@@ -25,6 +25,7 @@
 #include "work.hh"
 #include "safe_map.hh"
 #include "app_state.hh"
+#include "maybe_workspace_updater.hh"
 #include "project.hh"
 #include "simplestring_xform.hh"
 #include "keys.hh"
@@ -175,7 +176,8 @@ pick_branch_for_update(options & opts, database & db,
   return switched_branch;
 }
 
-static void
+// also used from maybe_workspace_updater.cc
+void
 update(app_state & app,
        args_vector const & args)
 {
@@ -494,11 +496,14 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     N_("Merges unmerged heads of a branch"),
     "",
     options::opts::branch | options::opts::date | options::opts::author |
-    options::opts::messages | options::opts::resolve_conflicts_opts)
+    options::opts::messages | options::opts::resolve_conflicts_opts |
+    options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
   project_t project(db);
+
+  maybe_workspace_updater updater(app, project);
 
   if (!args.empty())
     throw usage(execid);
@@ -563,7 +568,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   if (heads.size() > 1)
     P(F("note: branch '%s' still has %d heads; run merge again") % app.opts.branch % heads.size());
 
-  P(F("note: your workspaces have not been updated"));
+  updater.maybe_do_update();
 }
 
 CMD(propagate, "propagate", "", CMD_REF(tree),
@@ -611,7 +616,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
     N_("Merges one branch into a subdirectory in another branch"),
     "",
     options::opts::date | options::opts::author | options::opts::messages |
-    options::opts::resolve_conflicts_opts)
+    options::opts::resolve_conflicts_opts | options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -620,6 +625,8 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
 
   if (args.size() != 3)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   project.get_branch_heads(typecast_vocab<branch_name>(idx(args, 0)), src_heads,
                            app.opts.ignore_suspend_certs);
@@ -756,6 +763,8 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
       guard.commit();
       P(F("[merged] %s") % merged);
     }
+
+  updater.maybe_do_update();
 }
 
 CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
@@ -881,7 +890,8 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
     N_("The results of the merge are placed on the branch specified by "
        "DEST-BRANCH."),
     options::opts::date | options::opts::author |
-    options::opts::messages | options::opts::resolve_conflicts_opts)
+    options::opts::messages | options::opts::resolve_conflicts_opts |
+    options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -891,6 +901,8 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
 
   if (args.size() != 3)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   complete(app.opts, app.lua, project, idx(args, 0)(), left);
   complete(app.opts, app.lua, project, idx(args, 1)(), right);
@@ -911,6 +923,8 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
   merge_two(app.opts, app.lua, project, keys,
             left, right, branch, string("explicit merge"),
             std::cout, false);
+
+  updater.maybe_do_update();
 }
 
 namespace

@@ -1,5 +1,5 @@
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
-//               2008-2009 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008-2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -88,6 +88,24 @@ OPT(automate_stdio_size, "automate-stdio-size", size_t, 32768,
   automate_stdio_size = boost::lexical_cast<long>(arg);
   if (automate_stdio_size <= 0)
     throw bad_arg_internal(F("cannot be zero or negative").str());
+}
+#endif
+
+OPTSET(maybe_auto_update)
+OPTVAR(maybe_auto_update, bool, do_auto_update, false)
+OPTION(maybe_auto_update, yes_update, false, "update",
+       gettext_noop("automatically update the workspace, if it is clean and the base "
+                    "revision is a head of an affected branch"))
+#ifdef option_bodies
+{
+  do_auto_update = true;
+}
+#endif
+OPTION(maybe_auto_update, no_update, false, "no-update",
+       gettext_noop("do not touch the workspace (default)"))
+#ifdef option_bodies
+{
+  do_auto_update = false;
 }
 #endif
 
@@ -390,7 +408,7 @@ OPT(bookkeep_only, "bookkeep-only", bool, false,
 #endif
 
 OPT(move_conflicting_paths, "move-conflicting-paths", bool, false,
-        gettext_noop("move conflicting, unversioned paths into _MTN/conflicts "
+        gettext_noop("move conflicting, unversioned paths into _MTN/resolutions "
                      "before proceeding with any workspace change"))
 #ifdef option_bodies
 {

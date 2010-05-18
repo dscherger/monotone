@@ -7,7 +7,10 @@ addfile("foo", "bar")
 commit()
 R1 = base_revision()
 
-server = netsync.start()
+writefile("deny-automate.lua",
+          "function get_remote_automate_permitted(x, y, z) return false end")
+
+server = netsync.start({"--rcfile=deny-automate.lua"})
 
 check(mtn2("automate", "remote", "--remote-stdio-host", server.address,
     "interface_version"), 1, true, true)

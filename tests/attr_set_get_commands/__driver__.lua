@@ -19,15 +19,15 @@ update_r_sha1 = base_revision()
 
 -- Check checkouts.
 remove("co-dir")
-check(mtn("checkout", "--revision", co_r_sha1, "co-dir"), 0, true, true)
-check(qgrep("test:test_attr:foo:true", "stdout"))
-check(qgrep("test:test_attr:a:1", "stdout"))
+check(mtn("checkout", "--revision", co_r_sha1, "co-dir"), 0, false, true)
+check(qgrep("test:test_attr:foo:true", "stderr"))
+check(qgrep("test:test_attr:a:1", "stderr"))
 
 -- Check updates.
 remove("co-dir")
-check(mtn("checkout", "--revision", update_r_sha1, "co-dir"), 0, true, true)
-check(not qgrep("test:test_attr:foo", "stdout"))
-check(qgrep("test:test_attr:a:2", "stdout"))
+check(mtn("checkout", "--revision", update_r_sha1, "co-dir"), 0, false, true)
+check(not qgrep("test:test_attr:foo", "stderr"))
+check(qgrep("test:test_attr:a:2", "stderr"))
 
 -- check that files must exist to have attributes set
 check(mtn("attr", "set", "missing", "mtn:execute", "true"), 1, false, false)

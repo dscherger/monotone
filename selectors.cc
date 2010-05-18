@@ -186,7 +186,7 @@ decode_selector(options const & opts, lua_hooks & lua,
         case sel_parent:
           if (sel.empty())
             {
-              workspace work(opts, lua, F("the empty parent selector p: refers to "
+              workspace work(lua, F("the empty parent selector p: refers to "
                                           "the base revision of the workspace"));
 
               parent_map parents;
@@ -209,7 +209,7 @@ decode_selector(options const & opts, lua_hooks & lua,
           E(sel.empty(), origin::user,
             F("no value is allowed with the update selector u:"));
           {
-            workspace work(opts, lua, F("the update selector u: refers to the "
+            workspace work(lua, F("the update selector u: refers to the "
                                         "revision before the last update in the "
                                         "workspace"));
             revision_id update_id;
@@ -368,7 +368,7 @@ complete_one_selector(options const & opts, lua_hooks & lua,
 
     case sel_base:
       {
-        workspace work(opts, lua, F("the selector w: returns the "
+        workspace work(lua, F("the selector w: returns the "
                                     "base revision(s) of the workspace"));
         parent_map parents;
         work.get_parent_rosters(project.db, parents);

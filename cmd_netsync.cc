@@ -15,6 +15,7 @@
 #include "merge_content.hh"
 #include "netcmd.hh"
 #include "network/connection_info.hh"
+#include "file_io.hh"
 #include "globish.hh"
 #include "keys.hh"
 #include "key_store.hh"
@@ -24,6 +25,7 @@
 #include "vocab_cast.hh"
 #include "platform-wrapped.hh"
 #include "app_state.hh"
+#include "maybe_workspace_updater.hh"
 #include "project.hh"
 #include "work.hh"
 #include "database.hh"
@@ -48,8 +50,6 @@ static const var_key default_include_pattern_key(var_domain("database"),
                                                  var_name("default-include-pattern"));
 static const var_key default_exclude_pattern_key(var_domain("database"),
                                                  var_name("default-exclude-pattern"));
-
-static char const ws_internal_db_file_name[] = "mtn.db";
 
 static void
 find_key(options & opts,
@@ -92,24 +92,49 @@ build_client_connection_info(options & opts,
       L(FL("using default server address: %s") % info.client.unparsed);
     }
   parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+
+  var_key server_include(var_domain("server-include"),
+                         typecast_vocab<var_name>(info.client.unparsed));
+  var_key server_exclude(var_domain("server-exclude"),
+                         typecast_vocab<var_name>(info.client.unparsed));
+
   if (info.client.uri.query.empty() && !include_or_exclude_given)
     {
-      // No include/exclude given anywhere, use the defaults.
-      E(db.var_exists(default_include_pattern_key), origin::user,
-        F("no branch pattern given and no default pattern set"));
-      var_value pattern_value;
-      db.get_var(default_include_pattern_key, pattern_value);
-      info.client.include_pattern = globish(pattern_value(), origin::user);
-      L(FL("using default branch include pattern: '%s'")
-        % info.client.include_pattern);
-      if (db.var_exists(default_exclude_pattern_key))
+      if (db.var_exists(server_include))
         {
-          db.get_var(default_exclude_pattern_key, pattern_value);
-          info.client.exclude_pattern = globish(pattern_value(), origin::user);
+          var_value pattern_value;
+          db.get_var(server_include, pattern_value);
+          info.client.include_pattern = globish(pattern_value(), origin::user);
+          L(FL("using default branch include pattern: '%s'")
+            % info.client.include_pattern);
+          if (db.var_exists(server_exclude))
+            {
+              db.get_var(server_exclude, pattern_value);
+              info.client.exclude_pattern = globish(pattern_value(), origin::user);
+            }
+          else
+            info.client.exclude_pattern = globish();
+          L(FL("excluding: %s") % info.client.exclude_pattern);
         }
       else
-        info.client.exclude_pattern = globish();
-      L(FL("excluding: %s") % info.client.exclude_pattern);
+        {
+          // No include/exclude given anywhere, use the defaults.
+          E(db.var_exists(default_include_pattern_key), origin::user,
+            F("no branch pattern given and no default pattern set"));
+          var_value pattern_value;
+          db.get_var(default_include_pattern_key, pattern_value);
+          info.client.include_pattern = globish(pattern_value(), origin::user);
+          L(FL("using default branch include pattern: '%s'")
+            % info.client.include_pattern);
+          if (db.var_exists(default_exclude_pattern_key))
+            {
+              db.get_var(default_exclude_pattern_key, pattern_value);
+              info.client.exclude_pattern = globish(pattern_value(), origin::user);
+            }
+          else
+            info.client.exclude_pattern = globish();
+          L(FL("excluding: %s") % info.client.exclude_pattern);
+        }
     }
   else if(!info.client.uri.query.empty())
     {
@@ -163,28 +188,45 @@ build_client_connection_info(options & opts,
     }
 
   // Maybe set the default values.
-  if (!db.var_exists(default_server_key) || opts.set_default)
+  if (!db.var_exists(default_server_key)
+      || opts.set_default)
     {
       P(F("setting default server to %s") % info.client.unparsed());
       db.set_var(default_server_key,
                  typecast_vocab<var_value>(info.client.unparsed));
     }
-    if (!db.var_exists(default_include_pattern_key)
-        || opts.set_default)
-      {
-        P(F("setting default branch include pattern to '%s'")
-          % info.client.include_pattern);
-        db.set_var(default_include_pattern_key,
-                   typecast_vocab<var_value>(info.client.include_pattern));
-      }
-    if (!db.var_exists(default_exclude_pattern_key)
-        || opts.set_default)
-      {
-        P(F("setting default branch exclude pattern to '%s'")
-          % info.client.exclude_pattern);
-        db.set_var(default_exclude_pattern_key,
-                   typecast_vocab<var_value>(info.client.exclude_pattern));
-      }
+  if (!db.var_exists(default_include_pattern_key)
+      || opts.set_default)
+    {
+      P(F("setting default branch include pattern to '%s'")
+        % info.client.include_pattern);
+      db.set_var(default_include_pattern_key,
+                 typecast_vocab<var_value>(info.client.include_pattern));
+    }
+  if (!db.var_exists(default_exclude_pattern_key)
+      || opts.set_default)
+    {
+      P(F("setting default branch exclude pattern to '%s'")
+        % info.client.exclude_pattern);
+      db.set_var(default_exclude_pattern_key,
+                 typecast_vocab<var_value>(info.client.exclude_pattern));
+    }
+  if (!db.var_exists(server_include)
+      || opts.set_default)
+    {
+      P(F("setting default include pattern for server '%s' to '%s'")
+        % info.client.unparsed % info.client.include_pattern);
+      db.set_var(server_include,
+                 typecast_vocab<var_value>(info.client.include_pattern));
+    }
+  if (!db.var_exists(server_exclude)
+      || opts.set_default)
+    {
+      P(F("setting default exclude pattern for server '%s' to '%s'")
+        % info.client.unparsed % info.client.exclude_pattern);
+      db.set_var(server_exclude,
+                 typecast_vocab<var_value>(info.client.exclude_pattern));
+    }
 
   info.client.use_argv =
     lua.hook_get_netsync_connect_command(info.client.uri,
@@ -508,11 +550,14 @@ CMD(pull, "pull", "", CMD_REF(network),
     N_("This pulls all branches that match the pattern given in PATTERN "
        "from the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
-    options::opts::set_default | options::opts::exclude)
+    options::opts::set_default | options::opts::exclude |
+    options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
   project_t project(db);
+
+  maybe_workspace_updater updater(app, project);
 
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys, project,
@@ -523,6 +568,8 @@ CMD(pull, "pull", "", CMD_REF(network),
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
+
+  updater.maybe_do_update();
 }
 
 CMD_AUTOMATE(pull, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -551,11 +598,13 @@ CMD(sync, "sync", "", CMD_REF(network),
        "with the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::key_to_push)
+    options::opts::key_to_push | options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
   project_t project(db);
+
+  maybe_workspace_updater updater(app, project);
 
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys,
@@ -565,11 +614,13 @@ CMD(sync, "sync", "", CMD_REF(network),
     {
       // Write workspace options, including key; this is the simplest way to
       // fix a "found multiple keys" error reported by sync.
-      workspace work(app, true);
+      workspace::set_options(app.opts);
     }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
+
+  updater.maybe_do_update();
 }
 
 CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -590,57 +641,12 @@ CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   {
     // Write workspace options, including key; this is the simplest way to
     // fix a "found multiple keys" error reported by sync.
-    workspace work(app, true);
+    workspace::set_options(app.opts);
   }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
 }
-
-class dir_cleanup_helper
-{
-public:
-  dir_cleanup_helper(system_path const & new_dir, bool i_db)
-    : committed(false), internal_db(i_db), dir(new_dir)
-  {}
-  ~dir_cleanup_helper()
-  {
-    if (!committed && directory_exists(dir))
-      {
-        // Don't need to worry about where the db is on Unix.
-#ifndef WIN32
-        internal_db = false;
-#endif
-
-        // This is probably happening in the middle of another exception.
-        // Do not let anything that delete_dir_recursive throws escape, or
-        // the runtime will call std::terminate...
-        if (!internal_db)
-          {
-            try
-              {
-                delete_dir_recursive(dir);
-              }
-            catch (std::exception const & ex)
-              {
-                ui.fatal_exception(ex);
-              }
-            catch (...)
-              {
-                ui.fatal_exception();
-              }
-          }
-      }
-  }
-  void commit(void)
-  {
-    committed = true;
-  }
-private:
-  bool committed;
-  bool internal_db;
-  system_path dir;
-};
 
 CMD(clone, "clone", "", CMD_REF(network),
     N_("ADDRESS[:PORTNUMBER] BRANCH [DIRECTORY]"),
@@ -690,17 +696,16 @@ CMD(clone, "clone", "", CMD_REF(network),
   // db URIs will work
   system_path start_dir(get_current_working_dir(), origin::system);
 
-  bool internal_db = !app.opts.dbname_given || app.opts.dbname.empty();
-
   system_path _MTN_dir = workspace_dir / path_component("_MTN");
-  dir_cleanup_helper remove_on_fail(target_is_current_dir ? _MTN_dir : workspace_dir,
-                                    internal_db);
+  directory_cleanup_helper remove_on_fail(
+    target_is_current_dir ? _MTN_dir : workspace_dir
+  );
 
   // paths.cc's idea of the current workspace root is wrong at this point
-  if (internal_db)
+  if (!app.opts.dbname_given || app.opts.dbname.empty())
     app.opts.dbname = system_path(workspace_dir
                                   / bookkeeping_root_component
-                                  / ws_internal_db_file_name);
+                                  / bookkeeping_internal_db_file_name);
 
   // this is actually stupid, but app.opts.branch must be set here
   // otherwise it will not be written into _MTN/options, in case

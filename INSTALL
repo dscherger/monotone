@@ -113,6 +113,7 @@ building and installation process for monotone
            botan    | 1.8.4   | http://botan.randombit.net/download.html | Botan-1.8.4.tbz
            sqlite3  | 3.6.16  | http://www.sqlite.org/download.html | sqlite-amalgamation-3.6.16.tar.gz, with makefile
            libidn   | 1.9     | ftp://ftp.gnu.org/gnu/libidn | libidn-1.9.tar.gz
+           Depends.exe|       | http://www.dependencywalker.com/ ; also comes with Visual Studio
 
            msysDTK installs autoconf, automake, Perl, CVS, crypt, and
            other tools needed by the autoconf tools.
@@ -206,7 +207,15 @@ building and installation process for monotone
                $ ./configure --prefix=/mingw
                $ make install
 
-           15. build monotone
+           15. Depends.exe
+               If you have Visual Studio install, you should be able to skip this.
+               If you don't, then download the appropriate depends*.zip and
+               unpack it someplace in your %PATH%.
+               This is only used by the testsuite, in particular the empty_environment test.
+               If you just want to build monotone for your own use, you can skip this and
+               just ignore that that test fails.
+
+           16. build monotone
                $ cd /c/.../monotone
                $ export PATH=/bin:/mingw/bin
                $ autoreconf -i

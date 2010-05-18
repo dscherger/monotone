@@ -369,6 +369,22 @@ extract_packets(string const & s, packet_consumer & cons)
   return count;
 }
 
+// this is same as rfind, but search area is haystack[start:] (from start to end of string)
+// haystack is searched, needle is pattern
+static size_t 
+rfind_in_substr(std::string const& haystack, size_t start, std::string const& needle)
+{
+  I(start <= haystack.size());
+  const std::string::const_iterator result = 
+    std::find_end(haystack.begin() + start, haystack.end(),
+                  needle.begin(), needle.end());
+
+  if (result == haystack.end())
+    return std::string::npos;
+  else
+    return distance(haystack.begin(), result);
+}
+
 size_t
 read_packets(istream & in, packet_consumer & cons)
 {
@@ -379,10 +395,12 @@ read_packets(istream & in, packet_consumer & cons)
   static string const end("[end]");
   while(in)
     {
+      size_t const next_search_pos = (accum.size() >= end.size()) 
+                                      ? accum.size() - end.size() : 0;
       in.read(buf, bufsz);
       accum.append(buf, in.gcount());
       string::size_type endpos = string::npos;
-      endpos = accum.rfind(end);
+      endpos = rfind_in_substr(accum, next_search_pos, end);
       if (endpos != string::npos)
         {
           endpos += end.size();

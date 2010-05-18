@@ -180,7 +180,7 @@ BOOL WINAPI ConsoleCtrlHandler(DWORD what)
   //ExitProcess(0);
 
   // this exits without calling cleanup routines (atexit() and the like)
-  TerminateProcess(GetCurrentProcess(), 0);
+  TerminateProcess(GetCurrentProcess(), 1);
 
   // returning FALSE crashes (calls ExitProcess()); TRUE exits or does nothing
   return FALSE;

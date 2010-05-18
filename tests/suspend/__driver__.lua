@@ -12,7 +12,7 @@ REV2=base_revision()
 -- check that suspend hides things from the h: selector
 
 selmap("h:testbranch", {REV2})
-check(mtn("suspend", REV2))
+check(mtn("suspend", REV2), 0, nil, false)
 selmap("h:testbranch", {})
 
 check(mtn("automate", "heads"), 0, true, false)
@@ -48,7 +48,7 @@ OREV2=base_revision()
 
 -- now suspend the second branch and check it is gone when we list branches
 
-check(mtn("suspend", OREV2))
+check(mtn("suspend", OREV2), 0, nil, false)
 check(mtn("ls", "branches"), 0, true, true)
 check(samelines("stdout", {"testbranch"}))
 
@@ -66,7 +66,7 @@ selmap("h:otherbranch", {OREV2b})
 
 -- Check that a revision suspended in one branch can still appear in another
 
-check(mtn("approve", OREV2, "-b", "testbranch"))
+check(mtn("approve", OREV2, "-b", "testbranch"), 0, nil, false)
 selmap("h:testbranch", {OREV2})
 
 -- Check that update ignores the suspended revision when there is a non-suspended revision
@@ -83,7 +83,7 @@ check(base_revision() == OREV1)
 
 -- Check that update complains about multiple heads when all candidates are suspended
 
-check(mtn("suspend", OREV2b))
+check(mtn("suspend", OREV2b), 0, nil, false)
 check(mtn("up", "-r", OREV1, "-b", "otherbranch"), 0, false, false)
 check(mtn("up"), 1, false, false)
 check(base_revision() == OREV1)

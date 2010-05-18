@@ -53,6 +53,7 @@ static char const inodeprints_file_name[] = "inodeprints";
 static char const local_dump_file_name[] = "debug";
 static char const options_file_name[] = "options";
 static char const user_log_file_name[] = "log";
+static char const commit_file_name[] = "commit";
 static char const revision_file_name[] = "revision";
 static char const update_file_name[] = "update";
 static char const bisect_file_name[] = "bisect";
@@ -93,6 +94,13 @@ get_user_log_path(bookkeeping_path & ul_path)
 }
 
 static void
+get_commit_path(bookkeeping_path & commit_path)
+{
+  commit_path = bookkeeping_root / commit_file_name;
+  L(FL("commit path is %s") % commit_path);
+}
+
+static void
 get_update_path(bookkeeping_path & update_path)
 {
   update_path = bookkeeping_root / update_file_name;
@@ -117,6 +125,7 @@ directory_is_workspace(system_path const & dir)
 }
 
 bool workspace::found;
+bool workspace::used;
 bool workspace::branch_is_sticky;
 
 void
@@ -124,6 +133,7 @@ workspace::require_workspace()
 {
   E(workspace::found, origin::user,
     F("workspace required but not found"));
+  workspace::used = true;
 }
 
 void
@@ -131,6 +141,7 @@ workspace::require_workspace(i18n_format const & explanation)
 {
   E(workspace::found, origin::user,
     F("workspace required but not found\n%s") % explanation.str());
+  workspace::used = true;
 }
 
 void
@@ -180,30 +191,22 @@ workspace::create_workspace(options const & opts,
 }
 
 // Normal-use constructor.
-workspace::workspace(app_state & app, bool writeback_options)
+workspace::workspace(app_state & app)
   : lua(app.lua)
 {
   require_workspace();
-  if (writeback_options)
-    set_options(app.opts, false);
 }
 
-workspace::workspace(app_state & app, i18n_format const & explanation,
-                     bool writeback_options)
+workspace::workspace(app_state & app, i18n_format const & explanation)
   : lua(app.lua)
 {
   require_workspace(explanation);
-  if (writeback_options)
-    set_options(app.opts, false);
 }
 
-workspace::workspace(options const & opts, lua_hooks & lua,
-                     i18n_format const & explanation, bool writeback_options)
+workspace::workspace(lua_hooks & lua, i18n_format const & explanation)
   : lua(lua)
 {
   require_workspace(explanation);
-  if (writeback_options)
-    set_options(opts, false);
 }
 
 // routines for manipulating the bookkeeping directory
@@ -419,6 +422,41 @@ workspace::has_contents_user_log()
   return user_log_message().length() > 0;
 }
 
+// commit buffer backup file
+
+void
+workspace::load_commit_text(utf8 & dat)
+{
+  bookkeeping_path commit_path;
+  get_commit_path(commit_path);
+
+  if (file_exists(commit_path))
+    {
+      data tmp;
+      read_data(commit_path, tmp);
+      system_to_utf8(typecast_vocab<external>(tmp), dat);
+    }
+}
+
+void
+workspace::save_commit_text(utf8 const & dat)
+{
+  bookkeeping_path commit_path;
+  get_commit_path(commit_path);
+
+  external tmp;
+  utf8_to_system_best_effort(dat, tmp);
+  write_data(commit_path, typecast_vocab<data>(tmp));
+}
+
+void
+workspace::clear_commit_text()
+{
+  bookkeeping_path commit_path;
+  get_commit_path(commit_path);
+  delete_file(commit_path);
+}
+
 // _MTN/options handling.
 
 static void
@@ -554,6 +592,17 @@ workspace::get_database_option(system_path const & workspace,
 }
 
 void
+workspace::maybe_set_options(options const & opts)
+{
+  if (workspace::found && workspace::used)
+      set_options(opts, false);
+}
+
+// This function should usually be called at the (successful)
+// execution of a function, because we don't do many checks here, f.e.
+// if this is a valid sqlite file and if it contains the correct identifier,
+// so be warned that you do not call this too early
+void
 workspace::set_options(options const & opts, bool branch_is_sticky)
 {
   E(workspace::found, origin::user, F("workspace required but not found"));
@@ -573,25 +622,46 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
                       workspace_database, workspace_branch,
                       workspace_key, workspace_keydir);
 
-  // FIXME: we should do more checks here, f.e. if this is a valid sqlite
-  // file and if it contains the correct identifier, but these checks would
-  // duplicate those in database.cc. At the time it is checked there, however,
-  // the options file for the workspace is already written out...
-  if (!opts.dbname.as_internal().empty() &&
-      get_path_status(opts.dbname.as_internal()) == path::file)
-    workspace_database = opts.dbname;
-  if (!opts.key_dir.as_internal().empty() &&
-      get_path_status(opts.key_dir.as_internal()) == path::directory)
-    workspace_keydir = opts.key_dir;
-  if ((branch_is_sticky || workspace::branch_is_sticky)
-      && !opts.branch().empty())
-    workspace_branch = opts.branch;
-  if (opts.key_given)
-    workspace_key = opts.signing_key;
+  bool options_changed = false;
 
-  write_options_file(o_path,
-                     workspace_database, workspace_branch,
-                     workspace_key, workspace_keydir);
+  if (!opts.dbname.as_internal().empty() &&
+      get_path_status(opts.dbname.as_internal()) == path::file &&
+      workspace_database != opts.dbname)
+    {
+      workspace_database = opts.dbname;
+      options_changed = true;
+    }
+
+  if (!opts.key_dir.as_internal().empty() &&
+      get_path_status(opts.key_dir.as_internal()) == path::directory &&
+      workspace_keydir != opts.key_dir)
+    {
+      workspace_keydir = opts.key_dir;
+      options_changed = true;
+    }
+
+  if ((branch_is_sticky || workspace::branch_is_sticky) &&
+      !opts.branch().empty() &&
+      workspace_branch != opts.branch)
+    {
+      workspace_branch = opts.branch;
+      options_changed = true;
+    }
+
+  if (opts.key_given && workspace_key != opts.signing_key)
+    {
+      workspace_key = opts.signing_key;
+      options_changed = true;
+    }
+
+  // only rewrite the options file if there are actual changes
+  if (options_changed)
+    {
+      L(FL("workspace options changed - writing back to _MTN/options"));
+      write_options_file(o_path,
+                         workspace_database, workspace_branch,
+                         workspace_key, workspace_keydir);
+    }
 }
 
 void
