@@ -569,7 +569,7 @@ database::database(options const & o, lua_hooks & l)
 void
 database::init()
 {
-  boost::shared_ptr<database_impl> & i = dbcache[opts.dbname];
+  boost::shared_ptr<database_impl> i = dbcache[opts.dbname];
   if (!i)
     {
       system_path dbpath = opts.dbname;
