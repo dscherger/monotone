@@ -1247,8 +1247,14 @@ function get_remote_unix_socket_command(host)
 end
 
 function get_default_command_options(command)
-   local default_args = {}
-   return default_args
+    local default_args = {}
+    return default_args
+end
+
+function get_default_database_locations()
+    local paths = {}
+    table.insert(paths, get_confdir() .. "/databases")
+    return paths
 end
 
 hook_wrapper_dump                = {}

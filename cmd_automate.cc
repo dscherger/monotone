@@ -329,7 +329,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           // usually, if a command succeeds, any of its workspace-relevant
           // options are saved back to _MTN/options, this shouldn't be
           // any different here
-          workspace::maybe_set_options(app.opts);
+          workspace::maybe_set_options(app.opts, app.lua);
 
           // restore app.opts
           app.opts = original_opts;
@@ -477,7 +477,7 @@ LUAEXT(mtn_automate, )
       // usually, if a command succeeds, any of its workspace-relevant
       // options are saved back to _MTN/options, this shouldn't be
       // any different here
-      workspace::maybe_set_options(app_p->opts);
+      workspace::maybe_set_options(app_p->opts, app_p->lua);
 
       // allow further calls
       app_p->mtn_automate_allowed = true;

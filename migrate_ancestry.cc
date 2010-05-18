@@ -17,6 +17,7 @@
 #include "database.hh"
 #include "graph.hh"
 #include "key_store.hh"
+#include "lazy_rng.hh"
 #include "legacy.hh"
 #include "outdated_indicator.hh"
 #include "simplestring_xform.hh"
@@ -200,7 +201,7 @@ void anc_graph::write_certs()
       {
         char buf[constants::epochlen_bytes];
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-        keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
+        lazy_rng::get().randomize(reinterpret_cast<Botan::byte *>(buf),
                                  constants::epochlen_bytes);
 #else
         Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),

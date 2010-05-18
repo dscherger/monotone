@@ -127,6 +127,8 @@ public:
 
   bool hook_get_date_format_spec(date_format_spec in, std::string & out);
 
+  bool hook_get_default_database_locations(std::vector<system_path> & out);
+
   // workspace hooks
   bool hook_use_inodeprints();
 

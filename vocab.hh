@@ -111,6 +111,14 @@ enum date_format_spec
   date_time_short
 };
 
+// to distinguish different database types
+enum db_type
+{
+  memory_db,
+  managed_db,
+  unmanaged_db
+};
+
 // do these belong here?
 inline bool
 null_id(id const & i)

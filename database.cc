@@ -209,7 +209,7 @@ class database_impl
 
   // for scoped_ptr's sake
 public:
-  explicit database_impl(system_path const & f, bool mem,
+  explicit database_impl(system_path const & f, db_type t,
                          system_path const & roster_cache_performance_log);
   ~database_impl();
 
@@ -218,8 +218,8 @@ private:
   //
   // --== Opening the database and schema checking ==--
   //
-  system_path const filename;
-  bool use_memory_db;
+  system_path filename;
+  db_type type;
   struct sqlite3 * __sql;
 
   void install_functions();
@@ -459,10 +459,10 @@ sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
 }
 #endif
 
-database_impl::database_impl(system_path const & f, bool mem,
+database_impl::database_impl(system_path const & f, db_type t,
                              system_path const & roster_cache_performance_log) :
   filename(f),
-  use_memory_db(mem),
+  type(t),
   __sql(NULL),
   transaction_level(0),
   roster_cache(constants::db_roster_cache_sz,
@@ -488,31 +488,109 @@ database_impl::~database_impl()
     close();
 }
 
-struct database_cache
+void
+resolve_db_alias(lua_hooks & lua, std::string const & alias, system_path & path)
 {
-  map<system_path, boost::shared_ptr<database_impl> > dbs;
-};
+  // we take care of this in the options code
+  I(alias.find(':') == 0);
+
+  std::string pc = alias.substr(1);
+  size_t pos = pc.find('/');
+  E(pos == std::string::npos, origin::user,
+    F("invalid database alias '%s'") % pc);
+
+  pos = pc.rfind('.');
+  if (pos == std::string::npos || pc.substr(pos + 1) != "mtn")
+    pc += ".mtn";
+
+  path_component basename(pc, origin::user);
+  std::vector<system_path> candidates;
+  std::vector<system_path> search_paths;
+
+  E(lua.hook_get_default_database_locations(search_paths), origin::database,
+    F("could not query default database locations"));
+
+  for (std::vector<system_path>::const_iterator i = search_paths.begin();
+     i != search_paths.end(); ++i)
+    {
+      if (file_exists((*i) / basename))
+        {
+          candidates.push_back((*i) / basename);
+          continue;
+        }
+    }
+
+  MM(candidates);
+
+  // if we did not found the database anywhere, use the first
+  // available default path to possible save it there
+  if (candidates.size() == 0)
+    {
+      path = (*search_paths.begin()) / basename;
+      L(FL("no managed path candidates found, using '%s'") % path);
+      return;
+    }
+
+  if (candidates.size() == 1)
+    {
+      path = (*candidates.begin());
+      L(FL("one managed path candidate found: %s") % path);
+      return;
+    }
+
+  if (candidates.size() > 1)
+    {
+      string err =
+        (F("the managed database name ':%s' has multiple "
+           "ambiguous expansions:") % pc).str();
+
+      for (std::vector<system_path>::const_iterator i = candidates.begin();
+           i != candidates.end(); ++i)
+        err += ("\n  " + (*i).as_internal());
+
+      E(false, origin::user, i18n_format(err));
+    }
+}
+
+database_cache database::dbcache;
 
 database::database(app_state & app)
-  : lua(app.lua)
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  , rng(app.rng)
-#endif
+  : opts(app.opts), lua(app.lua)
 {
+  init();
+}
 
-  if (!app.dbcache)
-    app.dbcache.reset(new database_cache);
+database::database(options const & o, lua_hooks & l)
+  : opts(o), lua(l)
+{
+  init();
+}
 
-  boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
+void
+database::init()
+{
+  boost::shared_ptr<database_impl> i = dbcache[opts.dbname];
   if (!i)
-    i.reset(new database_impl(app.opts.dbname, app.opts.dbname_is_memory,
-                              app.opts.roster_cache_performance_log));
+    {
+      system_path dbpath = opts.dbname;
+      if (opts.dbname_type == managed_db)
+        resolve_db_alias(lua, opts.dbname_alias, dbpath);
+
+      i.reset(new database_impl(dbpath, opts.dbname_type,
+                                opts.roster_cache_performance_log));
+    }
 
   imp = i;
 }
 
 database::~database()
 {}
+
+void
+database::reset_cache()
+{
+  dbcache.clear();
+}
 
 system_path
 database::get_filename()
@@ -523,7 +601,7 @@ database::get_filename()
 bool
 database::is_dbfile(any_path const & file)
 {
-  if (imp->use_memory_db)
+  if (imp->type == memory_db)
     return false;
   system_path fn(file); // canonicalize
   bool same = (imp->filename == fn);
@@ -535,7 +613,7 @@ database::is_dbfile(any_path const & file)
 bool
 database::database_specified()
 {
-  return imp->use_memory_db || !imp->filename.empty();
+  return imp->type == memory_db || !imp->filename.empty();
 }
 
 void
@@ -614,7 +692,7 @@ database_impl::sql(enum open_mode mode)
 {
   if (! __sql)
     {
-      if (use_memory_db)
+      if (type == memory_db)
         {
           open();
 
@@ -3235,7 +3313,7 @@ database::encrypt_rsa(key_id const & pub_id,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
-          plaintext.size(), rng->get());
+          plaintext.size(), lazy_rng::get());
 #else
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
@@ -4482,11 +4560,11 @@ database_impl::check_db_exists()
     case path::directory:
       if (directory_is_workspace(filename))
         {
-          system_path workspace_database;
-          workspace::get_database_option(filename, workspace_database);
-          E(workspace_database.empty(), origin::user,
+          options opts;
+          workspace::get_options(filename, opts);
+          E(opts.dbname.as_internal().empty(), origin::user,
             F("%s is a workspace, not a database\n"
-              "(did you mean %s?)") % filename % workspace_database);
+              "(did you mean %s?)") % filename % opts.dbname);
         }
       E(false, origin::user,
         F("%s is a directory, not a database") % filename);
@@ -4515,10 +4593,16 @@ database_impl::open()
   I(!__sql);
 
   std::string to_open;
-  if (use_memory_db)
+  if (type == memory_db)
     to_open = ":memory:";
   else
-    to_open = filename.as_external();
+    {
+      system_path base_dir = filename.dirname();
+      if (!directory_exists(base_dir))
+        mkdir_p(base_dir);
+      to_open = filename.as_external();
+    }
+
   if (sqlite3_open(to_open.c_str(), &__sql) == SQLITE_NOMEM)
     throw std::bad_alloc();
 

@@ -287,7 +287,7 @@ cpp_main(int argc, char ** argv)
 
           commands::process(app, cmd, app.opts.args);
 
-          workspace::maybe_set_options(app.opts);
+          workspace::maybe_set_options(app.opts, app.lua);
 
           // The command will raise any problems itself through
           // exceptions.  If we reach this point, it is because it

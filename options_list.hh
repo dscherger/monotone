@@ -245,12 +245,26 @@ GOPT(format_dates, "no-format-dates", bool, true,
 }
 #endif
 
-OPTVAR(globals, bool, dbname_is_memory, false);
+
+OPTVAR(globals, db_type, dbname_type, );
+OPTVAR(globals, std::string, dbname_alias, );
 GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #ifdef option_bodies
 {
-  dbname = system_path(arg, origin::user);
-  dbname_is_memory = (arg == ":memory:");
+  if (arg == ":memory:")
+    {
+      dbname_type = memory_db;
+    }
+  else if (arg.size() > 1 && arg.substr(0, 1) == ":")
+    {
+      dbname_alias = arg;
+      dbname_type = managed_db;
+    }
+  else
+    {
+      dbname = system_path(arg, origin::user);
+      dbname_type = unmanaged_db;
+    }
 }
 #endif
 

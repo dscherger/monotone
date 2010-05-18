@@ -469,6 +469,10 @@ find_and_go_to_workspace(std::string const & search_root);
 void
 go_to_workspace(system_path const & new_workspace);
 
+// returns the currently active workspace path
+void
+get_current_workspace(system_path & workspace);
+
 void mark_std_paths_used(void);
 
 file_path
