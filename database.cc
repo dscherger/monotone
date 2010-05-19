@@ -569,18 +569,19 @@ database::database(options const & o, lua_hooks & l)
 void
 database::init()
 {
-  boost::shared_ptr<database_impl> i = dbcache[opts.dbname];
-  if (!i)
-    {
-      system_path dbpath = opts.dbname;
-      if (opts.dbname_type == managed_db)
-        resolve_db_alias(lua, opts.dbname_alias, dbpath);
+  system_path dbpath = opts.dbname;
+  if (opts.dbname_type == managed_db)
+    resolve_db_alias(lua, opts.dbname_alias, dbpath);
 
-      i.reset(new database_impl(dbpath, opts.dbname_type,
-                                opts.roster_cache_performance_log));
+  if (dbcache.find(dbpath) == dbcache.end())
+    {
+      L(FL("creating new database_impl instance for %s") % dbpath);
+      dbcache.insert(make_pair(dbpath, boost::shared_ptr<database_impl>(
+        new database_impl(dbpath, opts.dbname_type, opts.roster_cache_performance_log)
+      )));
     }
 
-  imp = i;
+  imp = dbcache[dbpath];
 }
 
 database::~database()
