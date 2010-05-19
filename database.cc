@@ -4595,7 +4595,7 @@ database_impl::open()
 
   string to_open;
   if (type == memory_db)
-    to_open = ":memory:";
+    to_open = memory_db_identifier;
   else
     {
       system_path base_dir = filename.dirname();

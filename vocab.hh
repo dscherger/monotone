@@ -119,6 +119,8 @@ enum db_type
   unmanaged_db
 };
 
+static const std::string memory_db_identifier = ":memory:";
+
 // do these belong here?
 inline bool
 null_id(id const & i)

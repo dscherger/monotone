@@ -251,7 +251,7 @@ OPTVAR(globals, std::string, dbname_alias, );
 GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #ifdef option_bodies
 {
-  if (arg == ":memory:")
+  if (arg == memory_db_identifier)
     {
       dbname_type = memory_db;
     }

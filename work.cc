@@ -486,14 +486,14 @@ read_options_file(any_path const & optspath,
 
       if (opt == "database")
         {
-          if (val.find(':') == 0 && val != ":memory:")
+          if (val.find(':') == 0 && val != memory_db_identifier)
             {
               opts.dbname_alias = val;
               opts.dbname_given = true;
               opts.dbname_type = managed_db;
             }
           else
-          if (val != ":memory:")
+          if (val != memory_db_identifier)
             {
               opts.dbname = system_path(val, origin::workspace);
               opts.dbname_given = true;
