@@ -348,6 +348,7 @@ private:
 
 #define bookkeeping_root (bookkeeping_path("_MTN"))
 #define bookkeeping_root_component (path_component("_MTN"))
+#define bookkeeping_internal_db_file_name (path_component("mtn.db"))
 // for migration
 #define old_bookkeeping_root_component (path_component("MT"))
 
@@ -378,8 +379,9 @@ public:
   explicit system_path(utf8 const & path);
 
   bool operator==(const system_path & other) const
-  { return data== other.data; }
-
+  { return data == other.data; }
+  bool operator!=(const system_path & other) const
+  { return data != other.data; }
   bool operator <(const system_path & other) const
   { return data < other.data; }
 

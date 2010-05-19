@@ -39,7 +39,7 @@ Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
 Copyright @copyright{} 2006 - 2009 Thomas Keller @*
-Copyright @copyright{} 2007 - 2009 Stephen Leake @*
+Copyright @copyright{} 2007 - 2010 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
 greater.  See the accompanying file COPYING for details.
@@ -1142,17 +1142,6 @@ version control tasks. Some tasks must be done by each member of our
 example team; other tasks involve only one member.
 
 @menu
-* Creating a Database::
-* Generating Keys::
-* Starting a New Project::
-* Adding Files::
-* Committing Work::
-* Basic Network Service::
-* Synchronising Databases::
-* Making Changes::
-* Dealing with a Fork::
-* Branching and Merging::
-* Network Service Revisited::
 * Creating a Database::
 * Generating Keys::
 * Starting a New Project::
@@ -3426,7 +3415,7 @@ so monotone is conservative and will refuse to destroy the information
 in your workspace contents. Furthermore, all workspace-changing commands have
 an option @option{--move-conflicting-paths}, which moves unversioned, but
 conflicting files and directories from the workspace into a new subdirectory
-under _MTN/conflicts. This is useful if you want to ensure that an update
+under _MTN/resolutions. This is useful if you want to ensure that an update
 always succeeds and you just want to move blocking paths out of the way.
 
 However, monotone cannot detect all kinds of failures and collisions in
@@ -4975,13 +4964,13 @@ merge the left and right files, leaving the result in the specified file.
 
 @var{file} must be a bookkeeping path; under @file{_MTN}.
 
-This inserts a @var{resolved_user file} conflict resolution in the
+This inserts a @var{resolved_user_left file} conflict resolution in the
 conflicts file.
 
 @item user @var{file}
 The file contents are replaced by the contents of the specified file.
 
-This inserts a @var{resolved_user file} conflict resolution in the
+This inserts a @var{resolved_user_left file} conflict resolution in the
 conflicts file.
 
 @item drop
@@ -5054,8 +5043,8 @@ database to be used, both of which will be placed in the
 This can be used with an empty directory to start a new blank project,
 or within an existing directory full of files, prior to using
 @command{mtn commit}. If no directory is specified, the current
-directory is used.
-
+directory is used.  If no database is given, a new database is
+initialized and saved to @file{_MTN/mtn.db}.
 
 @item mtn add [--recursive | -R] [--no-respect-ignore] @var{pathname...}
 @item mtn add [--recursive | -R] [--no-respect-ignore] --unknown [@var{pathname...}]
@@ -9245,7 +9234,9 @@ and @var{file} specifies the file for which to calculate revisions in which it w
 
 @item Purpose:
 
-Returns a list of revision IDs in which the content  was most recently changed, relative to the revision ID specified as @var{id}. This equates to a content mark following the *-merge algorithm.
+Returns a list of revision IDs in which the content  was most recently changed,
+relative to the revision ID specified as @var{id}. This equates to a content mark
+following the *-merge algorithm.
 
 @item Sample output:
 
@@ -9255,7 +9246,22 @@ Returns a list of revision IDs in which the content  was most recently changed, 
 
 @item Output format:
 
-Zero or more basic_io stanzas, each specifying a revision ID in which a content mark is set.
+Zero or more basic_io stanzas, each specifying a revision ID in which a content
+mark is set:
+
+@itemize
+@item
+No content mark is returned if @var{file} is a directory.
+@item
+One content mark is returned if @var{file} is a file and has recently been
+changed exclusively in one revision (be it by a commit or merge).
+@item
+Multiple content marks are returned if @var{file} is a file and has recently
+been part of a clean merge case.
+A clean merge happens when the same change to @var{file} is made on both sides
+of the particular merge, together with other unrelated changes, which make the
+resulting revisions not collapse into one revision.
+@end itemize
 
 The complete format:
 @verbatim
@@ -9899,6 +9905,45 @@ A path.
 
 If the current directory isn't part of a workspace, prints an error to
 stderr and exits with status 1.
+
+@end table
+
+@item mtn automate update
+
+@table @strong
+@item Arguments:
+
+Same as @command{mtn update}; no arguments, options
+@var{--move-conflicting-paths}, @var{--revision=revision}
+
+@item Added in:
+
+12.1
+
+@item Purpose:
+
+Update the current workspace to the latest or given revision; see
+@command{update} in @ref{Workspace}.
+
+@item Sample output:
+
+Nothing on stdout. stderr gives progress messages of the form:
+@verbatim
+mtn: updating along branch 'mms.work_stephe'
+mtn: selected update target 233afb8c4832bf33d5f5734225164de5f5a6278c
+mtn: [left]  4a368a6b217c40b2ff3b12bb7cfa00987e0f191c
+mtn: [right] 233afb8c4832bf33d5f5734225164de5f5a6278c
+mtn: renaming build/windows_common.make to build/utf_common.make
+mtn: adding build/x86_gnu_linux_release
+@end verbatim
+
+@item Output format:
+
+Free form, prefixed by ``mtn:''.
+
+@item Error conditions:
+
+see @command{update} in @ref{Workspace}.
 
 @end table
 
@@ -11265,6 +11310,19 @@ hook writers.
 This function adds a new alias for a monotone command.  A call to this function would
 normally be placed directly in the @file{monotonerc} file, rather than in a hook function.
 
+@item change_workspace(@var{directory})
+
+Change to workspace @var{directory}, which may be absolute or
+relative to the directory that was current when mtn was started.
+
+Throws an error if @var{directory} does not exist or is not a
+workspace (does not contain @file{_MTN}).
+
+After calling change_workspace, the next operation should read the
+workspace options. @command{mtn_automate} does this; other Lua
+extensions do not. In addition, @command{automate stio} reads the
+workspace options before executing each command.
+
 @item existonpath(@var{possible_command})
 
 This function receives a string containing the name of an external
@@ -11306,8 +11364,9 @@ error.
 @item includedir(@var{scriptpath})
 
 This function loads and executes in alphabetical order all the scripts
-contained into the directory scriptpath.
-If one of the scripts has an error, the functions doesn't process the
+contained in the directory scriptpath.
+
+If one of the scripts has an error, the function doesn't process the
 remaining scripts and immediately returns false.
 
 @item includedirpattern(@var{scriptpath}, @var{pattern})

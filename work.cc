@@ -1,4 +1,4 @@
-// Copyright (C) 2009 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2009, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -117,6 +117,7 @@ directory_is_workspace(system_path const & dir)
 }
 
 bool workspace::found;
+bool workspace::used;
 bool workspace::branch_is_sticky;
 
 void
@@ -124,6 +125,7 @@ workspace::require_workspace()
 {
   E(workspace::found, origin::user,
     F("workspace required but not found"));
+  workspace::used = true;
 }
 
 void
@@ -131,6 +133,7 @@ workspace::require_workspace(i18n_format const & explanation)
 {
   E(workspace::found, origin::user,
     F("workspace required but not found\n%s") % explanation.str());
+  workspace::used = true;
 }
 
 void
@@ -180,30 +183,22 @@ workspace::create_workspace(options const & opts,
 }
 
 // Normal-use constructor.
-workspace::workspace(app_state & app, bool writeback_options)
+workspace::workspace(app_state & app)
   : lua(app.lua)
 {
   require_workspace();
-  if (writeback_options)
-    set_options(app.opts, false);
 }
 
-workspace::workspace(app_state & app, i18n_format const & explanation,
-                     bool writeback_options)
+workspace::workspace(app_state & app, i18n_format const & explanation)
   : lua(app.lua)
 {
   require_workspace(explanation);
-  if (writeback_options)
-    set_options(app.opts, false);
 }
 
-workspace::workspace(options const & opts, lua_hooks & lua,
-                     i18n_format const & explanation, bool writeback_options)
+workspace::workspace(lua_hooks & lua, i18n_format const & explanation)
   : lua(lua)
 {
   require_workspace(explanation);
-  if (writeback_options)
-    set_options(opts, false);
 }
 
 // routines for manipulating the bookkeeping directory
@@ -554,6 +549,17 @@ workspace::get_database_option(system_path const & workspace,
 }
 
 void
+workspace::maybe_set_options(options const & opts)
+{
+  if (workspace::found && workspace::used)
+      set_options(opts, false);
+}
+
+// This function should usually be called at the (successful)
+// execution of a function, because we don't do many checks here, f.e.
+// if this is a valid sqlite file and if it contains the correct identifier,
+// so be warned that you do not call this too early
+void
 workspace::set_options(options const & opts, bool branch_is_sticky)
 {
   E(workspace::found, origin::user, F("workspace required but not found"));
@@ -573,25 +579,46 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
                       workspace_database, workspace_branch,
                       workspace_key, workspace_keydir);
 
-  // FIXME: we should do more checks here, f.e. if this is a valid sqlite
-  // file and if it contains the correct identifier, but these checks would
-  // duplicate those in database.cc. At the time it is checked there, however,
-  // the options file for the workspace is already written out...
-  if (!opts.dbname.as_internal().empty() &&
-      get_path_status(opts.dbname.as_internal()) == path::file)
-    workspace_database = opts.dbname;
-  if (!opts.key_dir.as_internal().empty() &&
-      get_path_status(opts.key_dir.as_internal()) == path::directory)
-    workspace_keydir = opts.key_dir;
-  if ((branch_is_sticky || workspace::branch_is_sticky)
-      && !opts.branch().empty())
-    workspace_branch = opts.branch;
-  if (opts.key_given)
-    workspace_key = opts.signing_key;
+  bool options_changed = false;
 
-  write_options_file(o_path,
-                     workspace_database, workspace_branch,
-                     workspace_key, workspace_keydir);
+  if (!opts.dbname.as_internal().empty() &&
+      get_path_status(opts.dbname.as_internal()) == path::file &&
+      workspace_database != opts.dbname)
+    {
+      workspace_database = opts.dbname;
+      options_changed = true;
+    }
+
+  if (!opts.key_dir.as_internal().empty() &&
+      get_path_status(opts.key_dir.as_internal()) == path::directory &&
+      workspace_keydir != opts.key_dir)
+    {
+      workspace_keydir = opts.key_dir;
+      options_changed = true;
+    }
+
+  if ((branch_is_sticky || workspace::branch_is_sticky) &&
+      !opts.branch().empty() &&
+      workspace_branch != opts.branch)
+    {
+      workspace_branch = opts.branch;
+      options_changed = true;
+    }
+
+  if (opts.key_given && workspace_key != opts.signing_key)
+    {
+      workspace_key = opts.signing_key;
+      options_changed = true;
+    }
+
+  // only rewrite the options file if there are actual changes
+  if (options_changed)
+    {
+      L(FL("workspace options changed - writing back to _MTN/options"));
+      write_options_file(o_path,
+                         workspace_database, workspace_branch,
+                         workspace_key, workspace_keydir);
+    }
 }
 
 void
@@ -637,7 +664,7 @@ workspace::get_bisect_info(vector<bisect::entry> & bisect)
 {
   bookkeeping_path bisect_path;
   get_bisect_path(bisect_path);
-  
+
   if (!file_exists(bisect_path))
     return;
 
@@ -680,7 +707,7 @@ workspace::get_bisect_info(vector<bisect::entry> & bisect)
       else
         I(false);
 
-      revision_id rid = 
+      revision_id rid =
         decode_hexenc_as<revision_id>(rev, parser.tok.in.made_from);
       bisect.push_back(make_pair(type, rid));
     }
@@ -693,7 +720,7 @@ workspace::put_bisect_info(vector<bisect::entry> const & bisect)
   get_bisect_path(bisect_path);
 
   basic_io::stanza st;
-  for (vector<bisect::entry>::const_iterator i = bisect.begin(); 
+  for (vector<bisect::entry>::const_iterator i = bisect.begin();
        i != bisect.end(); ++i)
     {
       switch (i->first)
@@ -2033,6 +2060,7 @@ workspace::perform_content_update(roster_t const & old_roster,
   temp_node_id_source nis;
   set<file_path> known;
   bookkeeping_path detached = path_for_detached_nids();
+  bool moved_conflicting = false;
 
   E(!directory_exists(detached), origin::user,
     F("workspace is locked\n"
@@ -2057,6 +2085,7 @@ workspace::perform_content_update(roster_t const & old_roster,
         F("re-run this command with --move-conflicting-paths to move "
           "conflicting paths out of the way."));
       move_conflicting_paths_into_bookkeeping(swt.get_conflicting_paths());
+      moved_conflicting = true;
     }
 
   mkdir_p(detached);
@@ -2083,6 +2112,9 @@ workspace::perform_content_update(roster_t const & old_roster,
     }
 
   delete_dir_shallow(detached);
+
+  if (moved_conflicting)
+    P(F("moved some conflicting files into %s/%s") % bookkeeping_root % "resolutions");
 }
 
 // Local Variables:

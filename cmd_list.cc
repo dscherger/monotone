@@ -562,8 +562,11 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
 
       if (inc.matches(i->name()) && !exc.matches(i->name()))
         {
-          cout << i->name << ' ' << i->ident << ' ';
-
+          hexenc<id> hexid;
+          encode_hexenc(i->ident.inner(), hexid);
+         
+          cout << i->name << ' ' << hexid().substr(0,10) << "... ";
+    
           for (vector<cert>::const_iterator c = certs.begin(); 
                c != certs.end(); ++c)
             {

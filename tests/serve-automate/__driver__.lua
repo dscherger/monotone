@@ -7,7 +7,10 @@ netsync.setup()
 addfile("foo", "bar")
 commit()
 
-server = netsync.start()
+writefile("deny-automate.lua",
+          "function get_remote_automate_permitted(x, y, z) return false end")
+
+server = netsync.start({"--rcfile=deny-automate.lua"})
 
 local errors = run_remote_stdio(server, "l17:interface_versione", 1, 0, "e")
 check(

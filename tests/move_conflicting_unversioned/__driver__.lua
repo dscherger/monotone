@@ -41,7 +41,8 @@ check(qgrep("unversioned", "stderr"))
 
 -- moves them out of the way
 check(mtn("update", "--move-conflicting-paths"), 0, nil, true)
-check(qgrep("moved conflicting", "stderr"))
+check(qgrep("moved conflicting path", "stderr"))
+check(qgrep("moved some conflicting files into", "stderr"))
 check(readfile("_MTN/resolutions/somedir/fourthfile")=="fourthfile content 2")
 
 remove("_MTN/resolutions")
