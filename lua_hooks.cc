@@ -36,12 +36,7 @@
 extern char const std_hooks_constant[];
 
 using std::make_pair;
-using std::map;
-using std::pair;
-using std::set;
 using std::sort;
-using std::string;
-using std::vector;
 
 static int panic_thrower(lua_State * st)
 {
@@ -85,7 +80,7 @@ extern "C"
     int nArgs = lua_gettop(LS);
     lua_getglobal(LS, "tostring");
 
-    std::string ret;
+    string ret;
     for (int i = 1; i <= nArgs; ++i)
       {
         const char *s;
@@ -284,7 +279,7 @@ lua_hooks::load_rcfiles(options & opts)
 }
 
 bool
-lua_hooks::hook_exists(std::string const & func_name)
+lua_hooks::hook_exists(string const & func_name)
 {
   return Lua(st)
     .func(func_name)
@@ -463,7 +458,7 @@ namespace {
   template<typename ID>
   bool
   shared_trust_function_body(Lua & ll,
-                             set<ID> const & signers,
+                             std::set<ID> const & signers,
                              id const & hash,
                              cert_name const & name,
                              cert_value const & val)
@@ -471,7 +466,7 @@ namespace {
     ll.push_table();
 
     int k = 1;
-    for (typename set<ID>::const_iterator v = signers.begin();
+    for (typename std::set<ID>::const_iterator v = signers.begin();
          v != signers.end(); ++v)
       {
         ll.push_int(k);
@@ -495,7 +490,7 @@ namespace {
 }
 
 bool
-lua_hooks::hook_get_revision_cert_trust(set<key_identity_info> const & signers,
+lua_hooks::hook_get_revision_cert_trust(std::set<key_identity_info> const & signers,
                                        id const & hash,
                                        cert_name const & name,
                                        cert_value const & val)
@@ -506,7 +501,7 @@ lua_hooks::hook_get_revision_cert_trust(set<key_identity_info> const & signers,
 }
 
 bool
-lua_hooks::hook_get_manifest_cert_trust(set<key_name> const & signers,
+lua_hooks::hook_get_manifest_cert_trust(std::set<key_name> const & signers,
                                         id const & hash,
                                         cert_name const & name,
                                         cert_value const & val)
@@ -619,7 +614,7 @@ lua_hooks::hook_external_diff(file_path const & path,
 
 bool
 lua_hooks::hook_get_encloser_pattern(file_path const & path,
-                                     std::string & pattern)
+                                     string & pattern)
 {
   bool exec_ok
     = Lua(st)
@@ -664,7 +659,7 @@ lua_hooks::hook_get_default_command_options(commands::command_id const & cmd,
   ll.begin();
   while (ll.next())
     {
-      std::string arg;
+      string arg;
       ll.extract_str(arg).pop();
       args.push_back(arg_type(arg, origin::user));
     }
@@ -672,7 +667,7 @@ lua_hooks::hook_get_default_command_options(commands::command_id const & cmd,
 }
 
 bool
-lua_hooks::hook_get_date_format_spec(date_format_spec in, std::string & out)
+lua_hooks::hook_get_date_format_spec(date_format_spec in, string & out)
 {
   string in_spec;
   switch (in)
@@ -700,7 +695,19 @@ lua_hooks::hook_get_date_format_spec(date_format_spec in, std::string & out)
   return exec_ok;
 }
 
-bool lua_hooks::hook_get_default_database_locations(std::vector<system_path> & out)
+bool lua_hooks::hook_get_default_database_alias(string & alias)
+{
+   bool exec_ok
+     = Lua(st)
+     .func("get_default_database_alias")
+     .call(0, 1)
+     .extract_str(alias)
+     .ok();
+
+  return exec_ok;
+}
+
+bool lua_hooks::hook_get_default_database_locations(vector<system_path> & out)
 {
   Lua ll(st);
   ll.func("get_default_database_locations");
@@ -709,22 +716,22 @@ bool lua_hooks::hook_get_default_database_locations(std::vector<system_path> & o
   ll.begin();
   while (ll.next())
     {
-      std::string path;
+      string path;
       ll.extract_str(path).pop();
       out.push_back(system_path(path, origin::user));
     }
   return ll.ok() && !out.empty();
 }
 
-bool lua_hooks::hook_hook_wrapper(std::string const & func_name,
-                                  std::vector<std::string> const & args,
-                                  std::string & out)
+bool lua_hooks::hook_hook_wrapper(string const & func_name,
+                                  vector<string> const & args,
+                                  string & out)
 {
   Lua ll(st);
   ll.func("hook_wrapper")
     .push_str(func_name);
 
-  for (std::vector<std::string>::const_iterator i = args.begin();
+  for (vector<string>::const_iterator i = args.begin();
         i != args.end(); ++i)
     {
       ll.push_str(*i);
@@ -838,7 +845,7 @@ lua_hooks::hook_get_netsync_connect_command(uri_t const & uri,
                                             globish const & include_pattern,
                                             globish const & exclude_pattern,
                                             bool debug,
-                                            std::vector<std::string> & argv)
+                                            vector<string> & argv)
 {
   bool cmd = false, exec_ok = false;
   Lua ll(st);
@@ -876,7 +883,7 @@ lua_hooks::hook_get_netsync_connect_command(uri_t const & uri,
   argv.clear();
   while(ll.next())
     {
-      std::string s;
+      string s;
       ll.extract_str(s).pop();
       argv.push_back(s);
     }
@@ -1151,7 +1158,7 @@ lua_hooks::hook_note_netsync_start(size_t session_id, string my_role,
 bool
 lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
                                                revision_data const & rdat,
-                                               set<pair<key_identity_info,
+                                               std::set<pair<key_identity_info,
                                                pair<cert_name,
                                                cert_value> > > const & certs,
                                                size_t session_id)
@@ -1164,7 +1171,7 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
 
   ll.push_table();
 
-  typedef set<pair<key_identity_info, pair<cert_name, cert_value> > > cdat;
+  typedef std::set<pair<key_identity_info, pair<cert_name, cert_value> > > cdat;
 
   int n = 1;
   for (cdat::const_iterator i = certs.begin(); i != certs.end(); ++i)
@@ -1188,7 +1195,7 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
 bool
 lua_hooks::hook_note_netsync_revision_sent(revision_id const & new_id,
                                            revision_data const & rdat,
-                                           set<pair<key_identity_info,
+                                           std::set<pair<key_identity_info,
                                            pair<cert_name,
                                            cert_value> > > const & certs,
                                            size_t session_id)
@@ -1201,7 +1208,7 @@ lua_hooks::hook_note_netsync_revision_sent(revision_id const & new_id,
 
   ll.push_table();
 
-  typedef set<pair<key_identity_info, pair<cert_name, cert_value> > > cdat;
+  typedef std::set<pair<key_identity_info, pair<cert_name, cert_value> > > cdat;
 
   int n = 1;
   for (cdat::const_iterator i = certs.begin(); i != certs.end(); ++i)

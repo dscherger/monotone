@@ -618,6 +618,25 @@ database::database_specified()
 }
 
 void
+database::create_if_not_exists()
+{
+  if (!opts.dbname_given)
+    {
+      string alias;
+      E(lua.hook_get_default_database_alias(alias) || alias.empty(),
+        origin::user, F("could not query default database alias"));
+      resolve_db_alias(lua, alias, imp->filename);
+      imp->type = managed_db;
+    }
+
+  if (get_path_status(imp->filename) == path::nonexistent)
+    {
+      P(F("initializing new database '%s'") % imp->filename);
+      initialize();
+    }
+}
+
+void
 database::check_is_not_rosterified()
 {
   E(!imp->table_has_data("rosters"), origin::user,

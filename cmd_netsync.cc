@@ -421,7 +421,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
   if (app.opts.dbname.empty())
     {
       W(F("No database given; assuming ':memory:' database. This means that we can't\n"
-          "verify the server key, because we have no record of what it should be.") 
+          "verify the server key, because we have no record of what it should be.")
           % memory_db_identifier);
       app.opts.dbname_type = memory_db;
     }
@@ -703,11 +703,12 @@ CMD(clone, "clone", "", CMD_REF(network),
     target_is_current_dir ? _MTN_dir : workspace_dir
   );
 
-  // paths.cc's idea of the current workspace root is wrong at this point
-  if (!app.opts.dbname_given || app.opts.dbname.empty())
-    app.opts.dbname = system_path(workspace_dir
-                                  / bookkeeping_root_component
-                                  / bookkeeping_internal_db_file_name);
+  database db(app);
+  db.create_if_not_exists();
+  db.ensure_open();
+
+  // FIXME: newly created databases are not saved to _MTN/options since
+  // we're not updating app.opts yet
 
   // this is actually stupid, but app.opts.branch must be set here
   // otherwise it will not be written into _MTN/options, in case
@@ -715,12 +716,6 @@ CMD(clone, "clone", "", CMD_REF(network),
   app.opts.branch = branchname;
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
   app.opts.branch = branch_name();
-
-  database db(app);
-  if (get_path_status(db.get_filename()) == path::nonexistent)
-    db.initialize();
-
-  db.ensure_open();
 
   key_store keys(app);
   project_t project(db);

@@ -93,6 +93,7 @@ public:
   bool is_dbfile(any_path const & file);
   bool database_specified();
   void check_is_not_rosterified();
+  void create_if_not_exists();
 
   void ensure_open();
   void ensure_open_for_format_changes();
