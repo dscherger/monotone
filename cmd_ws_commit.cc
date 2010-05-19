@@ -353,7 +353,8 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        old_roster, new_roster, ignored_file(work));
+                        old_roster, new_roster, ignored_file(work),
+                        restriction::explicit_includes);
 
   if (app.opts.missing)
     {

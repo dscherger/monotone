@@ -83,7 +83,7 @@ check(mtn("automate", "get_manifest_of"), 0, {"expected-manifest"}, nil)
 check(get("expected-log"))
 check(get("expected-log-left"))
 
-check(mtn("log", "--no-graph", "testfile"), 0, true, nil)
+check(mtn("log", "--no-graph", "testfile"), 0, true, false)
 canonicalize("stdout")
 check(samefile_ignore_dates("stdout", "expected-log"))
 

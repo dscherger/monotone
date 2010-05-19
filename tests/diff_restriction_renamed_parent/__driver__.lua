@@ -6,11 +6,11 @@ commit()
 orig = base_revision()
 
 -- rename the parent 
-check(mtn("rename", "parent1", "parent2"), 0, true, true)
+check(mtn("rename", "parent1", "parent2"), 0, false, false)
 commit()
 
 -- alter the file
 writefile("parent2/file1", "something else")
 commit()
 
-xfail(mtn("diff", "-r", orig, "parent2/file1"), 0, true, true)
+check(mtn("diff", "-r", orig, "parent2/file1"), 0, false, false)
