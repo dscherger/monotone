@@ -392,7 +392,6 @@ node_restriction::includes(roster_t const & roster, node_id nid) const
                 {
                   return false;
                 }
-              return true;
             }
         }
 
