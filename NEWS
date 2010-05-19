@@ -71,17 +71,16 @@ xxx xxx xx xx:xx:xx UTC 2010
           function available since 0.47, which can be used to let a monotone
           server exit gracefully instead of having to be killed.
 
-        - Default include and exclude patterns are now remembered per server.
-          This means that you can have for example one server that you sync
-          everything to, and one that you only sync some branches to, and you
-          don't have to worry about forgetting to give the include pattern and
-          accidentally trying to sync everything to the second server
-          (fixes monotone bugs #15994, #17499, #20447, #22044).
-
         Bugs fixed
 
         - A regression in 0.47 prevent successful execution of push / pull /
           sync over pipes (Debian bug 574512); this has been fixed.
+
+        - Several bugs related to restrictions not including the required parent
+          directories of included files have been fixed. It is now possible to
+          say 'mtn add a/b/c' followed by 'mtn commit a/b/c' and have the commit
+          succeed. See the restrictions section in the manual for more details
+          (fixes monotone bugs #15994, #17499, #20447 and #22044).
 
         - monotone no longer saves changed options from the command line back
           to _MTN/options in case the command execution was unsuccessful
@@ -116,11 +115,6 @@ xxx xxx xx xx:xx:xx UTC 2010
           sufficiently large items (files, diffs, revisions). This was fixed
           in 0.47 but not noted in the release notes at that time
           (fixes monotone bug #28991).
-
-        - Several bugs related to restrictions not including the required parent
-          directories of included files have been fixed. It is now possible to
-          say 'mtn add a/b/c' followed by 'mtn commit a/b/c' and have the commit
-          succeed. See the restrictions section in the manual for more details.
 
         Other
 
