@@ -1,4 +1,4 @@
 function notwowithoutthree()
-  io.write("hu hu")
+  io.stdout:write("hu hu")
 end
 notwowithoutthree()

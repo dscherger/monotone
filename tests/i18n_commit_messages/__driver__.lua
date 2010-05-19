@@ -18,24 +18,29 @@ check(mtn("attr", "set", "testfile", "testattr", readfile("euc-jp.txt")),
 f = io.open("fail_comment", "w")
 f:close()
 check(exists("fail_comment"))
-check(mtn("commit", "--rcfile", "extra_hooks.lua"), 1, true, false)
-check(qgrep("EDIT: BASE GOOD", "stdout"))
-check(qgrep("EDIT: MSG NONESUCH", "stdout"))
-check(qgrep("VALIDATE: MSG GOOD", "stdout"))
-check(qgrep("VALIDATE: REV GOOD", "stdout"))
+check(mtn("commit", "--rcfile", "extra_hooks.lua"), 1, false, true)
+check(qgrep("EDIT: BASE GOOD", "stderr"))
+check(qgrep("EDIT: MSG NONESUCH", "stderr"))
+check(qgrep("VALIDATE: MSG GOOD", "stderr"))
+check(qgrep("VALIDATE: REV GOOD", "stderr"))
 
 -- Now the localized message should have been written out to _MTN/log
 check(readfile("euc-jp.txt") == readfile("_MTN/log"))
 
 -- and if we commit again, both hooks should succeed
 remove("fail_comment")
-check(mtn("commit", "--rcfile", "extra_hooks.lua"), 0, true, false)
-check(qgrep("EDIT: BASE GOOD", "stdout"))
-check(qgrep("EDIT: MSG GOOD", "stdout"))
-check(qgrep("VALIDATE: MSG GOOD", "stdout"))
-check(qgrep("VALIDATE: REV GOOD", "stdout"))
+check(mtn("commit", "--rcfile", "extra_hooks.lua"), 0, false, true)
+check(qgrep("EDIT: BASE GOOD", "stderr"))
+check(qgrep("EDIT: MSG GOOD", "stderr"))
+check(qgrep("VALIDATE: MSG GOOD", "stderr"))
+check(qgrep("VALIDATE: REV GOOD", "stderr"))
+
+check(mtn("log"), 0, true, false)
+eucjp = string.gsub(readfile("euc-jp.txt"), "\n", "")
+check(qgrep(eucjp, "stdout"))
 
 -- and if we look at the cert, it should be in unicode
 rev = base_revision()
 check(mtn("automate", "certs", rev), 0, true, false)
-check(qgrep(readfile("utf8.txt"), "stdout"))
+utf8 = string.gsub(readfile("utf8.txt"), "\n", "")
+check(qgrep(utf8, "stdout"))

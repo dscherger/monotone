@@ -45,6 +45,9 @@ struct date_t
   // display only.
   std::string as_formatted_localtime(std::string const & fmt) const;
 
+  static date_t from_formatted_localtime(std::string const & s,
+                                         std::string const & fmt);
+
   // Retrieve the internal milliseconds count since the Unix epoch.
   s64 as_millisecs_since_unix_epoch() const;
 

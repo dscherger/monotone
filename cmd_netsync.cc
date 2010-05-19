@@ -25,6 +25,7 @@
 #include "vocab_cast.hh"
 #include "platform-wrapped.hh"
 #include "app_state.hh"
+#include "maybe_workspace_updater.hh"
 #include "project.hh"
 #include "work.hh"
 #include "database.hh"
@@ -549,11 +550,14 @@ CMD(pull, "pull", "", CMD_REF(network),
     N_("This pulls all branches that match the pattern given in PATTERN "
        "from the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
-    options::opts::set_default | options::opts::exclude)
+    options::opts::set_default | options::opts::exclude |
+    options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
   project_t project(db);
+
+  maybe_workspace_updater updater(app, project);
 
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys, project,
@@ -564,6 +568,8 @@ CMD(pull, "pull", "", CMD_REF(network),
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
+
+  updater.maybe_do_update();
 }
 
 CMD_AUTOMATE(pull, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -592,11 +598,13 @@ CMD(sync, "sync", "", CMD_REF(network),
        "with the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::key_to_push)
+    options::opts::key_to_push | options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
   project_t project(db);
+
+  maybe_workspace_updater updater(app, project);
 
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys,
@@ -611,6 +619,8 @@ CMD(sync, "sync", "", CMD_REF(network),
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
+
+  updater.maybe_do_update();
 }
 
 CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),

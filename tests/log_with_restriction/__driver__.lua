@@ -10,6 +10,7 @@ mkdir("1/2/3/4")
 
 check(mtn("add", "."), 0, true, false)
 commit("testbranch")
+rev_root = base_revision()
 
 check(mtn("add", "1"), 0, true, false)
 commit("testbranch")
@@ -98,11 +99,14 @@ rev_foo3 = base_revision()
 check(mtn("log", "--no-graph", "foo"), 0, true, false)
 rename("stdout", "log")
 
+-- note that we also get the initial commit that created the project's root
+-- directory here because it is implicitly included as the parent of foo
+
 check(grep("^Revision:", "log"), 0, true, false)
 rename("stdout", "revs")
-check(numlines("revs") == 3)
+check(numlines("revs") == 4)
 
+check(grep("^Revision: " .. rev_root, "log"), 0, true)
 check(grep("^Revision: " .. rev_foo1, "log"), 0, true)
 check(grep("^Revision: " .. rev_foo2, "log"), 0, true)
 check(grep("^Revision: " .. rev_foo3, "log"), 0, true)
-

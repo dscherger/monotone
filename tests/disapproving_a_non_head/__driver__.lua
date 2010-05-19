@@ -1,0 +1,11 @@
+mtn_setup()
+
+addfile("foo", "bar")
+commit()
+addfile("xyzzy", "xyzzy")
+commit()
+to_disapprove = base_revision()
+addfile("123", "456")
+commit()
+check(mtn("disapprove", to_disapprove), 0, true, true)
+check(qgrep("divergence", "stderr"))

@@ -33,7 +33,7 @@ check(mtn("--norc", "status"), 0, true)
 check(qgrep("foo/foo", "stdout"))
 check(qgrep("bar/bar", "stdout"))
 
-check(mtn("--norc", "status", "."), 0, true)
+check(mtn("--norc", "status", "."), 0, true, false)
 check(qgrep("foo/foo", "stdout"))
 check(not qgrep("bar/bar", "stdout"))
 
@@ -47,7 +47,7 @@ check(mtn("--norc", "status"), 0, true)
 check(qgrep("foo/foo", "stdout"))
 check(qgrep("bar/bar", "stdout"))
 
-check(mtn("--norc", "status", "."), 0, true)
+check(mtn("--norc", "status", "."), 0, true, false)
 check(not qgrep("foo/foo", "stdout"))
 check(qgrep("bar/bar", "stdout"))
 

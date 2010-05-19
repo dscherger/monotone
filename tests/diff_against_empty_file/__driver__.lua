@@ -7,7 +7,7 @@ commit("foo", "foo")
 
 rename("foo", "foo.away")
 writefile("foo")
-check(mtn("diff", "foo"), 0, true)
+check(mtn("diff", "foo"), 0, true, false)
 canonicalize("stdout")
 rename("stdout", "monodiff")
 

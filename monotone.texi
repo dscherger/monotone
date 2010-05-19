@@ -33,12 +33,12 @@ This edition documents version @value{VERSION}.
 
 Copyright @copyright{} 2003, 2004 Graydon Hoare @*
 Copyright @copyright{} 2004, 2005, 2006 Nathaniel Smith @*
-Copyright @copyright{} 2005, 2008, 2009 Derek Scherger @*
+Copyright @copyright{} 2005 - 2010 Derek Scherger @*
 Copyright @copyright{} 2005, 2006 Daniel Carosone @*
 Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
-Copyright @copyright{} 2006 - 2009 Thomas Keller @*
+Copyright @copyright{} 2006 - 2010 Thomas Keller @*
 Copyright @copyright{} 2007 - 2010 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
@@ -79,7 +79,7 @@ version control tools.
 * Advanced Uses::               Going beyond the basics
 * CVS Phrasebook::              Transitional guide for CVS users
 * Command Reference::           Details of each monotone command
-* Hook Reference::              Functions which extend monotone
+* Lua Reference::               How Lua is integrated in monotone
 * Special Topics::              Extra explanations and details
 * Default hooks::               The standard hook definitions
 * General Index::               Index of concepts and functions
@@ -310,7 +310,7 @@ snapshots with other manifests can use different names for the same
 file, or different contents for the same name.
 
 Other entries in the manifest format name directories or store file
-attrs, which we will cover later.
+attributes, which we will cover later.
 
 @ifinfo
 @smallexample
@@ -609,11 +609,6 @@ the scope of this document.
 @ifnotinfo
 @image{figures/cert}
 @end ifnotinfo
-
-@b{Warning:} because our certificates give the @i{name} of the
-signing key instead of the @i{hash} (ID), all key names must be
-globally unique forever. If you lose a key and need to generate a
-replacement, make sure that you give the replacement a different name.
 
 Monotone uses certs extensively. Any ``extra'' information which needs
 to be stored, transmitted or retrieved --- above and beyond files,
@@ -1452,21 +1447,26 @@ text:
 @smallexample
 @group
 $ cat _MTN/revision
-
 format_version "1"
 
-new_manifest [2098eddbe833046174de28172a813150a6cbda7b]
+new_manifest [0000000000000000000000000000000000000002]
 
 old_revision []
 
+add_dir ""
+
+add_dir "include"
+
+add_dir "src"
+
 add_file "include/jb.h"
- content [3b12b2d0b31439bd50976633db1895cff8b19da0]
+ content [f6996ce2dfc5d32bda8b574c3e9ce75db8d55492]
 
 add_file "src/apple.c"
- content [2650ffc660dd00a08b659b883b65a060cac7e560]
+ content [1ce885d2cc59842ff16785834391e864068fbc3c]
 
 add_file "src/banana.c"
- content [e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f]
+ content [ad88bbbb1b7507ddff26be67efd91d95e069afb6]
 @end group
 @end smallexample
 
@@ -1479,19 +1479,29 @@ he has forgotten what he was doing. He asks monotone:
 @smallexample
 @group
 $ mtn status
-Current branch: jp.co.juicebot.jb7
-Changes against parent :
-  added   include/jb.h
-  added   src/apple.c
-  added   src/banana.c
+----------------------------------------------------------------------
+Revision: 493bda86628fd72c992eb56f73899db9ead3cf6f
+Author:   jim@@juicebot.co.jp
+Date:     2004-10-26T02:53:08
+Branch:   jp.co.juicebot.jb7
+
+Changes
+
+  added
+  added    include
+  added    src
+  added    include/jb.h
+  added    src/apple.c
+  added    src/banana.c
+
 @end group
 @end smallexample
 
 The output of this command tells Jim that his edits, so far,
-constitute only the addition of some files.
+constitute only the addition of some files and directories.
 
 Jim wants to see the actual details of the files he added, however, so
-he runs a command which prints out the status @emph{and} a GNU
+he runs a command which prints out the revision @emph{and} a GNU
 ``unified diff'' of the patches involved in the changeset:
 
 @smallexample
@@ -1500,18 +1510,24 @@ $ mtn diff
 #
 # old_revision []
 #
+# add_dir ""
+#
+# add_dir "include"
+#
+# add_dir "src"
+#
 # add_file "include/jb.h"
-#  content [3b12b2d0b31439bd50976633db1895cff8b19da0]
+#  content [f6996ce2dfc5d32bda8b574c3e9ce75db8d55492]
 #
 # add_file "src/apple.c"
-#  content [2650ffc660dd00a08b659b883b65a060cac7e560]
+#  content [1ce885d2cc59842ff16785834391e864068fbc3c]
 #
 # add_file "src/banana.c"
-#  content [e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f]
+#  content [ad88bbbb1b7507ddff26be67efd91d95e069afb6]
 #
-============================================================================
---- include/jb.h
-+++ include/jb.h 3b12b2d0b31439bd50976633db1895cff8b19da0
+============================================================
+--- include/jb.h	f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
++++ include/jb.h	f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
 @@ -0,0 +1,13 @@
 +/* Standard JuiceBot hw interface */
 +
@@ -1526,9 +1542,9 @@ $ mtn diff
 +#define BANANA_SPOUT 0x7f
 +void dispense_apple_juice ();
 +void dispense_banana_juice ();
-============================================================================
---- src/apple.c
-+++ src/apple.c 2650ffc660dd00a08b659b883b65a060cac7e560
+============================================================
+--- src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
++++ src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
 @@ -0,0 +1,7 @@
 +#include "jb.h"
 +
@@ -1537,9 +1553,9 @@ $ mtn diff
 +@{
 +  /* Fill this in please, Abe. */
 +@}
-============================================================================
---- src/banana.c
-+++ src/banana.c e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f
+============================================================
+--- src/banana.c	ad88bbbb1b7507ddff26be67efd91d95e069afb6
++++ src/banana.c	ad88bbbb1b7507ddff26be67efd91d95e069afb6
 @@ -0,0 +1,7 @@
 +#include "jb.h"
 +
@@ -1567,7 +1583,7 @@ when he commits.
 @group
 $ mtn commit --message="initial checkin of project"
 mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-mtn: committed revision 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+mtn: committed revision 493bda86628fd72c992eb56f73899db9ead3cf6f
 @end group
 @end smallexample
 
@@ -1579,7 +1595,7 @@ command, if he wishes to return to this revision:
 @smallexample
 @group
 $ mtn automate get_base_revision_id
-2e24d49a48adf9acf3a1b6391a080008cbef9c21
+493bda86628fd72c992eb56f73899db9ead3cf6f
 @end group
 @end smallexample
 
@@ -1590,7 +1606,7 @@ ask monotone for a list of certs on this revision.
 
 @smallexample
 @group
-$ mtn ls certs 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+$ mtn ls certs 493bda86628fd72c992eb56f73899db9ead3cf6f
 -----------------------------------------------------------------
 Key   : jim@@juicebot.co.jp (398cb10d...)
 Sig   : ok
@@ -1622,7 +1638,7 @@ second indicates whether this cert is ``ok'', meaning whether the
 the cert name, and the fourth is the cert value. This list shows us
 that monotone has confirmed that, according to
 @code{jim@@juicebot.co.jp}, the revision
-@code{2e24d49a48adf9acf3a1b6391a080008cbef9c21} is a member of the
+@code{493bda86628fd72c992eb56f73899db9ead3cf6f} is a member of the
 branch @code{jp.co.juicebot.jb7}, written by
 @code{jim@@juicebot.co.jp}, with the given date and changelog.
 
@@ -1640,7 +1656,7 @@ command, which lists all the head revisions in the branch:
 @group
 $ mtn heads
 branch 'jp.co.juicebot.jb7' is currently merged:
-2e24d49a48adf9acf3a1b6391a080008cbef9c21 jim@@juicebot.co.jp 2004-10-26T02:53:08
+493bda86628fd72c992eb56f73899db9ead3cf6f jim@@juicebot.co.jp 2004-10-26T02:53:08
 @end group
 @end smallexample
 
@@ -1834,18 +1850,16 @@ forgotten what he changed. He can ask monotone for details:
 @group
 $ mtn diff
 #
-# old_revision [2e24d49a48adf9acf3a1b6391a080008cbef9c21]
+# old_revision [493bda86628fd72c992eb56f73899db9ead3cf6f]
 #
 # patch "src/apple.c"
-#  from [2650ffc660dd00a08b659b883b65a060cac7e560]
-#    to [e2c418703c863eabe70f9bde988765406f885fd0]
+#  from [1ce885d2cc59842ff16785834391e864068fbc3c]
+#    to [e2c64f6bde75a192d48d2256385df3dd7a963349]
 #
-============================================================================
---- src/apple.c 2650ffc660dd00a08b659b883b65a060cac7e560
-+++ src/apple.c e2c418703c863eabe70f9bde988765406f885fd0
-@@ -1,7 +1,10 @@
- #include "jb.h"
-
+============================================================
+--- src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
++++ src/apple.c	e2c64f6bde75a192d48d2256385df3dd7a963349
+@@ -3,5 +3,8 @@ dispense_apple_juice()
  void
  dispense_apple_juice()
  @{
@@ -1863,7 +1877,6 @@ Satisfied with his day's work, Abe decides to commit.
 @smallexample
 @group
 $ mtn commit
-mtn: beginning commit on branch 'jp.co.juicebot.jb7'
 @end group
 @end smallexample
 
@@ -1876,28 +1889,40 @@ committed and the opportunity to enter a log message.
 
 @smallexample
 @group
+Enter a description of this change following the Changelog line below.
+The values of Author, Date and Branch may be modified as required.
+
+*** REMOVE THIS LINE TO CANCEL THE COMMIT ***
+----------------------------------------------------------------------
+Revision: 42eae36587508faa664b111cefc291f0b85ef83a
+Parent:   493bda86628fd72c992eb56f73899db9ead3cf6f
+Author:   abe@@juicebot.co.jp
+Date:     2004-10-26T02:53:08
+Branch:   jp.co.juicebot.jb7
+
+Changelog:
+
 polling implementation of src/apple.c
-MTN: ----------------------------------------------------------------------
-MTN: Enter a description of this change.
-MTN: Lines beginning with `MTN:' are removed automatically.
-MTN:
-MTN: Current branch: jp.co.juicebot.jb7
-MTN: Changes against parent 2e24d49a48adf9acf3a1b6391a080008cbef9c21
-MTN:   patched  src/apple.c
-MTN: ----------------------------------------------------------------------
-MTN:
+
+----------------------------------------------------------------------
+Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
+
+  patched  src/apple.c
+
 @end group
 @end smallexample
 
-Abe enters a single line above the explanatory message, saying
-``polling implementation of src/apple.c''. He then saves the file and
-quits the editor. Monotone deletes all the lines beginning with
-``MTN:'' and leaves only Abe's short message. Returning to the shell,
-Abe's commit completes:
+Abe enters a single line below the Changelog: header, saying ``polling
+implementation of src/apple.c''. He then saves the file and quits the
+editor. Monotone confirms that no other lines have been changed and
+extracts the message to be stored in the associated ``changelog''
+cert, leaving only Abe's short message. Returning to the shell, Abe's
+commit completes:
 
 @smallexample
 @group
-mtn: committed revision 70decb4b31a8227a629c0e364495286c5c75f979
+mtn: beginning commit on branch 'jp.co.juicebot.jb7'
+mtn: committed revision 42eae36587508faa664b111cefc291f0b85ef83a
 @end group
 @end smallexample
 
@@ -1976,7 +2001,7 @@ before finishing her commit:
 @group
 $ mtn commit
 mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-mtn: committed revision 80ef9c9d251d39074d37e72abf4897e0bbae1cfb
+mtn: committed revision 85573a54105cd3220db10aa6a0713643cdf5ce6f
 @end group
 @end smallexample
 
@@ -2018,9 +2043,9 @@ worker was fully informed of the ``up-stream'' worker's actions, and
 produced purely derivative, ``down-stream'' work:
 
 @enumerate
-@item Jim made revision 2e24d...
-@item Abe changed revision 2e24d... into revision 70dec...
-@item Beth derived revision 70dec... into revision 80ef9...
+@item Jim made revision 493bd...
+@item Abe changed revision 493bd... into revision 42eae...
+@item Beth derived revision 42eae... into revision 85573...
 @end enumerate
 
 This is a simple, but sadly unrealistic, ordering of events. In real
@@ -2041,7 +2066,7 @@ To illustrate this, we return to our workers Beth and Abe. Suppose Jim
 sends out an email saying that the current polling juice dispensers
 use too much CPU time, and must be rewritten to use the JuiceBot's
 interrupt system. Beth wakes up first and begins working immediately,
-basing her work off the revision 80ef9... which is currently in her
+basing her work off the revision 85573... which is currently in her
 workspace:
 
 @smallexample
@@ -2057,15 +2082,15 @@ Beth finishes and examines her changes:
 @group
 $ mtn diff
 #
-# old_revision [80ef9c9d251d39074d37e72abf4897e0bbae1cfb]
+# old_revision [85573a54105cd3220db10aa6a0713643cdf5ce6f]
 #
 # patch "src/banana.c"
-#  from [7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a]
-#    to [5e6622cf5c8805bcbd50921ce7db86dad40f2ec6]
+#  from [d7e28a01cf6fc0f9ac04c6901dcafd77c2d32fb8]
+#    to [dd979c3c880e6a7221fcecd7148bd4afcfb3e964]
 #
-============================================================================
---- src/banana.c 7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a
-+++ src/banana.c 5e6622cf5c8805bcbd50921ce7db86dad40f2ec6
+============================================================
+--- src/banana.c	d7e28a01cf6fc0f9ac04c6901dcafd77c2d32fb8
++++ src/banana.c	dd979c3c880e6a7221fcecd7148bd4afcfb3e964
 @@ -1,10 +1,15 @@
  #include "jb.h"
 
@@ -2077,8 +2102,7 @@ $ mtn diff
 +@}
 +
  void
--dispense_banana_juice()
-+dispense_banana_juice()
+ dispense_banana_juice()
  @{
 +  spoutctl(BANANA_SPOUT, SET_INTR, &shut_off_banana);
    spoutctl(BANANA_SPOUT, FLOW_JUICE, 1);
@@ -2095,7 +2119,7 @@ She commits her work:
 @group
 $ mtn commit --message="interrupt implementation of src/banana.c"
 mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-mtn: committed revision 8b41b5399a564494993063287a737d26ede3dee4
+mtn: committed revision 90abe0f1bc354a73d42d3bff1b02946559682bd9
 @end group
 @end smallexample
 
@@ -2110,8 +2134,7 @@ $ mtn sync
 
 Unfortunately, before Beth managed to sync with Jim, Abe had woken up
 and implemented a similar interrupt-based apple juice dispenser, but
-his workspace is 70dec..., which is still ``upstream'' of
-Beth's.
+his workspace is 42eae..., which is still ``upstream'' of Beth's.
 
 @smallexample
 @group
@@ -2146,8 +2169,8 @@ the branch:
 @group
 $ mtn heads
 mtn: branch 'jp.co.juicebot.jb7' is currently unmerged:
-39969614e5a14316c7ffefc588771f491c709152 abe@@juicebot.co.jp 2004-10-26T02:53:16
-8b41b5399a564494993063287a737d26ede3dee4 beth@@juicebot.co.jp 2004-10-26T02:53:15
+90abe0f1bc354a73d42d3bff1b02946559682bd9 abe@@juicebot.co.jp 2004-10-26T02:53:16
+951da88860a4cf7419d66ed9094d8bf24df5fb8b beth@@juicebot.co.jp 2004-10-26T02:53:15
 @end group
 @end smallexample
 
@@ -2160,14 +2183,13 @@ conflicts Jim does so himself:
 @smallexample
 @group
 $ mtn merge
-mtn: starting with revision 1 / 2
-mtn: merging with revision 2 / 2
-mtn: [source] 39969614e5a14316c7ffefc588771f491c709152
-mtn: [source] 8b41b5399a564494993063287a737d26ede3dee4
-mtn: common ancestor 70decb4b31a8227a629c0e364495286c5c75f979 abe@@juicebot.co.jp  2004-10-26T:02:50:01 found
-mtn: trying 3-way merge
-mtn: [merged] da499b9d9465a0e003a4c6b2909102ef98bf4e6d
-mtn: your workspaces have not been updated
+mtn: 2 heads on branch 'jp.co.juicebot.jb7'
+mtn: merge 1 / 1:
+mtn: calculating best pair of heads to merge next
+mtn: [left]  90abe0f1bc354a73d42d3bff1b02946559682bd9
+mtn: [right] 951da88860a4cf7419d66ed9094d8bf24df5fb8b
+mtn: [merged] 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
+mtn: note: your workspaces have not been updated
 @end group
 @end smallexample
 
@@ -2185,10 +2207,13 @@ his workspace.
 @smallexample
 @group
 $ mtn update
-mtn: selected update target da499b9d9465a0e003a4c6b2909102ef98bf4e6d
-mtn: updating src/apple.c to f088e24beb43ab1468d7243e36ce214a559bdc96
-mtn: updating src/banana.c to 5e6622cf5c8805bcbd50921ce7db86dad40f2ec6
-mtn: updated to base revision da499b9d9465a0e003a4c6b2909102ef98bf4e6d
+mtn: updating along branch 'jp.co.juicebot.jb7'
+mtn: selected update target 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
+mtn: [left]  d60c18ec5e0cf1163b276f0bfdd908c1dfd53b4a
+mtn: [right] 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
+mtn: updating src/apple.c
+mtn: updating src/banana.c
+mtn: updated to base revision 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
 @end group
 @end smallexample
 
@@ -2444,7 +2469,7 @@ the beta-testers, Jim wants to allow them read-only access just to the
 main JuiceBot 7 development line, but not to any of the sub-branches
 where other experimental development is going on. He adds some lines at
 the top of the @file{~/.monotone/read-permissions} on the server, above
-the broader permissions given to team-members. See the @ref{Hook
+the broader permissions given to team-members. See the @ref{Lua
 Reference} for @code{get_netsync_read_permitted} for more details; the
 resulting file looks like this:
 
@@ -2842,7 +2867,7 @@ selector, due to its syntactic form, so modifies it to read
 @code{a:jrh@@example.org}. This hook will generally assign a selector
 type to values which ``look like'' partial hex strings, email
 addresses, branch names, or date specifications. For the complete
-source code of the hook, see @ref{Hook Reference}.
+source code of the hook, see @ref{Lua Reference}.
 
 @heading Expanding dates
 
@@ -2873,7 +2898,7 @@ day of month and time 00:00:00.
 The time component, if supplied, must be complete to the second.
 @end table
 
-For the complete source code of the hook, see @ref{Hook Reference}.
+For the complete source code of the hook, see @ref{Lua Reference}.
 
 @heading Typeless selection
 
@@ -2921,9 +2946,15 @@ ensure that the expected files are included or excluded by a
 restriction.
 
 Commands which support restrictions also support the
-@option{--depth=@var{n} } option, where @var{n} specifies the maximum
-number of directories to descend. For example, @var{n}=0 disables
-recursion, @var{n}=1 means descend at most one directory, and so on.
+@option{--depth=@var{n} } and @option{--exclude=@var{path}}
+options. The value @var{n} given to @option{--depth} specifies the
+maximum number of directories to descend. For example, @var{n}=0
+disables recursion, @var{n}=1 means descend at most one directory
+below each specified path, and so on.  The @option{--depth} value
+applies individually to each path specified on the command line. The
+value @var{path} given to @option{--exclude} specifies a path that
+should be excluded from the restriction. Multiple @option{--exclude}
+options may be specified to exclude several files or subdirectories.
 
 The @command{update} command does not allow for updates to a
 restricted set of files, which may be slightly different than other
@@ -2932,20 +2963,36 @@ monotone, as they would leave the workspace based on a revision that
 doesn't exist in the database, starting an entirely new line of
 development.
 
+In addition to including all of the explicitly specified paths and
+excluding all of the paths specified with @option{--exclude} options a
+restriction also implicitly includes the parent directories of all
+included paths. This is done to allow commands operating on newly
+added files to succeed. For example, if a new directory @file{a} is
+added and a file @file{a/b} is added to this directory restricting to
+exactly @file{a/b} will produce a meaningless state that doesn't
+include the required parent directory @file{a}.
+
+The implicit inclusion of required parent directories is done for all
+of the commands listed above with the exception of
+@command{revert}. This is done to allow reverting the addition of
+files in newly added or renamed directories without reverting the
+directories themselves. If the parent directories were implicitly
+included their addition or name changes would also be reverted.
+
 @heading Subdirectory restrictions
 
-The restrictions facility also allows commands to operate from within a
-subdirectory of the workspace.  By default, the @i{entire workspace} is
-always examined for changes. However, specifying an explicit "."
-pathname to a command will restrict it to the current subdirectory.
-Note that this is quite different from other version control systems and
-may seem somewhat surprising.
+The restrictions facility also allows commands to operate from within
+a subdirectory of the workspace.  By default, the @i{entire workspace}
+is always examined for changes. However, specifying an explicit
+@file{.}  pathname to a command will restrict it to the current
+subdirectory.  Note that this is quite different from other version
+control systems and may seem somewhat surprising.
 
-The expectation is that requiring a single "." to restrict to the
+The expectation is that requiring a single @file{.} to restrict to the
 current subdirectory should be simple to use. While the alternative,
 defaulting to restricting to the current subdirectory, would require a
-somewhat complicated ../../.. sequence to remove the restriction and
-operate on the whole tree.
+somewhat complicated @file{../../..} sequence to remove the
+restriction and operate on the whole tree.
 
 This default was chosen because monotone versions whole project trees
 and generally expects to commit all changes in the workspace as a
@@ -3039,7 +3086,7 @@ will continue to operate correctly.
 Normally, instead of enabling this up on a per-workspace basis, you
 will want to simply define the @code{use_inodeprints} hook to return
 @code{true}; this will automatically enable inodeprints mode in any new
-workspaces you create.  See @ref{Hook Reference} for details.
+workspaces you create.  See @ref{Lua Reference} for details.
 
 @page
 @node    Merge Conflicts, Workspace Collisions, Inodeprints, Advanced Uses
@@ -3525,7 +3572,7 @@ destination of an update. Only if the change in test results are
 deemed ``acceptable'' does monotone actually select an update target
 to merge into your workspace.
 
-For details on these hooks, see the @ref{Hook Reference}.
+For details on these hooks, see the @ref{Lua Reference}.
 
 @page
 @node    Vars, Reserved Files, Quality Assurance, Advanced Uses
@@ -3841,7 +3888,7 @@ by examining any manifest directly.
 
 You can tell monotone to automatically take actions based on these
 attributes by defining hooks; see the @code{attr_functions} entry in
-@ref{Hook Reference}.  Every time your workspace is written to,
+@ref{Lua Reference}.  Every time your workspace is written to,
 monotone will run the corresponding hooks registered for each attr in
 your workspace.  This way, you can extend the vocabulary of attrs
 understood by monotone simply by writing new hooks.
@@ -4673,7 +4720,7 @@ and does not need to be in any special location, or readable by other
 users.
 
 
-@node    Command Reference, Hook Reference, CVS Phrasebook, Top
+@node    Command Reference, Lua Reference, CVS Phrasebook, Top
 @chapter Command Reference
 
 Monotone has a large number of commands. To help navigate through them
@@ -5178,14 +5225,14 @@ options provided, with each one starting at the beginning of a new line.
 
 The @file{_MTN/log} file can be edited by the user during their daily
 work to record the changes made to the workspace. When running the
-@command{commit} command without a @var{logmsg} supplied, the contents of
-the @file{_MTN/log} file will be read and passed to the Lua hook
-@code{edit_comment} as a second parameter named @var{user_log_content}.
-The log message will be prepended with a 'magic' string that must be
-removed to confirm the commit.  This allows the user to easily cancel a
-commit, without emptying the entire log message.  If the commit is
-successful, the @file{_MTN/log} file is cleared of all content making it
-ready for another edit/commit cycle.
+@command{commit} command without a @var{logmsg} supplied, the contents
+of the @file{_MTN/log} file will be read and passed to the Lua hook
+@code{edit_comment} as a parameter named @var{user_log_message}.  The
+log message passed to the user's editor will contain a line that the
+user may remove allowing them user to easily cancel a commit, without
+emptying the entire log message.  If the commit is successful, the
+@file{_MTN/log} file is cleared of all content making it ready for
+another edit/commit cycle.
 
 If @option{--message-file=_MTN/log} is specified, the contents of
 @file{_MTN/log} will be used without confirmation.
@@ -5217,10 +5264,52 @@ importing ``by hand'' from another version control system.
 A @code{changelog} cert, containing the ``log message'' for these
 changes.  If you provided @var{logmsg} on the command line, this text
 will be used, otherwise @command{commit} will run the Lua hook
-@code{edit_comment (@var{commentary}, @var{user_log_content})}, which
-typically invokes an external editor program, in which you can compose
-and/or review your log message for the change.
+@code{edit_comment(@var{user_log_message})}, which typically invokes
+an external editor program, in which you can compose and/or review the
+revision and log message for the change.
 @end itemize
+
+The @var{user_log_message} passed to the @code{edit_comment} hook will
+contain a full summary of the revision as it would have been displayed
+by the @command{status} command prior to committing and as the
+@command{log} command will display it after it has been committed:
+
+@smallexample
+@group
+Enter a description of this change following the Changelog line below.
+The values of Author, Date and Branch may be modified as required.
+
+*** REMOVE THIS LINE TO CANCEL THE COMMIT ***
+----------------------------------------------------------------------
+Revision: 42eae36587508faa664b111cefc291f0b85ef83a
+Parent:   493bda86628fd72c992eb56f73899db9ead3cf6f
+Author:   abe@@juicebot.co.jp
+Date:     2004-10-26T02:53:08
+Branch:   jp.co.juicebot.jb7
+
+Changelog:
+
+polling implementation of src/apple.c
+
+----------------------------------------------------------------------
+Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
+
+  patched  src/apple.c
+
+@end group
+@end smallexample
+
+Values specified in @option{--author}, @option{--date} or
+@option{--branch} options on the command line will be displayed in the
+editor and may be further changed while editing the changelog
+message. The changelog message will be extracted from between the
+@code{Changelog:} header and the trailing line of @code{----}
+characters. Care must be taken to ensure no other lines are changed or
+the commit will abort to avoid extracting an incorrect message. If the
+commit needs to be cancelled the line following the leading
+instructions should be removed. Any pending text in @file{MTN/log}
+will be left untouched if the commit is cancelled.
+
 
 @item mtn revert @var{pathname...}
 @itemx mtn revert --missing @var{pathname...}
@@ -5507,7 +5596,7 @@ make the new default.
 
 In the server, different permissions can be applied to each branch; see
 the hooks @code{get_netsync_read_permitted} and
-@code{get_netsync_write_permitted} (see @ref{Hook Reference}).
+@code{get_netsync_write_permitted} (see @ref{Lua Reference}).
 
 If a @option{--pid-file} option is specified, the command
 @command{serve} will create the specified file and record the process
@@ -5835,15 +5924,22 @@ names of public and private keys you have on hand.
 If @var{pattern} is provided, it is used as a glob to limit the keys
 listed. Otherwise all keys in your database are listed.
 
-@item mtn list branches
-@item mtn ls branches
+@item mtn list branches [@var{pattern}] [--exclude=@var{pattern}]
+@item mtn ls branches [@var{pattern}] [--exclude=@var{pattern}]
 
-This command lists all known branches in your database.
+This command lists all known branches in your database. If
+@var{pattern} is provided, it is used as a glob to select the branches
+listed, otherwise all branches are listed.  If @option{-exclude}
+options are provided they are used as globs to exclude specified
+branches.
 
-@item mtn list tags
-@item mtn ls tags
+@item mtn list tags [@var{pattern}] [--exclude=@var{pattern}]
+@item mtn ls tags [@var{pattern}] [--exclude=@var{pattern}]
 
-This command lists all known tags in your database.
+This command lists all known tags in your database. If @var{pattern}
+is provided, it is used as a glob to select the tags listed, otherwise
+all tags are listed.  If @option{-exclude} options are provided they
+are used as globs to exclude specified tags.
 
 @item mtn list vars
 @item mtn ls vars
@@ -5998,7 +6094,7 @@ key @var{id}.
 @item mtn trusted @var{id} @var{certname} @var{certval} @var{signers}
 
 This command lets you test your revision trust hook
-@code{get_revision_cert_trust} (see @ref{Hook Reference}).  You pass it
+@code{get_revision_cert_trust} (see @ref{Lua Reference}).  You pass it
 a revision ID, a certificate name, a certificate value, and one or more
 key IDs or key names, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
@@ -6381,6 +6477,12 @@ except that monotone will ignore any certs signed by the missing key.
 You can fix it by finding a database containing the key in question, and
 using @command{pubkey} on that database to create a public key packet,
 which can be loaded into your database with @command{read}.
+
+@item branches not used or with incorrect head count or missing
+in the cache of branch heads. This is a serious problem; it suggests
+the presence of a bug in monotone's caching system, but does not
+involve data loss; please report this on the monotone mailing
+list. You can fix it by running @command{db regenerate_caches}.
 
 @end itemize
 
@@ -10204,33 +10306,39 @@ cause considerable clutter in tools like gitk.
 @end ftable
 
 
-@node    Hook Reference, Special Topics, Command Reference, Top
-@chapter Hook Reference
+@node    Lua Reference, Special Topics, Command Reference, Top
+@chapter Lua Reference
 
-Monotone's behavior can be customized and extended by writing
-@dfn{hook functions}, which are written in the
-@uref{http://www.lua.org, Lua} programming language. At certain points
-in time, when monotone is running, it will call a hook function to
-help it make a decision or perform some action.  If you provide a hook
-function definition which suits your preferences, monotone will
-execute it. This way you can modify how monotone behaves.
+Monotone makes use of the @uref{http://www.lua.org, Lua} programming
+language to customize and extend its behaviour.  By writing
+@dfn{functions} which are loaded and evaluated at runtime, you can
+help monotone to make a particular decision, set a suitable default or
+preference or perform a certain action.
 
-You can put new definitions for any of these hook functions in a file
-@file{$HOME/.monotone/monotonerc}, or in your workspace in
-@file{_MTN/monotonerc}, both of which will be read every time monotone
-runs. Definitions in @file{_MTN/monotonerc} shadow (override)
-definitions made in your @file{$HOME/.monotone/monotonerc}. You can also tell
-monotone to interpret extra hook functions from any other @var{file}
-using the @option{--rcfile=@var{file}} option; hooks defined in files
-specified on the command-line will shadow hooks from the the automatic
-files.
-By specifying @option{--rcfile=@var{directory}} you can automatically
-load all the files contained into @var{directory}.
+You can put Lua functions in a file @file{$HOME/.monotone/monotonerc},
+or in your workspace in @file{_MTN/monotonerc}, both of which will be
+read every time monotone runs. Definitions in @file{_MTN/monotonerc}
+shadow (override) definitions made in your
+@file{$HOME/.monotone/monotonerc}. You can also tell monotone to
+interpret extra hook functions from any other @var{file} using the
+@option{--rcfile=@var{file}} option; hooks defined in files specified
+on the command-line will shadow hooks from the other predefined
+locations.  By specifying @option{--rcfile=@var{directory}} you can
+automatically load all the files contained in @var{directory}.
 
-Monotone provides some default hooks, see @ref{Default hooks} for their
-complete source. When writing new hooks, it may be helpful to reuse some code
-from the default ones. Since Lua is a lexically scoped language with closures,
-this can be achieved with the following code:
+There are two uses for Lua functions; hooks and user-defined
+commands. This section documents hooks; see @command{register_command}
+in @ref{Additional Lua Functions} for user-defined commands. The source
+distribution contains some example user commands in the
+@file{contrib/command} directory.
+
+Hooks are Lua functions that are called from monotone code in many
+places. Monotone provides default definitions for some hooks; see
+@ref{Default hooks} for their complete source. For other hooks, if no
+definition is provided a default return value is used. When writing new
+hooks, it may be helpful to reuse some code from the default
+ones. Since Lua is a lexically scoped language with closures, this can
+be achieved with the following code:
 
 @smallexample
 @group
@@ -10249,16 +10357,17 @@ Now the default hook is trapped in a variable local to this block, and can
 only be seen by the new hook. Since in Lua variables default to the global
 scope, the new hook is seen from inside monotone.
 
-Monotone also makes available to hook writers a number of helper
-functions exposing functionality not available with standard Lua.
+Monotone also provides a number of helper functions to hook writers
+exposing functionality not available with standard Lua.
 
 @menu
 * Hooks::                       All hooks called by monotone.
 * Additional Lua Functions::    Extra functionality available to hook writers.
+* Implementation Differences::  Functional differences from standard Lua
 @end menu
 
 @page
-@node   Hooks, Additional Lua Functions, Hook Reference, Hook Reference
+@node   Hooks, Additional Lua Functions, Lua Reference, Lua Reference
 @section Hooks
 
 This section documents the existing hook functions and their default
@@ -10591,21 +10700,22 @@ end
 @end group
 @end smallexample
 
-@item edit_comment (@var{commentary}, @var{user_log_message})
+@item edit_comment (@var{user_log_message})
 
 Returns a log entry for a given set of changes, described in
-@var{commentary}.  The commentary is identical to the output of
-@command{mtn status}. This hook is intended to interface with
-some sort of editor, so that you can interactively document each
-change you make. The result is used as the value for a
-@code{changelog} certificate, automatically generated when you commit
-changes.
+@var{user_log_message}.  The user_log_message is identical to the
+output of @command{mtn status}. This hook is intended to interface
+with some sort of editor, so that you can interactively document each
+change you make. Values for @code{author}, @code{date}, @code{branch}
+and the @code{changelog} are extracted from the result and used to
+generate these certificates when you commit changes.
 
-The contents of @file{_MTN/log} are read and passed as
-@var{user_log_message}. This allows you to document your changes as
-you proceed instead of waiting until you are ready to commit. Upon
-a successful commit, the contents of @file{_MTN/log} are erased setting
-the system up for another edit/commit cycle.
+The contents of @file{_MTN/log} are read and passed as as the
+@code{changelog} value in @var{user_log_message}. This allows you to
+document your changes as you proceed instead of waiting until you are
+ready to commit. Upon a successful commit, the contents of
+@file{_MTN/log} are erased setting the system up for another
+edit/commit cycle.
 
 For the default definition of this hook, see @ref{Default hooks}.
 
@@ -10675,6 +10785,13 @@ for long and short date time formats, which is equivalent to @samp{22/05/09},
 @samp{time_long}, @samp{time_short}, @samp{date_time_long} and
 @samp{date_time_short}, though only @samp{date_short} and
 @samp{date_time_short} are currently used.
+
+The @samp{date_time_long} format is used by the @command{status},
+@command{commit} and @command{log} commands to format revision dates
+for printing. This format must preserve a date passed through a
+formatting and parsing cycle. Otherwise the @command{status} command
+will issue warnings that the format is unsuitable and the
+@command{commit} command will abort.
 
 @end ftable
 
@@ -11295,7 +11412,7 @@ the called function in Lua code on success.
 @end ftable
 
 @page
-@node   Additional Lua Functions,  , Hooks, Hook Reference
+@node   Additional Lua Functions, Implementation Differences, Hooks, Lua Reference
 @section Additional Lua Functions
 
 This section documents the additional Lua functions made available to
@@ -11531,7 +11648,43 @@ The exit code is meaningful only if the result value is 0.
 @end ftable
 
 
-@node    Special Topics, Default hooks, Hook Reference, Top
+@page
+@node   Implementation Differences, ,Additional Lua Functions, Lua Reference
+@section Implementation Differences
+
+This section documents disabled and overwritten functions from the standard
+Lua libraries.
+
+@ftable @code
+
+@item print, io.write
+
+Both functions are overwritten to print to standard error (instead of
+standard output), formatted as monotone progress message with the prefix
+"lua:" in front of every line.
+
+The rationale behind this is to catch most of the informational
+messages from hooks which use these functions and present them via
+monotone's user interface. This allows them to be logged just as other
+progress messages, and prevents unexpected out-of-band output in the
+@ref{Automation} interface.
+
+If you explicitely need to write to either stdout or stderr, please use
+@code{io.stdout:write} and @code{io.stderr.write}.
+
+@item os.execute, io.popen
+
+Both functions have been disabled for security reasons. You should use
+their replacements @code{spawn} and @code{spawn_pipe}.
+
+The original versions do not apply any kind of shell character escaping,
+which might lead to serious problems f.e. when a merger is automatically
+invoked by such a function.
+
+@end ftable
+
+
+@node    Special Topics, Default hooks, Lua Reference, Top
 @chapter Special Topics
 
 This chapter describes some ``special'' issues which are not directly
