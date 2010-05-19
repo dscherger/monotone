@@ -255,6 +255,30 @@ public:
   }
 };
 
+class key_lister
+{
+public:
+  typedef std::multimap<key_id, std::pair<branch_name, key_name> > name_map;
+private:
+  name_map & names;
+public:
+  key_lister(name_map & n) : names(n) { }
+  void operator()(shared_ptr<policy> pol, branch_name const & prefix,
+                  policies::delegation const & del)
+  {
+    if (!pol)
+      return;
+
+    typedef policies::policy::key_map key_map;
+
+    key_map const & km = pol->list_keys();
+    for (key_map::const_iterator i = km.begin(); i != km.end(); ++i)
+      {
+        names.insert(make_pair(i->second, make_pair(prefix, i->first)));
+      }
+  }
+};
+
 
 
 // find the policy governing a particular name
@@ -521,6 +545,54 @@ public:
   {
     walk_policies(project, policy, child_policies,
                   policy_lister(base, children));
+  }
+  bool lookup_key_name(project_t const & project,
+                       key_id const & ident,
+                       branch_name const & where,
+                       key_name & official_name)
+  {
+    key_lister::name_map names;
+    walk_policies(project, policy, child_policies, key_lister(names));
+
+    typedef key_lister::name_map::const_iterator it;
+    pair<it, it> range = names.equal_range(ident);
+
+    bool found = false;
+    for (it i = range.first; i != range.second; ++i)
+      {
+        if (i->second.first.has_prefix(where))
+          {
+            if (found)
+              {
+                // because we list keys by ident
+                W(F("Key %s has multiple names."));
+              }
+            found = true;
+            branch_name name_as_branch = typecast_vocab<branch_name>(i->second.second);
+            official_name = typecast_vocab<key_name>(i->second.first / name_as_branch);
+          }
+      }
+    return found;
+  }
+  void find_keys_named(project_t const & project,
+                       key_name const & name,
+                       branch_name const & where,
+                       map<key_name, key_id> & results)
+  {
+    key_lister::name_map names;
+    walk_policies(project, policy, child_policies, key_lister(names));
+
+    typedef key_lister::name_map::const_iterator it;
+    for (it i = names.begin(); i != names.end(); ++i)
+      {
+        if (i->second.first.has_prefix(where) && i->second.second == name)
+          {
+            branch_name name_as_branch = typecast_vocab<branch_name>(i->second.second);
+            key_name official_name =
+              typecast_vocab<key_name>(i->second.first / name_as_branch);
+            results[official_name] = i->first;
+          }
+      }
   }
 };
 
@@ -1308,6 +1380,40 @@ project_t::lookup_key_by_name(key_store * const keys,
                               key_name const & name,
                               key_id & id) const
 {
+  if (!project_policy->passthru)
+    {
+      set<key_id> my_matching_keys;
+      vector<key_id> storekeys;
+      keys->get_key_ids(storekeys);
+      for (vector<key_id>::const_iterator i = storekeys.begin();
+           i != storekeys.end(); ++i)
+        {
+          key_name i_name;
+          keypair kp;
+          keys->get_key_pair(*i, i_name, kp);
+
+          if (i_name == name)
+            my_matching_keys.insert(*i);
+        }
+      E(my_matching_keys.size() < 2, origin::user,
+        F("you have %d keys named '%s'") %
+        my_matching_keys.size() % name);
+      if (my_matching_keys.size() == 1)
+        {
+          id = *my_matching_keys.begin();
+          return;
+        }
+
+      map<key_name, key_id> results;
+      project_policy->find_keys_named(*this, name, branch_name(), results);
+      E(results.size() <= 1, origin::user,
+        F("there are %d keys named '%s'") % results.size() % name);
+      E(results.size() > 0, origin::user,
+        F("there are no keys named '%s'") % name);
+      id = results.begin()->second;
+      return;
+    }
+
   set<key_id> ks_match_by_local_name;
   set<key_id> db_match_by_local_name;
   set<key_id> ks_match_by_given_name;
@@ -1329,7 +1435,15 @@ project_t::lookup_key_by_name(key_store * const keys,
           key_identity_info identity;
           identity.id = *i;
           identity.given_name = i_name;
-          if (lua.hook_get_local_key_name(identity))
+          bool found;
+          if (project_policy->passthru)
+            found = lua.hook_get_local_key_name(identity);
+          else
+            found = project_policy->lookup_key_name(*this,
+                                                    identity.id,
+                                                    branch_name(),
+                                                    identity.official_name);
+          if (found)
             {
               if (identity.official_name == name)
                 ks_match_by_local_name.insert(*i);
@@ -1350,7 +1464,15 @@ project_t::lookup_key_by_name(key_store * const keys,
           key_identity_info identity;
           identity.id = *i;
           identity.given_name = i_name;
-          if (lua.hook_get_local_key_name(identity))
+          bool found;
+          if (project_policy->passthru)
+            found = lua.hook_get_local_key_name(identity);
+          else
+            found = project_policy->lookup_key_name(*this,
+                                                    identity.id,
+                                                    branch_name(),
+                                                    identity.official_name);
+          if (found)
             {
               if (identity.official_name == name)
                 db_match_by_local_name.insert(*i);
@@ -1419,7 +1541,14 @@ project_t::complete_key_identity(key_store * const keys,
   if (!info.id.inner()().empty())
     {
       get_canonical_name_of_key(keys, info.id, info.given_name);
-      lua.hook_get_local_key_name(info);
+
+      if (project_policy->passthru)
+        lua.hook_get_local_key_name(info);
+      else
+        project_policy->lookup_key_name(*this,
+                                        info.id,
+                                        branch_name(),
+                                        info.official_name);
     }
   else if (!info.official_name().empty())
     {

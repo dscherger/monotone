@@ -84,7 +84,10 @@ namespace {
 
     out += hexid();
     out += " ";
-    out += info.official_name();
+    if (info.official_name().empty())
+      out += "(no name)";
+    else
+      out += info.official_name();
     if (info.given_name != info.official_name)
       {
         out += " (";
@@ -414,7 +417,8 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
         {
           duplicate_aliases.insert(alias);
         }
-      seen_aliases.insert(alias);
+      if (!alias.empty())
+        seen_aliases.insert(alias);
 
       string rendered_basic = format_key_for_ls_keys(identity);
       string sort_key = alias + identity.id.inner()();
