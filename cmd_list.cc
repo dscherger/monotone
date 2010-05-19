@@ -619,12 +619,12 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
     "",
     options::opts::none)
 {
-  std::vector<system_path> search_paths, files, dirs;
+  vector<system_path> search_paths, files, dirs;
 
   E(app.lua.hook_get_default_database_locations(search_paths), origin::database,
     F("could not query default database locations"));
 
-  for (std::vector<system_path>::const_iterator i = search_paths.begin();
+  for (vector<system_path>::const_iterator i = search_paths.begin();
        i != search_paths.end(); ++i)
     {
       system_path search_path(*i);
@@ -633,13 +633,13 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
       fill_path_vec<system_path> fill_dirs(search_path, dirs, true);
       read_directory(search_path, fill_files, fill_dirs);
 
-      for (std::vector<system_path>::const_iterator j = files.begin();
+      for (vector<system_path>::const_iterator j = files.begin();
            j != files.end(); ++j)
         {
           system_path db_path(*j);
 
           // a little optimization, so we don't scan and open every file
-          std::string p = db_path.as_internal();
+          string p = db_path.as_internal();
           if (p.size() < 4 || p.substr(p.size() - 4) != ".mtn")
             {
               L(FL("ignoring file '%s'") % db_path);
@@ -662,7 +662,7 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
               continue;
             }
 
-          std::string managed_path = db_path.as_internal().substr(
+          string managed_path = db_path.as_internal().substr(
               search_path.as_internal().size() + 1
           );
           cout << F(":%s (in %s):") % managed_path % search_path << '\n';
@@ -677,10 +677,10 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
               var_value val;
               db.get_var(key, val);
 
-              std::vector<std::string> workspaces;
+              vector<std::string> workspaces;
               split_into_lines(val(), workspaces);
 
-              for (std::vector<std::string>::const_iterator k = workspaces.begin();
+              for (vector<std::string>::const_iterator k = workspaces.begin();
                    k != workspaces.end(); ++k)
                 {
                   system_path workspace_path(*k, origin::database);
@@ -709,7 +709,7 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
 
                   has_known_workspaces = true;
 
-                  std::string workspace_branch = workspace_opts.branch();
+                  string workspace_branch = workspace_opts.branch();
                   if (!workspace_opts.branch_given)
                     workspace_branch = _("<no branch set>");
 

@@ -651,17 +651,17 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
               var_value val;
               old_db.get_var(key, val);
 
-              std::vector<std::string> workspaces;
+              vector<string> workspaces;
               split_into_lines(val(), workspaces);
 
-              std::vector<std::string>::iterator pos =
-                std::find(workspaces.begin(),
-                          workspaces.end(),
-                          current_workspace.as_internal());
+              vector<std::string>::iterator pos =
+                find(workspaces.begin(),
+                     workspaces.end(),
+                     current_workspace.as_internal());
               if (pos != workspaces.end())
                 workspaces.erase(pos);
 
-              std::string ws;
+              string ws;
               join_lines(workspaces, ws);
 
               old_db.set_var(key, var_value(ws, origin::internal));
@@ -672,17 +672,17 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
           if (new_db.var_exists(key))
             new_db.get_var(key, val);
 
-          std::vector<std::string> workspaces;
+          vector<string> workspaces;
           split_into_lines(val(), workspaces);
 
-          std::vector<std::string>::iterator pos =
-            std::find(workspaces.begin(),
-                      workspaces.end(),
-                      current_workspace.as_internal());
+          vector<std::string>::iterator pos =
+            find(workspaces.begin(),
+                 workspaces.end(),
+                 current_workspace.as_internal());
           if (pos == workspaces.end())
             workspaces.push_back(current_workspace.as_internal());
 
-          std::string ws;
+          string ws;
           join_lines(workspaces, ws);
 
           new_db.set_var(key, var_value(ws, origin::internal));

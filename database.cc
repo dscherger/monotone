@@ -489,28 +489,28 @@ database_impl::~database_impl()
 }
 
 void
-resolve_db_alias(lua_hooks & lua, std::string const & alias, system_path & path)
+resolve_db_alias(lua_hooks & lua, string const & alias, system_path & path)
 {
   // we take care of this in the options code
   I(alias.find(':') == 0);
 
-  std::string pc = alias.substr(1);
+  string pc = alias.substr(1);
   size_t pos = pc.find('/');
-  E(pos == std::string::npos, origin::user,
+  E(pos == string::npos, origin::user,
     F("invalid database alias '%s'") % pc);
 
   pos = pc.rfind('.');
-  if (pos == std::string::npos || pc.substr(pos + 1) != "mtn")
+  if (pos == string::npos || pc.substr(pos + 1) != "mtn")
     pc += ".mtn";
 
   path_component basename(pc, origin::user);
-  std::vector<system_path> candidates;
-  std::vector<system_path> search_paths;
+  vector<system_path> candidates;
+  vector<system_path> search_paths;
 
   E(lua.hook_get_default_database_locations(search_paths), origin::database,
     F("could not query default database locations"));
 
-  for (std::vector<system_path>::const_iterator i = search_paths.begin();
+  for (vector<system_path>::const_iterator i = search_paths.begin();
      i != search_paths.end(); ++i)
     {
       if (file_exists((*i) / basename))
@@ -544,7 +544,7 @@ resolve_db_alias(lua_hooks & lua, std::string const & alias, system_path & path)
         (F("the managed database name ':%s' has multiple "
            "ambiguous expansions:") % pc).str();
 
-      for (std::vector<system_path>::const_iterator i = candidates.begin();
+      for (vector<system_path>::const_iterator i = candidates.begin();
            i != candidates.end(); ++i)
         err += ("\n  " + (*i).as_internal());
 
@@ -3906,7 +3906,7 @@ namespace {
     set<key_id> bad_sigs;
     set<key_id> unknown_sigs;
   };
-  
+
   // returns *one* of each trusted cert key/value
   // if two keys signed the same thing, we get two certs as input and
   // just pick one (assuming neither is invalid) to use in the output
@@ -4593,7 +4593,7 @@ database_impl::open()
 {
   I(!__sql);
 
-  std::string to_open;
+  string to_open;
   if (type == memory_db)
     to_open = ":memory:";
   else
