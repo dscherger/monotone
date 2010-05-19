@@ -33,14 +33,14 @@ commit()
 
 revert_to(anc)
 copy("twochanges", "testfile")
-check(mtn("diff", "testfile"), 0, true)
+check(mtn("diff", "testfile"), 0, true, false)
 canonicalize("stdout")
 rename("stdout", "monodiff")
 check(samefile("monodiff", "before.diff"))
 
 check(mtn("update"), 0, false, true)
 
-check(mtn("diff", "testfile"), 0, true)
+check(mtn("diff", "testfile"), 0, true, false)
 canonicalize("stdout")
 rename("stdout", "monodiff")
 xfail(samefile("monodiff", "after.diff"))

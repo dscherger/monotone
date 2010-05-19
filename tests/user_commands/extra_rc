@@ -8,9 +8,9 @@ function check_head(...)
     arghead = unpack(arg)
     heads = heads:gsub("^%s*(.-)%s*$", "%1")	-- trim leading and trailing whitespace
     if (heads == arghead) then
-        io.stdout:write("heads are equal\n")
+        io.write("heads are equal\n")
     end
-    io.stdout:write("end of command\n")
+    io.write("end of command\n")
 end
 
 
