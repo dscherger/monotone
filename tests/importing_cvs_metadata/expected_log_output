@@ -1,16 +1,15 @@
------------------------------------------------------------------
+----------------------------------------------------------------------
 Revision: f31b5f6dfeddd51ebf19cd44c4176c68bff51709
-Ancestor: 
-Author: luigi
-Date: 2009-09-11T16:37:48
-Branch: testbranch
+Author:   luigi
+Date:     2009-09-11T16:37:48
+Branch:   testbranch
 
-Added files:
-        test.txt
-Added directories:
-        .
-
-ChangeLog: 
+Changelog: 
 
 test
+
+Changes
+
+  added    
+  added    test.txt
 

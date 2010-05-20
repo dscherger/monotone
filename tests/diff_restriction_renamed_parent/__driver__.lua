@@ -6,7 +6,7 @@ commit()
 orig = base_revision()
 
 -- rename the parent 
-check(mtn("rename", "parent1", "parent2"), 0, true, true)
+check(mtn("rename", "parent1", "parent2"), 0, false, false)
 commit()
 
 -- alter the file
@@ -29,4 +29,4 @@ check(qgrep("^\\+\\+\\+ parent2/file1\t", "stdout"))
 -- include the parents, non-recursively, of all explicitly included nodes
 -- then the parent rename would be included here and the diff would work.
 
-xfail(mtn("diff", "-r", orig, "parent2/file1"), 0, true, true)
+check(mtn("diff", "-r", orig, "parent2/file1"), 0, false, false)
