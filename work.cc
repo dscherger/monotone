@@ -25,7 +25,6 @@
 #include "restrictions.hh"
 #include "sanity.hh"
 #include "safe_map.hh"
-#include "simplestring_xform.hh"
 #include "revision.hh"
 #include "inodeprint.hh"
 #include "merge_content.hh"
@@ -638,54 +637,14 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
         {
           // remove the currently registered workspace from the old
           // database and add it to the new one
-          var_domain domain("database", origin::internal);
-          var_name name("known-workspaces", origin::internal);
-          var_key key(make_pair(domain, name));
-
           system_path current_workspace;
           get_current_workspace(current_workspace);
 
           database old_db(cur_opts, lua);
-          if (old_db.var_exists(key))
-            {
-              var_value val;
-              old_db.get_var(key, val);
-
-              vector<string> workspaces;
-              split_into_lines(val(), workspaces);
-
-              vector<std::string>::iterator pos =
-                find(workspaces.begin(),
-                     workspaces.end(),
-                     current_workspace.as_internal());
-              if (pos != workspaces.end())
-                workspaces.erase(pos);
-
-              string ws;
-              join_lines(workspaces, ws);
-
-              old_db.set_var(key, var_value(ws, origin::internal));
-            }
+          old_db.unregister_workspace(current_workspace);
 
           database new_db(opts, lua);
-          var_value val;
-          if (new_db.var_exists(key))
-            new_db.get_var(key, val);
-
-          vector<string> workspaces;
-          split_into_lines(val(), workspaces);
-
-          vector<std::string>::iterator pos =
-            find(workspaces.begin(),
-                 workspaces.end(),
-                 current_workspace.as_internal());
-          if (pos == workspaces.end())
-            workspaces.push_back(current_workspace.as_internal());
-
-          string ws;
-          join_lines(workspaces, ws);
-
-          new_db.set_var(key, var_value(ws, origin::internal));
+          new_db.register_workspace(current_workspace);
 
           cur_opts.dbname_type = opts.dbname_type;
           cur_opts.dbname_alias = opts.dbname_alias;

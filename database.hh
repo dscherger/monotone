@@ -375,6 +375,10 @@ public:
 
   void clear_var(var_key const & key);
 
+  void register_workspace(system_path const & path);
+
+  void unregister_workspace(system_path const & path);
+
   //
   // --== Completion ==--
   //

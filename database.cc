@@ -49,6 +49,7 @@
 #include "safe_map.hh"
 #include "sanity.hh"
 #include "migration.hh"
+#include "simplestring_xform.hh"
 #include "transforms.hh"
 #include "ui.hh" // tickers
 #include "vocab.hh"
@@ -4388,6 +4389,62 @@ database::clear_var(var_key const & key)
   imp->execute(query("DELETE FROM db_vars WHERE domain = ? AND name = ?")
                % text(key.first())
                % blob(key.second()));
+}
+
+void
+database::register_workspace(system_path const & path)
+{
+  var_domain domain("database", origin::internal);
+  var_name name("known-workspaces", origin::internal);
+  var_key key(make_pair(domain, name));
+
+  var_value val;
+  if (var_exists(key))
+    get_var(key, val);
+
+  vector<string> workspaces;
+  split_into_lines(val(), workspaces);
+
+  vector<string>::iterator pos =
+    find(workspaces.begin(),
+         workspaces.end(),
+         path.as_internal());
+  if (pos == workspaces.end())
+    workspaces.push_back(path.as_internal());
+
+  string ws;
+  join_lines(workspaces, ws);
+
+  set_var(key, var_value(ws, origin::internal));
+}
+
+void
+database::unregister_workspace(system_path const & path)
+{
+  var_domain domain("database", origin::internal);
+  var_name name("known-workspaces", origin::internal);
+  var_key key(make_pair(domain, name));
+
+  if (var_exists(key))
+    {
+      var_value val;
+      get_var(key, val);
+
+      vector<string> workspaces;
+      split_into_lines(val(), workspaces);
+
+      vector<string>::iterator pos =
+        find(workspaces.begin(),
+             workspaces.end(),
+             path.as_internal());
+      if (pos != workspaces.end())
+        workspaces.erase(pos);
+
+      string ws;
+      join_lines(workspaces, ws);
+
+      set_var(key, var_value(ws, origin::internal));
+    }
 }
 
 // branches
