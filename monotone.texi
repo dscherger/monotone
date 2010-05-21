@@ -1160,9 +1160,7 @@ new database. This is done with the @command{mtn db init} command,
 providing a @option{--db} option to specify the location of the new
 database. Each programmer creates their own database, which will
 reside in their home directory and store all the revisions, files and
-manifests they work on. Monotone requires this step as an explicit
-command, to prevent spurious creation of databases when an invalid
-@option{--db} option is given.
+manifests they work on.
 
 In real life, most people prefer to keep one database for each project
 they work on.  If we followed that convention here in the tutorial,
@@ -1178,7 +1176,7 @@ $ mtn db init --db=~/jim.mtn
 @end group
 @end smallexample
 
-Abe issues the command:
+and Abe issues the command:
 
 @smallexample
 @group
@@ -1186,13 +1184,26 @@ $ mtn db init --db=~/abe.mtn
 @end group
 @end smallexample
 
-And Beth issues the command:
+Beth decides to use monotone's built-in database management functionality.
+monotone then expects to find managed database files in a couple of predefined
+places (like f.e. @file{~/.monotone/databases}, this is customizable) and acts
+upon those only by knowing their file or basename from anywhere.
+
+To create a new managed database, Beth issues the @command{mtn db init} command
+like this:
 
 @smallexample
 @group
-$ mtn db init --db=~/beth.mtn
+$ mtn db init --db=:beth
 @end group
 @end smallexample
+
+Beth can distinguish a managed database name from an unmanaged one by the
+leading colon in its name.  This special alias can now be used interchangeably
+in every monotone invocation.
+If Beth wants to see where monotone actually created the database and what
+other databases monotone knows of, she triggers the @command{mtn list databases}
+command (or @command{mtn ls dbs}) for that.  We'll come back to this in a few.
 
 @page
 @node    Generating Keys, Starting a New Project, Creating a Database, Tutorial
@@ -1704,7 +1715,7 @@ Beth also exports her public key:
 
 @smallexample
 @group
-$ mtn --db=~/beth.mtn pubkey beth@@juicebot.co.jp >~/beth.pubkey
+$ mtn --db=:beth pubkey beth@@juicebot.co.jp >~/beth.pubkey
 @end group
 @end smallexample
 
@@ -1946,7 +1957,7 @@ Jim's:
 
 @smallexample
 @group
-$ mtn --db=beth.mtn sync jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
+$ mtn --db=:beth sync jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
 mtn: setting default server to jim-laptop.juicebot.co.jp
 mtn: setting default branch include pattern to 'jp.co.juicebot.jb7*'
 mtn: setting default branch exclude pattern to ''
@@ -1969,11 +1980,28 @@ She checks out a copy of the tree from her database:
 
 @smallexample
 @group
-$ mtn --db=beth.mtn --branch=jp.co.juicebot.jb7 checkout .
+$ mtn --db=:beth --branch=jp.co.juicebot.jb7 checkout juicebot
 @end group
 @end smallexample
 
-She edits the file @file{src/banana.c}:
+and since she is using a managed database, monotone automatically remembers
+the connection between the newly created workspace and the database.  She
+looks now at the output of @command{mtn list databases} and sees the
+following:
+
+@smallexample
+@group
+$ mtn list databases
+:beth.mtn (in /home/beth/.monotone/databases):
+        jp.co.juicebot.jb7 (in /home/beth/juicebot)
+@end group
+@end smallexample
+
+Beth realizes that, whenever the database of the workspace changes, monotone
+will adapt the known paths for the old and the new database for her.
+
+But let us get back to the work, Beth now start to edits the file
+@file{src/banana.c}:
 
 @smallexample
 @group
