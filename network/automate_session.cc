@@ -261,7 +261,7 @@ bool automate_session::do_work(transaction_guard & guard,
                 // usually, if a command succeeds, any of its workspace-relevant
                 // options are saved back to _MTN/options, this shouldn't be
                 // any different here
-                workspace::maybe_set_options(app.opts);
+                workspace::maybe_set_options(app.opts, app.lua);
 
                 // restore app.opts
                 app.opts = original_opts;

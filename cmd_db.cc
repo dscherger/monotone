@@ -137,7 +137,7 @@ CMD(db_migrate, "migrate", "", CMD_REF(db), "",
   {
     database db(app);
     db.migrate(keys, mstat);
-    app.dbcache.reset();
+    database::reset_cache();
   }
 
   if (mstat.need_regen())

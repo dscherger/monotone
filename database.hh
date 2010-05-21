@@ -15,10 +15,10 @@
 #include <set>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
-#include <botan/version.h>
 
 #include "rev_types.hh"
 #include "cert.hh"
+#include "options.hh"
 
 class app_state;
 class lua_hooks;
@@ -77,25 +77,34 @@ typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 class database_impl;
 struct key_identity_info;
 
+typedef std::map<system_path, boost::shared_ptr<database_impl> > database_cache;
+
 class database
 {
   //
   // --== Opening the database and schema checking ==--
   //
 public:
-  explicit database(app_state &);
+  explicit database(app_state & app);
+  database(options const & o, lua_hooks & l);
   ~database();
 
   system_path get_filename();
   bool is_dbfile(any_path const & file);
   bool database_specified();
   void check_is_not_rosterified();
+  void create_if_not_exists();
 
   void ensure_open();
   void ensure_open_for_format_changes();
   void ensure_open_for_cache_reset();
+
+  // this is about resetting the database_impl cache
+  static void reset_cache();
+
 private:
   void ensure_open_for_maintenance();
+  void init();
 
   //
   // --== Transactions ==--
@@ -366,6 +375,12 @@ public:
 
   void clear_var(var_key const & key);
 
+  void register_workspace(system_path const & path);
+
+  void unregister_workspace(system_path const & path);
+
+  void get_registered_workspaces(std::vector<system_path> & paths);
+
   //
   // --== Completion ==--
   //
@@ -459,11 +474,11 @@ public:
                                revision_t const & rev);
 
 private:
+  static database_cache dbcache;
+
   boost::shared_ptr<database_impl> imp;
+  options opts;
   lua_hooks & lua;
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  boost::shared_ptr<lazy_rng> rng;
-#endif
 };
 
 // not a member function, defined in database_check.cc
@@ -564,6 +579,20 @@ public:
   {
     acquire();
   }
+};
+
+class database_path_helper
+{
+  lua_hooks & lua;
+public:
+  database_path_helper(lua_hooks & l) : lua(l) {}
+
+  void get_database_path(options const & opts, system_path & path);
+
+  void get_default_database_path(system_path & path);
+
+private:
+  void validate_and_clean_alias(std::string const & alias, path_component & pc);
 };
 
 #endif // __DATABASE_HH__

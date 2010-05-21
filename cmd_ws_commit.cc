@@ -199,9 +199,9 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
   revision_summary(rev, summary);
 
-  utf8 full_message(instructions() + cancel() + header() + notes() + summary(), 
+  utf8 full_message(instructions() + cancel() + header() + notes() + summary(),
                     origin::internal);
-  
+
   external input_message;
   external output_message;
 
@@ -787,8 +787,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
           string formatted = now.as_formatted_localtime(date_fmt);
           parsed = date_t::from_formatted_localtime(formatted, date_fmt);
         }
-      catch (recoverable_failure const & e) 
-        { 
+      catch (recoverable_failure const & e)
+        {
           L(FL("date check failed: %s") % e.what());
         }
 
@@ -1461,16 +1461,16 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
           string formatted = date.as_formatted_localtime(date_fmt);
           parsed = date_t::from_formatted_localtime(formatted, date_fmt);
         }
-      catch (recoverable_failure const & e) 
-        { 
+      catch (recoverable_failure const & e)
+        {
           L(FL("date check failed: %s") % e.what());
         }
-      
+
       if (parsed != date)
         {
           L(FL("date check failed: %s != %s") % date % parsed);
         }
-      
+
       E(parsed == date, origin::user,
         F("date format '%s' cannot be used for commit") % date_fmt);
     }
@@ -1633,7 +1633,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   }
 
   // the workspace should remember the branch we just committed to.
-  work.set_options(app.opts, true);
+  work.set_options(app.opts, app.lua, true);
 
   // the work revision is now whatever changes remain on top of the revision
   // we just checked in.
@@ -1705,23 +1705,14 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
     directory_exists(workspace_dir) ? _MTN_dir : workspace_dir
   );
 
-  workspace::create_workspace(app.opts, app.lua, workspace_dir);
-
-  if (!app.opts.dbname_given || app.opts.dbname.empty())
-    {
-      app.opts.dbname = system_path(workspace_dir
-                                    / bookkeeping_root_component
-                                    / bookkeeping_internal_db_file_name);
-    }
-
   database db(app);
-  if (get_path_status(db.get_filename()) == path::nonexistent)
-    {
-      P(F("initializing new database '%s'") % db.get_filename());
-      db.initialize();
-    }
-
+  db.create_if_not_exists();
   db.ensure_open();
+
+  // FIXME: newly created databases are not saved to _MTN/options since
+  // we're not updating app.opts yet
+
+  workspace::create_workspace(app.opts, app.lua, workspace_dir);
 
   workspace work(app);
   revision_t rev;
