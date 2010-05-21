@@ -4837,12 +4837,14 @@ If no @var{id} is provided, as in the latter two commands, you
 
 The clone command is a helper command that performs the roles of a
 number of other commands all at once.  Firstly, it constructs a new
-database.  It then populates this database by @command{pull}ing any data
+database. If no database is given, the configured default
+database is created or re-used (see the hook
+@code{get_default_database_alias} in the @ref{Lua Reference} for
+more details). Then it populates this database by @command{pull}ing any data
 in the branch @var{branchname} from the remote database, @var{address}.
 Finally, it copies the files out of the newly created database into a
 local directory, just as @command{checkout} would.  If no @var{directory}
-is given, the @var{branchname} is used as directory.  The created
-database is placed in the new workspace as @file{@var{directory}/_MTN/mtn.db}.
+is given, the @var{branchname} is used as directory.
 
 @item mtn disapprove @var{id}
 
@@ -5108,18 +5110,21 @@ shared ancestor, so @code{merge3} is not applicable.
 @section Workspace
 
 @ftable @command
-@item mtn setup [@var{directory}]
+@item mtn setup -b @var{branchname} [-d @var{database}] [@var{directory}]
 This command prepares @var{directory} as a monotone workspace,
 by creating and populating the @file{_MTN} directory with basic
-information.  This information must include at least the branch and the
-database to be used, both of which will be placed in the
+information.  This information must include at least the branch
+to be used.  If no database is given, the configured default
+database is created or re-used (see the hook
+@code{get_default_database_alias} in the @ref{Lua Reference} for
+more details).
+Both settings, branch and database name, will be placed in the
 @file{_MTN/options} file.
 
 This can be used with an empty directory to start a new blank project,
 or within an existing directory full of files, prior to using
 @command{mtn commit}. If no directory is specified, the current
-directory is used.  If no database is given, a new database is
-initialized and saved to @file{_MTN/mtn.db}.
+directory is used.
 
 @item mtn add [--recursive | -R] [--no-respect-ignore] @var{pathname...}
 @item mtn add [--recursive | -R] [--no-respect-ignore] --unknown [@var{pathname...}]
@@ -10722,6 +10727,26 @@ function get_author(branchname, key_identity)
 end
 @end group
 @end smallexample
+
+@item get_default_database_locations ()
+
+Returns a table of existing paths where monotone should look for
+managable databases.  The command @command{list databases} searches
+all these paths for valid monotone databases and outputs details on
+each one.
+
+The default implementation returns a table with a single entry,
+@file{.monotone/databases}, in the user's home directory.
+
+@item get_default_database_alias ()
+
+Returns the alias of the managed database which should be used as default
+for commands like @command{clone} or @command{setup} if these are missing
+an explicit database option.  This alias and the first path found in the
+@code{get_default_database_locations} hook form the complete path
+of this default database.
+
+The default implementation returns @code{:default.mtn}.
 
 @item edit_comment (@var{user_log_message})
 
