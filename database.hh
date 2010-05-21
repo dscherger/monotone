@@ -379,6 +379,8 @@ public:
 
   void unregister_workspace(system_path const & path);
 
+  void get_registered_workspaces(std::vector<system_path> & paths);
+
   //
   // --== Completion ==--
   //
@@ -479,12 +481,6 @@ private:
   lua_hooks & lua;
 };
 
-// not a member function, because it has to be called in non-db
-// context as well
-void resolve_db_alias(lua_hooks & lua,
-                      std::string const & alias,
-                      system_path & path);
-
 // not a member function, defined in database_check.cc
 void check_db(database & db);
 
@@ -583,6 +579,20 @@ public:
   {
     acquire();
   }
+};
+
+class database_path_helper
+{
+  lua_hooks & lua;
+public:
+  database_path_helper(lua_hooks & l) : lua(l) {}
+
+  void get_database_path(options const & opts, system_path & path);
+
+  void get_default_database_path(system_path & path);
+
+private:
+  void validate_and_clean_alias(std::string const & alias, path_component & pc);
 };
 
 #endif // __DATABASE_HH__

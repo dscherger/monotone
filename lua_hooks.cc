@@ -720,7 +720,7 @@ bool lua_hooks::hook_get_default_database_locations(vector<system_path> & out)
       ll.extract_str(path).pop();
       out.push_back(system_path(path, origin::user));
     }
-  return ll.ok() && !out.empty();
+  return ll.ok();
 }
 
 bool lua_hooks::hook_hook_wrapper(string const & func_name,

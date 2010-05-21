@@ -624,6 +624,8 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
   E(app.lua.hook_get_default_database_locations(search_paths), origin::database,
     F("could not query default database locations"));
 
+  database_path_helper helper(app.lua);
+
   for (vector<system_path>::const_iterator i = search_paths.begin();
        i != search_paths.end(); ++i)
     {
@@ -649,6 +651,7 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
           options opts;
           opts.dbname_type = unmanaged_db;
           opts.dbname = db_path;
+          opts.dbname_given = true;
 
           database db(opts, app.lua);
 
@@ -667,57 +670,40 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
           );
           cout << F(":%s (in %s):") % managed_path % search_path << '\n';
 
-          var_domain domain("database", origin::internal);
-          var_name name("known-workspaces", origin::internal);
-          var_key key(make_pair(domain, name));
+          bool has_valid_workspaces = false;
 
-          bool has_known_workspaces = false;
-          if (db.var_exists(key))
+          vector<system_path> workspaces;
+          db.get_registered_workspaces(workspaces);
+
+          for (vector<system_path>::const_iterator k = workspaces.begin();
+               k != workspaces.end(); ++k)
             {
-              var_value val;
-              db.get_var(key, val);
+              system_path workspace_path(*k);
 
-              vector<std::string> workspaces;
-              split_into_lines(val(), workspaces);
+              options workspace_opts;
+              workspace::get_options(workspace_path, workspace_opts);
 
-              for (vector<std::string>::const_iterator k = workspaces.begin();
-                   k != workspaces.end(); ++k)
+              system_path workspace_db_path;
+              helper.get_database_path(workspace_opts, workspace_db_path);
+
+              if (workspace_db_path != db_path)
                 {
-                  system_path workspace_path(*k, origin::database);
-                  if (!directory_exists(workspace_path / bookkeeping_root_component))
-                    {
-                      L(FL("ignoring missing workspace '%s'") % workspace_path);
-                      continue;
-                    }
-
-                  options workspace_opts;
-                  workspace::get_options(workspace_path, workspace_opts);
-
-                  system_path workspace_db_path = workspace_opts.dbname;
-                  if (workspace_opts.dbname_type == managed_db)
-                    resolve_db_alias(app.lua,
-                                     workspace_opts.dbname_alias,
-                                     workspace_db_path);
-
-                  if (workspace_db_path != db_path)
-                    {
-                      L(FL("ignoring workspace '%s', expected database %s, "
-                           "but has %s configured in _MTN/options")
-                          % workspace_path % db_path % workspace_db_path);
-                      continue;
-                    }
-
-                  has_known_workspaces = true;
-
-                  string workspace_branch = workspace_opts.branch();
-                  if (!workspace_opts.branch_given)
-                    workspace_branch = _("<no branch set>");
-
-                  cout << F("\t%s (in %s)") % workspace_branch % workspace_path << '\n';
+                  L(FL("ignoring workspace '%s', expected database %s, "
+                       "but has %s configured in _MTN/options")
+                      % workspace_path % db_path % workspace_db_path);
+                  continue;
                 }
+
+              has_valid_workspaces = true;
+
+              string workspace_branch = workspace_opts.branch();
+              if (!workspace_opts.branch_given)
+                workspace_branch = _("<no branch set>");
+
+              cout << F("\t%s (in %s)") % workspace_branch % workspace_path << '\n';
             }
 
-            if (!has_known_workspaces)
+            if (!has_valid_workspaces)
               cout << F("\tno known valid workspaces") << '\n';
         }
     }

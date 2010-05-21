@@ -626,35 +626,33 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
 
   bool options_changed = false;
 
-  if ((!opts.dbname.as_internal().empty() || !opts.dbname_alias.empty()) &&
-      (cur_opts.dbname != opts.dbname || cur_opts.dbname_alias != opts.dbname_alias))
+  database_path_helper helper(lua);
+  system_path old_db_path, new_db_path;
+
+  helper.get_database_path(cur_opts, old_db_path);
+  helper.get_database_path(opts, new_db_path);
+
+  if (old_db_path != new_db_path && file_exists(new_db_path))
     {
-      system_path dbpath = opts.dbname;
-      if (opts.dbname_type == managed_db)
-        resolve_db_alias(lua, opts.dbname_alias, dbpath);
+      // remove the currently registered workspace from the old
+      // database and add it to the new one
+      system_path current_workspace;
+      get_current_workspace(current_workspace);
 
-      if (get_path_status(dbpath.as_internal()) == path::file)
-        {
-          // remove the currently registered workspace from the old
-          // database and add it to the new one
-          system_path current_workspace;
-          get_current_workspace(current_workspace);
+      database old_db(cur_opts, lua);
+      old_db.unregister_workspace(current_workspace);
 
-          database old_db(cur_opts, lua);
-          old_db.unregister_workspace(current_workspace);
+      database new_db(opts, lua);
+      new_db.register_workspace(current_workspace);
 
-          database new_db(opts, lua);
-          new_db.register_workspace(current_workspace);
-
-          cur_opts.dbname_type = opts.dbname_type;
-          cur_opts.dbname_alias = opts.dbname_alias;
-          cur_opts.dbname = dbpath;
-          options_changed = true;
-        }
+      cur_opts.dbname_type = opts.dbname_type;
+      cur_opts.dbname_alias = opts.dbname_alias;
+      cur_opts.dbname = opts.dbname;
+      options_changed = true;
     }
 
   if (!opts.key_dir.as_internal().empty() &&
-      get_path_status(opts.key_dir.as_internal()) == path::directory &&
+      directory_exists(opts.key_dir) &&
       cur_opts.key_dir != opts.key_dir)
     {
       cur_opts.key_dir = opts.key_dir;

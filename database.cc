@@ -489,70 +489,6 @@ database_impl::~database_impl()
     close();
 }
 
-void
-resolve_db_alias(lua_hooks & lua, string const & alias, system_path & path)
-{
-  // we take care of this in the options code
-  I(alias.find(':') == 0);
-
-  string pc = alias.substr(1);
-  size_t pos = pc.find('/');
-  E(pos == string::npos, origin::user,
-    F("invalid database alias '%s'") % pc);
-
-  pos = pc.rfind('.');
-  if (pos == string::npos || pc.substr(pos + 1) != "mtn")
-    pc += ".mtn";
-
-  path_component basename(pc, origin::user);
-  vector<system_path> candidates;
-  vector<system_path> search_paths;
-
-  E(lua.hook_get_default_database_locations(search_paths), origin::database,
-    F("could not query default database locations"));
-
-  for (vector<system_path>::const_iterator i = search_paths.begin();
-     i != search_paths.end(); ++i)
-    {
-      if (file_exists((*i) / basename))
-        {
-          candidates.push_back((*i) / basename);
-          continue;
-        }
-    }
-
-  MM(candidates);
-
-  // if we did not found the database anywhere, use the first
-  // available default path to possible save it there
-  if (candidates.size() == 0)
-    {
-      path = (*search_paths.begin()) / basename;
-      L(FL("no managed path candidates found, using '%s'") % path);
-      return;
-    }
-
-  if (candidates.size() == 1)
-    {
-      path = (*candidates.begin());
-      L(FL("one managed path candidate found: %s") % path);
-      return;
-    }
-
-  if (candidates.size() > 1)
-    {
-      string err =
-        (F("the managed database name ':%s' has multiple "
-           "ambiguous expansions:") % pc).str();
-
-      for (vector<system_path>::const_iterator i = candidates.begin();
-           i != candidates.end(); ++i)
-        err += ("\n  " + (*i).as_internal());
-
-      E(false, origin::user, i18n_format(err));
-    }
-}
-
 database_cache database::dbcache;
 
 database::database(app_state & app)
@@ -570,9 +506,9 @@ database::database(options const & o, lua_hooks & l)
 void
 database::init()
 {
-  system_path dbpath = opts.dbname;
-  if (opts.dbname_type == managed_db)
-    resolve_db_alias(lua, opts.dbname_alias, dbpath);
+  database_path_helper helper(lua);
+  system_path dbpath;
+  helper.get_database_path(opts, dbpath);
 
   if (dbcache.find(dbpath) == dbcache.end())
     {
@@ -623,10 +559,8 @@ database::create_if_not_exists()
 {
   if (!opts.dbname_given)
     {
-      string alias;
-      E(lua.hook_get_default_database_alias(alias) || alias.empty(),
-        origin::user, F("could not query default database alias"));
-      resolve_db_alias(lua, alias, imp->filename);
+      database_path_helper helper(lua);
+      helper.get_default_database_path(imp->filename);
       imp->type = managed_db;
     }
 
@@ -4391,16 +4325,18 @@ database::clear_var(var_key const & key)
                % blob(key.second()));
 }
 
+#define KNOWN_WORKSPACES_KEY                        \
+  var_key(make_pair(                                \
+    var_domain("database", origin::internal),       \
+    var_name("known-workspaces", origin::internal)  \
+  ))
+
 void
 database::register_workspace(system_path const & path)
 {
-  var_domain domain("database", origin::internal);
-  var_name name("known-workspaces", origin::internal);
-  var_key key(make_pair(domain, name));
-
   var_value val;
-  if (var_exists(key))
-    get_var(key, val);
+  if (var_exists(KNOWN_WORKSPACES_KEY))
+    get_var(KNOWN_WORKSPACES_KEY, val);
 
   vector<string> workspaces;
   split_into_lines(val(), workspaces);
@@ -4415,20 +4351,16 @@ database::register_workspace(system_path const & path)
   string ws;
   join_lines(workspaces, ws);
 
-  set_var(key, var_value(ws, origin::internal));
+  set_var(KNOWN_WORKSPACES_KEY, var_value(ws, origin::internal));
 }
 
 void
 database::unregister_workspace(system_path const & path)
 {
-  var_domain domain("database", origin::internal);
-  var_name name("known-workspaces", origin::internal);
-  var_key key(make_pair(domain, name));
-
-  if (var_exists(key))
+  if (var_exists(KNOWN_WORKSPACES_KEY))
     {
       var_value val;
-      get_var(key, val);
+      get_var(KNOWN_WORKSPACES_KEY, val);
 
       vector<string> workspaces;
       split_into_lines(val(), workspaces);
@@ -4443,9 +4375,36 @@ database::unregister_workspace(system_path const & path)
       string ws;
       join_lines(workspaces, ws);
 
-      set_var(key, var_value(ws, origin::internal));
+      set_var(KNOWN_WORKSPACES_KEY, var_value(ws, origin::internal));
     }
 }
+
+void
+database::get_registered_workspaces(vector<system_path> & paths)
+{
+  if (var_exists(KNOWN_WORKSPACES_KEY))
+    {
+      var_value val;
+      get_var(KNOWN_WORKSPACES_KEY, val);
+
+      vector<string> workspaces;
+      split_into_lines(val(), workspaces);
+
+      for (vector<string>::const_iterator i = workspaces.begin();
+           i != workspaces.end(); ++i)
+        {
+          system_path workspace_path(*i, origin::database);
+          if (!directory_exists(workspace_path / bookkeeping_root_component))
+            {
+              L(FL("ignoring missing workspace '%s'") % workspace_path);
+              continue;
+            }
+          paths.push_back(workspace_path);
+        }
+    }
+}
+
+#undef KNOWN_WORKSPACES_KEY
 
 // branches
 
@@ -4746,7 +4705,120 @@ conditional_transaction_guard::commit()
   committed = true;
 }
 
+void
+database_path_helper::get_database_path(options const & opts, system_path & path)
+{
+  if (!opts.dbname_given ||
+      (opts.dbname.as_internal().empty() &&
+       opts.dbname_alias.empty()))
+    {
+      L(FL("no database option given or options empty"));
+      return;
+    }
 
+  if (opts.dbname_type == unmanaged_db)
+    {
+      path = opts.dbname;
+      return;
+    }
+
+  E(opts.dbname_type == managed_db, origin::internal,
+    F("cannot determine full path for this database type"));
+
+  path_component basename;
+  validate_and_clean_alias(opts.dbname_alias, basename);
+
+  vector<system_path> candidates;
+  vector<system_path> search_paths;
+
+  E(lua.hook_get_default_database_locations(search_paths) || search_paths.size() == 0,
+    origin::user, F("could not query default database locations"));
+
+  for (vector<system_path>::const_iterator i = search_paths.begin();
+     i != search_paths.end(); ++i)
+    {
+      if (file_exists((*i) / basename))
+        {
+          candidates.push_back((*i) / basename);
+          continue;
+        }
+    }
+
+  MM(candidates);
+
+  // if we did not found the database anywhere, use the first
+  // available default path to possible save it there
+  if (candidates.size() == 0)
+    {
+      path = (*search_paths.begin()) / basename;
+      L(FL("no path expansions found for '%s', using '%s'")
+          % opts.dbname_alias % path);
+      return;
+    }
+
+  if (candidates.size() == 1)
+    {
+      path = (*candidates.begin());
+      L(FL("one path expansion found for '%s': '%s'")
+          % opts.dbname_alias % path);
+      return;
+    }
+
+  if (candidates.size() > 1)
+    {
+      string err =
+        (F("the database alias '%s' has multiple ambiguous expansions:")
+         % opts.dbname_alias).str();
+
+      for (vector<system_path>::const_iterator i = candidates.begin();
+           i != candidates.end(); ++i)
+        err += ("\n  " + (*i).as_internal());
+
+      E(false, origin::user, i18n_format(err));
+    }
+}
+
+void
+database_path_helper::get_default_database_path(system_path & path)
+{
+  vector<system_path> default_paths;
+  E(lua.hook_get_default_database_locations(default_paths) || default_paths.size() == 0,
+    origin::user, F("could not query default database locations"));
+
+  string alias;
+  E(lua.hook_get_default_database_alias(alias) || alias.empty(),
+    origin::user, F("could not query default database alias"));
+
+  path_component basename;
+  validate_and_clean_alias(alias, basename);
+
+  path = (*default_paths.begin()) / basename;
+}
+
+void
+database_path_helper::validate_and_clean_alias(string const & alias, path_component & pc)
+{
+  E(alias.find(':') == 0, origin::system,
+    F("invalid database alias '%s': does not start with a colon") % alias);
+
+  string pure_alias = alias.substr(1);
+  E(pure_alias.size() > 0, origin::system,
+    F("invalid database alias '%s': must not be empty") % alias);
+
+  size_t pos = pure_alias.rfind('.');
+  if (pos == string::npos || pure_alias.substr(pos + 1) != "mtn")
+    pure_alias += ".mtn";
+
+  try
+    {
+      pc = path_component(pure_alias, origin::system);
+    }
+  catch (...)
+    {
+      E(false, origin::system,
+        F("invalid database alias '%s': does contain invalid characters") % alias);
+    }
+}
 
 // Local Variables:
 // mode: C++
