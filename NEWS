@@ -96,6 +96,10 @@ xxx xxx xx xx:xx:xx UTC 2010
           whose parent revision(s) do not exist in the specified database
           (fixes monotone bug #29677).
 
+        - The 'clone' command no longer removes an existing bookkeeping 
+          directory if the target directory "." points to a workspace
+          (fixes monotone bug #29927).
+ 
         - monotone on Windows will now have a non-zero exit code when
           interrupted (^C). This was broken in 0.47 when it was fixed to not
           throw an exception on being interrupted.

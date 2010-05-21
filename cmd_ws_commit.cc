@@ -1693,13 +1693,16 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
       dir = ".";
 
   system_path workspace_dir(dir, origin::user);
+  system_path _MTN_dir(workspace_dir / bookkeeping_root_component);
+
+  require_path_is_nonexistent
+    (_MTN_dir, F("bookkeeping directory already exists in '%s'")
+     % workspace_dir);
 
   // only try to remove the complete workspace directory
   // if we're about to create it anyways
   directory_cleanup_helper remove_on_fail(
-    directory_exists(workspace_dir)
-        ? workspace_dir / bookkeeping_root_component
-        : workspace_dir
+    directory_exists(workspace_dir) ? _MTN_dir : workspace_dir
   );
 
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
