@@ -557,14 +557,8 @@ database::database_specified()
 void
 database::create_if_not_exists()
 {
-  if (!opts.dbname_given)
-    {
-      database_path_helper helper(lua);
-      helper.get_default_database_path(imp->filename);
-      imp->type = managed_db;
-    }
-
-  if (get_path_status(imp->filename) == path::nonexistent)
+  imp->check_filename();
+  if (!file_exists(imp->filename))
     {
       P(F("initializing new database '%s'") % imp->filename);
       initialize();
@@ -4779,20 +4773,22 @@ database_path_helper::get_database_path(options const & opts, system_path & path
 }
 
 void
-database_path_helper::get_default_database_path(system_path & path)
+database_path_helper::maybe_set_default_alias(options & opts)
 {
-  vector<system_path> default_paths;
-  E(lua.hook_get_default_database_locations(default_paths) || default_paths.size() == 0,
-    origin::user, F("could not query default database locations"));
+  if (opts.dbname_given && (
+       !opts.dbname.as_internal().empty() ||
+       !opts.dbname_alias.empty()))
+    {
+      return;
+    }
 
   string alias;
   E(lua.hook_get_default_database_alias(alias) || alias.empty(),
     origin::user, F("could not query default database alias"));
 
-  path_component basename;
-  validate_and_clean_alias(alias, basename);
-
-  path = (*default_paths.begin()) / basename;
+  opts.dbname_given = true;
+  opts.dbname_alias = alias;
+  opts.dbname_type = managed_db;
 }
 
 void

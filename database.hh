@@ -589,7 +589,7 @@ public:
 
   void get_database_path(options const & opts, system_path & path);
 
-  void get_default_database_path(system_path & path);
+  void maybe_set_default_alias(options & opts);
 
 private:
   void validate_and_clean_alias(std::string const & alias, path_component & pc);

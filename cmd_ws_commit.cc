@@ -1705,12 +1705,12 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
     directory_exists(workspace_dir) ? _MTN_dir : workspace_dir
   );
 
+  database_path_helper helper(app.lua);
+  helper.maybe_set_default_alias(app.opts);
+
   database db(app);
   db.create_if_not_exists();
   db.ensure_open();
-
-  // FIXME: newly created databases are not saved to _MTN/options since
-  // we're not updating app.opts yet
 
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
 

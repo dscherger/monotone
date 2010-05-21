@@ -708,12 +708,12 @@ CMD(clone, "clone", "", CMD_REF(network),
   // db URIs will work
   system_path start_dir(get_current_working_dir(), origin::system);
 
+  database_path_helper helper(app.lua);
+  helper.maybe_set_default_alias(app.opts);
+
   database db(app);
   db.create_if_not_exists();
   db.ensure_open();
-
-  // FIXME: newly created databases are not saved to _MTN/options since
-  // we're not updating app.opts yet
 
   // this is actually stupid, but app.opts.branch must be set here
   // otherwise it will not be written into _MTN/options, in case
