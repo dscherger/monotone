@@ -140,6 +140,7 @@ sub advanced_find($$$)
 	Gtk2->main_iteration();
     }
     $wm->make_busy($advanced_find, 0);
+    local $advanced_find->{in_cb} = 1;
     hide_find_text($advanced_find->{details_textview});
     $advanced_find->{window}->hide();
 

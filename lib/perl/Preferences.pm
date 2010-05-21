@@ -67,7 +67,7 @@ use warnings;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
-# Constants for the columns within the mime types liststore widget.
+# Constants for the columns within the MIME types liststore widget.
 
 use constant MTLS_NAME_COLUMN     => 0;
 use constant MTLS_PATTERNS_COLUMN => 1;
@@ -82,7 +82,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 use constant PREFERENCES_FORMAT_VERSION => 11;
 
-# Text viewable application mime types.
+# Text viewable application MIME types.
 
 my @text_viewable_app_mime_types =
     qw(postscript
@@ -239,6 +239,7 @@ sub preferences($)
 
 	if ($instance->{preferences_to_be_saved})
 	{
+	    local $instance->{in_cb} = 1;
 	    save_preferences_from_gui($instance);
 	    $valid = validate_preferences($instance);
 	}
@@ -250,6 +251,7 @@ sub preferences($)
     }
     while (! $valid);
     $wm->make_busy($instance, 0);
+    local $instance->{in_cb} = 1;
     $instance->{window}->hide();
 
     # Deal with the result.
@@ -557,23 +559,39 @@ sub mime_types_treeselection_changed_cb($$)
 	$entry_path = $paths[0]->to_string();
     }
 
-    # If the selection has changed then, if necessary, save any changes made
-    # and update the liststore before loading in the new entry.
+    # If the selection has changed then save any changes made and, if
+    # necessary, update the liststore before loading in the new entry.
 
     if (defined($instance->{selected_mime_types_entry})
 	&& (! defined($entry)
 	    || $entry != $instance->{selected_mime_types_entry}))
     {
+	my($iter,
+	   $new_helper,
+	   $new_patterns,
+	   $old_helper,
+	   $old_patterns);
+	$iter = $instance->{mime_types_liststore}->
+	    get_iter_from_string($instance->{selected_mime_types_path});
+	$old_helper =
+	    $instance->{selected_mime_types_entry}->{helper_application};
+	$old_patterns = $instance->{mime_types_treeview}->get_model()->
+	    get($iter, MTLS_PATTERNS_COLUMN);
 	save_current_mime_types_settings($instance);
-	$instance->{mime_types_liststore}->
-	    set($instance->{mime_types_liststore}->
-		get_iter_from_string($instance->{selected_mime_types_path}),
-		MTLS_PATTERNS_COLUMN,
-		join(" ",
-		     @{$instance->{selected_mime_types_entry}->
-		       {file_name_patterns}}),
-		MTLS_HELPER_COLUMN,
-		$instance->{selected_mime_types_entry}->{helper_application});
+	$new_helper =
+	    $instance->{selected_mime_types_entry}->{helper_application};
+	$new_patterns = join(" ",
+			     @{$instance->{selected_mime_types_entry}->
+			       {file_name_patterns}});
+	if ($old_helper ne $new_helper || $old_patterns ne $new_patterns)
+	{
+	    $instance->{mime_types_liststore}->
+		set($iter,
+		    MTLS_PATTERNS_COLUMN,
+		    $new_patterns,
+		    MTLS_HELPER_COLUMN,
+		    $new_helper);
+	}
     }
 
     # Load in the newly selected entry.
@@ -1093,7 +1111,7 @@ sub get_preferences_window($$)
 		       unless ($_[1]->{in_cb}); },
 	     $instance);
 
-	# Setup the mime types list.
+	# Setup the MIME types list.
 
 	$instance->{mime_types_liststore} =
 	    Gtk2::ListStore->new("Glib::String",
@@ -1143,6 +1161,49 @@ sub get_preferences_window($$)
 	    signal_connect("changed",
 			   \&mime_types_treeselection_changed_cb,
 			   $instance);
+
+	# Find all of the re-ordering treeview header buttons on the MIME types
+	# treeview and add a clicked callback so we can update any selection
+	# path when the order changes.
+
+	foreach my $col_nr (0 .. 2)
+	{
+
+	    my($button,
+	       $col);
+
+	    next unless (defined($col = $instance->{mime_types_treeview}->
+				 get_column($col_nr)));
+
+	    # Find the header button widget.
+
+	    for ($button = $col->get_widget();
+		 defined($button) && ! $button->isa("Gtk2::Button");
+		 $button = $button->get_parent())
+	    {
+	    }
+	    next unless (defined($button));
+
+	    # Attach the selection change tracking callback.
+
+	    $button->signal_connect
+		("clicked",
+		 sub {
+		     my($widget, $instance) = @_;
+		     return if ($instance->{in_cb});
+		     local $instance->{in_cb} = 1;
+		     my @paths;
+		     @paths = $instance->{mime_types_treeview}->
+			 get_selection()->get_selected_rows();
+		     if (scalar(@paths) > 0)
+		     {
+			 $instance->{selected_mime_types_path} =
+			     $paths[0]->to_string();
+		     }
+		 },
+		 $instance);
+
+	}
 
 	# Setup the file name patterns list.
 
