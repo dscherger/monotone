@@ -12,7 +12,7 @@
 
 bool parse_date (const std::string s, const std::string fmt, struct tm *tp)
 {
-  char *p = strptime(s.c_str(), fmt.c_str(), tb);
+  char *p = strptime(s.c_str(), fmt.c_str(), tp);
 
   return p != 0;
 }
