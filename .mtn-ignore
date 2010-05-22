@@ -4,6 +4,7 @@
 ^lib/perl/Monotone$
 ^lib/ui/annotate.png$
 ^lib/ui/diffs.png$
+^lib/ui/eye.png$
 ^lib/ui/external-diffs.png$
 ^lib/ui/line.png$
 ^lib/ui/monotone-viz.png$
