@@ -3775,7 +3775,8 @@ ids selected for comparison</property>
 			    <widget class="GtkButton" id="compare_button">
 			      <property name="visible">True</property>
 			      <property name="sensitive">False</property>
-			      <property name="tooltip" translatable="yes">Compare the two selected files</property>
+			      <property name="tooltip" translatable="yes">Compare the two selected
+revisions or files</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
 			      <property name="focus_on_click">False</property>

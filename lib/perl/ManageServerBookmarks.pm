@@ -424,8 +424,7 @@ sub get_manage_server_bookmarks_window($$)
 	register_help_callbacks
 	    ($instance,
 	     {widget   => undef,
-	      help_ref => __("mtnb-xxx")});
-# TBD
+	      help_ref => __("mtnb-gsc-menus")});
     }
 
     return $instance;

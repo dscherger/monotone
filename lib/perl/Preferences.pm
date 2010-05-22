@@ -1799,6 +1799,7 @@ sub upgrade_preferences($)
     }
     if ($preferences->{version} == 10)
     {
+	$preferences->{remote_connections} = 0;
 	$preferences->{server_bookmarks} = [];
     }
 
@@ -1872,6 +1873,7 @@ sub initialise_preferences()
 				 find_files_containing  => [],
 				 find_files_modified_by => [],
 				 find_text              => []},
+	 remote_connections  => 0,
 	 server_bookmarks    => []);
 
     return \%preferences;

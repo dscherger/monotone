@@ -133,11 +133,6 @@ use constant UI_DIR       => File::Spec->catfile(PREFIX_DIR,
 
 my $window_type = "main_window";
 
-# Whether Monotone can handle remote connections to servers (undefined for
-# don't know).
-
-my $mtn_supports_remote_connections;
-
 # The large logo used for the about dialog window.
 
 my $large_logo;
@@ -352,7 +347,7 @@ sub view_button_clicked_cb($$);
 	setup_mtn_object($mtn, $browser->{window});
 	$browser->{mtn} = $mtn;
 	$browser->{connect_to_server_menutiem}->set_sensitive(FALSE)
-	    if (! $mtn_supports_remote_connections);
+	    if (! $user_preferences->{remote_connections});
 	Glib::Idle->add
 	    (sub {
 		 my $browser = $_[0];
@@ -1575,13 +1570,9 @@ sub manifest_browser_treeselection_changed_cb($$)
     {
 	$browser->{file_being_viewed} = {short_name     => $short_name,
 					 manifest_entry => $manifest_entry};
+	$browser->{appbar}->clear_stack();
+	&{$browser->{update_handler}}($browser, FILE_CHANGED);
     }
-    else
-    {
-	$browser->{file_being_viewed} = {};
-    }
-    $browser->{appbar}->clear_stack();
-    &{$browser->{update_handler}}($browser, FILE_CHANGED);
 
 }
 #
@@ -1790,6 +1781,7 @@ sub get_browser_window(;$$$$$)
 			    "directory_up_button",
 			    "find_files_button",
 			    "show_line_numbers_togglebutton",
+			    "annotate_button",
 			    "manifest_browser_treeview",
 			    "file_view_scrolledwindow",
 			    "file_name_value_label",
@@ -2991,6 +2983,8 @@ sub update_browser_state($$)
 		    {
 			$widget->set_sensitive(TRUE);
 		    }
+		    $browser->{annotate_button}->set_sensitive(FALSE)
+			if (defined($browser->{mtn}->get_service_name()));
 		    enable_find_text($browser->{file_view_sv}, 1);
 		}
 
@@ -3384,6 +3378,7 @@ sub setup_mtn_object($$)
 
     my($mtn, $parent) = @_;
 
+    my $save_prefs;
     my $wm = WindowManager->instance();
 
     # Deal with branch suspend certificate settings.
@@ -3407,6 +3402,7 @@ sub setup_mtn_object($$)
 	    $wm->allow_input(sub { $dialog->run(); });
 	    $dialog->destroy();
 	    $user_preferences->{show_suspended} = 0;
+	    $save_prefs = 1;
 	    eval
 	    {
 		save_preferences($user_preferences);
@@ -3426,20 +3422,37 @@ sub setup_mtn_object($$)
 	}
     }
 
-    # Determine whether remote connections to servers are supported if we don't
-    # already know.
+    # Determine whether remote connections to servers are supported.
 
-    if (! defined($mtn_supports_remote_connections))
+    if (($mtn->supports(MTN_REMOTE_CONNECTIONS)
+	 && ! $user_preferences->{remote_connections})
+	|| (! $mtn->supports(MTN_REMOTE_CONNECTIONS)
+	    && $user_preferences->{remote_connections}))
     {
-	if ($mtn->supports(MTN_REMOTE_CONNECTIONS))
+	$user_preferences->{remote_connections} =
+	    $mtn->supports(MTN_REMOTE_CONNECTIONS) ? 1 : 0;
+	$save_prefs = 1;
+    }
+
+    # Save the user's preferences if they have been changed.
+
+    if ($save_prefs)
+    {
+	eval
 	{
-	    $mtn_supports_remote_connections = 1;
-	}
-	else
+	    save_preferences($user_preferences);
+	};
+	if ($@)
 	{
-	    $mtn_supports_remote_connections = 0;
-# TBD
-$mtn_supports_remote_connections = 1;
+	    chomp($@);
+	    my $dialog = Gtk2::MessageDialog->new
+		(undef,
+		 ["modal"],
+		 "warning",
+		 "close",
+		 __("Your preferences could not be saved:\n") . $@);
+	    $wm->allow_input(sub { $dialog->run(); });
+	    $dialog->destroy();
 	}
     }
 
@@ -3652,6 +3665,7 @@ sub setup_sigchld_handler($)
 				my $buffer;
 				sysread($reader, $buffer, 1);
 				&$handler();
-				return 1; });
+				return 1;
+			    });
 
 }
