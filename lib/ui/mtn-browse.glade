@@ -64,7 +64,7 @@
 			  <signal name="activate" handler="new_blank_menu_item_clicked_cb" last_modification_time="Thu, 05 Jun 2008 10:14:27 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image130">
+			    <widget class="GtkImage" id="image154">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-new</property>
 			      <property name="icon_size">1</property>
@@ -92,7 +92,7 @@
 			  <property name="use_underline">True</property>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image131">
+			    <widget class="GtkImage" id="image155">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-network</property>
 			      <property name="icon_size">1</property>
@@ -106,7 +106,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkImageMenuItem" id="close1">
+			<widget class="GtkImageMenuItem" id="close_menuitem">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_CLOSE_ITEM</property>
 			  <signal name="activate" handler="close_toolbutton_clicked_cb" last_modification_time="Fri, 25 Apr 2008 16:18:44 GMT"/>
@@ -127,7 +127,7 @@
 			  <signal name="activate" handler="quit_activate_cb" last_modification_time="Fri, 20 Jun 2008 12:07:24 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image132">
+			    <widget class="GtkImage" id="image156">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-quit</property>
 			      <property name="icon_size">1</property>
@@ -185,6 +185,28 @@
 	      </child>
 
 	      <child>
+		<widget class="GtkMenuItem" id="tools1">
+		  <property name="visible">True</property>
+		  <property name="label" translatable="yes">_Tools</property>
+		  <property name="use_underline">True</property>
+
+		  <child>
+		    <widget class="GtkMenu" id="tools1_menu">
+
+		      <child>
+			<widget class="GtkMenuItem" id="compare_arbitrary_revisions_menuitem">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">_Compare Arbitrary Revisions</property>
+			  <property name="use_underline">True</property>
+			  <signal name="activate" handler="compare_arbitrary_revisions_activate_cb" last_modification_time="Sat, 22 May 2010 14:33:22 GMT"/>
+			</widget>
+		      </child>
+		    </widget>
+		  </child>
+		</widget>
+	      </child>
+
+	      <child>
 		<widget class="GtkMenuItem" id="help1">
 		  <property name="visible">True</property>
 		  <property name="stock_item">GNOMEUIINFO_MENU_HELP_TREE</property>
@@ -201,7 +223,7 @@
 			  <accelerator key="F1" modifiers="0" signal="activate"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image133">
+			    <widget class="GtkImage" id="image157">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-help</property>
 			      <property name="icon_size">1</property>
@@ -223,7 +245,7 @@
 			  <accelerator key="F1" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image134">
+			    <widget class="GtkImage" id="image158">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-help</property>
 			      <property name="icon_size">1</property>
@@ -245,7 +267,7 @@
 			  <accelerator key="F1" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image135">
+			    <widget class="GtkImage" id="image159">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-help</property>
 			      <property name="icon_size">1</property>
@@ -272,7 +294,7 @@
 			  <signal name="activate" handler="home_page_activate_cb" last_modification_time="Sun, 15 Feb 2009 17:15:45 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image136">
+			    <widget class="GtkImage" id="image160">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-home</property>
 			      <property name="icon_size">1</property>
@@ -9897,6 +9919,393 @@ Monotone server from the list</property>
 	  <property name="padding">0</property>
 	  <property name="expand">True</property>
 	  <property name="fill">True</property>
+	</packing>
+      </child>
+    </widget>
+  </child>
+</widget>
+
+<widget class="GtkWindow" id="compare_arbitrary_revisions_window">
+  <property name="visible">True</property>
+  <property name="title" translatable="yes">Compare Arbitrary Revisions</property>
+  <property name="type">GTK_WINDOW_TOPLEVEL</property>
+  <property name="window_position">GTK_WIN_POS_NONE</property>
+  <property name="modal">False</property>
+  <property name="resizable">False</property>
+  <property name="destroy_with_parent">False</property>
+  <property name="icon">mtn-browse.png</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
+
+  <child>
+    <widget class="GtkFrame" id="arbitrary_compare_frame">
+      <property name="border_width">5</property>
+      <property name="visible">True</property>
+      <property name="label_xalign">0</property>
+      <property name="label_yalign">0.5</property>
+      <property name="shadow_type">GTK_SHADOW_ETCHED_IN</property>
+
+      <child>
+	<widget class="GtkAlignment" id="arbitrary_compare_alignment">
+	  <property name="visible">True</property>
+	  <property name="xalign">0.5</property>
+	  <property name="yalign">0.5</property>
+	  <property name="xscale">1</property>
+	  <property name="yscale">1</property>
+	  <property name="top_padding">0</property>
+	  <property name="bottom_padding">0</property>
+	  <property name="left_padding">0</property>
+	  <property name="right_padding">0</property>
+
+	  <child>
+	    <widget class="GtkHBox" id="arbitrary_compare_hbox">
+	      <property name="border_width">5</property>
+	      <property name="visible">True</property>
+	      <property name="homogeneous">False</property>
+	      <property name="spacing">5</property>
+
+	      <child>
+		<widget class="GtkTable" id="arbitrary_revision_ids_table">
+		  <property name="visible">True</property>
+		  <property name="n_rows">2</property>
+		  <property name="n_columns">3</property>
+		  <property name="homogeneous">False</property>
+		  <property name="row_spacing">0</property>
+		  <property name="column_spacing">5</property>
+
+		  <child>
+		    <widget class="GtkScrolledWindow" id="arbitrary_revision_id_1_value_scrolledwindow">
+		      <property name="width_request">250</property>
+		      <property name="visible">True</property>
+		      <property name="can_focus">True</property>
+		      <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
+		      <property name="vscrollbar_policy">GTK_POLICY_NEVER</property>
+		      <property name="shadow_type">GTK_SHADOW_NONE</property>
+		      <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
+
+		      <child>
+			<widget class="GtkLayout" id="arbitrary_revision_id_1_value_layout">
+			  <property name="visible">True</property>
+			  <property name="width">1</property>
+			  <property name="height">1</property>
+			  <property name="hadjustment">0 0 250 10 225 250</property>
+			  <property name="vadjustment">0 0 30 10 27 30</property>
+
+			  <child>
+			    <widget class="GtkEventBox" id="arbitrary_revision_id_1_value_eventbox">
+			      <property name="width_request">0</property>
+			      <property name="height_request">0</property>
+			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">File id of the first file that is to be compared</property>
+			      <property name="visible_window">True</property>
+			      <property name="above_child">False</property>
+
+			      <child>
+				<widget class="GtkLabel" id="arbitrary_revision_id_1_value_label">
+				  <property name="width_request">0</property>
+				  <property name="height_request">0</property>
+				  <property name="visible">True</property>
+				  <property name="can_focus">True</property>
+				  <property name="label" translatable="yes"></property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">True</property>
+				  <property name="xalign">0</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
+			    </widget>
+			    <packing>
+			      <property name="x">0</property>
+			      <property name="y">7</property>
+			    </packing>
+			  </child>
+			</widget>
+		      </child>
+		    </widget>
+		    <packing>
+		      <property name="left_attach">1</property>
+		      <property name="right_attach">2</property>
+		      <property name="top_attach">0</property>
+		      <property name="bottom_attach">1</property>
+		      <property name="y_options">fill</property>
+		    </packing>
+		  </child>
+
+		  <child>
+		    <widget class="GtkScrolledWindow" id="arbitrary_revision_id_2_value_scrolledwindow">
+		      <property name="visible">True</property>
+		      <property name="can_focus">True</property>
+		      <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
+		      <property name="vscrollbar_policy">GTK_POLICY_NEVER</property>
+		      <property name="shadow_type">GTK_SHADOW_NONE</property>
+		      <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
+
+		      <child>
+			<widget class="GtkLayout" id="arbitrary_revision_id_2_value_layout">
+			  <property name="visible">True</property>
+			  <property name="width">1</property>
+			  <property name="height">1</property>
+			  <property name="hadjustment">0 0 250 10 225 250</property>
+			  <property name="vadjustment">0 0 30 10 27 30</property>
+
+			  <child>
+			    <widget class="GtkEventBox" id="arbitrary_revision_id_2_value_eventbox">
+			      <property name="width_request">0</property>
+			      <property name="height_request">0</property>
+			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">File id of the second file that is to be compared</property>
+			      <property name="visible_window">True</property>
+			      <property name="above_child">False</property>
+
+			      <child>
+				<widget class="GtkLabel" id="arbitrary_revision_id_2_value_label">
+				  <property name="width_request">0</property>
+				  <property name="height_request">0</property>
+				  <property name="visible">True</property>
+				  <property name="can_focus">True</property>
+				  <property name="label" translatable="yes"></property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">True</property>
+				  <property name="xalign">0</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
+			    </widget>
+			    <packing>
+			      <property name="x">0</property>
+			      <property name="y">7</property>
+			    </packing>
+			  </child>
+			</widget>
+		      </child>
+		    </widget>
+		    <packing>
+		      <property name="left_attach">1</property>
+		      <property name="right_attach">2</property>
+		      <property name="top_attach">1</property>
+		      <property name="bottom_attach">2</property>
+		      <property name="y_options">fill</property>
+		    </packing>
+		  </child>
+
+		  <child>
+		    <widget class="GtkEventBox" id="arbitrary_revision_id_1_label_eventbox">
+		      <property name="visible">True</property>
+		      <property name="tooltip" translatable="yes">The first of two revision ids
+selected for comparison</property>
+		      <property name="visible_window">True</property>
+		      <property name="above_child">False</property>
+
+		      <child>
+			<widget class="GtkLabel" id="arbitrary_revision_id_1_label">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">First revision id:</property>
+			  <property name="use_underline">False</property>
+			  <property name="use_markup">False</property>
+			  <property name="justify">GTK_JUSTIFY_LEFT</property>
+			  <property name="wrap">False</property>
+			  <property name="selectable">False</property>
+			  <property name="xalign">0</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+		      </child>
+		    </widget>
+		    <packing>
+		      <property name="left_attach">0</property>
+		      <property name="right_attach">1</property>
+		      <property name="top_attach">0</property>
+		      <property name="bottom_attach">1</property>
+		      <property name="x_options">fill</property>
+		      <property name="y_options">fill</property>
+		    </packing>
+		  </child>
+
+		  <child>
+		    <widget class="GtkEventBox" id="arbitrary_revision_id_2_label_eventbox">
+		      <property name="visible">True</property>
+		      <property name="tooltip" translatable="yes">The second of two revision
+ids selected for comparison</property>
+		      <property name="visible_window">True</property>
+		      <property name="above_child">False</property>
+
+		      <child>
+			<widget class="GtkLabel" id="arbitrary_revision_id_2_label">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">Second revision id:</property>
+			  <property name="use_underline">False</property>
+			  <property name="use_markup">False</property>
+			  <property name="justify">GTK_JUSTIFY_LEFT</property>
+			  <property name="wrap">False</property>
+			  <property name="selectable">False</property>
+			  <property name="xalign">0</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+		      </child>
+		    </widget>
+		    <packing>
+		      <property name="left_attach">0</property>
+		      <property name="right_attach">1</property>
+		      <property name="top_attach">1</property>
+		      <property name="bottom_attach">2</property>
+		      <property name="x_options">fill</property>
+		      <property name="y_options">fill</property>
+		    </packing>
+		  </child>
+
+		  <child>
+		    <widget class="GtkButton" id="arbitrary_revision_1_advanced_find_button">
+		      <property name="visible">True</property>
+		      <property name="tooltip" translatable="yes">Select a revision using
+advanced selection criteria</property>
+		      <property name="can_focus">True</property>
+		      <property name="relief">GTK_RELIEF_NONE</property>
+		      <property name="focus_on_click">True</property>
+
+		      <child>
+			<widget class="GtkImage" id="image140">
+			  <property name="visible">True</property>
+			  <property name="stock">gtk-find</property>
+			  <property name="icon_size">4</property>
+			  <property name="xalign">0.5</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+		      </child>
+		    </widget>
+		    <packing>
+		      <property name="left_attach">2</property>
+		      <property name="right_attach">3</property>
+		      <property name="top_attach">0</property>
+		      <property name="bottom_attach">1</property>
+		      <property name="x_options">fill</property>
+		      <property name="y_options"></property>
+		    </packing>
+		  </child>
+
+		  <child>
+		    <widget class="GtkButton" id="arbitrary_revision_2_advanced_find_button">
+		      <property name="visible">True</property>
+		      <property name="tooltip" translatable="yes">Select a revision using
+advanced selection criteria</property>
+		      <property name="can_focus">True</property>
+		      <property name="relief">GTK_RELIEF_NONE</property>
+		      <property name="focus_on_click">True</property>
+
+		      <child>
+			<widget class="GtkImage" id="image141">
+			  <property name="visible">True</property>
+			  <property name="stock">gtk-find</property>
+			  <property name="icon_size">4</property>
+			  <property name="xalign">0.5</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+		      </child>
+		    </widget>
+		    <packing>
+		      <property name="left_attach">2</property>
+		      <property name="right_attach">3</property>
+		      <property name="top_attach">1</property>
+		      <property name="bottom_attach">2</property>
+		      <property name="x_options">fill</property>
+		      <property name="y_options"></property>
+		    </packing>
+		  </child>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">True</property>
+		  <property name="fill">True</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkTable" id="arbitrary_compare_table">
+		  <property name="visible">True</property>
+		  <property name="n_rows">1</property>
+		  <property name="n_columns">1</property>
+		  <property name="homogeneous">False</property>
+		  <property name="row_spacing">0</property>
+		  <property name="column_spacing">5</property>
+
+		  <child>
+		    <widget class="GtkButton" id="arbitrary_compare_button">
+		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
+		      <property name="tooltip" translatable="yes">Compare the two
+selected revisions</property>
+		      <property name="can_focus">True</property>
+		      <property name="relief">GTK_RELIEF_NONE</property>
+		      <property name="focus_on_click">False</property>
+		      <signal name="clicked" handler="compare_button_clicked_cb" last_modification_time="Sat, 22 May 2010 14:49:42 GMT"/>
+
+		      <child>
+			<widget class="GtkImage" id="image139">
+			  <property name="visible">True</property>
+			  <property name="pixbuf">diffs.png</property>
+			  <property name="xalign">0.5</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+		      </child>
+		    </widget>
+		    <packing>
+		      <property name="left_attach">0</property>
+		      <property name="right_attach">1</property>
+		      <property name="top_attach">0</property>
+		      <property name="bottom_attach">1</property>
+		      <property name="x_options">fill</property>
+		      <property name="y_options"></property>
+		    </packing>
+		  </child>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">True</property>
+		</packing>
+	      </child>
+	    </widget>
+	  </child>
+	</widget>
+      </child>
+
+      <child>
+	<widget class="GtkLabel" id="arbitrary_compare_label">
+	  <property name="visible">True</property>
+	  <property name="label" translatable="yes">&lt;b&gt;Compare&lt;/b&gt;</property>
+	  <property name="use_underline">False</property>
+	  <property name="use_markup">True</property>
+	  <property name="justify">GTK_JUSTIFY_LEFT</property>
+	  <property name="wrap">False</property>
+	  <property name="selectable">False</property>
+	  <property name="xalign">0.5</property>
+	  <property name="yalign">0.5</property>
+	  <property name="xpad">0</property>
+	  <property name="ypad">0</property>
+	</widget>
+	<packing>
+	  <property name="type">label_item</property>
 	</packing>
       </child>
     </widget>

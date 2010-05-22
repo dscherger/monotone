@@ -110,22 +110,31 @@ sub advanced_find($$$)
 
 	local $advanced_find->{in_cb} = 1;
 
-	# Update it with any preset values.
+	# Update it with any preset values if they exist.
 
-	$advanced_find->{branch_combo_details}->{preset} = 1;
-	$advanced_find->{branch_combo_details}->{complete} =
-	    $browser->{branch_combo_details}->{complete};
-	$advanced_find->{branch_combo_details}->{value} =
-	    $browser->{branch_combo_details}->{value};
+	if (exists($browser->{branch_combo_details}))
+	{
+	    $advanced_find->{branch_combo_details}->{preset} = 1;
+	    $advanced_find->{branch_combo_details}->{complete} =
+		$browser->{branch_combo_details}->{complete};
+	    $advanced_find->{branch_combo_details}->{value} =
+		$browser->{branch_combo_details}->{value};
 
-	$advanced_find->{revision_combo_details}->{preset} = 1;
-	$advanced_find->{revision_combo_details}->{complete} =
-	    $browser->{revision_combo_details}->{complete};
-	$advanced_find->{revision_combo_details}->{value} =
-	    $browser->{revision_combo_details}->{value};
+	    $advanced_find->{revision_combo_details}->{preset} = 1;
+	    $advanced_find->{revision_combo_details}->{complete} =
+		$browser->{revision_combo_details}->{complete};
+	    $advanced_find->{revision_combo_details}->{value} =
+		$browser->{revision_combo_details}->{value};
 
-	$advanced_find->{tagged_checkbutton}->
-	    set_active($browser->{tagged_checkbutton}->get_active());
+	    $advanced_find->{tagged_checkbutton}->
+		set_active($browser->{tagged_checkbutton}->get_active());
+	}
+	else
+	{
+	    $advanced_find->{branch_combo_details}->{preset} = 0;
+	    $advanced_find->{revision_combo_details}->{preset} = 0;
+	    $advanced_find->{tagged_checkbutton}->set_active(FALSE);
+	}
 
 	&{$advanced_find->{update_handler}}($advanced_find, NEW_FIND);
 
@@ -793,6 +802,12 @@ sub get_advanced_find_window($)
     $instance->{done} = 0;
     $instance->{selected} = 0;
     $instance->{stop} = 0;
+
+    # Make sure that the branch comboboxentry has the focus and not the cancel
+    # button.
+
+    $instance->{branch_comboboxentry}->child()->grab_focus();
+    $instance->{branch_comboboxentry}->child()->set_position(-1);
 
     return $instance;
 

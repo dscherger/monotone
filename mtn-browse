@@ -145,6 +145,7 @@ sub about_activate_cb($$);
 sub advanced_find_button_clicked_cb($$);
 sub annotate_button_clicked_cb($$);
 sub close_toolbutton_clicked_cb($$);
+sub compare_arbitrary_revisions_activate_cb($$);
 sub connect_to_server_activate_cb($$);
 sub context_help_activate_cb($$);
 sub create_browser_widgets();
@@ -578,6 +579,33 @@ sub quit_activate_cb($$)
 	     return;
 	 });
     Gtk2->main_quit();
+
+}
+#
+##############################################################################
+#
+#   Routine      - compare_arbitrary_revisions_activate_cb
+#
+#   Description  - Callback routine called when the user selects the compare
+#                  arbitrary revisions menu option.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub compare_arbitrary_revisions_activate_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    display_arbitrary_revision_comparison($browser->{mtn});
 
 }
 #
@@ -1768,7 +1796,9 @@ sub get_browser_window(;$$$$$)
 	$browser->{window} = $browser->{glade}->get_widget($window_type);
 	foreach my $widget ("appbar",
 			    "connect_to_server_menutiem",
+			    "close_menuitem",
 			    "file_encoding_menuitem",
+			    "compare_arbitrary_revisions_menuitem",
 			    "main_vbox",
 			    "browser_hpaned",
 			    "close_toolbutton",
@@ -2342,6 +2372,9 @@ sub update_browser_state($$)
 
 	    # Disable the browser as no database is associated with it.
 
+	    $browser->{close_menuitem}->set_sensitive(FALSE);
+	    $browser->{compare_arbitrary_revisions_menuitem}->
+		set_sensitive(FALSE);
 	    $browser->{close_toolbutton}->set_sensitive(FALSE);
 	    $browser->{reload_toolbutton}->set_sensitive(FALSE);
 	    $browser->{main_vbox}->set_sensitive(FALSE);
@@ -2353,6 +2386,9 @@ sub update_browser_state($$)
 
 	    # Enable the browser as there is a database associated with it.
 
+	    $browser->{close_menuitem}->set_sensitive(TRUE);
+	    $browser->{compare_arbitrary_revisions_menuitem}->
+		set_sensitive(TRUE);
 	    $browser->{close_toolbutton}->set_sensitive(TRUE);
 	    $browser->{reload_toolbutton}->set_sensitive(TRUE);
 	    $browser->{main_vbox}->set_sensitive(TRUE);

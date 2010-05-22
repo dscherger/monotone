@@ -80,6 +80,7 @@ my $__select_id_rev_2_ttip  = __("Select this revision for comparison\n"
 
 # Public routines.
 
+sub display_arbitrary_revision_comparison($);
 sub display_file_change_history($$$);
 sub display_renamed_file_comparison($$$$$$);
 sub display_revision_change_history($$$);
@@ -87,11 +88,13 @@ sub display_revision_comparison($$$;$);
 
 # Private routines.
 
+sub compare_arbitrary_revision_advanced_find_button_clicked_cb($$);
 sub compare_button_clicked_cb($$);
 sub comparison_revision_change_log_button_clicked_cb($$);
 sub external_diffs($$$$$$);
 sub external_diffs_button_clicked_cb($$);
 sub file_comparison_combobox_changed_cb($$);
+sub get_compare_arbitrary_revisions_window();
 sub get_file_history_helper($$$);
 sub get_history_window();
 sub get_revision_comparison_window($);
@@ -1131,6 +1134,36 @@ sub display_renamed_file_comparison($$$$$$)
 #
 ##############################################################################
 #
+#   Routine      - display_arbitrary_revision_comparison
+#
+#   Description  - Display a window that allows the user to select two
+#                  arbitrary revisions for comparison.
+#
+#   Data         - $mtn : The Monotone::AutomateStdio object that is to be
+#                         used to do the comparison.
+#
+##############################################################################
+
+
+
+sub display_arbitrary_revision_comparison($)
+{
+
+    my $mtn = $_[0];
+
+    my $instance;
+
+    $instance = get_compare_arbitrary_revisions_window();
+    local $instance->{in_cb} = 1;
+
+    $instance->{mtn} = $mtn;
+    $instance->{first_revision_id} = "";
+    $instance->{second_revision_id} = "";
+
+}
+#
+##############################################################################
+#
 #   Routine      - history_list_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on any of the
@@ -1264,6 +1297,81 @@ sub history_list_button_clicked_cb($$)
 
 	display_change_log($instance->{mtn}, $revision_id);
 
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - compare_arbitrary_revision_advanced_find_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on either of
+#                  the advanced find buttons displayed in the compare
+#                  arbitrary revisions window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $details : A reference to an anonymous hash containing the
+#                             window instance and the number of the button
+#                             pressed.
+#
+##############################################################################
+
+
+
+sub compare_arbitrary_revision_advanced_find_button_clicked_cb($$)
+{
+
+    my($widget, $details) = @_;
+
+    my(@dummy,
+       $instance,
+       $revision_id);
+
+    $instance = $details->{instance};
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    # Let the user choose the revision (we aren't interested in the branch
+    # name(s)) and then store and display the result.
+
+    if (advanced_find($instance, \$revision_id, \@dummy))
+    {
+	if ($details->{button} == 1)
+	{
+	    $instance->{first_revision_id} = $revision_id;
+	    set_label_value($instance->{arbitrary_revision_id_1_value_label},
+			    $revision_id);
+	    if ($instance->{first_revision_id}
+		eq $instance->{second_revision_id})
+	    {
+		$instance->{second_revision_id} = "";
+		set_label_value
+		    ($instance->{arbitrary_revision_id_2_value_label}, "");
+	    }
+	}
+	else
+	{
+	    $instance->{second_revision_id} = $revision_id;
+	    set_label_value($instance->{arbitrary_revision_id_2_value_label},
+			    $revision_id);
+	    if ($instance->{second_revision_id}
+		eq $instance->{first_revision_id})
+	    {
+		$instance->{first_revision_id} = "";
+		set_label_value
+		    ($instance->{arbitrary_revision_id_1_value_label}, "");
+	    }
+	}
+	if ($instance->{first_revision_id} ne ""
+	    && $instance->{second_revision_id} ne "")
+	{
+	    $instance->{arbitrary_compare_button}->set_sensitive(TRUE);
+	}
+	else
+	{
+	    $instance->{arbitrary_compare_button}->set_sensitive(FALSE);
+	}
     }
 
 }
@@ -1560,7 +1668,7 @@ sub get_history_window()
     my $window_type = "history_window";
     my $wm = WindowManager->instance();
 
-    # Create a new file history window if an unused one wasn't found, otherwise
+    # Create a new history window if an unused one wasn't found, otherwise
     # reuse an existing unused one.
 
     if (! defined($instance = $wm->find_unused($window_type)))
@@ -1595,7 +1703,7 @@ sub get_history_window()
 	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
 	}
 
-	# Setup the file history callbacks.
+	# Setup the history callbacks.
 
 	$instance->{window}->signal_connect
 	    ("delete_event",
@@ -1615,7 +1723,7 @@ sub get_history_window()
 	$instance->{stop_button}->signal_connect
 	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
 
-	# Setup the file history viewer.
+	# Setup the history viewer.
 
 	$instance->{history_buffer} =
 	    $instance->{history_textview}->get_buffer();
@@ -1781,6 +1889,118 @@ sub get_revision_history_helper($$)
 	get_revision_history_helper($instance, $parent)
 	    if (! exists($instance->{revision_hits}->{$parent}));
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_compare_arbitrary_revisions_window
+#
+#   Description  - Creates or prepares an existing compare arbitrary revisions
+#                  window for use.
+#
+#   Data         - Return Value : A reference to the newly created or unused
+#                                 compare arbitrary revisions instance record.
+#
+##############################################################################
+
+
+
+sub get_compare_arbitrary_revisions_window()
+{
+
+    my $instance;
+    my $window_type = "compare_arbitrary_revisions_window";
+    my $wm = WindowManager->instance();
+
+    # Create a new file history window if an unused one wasn't found, otherwise
+    # reuse an existing unused one.
+
+    if (! defined($instance = $wm->find_unused($window_type)))
+    {
+	$instance = {};
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file,
+						 $window_type,
+						 APPLICATION_NAME);
+
+	# Flag to stop recursive calling of callbacks.
+
+	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
+
+	# Connect Glade registered signal handlers.
+
+	glade_signal_autoconnect($instance->{glade}, $instance);
+
+	# Get the widgets that we are interested in.
+
+	$instance->{window} = $instance->{glade}->get_widget($window_type);
+	foreach my $widget ("arbitrary_revision_id_1_value_label",
+			    "arbitrary_revision_id_2_value_label",
+			    "arbitrary_revision_1_advanced_find_button",
+			    "arbitrary_revision_2_advanced_find_button",
+			    "arbitrary_compare_button")
+	{
+	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
+	}
+
+	# Setup the arbitrary compare callbacks.
+
+	$instance->{window}->signal_connect
+	    ("delete_event",
+	     sub {
+		 my($widget, $event, $instance) = @_;
+		 return TRUE if ($instance->{in_cb});
+		 local $instance->{in_cb} = 1;
+		 $widget->hide();
+		 $instance->{mtn} = undef;
+		 return TRUE;
+	     },
+	     $instance);
+	foreach my $button (1 .. 2)
+	{
+	    my $widget =
+		"arbitrary_revision_" . $button . "_advanced_find_button";
+	    $instance->{$widget}->signal_connect
+		("clicked",
+		 \&compare_arbitrary_revision_advanced_find_button_clicked_cb,
+		 {instance => $instance,
+		  button   => $button});
+	}
+
+	# Display the window.
+
+	$instance->{window}->show_all();
+	$instance->{window}->present();
+
+	# Register the window for management and set up the help callbacks.
+
+	$wm->manage($instance,
+		    $window_type,
+		    $instance->{window});
+	# TBD
+	register_help_callbacks
+	    ($instance,
+	     {widget   => "stop_button",
+	      help_ref => __("mtnb-lachc-history-buttons")},
+	     {widget   => "compare_button",
+	      help_ref => __("mtnb-lachc-history-buttons")},
+	     {widget   => undef,
+	      help_ref => __("mtnb-lachc-the-revision-and-file-history-"
+			     . "windows")});
+    }
+    else
+    {
+	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
+	$instance->{arbitrary_compare_button}->set_sensitive(FALSE);
+	set_label_value($instance->{arbitrary_revision_id_1_value_label}, "");
+	set_label_value($instance->{arbitrary_revision_id_2_value_label}, "");
+	$instance->{window}->show_all();
+	$instance->{window}->present();
+    }
+
+    return $instance;
 
 }
 #
