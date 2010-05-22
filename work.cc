@@ -569,6 +569,9 @@ workspace::get_options(options & opts)
   if (!opts.dbname_given)
     {
       opts.dbname = cur_opts.dbname;
+      opts.dbname_alias = cur_opts.dbname_alias;
+      opts.dbname_type = cur_opts.dbname_type;
+      opts.dbname_given = cur_opts.dbname_type;
     }
 
   if (!opts.key_dir_given && !opts.conf_dir_given && cur_opts.key_dir_given)
