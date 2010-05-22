@@ -510,6 +510,10 @@ database::init()
   system_path dbpath;
   helper.get_database_path(opts, dbpath);
 
+  // FIXME: for all :memory: databases an empty path is returned above, thus
+  // all requests for a :memory: database point to the same database
+  // implementation. This means we cannot use two different memory databases
+  // within the same monotone process
   if (dbcache.find(dbpath) == dbcache.end())
     {
       L(FL("creating new database_impl instance for %s") % dbpath);
@@ -4716,8 +4720,12 @@ database_path_helper::get_database_path(options const & opts, system_path & path
       return;
     }
 
-  E(opts.dbname_type == managed_db, origin::internal,
-    F("cannot determine full path for this database type"));
+  if (opts.dbname_type == memory_db)
+    {
+      return;
+    }
+
+  I(opts.dbname_type == managed_db);
 
   path_component basename;
   validate_and_clean_alias(opts.dbname_alias, basename);
