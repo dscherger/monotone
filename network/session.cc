@@ -14,6 +14,7 @@
 #include "key_store.hh"
 #include "database.hh"
 #include "keys.hh"
+#include "lazy_rng.hh"
 #include "lua_hooks.hh"
 #include "network/automate_session.hh"
 #include "network/netsync_session.hh"
@@ -81,8 +82,8 @@ session::mk_nonce()
   char buf[constants::merkle_hash_length_in_bytes];
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
-                           constants::merkle_hash_length_in_bytes);
+  lazy_rng::get().randomize(reinterpret_cast<Botan::byte *>(buf),
+                            constants::merkle_hash_length_in_bytes);
 #else
   Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
                                constants::merkle_hash_length_in_bytes);

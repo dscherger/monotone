@@ -49,6 +49,7 @@
 #include "safe_map.hh"
 #include "sanity.hh"
 #include "migration.hh"
+#include "simplestring_xform.hh"
 #include "transforms.hh"
 #include "ui.hh" // tickers
 #include "vocab.hh"
@@ -209,7 +210,7 @@ class database_impl
 
   // for scoped_ptr's sake
 public:
-  explicit database_impl(system_path const & f, bool mem,
+  explicit database_impl(system_path const & f, db_type t,
                          system_path const & roster_cache_performance_log);
   ~database_impl();
 
@@ -218,8 +219,8 @@ private:
   //
   // --== Opening the database and schema checking ==--
   //
-  system_path const filename;
-  bool use_memory_db;
+  system_path filename;
+  db_type type;
   struct sqlite3 * __sql;
 
   void install_functions();
@@ -459,10 +460,10 @@ sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
 }
 #endif
 
-database_impl::database_impl(system_path const & f, bool mem,
+database_impl::database_impl(system_path const & f, db_type t,
                              system_path const & roster_cache_performance_log) :
   filename(f),
-  use_memory_db(mem),
+  type(t),
   __sql(NULL),
   transaction_level(0),
   roster_cache(constants::db_roster_cache_sz,
@@ -488,31 +489,46 @@ database_impl::~database_impl()
     close();
 }
 
-struct database_cache
-{
-  map<system_path, boost::shared_ptr<database_impl> > dbs;
-};
+database_cache database::dbcache;
 
 database::database(app_state & app)
-  : lua(app.lua)
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  , rng(app.rng)
-#endif
+  : opts(app.opts), lua(app.lua)
 {
+  init();
+}
 
-  if (!app.dbcache)
-    app.dbcache.reset(new database_cache);
+database::database(options const & o, lua_hooks & l)
+  : opts(o), lua(l)
+{
+  init();
+}
 
-  boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
-  if (!i)
-    i.reset(new database_impl(app.opts.dbname, app.opts.dbname_is_memory,
-                              app.opts.roster_cache_performance_log));
+void
+database::init()
+{
+  database_path_helper helper(lua);
+  system_path dbpath;
+  helper.get_database_path(opts, dbpath);
 
-  imp = i;
+  if (dbcache.find(dbpath) == dbcache.end())
+    {
+      L(FL("creating new database_impl instance for %s") % dbpath);
+      dbcache.insert(make_pair(dbpath, boost::shared_ptr<database_impl>(
+        new database_impl(dbpath, opts.dbname_type, opts.roster_cache_performance_log)
+      )));
+    }
+
+  imp = dbcache[dbpath];
 }
 
 database::~database()
 {}
+
+void
+database::reset_cache()
+{
+  dbcache.clear();
+}
 
 system_path
 database::get_filename()
@@ -523,7 +539,7 @@ database::get_filename()
 bool
 database::is_dbfile(any_path const & file)
 {
-  if (imp->use_memory_db)
+  if (imp->type == memory_db)
     return false;
   system_path fn(file); // canonicalize
   bool same = (imp->filename == fn);
@@ -535,7 +551,18 @@ database::is_dbfile(any_path const & file)
 bool
 database::database_specified()
 {
-  return imp->use_memory_db || !imp->filename.empty();
+  return imp->type == memory_db || !imp->filename.empty();
+}
+
+void
+database::create_if_not_exists()
+{
+  imp->check_filename();
+  if (!file_exists(imp->filename))
+    {
+      P(F("initializing new database '%s'") % imp->filename);
+      initialize();
+    }
 }
 
 void
@@ -614,7 +641,7 @@ database_impl::sql(enum open_mode mode)
 {
   if (! __sql)
     {
-      if (use_memory_db)
+      if (type == memory_db)
         {
           open();
 
@@ -3235,7 +3262,7 @@ database::encrypt_rsa(key_id const & pub_id,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
-          plaintext.size(), rng->get());
+          plaintext.size(), lazy_rng::get());
 #else
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
@@ -3827,7 +3854,7 @@ namespace {
     set<key_id> bad_sigs;
     set<key_id> unknown_sigs;
   };
-  
+
   // returns *one* of each trusted cert key/value
   // if two keys signed the same thing, we get two certs as input and
   // just pick one (assuming neither is invalid) to use in the output
@@ -4292,6 +4319,87 @@ database::clear_var(var_key const & key)
                % blob(key.second()));
 }
 
+#define KNOWN_WORKSPACES_KEY                        \
+  var_key(make_pair(                                \
+    var_domain("database", origin::internal),       \
+    var_name("known-workspaces", origin::internal)  \
+  ))
+
+void
+database::register_workspace(system_path const & path)
+{
+  var_value val;
+  if (var_exists(KNOWN_WORKSPACES_KEY))
+    get_var(KNOWN_WORKSPACES_KEY, val);
+
+  vector<string> workspaces;
+  split_into_lines(val(), workspaces);
+
+  vector<string>::iterator pos =
+    find(workspaces.begin(),
+         workspaces.end(),
+         path.as_internal());
+  if (pos == workspaces.end())
+    workspaces.push_back(path.as_internal());
+
+  string ws;
+  join_lines(workspaces, ws);
+
+  set_var(KNOWN_WORKSPACES_KEY, var_value(ws, origin::internal));
+}
+
+void
+database::unregister_workspace(system_path const & path)
+{
+  if (var_exists(KNOWN_WORKSPACES_KEY))
+    {
+      var_value val;
+      get_var(KNOWN_WORKSPACES_KEY, val);
+
+      vector<string> workspaces;
+      split_into_lines(val(), workspaces);
+
+      vector<string>::iterator pos =
+        find(workspaces.begin(),
+             workspaces.end(),
+             path.as_internal());
+      if (pos != workspaces.end())
+        workspaces.erase(pos);
+
+      string ws;
+      join_lines(workspaces, ws);
+
+      set_var(KNOWN_WORKSPACES_KEY, var_value(ws, origin::internal));
+    }
+}
+
+void
+database::get_registered_workspaces(vector<system_path> & paths)
+{
+  if (var_exists(KNOWN_WORKSPACES_KEY))
+    {
+      var_value val;
+      get_var(KNOWN_WORKSPACES_KEY, val);
+
+      vector<string> workspaces;
+      split_into_lines(val(), workspaces);
+
+      for (vector<string>::const_iterator i = workspaces.begin();
+           i != workspaces.end(); ++i)
+        {
+          system_path workspace_path(*i, origin::database);
+          if (!directory_exists(workspace_path / bookkeeping_root_component))
+            {
+              L(FL("ignoring missing workspace '%s'") % workspace_path);
+              continue;
+            }
+          paths.push_back(workspace_path);
+        }
+    }
+}
+
+#undef KNOWN_WORKSPACES_KEY
+
 // branches
 
 outdated_indicator
@@ -4482,11 +4590,11 @@ database_impl::check_db_exists()
     case path::directory:
       if (directory_is_workspace(filename))
         {
-          system_path workspace_database;
-          workspace::get_database_option(filename, workspace_database);
-          E(workspace_database.empty(), origin::user,
+          options opts;
+          workspace::get_options(filename, opts);
+          E(opts.dbname.as_internal().empty(), origin::user,
             F("%s is a workspace, not a database\n"
-              "(did you mean %s?)") % filename % workspace_database);
+              "(did you mean %s?)") % filename % opts.dbname);
         }
       E(false, origin::user,
         F("%s is a directory, not a database") % filename);
@@ -4514,11 +4622,17 @@ database_impl::open()
 {
   I(!__sql);
 
-  std::string to_open;
-  if (use_memory_db)
-    to_open = ":memory:";
+  string to_open;
+  if (type == memory_db)
+    to_open = memory_db_identifier;
   else
-    to_open = filename.as_external();
+    {
+      system_path base_dir = filename.dirname();
+      if (!directory_exists(base_dir))
+        mkdir_p(base_dir);
+      to_open = filename.as_external();
+    }
+
   if (sqlite3_open(to_open.c_str(), &__sql) == SQLITE_NOMEM)
     throw std::bad_alloc();
 
@@ -4585,7 +4699,122 @@ conditional_transaction_guard::commit()
   committed = true;
 }
 
+void
+database_path_helper::get_database_path(options const & opts, system_path & path)
+{
+  if (!opts.dbname_given ||
+      (opts.dbname.as_internal().empty() &&
+       opts.dbname_alias.empty()))
+    {
+      L(FL("no database option given or options empty"));
+      return;
+    }
 
+  if (opts.dbname_type == unmanaged_db)
+    {
+      path = opts.dbname;
+      return;
+    }
+
+  E(opts.dbname_type == managed_db, origin::internal,
+    F("cannot determine full path for this database type"));
+
+  path_component basename;
+  validate_and_clean_alias(opts.dbname_alias, basename);
+
+  vector<system_path> candidates;
+  vector<system_path> search_paths;
+
+  E(lua.hook_get_default_database_locations(search_paths) && search_paths.size() > 0,
+    origin::user, F("could not query default database locations"));
+
+  for (vector<system_path>::const_iterator i = search_paths.begin();
+     i != search_paths.end(); ++i)
+    {
+      if (file_exists((*i) / basename))
+        {
+          candidates.push_back((*i) / basename);
+          continue;
+        }
+    }
+
+  MM(candidates);
+
+  // if we did not found the database anywhere, use the first
+  // available default path to possible save it there
+  if (candidates.size() == 0)
+    {
+      path = (*search_paths.begin()) / basename;
+      L(FL("no path expansions found for '%s', using '%s'")
+          % opts.dbname_alias % path);
+      return;
+    }
+
+  if (candidates.size() == 1)
+    {
+      path = (*candidates.begin());
+      L(FL("one path expansion found for '%s': '%s'")
+          % opts.dbname_alias % path);
+      return;
+    }
+
+  if (candidates.size() > 1)
+    {
+      string err =
+        (F("the database alias '%s' has multiple ambiguous expansions:")
+         % opts.dbname_alias).str();
+
+      for (vector<system_path>::const_iterator i = candidates.begin();
+           i != candidates.end(); ++i)
+        err += ("\n  " + (*i).as_internal());
+
+      E(false, origin::user, i18n_format(err));
+    }
+}
+
+void
+database_path_helper::maybe_set_default_alias(options & opts)
+{
+  if (opts.dbname_given && (
+       !opts.dbname.as_internal().empty() ||
+       !opts.dbname_alias.empty()))
+    {
+      return;
+    }
+
+  string alias;
+  E(lua.hook_get_default_database_alias(alias) && !alias.empty(),
+    origin::user, F("could not query default database alias"));
+
+  opts.dbname_given = true;
+  opts.dbname_alias = alias;
+  opts.dbname_type = managed_db;
+}
+
+void
+database_path_helper::validate_and_clean_alias(string const & alias, path_component & pc)
+{
+  E(alias.find(':') == 0, origin::system,
+    F("invalid database alias '%s': does not start with a colon") % alias);
+
+  string pure_alias = alias.substr(1);
+  E(pure_alias.size() > 0, origin::system,
+    F("invalid database alias '%s': must not be empty") % alias);
+
+  size_t pos = pure_alias.rfind('.');
+  if (pos == string::npos || pure_alias.substr(pos + 1) != "mtn")
+    pure_alias += ".mtn";
+
+  try
+    {
+      pc = path_component(pure_alias, origin::system);
+    }
+  catch (...)
+    {
+      E(false, origin::system,
+        F("invalid database alias '%s': does contain invalid characters") % alias);
+    }
+}
 
 // Local Variables:
 // mode: C++
