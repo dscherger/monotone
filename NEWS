@@ -50,6 +50,9 @@ cxxx xxx xx xx:xx:xx UTC 2010
              get_default_command_options(cmd)
           hook in your monotonerc (fixes monotone bug #17878).
 
+        - New command 'undrop' which undoes a 'drop' done by mistake 
+          (fixes monotone bug #13604).
+
         - New automation command 'update' which behaves identical to
           the normal 'update' command.
 
@@ -70,8 +73,6 @@ cxxx xxx xx xx:xx:xx UTC 2010
         - There is also the new server_set_listening(bool) Lua extention
           function available since 0.47, which can be used to let a monotone
           server exit gracefully instead of having to be killed.
-
-        - New command 'undrop' which undoes a 'drop' done by mistake.
 
         Bugs fixed
 
