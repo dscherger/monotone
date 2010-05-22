@@ -810,7 +810,8 @@ sub mtn_annotate($$$$)
     my($buffer,
        @cmd,
        $cwd,
-       $exception);
+       $exception,
+       $ret_val);
 
     # Run mtn annotate in the root directory so as to avoid any workspace
     # conflicts.
@@ -826,7 +827,7 @@ sub mtn_annotate($$$$)
     eval
     {
 	die("chdir failed: " . $!) unless (chdir(File::Spec->rootdir()));
-	return unless (run_command(\$buffer, @cmd));
+	$ret_val = run_command(\$buffer, undef, @cmd);
     };
     $exception = $@;
     chdir($cwd);
@@ -850,7 +851,7 @@ sub mtn_annotate($$$$)
 
     @$list = split(/\n/, $buffer);
 
-    return 1;
+    return $ret_val;
 
 }
 

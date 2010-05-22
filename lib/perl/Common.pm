@@ -89,7 +89,7 @@ sub hex_dump($);
 sub open_database($$$);
 sub program_valid($;$);
 sub register_help_callbacks($@);
-sub run_command($@);
+sub run_command($$@);
 sub save_as_file($$$);
 sub set_label_value($$);
 sub treeview_column_searcher($$$$);
@@ -154,6 +154,9 @@ sub generate_tmp_path($)
 #
 #   Data         - $buffer      : A reference to the buffer that is to contain
 #                                 the output from the command.
+#                  $abort       : Either a reference to a boolean that is set
+#                                 to true if the command is to be aborted or
+#                                 undef if no abort checking is required.
 #                  $args        : A list containing the command to run and its
 #                                 arguments.
 #                  Return Value : True if the command worked, otherwise false
@@ -163,12 +166,13 @@ sub generate_tmp_path($)
 
 
 
-sub run_command($@)
+sub run_command($$@)
 {
 
-    my($buffer, @args) = @_;
+    my($buffer, $abort, @args) = @_;
 
-    my(@err,
+    my($dummy_flag,
+       @err,
        $fd_err,
        $fd_in,
        $fd_out,
@@ -177,6 +181,8 @@ sub run_command($@)
        $stop,
        $total_bytes,
        $watcher);
+
+    $abort = \$dummy_flag unless (defined($abort));
 
     # Run the command.
 
@@ -225,7 +231,7 @@ sub run_command($@)
     # Setup a watch handler to read our data and handle GTK2 events whilst the
     # command is running.
 
-    $stop = $total_bytes = 0;
+    $total_bytes = 0;
     $$buffer = "";
     $watcher = Gtk2::Helper->add_watch
 	(fileno($fd_out), "in",
@@ -235,7 +241,8 @@ sub run_command($@)
 					$$buffer,
 					32768,
 					$total_bytes))
-		 == 0)
+		     == 0
+		 || ! defined($bytes_read))
 	     {
 		 $stop = 1;
 	     }
@@ -245,15 +252,23 @@ sub run_command($@)
 	     }
 	     return TRUE;
 	 });
-    while (! $stop)
+    while (! $stop && ! $$abort)
     {
 	Gtk2->main_iteration();
     }
     Gtk2::Helper->remove_watch($watcher);
 
-    # Get any error output.
+    # If we have been asked to abort then terminate the subprocess, otherwise
+    # get any error output as the subprocess has just exited of its own accord.
 
-    @err = readline($fd_err);
+    if ($$abort)
+    {
+	kill("TERM", $pid);
+    }
+    else
+    {
+	@err = readline($fd_err) unless ($$abort);
+    }
 
     close($fd_in);
     close($fd_out);
@@ -288,42 +303,46 @@ sub run_command($@)
 
 	if ($wait_status == $pid)
 	{
-	    my $exit_status = $?;
-	    if (WIFEXITED($exit_status) && WEXITSTATUS($exit_status) != 0)
+	    if (! $$abort)
 	    {
-		my $dialog = Gtk2::MessageDialog->new_with_markup
-		    (undef,
-		     ["modal"],
-		     "warning",
-		     "close",
-		     __x("The {name} subprocess failed with an exit status\n"
-			     . "of {exit_code} and printed the following on "
-			     . "stderr:\n"
-			     . "<b><i>{error_message}</i></b>",
-			 name => Glib::Markup::escape_text($args[0]),
-			 exit_code => WEXITSTATUS($exit_status),
-			 error_message => Glib::Markup::escape_text
-                                          (join("", @err))));
-		WindowManager->instance()->allow_input
-		    (sub { $dialog->run(); });
-		$dialog->destroy();
-		return;
-	    }
-	    elsif (WIFSIGNALED($exit_status))
-	    {
-		my $dialog = Gtk2::MessageDialog->new
-		    (undef,
-		     ["modal"],
-		     "warning",
-		     "close",
-		     __x("The {name} subprocess was terminated by signal "
-			     . "{number}.",
-			 name   => Glib::Markup::escape_text($args[0]),
-			 number => WTERMSIG($exit_status)));
-		WindowManager->instance()->allow_input
-		    (sub { $dialog->run(); });
-		$dialog->destroy();
-		return;
+		my $exit_status = $?;
+		if (WIFEXITED($exit_status) && WEXITSTATUS($exit_status) != 0)
+		{
+		    my $dialog = Gtk2::MessageDialog->new_with_markup
+			(undef,
+			 ["modal"],
+			 "warning",
+			 "close",
+			 __x("The {name} subprocess failed with an exit "
+			         . "status\n"
+				 . "of {exit_code} and printed the following "
+			         . "on stderr:\n"
+				 . "<b><i>{error_message}</i></b>",
+			     name => Glib::Markup::escape_text($args[0]),
+			     exit_code => WEXITSTATUS($exit_status),
+			     error_message => Glib::Markup::escape_text
+					      (join("", @err))));
+		    WindowManager->instance()->allow_input
+			(sub { $dialog->run(); });
+		    $dialog->destroy();
+		    return;
+		}
+		elsif (WIFSIGNALED($exit_status))
+		{
+		    my $dialog = Gtk2::MessageDialog->new
+			(undef,
+			 ["modal"],
+			 "warning",
+			 "close",
+			 __x("The {name} subprocess was terminated by signal "
+				 . "{number}.",
+			     name   => Glib::Markup::escape_text($args[0]),
+			     number => WTERMSIG($exit_status)));
+		    WindowManager->instance()->allow_input
+			(sub { $dialog->run(); });
+		    $dialog->destroy();
+		    return;
+		}
 	    }
 	    last;
 	}

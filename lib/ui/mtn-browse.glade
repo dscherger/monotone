@@ -3690,8 +3690,8 @@ Tag</property>
 			  <child>
 			    <widget class="GtkEventBox" id="revision_id_1_label_eventbox">
 			      <property name="visible">True</property>
-			      <property name="tooltip" translatable="yes">Revision id of the first selected
-file version that is to be compared</property>
+			      <property name="tooltip" translatable="yes">The first of two revision ids
+selected for comparison</property>
 			      <property name="visible_window">True</property>
 			      <property name="above_child">False</property>
 
@@ -3724,8 +3724,8 @@ file version that is to be compared</property>
 			  <child>
 			    <widget class="GtkEventBox" id="revision_id_2_label_eventbox">
 			      <property name="visible">True</property>
-			      <property name="tooltip" translatable="yes">Revision id of the second selected
-file version that is to be compared</property>
+			      <property name="tooltip" translatable="yes">The second of two revision
+ids selected for comparison</property>
 			      <property name="visible_window">True</property>
 			      <property name="above_child">False</property>
 
@@ -4038,7 +4038,7 @@ selected file in an external viewer</property>
 			    <widget class="GtkButton" id="stop_button">
 			      <property name="visible">True</property>
 			      <property name="sensitive">False</property>
-			      <property name="tooltip" translatable="yes">Stop formatting the comparison results</property>
+			      <property name="tooltip" translatable="yes">Stop the comparison</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
 			      <property name="focus_on_click">False</property>

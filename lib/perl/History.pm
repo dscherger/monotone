@@ -94,10 +94,10 @@ sub external_diffs_button_clicked_cb($$);
 sub file_comparison_combobox_changed_cb($$);
 sub get_file_history_helper($$$);
 sub get_history_window();
-sub get_revision_comparison_window();
+sub get_revision_comparison_window($);
 sub get_revision_history_helper($$);
 sub history_list_button_clicked_cb($$);
-sub mtn_diff($$$$;$);
+sub mtn_diff($$$$$;$);
 sub save_differences_button_clicked_cb($$);
 #
 ##############################################################################
@@ -538,7 +538,7 @@ sub display_revision_comparison($$$;$)
        $iter);
     my $wm = WindowManager->instance();
 
-    $instance = get_revision_comparison_window();
+    $instance = get_revision_comparison_window($mtn);
     local $instance->{in_cb} = 1;
 
     $instance->{window}->
@@ -560,36 +560,76 @@ sub display_revision_comparison($$$;$)
 
     $wm->make_busy($instance, 1);
     $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
+    $instance->{stop_button}->set_sensitive(TRUE);
     $wm->update_gui();
 
     $instance->{mtn} = $mtn;
     $instance->{revision_id_1} = $revision_id_1;
     $instance->{revision_id_2} = $revision_id_2;
 
-    # Get Monotone to do the comparison.
+    # Get Monotone to do the comparison, later versions can do this via
+    # automate stdio.
 
     $instance->{appbar}->set_status(__("Calculating differences"));
     $wm->update_gui();
     if ($mtn->supports(MTN_CONTENT_DIFF_EXTRA_OPTIONS))
     {
+
+	my $exception;
+
+	local $instance->{kill_mtn_subprocess} = 1;
+
+	# The stop button callback will kill off the mtn subprocess so suppress
+	# any resultant errors.
+
 	$mtn->suppress_utf8_conversion(1);
-	$mtn->content_diff($instance->{diff_output},
-			   ["with-header"],
-			   $revision_id_1,
-			   $revision_id_2,
-			   $file_name);
+	CachingAutomateStdio->register_error_handler
+	    (MTN_SEVERITY_ALL,
+	     sub {
+		 my($severity, $message, $instance) = @_;
+		 mtn_error_handler($severity, $message)
+		     if ($severity == MTN_SEVERITY_WARNING
+			 || ! $instance->{stop});
+	     },
+	     $instance);
+	eval
+	{
+	    $mtn->content_diff($instance->{diff_output},
+			       ["with-header"],
+			       $revision_id_1,
+			       $revision_id_2,
+			       $file_name);
+	};
+	$exception = $@;
+	CachingAutomateStdio->register_error_handler(MTN_SEVERITY_ALL,
+						     \&mtn_error_handler);
 	$mtn->suppress_utf8_conversion(0);
+
+	# If we have aborted the comparison by killing off the mtn subprocess
+	# then cleanly closedown and restart it, otherwise rethrow any raised
+	# exceptions.
+
+	if ($instance->{stop})
+	{
+	    my $dummy;
+	    $mtn->closedown();
+	    $mtn->interface_version(\$dummy);
+	}
+	elsif ($exception)
+	{
+	    die($exception);
+	}
+
     }
     else
     {
 	mtn_diff($instance->{diff_output},
+		 \$instance->{stop},
 		 $mtn->get_db_name(),
 		 $revision_id_1,
 		 $revision_id_2,
 		 $file_name);
     }
-
-    $instance->{stop_button}->set_sensitive(TRUE);
 
     # Does the user want pretty printed differences output?
 
@@ -1751,15 +1791,19 @@ sub get_revision_history_helper($$)
 #   Description  - Creates or prepares an existing revision comparison window
 #                  for use.
 #
-#   Data         - Return Value : A reference to the newly created or unused
+#   Data         - $mtn         : The Monotone::AutomateStdio object that is
+#                                 to be used to do the comparison.
+#                  Return Value : A reference to the newly created or unused
 #                                 change log instance record.
 #
 ##############################################################################
 
 
 
-sub get_revision_comparison_window()
+sub get_revision_comparison_window($)
 {
+
+    my $mtn = $_[0];
 
     my($height,
        $instance,
@@ -1821,8 +1865,24 @@ sub get_revision_comparison_window()
 		 return TRUE;
 	     },
 	     $instance);
-	$instance->{stop_button}->signal_connect
-	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
+	if ($mtn->supports(MTN_CONTENT_DIFF_EXTRA_OPTIONS))
+	{
+	    $instance->{kill_mtn_subprocess} = 0;
+	    $instance->{stop_button}->signal_connect
+		("clicked",
+		 sub {
+		     my($widget, $instance) = @_;
+		     $instance->{stop} = 1;
+		     kill("TERM", $instance->{mtn}->get_pid())
+			 if ($instance->{kill_mtn_subprocess});
+		 },
+		 $instance);
+	}
+	else
+	{
+	    $instance->{stop_button}->signal_connect
+		("clicked", sub { $_[1]->{stop} = 1; }, $instance);
+	}
 
 	# Setup the file combobox.
 
@@ -2045,6 +2105,9 @@ sub external_diffs($$$$$$)
 #
 #   Data         - $list          : A reference to the list that is to contain
 #                                   the output from the diff command.
+#                  $abort         : A reference to an abort flag that when
+#                                   true will cause the mtn diff process to
+#                                   stop.
 #                  $mtn_db        : The Monotone database that is to be used
 #                                   or undef if the database associated with
 #                                   the current workspace is to be used.
@@ -2063,15 +2126,21 @@ sub external_diffs($$$$$$)
 
 
 
-sub mtn_diff($$$$;$)
+sub mtn_diff($$$$$;$)
 {
 
-    my($list, $mtn_db, $revision_id_1, $revision_id_2, $file_name) = @_;
+    my($list,
+       $abort,
+       $mtn_db,
+       $revision_id_1,
+       $revision_id_2,
+       $file_name) = @_;
 
     my($buffer,
        @cmd,
        $cwd,
-       $exception);
+       $exception,
+       $ret_val);
 
     # Run mtn diff in the root directory so as to avoid any workspace
     # conflicts.
@@ -2089,31 +2158,39 @@ sub mtn_diff($$$$;$)
     eval
     {
 	die("chdir failed: " . $!) unless (chdir(File::Spec->rootdir()));
-	return unless (run_command(\$buffer, @cmd));
+	$ret_val = run_command(\$buffer, $abort, @cmd);
     };
     $exception = $@;
     chdir($cwd);
-    if ($exception)
+    if (! $$abort)
     {
-	my $dialog = Gtk2::MessageDialog->new_with_markup
-	    (undef,
-	     ["modal"],
-	     "warning",
-	     "close",
-	     __x("Problem running mtn diff, got:\n"
-		     . "<b><i>{error_message}</i></b>\n"
-		     . "This should not be happening!",
-		 error_message => Glib::Markup::escape_text($exception)));
-	WindowManager->instance()->allow_input(sub { $dialog->run(); });
-	$dialog->destroy();
-	return;
+	if ($exception)
+	{
+	    my $dialog = Gtk2::MessageDialog->new_with_markup
+		(undef,
+		 ["modal"],
+		 "warning",
+		 "close",
+		 __x("Problem running mtn diff, got:\n"
+		         . "<b><i>{error_message}</i></b>\n"
+		         . "This should not be happening!",
+		     error_message => Glib::Markup::escape_text($exception)));
+	    WindowManager->instance()->allow_input(sub { $dialog->run(); });
+	    $dialog->destroy();
+	    return;
+	}
+
+	# Break up the input into a list of lines.
+
+	@$list = split(/\n/, $buffer);
+
+    }
+    else
+    {
+	@$list = ();
     }
 
-    # Break up the input into a list of lines.
-
-    @$list = split(/\n/, $buffer);
-
-    return 1;
+    return $ret_val;
 
 }
 
