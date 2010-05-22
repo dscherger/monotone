@@ -692,14 +692,19 @@ CMD(clone, "clone", "", CMD_REF(network),
          % workspace_dir);
     }
 
-  // remember the initial working dir so that relative file://
-  // db URIs will work
-  system_path start_dir(get_current_working_dir(), origin::system);
-
   system_path _MTN_dir = workspace_dir / path_component("_MTN");
+
+  require_path_is_nonexistent
+    (_MTN_dir, F("bookkeeping directory already exists in '%s'")
+     % workspace_dir);
+
   directory_cleanup_helper remove_on_fail(
     target_is_current_dir ? _MTN_dir : workspace_dir
   );
+
+  // remember the initial working dir so that relative file://
+  // db URIs will work
+  system_path start_dir(get_current_working_dir(), origin::system);
 
   // paths.cc's idea of the current workspace root is wrong at this point
   if (!app.opts.dbname_given || app.opts.dbname.empty())
