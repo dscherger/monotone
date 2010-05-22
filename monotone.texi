@@ -1160,9 +1160,7 @@ new database. This is done with the @command{mtn db init} command,
 providing a @option{--db} option to specify the location of the new
 database. Each programmer creates their own database, which will
 reside in their home directory and store all the revisions, files and
-manifests they work on. Monotone requires this step as an explicit
-command, to prevent spurious creation of databases when an invalid
-@option{--db} option is given.
+manifests they work on.
 
 In real life, most people prefer to keep one database for each project
 they work on.  If we followed that convention here in the tutorial,
@@ -1178,7 +1176,7 @@ $ mtn db init --db=~/jim.mtn
 @end group
 @end smallexample
 
-Abe issues the command:
+and Abe issues the command:
 
 @smallexample
 @group
@@ -1186,13 +1184,26 @@ $ mtn db init --db=~/abe.mtn
 @end group
 @end smallexample
 
-And Beth issues the command:
+Beth decides to use monotone's built-in database management functionality.
+monotone then expects to find managed database files in a couple of predefined
+places (like f.e. @file{~/.monotone/databases}, this is customizable) and acts
+upon those only by knowing their file or basename from anywhere.
+
+To create a new managed database, Beth issues the @command{mtn db init} command
+like this:
 
 @smallexample
 @group
-$ mtn db init --db=~/beth.mtn
+$ mtn db init --db=:beth
 @end group
 @end smallexample
+
+Beth can distinguish a managed database name from an unmanaged one by the
+leading colon in its name.  This special alias can now be used interchangeably
+in every monotone invocation.
+If Beth wants to see where monotone actually created the database and what
+other databases monotone knows of, she triggers the @command{mtn list databases}
+command (or @command{mtn ls dbs}) for that.  We'll come back to this in a few.
 
 @page
 @node    Generating Keys, Starting a New Project, Creating a Database, Tutorial
@@ -1704,7 +1715,7 @@ Beth also exports her public key:
 
 @smallexample
 @group
-$ mtn --db=~/beth.mtn pubkey beth@@juicebot.co.jp >~/beth.pubkey
+$ mtn --db=:beth pubkey beth@@juicebot.co.jp >~/beth.pubkey
 @end group
 @end smallexample
 
@@ -1946,7 +1957,7 @@ Jim's:
 
 @smallexample
 @group
-$ mtn --db=beth.mtn sync jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
+$ mtn --db=:beth sync jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
 mtn: setting default server to jim-laptop.juicebot.co.jp
 mtn: setting default branch include pattern to 'jp.co.juicebot.jb7*'
 mtn: setting default branch exclude pattern to ''
@@ -1969,11 +1980,28 @@ She checks out a copy of the tree from her database:
 
 @smallexample
 @group
-$ mtn --db=beth.mtn --branch=jp.co.juicebot.jb7 checkout .
+$ mtn --db=:beth --branch=jp.co.juicebot.jb7 checkout juicebot
 @end group
 @end smallexample
 
-She edits the file @file{src/banana.c}:
+and since she is using a managed database, monotone automatically remembers
+the connection between the newly created workspace and the database.  She
+looks now at the output of @command{mtn list databases} and sees the
+following:
+
+@smallexample
+@group
+$ mtn list databases
+:beth.mtn (in /home/beth/.monotone/databases):
+        jp.co.juicebot.jb7 (in /home/beth/juicebot)
+@end group
+@end smallexample
+
+Beth realizes that, whenever the database of the workspace changes, monotone
+will adapt the known paths for the old and the new database for her.
+
+But let us get back to the work, Beth now start to edits the file
+@file{src/banana.c}:
 
 @smallexample
 @group
@@ -4809,12 +4837,14 @@ If no @var{id} is provided, as in the latter two commands, you
 
 The clone command is a helper command that performs the roles of a
 number of other commands all at once.  Firstly, it constructs a new
-database.  It then populates this database by @command{pull}ing any data
+database. If no database is given, the configured default
+database is created or re-used (see the hook
+@code{get_default_database_alias} in the @ref{Lua Reference} for
+more details). Then it populates this database by @command{pull}ing any data
 in the branch @var{branchname} from the remote database, @var{address}.
 Finally, it copies the files out of the newly created database into a
 local directory, just as @command{checkout} would.  If no @var{directory}
-is given, the @var{branchname} is used as directory.  The created
-database is placed in the new workspace as @file{@var{directory}/_MTN/mtn.db}.
+is given, the @var{branchname} is used as directory.
 
 @item mtn disapprove @var{id}
 
@@ -5080,18 +5110,21 @@ shared ancestor, so @code{merge3} is not applicable.
 @section Workspace
 
 @ftable @command
-@item mtn setup [@var{directory}]
+@item mtn setup -b @var{branchname} [-d @var{database}] [@var{directory}]
 This command prepares @var{directory} as a monotone workspace,
 by creating and populating the @file{_MTN} directory with basic
-information.  This information must include at least the branch and the
-database to be used, both of which will be placed in the
+information.  This information must include at least the branch
+to be used.  If no database is given, the configured default
+database is created or re-used (see the hook
+@code{get_default_database_alias} in the @ref{Lua Reference} for
+more details).
+Both settings, branch and database name, will be placed in the
 @file{_MTN/options} file.
 
 This can be used with an empty directory to start a new blank project,
 or within an existing directory full of files, prior to using
 @command{mtn commit}. If no directory is specified, the current
-directory is used.  If no database is given, a new database is
-initialized and saved to @file{_MTN/mtn.db}.
+directory is used.
 
 @item mtn add [--recursive | -R] [--no-respect-ignore] @var{pathname...}
 @item mtn add [--recursive | -R] [--no-respect-ignore] --unknown [@var{pathname...}]
@@ -10699,6 +10732,26 @@ function get_author(branchname, key_identity)
 end
 @end group
 @end smallexample
+
+@item get_default_database_locations ()
+
+Returns a table of existing paths where monotone should look for
+managable databases.  The command @command{list databases} searches
+all these paths for valid monotone databases and outputs details on
+each one.
+
+The default implementation returns a table with a single entry,
+@file{.monotone/databases}, in the user's home directory.
+
+@item get_default_database_alias ()
+
+Returns the alias of the managed database which should be used as default
+for commands like @command{clone} or @command{setup} if these are missing
+an explicit database option.  This alias and the first path found in the
+@code{get_default_database_locations} hook form the complete path
+of this default database.
+
+The default implementation returns @code{:default.mtn}.
 
 @item edit_comment (@var{user_log_message})
 
