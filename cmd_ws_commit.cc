@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -127,6 +128,41 @@ private:
   size_t offset;
 };
 
+static bool
+date_fmt_valid (string date_fmt)
+{
+  if (date_fmt.empty())
+    {
+      return true;
+    }
+  else
+    {
+      // check that the specified date format can be used to format and
+      // parse a date
+      date_t now = date_t::now();
+      date_t parsed;
+      try
+        {
+          string formatted = now.as_formatted_localtime(date_fmt);
+          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
+        }
+      catch (recoverable_failure const & e)
+        {
+          L(FL("date check failed: %s") % e.what());
+        }
+
+      if (parsed != now)
+        {
+          L(FL("date check failed: %s != %s") % now % parsed);
+          return false;
+        }
+      else
+        {
+          return true;
+        }
+    }
+}
+
 static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               project_t & project,
@@ -196,12 +232,23 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   utf8 header;
   utf8 summary;
 
-  revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
+  bool is_date_fmt_valid = date_fmt_valid(date_fmt);
+  string null_date_fmt("");
+
+  if (!is_date_fmt_valid)
+    {
+      W(F("date format '%s' cannot be used for commit; using default instead") % date_fmt);
+      revision_header(rid, rev, author, date, branch, changelog, null_date_fmt, header);
+    }
+  else
+    {
+      revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
+    }
   revision_summary(rev, summary);
 
-  utf8 full_message(instructions() + cancel() + header() + notes() + summary(), 
+  utf8 full_message(instructions() + cancel() + header() + notes() + summary(),
                     origin::internal);
-  
+
   external input_message;
   external output_message;
 
@@ -276,7 +323,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   E(!d.empty(), origin::user,
     F("Commit failed. Date value empty."));
 
-  if (date_fmt.empty())
+  if (!is_date_fmt_valid || date_fmt.empty())
     date = date_t(d);
   else
     date = date_t::from_formatted_localtime(d, date_fmt);
@@ -777,27 +824,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
     }
 
-  if (!date_fmt.empty())
-    {
-      // check that the specified date format can be parsed (for commit)
-      date_t now = date_t::now();
-      date_t parsed;
-      try
-        {
-          string formatted = now.as_formatted_localtime(date_fmt);
-          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
-        }
-      catch (recoverable_failure const & e) 
-        { 
-          L(FL("date check failed: %s") % e.what());
-        }
-
-      if (parsed != now)
-        {
-          L(FL("date check failed: %s != %s") % now % parsed);
-          W(F("date format '%s' cannot be used for commit") % date_fmt);
-        }
-    }
+  if (!date_fmt_valid(date_fmt))
+    W(F("date format '%s' cannot be used for commit") % date_fmt);
 
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
@@ -1450,29 +1478,6 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
       if (!app.lua.hook_get_author(app.opts.branch, key, author))
         author = key.official_name();
-    }
-
-  if (!date_fmt.empty())
-    {
-      // check that the current date format can be parsed
-      date_t parsed;
-      try
-        {
-          string formatted = date.as_formatted_localtime(date_fmt);
-          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
-        }
-      catch (recoverable_failure const & e) 
-        { 
-          L(FL("date check failed: %s") % e.what());
-        }
-      
-      if (parsed != date)
-        {
-          L(FL("date check failed: %s != %s") % date % parsed);
-        }
-      
-      E(parsed == date, origin::user,
-        F("date format '%s' cannot be used for commit") % date_fmt);
     }
 
   if (!log_message_given)

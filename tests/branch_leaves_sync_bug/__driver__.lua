@@ -6,6 +6,12 @@
 -- The bug does not occur if the two workspaces use the same author
 -- name and key.
 
+-- The bug was about logic in the branch leaves cache, not
+-- specifically about sync; it's tested adequately on Linux. 'sync
+-- file:' doesn't work on Win32, but it's not worth setting up a
+-- server for this test.
+skip_if(ostype == "Windows")
+
 function abe_mtn(...)
   return raw_mtn("--rcfile", test.root .. "/min_hooks.lua",
          "--db=" .. test.root .. "/abe.db",
