@@ -406,7 +406,7 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_COMMON_KEY_HASH
 					MTN_T_STREAM)]);
 our @EXPORT = qw();
 Exporter::export_ok_tags(qw(capabilities severities streams));
-our $VERSION = 0.07;
+our $VERSION = 0.08;
 #
 ##############################################################################
 #

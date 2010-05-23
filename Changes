@@ -1,5 +1,18 @@
 Revision history for Perl extension Monotone::AutomateStdio.
 
+0.08  Sun May 23 10:00:00 2010 Anthony Cooper <support@coosoft.plus.com>
+	- The get_db_name() method now returns undef instead of ":memory:" when
+	  connecting to a network service.
+	- Added the get_service_name() method.
+	- Corrected a bug where retries on locked db caused exceptions to be
+	  thrown in the startup routine despite the retry handler successfully
+	  dealing with the situation and waiting until the db was unlocked.
+	- Now stop deep recursion from happening in the above situation.
+	- Improved the logic in error handling inside the startup routine so
+	  that the best error message is generated.
+	- Improved some exception messages and other minor code tidy-ups.
+	- Updates the documentation and corrected a few typos.
+
 0.07  Sat Feb 27 19:30:00 2010 Anthony Cooper <support@coosoft.plus.com>
 	- Added support for 0.46:
 	  - Added support for extracting the extra automate stdio data streams
