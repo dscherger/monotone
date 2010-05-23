@@ -255,7 +255,7 @@ GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
     {
       dbname_type = memory_db;
     }
-  else if (arg.size() > 1 && arg.substr(0, 1) == ":")
+  else if (arg.size() > 0 && arg.substr(0, 1) == ":")
     {
       dbname_alias = arg;
       dbname_type = managed_db;
