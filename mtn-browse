@@ -45,7 +45,7 @@ require 5.008005;
 BEGIN
 {
     use constant APPLICATION_NAME    => "mtn-browse";
-    use constant APPLICATION_VERSION => 0.63;
+    use constant APPLICATION_VERSION => 0.70;
     use constant FILE_COMPARE_CMD    => "@INST:FILE_COMPARE_CMD@";
     use constant HTML_VIEWER_CMD     => "@INST:HTML_VIEWER_CMD@";
     use constant LIB_DIR             => "@INST:LIB_DIR@";

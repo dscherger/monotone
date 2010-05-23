@@ -424,7 +424,8 @@ sub get_manage_server_bookmarks_window($$)
 	register_help_callbacks
 	    ($instance,
 	     {widget   => undef,
-	      help_ref => __("mtnb-gsc-menus")});
+	      help_ref => __("mtnb-upc-the-manage-server-bookmarks-dialog-"
+			     . "window")});
     }
 
     return $instance;

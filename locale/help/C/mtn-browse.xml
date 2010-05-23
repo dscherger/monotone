@@ -6,7 +6,7 @@
 
     <!ENTITY APP "Monotone Browser">
     <!ENTITY APP-CMD "mtn-browse">
-    <!ENTITY VERSION "0.02">
+    <!ENTITY VERSION "0.03">
 
   ]
 >
@@ -110,8 +110,16 @@ GNOME or DocBook.
         </revdescription>
       </revision>
       <revision>
-        <revnumber>&APP; Manual V&VERSION;</revnumber>
+        <revnumber>&APP; Manual V0.02</revnumber>
         <date>08 November 2009</date>
+        <revdescription>
+          <para role="author">Anthony Cooper</para>
+          <para role="publisher">CooSoft</para>
+        </revdescription>
+      </revision>
+      <revision>
+        <revnumber>&APP; Manual V&VERSION;</revnumber>
+        <date>23 May 2010</date>
         <revdescription>
           <para role="author">Anthony Cooper</para>
           <para role="publisher">CooSoft</para>
@@ -319,10 +327,16 @@ GNOME or DocBook.
             <para><menuchoice><guimenu>File</guimenu><guimenuitem>New Blank</guimenuitem></menuchoice> - Displays a new <guilabel>Monotone Browser</guilabel> window but in its closed state rather than initially duplicating the contents of the existing window. This is particularly useful if the first thing you are going to do is to open a completely different database.</para>
           </listitem>
           <listitem>
+            <para><menuchoice><guimenu>File</guimenu><guimenuitem>Connect To Server</guimenuitem></menuchoice> - Presents the user with a remote server bookmark menu from which they can select a server to connect to. There is also the <guimenuitem>Manage Server Bookmarks</guimenuitem> menu option for managing these bookmarks (see <xref linkend="mtnb-upc-the-manage-server-bookmarks-dialog-window"/>).</para>
+          </listitem>
+          <listitem>
             <para><menuchoice><guimenu>File</guimenu><guimenuitem>Quit</guimenuitem></menuchoice> - This completely quits out of the application regardless of what windows you may have open. Normally the application only exits when all of its <guilabel>Monotone Browser</guilabel> windows have been closed.</para>
           </listitem>
           <listitem>
-            <para><menuchoice><guimenu>Help</guimenu><guimenuitem>Help Contents</guimenuitem></menuchoice> - Displays the contents page of the <application>&APP;</application> manual.</para>
+            <para><menuchoice><guimenu>View</guimenu><guimenuitem>File Encoding</guimenuitem></menuchoice> - Allows the user to select the character encoding for the files that they are going to display in <application>&APP;</application>. The most popular encodings are listed first but there is also the <guisubmenu>All Encodings</guisubmenu> submenu containing all of the encodings known to your system. The default character encoding used by <application>&APP;</application> is UTF-8.</para>
+          </listitem>
+          <listitem>
+            <para><menuchoice><guimenu>Tools</guimenu><guimenuitem>Compare Arbitrary Revisions</guimenuitem></menuchoice> - Displays a <guilabel>Compare Arbitrary Revisions</guilabel> window that allows the user to compare any two revisions in the database (see <xref linkend="mtnb-lachc-the-compare-arbitrary-revisions-window"/>).</para>
           </listitem>
           <listitem>
             <para><menuchoice><guimenu>Help</guimenu><guimenuitem>Help On Window</guimenuitem></menuchoice> - Displays the relevant section in the <application>&APP;</application> manual for the current window.</para>
@@ -339,7 +353,17 @@ GNOME or DocBook.
         </itemizedlist>
 
         <note>
-          <para>The keyboard shortcuts shown against the <menuchoice><guimenu>Help</guimenu></menuchoice> menu options work on nearly all <application>&APP;</application> windows.</para>
+          <orderedlist numeration="arabic">
+            <listitem>
+	      <para>The keyboard shortcuts shown against the <menuchoice><guimenu>Help</guimenu></menuchoice> menu options work on nearly all <application>&APP;</application> windows.</para>
+            </listitem>
+            <listitem>
+	      <para>The <menuchoice><guimenu>File</guimenu><guimenuitem>Connect To Server</guimenuitem></menuchoice> submenu is only available if your version of Monotone supports this feature.</para>
+            </listitem>
+            <listitem>
+	      <para>Connecting to Monotone server over a network is not only slower but also has no support for running <application>Monotone Viz</application> or doing file annotations.</para>
+            </listitem>
+          </orderedlist>
         </note>
 
       </sect2>
@@ -364,7 +388,7 @@ GNOME or DocBook.
               </row>
               <row valign="top">
                 <entry><para><inlinegraphic fileref="figures/open-toolbar-button.png" format="png" valign="middle"/></para></entry>
-                <entry><para>Allows you to open a different database via the <guilabel>Open Database</guilabel> dialog window. Any database currently oen in the browser window will automatically be closed first.</para></entry>
+                <entry><para>Allows you to open a different database via the <guilabel>Open Database</guilabel> dialog window. Any database currently open in the browser window will automatically be closed first.</para></entry>
               </row>
               <row valign="top">
                 <entry><para><inlinegraphic fileref="figures/close-toolbar-button.png" format="png" valign="middle"/></para></entry>
@@ -1233,11 +1257,58 @@ GNOME or DocBook.
               </row>
               <row valign="top">
                 <entry><para><inlinegraphic fileref="figures/stop-button.png" format="png" valign="middle"/></para></entry>
-                <entry><para>Stops the current formatting and highlight process. This is very useful when you accidentally generate a much larger comparison result than expected.</para></entry>
+                <entry><para>Stops the currently running comparison. This is very useful when you accidentally start a comparison that generates a much larger result than expected.</para></entry>
               </row>
               <row valign="top">
                 <entry><para><guilabel>Revision Change Log</guilabel></para></entry>
                 <entry><para>These buttons display <guilabel>Change Log</guilabel> windows for the two revisions on which the comparison was based. The red button displays the change log for the older revision that contains the text highlighted in red. Likewise the green button displays the change log for the newer revision that contains the text highlighted in green.</para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+      </sect2>
+
+    </sect1>
+
+    <sect1 id="mtnb-lachc-the-compare-arbitrary-revisions-window">
+      <title>The Compare Arbitrary Revisions Window</title>
+
+      <para>When the user selects the <menuchoice><guimenu>Tools</guimenu><guimenuitem>Compare Arbitrary Revisions</guimenuitem></menuchoice> menu option on a <guilabel>Monotone Browser</guilabel> window they will be presented with a <guilabel>Compare Arbitrary Revisions</guilabel> window. This allows them to select any two revisions from the database for comparison. A typical <guilabel>Compare Arbitrary Revisions</guilabel> window that has two revisions selected is shown below.</para>
+
+      <figure>
+        <title>A Compare Arbitrary Revisions Window</title>
+        <screenshot>
+          <screeninfo>A <guilabel>Compare Arbitrary Revisions</guilabel> window showing two selected revisions.</screeninfo>
+          <graphic fileref="figures/compare-arbitrary-revisions-window.png" format="png"/>
+        </screenshot>
+      </figure>
+
+      <warning>
+	<para>Depending upon what revisions are selected, you may end up with a massive result. Think about what you are doing before using this feature.</para>
+      </warning>
+
+      <sect2 id="mtnb-lachc-compare-arbitrary-revisions-buttons">
+        <title>Compare Arbitrary Revisions Buttons</title>
+
+        <para>These buttons are located on the right hand side of the <guilabel>Compare Arbitrary Revisions</guilabel> window. They do the following:</para>
+
+        <informaltable>
+          <tgroup cols="2">
+            <thead>
+              <row>
+                <entry><para>Button</para></entry>
+                <entry><para>Description</para></entry>
+              </row>
+            </thead>
+            <tbody>
+	      <row valign="top">
+		<entry><para><inlinegraphic fileref="figures/find-button.png" format="png" valign="middle"/></para></entry>
+		<entry><para>Displays the <guilabel>Advanced Find</guilabel> dialog window that allows one to enter more complex database queries (see <xref linkend="mtnb-mcqc"/>). This window is used to select both revisions.</para></entry>
+	      </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/compare-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Displays a <guilabel>Differences</guilabel> window that shows all of the differences between the two selected revisions. The two revisions in question are selected by using the <inlinegraphic fileref="figures/find-button-small.png" format="png" valign="middle"/>&nbsp; buttons mentioned above (see <xref linkend="mtnb-lachc-the-differences-window"/>).</para></entry>
               </row>
             </tbody>
           </tgroup>
@@ -1319,7 +1390,7 @@ GNOME or DocBook.
   <chapter label="6" id="mtnb-upc">
     <title>User Preferences</title>
 
-    <para>This chapter covers the <guilabel>Preferences</guilabel> dialog window and what can be customised.</para>
+    <para>This chapter covers the <guilabel>Preferences</guilabel> and <guilabel>Manage Server Bookmarks</guilabel> dialog windows.</para>
 
       <note>
         <para>Some preference settings only take effect when <application>&APP;</application> is restarted.</para>
@@ -1667,6 +1738,25 @@ GNOME or DocBook.
       </itemizedlist>
 
       <para>When one left clicks on the <guilabel>Defaults</guilabel> button right at the bottom of the <guiicon>Preferences</guiicon> dialog window then all of the settings on the currently displayed tab are reset to their default values.</para>
+
+    </sect1>
+
+    <sect1 id="mtnb-upc-the-manage-server-bookmarks-dialog-window">
+      <title>The Manage Server Bookmarks Dialog Window</title>
+
+      <para>When you select the <menuchoice><guimenu>File</guimenu><guisubmenu>Connect To Server</guisubmenu><guimenuitem>Manage Server Bookmarks</guimenuitem></menuchoice> menu option on a <guilabel>Monotone Browser</guilabel> window you will be presented with a dialog window like the one shown below.</para>
+
+      <figure>
+        <title>A Manage Server Bookmarks Dialog Window</title>
+        <screenshot>
+          <screeninfo>A <guilabel>Manage Server Bookmarks</guilabel> dialog window.</screeninfo>
+          <graphic fileref="figures/manage-server-bookmarks-window.png" format="png"/>
+        </screenshot>
+      </figure>
+
+      <para>This dialog window allows you to manage a list of Monotone servers that you can connect to remotely over the network. On the left hand side is the list of server names that appears in your bookmarks menu. To the right of this list is an entry field where one can enter new server names and then left click on the <guilabel>+</guilabel> button just to the right of this entry field to add it to the list . Likewise, when you left click on the <guilabel>-</guilabel> then the currently selected server name is removed from the list.</para>
+
+      <para>Server names can be either a valid host name or an Internet address, optionally followed by a colon and the number of the port to connect to if the Monotone server is not listening on the standard port. <userinput>192.168.1.1</userinput>, <userinput>192.168.1.1:5000</userinput>, <userinput>monotone.ca</userinput> and <userinput>venge.net:8000</userinput> are all examples of valid server name entries.</para>
 
     </sect1>
 

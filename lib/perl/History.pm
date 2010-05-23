@@ -1978,16 +1978,20 @@ sub get_compare_arbitrary_revisions_window()
 	$wm->manage($instance,
 		    $window_type,
 		    $instance->{window});
-	# TBD
 	register_help_callbacks
 	    ($instance,
-	     {widget   => "stop_button",
-	      help_ref => __("mtnb-lachc-history-buttons")},
-	     {widget   => "compare_button",
-	      help_ref => __("mtnb-lachc-history-buttons")},
+	     {widget   => "arbitrary_revision_1_advanced_find_button",
+	      help_ref => __("mtnb-lachc-compare-arbitrary-revisions-"
+			     . "buttons")},
+	     {widget   => "arbitrary_revision_1_advanced_find_button",
+	      help_ref => __("mtnb-lachc-compare-arbitrary-revisions-"
+			     . "buttons")},
+	     {widget   => "arbitrary_compare_button",
+	      help_ref => __("mtnb-lachc-compare-arbitrary-revisions-"
+			     . "buttons")},
 	     {widget   => undef,
-	      help_ref => __("mtnb-lachc-the-revision-and-file-history-"
-			     . "windows")});
+	      help_ref => __("mtnb-lachc-the-compare-arbitrary-revisions-"
+			     . "window")});
     }
     else
     {
