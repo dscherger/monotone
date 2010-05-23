@@ -736,7 +736,7 @@ sub about_activate_cb($$)
     Gnome2::About->new
 	(APPLICATION_NAME,
 	 APPLICATION_VERSION,
-	 __("Copyright \xa9 2007-2009 Anthony Cooper"),
+	 __("Copyright \xa9 2007-2010 Anthony Cooper"),
 	 __("A graphical front-end browser for Monotone VCS databases"),
 	 ["Anthony Cooper <support\@coosoft.plus.com>"],
 	 __("Anthony Cooper <support\@coosoft.plus.com>"),
