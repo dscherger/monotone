@@ -485,14 +485,17 @@ read_options_file(any_path const & optspath,
 
       if (opt == "database")
         {
-          if (val.find(':') == 0 && val != memory_db_identifier)
+          E(val != memory_db_identifier, origin::user,
+            F("a memory database '%s' cannot be used in a workspace")
+                % memory_db_identifier);
+
+          if (val.find(':') == 0)
             {
               opts.dbname_alias = val;
               opts.dbname_given = true;
               opts.dbname_type = managed_db;
             }
           else
-          if (val != memory_db_identifier)
             {
               opts.dbname = system_path(val, origin::workspace);
               opts.dbname_given = true;
@@ -527,6 +530,10 @@ write_options_file(bookkeeping_path const & optspath,
                    options const & opts)
 {
   basic_io::stanza st;
+
+  E(opts.dbname_type != memory_db, origin::user,
+    F("a memory database '%s' cannot be used in a workspace")
+      % memory_db_identifier);
 
   // if we have both, alias and full path, prefer the alias
   if (opts.dbname_type == managed_db && !opts.dbname_alias.empty())
