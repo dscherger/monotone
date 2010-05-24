@@ -214,6 +214,7 @@ public:
 
 #endif // __LUA_HOOKS_HH__
 
+// Local Variables:
 // mode: C++
 // fill-column: 76
 // c-file-style: "gnu"

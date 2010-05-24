@@ -5,7 +5,8 @@ mtn_setup()
 addfile("foo", "blah blah")
 commit("mybranch")
 
-testURI="file:" .. test.root .. "/test.db"
+copy("test.db", "test-clone.db")
+testURI="file:" .. test.root .. "/test-clone.db"
 
 check(nodb_mtn("clone", testURI, "mybranch"), 0, false, false)
 check(exists("mybranch"))

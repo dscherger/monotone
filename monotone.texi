@@ -1187,7 +1187,7 @@ $ mtn db init --db=~/abe.mtn
 Beth decides to use monotone's built-in database management functionality.
 monotone then expects to find managed database files in a couple of predefined
 places (like f.e. @file{~/.monotone/databases}, this is customizable) and acts
-upon those only by knowing their file or basename from anywhere.
+upon those by knowing only their file or basename from anywhere.
 
 To create a new managed database, Beth issues the @command{mtn db init} command
 like this:
@@ -1202,8 +1202,8 @@ Beth can distinguish a managed database name from an unmanaged one by the
 leading colon in its name.  This special alias can now be used interchangeably
 in every monotone invocation.
 If Beth wants to see where monotone actually created the database and what
-other databases monotone knows of, she triggers the @command{mtn list databases}
-command (or @command{mtn ls dbs}) for that.  We'll come back to this in a few.
+other databases monotone knows of, she uses the @command{mtn list databases}
+command (or @command{mtn ls dbs}) for that.  We'll come back to this in a bit.
 
 @page
 @node    Generating Keys, Starting a New Project, Creating a Database, Tutorial
@@ -1986,7 +1986,7 @@ $ mtn --db=:beth --branch=jp.co.juicebot.jb7 checkout juicebot
 
 and since she is using a managed database, monotone automatically remembers
 the connection between the newly created workspace and the database.  She
-looks now at the output of @command{mtn list databases} and sees the
+now looks at the output of @command{mtn list databases} and sees the
 following:
 
 @smallexample
@@ -10735,10 +10735,9 @@ end
 
 @item get_default_database_locations ()
 
-Returns a table of existing paths where monotone should look for
-managable databases.  The command @command{list databases} searches
-all these paths for valid monotone databases and outputs details on
-each one.
+Returns a table of paths where monotone should look for managable
+databases.  The command @command{list databases} searches all these
+paths for valid monotone databases and outputs details on each one.
 
 The default implementation returns a table with a single entry,
 @file{.monotone/databases}, in the user's home directory.
