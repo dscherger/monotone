@@ -34,10 +34,11 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   key_identity_info identity;
-  project.get_key_identity(keys, app.lua, idx(args, 0), identity);
+  project.get_key_identity(keys, app.lua, app.opts.branch,
+                           idx(args, 0), identity);
   bool exists(false);
   rsa_pub_key key;
   if (db.database_specified() && db.public_key_exists(identity.id))
@@ -66,14 +67,14 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() != 1)
     throw usage(execid);
 
   key_name name = typecast_vocab<key_name>(idx(args, 0));
   key_identity_info identity;
-  project.get_key_identity(app.lua, idx(args, 0), identity);
+  project.get_key_identity(app.lua, branch_name(), idx(args, 0), identity);
   E(keys.key_pair_exists(identity.id), origin::user,
     F("public and private key '%s' do not exist in keystore")
     % idx(args, 0)());

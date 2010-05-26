@@ -333,7 +333,7 @@ public:
                                cert_name const &,
                                cert_value const &)> cert_trust_checker;
   // this takes a project_t so it can translate key names for the trust hook
-  void erase_bogus_certs(project_t & project, std::vector<cert> & certs);
+  void erase_bogus_certs(project_t const & project, std::vector<cert> & certs);
   // permit alternative trust functions
   void erase_bogus_certs(std::vector<cert> & certs,
                          cert_trust_checker const & checker);
@@ -342,15 +342,15 @@ public:
   // --== Epochs ==--
   //
 public:
-  void get_epochs(std::map<branch_name, epoch_data> & epochs);
+  void get_epochs(std::map<branch_uid, epoch_data> & epochs);
 
-  void get_epoch(epoch_id const & eid, branch_name & branch, epoch_data & epo);
+  void get_epoch(epoch_id const & eid, branch_uid & branch, epoch_data & epo);
 
   bool epoch_exists(epoch_id const & eid);
 
-  void set_epoch(branch_name const & branch, epoch_data const & epo);
+  void set_epoch(branch_uid const & branch, epoch_data const & epo);
 
-  void clear_epoch(branch_name const & branch);
+  void clear_epoch(branch_uid const & branch);
 
   //
   // --== Database 'vars' ==--
@@ -457,7 +457,6 @@ public:
   void delete_existing_rosters();
   void put_roster_for_revision(revision_id const & new_id,
                                revision_t const & rev);
-
 private:
   boost::shared_ptr<database_impl> imp;
   lua_hooks & lua;

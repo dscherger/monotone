@@ -3905,7 +3905,7 @@ namespace {
   // the lua hook wants key_identity_info, but all that's been
   // pulled from the certs is key_id. So this is needed to translate.
   // use pointers for project and lua so bind() doesn't make copies
-  bool check_revision_cert_trust(project_t * const project,
+  bool check_revision_cert_trust(project_t const * const project,
                                  lua_hooks * const lua,
                                  set<key_id> const & signers,
                                  id const & hash,
@@ -3918,7 +3918,7 @@ namespace {
       {
         key_identity_info identity;
         identity.id = *i;
-        project->complete_key_identity(*lua, identity);
+        project->complete_key_identity(*lua, branch_name(), identity);
         signer_identities.insert(identity);
       }
 
@@ -3949,7 +3949,7 @@ namespace {
 } // anonymous namespace
 
 void
-database::erase_bogus_certs(project_t & project, vector<cert> & certs)
+database::erase_bogus_certs(project_t const & project, vector<cert> & certs)
 {
   erase_bogus_certs_internal(certs, *this,
                              boost::bind(&check_revision_cert_trust,
@@ -4165,14 +4165,14 @@ database::select_date(string const & date, string const & comparison,
 // epochs
 
 void
-database::get_epochs(map<branch_name, epoch_data> & epochs)
+database::get_epochs(map<branch_uid, epoch_data> & epochs)
 {
   epochs.clear();
   results res;
   imp->fetch(res, 2, any_rows, query("SELECT branch, epoch FROM branch_epochs"));
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
     {
-      branch_name decoded(idx(*i, 0), origin::database);
+      branch_uid decoded(idx(*i, 0), origin::database);
       I(epochs.find(decoded) == epochs.end());
       epochs.insert(make_pair(decoded,
                               epoch_data(idx(*i, 1),
@@ -4182,7 +4182,7 @@ database::get_epochs(map<branch_name, epoch_data> & epochs)
 
 void
 database::get_epoch(epoch_id const & eid,
-                    branch_name & branch, epoch_data & epo)
+                    branch_uid & branch, epoch_data & epo)
 {
   I(epoch_exists(eid));
   results res;
@@ -4191,7 +4191,7 @@ database::get_epoch(epoch_id const & eid,
                    " WHERE hash = ?")
              % blob(eid.inner()()));
   I(res.size() == 1);
-  branch = branch_name(idx(idx(res, 0), 0), origin::database);
+  branch = branch_uid(idx(idx(res, 0), 0), origin::database);
   epo = epoch_data(idx(idx(res, 0), 1), origin::database);
 }
 
@@ -4207,7 +4207,7 @@ database::epoch_exists(epoch_id const & eid)
 }
 
 void
-database::set_epoch(branch_name const & branch, epoch_data const & epo)
+database::set_epoch(branch_uid const & branch, epoch_data const & epo)
 {
   epoch_id eid;
   epoch_hash_code(branch, epo, eid);
@@ -4219,7 +4219,7 @@ database::set_epoch(branch_name const & branch, epoch_data const & epo)
 }
 
 void
-database::clear_epoch(branch_name const & branch)
+database::clear_epoch(branch_uid const & branch)
 {
   imp->execute(query("DELETE FROM branch_epochs WHERE branch = ?")
                % blob(branch()));
