@@ -132,7 +132,8 @@ get_user_key(options const & opts, lua_hooks & lua,
       if (!opts.signing_key().empty())
         {
           key_identity_info identity;
-          project.get_key_identity(keys, lua, opts.signing_key, identity);
+          project.get_key_identity(keys, lua, opts.branch,
+                                   opts.signing_key, identity);
           key = identity.id;
         }
       else
@@ -178,7 +179,8 @@ cache_netsync_key(options const & opts,
       // maybe they specifically requested no key ("--key ''")
       if (!opts.signing_key().empty())
         {
-          project.get_key_identity(keys, lua, opts.signing_key, identity);
+          project.get_key_identity(keys, lua, opts.branch,
+                                   opts.signing_key, identity);
           key = identity.id;
           found_key = true;
         }

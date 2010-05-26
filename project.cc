@@ -585,7 +585,9 @@ public:
     typedef key_lister::name_map::const_iterator it;
     for (it i = names.begin(); i != names.end(); ++i)
       {
-        if (i->second.first.has_prefix(where) && i->second.second == name)
+        if (i->second.second != name)
+          continue;
+        if (where.empty() || where.has_prefix(i->second.first))
           {
             branch_name name_as_branch = typecast_vocab<branch_name>(i->second.second);
             key_name official_name =
@@ -1311,7 +1313,7 @@ project_t::put_standard_certs_from_options(options const & opts,
     {
       key_identity_info key;
       get_user_key(opts, lua, db, keys, *this, key.id);
-      complete_key_identity(lua, key);
+      complete_key_identity(lua, branch, key);
 
       if (!lua.hook_get_author(branch, key, author))
         {
@@ -1377,6 +1379,7 @@ project_t::put_revision_testresult(key_store & keys,
 void
 project_t::lookup_key_by_name(key_store * const keys,
                               lua_hooks & lua,
+                              branch_name const & where,
                               key_name const & name,
                               key_id & id) const
 {
@@ -1405,7 +1408,7 @@ project_t::lookup_key_by_name(key_store * const keys,
         }
 
       map<key_name, key_id> results;
-      project_policy->find_keys_named(*this, name, branch_name(), results);
+      project_policy->find_keys_named(*this, name, where, results);
       E(results.size() <= 1, origin::user,
         F("there are %d keys named '%s'") % results.size() % name);
       E(results.size() > 0, origin::user,
@@ -1533,6 +1536,7 @@ project_t::get_canonical_name_of_key(key_store * const keys,
 void
 project_t::complete_key_identity(key_store * const keys,
                                  lua_hooks & lua,
+                                 branch_name const & where,
                                  key_identity_info & info) const
 {
   MM(info.id);
@@ -1552,7 +1556,7 @@ project_t::complete_key_identity(key_store * const keys,
     }
   else if (!info.official_name().empty())
     {
-      lookup_key_by_name(keys, lua, info.official_name, info.id);
+      lookup_key_by_name(keys, lua, where, info.official_name, info.id);
       get_canonical_name_of_key(keys, info.id, info.given_name);
     }
   //else if (!info.given_name().empty())
@@ -1567,21 +1571,24 @@ project_t::complete_key_identity(key_store * const keys,
 void
 project_t::complete_key_identity(key_store & keys,
                                  lua_hooks & lua,
+                                 branch_name const & where,
                                  key_identity_info & info) const
 {
-  complete_key_identity(&keys, lua, info);
+  complete_key_identity(&keys, lua, where, info);
 }
 
 void
 project_t::complete_key_identity(lua_hooks & lua,
+                                 branch_name const & where,
                                  key_identity_info & info) const
 {
-  complete_key_identity(0, lua, info);
+  complete_key_identity(0, lua, where, info);
 }
 
 void
 project_t::get_key_identity(key_store * const keys,
                             lua_hooks & lua,
+                            branch_name const & where,
                             external_key_name const & input,
                             key_identity_info & output) const
 {
@@ -1598,41 +1605,47 @@ project_t::get_key_identity(key_store * const keys,
     {
       output.official_name = typecast_vocab<key_name>(input);
     }
-  complete_key_identity(keys, lua, output);
+  complete_key_identity(keys, lua, where, output);
 }
 
 void
 project_t::get_key_identity(key_store & keys,
                             lua_hooks & lua,
+                            branch_name const & where,
                             external_key_name const & input,
                             key_identity_info & output) const
 {
-  get_key_identity(&keys, lua, input, output);
+  get_key_identity(&keys, lua, where, input, output);
 }
 
 void
 project_t::get_key_identity(lua_hooks & lua,
+                            branch_name const & where,
                             external_key_name const & input,
                             key_identity_info & output) const
 {
-  get_key_identity(0, lua, input, output);
+  get_key_identity(0, lua, where, input, output);
 }
 
 void
 project_t::get_key_identity(key_store & keys,
                             lua_hooks & lua,
+                            branch_name const & where,
                             arg_type const & input,
                             key_identity_info & output) const
 {
-  get_key_identity(&keys, lua, typecast_vocab<external_key_name>(input), output);
+  get_key_identity(&keys, lua, where,
+                   typecast_vocab<external_key_name>(input), output);
 }
 
 void
 project_t::get_key_identity(lua_hooks & lua,
+                            branch_name const & where,
                             arg_type const & input,
                             key_identity_info & output) const
 {
-  get_key_identity(0, lua, typecast_vocab<external_key_name>(input), output);
+  get_key_identity(0, lua, where,
+                   typecast_vocab<external_key_name>(input), output);
 }
 
 

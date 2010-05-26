@@ -333,7 +333,8 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
   else
     {
       key_identity_info identity;
-      project.get_key_identity(keys, *this, arg_type(key, origin::user), identity);
+      project.get_key_identity(keys, *this, branch_name(),
+                               arg_type(key, origin::user), identity);
       k = identity.id;
       return true;
     }
@@ -753,7 +754,8 @@ lua_hooks::hook_get_netsync_key(utf8 const & server_address,
   else
     {
       key_identity_info identity;
-      project.get_key_identity(keys, *this, arg_type(name, origin::user), identity);
+      project.get_key_identity(keys, *this, branch_name(),
+                               arg_type(name, origin::user), identity);
       k = identity.id;
       return true;
     }

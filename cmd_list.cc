@@ -189,7 +189,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
       key_identity_info identity;
       identity.id = idx(certs, i).key;
-      project.complete_key_identity(keys, app.lua, identity);
+      project.complete_key_identity(keys, app.lua, branch_name(), identity);
 
       cout << string(guess_terminal_width(), '-') << '\n'
            << (i18n_format(str)
@@ -332,7 +332,7 @@ namespace {
             {
               key_identity_info identity;
               identity.id = *i;
-              project.complete_key_identity(lua, identity);
+              project.complete_key_identity(lua, branch_name(), identity);
               items[*i].identity = identity;
               items[*i].public_locations.push_back("database");
             }
@@ -346,7 +346,7 @@ namespace {
         {
           key_identity_info identity;
           identity.id = *i;
-          project.complete_key_identity(keys, lua, identity);
+          project.complete_key_identity(keys, lua, branch_name(), identity);
           items[*i].identity = identity;
           items[*i].public_locations.push_back("keystore");
           items[*i].private_locations.push_back("keystore");
@@ -570,7 +570,9 @@ CMD(tags, "tags", "", CMD_REF(list), "",
         {
           key_identity_info identity;
           identity.id = i->key;
-          project.complete_key_identity(app.lua, identity);
+          project.complete_key_identity(app.lua,
+                                        typecast_vocab<branch_name>(i->name),
+                                        identity);
           cout << ' ' << format_key(identity)  << '\n';
         }
       else
@@ -926,7 +928,7 @@ CMD_AUTOMATE(certs, N_("REV"),
 
       key_identity_info identity;
       identity.id = idx(certs, i).key;
-      project.complete_key_identity(app.lua, identity);
+      project.complete_key_identity(app.lua, branch_name(), identity);
       signers.insert(identity);
 
       bool trusted =

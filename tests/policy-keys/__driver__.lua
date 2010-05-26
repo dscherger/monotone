@@ -14,18 +14,28 @@ check(mtn("genkey", "mykey@test.net"), 0, false, true,
 for hash in readfile("stderr"):gmatch("'(" .. string.rep("%x", 40) .. ")'") do
    my_key = hash
 end
+check(mtn("genkey", "otherkey@test.net"), 0, false, true,
+      string.rep("otherkey@test.net\n", 2))
+for hash in readfile("stderr"):gmatch("'(" .. string.rep("%x", 40) .. ")'") do
+   other_key = hash
+end
 
-check(mtn("create_project", "test_project", "-k", "mykey@test.net"), 0, false, false)
+function init_policy(project, key, name, hash)
+   check(mtn("create_project", project, "-k", key), 0, false, false)
 
-check(mtn("setup", "-btest_project.__policy__", "policy_checkout"), 0, false, false)
+   check(mtn("setup", "-b", project .. ".__policy__", project),
+	 0, false, false)
 
-mkdir("policy_checkout/keys")
-writefile("policy_checkout/keys/my_key", my_key)
-check(indir("policy_checkout", mtn("add", "keys/my_key", "--no-respect-ignore")),
-   0, false, false)
-check(indir("policy_checkout",
-	    mtn("commit", "-m", "add key", "-k", "mykey@test.net")),
-      0, false, false)
+   mkdir(project .. "/keys")
+   writefile(project .. "/keys/" .. name, hash)
+   check(indir(project, mtn("add", "keys/" .. name, "--no-respect-ignore")),
+	 0, false, false)
+   check(indir(project, mtn("commit", "-m", "add key", "-k", key)),
+	 0, false, false)
+end
+
+init_policy("test_project", "mykey@test.net", "my_key", my_key)
+init_policy("other_project", "otherkey@test.net", "other_key", other_key)
 
 
 --  use new key in delegation, branch, and branch under delegation
@@ -33,8 +43,7 @@ check(indir("policy_checkout",
 check(mtn("ls", "keys"), 0, true)
 check(qgrep("test_project.my_key", "stdout"))
 
--- TODO: check that keys named in some other (unrelated) policy
--- don't work here unless the full path is given
+
 check(mtn("create_subpolicy", "test_project.delegated",
 	  "--no-workspace", "-k", "my_key"), 0, nil, false)
 
@@ -44,6 +53,9 @@ check(mtn("create_branch", "test_project.somebranch",
 check(mtn("create_branch", "test_project.delegated.otherbranch",
 	  "--no-workspace", "-k", "my_key"), 0, nil, false)
 
+-- unrelated keys don't work
+check(mtn("create_branch", "test_project.badbranch",
+	  "--no-workspace", "-k", "other_key"), 1, nil, false)
 
 -- drop private key (dropkey -d:memory:)
 check(mtn("-d", ":memory:", "--no-workspace", "dropkey", my_key), 0, nil, false)

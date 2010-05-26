@@ -3884,7 +3884,7 @@ namespace {
       {
         key_identity_info identity;
         identity.id = *i;
-        project->complete_key_identity(*lua, identity);
+        project->complete_key_identity(*lua, branch_name(), identity);
         signer_identities.insert(identity);
       }
 
