@@ -4330,7 +4330,7 @@ database::clear_var(var_key const & key)
   ))
 
 void
-database::register_workspace(system_path const & path)
+database::register_workspace(system_path const & workspace)
 {
   var_value val;
   if (var_exists(KNOWN_WORKSPACES_KEY))
@@ -4342,9 +4342,9 @@ database::register_workspace(system_path const & path)
   vector<string>::iterator pos =
     find(workspaces.begin(),
          workspaces.end(),
-         path.as_internal());
+         workspace.as_internal());
   if (pos == workspaces.end())
-    workspaces.push_back(path.as_internal());
+    workspaces.push_back(workspace.as_internal());
 
   string ws;
   join_lines(workspaces, ws);
@@ -4353,7 +4353,7 @@ database::register_workspace(system_path const & path)
 }
 
 void
-database::unregister_workspace(system_path const & path)
+database::unregister_workspace(system_path const & workspace)
 {
   if (var_exists(KNOWN_WORKSPACES_KEY))
     {
@@ -4366,7 +4366,7 @@ database::unregister_workspace(system_path const & path)
       vector<string>::iterator pos =
         find(workspaces.begin(),
              workspaces.end(),
-             path.as_internal());
+             workspace.as_internal());
       if (pos != workspaces.end())
         workspaces.erase(pos);
 
@@ -4378,28 +4378,38 @@ database::unregister_workspace(system_path const & path)
 }
 
 void
-database::get_registered_workspaces(vector<system_path> & paths)
+database::get_registered_workspaces(vector<system_path> & workspaces)
 {
   if (var_exists(KNOWN_WORKSPACES_KEY))
     {
       var_value val;
       get_var(KNOWN_WORKSPACES_KEY, val);
 
-      vector<string> workspaces;
-      split_into_lines(val(), workspaces);
+      vector<string> paths;
+      split_into_lines(val(), paths);
 
-      for (vector<string>::const_iterator i = workspaces.begin();
-           i != workspaces.end(); ++i)
+      for (vector<string>::const_iterator i = paths.begin();
+           i != paths.end(); ++i)
         {
           system_path workspace_path(*i, origin::database);
-          if (!directory_exists(workspace_path / bookkeeping_root_component))
-            {
-              L(FL("ignoring missing workspace '%s'") % workspace_path);
-              continue;
-            }
-          paths.push_back(workspace_path);
+          workspaces.push_back(workspace_path);
         }
     }
+}
+
+void
+database::set_registered_workspaces(vector<system_path> const & workspaces)
+{
+  vector<string> paths;
+  for (vector<system_path>::const_iterator i = workspaces.begin();
+       i != workspaces.end(); ++i)
+    {
+      paths.push_back((*i).as_internal());
+    }
+
+  string ws;
+  join_lines(paths, ws);
+  set_var(KNOWN_WORKSPACES_KEY, var_value(ws, origin::internal));
 }
 
 #undef KNOWN_WORKSPACES_KEY

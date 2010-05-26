@@ -679,6 +679,11 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
                k != workspaces.end(); ++k)
             {
               system_path workspace_path(*k);
+              if (!directory_exists(workspace_path / bookkeeping_root_component))
+                {
+                  L(FL("ignoring missing workspace '%s'") % workspace_path);
+                  continue;
+                }
 
               options workspace_opts;
               workspace::get_options(workspace_path, workspace_opts);

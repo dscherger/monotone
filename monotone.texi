@@ -1186,7 +1186,7 @@ $ mtn db init --db=~/abe.mtn
 
 Beth decides to use monotone's built-in database management functionality.
 monotone then expects to find managed database files in a couple of predefined
-places (like f.e. @file{~/.monotone/databases} on Unix and 
+places (like f.e. @file{~/.monotone/databases} on Unix and
 @file{%APPDDATA%\monotone\databases} on Windows, this is customizable) and acts
 upon those by knowing only their file or basename from anywhere.
 
@@ -6342,6 +6342,30 @@ See @ref{Vars} for more information.
 Deletes any value associated with @var{name} in @var{domain}.  See
 @ref{Vars} for more information.
 
+@item mtn register-workspace [@var{workspace_path}]
+
+Registers the given workspace from the current database, so that it
+will show up in the output of @command{list databases} (the database
+has to be in a managed location for this to work).
+
+If no @var{workspace_path} is given, this command defaults to the
+current workspace.
+
+@item mtn unregister-workspace [@var{workspace_path}]
+
+Unregisters the given workspace from the current database, so that it
+will no longer show up in the output of @command{list databases}.
+
+If no @var{workspace_path} is given, this command defaults to the
+current workspace.
+
+@item mtn cleanup-workspace-list
+
+Removes all invalid workspaces from the list of registered workspaces
+of the current database.  A workspace is considered invalid if its path
+does either not contain an _MTN directory anymore or if the configured
+database for this workspace is a different one.
+
 @item mtn db init --db=@var{dbfile}
 
 This command initializes a new monotone database at @var{dbfile}.
@@ -10741,7 +10765,7 @@ databases.  The command @command{list databases} searches all these
 paths for valid monotone databases and outputs details on each one.
 
 The default implementation returns a table with a single entry,
-@file{$HOME/.monotone/databases} on Unix and 
+@file{$HOME/.monotone/databases} on Unix and
 @file{%APPDATA%\monotone\databases} on Windows.
 
 @item get_default_database_alias ()

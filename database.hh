@@ -20,6 +20,8 @@
 #include "cert.hh"
 #include "options.hh"
 
+using std::vector;
+
 class app_state;
 class lua_hooks;
 struct date_t;
@@ -375,11 +377,13 @@ public:
 
   void clear_var(var_key const & key);
 
-  void register_workspace(system_path const & path);
+  void register_workspace(system_path const & workspace);
 
-  void unregister_workspace(system_path const & path);
+  void unregister_workspace(system_path const & workspace);
 
-  void get_registered_workspaces(std::vector<system_path> & paths);
+  void get_registered_workspaces(vector<system_path> & workspaces);
+
+  void set_registered_workspaces(vector<system_path> const & workspaces);
 
   //
   // --== Completion ==--
