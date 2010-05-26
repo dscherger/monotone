@@ -400,7 +400,7 @@ CMD(unset, "unset", "", CMD_REF(variables), N_("DOMAIN NAME"),
   db.clear_var(k);
 }
 
-CMD(register_workspace, "register-workspace",  "", CMD_REF(variables),
+CMD(register_workspace, "register_workspace",  "", CMD_REF(variables),
     N_("[WORKSPACE_PATH]"),
     N_("Registers a new workspace for the current database"),
     N_("This command adds WORKSPACE_PATH to the list of `known-workspaces'."),
@@ -422,7 +422,7 @@ CMD(register_workspace, "register-workspace",  "", CMD_REF(variables),
   db.register_workspace(workspace);
 }
 
-CMD(unregister_workspace, "unregister-workspace", "", CMD_REF(variables),
+CMD(unregister_workspace, "unregister_workspace", "", CMD_REF(variables),
     N_("[WORKSPACE_PATH]"),
     N_("Unregisters an existing workspace for the current database"),
     N_("This command removes WORKSPACE_PATH to the list of `known-workspaces'."),
@@ -444,7 +444,7 @@ CMD(unregister_workspace, "unregister-workspace", "", CMD_REF(variables),
   db.unregister_workspace(workspace);
 }
 
-CMD(cleanup_workspace_list, "cleanup-workspace-list", "", CMD_REF(variables), "",
+CMD(cleanup_workspace_list, "cleanup_workspace_list", "", CMD_REF(variables), "",
     N_("Removes all invalid, registered workspace paths for the current database"),
     "",
     options::opts::none)

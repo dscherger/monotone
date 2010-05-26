@@ -6342,7 +6342,7 @@ See @ref{Vars} for more information.
 Deletes any value associated with @var{name} in @var{domain}.  See
 @ref{Vars} for more information.
 
-@item mtn register-workspace [@var{workspace_path}]
+@item mtn register_workspace [@var{workspace_path}]
 
 Registers the given workspace from the current database, so that it
 will show up in the output of @command{list databases} (the database
@@ -6351,7 +6351,7 @@ has to be in a managed location for this to work).
 If no @var{workspace_path} is given, this command defaults to the
 current workspace.
 
-@item mtn unregister-workspace [@var{workspace_path}]
+@item mtn unregister_workspace [@var{workspace_path}]
 
 Unregisters the given workspace from the current database, so that it
 will no longer show up in the output of @command{list databases}.
@@ -6359,7 +6359,7 @@ will no longer show up in the output of @command{list databases}.
 If no @var{workspace_path} is given, this command defaults to the
 current workspace.
 
-@item mtn cleanup-workspace-list
+@item mtn cleanup_workspace_list
 
 Removes all invalid workspaces from the list of registered workspaces
 of the current database.  A workspace is considered invalid if its path
