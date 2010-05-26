@@ -5042,7 +5042,7 @@ sub startup($)
 		unless (defined($file = IO::File->new("mtn --version |")));
 	    while (defined($line = $file->getline()))
 	    {
-		if ($line =~ m/^monotone (\d+\.\d+) ./)
+		if ($line =~ m/^monotone (\d+\.\d+)(dev)? ./)
 		{
 		    $mtn_version = $1;
 		}
