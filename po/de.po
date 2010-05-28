@@ -2364,7 +2364,7 @@ msgid ""
 "The values of Author, Date and Branch may be modified as required.\n"
 "\n"
 msgstr ""
-"Geben Sie eine Beschreibung dieser Änderung unterhalb der Zeile \"Änderungen\""
+"Geben Sie eine Beschreibung dieser Änderung unterhalb der Zeile \"Änderungen\"\n"
 "ein. Die Werte für Autor, Datum und Zweig können ggf. geändert werden.\n"
 "\n"
 
