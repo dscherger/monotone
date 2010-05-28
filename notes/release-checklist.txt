@@ -123,12 +123,11 @@ How to release a new version of monotone
     $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
     $ mtn sync
 
-12) Update index.html on the website to state the latest version at the
-    top, and modify the list of download links to point to the new
-    version.
+12) Update index.php on the website to state the latest version in the left
+    column:
 
     $ cd WEBDIR
-    $ vi index.html
+    $ vi index.php
     $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
     $ mtn sync
 
