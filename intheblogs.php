@@ -11,10 +11,7 @@ require_once("header.inc.php");
     require_once("simplepie-1.2.0/simplepie.inc.php");
 
     $feed = new SimplePie();
-    $feed->set_feed_url(array(
-        'http://www.thomaskeller.biz/blog/category/coding/monotone/feed/',
-        'http://identi.ca/lapo/tag/monotone/rss',
-    ));
+    $feed->set_feed_url(require_once("rss_feeds.inc.php"));
     $feed->init();
     $feed->handle_content_type();
 
@@ -24,7 +21,7 @@ require_once("header.inc.php");
             <p>No blog posts found.</p>
 <?php
     else:
-        foreach ($feed->get_items() as $item):
+        foreach ($items as $item):
             $author = ($author = $item->get_author())
                 ? $author->get_name() : "unknown";
 ?>
