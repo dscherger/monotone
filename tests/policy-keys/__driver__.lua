@@ -1,8 +1,5 @@
 mtn_setup()
 
-
--- this is a placeholder
-
 -- test that keys are handled properly:
 --   * naming keys by ID always works
 --   * naming keys by given name only work if we have the private key
@@ -65,6 +62,22 @@ check(mtn("create_branch", "test_project.badbranch",
 check(mtn("-d", ":memory:", "--no-workspace", "dropkey", my_key), 0, nil, false)
 
 -- check that the delegation and branches still work
+do
+   local trynum = 0
+   function trybranch(branch, result)
+      trynum = trynum + 1
+      check(mtn("setup", "-b", branch, "co_" .. trynum), 0)
+      writefile("co_" .. trynum .. "/thefile", "stuff... " .. branch)
+      check(indir("co_" .. trynum, mtn("add", "thefile")), 0, nil, false)
+      check(indir("co_" .. trynum, mtn("commit", "-mx")), result, nil, false)
+   end
+end
+trybranch("test_project.somebranch", 0)
+trybranch("test_project.badbranch", 1)
+trybranch("test_project.delegated.otherbranch", 0)
+trybranch("test_project.delegated.fakebranch", 1)
 
 
+-- may need to add more checks about using the key names
+-- need a clearer picture of when/where/why key names are resolved first
 check(false)
