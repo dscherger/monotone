@@ -1,0 +1,19 @@
+----------------------------------------------------------------------
+Revision: 07d3c194ca04f8907a5374abb366008a6c96220e
+Parent:   8b8566e0d6448ac4f181ab7fbb2ba2743ba9dd4e
+Author:   tester@test.net
+Date:     2010-05-20T04:53:22
+Branch:   testbranch
+
+Changes against parent 8b8566e0d6448ac4f181ab7fbb2ba2743ba9dd4e
+
+  dropped  aaa
+  dropped  bbb
+  dropped  ccc
+  added    ddd
+  added    eee
+  added    fff
+  patched  ggg
+  patched  hhh
+  patched  iii
+

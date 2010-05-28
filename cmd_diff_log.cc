@@ -115,6 +115,51 @@ dump_diff(lua_hooks & lua,
 
 }
 
+// structs to ensure diffs are ordered the same as revision summaries
+
+struct dropped
+{
+  node_id nid;
+  file_id left_id;
+  file_path left_path;
+  dropped(node_id nid, file_id left_id, file_path left_path) :
+    nid(nid), left_id(left_id), left_path(left_path) {}
+  bool operator<(dropped const & other) const
+  {
+    return left_path < other.left_path;
+  }
+};
+
+struct added
+{
+  node_id nid;
+  file_id right_id;
+  file_path right_path;
+  added(node_id nid, file_id right_id, file_path right_path) :
+    nid(nid), right_id(right_id), right_path(right_path) {}
+  bool operator<(added const & other) const
+  {
+    return right_path < other.right_path;
+  }
+};
+
+struct patched
+{
+  node_id nid;
+  file_id left_id;
+  file_id right_id;
+  file_path left_path;
+  file_path right_path;
+  patched(node_id nid, file_id left_id, file_id right_id, 
+          file_path left_path, file_path right_path) :
+    nid(nid), left_id(left_id), right_id(right_id), 
+    left_path(left_path), right_path(right_path) {}
+  bool operator<(patched const & other) const
+  {
+    return right_path < other.right_path;
+  }
+};
+
 static void
 dump_diffs(lua_hooks & lua,
            database & db,
@@ -128,6 +173,17 @@ dump_diffs(lua_hooks & lua,
            bool right_from_db,
            bool show_encloser)
 {
+  // revision_summary in rev_output.cc prints things in sections of drops
+  // renames, adds, patches and attrs. within these sections the output is
+  // ordered by path. we only care about drops, adds and patches here but
+  // iterating over rosters is done in node order rather the order above.
+  // so extract the different sets of drops, adds and patches and order them
+  // each by path.
+
+  set<dropped> drops;
+  set<added> adds;
+  set<patched> patches;
+
   parallel::iter<node_map> i(left_roster.all_nodes(), right_roster.all_nodes());
   while (i.next())
     {
@@ -141,28 +197,11 @@ dump_diffs(lua_hooks & lua,
           // deleted
           if (is_file_t(i.left_data()))
             {
-              file_path left_path, right_path;
-              left_roster.get_name(i.left_key(), left_path);
-              // right_path is null
-          
-              file_id left_id, right_id;
+              file_path path;
+              file_id left_id;
+              left_roster.get_name(i.left_key(), path);
               left_id = downcast_to_file_t(i.left_data())->content;
-              // right_id is null
-
-              data left_data, right_data;
-              get_data(db, left_path, left_id, left_from_db, left_data);
-              // right_data is null
-
-              string encloser("");
-              if (show_encloser)
-                lua.hook_get_encloser_pattern(left_path, encloser);
-
-              dump_diff(lua, 
-                        left_path, right_path,
-                        left_id, right_id,
-                        left_data, right_data,
-                        diff_format, external_diff_args_given, external_diff_args,
-                        encloser, output);
+              drops.insert(dropped(i.left_key(), left_id, path));
             }
           break;
 
@@ -170,28 +209,11 @@ dump_diffs(lua_hooks & lua,
           // added
           if (is_file_t(i.right_data()))
             {
-              file_path left_path, right_path;
-              // left_path is null
-              right_roster.get_name(i.right_key(), right_path);
-           
-              file_id left_id, right_id;
-              // left_id is null
+              file_path path;
+              file_id right_id;
+              right_roster.get_name(i.right_key(), path);
               right_id = downcast_to_file_t(i.right_data())->content;
-
-              data left_data, right_data;
-              // left_data is null
-              get_data(db, right_path, right_id, right_from_db, right_data);
-
-              string encloser("");
-              if (show_encloser)
-                lua.hook_get_encloser_pattern(right_path, encloser);
-
-              dump_diff(lua, 
-                        left_path, right_path,
-                        left_id, right_id,
-                        left_data, right_data,
-                        diff_format, external_diff_args_given, external_diff_args,
-                        encloser, output);
+              adds.insert(added(i.right_key(), right_id, path));
             }
           break;
 
@@ -199,7 +221,6 @@ dump_diffs(lua_hooks & lua,
           // moved/renamed/patched/attribute changes
           if (is_file_t(i.left_data()))
             {
-          
               file_id left_id, right_id;
               left_id = downcast_to_file_t(i.left_data())->content;
               right_id = downcast_to_file_t(i.right_data())->content;
@@ -210,25 +231,73 @@ dump_diffs(lua_hooks & lua,
               file_path left_path, right_path;
               left_roster.get_name(i.left_key(), left_path);
               right_roster.get_name(i.right_key(), right_path);
-          
-              data left_data, right_data;
-              get_data(db, left_path, left_id, left_from_db, left_data);
-              get_data(db, right_path, right_id, right_from_db, right_data);
 
-              string encloser("");
-              if (show_encloser)
-                lua.hook_get_encloser_pattern(right_path, encloser);
-
-              dump_diff(lua, 
-                        left_path, right_path,
-                        left_id, right_id,
-                        left_data, right_data,
-                        diff_format, external_diff_args_given, external_diff_args,
-                        encloser, output);
+              patches.insert(patched(i.left_key(), left_id, right_id,
+                                     left_path, right_path));
             }
           break;
         }
     }
+
+  file_path null_path;
+  file_id null_id;
+  data null_data;
+
+  // process the separated sets of drops, adds and patches in path order and
+  // dump out the relevant diffs
+
+  for (set<dropped>::const_iterator i = drops.begin(); i != drops.end(); ++i)
+    {
+      data left_data;
+      get_data(db, i->left_path, i->left_id, left_from_db, left_data);
+
+      string encloser("");
+      if (show_encloser)
+        lua.hook_get_encloser_pattern(i->left_path, encloser);
+
+      dump_diff(lua, 
+                i->left_path, null_path,
+                i->left_id, null_id,
+                left_data, null_data,
+                diff_format, external_diff_args_given, external_diff_args,
+                encloser, output);
+    }
+
+  for (set<added>::const_iterator i = adds.begin(); i != adds.end(); ++i)
+    {
+      data right_data;
+      get_data(db, i->right_path, i->right_id, right_from_db, right_data);
+
+      string encloser("");
+      if (show_encloser)
+        lua.hook_get_encloser_pattern(i->right_path, encloser);
+
+      dump_diff(lua, 
+                null_path, i->right_path,
+                null_id, i->right_id,
+                null_data, right_data,
+                diff_format, external_diff_args_given, external_diff_args,
+                encloser, output);
+    }
+
+  for (set<patched>::const_iterator i = patches.begin(); i != patches.end(); ++i)
+    {
+      data left_data, right_data;
+      get_data(db, i->left_path, i->left_id, left_from_db, left_data);
+      get_data(db, i->right_path, i->right_id, right_from_db, right_data);
+
+      string encloser("");
+      if (show_encloser)
+        lua.hook_get_encloser_pattern(i->right_path, encloser);
+
+      dump_diff(lua, 
+                i->left_path, i->right_path,
+                i->left_id, i->right_id,
+                left_data, right_data,
+                diff_format, external_diff_args_given, external_diff_args,
+                encloser, output);
+    }
+
 }
 
 // common functionality for diff and automate content_diff to determine
