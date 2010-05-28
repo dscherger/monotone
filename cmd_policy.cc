@@ -72,7 +72,7 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
 
   policies::editable_policy bp(project.get_base_policy());
 
-  bp.set_delegation(project_name, policies::delegation::create(app, signers));
+  bp.set_delegation(project_name, policies::delegation::create(signers));
 
   policies::base_policy::write(app.lua, bp);
 }
@@ -116,7 +116,7 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   admin_keys.insert(key_id_to_external_name(keys.signing_key));
   branch_name del_name(name);
   del_name.strip_prefix(gov.back().full_policy_name);
-  parent.set_delegation(del_name(), policies::delegation::create(app, admin_keys));
+  parent.set_delegation(del_name(), policies::delegation::create(admin_keys));
 
   revision_id revid = parent_branch.commit(project, keys, parent,
                                            utf8("Add delegation to new child policy"),
@@ -161,7 +161,7 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   suffix.strip_prefix(gov.back().full_policy_name);
   if (suffix().empty())
     suffix = branch_name("__main__", origin::internal);
-  ppol.set_branch(suffix(), policies::branch::create(app, admin_keys));
+  ppol.set_branch(suffix(), policies::branch::create(admin_keys));
   revision_id revid = parent.commit(project, keys, ppol,
                                     utf8("Add branch."),
                                     origin::user);

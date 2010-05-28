@@ -35,12 +35,11 @@ namespace policies {
     : type(branch_type),
       branch_desc(b)
   { }
-  delegation delegation::create(app_state & app,
-                                std::set<external_key_name> const & admins)
+  delegation delegation::create(std::set<external_key_name> const & admins)
   {
     delegation ret;
     ret.type = branch_type;
-    ret.branch_desc = branch::create(app, admins);
+    ret.branch_desc = branch::create(admins);
     return ret;
   }
 

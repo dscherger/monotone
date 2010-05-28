@@ -15,7 +15,8 @@ addfile("otherfile", "splork")
 commit()
 REV3=base_revision()
 
-testURI="file:" .. test.root .. "/test.db"
+copy("test.db", "test-clone.db")
+testURI="file:" .. test.root .. "/test-clone.db"
 
 check(nodb_mtn("clone", testURI, "testbranch", "test_dirA"),
          1, false, true)

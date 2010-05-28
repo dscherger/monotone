@@ -25,8 +25,10 @@ cxxx xxx xx xx:xx:xx UTC 2010
           with the new information displayed by 'commit' so that all three
           commands display revisions similarly.
 
-        - The 'setup' command now creates a new internal database if no
-          database is given either as command line or workspace option.
+        - The 'setup' as well as the 'clone' command check if a managed default
+          database exists and if not create one - in case no database option is
+          given either as command line or workspace option to the command
+          (see below for more information on the new management features).
 
         - Monotone will only warn about bad certs if there are not also matching
           trusted certs. So if someone commits a bad branch cert, monotone will
@@ -41,6 +43,29 @@ cxxx xxx xx xx:xx:xx UTC 2010
           monotone. See chapter 6.3 in the documentation for details.
 
         New features
+
+        - Monotone has now database management capabilities: If you place your
+          databases in one or more specific locations (defaults to 
+          %APPDIR%/monotone/databases on Windows and $HOME/.monotone/databases
+          on Linux, configurable by a hook), it is able to discover these databases
+          and access them only by giving the (base) name of their filename, 
+          for example ":my-database.mtn".
+
+          You can also directly create new databases in the first found default
+          location by issuing 'mtn db init -d ":my-database.mtn".
+
+          Some commands, like 'setup' and 'clone' automatically fall back to
+          a default database (":default.mtn", also configurable by a hook) if
+          no database option is explicitely given.
+          
+          Additionally monotone remembers checked out workspaces for every 
+          managed database and displays these "known" registered paths together
+          with other information in the new 'list databases' command
+          (closes monotone bug #8916).
+
+        - A set of management commands - 'register_workspace', 
+          'unregister_workspace' and 'cleanup_workspace_list' - to handle moved
+          or removed workspaces for managed databases have been added.
 
         - Many commands that change the heads of a branch (approve, disapprove,
           pull, merge, etc) can now take an option "--update". If run from

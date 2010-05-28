@@ -1666,7 +1666,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   }
 
   // the workspace should remember the branch we just committed to.
-  work.set_options(app.opts, true);
+  work.set_options(app.opts, app.lua, true);
 
   // the work revision is now whatever changes remain on top of the revision
   // we just checked in.
@@ -1738,23 +1738,14 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
     directory_exists(workspace_dir) ? _MTN_dir : workspace_dir
   );
 
-  workspace::create_workspace(app.opts, app.lua, workspace_dir);
-
-  if (!app.opts.dbname_given || app.opts.dbname.empty())
-    {
-      app.opts.dbname = system_path(workspace_dir
-                                    / bookkeeping_root_component
-                                    / bookkeeping_internal_db_file_name);
-    }
+  database_path_helper helper(app.lua);
+  helper.maybe_set_default_alias(app.opts);
 
   database db(app);
-  if (get_path_status(db.get_filename()) == path::nonexistent)
-    {
-      P(F("initializing new database '%s'") % db.get_filename());
-      db.initialize();
-    }
-
+  db.create_if_not_exists();
   db.ensure_open();
+
+  workspace::create_workspace(app.opts, app.lua, workspace_dir);
 
   workspace work(app);
   revision_t rev;

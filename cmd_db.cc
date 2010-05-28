@@ -137,7 +137,7 @@ CMD(db_migrate, "migrate", "", CMD_REF(db), "",
   {
     database db(app);
     db.migrate(keys, mstat);
-    app.dbcache.reset();
+    database::reset_cache();
   }
 
   if (mstat.need_regen())
@@ -403,6 +403,95 @@ CMD(unset, "unset", "", CMD_REF(variables), N_("DOMAIN NAME"),
   E(db.var_exists(k), origin::user,
     F("no var with name %s in domain %s") % n % d);
   db.clear_var(k);
+}
+
+CMD(register_workspace, "register_workspace",  "", CMD_REF(variables),
+    N_("[WORKSPACE_PATH]"),
+    N_("Registers a new workspace for the current database"),
+    N_("This command adds WORKSPACE_PATH to the list of `known-workspaces'."),
+    options::opts::none)
+{
+  if (args.size() > 1)
+    throw usage(execid);
+
+  E(args.size() == 1 || workspace::found, origin::user,
+    F("No workspace given"));
+
+  system_path workspace;
+  if (args.size() == 1)
+    workspace = system_path(idx(args, 0)(), origin::user);
+  else
+    get_current_workspace(workspace);
+
+  database db(app);
+  db.register_workspace(workspace);
+}
+
+CMD(unregister_workspace, "unregister_workspace", "", CMD_REF(variables),
+    N_("[WORKSPACE_PATH]"),
+    N_("Unregisters an existing workspace for the current database"),
+    N_("This command removes WORKSPACE_PATH to the list of `known-workspaces'."),
+    options::opts::none)
+{
+  if (args.size() > 1)
+    throw usage(execid);
+
+  E(args.size() == 1 || workspace::found, origin::user,
+    F("No workspace given"));
+
+  system_path workspace;
+  if (args.size() == 1)
+    workspace = system_path(idx(args, 0)(), origin::user);
+  else
+    get_current_workspace(workspace);
+
+  database db(app);
+  db.unregister_workspace(workspace);
+}
+
+CMD(cleanup_workspace_list, "cleanup_workspace_list", "", CMD_REF(variables), "",
+    N_("Removes all invalid, registered workspace paths for the current database"),
+    "",
+    options::opts::none)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+
+  vector<system_path> original_workspaces, valid_workspaces;
+
+  database db(app);
+  db.get_registered_workspaces(original_workspaces);
+
+  database_path_helper helper(app.lua);
+
+  for (vector<system_path>::const_iterator i = original_workspaces.begin();
+       i != original_workspaces.end(); ++i)
+    {
+      system_path workspace_path(*i);
+      if (!directory_exists(workspace_path / bookkeeping_root_component))
+        {
+          L(FL("ignoring missing workspace '%s'") % workspace_path);
+          continue;
+        }
+
+      options workspace_opts;
+      workspace::get_options(workspace_path, workspace_opts);
+
+      system_path workspace_db_path;
+      helper.get_database_path(workspace_opts, workspace_db_path);
+
+      if (workspace_db_path != db.get_filename())
+        {
+          L(FL("ignoring workspace '%s', expected database %s, "
+               "but has %s configured in _MTN/options")
+              % workspace_path % db.get_filename() % workspace_db_path);
+          continue;
+        }
+
+      valid_workspaces.push_back(workspace_path);
+    }
+
+  db.set_registered_workspaces(valid_workspaces);
 }
 
 CMD(complete, "complete", "", CMD_REF(informative),

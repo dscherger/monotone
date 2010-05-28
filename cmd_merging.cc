@@ -238,7 +238,7 @@ update(app_state & app,
       P(F("already up to date at %s") % old_rid);
       // do still switch the workspace branch, in case they have used
       // update to switch branches.
-      work.set_options(app.opts, true);
+      work.set_options(app.opts, app.lua, true);
       return;
     }
 
@@ -328,7 +328,7 @@ update(app_state & app,
   work.put_update_id(old_rid);
   work.put_work_rev(remaining);
   work.maybe_update_inodeprints(db);
-  work.set_options(app.opts, true);
+  work.set_options(app.opts, app.lua, true);
 
   if (switched_branch)
     P(F("switched branch; next commit will use branch %s") % app.opts.branch());

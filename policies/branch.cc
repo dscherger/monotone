@@ -11,8 +11,8 @@
 #include "base.hh"
 #include "policies/branch.hh"
 
-#include "app_state.hh"
 #include "basic_io.hh"
+#include "dates.hh"
 #include "lazy_rng.hh"
 #include "transforms.hh"
 
@@ -26,11 +26,11 @@ namespace basic_io {
 }
 
 namespace {
-  branch_uid generate_uid(app_state & app)
+  branch_uid generate_uid()
   {
     std::string when = date_t::now().as_iso_8601_extended();
     char buf[20];
-    app.rng->get().randomize(reinterpret_cast<Botan::byte*>(buf), 20);
+    lazy_rng::get().randomize(reinterpret_cast<Botan::byte*>(buf), 20);
     return branch_uid(when + "--" + encode_hexenc(std::string(buf, 20),
                                                   origin::internal),
                       origin::internal);
@@ -39,12 +39,11 @@ namespace {
 
 namespace policies {
   branch::branch() { }
-  branch branch::create(app_state & app,
-                        std::set<external_key_name> const & admins)
+  branch branch::create(std::set<external_key_name> const & admins)
   {
     branch ret;
     ret.signers = admins;
-    ret.uid = generate_uid(app);
+    ret.uid = generate_uid();
     return ret;
   }
   branch_uid const & branch::get_uid() const
