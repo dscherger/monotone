@@ -53,10 +53,9 @@ check(mtn("create_branch", "test_project.somebranch",
 check(mtn("create_branch", "test_project.delegated.otherbranch",
 	  "--no-workspace", "-k", "my_key"), 0, nil, false)
 
--- unrelated keys don't work
+-- unrelated keys don't work...
 check(mtn("create_branch", "test_project.badbranch",
 	  "--no-workspace", "-k", "other_key"), 1, nil, false)
-
 -- ...unless fully qualified
 check(mtn("create_branch", "test_project.badbranch",
 	  "--no-workspace", "-k", "other_project.other_key"), 0, nil, false)

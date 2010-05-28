@@ -138,6 +138,7 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   project_t project(db, app.lua, app.opts);
   branch_name branch = typecast_vocab<branch_name>(idx(args, 0));
 
+  app.opts.branch = branch;
   cache_user_key(app.opts, app.lua, db, keys, project);
 
   policy_chain gov;

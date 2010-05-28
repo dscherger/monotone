@@ -585,13 +585,19 @@ public:
     typedef key_lister::name_map::const_iterator it;
     for (it i = names.begin(); i != names.end(); ++i)
       {
+        branch_name name_as_branch =
+          typecast_vocab<branch_name>(i->second.second);
+        key_name official_name =
+          typecast_vocab<key_name>(i->second.first / name_as_branch);
+        if (official_name == name)
+          {
+            // fully-qualified exact match
+            results[official_name] = i->first;
+          }
         if (i->second.second != name)
           continue;
         if (where.empty() || where.has_prefix(i->second.first))
           {
-            branch_name name_as_branch = typecast_vocab<branch_name>(i->second.second);
-            key_name official_name =
-              typecast_vocab<key_name>(i->second.first / name_as_branch);
             results[official_name] = i->first;
           }
       }
