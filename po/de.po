@@ -7025,7 +7025,7 @@ msgstr "Revision:   "
 
 #: rev_output.cc:67
 msgid "Parent:   "
-msgstr "Elternrev.:"
+msgstr "Elternrev.: "
 
 #: rev_output.cc:79
 msgid "Author:   "
