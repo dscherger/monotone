@@ -564,10 +564,10 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
         {
           hexenc<id> hexid;
           encode_hexenc(i->ident.inner(), hexid);
-         
+
           cout << i->name << ' ' << hexid().substr(0,10) << "... ";
-    
-          for (vector<cert>::const_iterator c = certs.begin(); 
+
+          for (vector<cert>::const_iterator c = certs.begin();
                c != certs.end(); ++c)
             {
               if (c->name == branch)
@@ -611,6 +611,106 @@ CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
       cout << i->first.first << ": "
            << i->first.second << ' '
            << i->second << '\n';
+    }
+}
+
+CMD(databases, "databases", "dbs", CMD_REF(list), "",
+    N_("Lists managed databases and their known workspaces"),
+    "",
+    options::opts::none)
+{
+  vector<system_path> search_paths, files, dirs;
+
+  E(app.lua.hook_get_default_database_locations(search_paths), origin::database,
+    F("could not query default database locations"));
+
+  database_path_helper helper(app.lua);
+
+  for (vector<system_path>::const_iterator i = search_paths.begin();
+       i != search_paths.end(); ++i)
+    {
+      system_path search_path(*i);
+
+      fill_path_vec<system_path> fill_files(search_path, files, false);
+      fill_path_vec<system_path> fill_dirs(search_path, dirs, true);
+      read_directory(search_path, fill_files, fill_dirs);
+
+      for (vector<system_path>::const_iterator j = files.begin();
+           j != files.end(); ++j)
+        {
+          system_path db_path(*j);
+
+          // a little optimization, so we don't scan and open every file
+          string p = db_path.as_internal();
+          if (p.size() < 4 || p.substr(p.size() - 4) != ".mtn")
+            {
+              L(FL("ignoring file '%s'") % db_path);
+              continue;
+            }
+
+          options opts;
+          opts.dbname_type = unmanaged_db;
+          opts.dbname = db_path;
+          opts.dbname_given = true;
+
+          database db(opts, app.lua);
+
+          try
+            {
+              db.ensure_open();
+            }
+          catch (recoverable_failure & f)
+            {
+              L(FL("could not open '%s': %s") % db_path % f.what());
+              continue;
+            }
+
+          string managed_path = db_path.as_internal().substr(
+              search_path.as_internal().size() + 1
+          );
+          cout << F(":%s (in %s):") % managed_path % search_path << '\n';
+
+          bool has_valid_workspaces = false;
+
+          vector<system_path> workspaces;
+          db.get_registered_workspaces(workspaces);
+
+          for (vector<system_path>::const_iterator k = workspaces.begin();
+               k != workspaces.end(); ++k)
+            {
+              system_path workspace_path(*k);
+              if (!directory_exists(workspace_path / bookkeeping_root_component))
+                {
+                  L(FL("ignoring missing workspace '%s'") % workspace_path);
+                  continue;
+                }
+
+              options workspace_opts;
+              workspace::get_options(workspace_path, workspace_opts);
+
+              system_path workspace_db_path;
+              helper.get_database_path(workspace_opts, workspace_db_path);
+
+              if (workspace_db_path != db_path)
+                {
+                  L(FL("ignoring workspace '%s', expected database %s, "
+                       "but has %s configured in _MTN/options")
+                      % workspace_path % db_path % workspace_db_path);
+                  continue;
+                }
+
+              has_valid_workspaces = true;
+
+              string workspace_branch = workspace_opts.branch();
+              if (!workspace_opts.branch_given)
+                workspace_branch = _("<no branch set>");
+
+              cout << F("\t%s (in %s)") % workspace_branch % workspace_path << '\n';
+            }
+
+            if (!has_valid_workspaces)
+              cout << F("\tno known valid workspaces") << '\n';
+        }
     }
 }
 

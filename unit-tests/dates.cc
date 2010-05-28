@@ -188,6 +188,8 @@ UNIT_TEST(from_string)
 #undef NO
 }
 
+#ifndef WIN32
+// parse_date (used by from_formatted_localtime) not implemented on Win32
 UNIT_TEST(roundtrip_localtimes)
 {
 #define OK(x) do {                                                       \
@@ -213,7 +215,7 @@ UNIT_TEST(roundtrip_localtimes)
   end += 1000;
 
   // these tests run with LANG=C and TZ=UTC so the %c format seems to work
-  // however strptime does not like the timezone name when %c is used in 
+  // however strptime does not like the timezone name when %c is used in
   // other locales. with LANG=en_CA.UTF-8 this test fails.
 
   if (sizeof(time_t) <= 4)
@@ -247,7 +249,10 @@ UNIT_TEST(roundtrip_localtimes)
 
 #undef OK
 }
+#endif
 
+#ifndef WIN32
+// parse_date (used by from_formatted_localtime) not implemented on Win32
 UNIT_TEST(localtime_formats)
 {
 #define OK(d, f) do {                                                    \
@@ -309,6 +314,7 @@ UNIT_TEST(localtime_formats)
 
 #undef OK
 }
+#endif
 
 UNIT_TEST(from_unix_epoch)
 {

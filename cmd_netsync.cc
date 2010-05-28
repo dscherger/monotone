@@ -288,9 +288,10 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
 
   if (app.opts.dbname.empty())
     {
-      W(F("No database given; assuming ':memory:' database. This means that we can't\n"
-          "verify the server key, because we have no record of what it should be."));
-      app.opts.dbname_is_memory = true;
+      W(F("No database given; assuming '%s' database. This means that we can't\n"
+          "verify the server key, because we have no record of what it should be.")
+          % memory_db_identifier);
+      app.opts.dbname_type = memory_db;
     }
 
   database db(app);
@@ -419,9 +420,10 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   if (app.opts.dbname.empty())
     {
-      W(F("No database given; assuming ':memory:' database. This means that we can't\n"
-          "verify the server key, because we have no record of what it should be."));
-      app.opts.dbname_is_memory = true;
+      W(F("No database given; assuming '%s' database. This means that we can't\n"
+          "verify the server key, because we have no record of what it should be.")
+          % memory_db_identifier);
+      app.opts.dbname_type = memory_db;
     }
 
   database db(app);
@@ -614,7 +616,7 @@ CMD(sync, "sync", "", CMD_REF(network),
     {
       // Write workspace options, including key; this is the simplest way to
       // fix a "found multiple keys" error reported by sync.
-      workspace::set_options(app.opts);
+      workspace::set_options(app.opts, app.lua);
     }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
@@ -641,7 +643,7 @@ CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   {
     // Write workspace options, including key; this is the simplest way to
     // fix a "found multiple keys" error reported by sync.
-    workspace::set_options(app.opts);
+    workspace::set_options(app.opts, app.lua);
   }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
@@ -692,20 +694,26 @@ CMD(clone, "clone", "", CMD_REF(network),
          % workspace_dir);
     }
 
-  // remember the initial working dir so that relative file://
-  // db URIs will work
-  system_path start_dir(get_current_working_dir(), origin::system);
-
   system_path _MTN_dir = workspace_dir / path_component("_MTN");
+
+  require_path_is_nonexistent
+    (_MTN_dir, F("bookkeeping directory already exists in '%s'")
+     % workspace_dir);
+
   directory_cleanup_helper remove_on_fail(
     target_is_current_dir ? _MTN_dir : workspace_dir
   );
 
-  // paths.cc's idea of the current workspace root is wrong at this point
-  if (!app.opts.dbname_given || app.opts.dbname.empty())
-    app.opts.dbname = system_path(workspace_dir
-                                  / bookkeeping_root_component
-                                  / bookkeeping_internal_db_file_name);
+  // remember the initial working dir so that relative file://
+  // db URIs will work
+  system_path start_dir(get_current_working_dir(), origin::system);
+
+  database_path_helper helper(app.lua);
+  helper.maybe_set_default_alias(app.opts);
+
+  database db(app);
+  db.create_if_not_exists();
+  db.ensure_open();
 
   // this is actually stupid, but app.opts.branch must be set here
   // otherwise it will not be written into _MTN/options, in case
@@ -713,12 +721,6 @@ CMD(clone, "clone", "", CMD_REF(network),
   app.opts.branch = branchname;
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
   app.opts.branch = branch_name();
-
-  database db(app);
-  if (get_path_status(db.get_filename()) == path::nonexistent)
-    db.initialize();
-
-  db.ensure_open();
 
   key_store keys(app);
   project_t project(db);

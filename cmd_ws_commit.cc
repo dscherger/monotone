@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -127,6 +128,41 @@ private:
   size_t offset;
 };
 
+static bool
+date_fmt_valid (string date_fmt)
+{
+  if (date_fmt.empty())
+    {
+      return true;
+    }
+  else
+    {
+      // check that the specified date format can be used to format and
+      // parse a date
+      date_t now = date_t::now();
+      date_t parsed;
+      try
+        {
+          string formatted = now.as_formatted_localtime(date_fmt);
+          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
+        }
+      catch (recoverable_failure const & e)
+        {
+          L(FL("date check failed: %s") % e.what());
+        }
+
+      if (parsed != now)
+        {
+          L(FL("date check failed: %s != %s") % now % parsed);
+          return false;
+        }
+      else
+        {
+          return true;
+        }
+    }
+}
+
 static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               project_t & project,
@@ -196,12 +232,23 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   utf8 header;
   utf8 summary;
 
-  revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
+  bool is_date_fmt_valid = date_fmt_valid(date_fmt);
+  string null_date_fmt("");
+
+  if (!is_date_fmt_valid)
+    {
+      W(F("date format '%s' cannot be used for commit; using default instead") % date_fmt);
+      revision_header(rid, rev, author, date, branch, changelog, null_date_fmt, header);
+    }
+  else
+    {
+      revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
+    }
   revision_summary(rev, summary);
 
-  utf8 full_message(instructions() + cancel() + header() + notes() + summary(), 
+  utf8 full_message(instructions() + cancel() + header() + notes() + summary(),
                     origin::internal);
-  
+
   external input_message;
   external output_message;
 
@@ -276,7 +323,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   E(!d.empty(), origin::user,
     F("Commit failed. Date value empty."));
 
-  if (date_fmt.empty())
+  if (!is_date_fmt_valid || date_fmt.empty())
     date = date_t(d);
   else
     date = date_t::from_formatted_localtime(d, date_fmt);
@@ -323,11 +370,10 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   work.clear_commit_text();
 }
 
-CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
-    N_("Reverts files and/or directories"),
-    N_("In order to revert the entire workspace, specify \".\" as the "
-       "file name."),
-    options::opts::depth | options::opts::exclude | options::opts::missing)
+void
+revert(app_state & app,
+       args_vector const & args,
+       bool undrop)
 {
   roster_t old_roster, new_roster;
   cset preserved;
@@ -432,7 +478,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
         {
           file_t f = downcast_to_file_t(node);
 
-          bool changed = true;
+          bool revert = true;
 
           if (file_exists(path))
             {
@@ -442,11 +488,15 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
               if (ident == f->content)
                 {
                   L(FL("skipping unchanged %s") % path);
-                  changed = false;;
+                  revert = false;
+                }
+              else
+                {
+                  revert = !undrop;
                 }
             }
 
-          if (changed)
+          if (revert)
             {
               P(F("reverting %s") % path);
               L(FL("reverting %s to [%s]") % path
@@ -504,6 +554,24 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   // Race.
   work.put_work_rev(remaining);
   work.maybe_update_inodeprints(db);
+}
+
+CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Reverts files and/or directories"),
+    N_("In order to revert the entire workspace, specify \".\" as the "
+       "file name."),
+    options::opts::depth | options::opts::exclude | options::opts::missing)
+{
+  revert(app, args, false);
+}
+
+CMD(undrop, "undrop", "", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Reverses a mistaken 'drop'"),
+    N_("If the file was deleted from the workspace, this is the same as 'revert'. "
+       "Otherwise, it just removes the 'drop' from the manifest."),
+    options::opts::none)
+{
+  revert(app, args, true);
 }
 
 CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
@@ -777,27 +845,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
     }
 
-  if (!date_fmt.empty())
-    {
-      // check that the specified date format can be parsed (for commit)
-      date_t now = date_t::now();
-      date_t parsed;
-      try
-        {
-          string formatted = now.as_formatted_localtime(date_fmt);
-          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
-        }
-      catch (recoverable_failure const & e) 
-        { 
-          L(FL("date check failed: %s") % e.what());
-        }
-
-      if (parsed != now)
-        {
-          L(FL("date check failed: %s != %s") % now % parsed);
-          W(F("date format '%s' cannot be used for commit") % date_fmt);
-        }
-    }
+  if (!date_fmt_valid(date_fmt))
+    W(F("date format '%s' cannot be used for commit") % date_fmt);
 
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
@@ -1452,29 +1501,6 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
         author = key.official_name();
     }
 
-  if (!date_fmt.empty())
-    {
-      // check that the current date format can be parsed
-      date_t parsed;
-      try
-        {
-          string formatted = date.as_formatted_localtime(date_fmt);
-          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
-        }
-      catch (recoverable_failure const & e) 
-        { 
-          L(FL("date check failed: %s") % e.what());
-        }
-      
-      if (parsed != date)
-        {
-          L(FL("date check failed: %s != %s") % date % parsed);
-        }
-      
-      E(parsed == date, origin::user,
-        F("date format '%s' cannot be used for commit") % date_fmt);
-    }
-
   if (!log_message_given)
     {
       // This call handles _MTN/log.
@@ -1633,7 +1659,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   }
 
   // the workspace should remember the branch we just committed to.
-  work.set_options(app.opts, true);
+  work.set_options(app.opts, app.lua, true);
 
   // the work revision is now whatever changes remain on top of the revision
   // we just checked in.
@@ -1693,32 +1719,26 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
       dir = ".";
 
   system_path workspace_dir(dir, origin::user);
+  system_path _MTN_dir(workspace_dir / bookkeeping_root_component);
+
+  require_path_is_nonexistent
+    (_MTN_dir, F("bookkeeping directory already exists in '%s'")
+     % workspace_dir);
 
   // only try to remove the complete workspace directory
   // if we're about to create it anyways
   directory_cleanup_helper remove_on_fail(
-    directory_exists(workspace_dir)
-        ? workspace_dir / bookkeeping_root_component
-        : workspace_dir
+    directory_exists(workspace_dir) ? _MTN_dir : workspace_dir
   );
 
-  workspace::create_workspace(app.opts, app.lua, workspace_dir);
-
-  if (!app.opts.dbname_given || app.opts.dbname.empty())
-    {
-      app.opts.dbname = system_path(workspace_dir
-                                    / bookkeeping_root_component
-                                    / bookkeeping_internal_db_file_name);
-    }
+  database_path_helper helper(app.lua);
+  helper.maybe_set_default_alias(app.opts);
 
   database db(app);
-  if (get_path_status(db.get_filename()) == path::nonexistent)
-    {
-      P(F("initializing new database '%s'") % db.get_filename());
-      db.initialize();
-    }
-
+  db.create_if_not_exists();
   db.ensure_open();
+
+  workspace::create_workspace(app.opts, app.lua, workspace_dir);
 
   workspace work(app);
   revision_t rev;
