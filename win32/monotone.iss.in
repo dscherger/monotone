@@ -30,6 +30,8 @@ WizardImageFile={#SRCDIR}\win32\monotone.bmp
 Source: "{#BUILDDIR}\mtn-stripped.exe"; DestDir: "{app}"; DestName: "mtn.exe"; Flags: ignoreversion
 Source: "{#BUILDDIR}\monotone.html"; DestDir: "{app}\documentation"; Flags: ignoreversion
 Source: "{#BUILDDIR}\figures\*.png"; DestDir: "{app}\documentation\figures"; Flags: ignoreversion
+Source: "{#BUILDDIR}\images\*.png"; DestDir: "{app}\documentation\images"; Flags: ignoreversion
+Source: "{#SRCDIR}\texinfo.css"; DestDir: "{app}\documentation"; Flags: ignoreversion
 Source: "{#SRCDIR}\COPYING"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SRCDIR}\monotone.info"; DestDir: "{app}\documentation"; Flags: ignoreversion
 Source: "{#SRCDIR}\monotone.info-1"; DestDir: "{app}\documentation"; Flags: ignoreversion
