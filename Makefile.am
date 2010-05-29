@@ -484,6 +484,30 @@ monotone-$(PACKAGE_VERSION).dmg: monotone-$(PACKAGE_VERSION).pkg
 		"$@" -format UDZO -scrub -imagekey zlib-level=9 \
 		-volname monotone-$(PACKAGE_VERSION)
 
+# build win32 installer using INNO setup
+ISCC=@ISCC@
+
+win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe 
+
+monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
+	$(ISCC) monotone.iss
+	
+mtn-stripped.exe: mtn.exe
+	strip $< -o $@
+
+dlls.iss: mtn-stripped.exe ${top_srcdir}/Makefile.am
+	rm -f $@
+	for DLL in $$( ${top_srcdir}/win32/dlls.sh mtn-stripped.exe | xargs cmd //c echo) ; do \
+	    echo "Source: \"$$DLL\"; DestDir: \"{app}\"" >> $@ ; \
+	done
+
+linguas.iss: ${top_srcdir}/Makefile.am
+	rm -rf $@
+	for LANG in $(INST_LINGUAS) ; do \
+		echo "Source: \"{#BUILDDIR}\\$${LANG}.gmo\"; DestDir: \"{app}\\locale\\$${LANG}\\LC_MESSAGES\"; DestName: \"monotone.mo\"; Flags: ignoreversion" >> $@ ; \
+	done
+
+
 # testsuite stuff (could this possibly be more ugly?)  To get
 # parallelism, we cannot use Automake's TESTS feature at all.  The
 # shell script embedded in the 'check-local' rule is partially

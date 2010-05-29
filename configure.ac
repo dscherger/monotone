@@ -48,6 +48,10 @@ case "$host" in
     AC_MSG_RESULT([Windows])
     WIN32_PLATFORM="true"
     os_err_t="unsigned int"
+    
+    # Inno setup configuration
+    AC_CONFIG_FILES([monotone.iss:win32/monotone.iss.in])
+    AC_PATH_PROG(ISCC, [ISCC]) 
   ;;
 
   *-ibm-aix* )
