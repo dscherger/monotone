@@ -434,6 +434,7 @@ set<revision_id> get_ancestors(project_t const & project,
       frontier.erase(frontier.begin());
       set<revision_id> p;
       project.db.get_revision_parents(revid, p);
+      p.erase(revision_id());
       frontier.insert(p.begin(), p.end());
       ret.insert(p.begin(), p.end());
     }
@@ -684,10 +685,10 @@ shared_ptr<selector> selector::create(options const & opts,
       if (*tok == "(") {
         items.push_back(parse_item(*tok));
       } else if (*tok == ")") {
-        unsigned int lparen_pos = 0;
+        unsigned int lparen_pos = 1;
         while (lparen_pos <= items.size() && items[items.size() - lparen_pos].str != "(")
           {
-            --lparen_pos;
+            ++lparen_pos;
           }
         E(items[items.size() - lparen_pos].str == "(", origin::user,
           F("selector '%s' is invalid, unmatched '('") % orig);
@@ -696,12 +697,15 @@ shared_ptr<selector> selector::create(options const & opts,
           {
             // looks like a function call
             shared_ptr<fn_selector> to_add(new fn_selector(items[name_idx].str));
+            L(FL("found function-like selector '%s' at stack position %d of %d")
+              % items[name_idx].str % name_idx % items.size());
+            // note the closing paren is not on the item stack
             for (unsigned int idx = items.size() - lparen_pos + 1;
-                 idx < items.size() - 1; idx += 2)
+                 idx < items.size(); idx += 2)
               {
+                L(FL("        found argument at stack position %d") % idx);
                 shared_ptr<selector> arg = items[idx].sel;
-                string sep = items[idx + 1].str;
-                E(sep == "," || (sep == ")" && idx == items.size() - 2), origin::user,
+                E(idx == items.size() - 1 || items[idx+1].str == ",", origin::user,
                   F("selector '%s' is invalid, function argument doesn't look like an arg-list"));
                 to_add->add(arg);
               }
