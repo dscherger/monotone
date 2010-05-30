@@ -28,6 +28,13 @@ hr {
     border-top: 0.0625em dotted #CCCCCC;
 }
 
+dl {}
+
+dl dd {
+    margin-top: 0.3em;
+    margin-bottom: 0.3em;
+}
+
 .clearfloat {
     clear: both;
 }

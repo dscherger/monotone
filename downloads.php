@@ -15,39 +15,75 @@ $matchers = array(
 $webdir           = "/downloads";
 $basedir          = dirname(__FILE__) . "/downloads";
 $releaseDirs 	  = scandir($basedir, 1);
-$latestFiles 	  = array_flip(array_keys($matchers));
-$matchedPlatforms = array();
 
-foreach ($releaseDirs as $dir)
+function getLatestFiles()
 {
-    if (!is_dir("$basedir/$dir") || $dir == "." || $dir == "..")
-        continue;
+    global $matchers, $webdir, $basedir, $releaseDirs;
 
-    if (count($matchedPlatforms) == count($matchers))
-        break;
+    $latestFiles = array();
+    $matchedPlatforms = array();
 
-    $files = scandir("$basedir/$dir", 1);
-    $release = $dir;
-    $newlyMatchedPlatforms = array();
-
-    foreach ($files as $file)
+    foreach ($releaseDirs as $dir)
     {
-        foreach ($matchers as $platform => $matcher)
-        {
+        if (!is_dir("$basedir/$dir") || $dir == "." || $dir == "..")
+            continue;
 
-            if (preg_match(str_replace("%version%", $release, $matcher), $file) &&
-                !in_array($platform, $matchedPlatforms))
+        // a little optimization
+        if (count($matchedPlatforms) == count($matchers))
+            break;
+
+        $files = scandir("$basedir/$dir", 1);
+        $release = $dir;
+        $newlyMatchedPlatforms = array();
+
+        foreach ($files as $file)
+        {
+            foreach ($matchers as $platform => $matcher)
             {
-                if (!is_array($latestFiles[$platform]))
+                if (preg_match(str_replace("%version%", $release, $matcher), $file) &&
+                    !in_array($platform, $matchedPlatforms))
                 {
-                    $latestFiles[$platform] = array();
+                    if (!isset($latestFiles[$platform]))
+                    {
+                        $latestFiles[$platform] = array();
+                    }
+                    $latestFiles[$platform][] = "$release/$file";
+                    $newlyMatchedPlatforms[] = $platform;
                 }
-                $latestFiles[$platform][] = "$release/$file";
-                $newlyMatchedPlatforms[] = $platform;
+            }
+        }
+        $matchedPlatforms = array_merge($matchedPlatforms, $newlyMatchedPlatforms);
+    }
+
+    return $latestFiles;
+}
+
+function getAllFiles($platform)
+{
+    global $matchers, $webdir, $basedir, $releaseDirs;
+
+    $matcher = $matchers[$platform];
+    $allFiles = array();
+
+    foreach ($releaseDirs as $dir)
+    {
+        if (!is_dir("$basedir/$dir") || $dir == "." || $dir == "..")
+            continue;
+
+        $files = scandir("$basedir/$dir", 1);
+        $release = $dir;
+
+        foreach ($files as $file)
+        {
+            if (preg_match(str_replace("%version%", $release, $matcher), $file))
+            {
+                $allFiles[] = "$release/$file";
             }
         }
     }
-    $matchedPlatforms = array_merge($matchedPlatforms, $newlyMatchedPlatforms);
+
+    rsort($allFiles);
+    return $allFiles;
 }
 
 $page_title = "Downloads";
@@ -58,7 +94,17 @@ require_once("header.inc.php");
     <div class="box box-wide">
         <h1 class="getit">Latest monotone downloads by platform</h1>
 
-<?php if (count($matchedPlatforms) == 0): ?>
+<?php
+
+$platform = isset($_GET['platform']) &&
+            array_key_exists($_GET['platform'], $matchers) ?
+            $_GET['platform'] : "";
+
+if (empty($platform)):
+
+      $latestFiles = getLatestFiles();
+
+      if (count($latestFiles) == 0): ?>
         <p>No files found</p>
 <?php else: ?>
         <dl><?php
@@ -72,15 +118,44 @@ END;
             foreach ($files as $file):
                 $name = basename($file);
                 $release = dirname($file);
+                $size = round(filesize("$basedir/$file") / (1024*1024), 2)."MB";
+                $sha1 = sha1_file("$basedir/$file");
                 echo <<<END
             <dd>
-                <a href="$webdir/$file">$name</a><br/>
-                <span style="font-size:75%"<a href="$webdir/$release/">&#187; more packages for $release</a></span>
+                <a href="$webdir/$file">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
+                <span style="font-size:75%"><a href="?platform=$platform">&#187; all packages for this platform</a></span>
             </dd>
 END;
             endforeach;
         endforeach;
         ?></dl>
+<?php endif;
+else:
+
+        $allFiles = getAllFiles($platform);
+        if (count($allFiles) == 0): ?>
+        <p>No files found</p>
+<?php else: ?>
+        <dl><?php
+        echo<<<END
+            <dt>$platform</dt>
+END;
+        foreach ($allFiles as $file):
+            $name = basename($file);
+            $release = dirname($file);
+            $size = round(filesize("$basedir/$file") / (1024*1024), 2)."MB";
+            $sha1 = sha1_file("$basedir/$file");
+            echo <<<END
+            <dd>
+                <a href="$webdir/$file">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
+            </dd>
+END;
+        endforeach;
+        ?></dl>
+<?php endif; ?>
+
+    <p style="font-size:75%"><a href="downloads.php">&#171; back to overview</a></p>
+
 <?php endif; ?>
     </div>
 </div>
