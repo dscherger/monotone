@@ -36,12 +36,4 @@ Publish the binary on the monotone website with proper permissions:
 chmod a+r monotone-<version>/win32/monotone-<version>-setup.exe
 scp -p monotone-<version>/win32/monotone-<version>-setup.exe mtn-uploads@monotone.ca:downloads/<version>
 
-checkout the web files:
-
-mtn -d /path/to/monotone.db checkout --branch net.venge.monotone.web monotone.web
-
-Edit monotone.web/index.html; search for <li>Windows, uncomment it
-
-Commit and sync.
-
 Download from the web and test!
