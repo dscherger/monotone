@@ -42,12 +42,12 @@ mtn_setup()
 -- so it looks like the restricted cset is bad.
 
 -- actually, the restriction excludes the parent dir rename and because of this
--- diff uses the old name to try and get the file content, which no longer
+-- diff uses the old name to try and get the file content, which is no longer
 -- available under that name.
 
--- the solution here is probably to make the restrictions code implicitly
--- include the parents, non-recursively, of all explicitly included nodes
--- then the parent rename would be included here and the diff would work.
+-- restrictions now implicitly include (non-recursively) the parent directories
+-- of all explicitly included nodes. this includes the parent rename here and
+-- the diff works.
 
 mkdir("dir1")
 addfile("dir1/test.txt", "booya")
