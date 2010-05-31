@@ -22,6 +22,9 @@ struct uri_t
   std::string query;
   std::string fragment;
 
+  // everything before the query/fragment
+  std::string resource;
+
   void clear()
   {
     scheme.clear();
@@ -31,6 +34,8 @@ struct uri_t
     path.clear();
     query.clear();
     fragment.clear();
+
+    resource.clear();
   }
 };
 

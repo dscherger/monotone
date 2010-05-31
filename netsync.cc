@@ -82,11 +82,10 @@ build_stream_to_server(options & opts, lua_hooks & lua,
       bool use_ipv6=false;
 #endif
       string host(info.client.uri.host);
-      if (host.empty())
-        host = info.client.unparsed();
+      I(!host.empty());
       if (!info.client.uri.port.empty())
         default_port = lexical_cast<Netxx::port_type>(info.client.uri.port);
-      Netxx::Address addr(info.client.unparsed().c_str(),
+      Netxx::Address addr(host.c_str(),
                           default_port, use_ipv6);
       return shared_ptr<Netxx::StreamBase>
         (new Netxx::Stream(addr, timeout));
@@ -106,11 +105,11 @@ call_server(app_state & app,
   Netxx::Timeout timeout(static_cast<long>(constants::netsync_timeout_seconds)),
     instant(0,1);
 
-  P(F("connecting to %s") % info.client.unparsed);
+  P(F("connecting to %s") % info.client.uri.host);
 
   shared_ptr<Netxx::StreamBase> server
     = build_stream_to_server(app.opts, app.lua,
-                             info, constants::netsync_default_port,
+                             info, info.client.get_port(),
                              timeout);
 
 
@@ -121,7 +120,7 @@ call_server(app_state & app,
 
   shared_ptr<session> sess(new session(app, project, keys,
                                        client_voice,
-                                       info.client.unparsed(), server));
+                                       info.client.uri.resource, server));
   shared_ptr<wrapped_session> wrapped;
   switch (info.client.connection_type)
     {
@@ -216,10 +215,10 @@ session_from_server_sync_item(app_state & app,
 
   try
     {
-      P(F("connecting to %s") % info.client.unparsed);
+      P(F("connecting to %s") % info.client.uri.host);
       shared_ptr<Netxx::StreamBase> server
         = build_stream_to_server(app.opts, app.lua,
-                                 info, constants::netsync_default_port,
+                                 info, info.client.get_port(),
                                  Netxx::Timeout(constants::netsync_timeout_seconds));
 
       // 'false' here means not to revert changes when
@@ -238,7 +237,7 @@ session_from_server_sync_item(app_state & app,
       shared_ptr<session>
         sess(new session(app, project, keys,
                          client_voice,
-                         info.client.unparsed(), server));
+                         info.client.uri.resource, server));
       shared_ptr<wrapped_session>
         wrapped(new netsync_session(sess.get(),
                                     app.opts, app.lua, project,

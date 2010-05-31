@@ -8,6 +8,7 @@
 // PURPOSE.
 
 #include "base.hh"
+#include "pcrewrap.hh"
 #include "sanity.hh"
 #include "uri.hh"
 
@@ -70,10 +71,53 @@ parse_authority(string const & in, uri_t & uri, origin::type made_from)
     }
 }
 
+static bool
+try_parse_bare_authority(string const & in, uri_t & uri, origin::type made_from)
+{
+  if (in.empty())
+    return false;
+
+  pcre::regex hostlike("^("
+                       "[^:/]+(:[0-9]+)?" // hostname or ipv4
+                       "|"
+                       "[:0-9a-fA-F]+" // non-bracketed ipv6
+                       "|"
+                       "\[[:0-9a-fA-F]+\](:[0-9]+)?" // bracketed ipv6
+                       ")$",
+                       origin::internal);
+
+  if (hostlike.match(in, made_from))
+    {
+      parse_authority(in, uri, made_from);
+      return true;
+    }
+  else
+    {
+      return false;
+    }
+}
+
 void
 parse_uri(string const & in, uri_t & uri, origin::type made_from)
 {
   uri.clear();
+
+  {
+    size_t resource_end = in.find_first_of("?#");
+    if (resource_end == string::npos)
+      {
+        uri.resource = in;
+      }
+    else
+      {
+        uri.resource.assign(in, 0, resource_end);
+      }
+  }
+
+  if (try_parse_bare_authority(in, uri, made_from))
+    {
+      return;
+    }
 
   stringpos p = 0;
 

@@ -47,6 +47,7 @@ struct netsync_connection_info
     automate_ostream & get_output_stream() const;
     void set_input_stream(std::istream & is);
     void set_output_stream(automate_ostream & os);
+    std::size_t get_port() const;
     Client();
   } client;
 };
