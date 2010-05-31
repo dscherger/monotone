@@ -361,7 +361,7 @@ GNOME or DocBook.
 	      <para>The <menuchoice><guimenu>File</guimenu><guimenuitem>Connect To Server</guimenuitem></menuchoice> submenu is only available if your version of Monotone supports this feature.</para>
             </listitem>
             <listitem>
-	      <para>Connecting to Monotone server over a network is not only slower but also has no support for running <application>Monotone Viz</application> or doing file annotations.</para>
+	      <para>Connecting to a Monotone server over a network is not only slower but also has no support for running <application>Monotone Viz</application> or doing file annotations.</para>
             </listitem>
           </orderedlist>
         </note>

@@ -1,6 +1,6 @@
 Revision history for mtn-browse.
 
-0.70  Sun May 23 14:50:00 2010 Anthony Cooper <support@coosoft.plus.com>
+0.70  Mon May 31 14:50:00 2010 Anthony Cooper <support@coosoft.plus.com>
 	- Updated the help documentation in light of the changes made to
 	  mtn-browse (the manage server bookmarks dialog window, the file
 	  encoding menu options and the compare arbitrary revisions window).
