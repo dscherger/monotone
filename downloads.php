@@ -1,27 +1,28 @@
 <?php
 
-// this assumes that all packages for a specific platform
+// this assumes that all packages for a specific type
 // follow a distinct file naming. %version% is replaced with
 // the specific monotone version which is tried to match
 $matchers = array(
     "Tarball"               => "/monotone-%version%\.tar\.gz/",
     "Linux x86/glibc 2.3"   => "/mtn-%version%-linux-x86\.bz2/",
+    "Windows Installer"     => "/monotone-%version%-setup\.exe/",
     "Mac OS X Installer"    => "/monotone-%version%\.dmg/",
     "Mac OS X Binary"       => "/mtn-%version%-osx(-univ)?\.bz2/",
     "Solaris Package"       => "/PMmonotone-%version%\.(i386|sparc)\.pkg/",
-    "Windows Installer"     => "/monotone-%version%-setup\.exe/",
 );
 
-$webdir           = "/downloads";
-$basedir          = dirname(__FILE__) . "/downloads";
-$releaseDirs 	  = scandir($basedir, 1);
+$webdir      = "/downloads";
+$basedir     = dirname(__FILE__) . "/downloads";
+$cachedir    = "/data/monotone.ca/cache";
+$releaseDirs = scandir($basedir, 1);
 
 function getLatestFiles()
 {
     global $matchers, $webdir, $basedir, $releaseDirs;
 
     $latestFiles = array();
-    $matchedPlatforms = array();
+    $matchedTypes = array();
 
     foreach ($releaseDirs as $dir)
     {
@@ -29,40 +30,40 @@ function getLatestFiles()
             continue;
 
         // a little optimization
-        if (count($matchedPlatforms) == count($matchers))
+        if (count($matchedTypes) == count($matchers))
             break;
 
         $files = scandir("$basedir/$dir", 1);
         $release = $dir;
-        $newlyMatchedPlatforms = array();
+        $newlyMatchedTypes = array();
 
         foreach ($files as $file)
         {
-            foreach ($matchers as $platform => $matcher)
+            foreach ($matchers as $type => $matcher)
             {
                 if (preg_match(str_replace("%version%", $release, $matcher), $file) &&
-                    !in_array($platform, $matchedPlatforms))
+                    !in_array($type, $matchedTypes))
                 {
-                    if (!isset($latestFiles[$platform]))
+                    if (!isset($latestFiles[$type]))
                     {
-                        $latestFiles[$platform] = array();
+                        $latestFiles[$type] = array();
                     }
-                    $latestFiles[$platform][] = "$release/$file";
-                    $newlyMatchedPlatforms[] = $platform;
+                    $latestFiles[$type][] = "$release/$file";
+                    $newlyMatchedTypes[] = $type;
                 }
             }
         }
-        $matchedPlatforms = array_merge($matchedPlatforms, $newlyMatchedPlatforms);
+        $matchedTypes = array_merge($matchedTypes, $newlyMatchedTypes);
     }
 
     return $latestFiles;
 }
 
-function getAllFiles($platform)
+function getAllFiles($type)
 {
     global $matchers, $webdir, $basedir, $releaseDirs;
 
-    $matcher = $matchers[$platform];
+    $matcher = $matchers[$type];
     $allFiles = array();
 
     foreach ($releaseDirs as $dir)
@@ -86,21 +87,61 @@ function getAllFiles($platform)
     return $allFiles;
 }
 
+class cache
+{
+    private static $instance;
+    private $basedir;
+    private $cachedir;
+    private $cache = array();
+    private function __construct($basedir, $cachedir)
+    {
+        $this->basedir = $basedir;
+        $this->cachedir = $cachedir;
+        if (is_file("$cachedir/download_cache"))
+            $this->cache = (array)@unserialize(
+                file_get_contents("$cachedir/download_cache")
+            );
+    }
+    public function __destruct()
+    {
+        if (is_writable($this->cachedir))
+            file_put_contents("{$this->cachedir}/download_cache",
+                              serialize($this->cache));
+    }
+    public function get($file)
+    {
+        if (!isset($this->cache[$file]))
+        {
+            $this->cache[$file] = array(
+                filesize("{$this->basedir}/$file"),
+                sha1_file("{$this->basedir}/$file")
+            );
+        }
+        return $this->cache[$file];
+    }
+    public static function instance($basedir, $cachedir)
+    {
+        if (!self::$instance)
+            self::$instance = new cache($basedir, $cachedir);
+        return self::$instance;
+    }
+}
+
 $page_title = "Downloads";
 require_once("header.inc.php");
 
 ?>
 <div class="boxes">
     <div class="box box-wide">
-        <h1 class="getit">Latest monotone downloads by platform</h1>
+        <h1 class="getit">Latest monotone downloads by type</h1>
 
 <?php
 
-$platform = isset($_GET['platform']) &&
-            array_key_exists($_GET['platform'], $matchers) ?
-            $_GET['platform'] : "";
+$type = isset($_GET['type']) &&
+        array_key_exists($_GET['type'], $matchers) ?
+        $_GET['type'] : "";
 
-if (empty($platform)):
+if (empty($type)):
 
       $latestFiles = getLatestFiles();
 
@@ -108,22 +149,22 @@ if (empty($platform)):
         <p>No files found</p>
 <?php else: ?>
         <dl><?php
-        foreach ($latestFiles as $platform => $files):
-            if (!is_array($files))
-                continue;
+        foreach (array_keys($matchers) as $type):
+            if (!is_array($latestFiles[$type]))
+              continue;
 
             echo<<<END
-            <dt>$platform</dt>
+            <dt>$type</dt>
 END;
-            foreach ($files as $file):
+            foreach ($latestFiles[$type] as $file):
                 $name = basename($file);
                 $release = dirname($file);
-                $size = round(filesize("$basedir/$file") / (1024*1024), 2)."MB";
-                $sha1 = sha1_file("$basedir/$file");
+                list($size, $sha1) = cache::instance($basedir, $cachedir)->get($file);
+                $size = round($size / (1024*1024), 2)."MB";
                 echo <<<END
             <dd>
                 <a href="$webdir/$file">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
-                <span style="font-size:75%"><a href="?platform=$platform">&#187; all packages for this platform</a></span>
+                <span style="font-size:75%"><a href="?type=$type">&#187; all downloads of this type</a></span>
             </dd>
 END;
             endforeach;
@@ -132,19 +173,19 @@ END;
 <?php endif;
 else:
 
-        $allFiles = getAllFiles($platform);
+        $allFiles = getAllFiles($type);
         if (count($allFiles) == 0): ?>
         <p>No files found</p>
 <?php else: ?>
         <dl><?php
         echo<<<END
-            <dt>$platform</dt>
+            <dt>$type</dt>
 END;
         foreach ($allFiles as $file):
             $name = basename($file);
             $release = dirname($file);
-            $size = round(filesize("$basedir/$file") / (1024*1024), 2)."MB";
-            $sha1 = sha1_file("$basedir/$file");
+            list($size, $sha1) = cache::instance($basedir, $cachedir)->get($file);
+            $size = round($size / (1024*1024), 2)."MB";
             echo <<<END
             <dd>
                 <a href="$webdir/$file">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
