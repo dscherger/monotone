@@ -1,45 +1,32 @@
 <?php
 
-// this assumes that all packages for a specific type
-// follow a distinct file naming. %version% is replaced with
-// the specific monotone version which is tried to match
-$matchers = array(
-    "Tarball"               => "/monotone-%version%\.tar\.gz/",
-    "Linux x86/glibc 2.3"   => "/mtn-%version%-linux-x86\.bz2/",
-    "Windows Installer"     => "/monotone-%version%-setup\.exe/",
-    "Mac OS X Installer"    => "/monotone-%version%\.dmg/",
-    "Mac OS X Binary"       => "/mtn-%version%-osx(-univ)?\.bz2/",
-    "Solaris Package"       => "/PMmonotone-%version%\.(i386|sparc)\.pkg/",
-);
-
-$webdir      = "/downloads";
-$basedir     = dirname(__FILE__) . "/downloads";
-$cachedir    = "/data/monotone.ca/cache";
-$releaseDirs = scandir($basedir, 1);
+require_once("config.inc.php");
 
 function getLatestFiles()
 {
-    global $matchers, $webdir, $basedir, $releaseDirs;
+    global $CFG;
+
+    $releaseDirs = scandir($CFG['download_dir'], 1);
 
     $latestFiles = array();
     $matchedTypes = array();
 
     foreach ($releaseDirs as $dir)
     {
-        if (!is_dir("$basedir/$dir") || $dir == "." || $dir == "..")
+        if (!is_dir("{$CFG['download_dir']}/$dir") || $dir == "." || $dir == "..")
             continue;
 
         // a little optimization
-        if (count($matchedTypes) == count($matchers))
+        if (count($matchedTypes) == count($CFG['download_matchers']))
             break;
 
-        $files = scandir("$basedir/$dir", 1);
+        $files = scandir("{$CFG['download_dir']}/$dir", 1);
         $release = $dir;
         $newlyMatchedTypes = array();
 
         foreach ($files as $file)
         {
-            foreach ($matchers as $type => $matcher)
+            foreach ($CFG['download_matchers'] as $type => $matcher)
             {
                 if (preg_match(str_replace("%version%", $release, $matcher), $file) &&
                     !in_array($type, $matchedTypes))
@@ -61,17 +48,19 @@ function getLatestFiles()
 
 function getAllFiles($type)
 {
-    global $matchers, $webdir, $basedir, $releaseDirs;
+    global $CFG;
 
-    $matcher = $matchers[$type];
+    $matcher = $CFG['download_matchers'][$type];
     $allFiles = array();
+
+    $releaseDirs = scandir($CFG['download_dir'], 1);
 
     foreach ($releaseDirs as $dir)
     {
-        if (!is_dir("$basedir/$dir") || $dir == "." || $dir == "..")
+        if (!is_dir("{$CFG['download_dir']}/$dir") || $dir == "." || $dir == "..")
             continue;
 
-        $files = scandir("$basedir/$dir", 1);
+        $files = scandir("{$CFG['download_dir']}/$dir", 1);
         $release = $dir;
 
         foreach ($files as $file)
@@ -138,7 +127,7 @@ require_once("header.inc.php");
 <?php
 
 $type = isset($_GET['type']) &&
-        array_key_exists($_GET['type'], $matchers) ?
+        array_key_exists($_GET['type'], $CFG['download_matchers']) ?
         $_GET['type'] : "";
 
 if (empty($type)):
@@ -149,7 +138,7 @@ if (empty($type)):
         <p>No files found</p>
 <?php else: ?>
         <dl><?php
-        foreach (array_keys($matchers) as $type):
+        foreach (array_keys($CFG['download_matchers']) as $type):
             if (!is_array($latestFiles[$type]))
               continue;
 
@@ -159,11 +148,13 @@ END;
             foreach ($latestFiles[$type] as $file):
                 $name = basename($file);
                 $release = dirname($file);
-                list($size, $sha1) = cache::instance($basedir, $cachedir)->get($file);
+                list($size, $sha1) = 
+                    cache::instance($CFG['download_dir'], $CFG['cache_dir'])
+                        ->get($file);
                 $size = round($size / (1024*1024), 2)."MB";
                 echo <<<END
             <dd>
-                <a href="$webdir/$file">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
+                <a href="{$CFG['download_webdir']}/$file">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
                 <span style="font-size:75%"><a href="?type=$type">&#187; all downloads of this type</a></span>
             </dd>
 END;
@@ -184,11 +175,13 @@ END;
         foreach ($allFiles as $file):
             $name = basename($file);
             $release = dirname($file);
-            list($size, $sha1) = cache::instance($basedir, $cachedir)->get($file);
+            list($size, $sha1) =
+                cache::instance($CFG['download_dir'], $CFG['cache_dir'])
+                    ->get($file);
             $size = round($size / (1024*1024), 2)."MB";
             echo <<<END
             <dd>
-                <a href="$webdir/$file">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
+                <a href="{$CFG['download_webdir']}/$file">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
             </dd>
 END;
         endforeach;

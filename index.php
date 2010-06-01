@@ -1,5 +1,7 @@
 <?php
+require_once("config.inc.php");
 require_once("header.inc.php");
+require_once("simplepie-1.2.0/simplepie.inc.php");
 ?>
     <div class="boxes">
         <div class="box box-small">
@@ -72,10 +74,9 @@ require_once("header.inc.php");
             <h1 class="intheblogs">Monotone in the blogs</h1>
 
 <?php
-    require_once("simplepie-1.2.0/simplepie.inc.php");
-
     $feed = new SimplePie();
-    $feed->set_feed_url(require_once("rss_feeds.inc.php"));
+    $feed->set_cache_location($CFG['cache_dir']);
+    $feed->set_feed_url($CFG['aggregated_feeds']);
     $feed->set_item_limit(3);
     $feed->init();
     $feed->handle_content_type();
