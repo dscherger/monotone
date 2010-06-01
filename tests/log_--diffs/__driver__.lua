@@ -34,9 +34,18 @@ canonicalize("full")
 check(samefile("expect_full", "full"))
 
 -- restrict to foo2 and quux
-check(mtn("log", "--no-graph", "quux", "--diffs", "foo2"), 0, true, false)
+check(mtn("log", "--no-graph", "quux", "foo2", "--diffs", "--from", REV4, "--to", REV1), 0, true, false)
 check(grep("^(---|\\+\\+\\+) ", "stdout"), 0, true, false)
 rename("stdout", "restrict")
 check(get("expect_restrict"))
 canonicalize("restrict")
 check(samefile("expect_restrict", "restrict"))
+
+-- this fails because restricting to quux and foo2 excludes the
+-- addition of the root dir in the initial revision.
+
+-- the solution here is probably to make the restrictions code implicitly
+-- include the parents, non-recursively, of all explicitly included nodes
+-- then the parent rename would be included here and the diff would work.
+
+xfail(mtn("log", "-r", REV1, "quux", "foo2", "--diffs"), 0, false, false)

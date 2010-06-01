@@ -11,6 +11,7 @@
 #include <iostream>
 #include <sstream>
 #include <windows.h>
+#include <cstring>
 
 #include "sanity.hh"
 #include "platform.hh"

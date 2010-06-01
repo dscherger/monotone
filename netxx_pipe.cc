@@ -14,6 +14,7 @@
 #include <netxx/streamserver.h>
 #include <cstring> // strerror
 #include <cstdlib> // exit
+#include <cassert> // assert
 
 #ifdef WIN32
 #include <windows.h>

@@ -59,14 +59,8 @@ How to release a new version of monotone
 
 7) Update version numbers.  The following files need to be touched:
      configure.ac: change the call to AC_INIT
-     win32/monotone.iss: look out for "#define APPVERS"
      visualc/config.h: the version number is mentioned several times,
        don't miss any.
-     debian/changelog: rather than modifying this file directly, run
-       the command "debchange -v <NEW VERSION>-0.1".  (If you screw up
-       and need to roll a new unofficial package, use "debchange -i"
-       to increment this number.)
-
    Commit your changes.
 
 8) Okay, everything should be ready to go... double-check that:

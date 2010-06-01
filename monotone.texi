@@ -10095,6 +10095,8 @@ mtn: renaming build/windows_common.make to build/utf_common.make
 mtn: adding build/x86_gnu_linux_release
 @end verbatim
 
+These messages are in the 'p' stream in automate stdio.
+
 @item Output format:
 
 Free form, prefixed by ``mtn:''.

@@ -330,7 +330,8 @@ EXTRA_DIST =								\
 	audit-includes do-editor-vars.sh doxygen.cfg			\
 	$(wildcard $(srcdir)/m4/*.m4) monotone.html images		\
 	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
-	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
+	win32/monotone.iss.in win32/modpath.iss win32/monotone.bmp	\
+	win32/dlls.sh                                                   \
 									\
 	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
 	figures/monotone-logo.svg figures/oo-figures.sxd		\
@@ -483,6 +484,30 @@ monotone-$(PACKAGE_VERSION).dmg: monotone-$(PACKAGE_VERSION).pkg
 	hdiutil create -srcfolder "$(top_builddir)/dmg_root" \
 		"$@" -format UDZO -scrub -imagekey zlib-level=9 \
 		-volname monotone-$(PACKAGE_VERSION)
+
+# build win32 installer using INNO setup
+ISCC=@ISCC@
+
+win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe 
+
+monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
+	$(ISCC) monotone.iss
+	
+mtn-stripped.exe: mtn.exe
+	strip $< -o $@
+
+dlls.iss: mtn-stripped.exe ${top_srcdir}/Makefile.am
+	rm -f $@
+	for DLL in $$( ${top_srcdir}/win32/dlls.sh mtn-stripped.exe | xargs cmd //c echo) ; do \
+	    echo "Source: \"$$DLL\"; DestDir: \"{app}\"" >> $@ ; \
+	done
+
+linguas.iss: ${top_srcdir}/Makefile.am
+	rm -rf $@
+	for LANG in $(INST_LINGUAS) ; do \
+		echo "Source: \"{#BUILDDIR}\\$${LANG}.gmo\"; DestDir: \"{app}\\locale\\$${LANG}\\LC_MESSAGES\"; DestName: \"monotone.mo\"; Flags: ignoreversion" >> $@ ; \
+	done
+
 
 # testsuite stuff (could this possibly be more ugly?)  To get
 # parallelism, we cannot use Automake's TESTS feature at all.  The
