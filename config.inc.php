@@ -3,7 +3,7 @@
 $CFG = array();
 
 // Must be writable by the www user
-$CFG["cache_dir"] = /data/monotone.ca/cache";
+$CFG["cache_dir"] = "/data/monotone.ca/cache";
 
 $CFG["aggregated_feeds"] = array(
     "http://www.thomaskeller.biz/blog/category/coding/monotone/feed/",
