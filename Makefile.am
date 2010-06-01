@@ -330,7 +330,8 @@ EXTRA_DIST =								\
 	audit-includes do-editor-vars.sh doxygen.cfg			\
 	$(wildcard $(srcdir)/m4/*.m4) monotone.html images		\
 	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
-	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
+	win32/monotone.iss.in win32/modpath.iss win32/monotone.bmp	\
+	win32/dlls.sh                                                   \
 									\
 	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
 	figures/monotone-logo.svg figures/oo-figures.sxd		\
