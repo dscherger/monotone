@@ -1187,7 +1187,7 @@ $ mtn db init --db=~/abe.mtn
 Beth decides to use monotone's built-in database management functionality.
 monotone then expects to find managed database files in a couple of predefined
 places (like f.e. @file{~/.monotone/databases} on Unix and
-@file{%APPDDATA%\monotone\databases} on Windows, this is customizable) and acts
+@file{%APPDATA%\monotone\databases} on Windows, this is customizable) and acts
 upon those by knowing only their file or basename from anywhere.
 
 To create a new managed database, Beth issues the @command{mtn db init} command
