@@ -86,3 +86,7 @@ expect("ancestors(b:otherbranch)", other, lhs, root)
 expect("descendants("..lhs..")", m, other, other_2)
 expect("parents(lca(h:otherbranch,h:testbranch))", root)
 expect("children(lca(h:otherbranch,h:testbranch))", m, other)
+
+other_head = merge(other_2, m, "otherbranch", "Jack")
+expect("max((ancestors(h:testbranch)|h:testbranch)/(ancestors(h:otherbranch)|h:otherbranch))", m)
+expect("lca(h:testbranch,h:otherbranch)", m)
