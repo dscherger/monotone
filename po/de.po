@@ -34,7 +34,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: de\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-05-27 10:48+0200\n"
+"POT-Creation-Date: 2010-05-30 16:08+0200\n"
 "PO-Revision-Date: 2009-12-27 15:38+0100\n"
 "Last-Translator: Thomas Keller <me@thomaskeller.biz>\n"
 "Language-Team: Deutsch <me@thomaskeller.biz>\n"
@@ -2095,8 +2095,9 @@ msgstr "Registriert einen neuen Arbeitsbereich für die gewählte Datenbank"
 
 #: cmd_db.cc:406
 msgid "This command adds WORKSPACE_PATH to the list of `known-workspaces'."
-msgstr "Dieses Kommando fügt den ARBEITSBEREICH der Liste bekannter "
-"Arbeitsbereiche hinzu."
+msgstr ""
+"Dieses Kommando fügt den ARBEITSBEREICH der Liste bekannter Arbeitsbereiche "
+"hinzu."
 
 #: cmd_db.cc:413 cmd_db.cc:435
 #, c-format
@@ -2105,18 +2106,21 @@ msgstr "Kein Arbeitsbereich angegeben"
 
 #: cmd_db.cc:427
 msgid "Unregisters an existing workspace for the current database"
-msgstr "Deregistiert einen existierenden Arbeitsbereich für die gewählte Datenbank"
+msgstr ""
+"Deregistiert einen existierenden Arbeitsbereich für die gewählte Datenbank"
 
 #: cmd_db.cc:428
 msgid "This command removes WORKSPACE_PATH to the list of `known-workspaces'."
-msgstr "Dieses Kommando entfernt den ARBEITSBEREICH aus der Liste bekannter "
+msgstr ""
+"Dieses Kommando entfernt den ARBEITSBEREICH aus der Liste bekannter "
 "Arbeitsbereiche."
 
 #: cmd_db.cc:448
 msgid ""
 "Removes all invalid, registered workspace paths for the current database"
 msgstr ""
-"Entfernt alle ungültigen, registrierten Arbeitsbereiche für die gewählte Datenbank"
+"Entfernt alle ungültigen, registrierten Arbeitsbereiche für die gewählte "
+"Datenbank"
 
 #: cmd_db.cc:493
 msgid "(revision|file|key) PARTIAL-ID"
@@ -2238,17 +2242,17 @@ msgstr "lade Zertifikat"
 msgid "loaded %d certs"
 msgstr "%d Zertifikate geladen"
 
-#: cmd_diff_log.cc:238
+#: cmd_diff_log.cc:254
 #, c-format
 msgid "more than two revisions given"
 msgstr "mehr als zwei Revisionen wurden übergeben"
 
-#: cmd_diff_log.cc:241
+#: cmd_diff_log.cc:257
 #, c-format
 msgid "--reverse only allowed with exactly one revision"
 msgstr "--reverse erlaubt die Angabe von genau nur einer Revision"
 
-#: cmd_diff_log.cc:254
+#: cmd_diff_log.cc:270
 #, c-format
 msgid ""
 "this workspace has more than one parent\n"
@@ -2258,22 +2262,22 @@ msgstr ""
 "(Geben Sie die Revision, gegen die Änderungen angezeigt werden sollen, "
 "explizit mit --revision an.)"
 
-#: cmd_diff_log.cc:390 rev_output.cc:147
+#: cmd_diff_log.cc:414 rev_output.cc:147
 msgid "no changes"
 msgstr "keine Änderungen"
 
-#: cmd_diff_log.cc:395 cmd_ws_commit.cc:559 cmd_ws_commit.cc:568
+#: cmd_diff_log.cc:419 cmd_ws_commit.cc:559 cmd_ws_commit.cc:568
 #: cmd_ws_commit.cc:697 cmd_ws_commit.cc:734 cmd_ws_commit.cc:825
 #: cmd_ws_commit.cc:1390 automate.cc:1012
 msgid "[PATH]..."
 msgstr "[PFAD]..."
 
-#: cmd_diff_log.cc:396
+#: cmd_diff_log.cc:420
 msgid "Shows current differences"
 msgstr "Zeigt die derzeitigen Unterschiede"
 
 #
-#: cmd_diff_log.cc:397
+#: cmd_diff_log.cc:421
 msgid ""
 "Compares the current tree with the files in the repository and prints the "
 "differences on the standard output.\n"
@@ -2288,7 +2292,7 @@ msgstr ""
 "Unterschiede zwischen diesen beiden ausgegeben.  Wenn kein Format angegeben "
 "wurde, wird standardmäßig 'unified' verwendet."
 
-#: cmd_diff_log.cc:408
+#: cmd_diff_log.cc:432
 #, c-format
 msgid ""
 "--diff-args requires --external\n"
@@ -2297,24 +2301,24 @@ msgstr ""
 "--diff-args benötigt --external\n"
 "Fügen Sie --external hinzu oder entfernen Sie --diff-args."
 
-#: cmd_diff_log.cc:446
+#: cmd_diff_log.cc:466
 msgid "[FILE [...]]"
 msgstr "[DATEI [...]]"
 
-#: cmd_diff_log.cc:447
+#: cmd_diff_log.cc:467
 msgid "Calculates diffs of files"
 msgstr "Berechnet die Unterschiede in Dateien"
 
-#: cmd_diff_log.cc:525
+#: cmd_diff_log.cc:548
 msgid "[PATH] ..."
 msgstr "[PFAD] ..."
 
-#: cmd_diff_log.cc:526
+#: cmd_diff_log.cc:549
 msgid "Prints selected history in forward or reverse order"
 msgstr "Gibt die ausgewählte Historie vorwärts oder rückwärts aus"
 
 #
-#: cmd_diff_log.cc:527
+#: cmd_diff_log.cc:550
 msgid ""
 "This command prints selected history in forward or reverse order, filtering "
 "it by PATH if given."
@@ -2322,25 +2326,25 @@ msgstr ""
 "Dieses Kommando gibt die ausgewählte Historie vorwärts oder rückwärts aus, "
 "gefiltert durch PFAD, sofern angegeben."
 
-#: cmd_diff_log.cc:554
+#: cmd_diff_log.cc:577
 #, c-format
 msgid "only one of --last/--next allowed"
 msgstr "'--last' und '--next' sind nur einmal erlaubt"
 
-#: cmd_diff_log.cc:571
+#: cmd_diff_log.cc:594
 #, c-format
 msgid "try passing a --from revision to start at"
 msgstr "Versuchen Sie, über die Option --from eine Startrevision anzugeben."
 
-#: cmd_diff_log.cc:580
+#: cmd_diff_log.cc:603
 #, c-format
 msgid ""
 "workspace parent revision '%s' not found - did you specify a wrong database?"
 msgstr ""
-"Eltern-Revision '%s' des Arbeitsbereiches wurde nicht gefunden - "
-"haben Sie eine falsche Datenbank angegeben?"
+"Eltern-Revision '%s' des Arbeitsbereiches wurde nicht gefunden - haben Sie "
+"eine falsche Datenbank angegeben?"
 
-#: cmd_diff_log.cc:889
+#: cmd_diff_log.cc:925
 #, c-format
 msgid "(Revision: %s)"
 msgstr "(Revision: %s)"
@@ -2352,6 +2356,11 @@ msgid ""
 "This file must be removed before commit will proceed.\n"
 "You may recover the previous message from this file if necessary."
 msgstr ""
+"Es existiert eine Sicherungsdatei eines vormals fehlgeschlagenen\n"
+"Einpflegens in _MTN/commit. Diese Datei muss entfernt werden, bevor\n"
+"das Einpflegen fortgesetzt werden kann.\n"
+"Sie können die Änderungsnachricht von dieser Datei bei Bedarf\n"
+"wiederherstellen."
 
 #: cmd_ws_commit.cc:183
 msgid ""
@@ -2359,6 +2368,9 @@ msgid ""
 "The values of Author, Date and Branch may be modified as required.\n"
 "\n"
 msgstr ""
+"Geben Sie eine Beschreibung unterhalb der Zeile \"Änderungen:\" ein.\n"
+"Die Werte für Autor, Datum und Zweig können ggf. geändert werden.\n"
+"\n"
 
 #: cmd_ws_commit.cc:187
 msgid "*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"
@@ -2383,7 +2395,9 @@ msgstr "*** DIESE REVISION WIRD EINEN NEUEN KOPF ERZEUGEN ***"
 #: cmd_ws_commit.cc:240
 #, c-format
 msgid "date format '%s' cannot be used for commit; using default instead"
-msgstr "Datumsformat '%s' kann nicht zum Einpflegen genutzt werden; nutze stattdesseb Standardformat"
+msgstr ""
+"Datumsformat '%s' kann nicht zum Einpflegen genutzt werden; nutze "
+"stattdessen Standardformat"
 
 #: cmd_ws_commit.cc:259
 #, c-format
@@ -2419,7 +2433,9 @@ msgstr "Änderungen: "
 #: cmd_ws_commit.cc:304
 #, c-format
 msgid "Commit failed. Revision/Parent header not found."
-msgstr "Einpflegen fehlgeschlagen. Revision- / Elternrevision-Kopfzeile nicht gefunden."
+msgstr ""
+"Einpflegen fehlgeschlagen. Revision- / Elternrevision-Kopfzeile nicht "
+"gefunden."
 
 #: cmd_ws_commit.cc:309
 #, c-format
@@ -2454,7 +2470,9 @@ msgstr "Einpflegen fehlgeschlagen. Wert der Zweig-Kopfzeile ist leer."
 #: cmd_ws_commit.cc:345
 #, c-format
 msgid "Commit failed. Blank line before Changelog header not found."
-msgstr "Einpflegen fehlgeschlagen. Leerzeile vor der Änderungen-Kopfzeile nicht gefunden."
+msgstr ""
+"Einpflegen fehlgeschlagen. Leerzeile vor der Änderungen-Kopfzeile nicht "
+"gefunden."
 
 #: cmd_ws_commit.cc:350
 #, c-format
@@ -2464,7 +2482,8 @@ msgstr "Einpflegen fehlgeschlagen. Änderungen-Kopfzeile nicht gefunden."
 #: cmd_ws_commit.cc:359
 #, c-format
 msgid "Commit failed. Change summary not found."
-msgstr "Einpflegen fehlgeschlagen. Zusammenfassung der Änderungen nicht gefunden."
+msgstr ""
+"Einpflegen fehlgeschlagen. Zusammenfassung der Änderungen nicht gefunden."
 
 #: cmd_ws_commit.cc:362
 #, c-format
@@ -2511,13 +2530,16 @@ msgstr ""
 
 #: cmd_ws_commit.cc:569
 msgid "Reverses a mistaken 'drop'"
-msgstr ""
+msgstr "Hebt ein falsches 'drop' auf"
 
 #: cmd_ws_commit.cc:570
 msgid ""
 "If the file was deleted from the workspace, this is the same as 'revert'. "
 "Otherwise, it just removes the 'drop' from the manifest."
 msgstr ""
+"Wenn die Datei aus dem Arbeitsbereich gelöscht wurde, verhält sich dieses "
+"Kommando wie 'revert'.  Andernfalls entfernt es lediglich den 'drop'-Eintrag "
+"aus der Änderungsliste des Arbeitsbereichs, ohne die Datei selbst anzufassen."
 
 #: cmd_ws_commit.cc:578
 msgid "Disapproves a particular revision"
@@ -2612,7 +2634,7 @@ msgstr "Zeigt Status-Informationen des Arbeitsbereiches"
 #: cmd_ws_commit.cc:849
 #, c-format
 msgid "date format '%s' cannot be used for commit"
-msgstr ""
+msgstr "das Datumformat '%s' kann nicht zum Einpflegen genutzt werden"
 
 #: cmd_ws_commit.cc:874
 #, c-format
@@ -3619,7 +3641,9 @@ msgstr "Konnte Optionen-Datei %s nicht lesen: %s"
 #: work.cc:489 work.cc:535
 #, c-format
 msgid "a memory database '%s' cannot be used in a workspace"
-msgstr "eine flüchtige Datenbank '%s' kann nicht in einem Arbeitsbereich genutzt werden"
+msgstr ""
+"eine flüchtige Datenbank '%s' kann nicht in einem Arbeitsbereich genutzt "
+"werden"
 
 #: work.cc:521
 #, c-format
@@ -5423,59 +5447,59 @@ msgstr "Peer %s E/A im 'confirmed state' fehlgeschlagen (Erfolg)"
 msgid "Network error on peer %s, disconnecting"
 msgstr "Netzwerk-Fehler an Peer %s, trenne Verbindung"
 
-#: netxx_pipe.cc:49 netxx_pipe.cc:181
+#: netxx_pipe.cc:50 netxx_pipe.cc:182
 #, c-format
 msgid "this transport not supported on native Win32; use Cygwin"
 msgstr ""
 "Diese Transportmöglichkeit wird bei der nativem Win32-Version nicht "
 "unterstützt; nutzen Sie stattdessen Cygwin."
 
-#: netxx_pipe.cc:62
+#: netxx_pipe.cc:63
 #, c-format
 msgid "pipe handle is invalid"
 msgstr "Pipe-Handle ist ungültig"
 
-#: netxx_pipe.cc:205
+#: netxx_pipe.cc:206
 #, c-format
 msgid "CreateNamedPipe(%s,...) call failed: %s"
 msgstr "CreateNamedPipe(%s,...)-Aufruf schlug fehl: %s"
 
-#: netxx_pipe.cc:222
+#: netxx_pipe.cc:223
 #, c-format
 msgid "CreateFile(%s,...) call failed: %s"
 msgstr "CreateFile(%s,...)-Aufruf schlug fehl: %s"
 
-#: netxx_pipe.cc:253
+#: netxx_pipe.cc:254
 #, c-format
 msgid "CreateProcess(%s,...) call failed: %s"
 msgstr "CreateProcess(%s,...)-Aufruf schlug fehl: %s"
 
-#: netxx_pipe.cc:269
+#: netxx_pipe.cc:270
 #, c-format
 msgid "pipe/fork failed: %s"
 msgstr "pipe/fork schlug fehl: %s"
 
-#: netxx_pipe.cc:315
+#: netxx_pipe.cc:316
 #, c-format
 msgid "WriteFile call failed: %s"
 msgstr "WriteFile-Aufruf schlug fehl: %s"
 
-#: netxx_pipe.cc:407
+#: netxx_pipe.cc:408
 #, c-format
 msgid "ReadFile call failed: %s"
 msgstr "ReadFile-Aufruf schlug fehl: %s"
 
-#: netxx_pipe.cc:442
+#: netxx_pipe.cc:443
 #, c-format
 msgid "WaitForMultipleObjects call failed: %s"
 msgstr "WaitForMultipleObjects-Aufruf schlug fehl: %s"
 
-#: netxx_pipe.cc:452
+#: netxx_pipe.cc:453
 #, c-format
 msgid "WaitForSingleObject call failed: %s"
 msgstr "WaitForSingleObject-Aufruf schlug fehl: %s"
 
-#: netxx_pipe.cc:472
+#: netxx_pipe.cc:473
 #, c-format
 msgid "GetOverlappedResult call failed: %s"
 msgstr "GetOverlappedResult-Aufruf schlug fehl: %s"
@@ -6280,26 +6304,26 @@ msgstr "%d fehlerhafte Höhenangaben"
 #: database_check.cc:1139
 #, c-format
 msgid "%d branches cached but not used"
-msgstr ""
+msgstr "%d Zweige gecacht, aber nicht genutzt"
 
 #: database_check.cc:1141
 #, c-format
 msgid "%d branches with incorrect head count"
-msgstr ""
+msgstr "%d Zweige mit ungültiger Anzahl an Köpfen"
 
 #: database_check.cc:1143
 #, c-format
 msgid "%d branches missing from branch cache"
-msgstr ""
+msgstr "%d Zweige fehlen im Zweig-Cache"
 
 #: database_check.cc:1172
 #, c-format
 msgid ""
-"check complete: %d files; %d rosters; %d revisions; %d keys; %d certs; "
-"%d heights; %d branches"
+"check complete: %d files; %d rosters; %d revisions; %d keys; %d certs; %d "
+"heights; %d branches"
 msgstr ""
-"Überprüfung beendet: %d Dateien; %d Kataloge; %d Revisionen; %d Schlüssel; "
-"%d Zertifikate; %d Höhenangaben; %d Zweige"
+"Überprüfung beendet: %d Dateien; %d Kataloge; %d Revisionen; %d Schlüssel; %"
+"d Zertifikate; %d Höhenangaben; %d Zweige"
 
 #: database_check.cc:1180
 #, c-format
@@ -7025,7 +7049,7 @@ msgstr "Revision:   "
 
 #: rev_output.cc:67
 msgid "Parent:   "
-msgstr "Elternrev.:"
+msgstr "Elternrev.: "
 
 #: rev_output.cc:79
 msgid "Author:   "
@@ -7053,41 +7077,60 @@ msgstr "Änderungen"
 
 #: rev_output.cc:143
 msgid "Changes against parent "
-msgstr "Veränderungen gegenüber Eltern-Revision"
+msgstr "Veränderungen ggü. Elternrev. "
 
 #: rev_output.cc:151
-msgid "  dropped  "
-msgstr "   entfernt  "
+#, c-format
+msgid "  dropped  %s"
+msgstr ""
+"       Pfad  %s\n"
+"   entfernt"
 
 #: rev_output.cc:156
-msgid "  renamed  "
+#, c-format
+msgid ""
+"  renamed  %s\n"
+"       to  %s"
 msgstr ""
-
-#: rev_output.cc:157 rev_output.cc:175
-msgid "       to  "
-msgstr ""
+"       Pfad  %s\n"
+"       nach  %s\n"
+"  umbenannt"
 
 #: rev_output.cc:161 rev_output.cc:165
-#, fuzzy
-msgid "  added    "
-msgstr "hinzugefügt: %s"
+#, c-format
+msgid "  added    %s"
+msgstr ""
+"       Pfad  %s\n"
+"hinzugefügt"
 
 #: rev_output.cc:169
-#, fuzzy
-msgid "  patched  "
-msgstr "  verändert: %s"
-
-#: rev_output.cc:173 rev_output.cc:185
-msgid "  attr on  "
+#, c-format
+msgid "  patched  %s"
 msgstr ""
+"      Datei  %s\n"
+"  verändert"
 
-#: rev_output.cc:174
-msgid "      set  "
+#: rev_output.cc:173
+#, c-format
+msgid ""
+"  attr on  %s\n"
+"      set  %s\n"
+"       to  %s"
 msgstr ""
+"   Attribut  %2$s\n"
+"   mit Wert  %3$s\n"
+"        auf  %1$s\n"
+"    gesetzt"
 
 #: rev_output.cc:186
-msgid "    unset  "
+#, c-format
+msgid ""
+"  attr on  %s\n"
+"    unset  %s"
 msgstr ""
+"   Attribut  %2$s\n"
+"        von  %1$s\n"
+"   gelöscht"
 
 #: asciik.cc:374
 msgid "Prints an ASCII representation of the revisions' graph"
@@ -7105,7 +7148,7 @@ msgstr ""
 #: dates.cc:385 dates.cc:389
 #, c-format
 msgid "date '%s' is out of range and cannot be formatted"
-msgstr ""
+msgstr "Datum '%s' ist außerhalb des Bereichs und kann nicht formatiert werden"
 
 #: dates.cc:427
 #, c-format
@@ -7124,12 +7167,12 @@ msgstr ""
 #: dates.cc:448
 #, c-format
 msgid "unable to parse date '%s' with format '%s'"
-msgstr ""
+msgstr "kann Datum '%s' nicht mit dem Format '%s' analysieren"
 
 #: dates.cc:495
 #, c-format
 msgid "date '%s' is out of range and cannot be parsed"
-msgstr ""
+msgstr "Datum '%s' ist außerhalb des Bereichs und kann nicht analysiert werden"
 
 #: dates.cc:536 dates.cc:550 dates.cc:565 dates.cc:573 dates.cc:580
 #: dates.cc:592 dates.cc:604 dates.cc:613 dates.cc:647
@@ -7256,11 +7299,12 @@ msgid ""
 "automatically update the workspace, if it is clean and the base revision is "
 "a head of an affected branch"
 msgstr ""
+"aktualisiere automatisch den Arbeitsbereich, wenn dieser sauber und die "
+"Basisrevision der Kopf eines betroffenen Zweiges ist"
 
 #: options_list.hh:105
-#, fuzzy
 msgid "do not touch the workspace (default)"
-msgstr "Fügt Dateien zum Arbeitsbereich hinzu"
+msgstr "fasse den Arbeitsbereich nicht an (Standard)"
 
 #: options_list.hh:118
 msgid "address:port to listen on (default :4691)"
@@ -7416,13 +7460,12 @@ msgstr ""
 "Dateisystem"
 
 #: options_list.hh:425
-#, fuzzy
 msgid ""
 "move conflicting, unversioned paths into _MTN/resolutions before proceeding "
 "with any workspace change"
 msgstr ""
-"bewegt in Konflikt stehende, nicht versionisierte Pfade nach _MTN/conflicts, "
-"bevor Änderungen am Arbeitsbereich vorgenommen werden"
+"bewegt in Konflikt stehende, nicht versionisierte Pfade nach _MTN/"
+"resolutions, bevor Änderungen am Arbeitsbereich vorgenommen werden"
 
 #: options_list.hh:434
 msgid ""
@@ -8019,305 +8062,3 @@ msgstr "Drücken Sie die Eingabetaste"
 #: std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Drücken Sie die Eingabetaste, wenn der Unterprozess beendet ist"
-
-#~ msgid "Deleted entries:"
-#~ msgstr "Gelöschte Einträge:"
-
-#~ msgid "Renamed entries:"
-#~ msgstr "Umbenannte Einträge:"
-
-#~ msgid "Added files:"
-#~ msgstr "Hinzugefügte Dateien:"
-
-#~ msgid "Added directories:"
-#~ msgstr "Hinzugefügte Verzeichnisse:"
-
-#~ msgid "Modified files:"
-#~ msgstr "Geänderte Dateien:"
-
-#~ msgid "Modified attrs:"
-#~ msgstr "Geänderte Attribute:"
-
-#~ msgid "Ancestor: "
-#~ msgstr "Vorfahr: "
-
-#~ msgid "Current revision: %s"
-#~ msgstr "Derzeitige Revision: %s"
-
-#~ msgid "Current branch: %s"
-#~ msgstr "Derzeitiger Zweig: %s"
-
-#~ msgid "  no changes"
-#~ msgstr "  keine Änderungen"
-
-#~ msgid ""
-#~ "  renamed  %s\n"
-#~ "       to  %s"
-#~ msgstr ""
-#~ "  umbenannt: %s\n"
-#~ "       nach: %s"
-
-#~ msgid ""
-#~ "  attr on  %s\n"
-#~ "    attr   %s\n"
-#~ "    value  %s"
-#~ msgstr ""
-#~ "  auf Datei: %s\n"
-#~ "   Attribut: %s\n"
-#~ "   mit Wert: %s\n"
-#~ "     gesetzt"
-
-#~ msgid ""
-#~ "  unset on %s\n"
-#~ "      attr %s"
-#~ msgstr ""
-#~ "  von Datei: %s\n"
-#~ "   Attribut: %s\n"
-#~ "   entfernt"
-
-#~ msgid ""
-#~ "Enter a description of this change.\n"
-#~ "Lines beginning with `MTN:' are removed automatically."
-#~ msgstr ""
-#~ "Geben Sie eine Beschreibung dieser Änderung an.\n"
-#~ "Zeilen, die mit 'MTN:' beginnen, werden automatisch entfernt."
-
-#~ msgid "failed to remove magic line; commit cancelled"
-#~ msgstr ""
-#~ "konnte magische Kommentarzeile nicht entfernen; Einpflegen abgebrochen"
-
-#~ msgid "skipping invalid path '%s'"
-#~ msgstr "übergehe ungültigen Pfad '%s'"
-
-#~ msgid "cannot handle special files in dir '%s'"
-#~ msgstr "kann nicht mit speziellen Dateien im Verzeichnis '%s' umgehen"
-
-#~ msgid "rejected attempt at anonymous connection while running as sink"
-#~ msgstr "verweigerte anonyme Verbindung im Datensenke-Modus"
-
-#~ msgid ""
-#~ "denied '%s' read permission for '%s' excluding '%s' while running as pure "
-#~ "sink"
-#~ msgstr ""
-#~ "verweigere '%s' Leseberechtigung für '%s' außer '%s' im reinen Datensenke-"
-#~ "Modus"
-
-#~ msgid ""
-#~ "denied '%s' write permission for '%s' excluding '%s' while running as "
-#~ "pure source"
-#~ msgstr ""
-#~ "verweigere '%s' Schreibberechtigung für '%s' außer '%s' im reinen "
-#~ "Datensenke-Modus"
-
-#~ msgid "input buffer for peer %s is overfull after netcmd dispatch"
-#~ msgstr "Eingabepuffer für Peer %s ist nach netcmd-Absendung übervoll."
-
-#~ msgid "Cannot find appropriate key '%s' for old-style cert"
-#~ msgstr ""
-#~ "Kann keinen passenden Schlüssel '%s' für alten Zertifikatstyp finden"
-
-#~ msgid ""
-#~ "Some keys in the database have the same ID as, but different hashes to, "
-#~ "keys in your local key store!"
-#~ msgstr ""
-#~ "Einige Schlüssel in der Datenbank haben identische Kennungen, jedoch "
-#~ "unterschiedliche Prüfsummen zu Schlüsseln im lokalen Schlüsselbund!"
-
-#~ msgid "Mismatched Key: %s"
-#~ msgstr "Falsch zugeordneter Schlüssel: %s"
-
-#~ msgid "KEYID"
-#~ msgstr "Schlüssel-ID"
-
-#~ msgid "left and right resolutions cannot both be 'user'"
-#~ msgstr "linke und rechte Konfliktlösung können nicht beide 'user' sein"
-
-#~ msgid "key '%s' is not equal to key '%s' in database"
-#~ msgstr ""
-#~ "Schlüssel '%s' stimmt nicht mit dem Schlüssel '%s' in der Datenbank "
-#~ "überein"
-
-#~ msgid "Cannot store key '%s': a different key by that name exists."
-#~ msgstr ""
-#~ "Kann den Schlüssel '%s' nicht speichern; ein anderer Schlüssel mit diesem "
-#~ "Namen existiert bereits"
-
-#~ msgid ""
-#~ "NOTE: this upgrade cleared monotone's caches\n"
-#~ "you should now run '%s db regenerate_caches'"
-#~ msgstr ""
-#~ "HINWEIS: Dieses Upgrade hat monotones Caches gelöscht.\n"
-#~ "Sie sollten nun '%s db regenerate_caches' ausführen."
-
-#~ msgid ""
-#~ "the server sent a key with the key id '%s'\n"
-#~ "which is already in use in your database. you may want to execute\n"
-#~ "  %s dropkey %s\n"
-#~ "on your local database before you run this command again,\n"
-#~ "assuming that key currently present in your database does NOT have\n"
-#~ "a private counterpart (or in other words, is one of YOUR keys)"
-#~ msgstr ""
-#~ "Der Server hat einen Schlüssel mit der Schlüssel-ID '%s'\n"
-#~ "gesendet, der in Ihrer Datenbank bereits in Benutzung ist.\n"
-#~ "Eventuell möchten Sie\n"
-#~ "  %s dropkey %s\n"
-#~ "auf Ihrer lokalen Datenbank ausführen, bevor Sie das Kommando noch\n"
-#~ "einmal starten, sofern der Schlüssel, der sich zur Zeit in Ihrer\n"
-#~ "Datenbank befindet, KEIN privates Gegenstück besitzt (oder mit anderen\n"
-#~ "Worten keiner IHRER Schlüssel ist)."
-
-#~ msgid "set key for signatures"
-#~ msgstr "setze Schlüssel für Signaturen"
-
-#~ msgid "reverting %s on %s"
-#~ msgstr "setze %s auf %s zurück"
-
-#~ msgid "modifying %s"
-#~ msgstr "verändere %s"
-
-#~ msgid "[FILE] ..."
-#~ msgstr "[DATEI] ..."
-
-#~ msgid "trust function disliked %d signers of %s cert on manifest %s"
-#~ msgstr ""
-#~ "Vertrauensfunktion lehnt %d Unterzeichner des Zertifikats %s auf Manifest "
-#~ "%s ab"
-
-#~ msgid ""
-#~ "%s\n"
-#~ "Running on          : %s\n"
-#~ "C++ compiler        : %s\n"
-#~ "C++ standard library: %s\n"
-#~ "Boost version       : %s\n"
-#~ "Changes since base revision:\n"
-#~ "%s"
-#~ msgstr ""
-#~ "%s\n"
-#~ "Laufe auf              : %s\n"
-#~ "C++-Compiler           : %s\n"
-#~ "C++-Standard-Bibliothek: %s\n"
-#~ "Boost-Version          : %s\n"
-#~ "Änderungen seit der Basis-Revision:\n"
-#~ "%s"
-
-#~ msgid "detected at %s:%d"
-#~ msgstr "festgestellt in %s:%d"
-
-#~ msgid "Source '%s' for copy does not exist"
-#~ msgstr "Quelle '%s' zum Kopieren existiert nicht"
-
-#~ msgid "cannot copy special files in '%s'"
-#~ msgstr "kann nicht spezielle Dateien in '%s' kopieren"
-
-#~ msgid "invalid argument %d to umask"
-#~ msgstr "ungültiges Argument %d für `umask'"
-
-#~ msgid "invalid octal number %d in umask"
-#~ msgstr "ungültige Oktalzahl %d in `umask'"
-
-#~ msgid ""
-#~ "This test suite cannot be run as the root user.\n"
-#~ "Please try again with a normal user account.\n"
-#~ msgstr ""
-#~ "Diese Testsuite kann nicht als root-Nuzter laufen.\n"
-#~ "Bitte versuchen Sie es noch einmal mit einem normalen Benutzeraccount.\n"
-
-#~ msgid "test %s: %s"
-#~ msgstr "test %s: %s"
-
-#~ msgid "-j %d makes no sense, option ignored"
-#~ msgstr "-j %d ergibt keinen Sinn, Option wird ignoriert"
-
-#~ msgid "no support for -l %f: forcing -j1"
-#~ msgstr "keine Unterstützung für -l %f: erzwinge -j1"
-
-#~ msgid "unrecognized option '%s'"
-#~ msgstr "nicht erkannte Option '%s'"
-
-#~ msgid ""
-#~ "incorrect self-invocation; -r <abs path to lua-testsuite.lua> <abs path "
-#~ "to tester_dir> <test>"
-#~ msgstr ""
-#~ "falscher Selbstaufruf; -r <abs. Pfad zur lua-testsuite.lua> <abs. Pfad "
-#~ "zum tester_dir> <test>"
-
-#~ msgid "%s: no test suite specified\n"
-#~ msgstr "%s: keine Test-Suite spezifiziert\n"
-
-#~ msgid "Usage: %s test-file testsuite [options] [tests]\n"
-#~ msgstr "Aufruf: %s <Testdatei Testsuite> [Optionen] [Testfälle]\n"
-
-#~ msgid ""
-#~ "Testsuite: a Lua script defining the test suite to run.\n"
-#~ "Options:\n"
-#~ "  -l, --list     just list tests that would be run\n"
-#~ "  -d, --debug    don't erase working dirs of successful tests\n"
-#~ "  -j N, --jobs=N run N test cases in parallel\n"
-#~ "                 (note: unlike make, the N is not optional)\n"
-#~ "  -h, --help     display this help message\n"
-#~ "Tests may be specified as:\n"
-#~ "  nothing - run all tests.\n"
-#~ "  numbers - run the tests with those numbers\n"
-#~ "            negative numbers count back from the end\n"
-#~ "            ranges may be specified as A..B (inclusive)\n"
-#~ "  regexes - run the tests whose names match (unanchored)\n"
-#~ msgstr ""
-#~ "Testdatei Testsuite: ein Luaskript, welches die auszuführende Testsuite "
-#~ "bestimmt.\n"
-#~ "Optionen:\n"
-#~ "  -l, --list     listet die Tests, die ausgeführt werden würden\n"
-#~ "  -d, --debug    löscht keine Testverzeichnisse von erfolgreichen Tests\n"
-#~ "  -j N, --jobs=N startet N Testfälle parallel\n"
-#~ "                 (Hinweis: Das Argument N ist nicht optional)\n"
-#~ "  -h, --help     zeigt diese Hilfe\n"
-#~ "Testfälle können wie folgt definiert werden:\n"
-#~ "  nichts         - alle Testfälle werden ausgeführt\n"
-#~ "  Zahlen         - lässt die Testfälle mit den aufgeführten Nummern "
-#~ "laufen\n"
-#~ "                   negative Nummern zählen Testfälle beginnen vom Ende "
-#~ "ab\n"
-#~ "                   Reihen können als A..B (inklusive A und B) "
-#~ "spezifiziert\n"
-#~ "                   werden\n"
-#~ "  Reg. Ausdrücke - lässt die Testfälle laufen, deren Name auf den "
-#~ "Ausdruck\n"
-#~ "                   passt (ohne Anker)\n"
-
-#~ msgid "self-invocation should not be used on Unix\n"
-#~ msgstr "Selbstaufruf sollte nicht unter Unix verwendet werden\n"
-
-#~ msgid "%s\n"
-#~ msgstr "%s\n"
-
-#~ msgid "Invariant failure: %s\n"
-#~ msgstr "Invarianten-Fehler: %s\n"
-
-#~ msgid "Uncaught exception: %s"
-#~ msgstr "Nicht gefangene Ausnahme: %s"
-
-#~ msgid "timeout reading data %d"
-#~ msgstr "Zeitüberschreitung beim Lesen der Daten %d"
-
-#~ msgid "Failure %s"
-#~ msgstr "Fehler %s"
-
-#~ msgid "%s:%d: invariant '%s' violated"
-#~ msgstr "%s:%d: Invariante '%s' verletzt"
-
-#~ msgid "ssh_agent: connect: could not open socket to ssh-agent"
-#~ msgstr "ssh_agent: connect: kann Socket zu ssh-agent nicht öffnen"
-
-#~ msgid "ssh_agent: connect: could not set up socket for ssh-agent"
-#~ msgstr "ssh_agent: connect: kann Socket für ssh-agent nicht aufsetzen"
-
-#~ msgid "stream read failed (%i)"
-#~ msgstr "Lesen vom Strom schlug fehl (%i)"
-
-#~ msgid "Options specific to '%s %s':"
-#~ msgstr "Spezifische Optionen für '%s %s':"
-
-#, fuzzy
-#~ msgid "warning: %s conflict with no supported resolutions."
-#~ msgid_plural "warning: %s conflicts with no supported resolutions."
-#~ msgstr[0] "Warnung: %d Konflikt ohne unterstützte Konfliktlösungen"
-#~ msgstr[1] "Warnung: %d Konflikte ohne unterstützte Konfliktlösungen"
