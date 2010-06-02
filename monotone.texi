@@ -1187,7 +1187,7 @@ $ mtn db init --db=~/abe.mtn
 Beth decides to use monotone's built-in database management functionality.
 monotone then expects to find managed database files in a couple of predefined
 places (like f.e. @file{~/.monotone/databases} on Unix and
-@file{%APPDDATA%\monotone\databases} on Windows, this is customizable) and acts
+@file{%APPDATA%\monotone\databases} on Windows, this is customizable) and acts
 upon those by knowing only their file or basename from anywhere.
 
 To create a new managed database, Beth issues the @command{mtn db init} command
@@ -3727,7 +3727,7 @@ for you whenever it is appropriate.  However, both are documented
 here, just in case a situation arises where you need to go ``under the
 hood''.
 
-@heading Existing control files
+@heading Existing control files and directories
 
 The following control files are currently used. More control files may be added
 in the future, but they will follow the patterns given above.
@@ -3759,12 +3759,31 @@ Contains log messages to append to the ``changelog'' cert upon
 commit. The user may add content to this file while they work.  Upon a
 successful commit monotone will empty the file making it ready for the
 next edit/commit cycle.
+@item _MTN/commit
+If a commit fails, f.e. because a header field could not be parsed
+properly, then this file will contain a dump of the complete contents
+which have been saved through the editor.  After the information have been
+recovered from this file, it has to be removed explicitely, since a new commit
+won't be possible as long as this file exists.
 @item _MTN/inodeprints
 If this file exists, monotone considers the directory to be in
 @ref{Inodeprints} mode, and uses this file to cache the inodeprints.
 @item _MTN/debug
 If monotone detects a bug in itself or crashes, then before exiting it
 dumps a log of its recent activity to this file, to aid in debugging.
+@item _MTN/bisect
+Contains the current state of an ongoing bisection.  See @ref{Bisecting}
+for more information.
+@item _MTN/update
+Remembers the update / previous base revision of the workspace when
+the @code{u:} selector is used.  See @ref{Selectors} for more information.
+@item _MTN/conflicts
+The default file which is used by monotone to read and write merge conflicts
+for conflict resolution.  See @ref{Conflicts} for more information.
+@item _MTN/resolutions
+The directory in which monotone moves unversioned, conflicting files from
+a workspace to, in case @command{update} or other commands are called with
+the @option{--move-conflicting-paths} option.
 @end table
 
 

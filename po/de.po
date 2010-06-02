@@ -2397,7 +2397,7 @@ msgstr "*** DIESE REVISION WIRD EINEN NEUEN KOPF ERZEUGEN ***"
 msgid "date format '%s' cannot be used for commit; using default instead"
 msgstr ""
 "Datumsformat '%s' kann nicht zum Einpflegen genutzt werden; nutze "
-"stattdesseb Standardformat"
+"stattdessen Standardformat"
 
 #: cmd_ws_commit.cc:259
 #, c-format
