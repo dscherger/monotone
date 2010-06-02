@@ -435,9 +435,15 @@ set<revision_id> get_ancestors(project_t const & project,
       frontier.erase(frontier.begin());
       set<revision_id> p;
       project.db.get_revision_parents(revid, p);
-      p.erase(revision_id());
-      frontier.insert(p.begin(), p.end());
-      ret.insert(p.begin(), p.end());
+      for (set<revision_id>::const_iterator i = p.begin();
+           i != p.end(); ++i)
+        {
+          if (null_id(*i))
+            continue;
+          pair<set<revision_id>::iterator, bool> x = ret.insert(*i);
+          if (x.second)
+            frontier.insert(*i);
+        }
     }
   return ret;
 }
@@ -510,8 +516,15 @@ public:
             frontier.erase(frontier.begin());
             set<revision_id> c;
             project.db.get_revision_children(revid, c);
-            frontier.insert(c.begin(), c.end());
-            ret.insert(c.begin(), c.end());
+            for (set<revision_id>::const_iterator i = c.begin();
+                 i != c.end(); ++i)
+              {
+                if (null_id(*i))
+                  continue;
+                pair<set<revision_id>::iterator, bool> x = ret.insert(*i);
+                if (x.second)
+                  frontier.insert(*i);
+              }
           }
         return ret;
       }

@@ -2896,13 +2896,13 @@ heads of two specific branches.
 
 There are also several selector functions defined, which take one or more
 selectors as arguments. These are:
-@table
-@item @code{difference(A,B)}
+@table @code
+@item difference(A,B)
 Set difference; this returns all revisions selected by A but not by B. For
 example, @code{difference(a:graydon,b:net.venge.monotone)} would return all
 revisions which have an @code{author} cert beginning with @code{graydon} which
 are not in the branch @code{net.venge.monotone}.
-@item @code{lca(A,B)}
+@item lca(A,B)
 Least common ancestors; this is identical to
 @code{max((ancestors(A)|A)/(ancestors(B)|B))},
 but it may be faster and is certainly more convenient to type. For example,
@@ -2910,30 +2910,30 @@ but it may be faster and is certainly more convenient to type. For example,
 return the last propagate between the given branches, or the branch point if
 there were no subsequent propagates yet. This could be particularly useful with
 the @code{diff} command, to see exactly what has changed on a given branch.
-@item @code{max(A)}
+@item max(A)
 Erase ancestors; this returns all revisions selected by @code{A} which are not
 ancestors of other revisions selected by @code{A}. For example,
 @code{max(b:net.venge.monotone/a:graydon)} would return the latest revision(s)
 on branch @code{net.venge.monotone} which have an @code{author} cert beginning
 with @code{graydon}.
-@item @code{ancestors(A)}
+@item ancestors(A)
 Strict ancestors; returns all revisions which are an ancestor of a revision
 selected by @code{A}. For example, @code{ancestors(b:net.venge.monotone)}
 would return all revisions in branch @code{net.venge.monotone} except for the
 branch heads, and all revisions in branches which have been merged back into
 @code{net.venge.monotone}.
-@item @code{descendants(A)}
+@item descendants(A)
 Strict descendants; returns all revisions which are a descendant of a revision
 selected by @code{A}. For example,
 @code{descendants(b:net.venge.monotone/a:graydon)} would return all revisions
 which are descended from a revision which is in branch @code{net.venge.monotone}
 and has an @code{author} cert beginning with @code{graydon}.
-@item @code{parents(A)}
+@item parents(A)
 Returns all revisions which are a parent of a revision selected by @code{A}.
 For example, @code{parents(m:*foobar*)} would return the parents of any
 revisions which have @code{comment} or @code{changelog} certs containing the
 word @code{foobar}.
-@item @code{children(A)}
+@item children(A)
 Returns all revisions which are a child of a revision selected by @code{A}.
 For example, @code{children(m:*foobar*)} would return the children of any
 revisions which have @code{comment} or @code{changelog} certs containing the
