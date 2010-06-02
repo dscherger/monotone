@@ -21,6 +21,7 @@
 #include "work.hh"
 #include "transforms.hh"
 #include "roster.hh"
+#include "vector.hh"
 
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
@@ -470,8 +471,12 @@ public:
       {
         E(args.size() == 2, origin::user,
           F("the 'lca' function takes 2 arguments, not %d") % args.size());
-        set<revision_id> lhs = get_ancestors(project, args[0]->complete(project));
-        set<revision_id> rhs = get_ancestors(project, args[1]->complete(project));
+        set<revision_id> lhs_heads = args[0]->complete(project);
+        set<revision_id> rhs_heads = args[1]->complete(project);
+        set<revision_id> lhs = get_ancestors(project, lhs_heads);
+        set<revision_id> rhs = get_ancestors(project, rhs_heads);
+        lhs.insert(lhs_heads.begin(), lhs_heads.end());
+        rhs.insert(rhs_heads.begin(), rhs_heads.end());
         set<revision_id> common;
         set_intersection(lhs.begin(), lhs.end(),
                          rhs.begin(), rhs.end(),
@@ -679,33 +684,38 @@ shared_ptr<selector> selector::create(options const & opts,
     }
 
   vector<parse_item> items;
+  size_t tok_num = 0;
   for (vector<string>::const_iterator tok = splitted.begin();
        tok != splitted.end(); ++tok)
     {
+      L(FL("Processing token number %d: '%s'") % tok_num % *tok);
+      ++tok_num;
       if (*tok == "(") {
         items.push_back(parse_item(*tok));
       } else if (*tok == ")") {
         unsigned int lparen_pos = 1;
-        while (lparen_pos <= items.size() && items[items.size() - lparen_pos].str != "(")
+        while (lparen_pos <= items.size() && idx(items, items.size() - lparen_pos).str != "(")
           {
             ++lparen_pos;
           }
-        E(items[items.size() - lparen_pos].str == "(", origin::user,
-          F("selector '%s' is invalid, unmatched '('") % orig);
+        E(lparen_pos < items.size(), origin::user,
+          F("selector '%s' is invalid, unmatched ')'") % orig);
+        I(idx(items, items.size() - lparen_pos).str == "(");
         unsigned int name_idx = items.size() - lparen_pos - 1;
-        if (lparen_pos < items.size() && !items[name_idx].str.empty())
+        if (lparen_pos < items.size() && !idx(items, name_idx).str.empty()
+            && special_chars.find(idx(items, name_idx).str) == string::npos)
           {
             // looks like a function call
-            shared_ptr<fn_selector> to_add(new fn_selector(items[name_idx].str));
+            shared_ptr<fn_selector> to_add(new fn_selector(idx(items, name_idx).str));
             L(FL("found function-like selector '%s' at stack position %d of %d")
               % items[name_idx].str % name_idx % items.size());
             // note the closing paren is not on the item stack
-            for (unsigned int idx = items.size() - lparen_pos + 1;
-                 idx < items.size(); idx += 2)
+            for (unsigned int i = items.size() - lparen_pos + 1;
+                 i < items.size(); i += 2)
               {
-                L(FL("        found argument at stack position %d") % idx);
-                shared_ptr<selector> arg = items[idx].sel;
-                E(idx == items.size() - 1 || items[idx+1].str == ",", origin::user,
+                L(FL("        found argument at stack position %d") % i);
+                shared_ptr<selector> arg = idx(items,i).sel;
+                E(i == items.size() - 1 || idx(items,i+1).str == ",", origin::user,
                   F("selector '%s' is invalid, function argument doesn't look like an arg-list"));
                 to_add->add(arg);
               }
@@ -715,12 +725,11 @@ shared_ptr<selector> selector::create(options const & opts,
           }
         else
           {
-            // just parentheses for grouping
-            E(lparen_pos == 3 && items[items.size() - 2].sel, origin::user,
+            // just parentheses for grouping, closing paren is not on the item stack
+            E(lparen_pos == 2 && idx(items, items.size() - 1).sel, origin::user,
               F("selector '%s' is invalid, grouping parentheses contain something that "
                 "doesn't look like an expr") % orig);
-            shared_ptr<selector> to_add(new nested_selector(items[items.size() - 2].sel));
-            items.pop_back();
+            shared_ptr<selector> to_add(new nested_selector(idx(items, items.size() - 1).sel));
             items.pop_back();
             items.pop_back();
             items.push_back(parse_item(to_add));
@@ -752,11 +761,11 @@ shared_ptr<selector> selector::create(options const & opts,
       // may have an infix operator to reduce
       if (items.size() >= 3 && items.back().sel)
         {
-          string op = items[items.size() - 2].str;
+          string op = idx(items, items.size() - 2).str;
           if (op == "|" || op == "/")
             {
-              shared_ptr<selector> lhs = items[items.size() - 3].sel;
-              shared_ptr<selector> rhs = items[items.size() - 1].sel;
+              shared_ptr<selector> lhs = idx(items, items.size() - 3).sel;
+              shared_ptr<selector> rhs = idx(items, items.size() - 1).sel;
               E(lhs, origin::user,
                 F("selector '%s is invalid, because there is a '%s' someplace it shouldn't be")
                 % orig % op);
