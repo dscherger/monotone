@@ -155,22 +155,22 @@ private:
                           key_name const & name,
                           key_id & id);
   // get the name given when creating the key
-  void get_canonical_name_of_key(key_store * const keys,
-                                 key_id const & id,
-                                 key_name & name);
-  void complete_key_identity(key_store * const keys,
-                             lua_hooks & lua,
-                             key_identity_info & info);
+  void get_given_name_of_key(key_store * const keys,
+                             key_id const & id,
+                             key_name & name);
+  void complete_key_identity_from_id(key_store * const keys,
+                                     lua_hooks & lua,
+                                     key_identity_info & info);
   void get_key_identity(key_store * const keys,
                         lua_hooks & lua,
                         external_key_name const & input,
                         key_identity_info & output);
 public:
-  void complete_key_identity(key_store & keys,
-                             lua_hooks & lua,
-                             key_identity_info & info);
-  void complete_key_identity(lua_hooks & lua,
-                             key_identity_info & info);
+  void complete_key_identity_from_id(key_store & keys,
+                                     lua_hooks & lua,
+                                     key_identity_info & info);
+  void complete_key_identity_from_id(lua_hooks & lua,
+                                     key_identity_info & info);
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,
                         external_key_name const & input,
