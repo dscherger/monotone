@@ -117,11 +117,14 @@ public:
 
 private:
   boost::shared_ptr<policy_info> project_policy;
+  // These are caches of what's in the database. They are updated when
+  // they're noticed to be out of date, which will always be during a
+  // logically read-only operation.
   mutable std::map<branch_heads_key,
-                  std::pair<outdated_indicator, std::set<revision_id> >
-  > branch_heads;
-  std::set<branch_name> branches;
-  outdated_indicator indicator;
+                   std::pair<outdated_indicator, std::set<revision_id> >
+                   > branch_heads;
+  mutable std::set<branch_name> branches;
+  mutable outdated_indicator indicator;
 
   explicit project_t(database & db);
 public:
@@ -139,14 +142,14 @@ public:
                        std::set<branch_name> & names) const;
 
   void get_branch_list(std::set<branch_name> & names,
-                       bool check_heads = false);
+                       bool check_heads = false) const;
   void get_branch_list(globish const & glob, std::set<branch_name> & names,
-                       bool check_heads = false);
+                       bool check_heads = false) const;
 
   // used by 'ls epochs'
-  void get_branch_list(std::set<branch_uid> & ids);
-  branch_uid translate_branch(branch_name const & branch);
-  branch_name translate_branch(branch_uid const & branch);
+  void get_branch_list(std::set<branch_uid> & ids) const;
+  branch_uid translate_branch(branch_name const & branch) const;
+  branch_name translate_branch(branch_uid const & branch) const;
 
   // internal for policy stuff
   outdated_indicator get_branch_heads(branch_uid const & uid,
@@ -163,38 +166,38 @@ public:
                         std::multimap<revision_id, revision_id>
                             *inverse_graph_cache_ptr = NULL) const;
 
-  outdated_indicator get_tags(std::set<tag_t> & tags);
+  outdated_indicator get_tags(std::set<tag_t> & tags) const;
   void put_tag(key_store & keys,
                revision_id const & id,
                std::string const & name);
 
   bool revision_is_in_branch(revision_id const & id,
-                             branch_name const & branch);
+                             branch_name const & branch) const;
   void put_revision_in_branch(key_store & keys,
                               revision_id const & id,
                               branch_name const & branch);
 
   bool revision_is_suspended_in_branch(revision_id const & id,
-                                       branch_name const & branch);
+                                       branch_name const & branch) const;
   void suspend_revision_in_branch(key_store & keys,
                                   revision_id const & id,
                                   branch_name const & branch);
 
   outdated_indicator get_revision_cert_hashes(revision_id const & rid,
-                                              std::vector<id> & hashes);
+                                              std::vector<id> & hashes) const;
   outdated_indicator get_revision_certs(revision_id const & id,
-                                        std::vector<cert> & certs);
+                                        std::vector<cert> & certs) const;
   // This kind of assumes that we'll eventually have certs be for a specific
   // project. There's a fairly good chance that that won't happen, which would
   // mean that this can go away.
   outdated_indicator get_revision_certs_by_name(revision_id const & id,
                                                 cert_name const & name,
-                                                std::vector<cert> & certs);
+                                                std::vector<cert> & certs) const;
   // What branches in *this* project does the given revision belong to?
   outdated_indicator get_revision_branches(revision_id const & id,
-                                           std::set<branch_name> & branches);
+                                           std::set<branch_name> & branches) const;
   outdated_indicator get_branch_certs(branch_name const & branch,
-                                      std::vector<std::pair<id, cert> > & certs);
+                                      std::vector<std::pair<id, cert> > & certs) const;
 
   void put_standard_certs(key_store & keys,
                           revision_id const & id,
@@ -264,15 +267,6 @@ public:
   void get_key_identity(lua_hooks & lua,
                         branch_name const & where,
                         external_key_name const & input,
-                        key_identity_info & output) const;
-  void get_key_identity(key_store & keys,
-                        lua_hooks & lua,
-                        branch_name const & where,
-                        arg_type const & input,
-                        key_identity_info & output) const;
-  void get_key_identity(lua_hooks & lua,
-                        branch_name const & where,
-                        arg_type const & input,
                         key_identity_info & output) const;
 };
 

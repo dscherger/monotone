@@ -680,7 +680,7 @@ project_t::get_subpolicies(branch_name const & name,
 
 void
 project_t::get_branch_list(set<branch_name> & names,
-                           bool check_heads)
+                           bool check_heads) const
 {
   if (!project_policy->passthru)
     {
@@ -715,7 +715,7 @@ project_t::get_branch_list(set<branch_name> & names,
 void
 project_t::get_branch_list(globish const & glob,
                            set<branch_name> & names,
-                           bool check_heads)
+                           bool check_heads) const
 {
   if (!project_policy->passthru)
     {
@@ -752,7 +752,7 @@ project_t::get_branch_list(globish const & glob,
 }
 
 void
-project_t::get_branch_list(std::set<branch_uid> & branch_ids)
+project_t::get_branch_list(std::set<branch_uid> & branch_ids) const
 {
   branch_ids.clear();
   if (project_policy->passthru)
@@ -770,7 +770,7 @@ project_t::get_branch_list(std::set<branch_uid> & branch_ids)
 }
 
 branch_uid
-project_t::translate_branch(branch_name const & name)
+project_t::translate_branch(branch_name const & name) const
 {
   if (project_policy->passthru)
     return typecast_vocab<branch_uid>(name);
@@ -779,7 +779,7 @@ project_t::translate_branch(branch_name const & name)
 }
 
 branch_name
-project_t::translate_branch(branch_uid const & uid)
+project_t::translate_branch(branch_uid const & uid) const
 {
   if (project_policy->passthru)
     return typecast_vocab<branch_name>(uid);
@@ -967,7 +967,7 @@ project_t::get_branch_heads(branch_uid const & uid,
                             std::set<revision_id> & heads,
                             bool ignore_suspend_certs,
                             std::multimap<revision_id, revision_id>
-                                *inverse_graph_cache_ptr) const
+                            *inverse_graph_cache_ptr) const
 {
   branch_heads_key cache_index(uid, ignore_suspend_certs, signers, true);
 
@@ -1022,7 +1022,7 @@ project_t::get_branch_heads(branch_name const & name,
 
 bool
 project_t::revision_is_in_branch(revision_id const & id,
-                                 branch_name const & branch)
+                                 branch_name const & branch) const
 {
   if (project_policy->passthru)
     {
@@ -1069,7 +1069,7 @@ project_t::put_revision_in_branch(key_store & keys,
 
 bool
 project_t::revision_is_suspended_in_branch(revision_id const & id,
-                                 branch_name const & branch)
+                                           branch_name const & branch) const
 {
   branch_uid bid;
   if (project_policy->passthru)
@@ -1109,14 +1109,14 @@ project_t::suspend_revision_in_branch(key_store & keys,
 
 outdated_indicator
 project_t::get_revision_cert_hashes(revision_id const & rid,
-                                    vector<id> & hashes)
+                                    vector<id> & hashes) const
 {
   return db.get_revision_certs(rid, hashes);
 }
 
 outdated_indicator
 project_t::get_revision_certs(revision_id const & id,
-                              vector<cert> & certs)
+                              vector<cert> & certs) const
 {
   return db.get_revision_certs(id, certs);
 }
@@ -1124,7 +1124,7 @@ project_t::get_revision_certs(revision_id const & id,
 outdated_indicator
 project_t::get_revision_certs_by_name(revision_id const & id,
                                       cert_name const & name,
-                                      vector<cert> & certs)
+                                      vector<cert> & certs) const
 {
   outdated_indicator i = db.get_revision_certs(id, name, certs);
   db.erase_bogus_certs(*this, certs);
@@ -1133,7 +1133,7 @@ project_t::get_revision_certs_by_name(revision_id const & id,
 
 outdated_indicator
 project_t::get_revision_branches(revision_id const & id,
-                                 set<branch_name> & branches)
+                                 set<branch_name> & branches) const
 {
   vector<cert> certs;
   outdated_indicator i = get_revision_certs_by_name(id, branch_cert_name, certs);
@@ -1158,7 +1158,7 @@ project_t::get_revision_branches(revision_id const & id,
 
 outdated_indicator
 project_t::get_branch_certs(branch_name const & branch,
-                            vector<pair<id, cert> > & certs)
+                            vector<pair<id, cert> > & certs) const
 {
   branch_uid bid;
   if (project_policy->passthru)
@@ -1195,7 +1195,7 @@ operator < (tag_t const & a, tag_t const & b)
 }
 
 outdated_indicator
-project_t::get_tags(set<tag_t> & tags)
+project_t::get_tags(set<tag_t> & tags) const
 {
   if (project_policy->passthru)
     {
@@ -1621,27 +1621,6 @@ project_t::get_key_identity(lua_hooks & lua,
                             key_identity_info & output) const
 {
   get_key_identity(0, lua, where, input, output);
-}
-
-void
-project_t::get_key_identity(key_store & keys,
-                            lua_hooks & lua,
-                            branch_name const & where,
-                            arg_type const & input,
-                            key_identity_info & output) const
-{
-  get_key_identity(&keys, lua, where,
-                   typecast_vocab<external_key_name>(input), output);
-}
-
-void
-project_t::get_key_identity(lua_hooks & lua,
-                            branch_name const & where,
-                            arg_type const & input,
-                            key_identity_info & output) const
-{
-  get_key_identity(0, lua, where,
-                   typecast_vocab<external_key_name>(input), output);
 }
 
 
