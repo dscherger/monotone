@@ -106,7 +106,7 @@ netsync_session::netsync_session(session * owner,
        i != opts.keys_to_push.end(); ++i)
     {
       key_identity_info ident;
-      project.get_key_identity(keys, lua, opts, *i, ident);
+      project.get_key_identity(keys, lua, *i, ident);
       keys_to_push.push_back(ident.id);
     }
 }

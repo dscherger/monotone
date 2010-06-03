@@ -57,7 +57,7 @@ public:
   // cert hooks
   bool hook_expand_selector(string const & sel, string & exp);
   bool hook_expand_date(string const & sel, string & exp);
-  bool hook_get_branch_key(options const & opts,
+  bool hook_get_branch_key(branch_name const & branchname,
                            key_store & keys,
                            project_t & project, key_id & k);
   bool hook_get_passphrase(key_identity_info const & info,
@@ -91,7 +91,6 @@ public:
                             globish const & exclude,
                             key_store & keys,
                             project_t & project,
-                            options const & opts,
                             key_id & k);
   bool hook_get_netsync_connect_command(uri_t const & uri,
                                         globish const & include_pattern,

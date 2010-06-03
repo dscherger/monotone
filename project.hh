@@ -126,6 +126,8 @@ private:
   mutable std::set<branch_name> branches;
   mutable outdated_indicator indicator;
 
+  branch_name const & branch_option;
+
   explicit project_t(database & db);
 public:
   project_t(database & db, lua_hooks & lua, options & opts);
@@ -248,7 +250,6 @@ private:
                                      key_identity_info & info) const;
   void get_key_identity(key_store * const keys,
                         lua_hooks & lua,
-                        options const & opts,
                         external_key_name const & input,
                         key_identity_info & output) const;
 public:
@@ -261,11 +262,9 @@ public:
                                      key_identity_info & info) const;
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,
-                        options const & opts,
                         external_key_name const & input,
                         key_identity_info & output) const;
   void get_key_identity(lua_hooks & lua,
-                        options const & opts,
                         external_key_name const & input,
                         key_identity_info & output) const;
 };

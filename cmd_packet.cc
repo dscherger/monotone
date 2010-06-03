@@ -37,7 +37,7 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
   project_t project(db, app.lua, app.opts);
 
   key_identity_info identity;
-  project.get_key_identity(keys, app.lua, app.opts,
+  project.get_key_identity(keys, app.lua,
                            typecast_vocab<external_key_name>(idx(args, 0)),
                            identity);
   bool exists(false);
@@ -75,7 +75,7 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
 
   key_name name = typecast_vocab<key_name>(idx(args, 0));
   key_identity_info identity;
-  project.get_key_identity(app.lua, app.opts,
+  project.get_key_identity(app.lua,
                            typecast_vocab<external_key_name>(idx(args, 0)),
                            identity);
   E(keys.key_pair_exists(identity.id), origin::user,

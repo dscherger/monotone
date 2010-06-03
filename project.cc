@@ -628,15 +628,15 @@ operator<<(std::ostream & os,
   return os;
 }
 
-
+branch_name const empty_branch_name;
 project_t::project_t(database & db)
-  : db(db)
+  : db(db), branch_option(empty_branch_name)
 {
   project_policy.reset(new policy_info());
 }
 
 project_t::project_t(database & db, lua_hooks & lua, options & opts)
-  : db(db)
+  : db(db), branch_option(opts.branch)
 {
   shared_ptr<policies::base_policy> bp(new policies::base_policy(opts, lua));
   project_policy.reset(new policy_info(bp->empty(), bp));
@@ -1580,7 +1580,6 @@ project_t::complete_key_identity_from_id(lua_hooks & lua,
 void
 project_t::get_key_identity(key_store * const keys,
                             lua_hooks & lua,
-                            options const & opts,
                             external_key_name const & input,
                             key_identity_info & output) const
 {
@@ -1592,13 +1591,13 @@ project_t::get_key_identity(key_store * const keys,
       // above throw recoverable_failure instead of unrecoverable_failure
       ident.made_from = input.made_from;
       output.id = key_id(ident);
-      complete_key_identity_from_id(keys, lua, opts.branch, output);
+      complete_key_identity_from_id(keys, lua, branch_option, output);
       return;
     }
   catch (recoverable_failure &)
     {
       output.official_name = typecast_vocab<key_name>(input);
-      lookup_key_by_name(keys, lua, opts.branch, output.official_name, output.id);
+      lookup_key_by_name(keys, lua, branch_option, output.official_name, output.id);
       get_given_name_of_key(keys, output.id, output.given_name);
       return;
     }
@@ -1607,20 +1606,18 @@ project_t::get_key_identity(key_store * const keys,
 void
 project_t::get_key_identity(key_store & keys,
                             lua_hooks & lua,
-                            options const & opts,
                             external_key_name const & input,
                             key_identity_info & output) const
 {
-  get_key_identity(&keys, lua, opts, input, output);
+  get_key_identity(&keys, lua, input, output);
 }
 
 void
 project_t::get_key_identity(lua_hooks & lua,
-                            options const & opts,
                             external_key_name const & input,
                             key_identity_info & output) const
 {
-  get_key_identity(0, lua, opts, input, output);
+  get_key_identity(0, lua, input, output);
 }
 
 
