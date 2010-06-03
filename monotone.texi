@@ -3819,9 +3819,9 @@ next edit/commit cycle.
 @item _MTN/commit
 If a commit fails, f.e. because a header field could not be parsed
 properly, then this file will contain a dump of the complete contents
-which have been saved through the editor.  After the information have been
-recovered from this file, it has to be removed explicitely, since a new commit
-won't be possible as long as this file exists.
+which have been saved through the editor.  After the information has
+been recovered from this file, it has to be removed explicitly, since
+a new commit won't be possible as long as this file exists.
 @item _MTN/inodeprints
 If this file exists, monotone considers the directory to be in
 @ref{Inodeprints} mode, and uses this file to cache the inodeprints.
