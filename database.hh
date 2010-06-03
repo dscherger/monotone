@@ -344,7 +344,7 @@ public:
                                cert_name const &,
                                cert_value const &)> cert_trust_checker;
   // this takes a project_t so it can translate key names for the trust hook
-  void erase_bogus_certs(project_t & project, std::vector<cert> & certs);
+  void erase_bogus_certs(project_t const & project, std::vector<cert> & certs);
   // permit alternative trust functions
   void erase_bogus_certs(std::vector<cert> & certs,
                          cert_trust_checker const & checker);
