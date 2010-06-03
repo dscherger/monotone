@@ -2879,9 +2879,9 @@ Further selector types may be added in the future.
 @heading Composite selectors
 
 Selectors may be combined with @code{and} and @code{or} operators and
-parentheses, and may be modified using a syntax similar to C function calls.
-The recognized special characters are @code{/}, @code{|}, @code{,}, @code{(}
-and @code{)}, and @code{\} (forward slash, pipe, comma, left and right
+parentheses, and may be modified using a function-call style syntax.
+The recognized special characters are @code{/}, @code{|}, @code{;}, @code{(}
+and @code{)}, and @code{\} (forward slash, pipe, semicolon, left and right
 parentheses, and backslash); to use any of these characters in a selector value,
 precede it with a backslash (@code{\}).
 
@@ -2895,18 +2895,20 @@ The @code{or} operator is the @code{|} character. For example, the selector
 heads of two specific branches.
 
 There are also several selector functions defined, which take one or more
-selectors as arguments. These are:
+selectors as arguments. The general form for these is
+@code{name '(' selector [ ';' selector ... ] ')'}, that is, arguments are
+enclosed in parantheses and separated by semicolons. These are:
 @table @code
-@item difference(A,B)
+@item difference(A;B)
 Set difference; this returns all revisions selected by A but not by B. For
-example, @code{difference(a:graydon,b:net.venge.monotone)} would return all
+example, @code{difference(a:graydon;b:net.venge.monotone)} would return all
 revisions which have an @code{author} cert beginning with @code{graydon} which
 are not in the branch @code{net.venge.monotone}.
-@item lca(A,B)
+@item lca(A;B)
 Least common ancestors; this is identical to
 @code{max((ancestors(A)|A)/(ancestors(B)|B))},
 but it may be faster and is certainly more convenient to type. For example,
-@code{lca(h:net.venge.monotone,h:net.venge.monotone.extended-selectors)} would
+@code{lca(h:net.venge.monotone;h:net.venge.monotone.extended-selectors)} would
 return the last propagate between the given branches, or the branch point if
 there were no subsequent propagates yet. This could be particularly useful with
 the @code{diff} command, to see exactly what has changed on a given branch.

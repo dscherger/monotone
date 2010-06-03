@@ -647,7 +647,7 @@ shared_ptr<selector> selector::create(options const & opts,
   // Using bisonc++ with flex in c++ mode might be better, except that
   // bisonc++ is GPLv3 *without* (as far as I can see) an exception for use
   // of the parser skeleton as included in the output.
-  string const special_chars("(),\\/|");
+  string const special_chars("();\\/|");
   boost::char_separator<char> splitter("", special_chars.c_str());
   typedef boost::tokenizer<boost::char_separator<char> > tokenizer_t;
   tokenizer_t tokenizer(orig, splitter);
@@ -728,7 +728,7 @@ shared_ptr<selector> selector::create(options const & opts,
               {
                 L(FL("        found argument at stack position %d") % i);
                 shared_ptr<selector> arg = idx(items,i).sel;
-                E(i == items.size() - 1 || idx(items,i+1).str == ",", origin::user,
+                E(i == items.size() - 1 || idx(items,i+1).str == ";", origin::user,
                   F("selector '%s' is invalid, function argument doesn't look like an arg-list"));
                 to_add->add(arg);
               }
@@ -747,7 +747,7 @@ shared_ptr<selector> selector::create(options const & opts,
             items.pop_back();
             items.push_back(parse_item(to_add));
           }
-      } else if (*tok == ",") {
+      } else if (*tok == ";") {
         items.push_back(parse_item(*tok));
       } else if (*tok == "/") {
         E(!items.empty(), origin::user,
