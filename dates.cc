@@ -8,13 +8,13 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <ctime>
-#include <climits>
-
 #include "base.hh"
 #include "dates.hh"
 #include "sanity.hh"
 #include "platform.hh"
+
+#include <ctime>
+#include <climits>
 
 // Generic date handling routines for Monotone.
 //

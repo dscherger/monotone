@@ -7,7 +7,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <string>
+#include "base.hh"
 #include <ctime>
 
 bool parse_date (const std::string s, const std::string fmt, struct tm *tp)
