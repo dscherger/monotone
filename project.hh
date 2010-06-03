@@ -248,7 +248,7 @@ private:
                                      key_identity_info & info) const;
   void get_key_identity(key_store * const keys,
                         lua_hooks & lua,
-                        branch_name const & where,
+                        options const & opts,
                         external_key_name const & input,
                         key_identity_info & output) const;
 public:
@@ -261,11 +261,11 @@ public:
                                      key_identity_info & info) const;
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,
-                        branch_name const & where,
+                        options const & opts,
                         external_key_name const & input,
                         key_identity_info & output) const;
   void get_key_identity(lua_hooks & lua,
-                        branch_name const & where,
+                        options const & opts,
                         external_key_name const & input,
                         key_identity_info & output) const;
 };

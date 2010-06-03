@@ -1580,7 +1580,7 @@ project_t::complete_key_identity_from_id(lua_hooks & lua,
 void
 project_t::get_key_identity(key_store * const keys,
                             lua_hooks & lua,
-                            branch_name const & where,
+                            options const & opts,
                             external_key_name const & input,
                             key_identity_info & output) const
 {
@@ -1592,13 +1592,13 @@ project_t::get_key_identity(key_store * const keys,
       // above throw recoverable_failure instead of unrecoverable_failure
       ident.made_from = input.made_from;
       output.id = key_id(ident);
-      complete_key_identity_from_id(keys, lua, where, output);
+      complete_key_identity_from_id(keys, lua, opts.branch, output);
       return;
     }
   catch (recoverable_failure &)
     {
       output.official_name = typecast_vocab<key_name>(input);
-      lookup_key_by_name(keys, lua, where, output.official_name, output.id);
+      lookup_key_by_name(keys, lua, opts.branch, output.official_name, output.id);
       get_given_name_of_key(keys, output.id, output.given_name);
       return;
     }
@@ -1607,20 +1607,20 @@ project_t::get_key_identity(key_store * const keys,
 void
 project_t::get_key_identity(key_store & keys,
                             lua_hooks & lua,
-                            branch_name const & where,
+                            options const & opts,
                             external_key_name const & input,
                             key_identity_info & output) const
 {
-  get_key_identity(&keys, lua, where, input, output);
+  get_key_identity(&keys, lua, opts, input, output);
 }
 
 void
 project_t::get_key_identity(lua_hooks & lua,
-                            branch_name const & where,
+                            options const & opts,
                             external_key_name const & input,
                             key_identity_info & output) const
 {
-  get_key_identity(0, lua, where, input, output);
+  get_key_identity(0, lua, opts, input, output);
 }
 
 

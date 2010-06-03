@@ -133,7 +133,7 @@ get_user_key(options const & opts, lua_hooks & lua,
       if (!opts.signing_key().empty())
         {
           key_identity_info identity;
-          project.get_key_identity(keys, lua, opts.branch,
+          project.get_key_identity(keys, lua, opts,
                                    opts.signing_key, identity);
           key = identity.id;
         }
@@ -144,7 +144,7 @@ get_user_key(options const & opts, lua_hooks & lua,
               "was given with an empty argument"));
         }
     }
-  else if (lua.hook_get_branch_key(opts.branch, keys, project, key))
+  else if (lua.hook_get_branch_key(opts, keys, project, key))
     ; // the lua hook sets the key
   else
     {
@@ -181,13 +181,13 @@ cache_netsync_key(options const & opts,
       // maybe they specifically requested no key ("--key ''")
       if (!opts.signing_key().empty())
         {
-          project.get_key_identity(keys, lua, opts.branch,
+          project.get_key_identity(keys, lua, opts,
                                    opts.signing_key, identity);
           key = identity.id;
           found_key = true;
         }
     }
-  else if (lua.hook_get_netsync_key(host, include, exclude, keys, project, key))
+  else if (lua.hook_get_netsync_key(host, include, exclude, keys, project, opts, key))
     {
       found_key = true;
     }

@@ -359,7 +359,7 @@ lua_hooks::hook_expand_date(string const & sel,
 }
 
 bool
-lua_hooks::hook_get_branch_key(branch_name const & branchname,
+lua_hooks::hook_get_branch_key(options const & opts,
                                key_store & keys,
                                project_t & project,
                                key_id & k)
@@ -367,7 +367,7 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
   string key;
   bool ok = Lua(st)
     .func("get_branch_key")
-    .push_str(branchname())
+    .push_str(opts.branch())
     .call(1,1)
     .extract_str(key)
     .ok();
@@ -377,7 +377,7 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
   else
     {
       key_identity_info identity;
-      project.get_key_identity(keys, *this, branch_name(),
+      project.get_key_identity(keys, *this, opts,
                                external_key_name(key, origin::user), identity);
       k = identity.id;
       return true;
@@ -805,6 +805,7 @@ lua_hooks::hook_get_netsync_key(utf8 const & server_address,
                                 globish const & exclude,
                                 key_store & keys,
                                 project_t & project,
+                                options const & opts,
                                 key_id & k)
 {
   string name;
@@ -823,7 +824,7 @@ lua_hooks::hook_get_netsync_key(utf8 const & server_address,
   else
     {
       key_identity_info identity;
-      project.get_key_identity(keys, *this, branch_name(),
+      project.get_key_identity(keys, *this, opts,
                                external_key_name(name, origin::user), identity);
       k = identity.id;
       return true;

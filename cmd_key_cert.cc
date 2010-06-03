@@ -72,7 +72,7 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
 
   key_identity_info identity;
   project_t project(db, app.lua, app.opts);
-  project.get_key_identity(keys, app.lua, branch_name(),
+  project.get_key_identity(keys, app.lua, app.opts,
                            typecast_vocab<external_key_name>(idx(args, 0)),
                            identity);
 
@@ -119,7 +119,7 @@ CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
   project_t project(db, app.lua, app.opts);
   key_identity_info identity;
 
-  project.get_key_identity(keys, app.lua, branch_name(),
+  project.get_key_identity(keys, app.lua, app.opts,
                            typecast_vocab<external_key_name>(idx(args, 0)),
                            identity);
 
@@ -237,7 +237,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
   for (unsigned int i = 3; i != args.size(); ++i)
     {
       key_identity_info identity;
-      project.get_key_identity(keys, app.lua, app.opts.branch,
+      project.get_key_identity(keys, app.lua, app.opts,
                                typecast_vocab<external_key_name>(idx(args, i)),
                                identity);
       signers.insert(identity);
