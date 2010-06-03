@@ -1319,7 +1319,7 @@ project_t::put_standard_certs_from_options(options const & opts,
     {
       key_identity_info key;
       get_user_key(opts, lua, db, keys, *this, key.id);
-      complete_key_identity(lua, branch, key);
+      complete_key_identity_from_id(lua, branch, key);
 
       if (!lua.hook_get_author(branch, key, author))
         {
@@ -1518,9 +1518,9 @@ project_t::lookup_key_by_name(key_store * const keys,
 }
 
 void
-project_t::get_canonical_name_of_key(key_store * const keys,
-                                     key_id const & id,
-                                     key_name & name) const
+project_t::get_given_name_of_key(key_store * const keys,
+                                 key_id const & id,
+                                 key_name & name) const
 {
   if (keys && keys->key_pair_exists(id))
     {
@@ -1540,55 +1540,41 @@ project_t::get_canonical_name_of_key(key_store * const keys,
 }
 
 void
-project_t::complete_key_identity(key_store * const keys,
-                                 lua_hooks & lua,
-                                 branch_name const & where,
-                                 key_identity_info & info) const
+project_t::complete_key_identity_from_id(key_store * const keys,
+                                         lua_hooks & lua,
+                                         branch_name const & where,
+                                         key_identity_info & info) const
 {
   MM(info.id);
   MM(info.official_name);
   MM(info.given_name);
-  if (!info.id.inner()().empty())
-    {
-      get_canonical_name_of_key(keys, info.id, info.given_name);
+  I(!info.id.inner()().empty());
+  get_given_name_of_key(keys, info.id, info.given_name);
 
-      if (project_policy->passthru)
-        lua.hook_get_local_key_name(info);
-      else
-        project_policy->lookup_key_name(*this,
-                                        info.id,
-                                        branch_name(),
-                                        info.official_name);
-    }
-  else if (!info.official_name().empty())
-    {
-      lookup_key_by_name(keys, lua, where, info.official_name, info.id);
-      get_canonical_name_of_key(keys, info.id, info.given_name);
-    }
-  //else if (!info.given_name().empty())
-  //  {
-  //    lookup_key_by_name(keys, info.given_name, info.id);
-  //    get_name_of_key(keys, info.id, info.official_name);
-  //  }
+  if (project_policy->passthru)
+    lua.hook_get_local_key_name(info);
   else
-    I(false);
+    project_policy->lookup_key_name(*this,
+                                    info.id,
+                                    branch_name(),
+                                    info.official_name);
 }
 
 void
-project_t::complete_key_identity(key_store & keys,
-                                 lua_hooks & lua,
-                                 branch_name const & where,
-                                 key_identity_info & info) const
+project_t::complete_key_identity_from_id(key_store & keys,
+                                         lua_hooks & lua,
+                                         branch_name const & where,
+                                         key_identity_info & info) const
 {
-  complete_key_identity(&keys, lua, where, info);
+  complete_key_identity_from_id(&keys, lua, where, info);
 }
 
 void
-project_t::complete_key_identity(lua_hooks & lua,
-                                 branch_name const & where,
-                                 key_identity_info & info) const
+project_t::complete_key_identity_from_id(lua_hooks & lua,
+                                         branch_name const & where,
+                                         key_identity_info & info) const
 {
-  complete_key_identity(0, lua, where, info);
+  complete_key_identity_from_id(0, lua, where, info);
 }
 
 void
@@ -1606,12 +1592,16 @@ project_t::get_key_identity(key_store * const keys,
       // above throw recoverable_failure instead of unrecoverable_failure
       ident.made_from = input.made_from;
       output.id = key_id(ident);
+      complete_key_identity_from_id(keys, lua, where, output);
+      return;
     }
   catch (recoverable_failure &)
     {
       output.official_name = typecast_vocab<key_name>(input);
+      lookup_key_by_name(keys, lua, where, output.official_name, output.id);
+      get_given_name_of_key(keys, output.id, output.given_name);
+      return;
     }
-  complete_key_identity(keys, lua, where, output);
 }
 
 void

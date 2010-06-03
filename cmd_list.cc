@@ -189,7 +189,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
       key_identity_info identity;
       identity.id = idx(certs, i).key;
-      project.complete_key_identity(keys, app.lua, branch_name(), identity);
+      project.complete_key_identity_from_id(keys, app.lua, branch_name(), identity);
 
       cout << string(guess_terminal_width(), '-') << '\n'
            << (i18n_format(str)
@@ -332,7 +332,7 @@ namespace {
             {
               key_identity_info identity;
               identity.id = *i;
-              project.complete_key_identity(lua, branch_name(), identity);
+              project.complete_key_identity_from_id(lua, branch_name(), identity);
               items[*i].identity = identity;
               items[*i].public_locations.push_back("database");
             }
@@ -346,7 +346,7 @@ namespace {
         {
           key_identity_info identity;
           identity.id = *i;
-          project.complete_key_identity(keys, lua, branch_name(), identity);
+          project.complete_key_identity_from_id(keys, lua, branch_name(), identity);
           items[*i].identity = identity;
           items[*i].public_locations.push_back("keystore");
           items[*i].private_locations.push_back("keystore");
@@ -576,7 +576,7 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
       identity.id = i->key;
       if (!null_id(identity.id.inner()))
         {
-          project.complete_key_identity(app.lua, branch_name(), identity);
+          project.complete_key_identity_from_id(app.lua, branch_name(), identity);
         }
 
       vector<cert> certs;
@@ -1055,7 +1055,7 @@ CMD_AUTOMATE(certs, N_("REV"),
 
       key_identity_info identity;
       identity.id = idx(certs, i).key;
-      project.complete_key_identity(app.lua, branch_name(), identity);
+      project.complete_key_identity_from_id(app.lua, branch_name(), identity);
       signers.insert(identity);
 
       bool trusted =

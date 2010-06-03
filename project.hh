@@ -236,26 +236,26 @@ private:
                           key_name const & name,
                           key_id & id) const;
   // get the name given when creating the key
-  void get_canonical_name_of_key(key_store * const keys,
-                                 key_id const & id,
-                                 key_name & name) const;
-  void complete_key_identity(key_store * const keys,
-                             lua_hooks & lua,
-                             branch_name const & where,
-                             key_identity_info & info) const;
+  void get_given_name_of_key(key_store * const keys,
+                             key_id const & id,
+                             key_name & name) const;
+  void complete_key_identity_from_id(key_store * const keys,
+                                     lua_hooks & lua,
+                                     branch_name const & where,
+                                     key_identity_info & info) const;
   void get_key_identity(key_store * const keys,
                         lua_hooks & lua,
                         branch_name const & where,
                         external_key_name const & input,
                         key_identity_info & output) const;
 public:
-  void complete_key_identity(key_store & keys,
-                             lua_hooks & lua,
-                             branch_name const & where,
-                             key_identity_info & info) const;
-  void complete_key_identity(lua_hooks & lua,
-                             branch_name const & where,
-                             key_identity_info & info) const;
+  void complete_key_identity_from_id(key_store & keys,
+                                     lua_hooks & lua,
+                                     branch_name const & where,
+                                     key_identity_info & info) const;
+  void complete_key_identity_from_id(lua_hooks & lua,
+                                     branch_name const & where,
+                                     key_identity_info & info) const;
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,
                         branch_name const & where,
