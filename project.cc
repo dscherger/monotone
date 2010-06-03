@@ -658,23 +658,6 @@ project_t::get_key_identity(lua_hooks & lua,
   get_key_identity(0, lua, input, output);
 }
 
-void
-project_t::get_key_identity(key_store & keys,
-                            lua_hooks & lua,
-                            arg_type const & input,
-                            key_identity_info & output) const
-{
-  get_key_identity(&keys, lua, typecast_vocab<external_key_name>(input), output);
-}
-
-void
-project_t::get_key_identity(lua_hooks & lua,
-                            arg_type const & input,
-                            key_identity_info & output) const
-{
-  get_key_identity(0, lua, typecast_vocab<external_key_name>(input), output);
-}
-
 
 // These should maybe be converted to member functions.
 
