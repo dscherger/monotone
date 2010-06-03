@@ -12,8 +12,10 @@
 -- server for this test.
 skip_if(ostype == "Windows")
 
+check(getstd("test_hooks.lua"))
+
 function abe_mtn(...)
-  return raw_mtn("--rcfile", test.root .. "/min_hooks.lua",
+  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua",
          "--db=" .. test.root .. "/abe.db",
          "--keydir", test.root .. "/keys",
          "--key=abe@test.net",
@@ -21,7 +23,7 @@ function abe_mtn(...)
 end
 
 function beth_mtn(...)
-  return raw_mtn("--rcfile", test.root .. "/min_hooks.lua",
+  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua",
          "--db=" .. test.root .. "/beth.db",
          "--keydir", test.root .. "/keys",
          "--key=beth@test.net",
