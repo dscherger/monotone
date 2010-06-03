@@ -255,10 +255,8 @@ private:
 public:
   void complete_key_identity_from_id(key_store & keys,
                                      lua_hooks & lua,
-                                     branch_name const & where,
                                      key_identity_info & info) const;
   void complete_key_identity_from_id(lua_hooks & lua,
-                                     branch_name const & where,
                                      key_identity_info & info) const;
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,

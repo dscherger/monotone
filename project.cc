@@ -551,28 +551,44 @@ public:
                        branch_name const & where,
                        key_name & official_name)
   {
+    L(FL("looking for key %s under prefix '%s'...") % ident % where);
     key_lister::name_map names;
     walk_policies(project, policy, child_policies, key_lister(names));
 
     typedef key_lister::name_map::const_iterator it;
     pair<it, it> range = names.equal_range(ident);
 
-    bool found = false;
+    int prefix_length = -1;
+    bool have_dup = false;
+    set<key_name> matched_names;
     for (it i = range.first; i != range.second; ++i)
       {
-        if (i->second.first.has_prefix(where))
+        int my_prefix_length = 0;
+        if (!where.empty() && where.has_prefix(i->second.first))
+          my_prefix_length = i->second.first.size();
+        if (my_prefix_length >= prefix_length)
           {
-            if (found)
+            if (my_prefix_length > prefix_length)
               {
-                // because we list keys by ident
-                W(F("Key %s has multiple names."));
+                matched_names.clear();
               }
-            found = true;
+            prefix_length = my_prefix_length;
+            
             branch_name name_as_branch = typecast_vocab<branch_name>(i->second.second);
             official_name = typecast_vocab<key_name>(i->second.first / name_as_branch);
+            matched_names.insert(official_name);
           }
       }
-    return found;
+    if (matched_names.size() > 1)
+      {
+        W(F("key %s has multiple names") % ident);
+        for (set<key_name>::const_iterator k = matched_names.begin();
+             k != matched_names.end(); ++k)
+          {
+            W(F("    name: %s") % *k);
+          }
+      }
+    return prefix_length >= 0;
   }
   void find_keys_named(project_t const & project,
                        key_name const & name,
@@ -581,6 +597,9 @@ public:
   {
     key_lister::name_map names;
     walk_policies(project, policy, child_policies, key_lister(names));
+
+    results.clear();
+    int prefix_length = -1;
 
     typedef key_lister::name_map::const_iterator it;
     for (it i = names.begin(); i != names.end(); ++i)
@@ -592,12 +611,25 @@ public:
         if (official_name == name)
           {
             // fully-qualified exact match
+            results.clear();
             results[official_name] = i->first;
+            return;
           }
         if (i->second.second != name)
           continue;
-        if (where.empty() || where.has_prefix(i->second.first))
+        int my_prefix_length = 0;
+        if (!where.empty() && where.has_prefix(i->second.first))
+          my_prefix_length = i->second.first.size();
+        // This is used to interpret key names provided by the user.
+        // It shouldn't accidentially match on keys that aren't recognized by
+        // the current policy.
+        if (my_prefix_length == 0 && !where.empty())
+          continue;
+        if (my_prefix_length >= prefix_length)
           {
+            if (my_prefix_length > prefix_length)
+              results.clear();
+            prefix_length = my_prefix_length;
             results[official_name] = i->first;
           }
       }
@@ -1319,7 +1351,7 @@ project_t::put_standard_certs_from_options(options const & opts,
     {
       key_identity_info key;
       get_user_key(opts, lua, db, keys, *this, key.id);
-      complete_key_identity_from_id(lua, branch, key);
+      complete_key_identity_from_id(0, lua, branch, key);
 
       if (!lua.hook_get_author(branch, key, author))
         {
@@ -1450,7 +1482,7 @@ project_t::lookup_key_by_name(key_store * const keys,
           else
             found = project_policy->lookup_key_name(*this,
                                                     identity.id,
-                                                    branch_name(),
+                                                    where,
                                                     identity.official_name);
           if (found)
             {
@@ -1479,7 +1511,7 @@ project_t::lookup_key_by_name(key_store * const keys,
           else
             found = project_policy->lookup_key_name(*this,
                                                     identity.id,
-                                                    branch_name(),
+                                                    where,
                                                     identity.official_name);
           if (found)
             {
@@ -1556,25 +1588,23 @@ project_t::complete_key_identity_from_id(key_store * const keys,
   else
     project_policy->lookup_key_name(*this,
                                     info.id,
-                                    branch_name(),
+                                    where,
                                     info.official_name);
 }
 
 void
 project_t::complete_key_identity_from_id(key_store & keys,
                                          lua_hooks & lua,
-                                         branch_name const & where,
                                          key_identity_info & info) const
 {
-  complete_key_identity_from_id(&keys, lua, where, info);
+  complete_key_identity_from_id(&keys, lua, branch_option, info);
 }
 
 void
 project_t::complete_key_identity_from_id(lua_hooks & lua,
-                                         branch_name const & where,
                                          key_identity_info & info) const
 {
-  complete_key_identity_from_id(0, lua, where, info);
+  complete_key_identity_from_id(0, lua, branch_option, info);
 }
 
 void

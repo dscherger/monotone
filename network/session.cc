@@ -416,7 +416,7 @@ session::request_netsync(protocol_role role,
   key_identity_info remote_key;
   remote_key.id = remote_peer_key_id;
   if (!remote_key.id.inner()().empty())
-    project.complete_key_identity_from_id(keys, app.lua, branch_name(), remote_key);
+    project.complete_key_identity_from_id(keys, app.lua, remote_key);
 
   wrapped->on_begin(session_id, remote_key);
 }
@@ -447,7 +447,7 @@ session::request_automate()
   key_identity_info remote_key;
   remote_key.id = remote_peer_key_id;
   if (!remote_key.id.inner()().empty())
-    project.complete_key_identity_from_id(keys, app.lua, branch_name(), remote_key);
+    project.complete_key_identity_from_id(keys, app.lua, remote_key);
 
   wrapped->on_begin(session_id, remote_key);
 }
@@ -665,7 +665,7 @@ bool session::handle_service_request()
     {
       client_identity.id = client_id;
       if (!client_identity.id.inner()().empty())
-        project.complete_key_identity_from_id(keys, app.lua, branch_name(), client_identity);
+        project.complete_key_identity_from_id(keys, app.lua, client_identity);
     }
 
   wrapped->on_begin(session_id, client_identity);

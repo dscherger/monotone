@@ -76,8 +76,3 @@ trybranch("test_project.somebranch", 0)
 trybranch("test_project.badbranch", 1)
 trybranch("test_project.delegated.otherbranch", 0)
 trybranch("test_project.delegated.fakebranch", 1)
-
-
--- may need to add more checks about using the key names
--- need a clearer picture of when/where/why key names are resolved first
-check(false)
