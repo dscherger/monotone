@@ -560,6 +560,16 @@ public:
         ret.erase(revision_id());
         return ret;
       }
+    else if (name == "pick")
+      {
+        E(args.size() == 1, origin::user,
+          F("the 'pick' function takes 1 argument, not %d") % args.size());
+        set<revision_id> tmp = args[0]->complete(project);
+        set<revision_id> ret;
+        if (!tmp.empty())
+          ret.insert(*tmp.begin());
+        return ret;
+      }
     else
       {
         E(false, origin::user,

@@ -90,3 +90,13 @@ expect("children(lca(h:otherbranch;h:testbranch))", m, other)
 other_head = merge(other_2, m, "otherbranch", "Jack")
 expect("max((ancestors(h:testbranch)|h:testbranch)/(ancestors(h:otherbranch)|h:otherbranch))", m)
 expect("lca(h:testbranch;h:otherbranch)", m)
+
+
+check(mtn("automate", "select", "pick(h:*)"), 0, true, nil)
+numlines = 0
+for line in io.lines("stdout")
+do
+   numlines = numlines + 1
+   check(line == m or line == other_2)
+end
+check(numlines == 1)

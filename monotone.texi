@@ -2940,6 +2940,11 @@ Returns all revisions which are a child of a revision selected by @code{A}.
 For example, @code{children(m:*foobar*)} would return the children of any
 revisions which have @code{comment} or @code{changelog} certs containing the
 word @code{foobar}.
+@item pick(A)
+Picks one of the revisions selected by @code{A}, and returns that. For example,
+@code{h:some-branch} is often used with @code{mtn update}, but will fail if
+@code{some-branch} has multiple heads. Using @code{pick(h:some-branch)} instead
+will always choose a single head, and not fail if there is more than one.
 @end table
 
 @heading Selector expansion
