@@ -2655,6 +2655,7 @@ database::is_a_ancestor_of_b(revision_id const & ancestor,
 
   vector<revision_id> todo;
   todo.push_back(ancestor);
+  set<revision_id> seen;
   while (!todo.empty())
     {
       revision_id anc = todo.back();
@@ -2666,11 +2667,16 @@ database::is_a_ancestor_of_b(revision_id const & ancestor,
         {
           if (*i == child)
             return true;
+          else if (seen.find(*i) != seen.end())
+            continue;
           else
             {
               get_rev_height(*i, anc_height);
               if (child_height > anc_height)
-                todo.push_back(*i);
+                {
+                  seen.insert(*i);
+                  todo.push_back(*i);
+                }
             }
         }
     }
