@@ -166,10 +166,10 @@ double cpu_now();
 std::string get_locale_dir();
 
 // Fill tp from s, using format fmt.
-// Returns false on failure, true on success.
+// throws on failure.
 //
 // This is strptime on Unix, something else on MinGW.
-bool parse_date (const std::string s, const std::string fmt, struct tm *tp);
+void parse_date(const std::string s, const std::string fmt, struct tm *tp);
 
 #endif // __PLATFORM_HH__
 

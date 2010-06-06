@@ -312,6 +312,11 @@ UNIT_TEST(localtime_formats)
       //(date, "%a %d %b %Y %I:%M:%S %p %Z"); // the timezone label breaks this
     }
 
+  // check that trailing characters not matched by the date format are caught
+  UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("1988-01-01 12:12:12 gobbledygook",
+                                                         "%F %X"),
+                        recoverable_failure);
+
 #undef OK
 }
 #endif

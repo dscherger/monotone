@@ -129,7 +129,7 @@ private:
 };
 
 static bool
-date_fmt_valid (string date_fmt)
+date_fmt_valid(string date_fmt)
 {
   if (date_fmt.empty())
     {
