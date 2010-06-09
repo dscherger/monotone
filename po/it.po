@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: monotone 0.48dev\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-06-09 12:50+0200\n"
-"PO-Revision-Date: 2010-06-09 15:37+0100\n"
-"Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
+"PO-Revision-Date: 2010-06-09 18:24+0100\n"
+"Last-Translator: Roberta Lazzeri <ripley@lapo.it>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -1871,7 +1871,7 @@ msgstr "Mostra la versione del database"
 
 #: cmd_db.cc:80
 msgid "Attempt to fix bad certs"
-msgstr ""
+msgstr "Tentativo di riparare certificati cattivi"
 
 #: cmd_db.cc:81
 msgid "Older monotone versions could sometimes associate certs with the wrong key. This fixes such certs if you have the correct key, and can optionally drop any certs that you don't have the correct key for. This should only be needed if you had such certs in your db when upgrading from 0.44 or earlier, or if you loaded such certs with 'mtn read'."
@@ -2039,7 +2039,7 @@ msgstr "[PATH_SPAZIO_DI_LAVORO]"
 
 #: cmd_db.cc:405
 msgid "Registers a new workspace for the current database"
-msgstr ""
+msgstr "Registra un nuovo spazio di lavoro per il database corrente"
 
 #: cmd_db.cc:406
 msgid "This command adds WORKSPACE_PATH to the list of `known-workspaces'."
@@ -2049,7 +2049,7 @@ msgstr ""
 #: cmd_db.cc:435
 #, c-format
 msgid "No workspace given"
-msgstr ""
+msgstr "Nessuno spazio di lavoro dato"
 
 #: cmd_db.cc:427
 msgid "Unregisters an existing workspace for the current database"
@@ -2061,7 +2061,7 @@ msgstr ""
 
 #: cmd_db.cc:448
 msgid "Removes all invalid, registered workspace paths for the current database"
-msgstr ""
+msgstr "Rimuove tutti i percorsi invalidi registrati nello spazio di lavoro per il database corrente"
 
 #: cmd_db.cc:493
 msgid "(revision|file|key) PARTIAL-ID"
@@ -2099,9 +2099,11 @@ msgstr "altezza in cache: %s"
 msgid "load all revisions from the database"
 msgstr "carica tutte le revisioni dal database"
 
+# TODO non sono sicura
 #: cmd_db.cc:582
+#, fuzzy
 msgid "This command loads all revisions from the database and is intended to be used for timing revision loading performance."
-msgstr ""
+msgstr "Questo comando carica tutte le revisioni dal database ed è progettato per essere usato per datare l'esecuzione di revisioni che vengono caricate"
 
 #: cmd_db.cc:593
 #, c-format
@@ -2325,7 +2327,7 @@ msgstr ""
 #: cmd_ws_commit.cc:285
 #, c-format
 msgid "Commit cancelled."
-msgstr ""
+msgstr "Commit cancellato."
 
 #: cmd_ws_commit.cc:288
 msgid "Author: "
@@ -2536,7 +2538,7 @@ msgstr ""
 #: cmd_ws_commit.cc:874
 #, c-format
 msgid "bisection from revision %s in progress"
-msgstr ""
+msgstr "bisezione dalla revisione %s in corso"
 
 #: cmd_ws_commit.cc:940
 #: cmd_ws_commit.cc:1704
@@ -2799,18 +2801,19 @@ msgid "These commands subdivide a set of revisions into good, bad and untested s
 msgstr ""
 
 #: cmd_ws_commit.cc:1899
+#, fuzzy
 msgid "Reset the current bisection search"
-msgstr ""
+msgstr "Risetta la corrente ricerca di bisezione"
 
 #: cmd_ws_commit.cc:1900
 msgid "Update the workspace back to the revision from which the bisection was started and remove all current search information, allowing a new search to be started."
-msgstr ""
+msgstr "Aggiorna lo spazio di lavoro riportandolo alla versione dalla quale era iniziata la besezione e rimuove ogni informazione di ricerca corrente, permettendo di cominciare una nuova ricerca."
 
 #: cmd_ws_commit.cc:1915
 #: cmd_ws_commit.cc:1971
 #, c-format
 msgid "no bisection in progress"
-msgstr ""
+msgstr "nessuna bisezione in corso"
 
 #: cmd_ws_commit.cc:1930
 #: cmd_ws_commit.cc:2158
@@ -2819,9 +2822,9 @@ msgid "this command can only be used in a workspace with no pending changes"
 msgstr "questo comando può essere usato solamente in spazio di lavoro senza cambiamenti in sospeso"
 
 #: cmd_ws_commit.cc:1936
-#, c-format
+#, fuzzy, c-format
 msgid "reset back to %s"
-msgstr ""
+msgstr "riportato a %s"
 
 #: cmd_ws_commit.cc:2002
 #, c-format
