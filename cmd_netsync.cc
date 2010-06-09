@@ -142,7 +142,7 @@ build_client_connection_info(options & opts,
         F("Include/exclude pattern was given both as part of the URL and as a separate argument."));
 
       // Pull include/exclude from the query string
-      char const separator = '/';
+      char const separator = ',';
       char const negate = '-';
       string const & query(info.client.uri.query);
       std::vector<arg_type> includes, excludes;
