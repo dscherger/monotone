@@ -524,7 +524,7 @@ key_store_state::decrypt_private_key(key_id const & id,
       pkcs8_key.reset(Botan::PKCS8::load_key(ds, ""));
 #endif
     }
-  catch (Botan::Exception & e)
+  catch (std::exception & e)
     {
       L(FL("failed to load key with no passphrase: %s") % e.what());
 
@@ -557,7 +557,7 @@ key_store_state::decrypt_private_key(key_id const & id,
 #endif
             break;
           }
-        catch (Botan::Exception & e)
+        catch (std::exception & e)
           {
             cycles++;
             L(FL("decrypt_private_key: failure %d to load encrypted key: %s")
@@ -768,7 +768,7 @@ key_store::decrypt_rsa(key_id const & id,
       plaintext = string(reinterpret_cast<char const*>(plain.begin()),
                          plain.size());
     }
-  catch (Botan::Exception & ex)
+  catch (std::exception & ex)
     {
       E(false, ciphertext.made_from,
         F("Botan error decrypting data: '%s'") % ex.what());
@@ -997,7 +997,7 @@ key_store_state::migrate_old_key_pair
 #endif
         break;
       }
-    catch (Botan::Exception & e)
+    catch (std::exception & e)
       {
         L(FL("migrate_old_key_pair: failure %d to load old private key: %s")
           % cycles % e.what());

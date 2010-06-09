@@ -20,7 +20,7 @@
 class arg_type;
 class database;
 class key_store;
-class options;
+struct options;
 class lua_hooks;
 struct globish;
 struct date_t;

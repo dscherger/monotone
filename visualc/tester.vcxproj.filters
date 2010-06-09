@@ -1,0 +1,158 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\basic_io.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\charset.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\constants.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\file_io.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win32\fs.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win32\get_system_flavour.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\globish.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lua.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\luaext_globish.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\luaext_parse_basic_io.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\luaext_platform.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win32\make_io_binary.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mkstemp.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win32\os_strerror.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\paths.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pcrewrap.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win32\process.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sanity.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\simplestring_xform.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tester.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win32\tester-plaf.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vocab.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\testlib.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\transforms.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gzip.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\basic_io.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\charset.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\constants.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\file_io.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\globish.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\hash_map.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\interner.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\lua.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\numeric_vocab.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\paths.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\pcrewrap.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\platform.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\quick_alloc.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\sanity.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\simplestring_xform.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\vocab.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\vocab_macros.hh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\vocab_terms.hh">
+      <Filter>Header Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\testlib.lua" />
+  </ItemGroup>
+</Project>

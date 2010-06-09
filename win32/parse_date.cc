@@ -8,6 +8,7 @@
 // PURPOSE.
 
 #include "base.hh"
+#include "sanity.hh"
 
 void parse_date(const std::string s, const std::string fmt, struct tm *tp)
 {

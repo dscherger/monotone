@@ -12,6 +12,7 @@
 #include <io.h>
 #include <errno.h>
 #include <windows.h>
+#include <ShellAPI.h>
 #include <shlobj.h>
 #include <direct.h>
 
@@ -287,7 +288,11 @@ do_remove_recursive(std::string const & path)
   // 0x402 is "unknown error"; it occurs for a non-existing path, which is
   // not an error in this function. It also occurs for other problems, like
   // '/' as a directory separator. Sigh.
-  E(rc == 0 || rc == 0x402, origin::system,
+  //
+  // But some return codes are the normal Win32 codes, including 0x02 for
+  // file not found on Win7. (Probably also Vista, since that's when it
+  // stopped returning 0x402.)
+  E(rc == 0 || rc == 0x402 || rc == 2, origin::system,
     F("could not remove '%s' and contents: SHFileOperation error code 0x%x")
     % path % rc);
   E(!op.fAnyOperationsAborted, origin::system,

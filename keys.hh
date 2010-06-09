@@ -18,7 +18,7 @@ class lua_hooks;
 class key_store;
 class database;
 struct keypair;
-class globish;
+struct globish;
 
 enum key_cache_flag { cache_disable, cache_enable };
 
