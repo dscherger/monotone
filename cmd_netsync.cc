@@ -62,7 +62,7 @@ find_key(options & opts,
 {
   utf8 host(info.client.unparsed);
   if (!info.client.uri.host.empty())
-    host = utf8(info.client.uri.host, origin::user);
+    host = utf8(info.client.uri.resource, origin::user);
 
   cache_netsync_key(opts, db, keys, lua, project, host,
                     info.client.include_pattern,
@@ -94,9 +94,9 @@ build_client_connection_info(options & opts,
   parse_uri(info.client.unparsed(), info.client.uri, origin::user);
 
   var_key server_include(var_domain("server-include"),
-                         typecast_vocab<var_name>(info.client.unparsed));
+                         var_name(info.client.uri.resource, origin::user));
   var_key server_exclude(var_domain("server-exclude"),
-                         typecast_vocab<var_name>(info.client.unparsed));
+                         var_name(info.client.uri.resource, origin::user));
 
   if (info.client.uri.query.empty() && !include_or_exclude_given)
     {
@@ -142,7 +142,7 @@ build_client_connection_info(options & opts,
         F("Include/exclude pattern was given both as part of the URL and as a separate argument."));
 
       // Pull include/exclude from the query string
-      char const separator = '/';
+      char const separator = ',';
       char const negate = '-';
       string const & query(info.client.uri.query);
       std::vector<arg_type> includes, excludes;
@@ -191,9 +191,9 @@ build_client_connection_info(options & opts,
   if (!db.var_exists(default_server_key)
       || opts.set_default)
     {
-      P(F("setting default server to %s") % info.client.unparsed());
+      P(F("setting default server to %s") % info.client.uri.resource);
       db.set_var(default_server_key,
-                 typecast_vocab<var_value>(info.client.unparsed));
+                 var_value(info.client.uri.resource, origin::user));
     }
   if (!db.var_exists(default_include_pattern_key)
       || opts.set_default)
@@ -215,7 +215,7 @@ build_client_connection_info(options & opts,
       || opts.set_default)
     {
       P(F("setting default include pattern for server '%s' to '%s'")
-        % info.client.unparsed % info.client.include_pattern);
+        % info.client.uri.resource % info.client.include_pattern);
       db.set_var(server_include,
                  typecast_vocab<var_value>(info.client.include_pattern));
     }
@@ -223,7 +223,7 @@ build_client_connection_info(options & opts,
       || opts.set_default)
     {
       P(F("setting default exclude pattern for server '%s' to '%s'")
-        % info.client.unparsed % info.client.exclude_pattern);
+        % info.client.uri.resource % info.client.exclude_pattern);
       db.set_var(server_exclude,
                  typecast_vocab<var_value>(info.client.exclude_pattern));
     }
@@ -318,9 +318,9 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
 
   if (!db.var_exists(default_server_key) || app.opts.set_default)
     {
-      P(F("setting default server to %s") % info.client.unparsed());
+      P(F("setting default server to %s") % info.client.uri.resource);
       db.set_var(default_server_key,
-                 typecast_vocab<var_value>(info.client.unparsed));
+                 var_value(info.client.uri.resource, origin::user));
     }
 
   info.client.use_argv =
@@ -450,9 +450,9 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   if (!db.var_exists(default_server_key) || app.opts.set_default)
     {
-      P(F("setting default server to %s") % info.client.unparsed());
+      P(F("setting default server to %s") % info.client.uri.resource);
       db.set_var(default_server_key,
-                 typecast_vocab<var_value>(info.client.unparsed));
+                 var_value(info.client.uri.resource, origin::user));
     }
 
   info.client.use_argv =
