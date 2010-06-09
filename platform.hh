@@ -32,7 +32,7 @@ pid_t process_spawn_redirected(char const * in,
 pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out);
 int process_wait(pid_t pid, int *res, int timeout = -1);// default infinite
 int process_kill(pid_t pid, int signal);
-int process_sleep(unsigned int seconds);
+int process_sleep(float seconds);
 
 // stop "\n"->"\r\n" from breaking automate on Windows
 void make_io_binary();

@@ -13,7 +13,7 @@
 #include "vocab.hh"
 #include <set>
 
-class options;
+struct options;
 class lua_hooks;
 class project_t;
 

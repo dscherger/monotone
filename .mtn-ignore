@@ -61,3 +61,6 @@
 ^unit_tests\.status$
 ^version\.texi$
 ^monotone\.html$
+^visualc/[a-z_0-9]+\.vcxproj\.user$
+^visualc/[-a-z_0-9]*(Debug|Release)$
+^visualc/monotone.suo$

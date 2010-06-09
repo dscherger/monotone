@@ -10,7 +10,7 @@
 #ifdef _MSC_VER
 #include <io.h>
 #include <process.h>
-typedef size_t ssize_t;
+//typedef size_t ssize_t;
 #endif
 
 #endif /* _UNISTD_H */

@@ -120,7 +120,9 @@ struct basic_automate_ostream : public std::basic_ostream<_CharT, _Traits>
   { /* this->init(&_M_autobuf); */ }
 
 protected:
-  basic_automate_ostream() { }
+  basic_automate_ostream()
+    : std::basic_ostream<_CharT, _Traits>(&_M_autobuf)
+  { }
 public:
 
   virtual ~basic_automate_ostream()

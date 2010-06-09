@@ -28,7 +28,7 @@ class database;
 class project_t;
 class key_store;
 class lua_hooks;
-class options;
+struct options;
 
 class app_state;
 

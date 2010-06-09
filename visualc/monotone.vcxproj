@@ -1,0 +1,288 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{83E1EB91-ABA9-4DC5-9423-87B3D977F015}</ProjectGuid>
+    <RootNamespace>monotone</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">monotoneDebug\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">monotoneRelease\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">mtn</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_CONSOLE;BOOST_MSVC_STD_ITERATOR;_CRT_SECURE_NO_DEPRECATE;min=min;max=max;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.hh</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DisableSpecificWarnings>4231;4800;4267;4996;4355;4661;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ForcedIncludeFiles>pch.hh;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/NODEFAULTLIB:LIBCMTD.lib  %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>botan.lib;sqlite3.lib;netxx.lib;libidn.lib;lua51.lib;pcre.lib;ws2_32.lib;shell32.lib;advapi32.lib;zlib.lib;libplatform.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)mtn.exe</OutputFile>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\lua;$(ProjectDir)\..\pcre;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_MBCS;_CONSOLE;BOOST_MSVC_STD_ITERATOR;_CRT_SECURE_NO_DEPRECATE;min=min;max=max;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>true</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.hh</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4231;4800;4267;4996;4355;4661;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ForcedIncludeFiles>pch.hh;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/NODEFAULTLIB:LIBCMT.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>botan.lib;sqlite3.lib;netxx.lib;stringprep.lib;lua.lib;pcre.lib;iconv.lib;ws2_32.lib;shell32.lib;advapi32.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)mtn.exe</OutputFile>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateMapFile>false</GenerateMapFile>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\ancestry.cc" />
+    <ClCompile Include="..\annotate.cc" />
+    <ClCompile Include="..\app_state.cc" />
+    <ClCompile Include="..\asciik.cc" />
+    <ClCompile Include="..\automate.cc" />
+    <ClCompile Include="..\automate_reader.cc" />
+    <ClCompile Include="..\basic_io.cc" />
+    <ClCompile Include="..\cache_logger.cc" />
+    <ClCompile Include="..\cert.cc" />
+    <ClCompile Include="..\charset.cc" />
+    <ClCompile Include="..\cmd.cc" />
+    <ClCompile Include="..\cmd_automate.cc" />
+    <ClCompile Include="..\cmd_conflicts.cc" />
+    <ClCompile Include="..\cmd_db.cc" />
+    <ClCompile Include="..\cmd_diff_log.cc" />
+    <ClCompile Include="..\cmd_files.cc" />
+    <ClCompile Include="..\cmd_key_cert.cc" />
+    <ClCompile Include="..\cmd_list.cc" />
+    <ClCompile Include="..\cmd_merging.cc" />
+    <ClCompile Include="..\cmd_netsync.cc" />
+    <ClCompile Include="..\cmd_othervcs.cc" />
+    <ClCompile Include="..\cmd_packet.cc" />
+    <ClCompile Include="..\cmd_ws_commit.cc" />
+    <ClCompile Include="..\commands.cc" />
+    <ClCompile Include="..\constants.cc" />
+    <ClCompile Include="..\cset.cc" />
+    <ClCompile Include="..\database.cc" />
+    <ClCompile Include="..\database_check.cc" />
+    <ClCompile Include="..\dates.cc" />
+    <ClCompile Include="..\diff_output.cc" />
+    <ClCompile Include="..\enumerator.cc" />
+    <ClCompile Include="..\epoch.cc" />
+    <ClCompile Include="..\file_io.cc" />
+    <ClCompile Include="..\git_change.cc" />
+    <ClCompile Include="..\git_export.cc" />
+    <ClCompile Include="..\globish.cc" />
+    <ClCompile Include="..\graph.cc" />
+    <ClCompile Include="..\gzip.cc" />
+    <ClCompile Include="..\hmac.cc" />
+    <ClCompile Include="..\inodeprint.cc" />
+    <ClCompile Include="..\keys.cc" />
+    <ClCompile Include="..\key_store.cc" />
+    <ClCompile Include="..\lcs.cc" />
+    <ClCompile Include="..\legacy.cc" />
+    <ClCompile Include="..\lua.cc" />
+    <ClCompile Include="..\luaext_globish.cc" />
+    <ClCompile Include="..\luaext_guess_binary.cc" />
+    <ClCompile Include="..\luaext_mkstemp.cc" />
+    <ClCompile Include="..\luaext_parse_basic_io.cc" />
+    <ClCompile Include="..\luaext_platform.cc" />
+    <ClCompile Include="..\lua_hooks.cc" />
+    <ClCompile Include="..\merge_3way.cc" />
+    <ClCompile Include="..\merge_conflict.cc" />
+    <ClCompile Include="..\merge_content.cc" />
+    <ClCompile Include="..\merge_roster.cc" />
+    <ClCompile Include="..\merkle_tree.cc" />
+    <ClCompile Include="..\migrate_ancestry.cc" />
+    <ClCompile Include="..\migrate_schema.cc" />
+    <ClCompile Include="..\migrate_work.cc" />
+    <ClCompile Include="..\mkstemp.cc" />
+    <ClCompile Include="..\monotone.cc" />
+    <ClCompile Include="..\mtn-sanity.cc" />
+    <ClCompile Include="..\mt_version.cc" />
+    <ClCompile Include="..\netcmd.cc" />
+    <ClCompile Include="..\netsync.cc" />
+    <ClCompile Include="..\network\automate_session.cc" />
+    <ClCompile Include="..\network\connection_info.cc" />
+    <ClCompile Include="..\network\listener.cc" />
+    <ClCompile Include="..\network\listener_base.cc" />
+    <ClCompile Include="..\network\make_server.cc" />
+    <ClCompile Include="..\network\netsync_session.cc" />
+    <ClCompile Include="..\network\reactable.cc" />
+    <ClCompile Include="..\network\reactor.cc" />
+    <ClCompile Include="..\network\session.cc" />
+    <ClCompile Include="..\network\session_base.cc" />
+    <ClCompile Include="..\network\wrapped_session.cc" />
+    <ClCompile Include="..\netxx_pipe.cc" />
+    <ClCompile Include="..\option.cc" />
+    <ClCompile Include="..\options.cc" />
+    <ClCompile Include="..\outdated_indicator.cc" />
+    <ClCompile Include="..\package_full_revision.cc" />
+    <ClCompile Include="..\package_revision.cc" />
+    <ClCompile Include="..\packet.cc" />
+    <ClCompile Include="..\paths.cc" />
+    <ClCompile Include="..\pcrewrap.cc" />
+    <ClCompile Include="..\project.cc" />
+    <ClCompile Include="..\randomizer.cc" />
+    <ClCompile Include="..\rcs_file.cc" />
+    <ClCompile Include="..\rcs_import.cc" />
+    <ClCompile Include="..\refiner.cc" />
+    <ClCompile Include="..\restrictions.cc" />
+    <ClCompile Include="..\revision.cc" />
+    <ClCompile Include="..\rev_height.cc" />
+    <ClCompile Include="..\roster.cc" />
+    <ClCompile Include="..\roster_delta.cc" />
+    <ClCompile Include="..\sanity.cc" />
+    <ClCompile Include="..\schema.cc">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\selectors.cc" />
+    <ClCompile Include="..\sha1.cc" />
+    <ClCompile Include="..\simplestring_xform.cc" />
+    <ClCompile Include="..\specialized_lexical_cast.cc" />
+    <ClCompile Include="..\ssh_agent.cc" />
+    <ClCompile Include="..\std_hooks.cc">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\transforms.cc" />
+    <ClCompile Include="..\ui.cc" />
+    <ClCompile Include="..\update.cc" />
+    <ClCompile Include="..\uri.cc" />
+    <ClCompile Include="..\vocab.cc" />
+    <ClCompile Include="..\win32\main.cc" />
+    <ClCompile Include="..\work.cc" />
+    <ClCompile Include="..\xdelta.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\schema.sql">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">txt2c schema.sql</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(TargetDir)\txt2c.exe" --strip-trailing schema "$(ProjectDir)\..\schema.sql" "$(ProjectDir)\..\schema.cc"
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(TargetDir)\txt2c.exe;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">schema.cc;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Generating $(ProjectDir)\..\schema.c from $(ProjectDir)\..\schema.sql</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(TargetDir)\txt2c.exe" --strip-trailing --no-static "$(ProjectDir)\..\schema.sql" schema &gt;"$(ProjectDir)\..\schema.c"
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(TargetDir)\txt2c.exe;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">schema.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\std_hooks.lua">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">txt2c std_hooks.lua</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(TargetDir)\txt2c.exe" --strip-trailing std_hooks "$(ProjectDir)\..\std_hooks.lua" "$(ProjectDir)\..\std_hooks.cc"
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(TargetDir)\txt2c.exe;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">std_hooks.cc;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Generating $(ProjectDir)\..\std_hooks.c from $(ProjectDir)\..\std_hooks.lua</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(TargetDir)\txt2c.exe" --strip-trailing --no-static "$(ProjectDir)\..\std_hooks.lua" std_hooks &gt;"$(ProjectDir)\..\std_hooks.c"
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(TargetDir)\txt2c.exe;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">std_hooks.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="unknown_package.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Writing package_full_revision.cc</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy "$(ProjectDir)\..\_MTN\revision" "$(ProjectDir)\..\package_revision.txt"
+"$(TargetDir)\txt2c.exe" --strip-trailing package_full_revision "$(ProjectDir)\unknown_package.txt" $(ProjectDir)\..\package_full_revision.cc"
+"$(TargetDir)\txt2c.exe" --strip-trailing package_revision "$(ProjectDir)\..\package_revision.txt" $(ProjectDir)\..\package_revision.cc"
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(TargetDir)\txt2c.exe;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">package_full_revision.cc;package_revision.cc;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Writing package_full_revision.cc</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy "$(ProjectDir)\..\_MTN\revision" "$(ProjectDir)\..\package_revision.txt"
+"$(TargetDir)\txt2c.exe" --strip-trailing --no-static "$(ProjectDir)\unknown_package.txt" package_full_revision &gt;"$(ProjectDir)\..\package_full_revision.cc"
+"$(TargetDir)\txt2c.exe" --strip-trailing --no-static "$(ProjectDir)\..\package_revision.txt" package_revision &gt;"$(ProjectDir)\..\package_revision.cc"
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(TargetDir)\txt2c.exe;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">package_full_revision.cc;package_revision.cc;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="netxx.vcxproj">
+      <Project>{a075e27b-893b-4426-9b52-d6a795f699de}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="txt2c.vcxproj">
+      <Project>{efc02287-836f-470d-9955-44a8f81fb764}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

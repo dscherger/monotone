@@ -11,7 +11,7 @@
 #include <iostream>
 #include <sstream>
 #include <map>
-#include <unistd.h>
+//#include <unistd.h>
 
 #include "cmd.hh"
 #include "app_state.hh"
@@ -21,6 +21,7 @@
 #include "lua.hh"
 #include "lua_hooks.hh"
 #include "database.hh"
+#include "platform.hh"
 #include "work.hh"
 
 using std::istream;
@@ -151,7 +152,7 @@ CMD_AUTOMATE_HIDDEN(bandtest, "{ info | warning | error | ticker }",
         {
           first+=3;
           ++second;
-          usleep(100000); // 100ms
+          process_sleep(0.1); // 100ms
         }
     }
   else

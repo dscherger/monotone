@@ -57,7 +57,7 @@ static unsigned char unfiltered_pipe_cleanup_mem[sizeof(cached_botan_pipe)];
 
 string basename(string const & s)
 {
-  string::size_type sep = s.rfind('/');
+  string::size_type sep = s.find_last_of("/\\");
   if (sep == string::npos)
     return s;  // force use of short circuit
   if (sep == s.size())
@@ -67,7 +67,7 @@ string basename(string const & s)
 
 string dirname(string const & s)
 {
-  string::size_type sep = s.rfind('/');
+  string::size_type sep = s.find_last_of("/\\");
   if (sep == string::npos)
     return ".";
   if (sep == s.size() - 1) // dirname() of the root directory is itself
