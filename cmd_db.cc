@@ -178,7 +178,7 @@ CMD(db_kill_rev_locally, "kill_rev_locally", "", CMD_REF(db), "ID",
   revision_id revid;
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   complete(app.opts, app.lua, project, idx(args, 0)(), revid);
 
   // Check that the revision does not have any children
@@ -284,7 +284,7 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
@@ -305,7 +305,7 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
@@ -340,8 +340,11 @@ CMD_HIDDEN(clear_epoch, "clear_epoch", "", CMD_REF(db), "BRANCH",
   if (args.size() != 1)
     throw usage(execid);
 
+  branch_name name = typecast_vocab<branch_name>(idx(args, 0));
   database db(app);
-  db.clear_epoch(typecast_vocab<branch_name>(idx(args, 0)));
+  project_t project(db, app.lua, app.opts);
+  branch_uid branch = project.translate_branch(name);
+  project.db.clear_epoch(branch);
 }
 
 CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
@@ -354,10 +357,12 @@ CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
 
   E(idx(args, 1)().size() == constants::epochlen, origin::user,
     F("The epoch must be %s characters") % constants::epochlen);
-
+  branch_name name = typecast_vocab<branch_name>(idx(args, 0));
   epoch_data ed(decode_hexenc_as<epoch_data>(idx(args, 1)(), origin::user));
   database db(app);
-  db.set_epoch(branch_name(idx(args, 0)(), origin::user), ed);
+  project_t project(db, app.lua, app.opts);
+  branch_uid branch = project.translate_branch(name);
+  project.db.set_epoch(branch, ed);
 }
 
 CMD(set, "set", "", CMD_REF(variables), N_("DOMAIN NAME VALUE"),
@@ -499,7 +504,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
     throw usage(execid);
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   bool verbose = app.opts.verbose;
 

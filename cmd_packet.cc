@@ -34,7 +34,7 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   key_identity_info identity;
   project.get_key_identity(keys, app.lua,
@@ -68,7 +68,7 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() != 1)
     throw usage(execid);
