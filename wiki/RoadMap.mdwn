@@ -35,7 +35,7 @@ Remove netsync's SERVER [PATTERN] syntax | n/a | n/a | not started |
 
 [[!table data="""
 Description | More Info | Branch(es) | Status |
-Policy Branches | [[VersionedPolicy]] |  `nvm.tbrownaw.policy-branches`,[[br]]  `nvm.experimental.policy-branches*` | in development |
+Policy Branches | [[VersionedPolicy]] |  `nvm.tbrownaw.policy-branches`,<br />`nvm.experimental.policy-branches*` | in development |
 Daggy refinement | [[DagBasedRefinement]] | n/a | not started |
 SSL for netsync | n/a | n/a | not started |
 Partial pull | [[PartialPull]] | n/a | not started |
