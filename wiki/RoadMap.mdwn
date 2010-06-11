@@ -1,125 +1,50 @@
-[[tag migration-auto]]
 
+# monotone implementation road map
 
-This page summarizes what is left to do and who is in charge for what tasks which should be done before monotone 1.0 hits the world.
+## Release 0.99 / 1.0 - Fall 2010
 
-If there is no contact person for a certain work piece yet and you feel responsible for it, put in your name and IRC nick.
+[[!table data="""
+Description | More Info | Branch(es) | Status |
+Netsync URI refactoring | n/a | `nvm.connection_info_cleanup` | in development |
+Extended selectors | [[MagicSelectors]] | `nvm.extended-selectors` | in development |
+netsync --anonymous | n/a | `nvm.bugfest-2010.28805-rlevitte` | in development |
+Fix `rename foo foo` | n/a | `nvm.bugfest-2010.29484-rlevitte` | in development |
+`kill_certs_locally` | n/a | `nvm.kill_certs_locally` | in development |
+Overwritable, negatable options | n/a | n/a | not started |
+Fix mtn:// sync | n/a | n/a  | not started |
+Branch name deprecation | [monotone-devel](http://article.gmane.org/gmane.comp.version-control.monotone.devel/17117/match=netsync+connection+info+cleanup) | n/a | not started |
+""" ]]
 
-There is also an unsorted list of [[QuickieTasks]] which should help you get in contact with monotone if you like to start on it.
+## Release 1.x - 2010 / 2011
 
-## Policy Branches
+[[!table data="""
+Description | More Info | Branch(es) | Status |
+`rename --guess` | n/a | `nvm.rename-guess` | somewhat abandoned |
+Disapprove multiple revisions | n/a | `nvm.tkoskine.disapprove-multirev` | in development |
+Clean workspace from unknown / ignored files | n/a | `nvm.tkoskine.purge` | in development |
+""" ]]
 
-Contact person(s): Nathaniel Smith (njs), Paul Crowley (ciphergoth)
+## Release 2.0 - 2011
 
-Branch(es): net.venge.monotone.experimental.policy-branches*
+[[!table data="""
+Description | More Info | Branch(es) | Status |
+Remove netsync's SERVER [PATTERN] syntax | n/a | n/a | not started |
+""" ]]
 
-Entry page(s): [[VersionedPolicy]]
+## Not targeted
 
-State: ?% (awaiting feedback on proposals since 2007-02-07)
-
-## Command naming and UI cleanups
-
-Contact person(s): Thomas Keller (tommyd)
-
-Branch(es): net.venge.monotone.commit\_without_-b
-
-Entry page(s): ?
-
-State: ?% (waiting for feedback how to continue with the current implementation of mtn branch)
-
-## Selector overhaul
-
-Contact person(s): ?
-
-Branch(es): ?
-
-Entry page(s): [[MagicSelectors]]
-
-State: ?%
-
-## CVS import with branch reconstruction
-
-Contact person(s): Markus Wanner
-
-Branch(es): net.venge.monotone.cvsimport-branch-reconstruction
-
-Entry page(s): [[CvsImport]]
-
-State: ?%
-
-## CVS <=> monotone synchronization
-
-Contact person(s): Christof Petig (christof), William Uther (willu)
-
-Branch(es): net.venge.monotone.cvssync*
-
-Entry page(s): [[CvsSync3]]
-
-State: ?%
-
-## Workspace merge: conflict handling
-
-Contact person(s): Timothy Brownawell (tbrownaw)
-
-Branch(es): net.venge.monotone.workspace-merge*
-
-Entry page(s): [[MergeViaWorkingDir]]
-
-State: ?%
-
-## Automation expansions
-
-Contact person(s): Derek Scherger (dscherger), Thomas Moschny (thm), Thomas Keller (tommyd)
-
-Branch(es): net.venge.monotone.basic\_io.inventory (*DONE*, merged to mainline at 07ae9cb), net.venge.monotone.revision\_diff, net.venge.monotone.automate\_current\_revision
-
-Entry page(s): [[AutomateWishlist]]
-
-State: 33%
-
-## Update conflict handling
-
-Contact person(s): Stephen Leake (stephe)
-
-Branch(es): net.venge.monotone.update_conflicts
-
-Implement asynchronous conflict resolution process for update, similar
-to what we have for merge.
-
-One motivation for this is to allow update to be fully
-non-interactive, so it can be used in an automate stdio session.
-
-State: 0%
-
-## Overwritable, negatable options
-
-Contact person(s): Stephen Leake (stephe)
-
-Branch(es): net.venge.monotone.overwritable_options
-
-Implement --no- for all Boolean options (by an automatic mechanism,
-not manually). Allow options specified on the command line to override
-options specified in hooks or _MTN/options, or earlier in the command
-line.
-
-One motivation for this is to allow users to set their preferred
-default options in a hook, and then easily override them as needed.
-That makes it less significant what mtn sets as the default.
-
-State: 0%
-
-
-# Template
-
-## Project name
-
-Contact person(s): Firstname Lastname (irc nick), ...
-
-Branch(es): net.venge.monotone.foo
-
-Entry page(s): ...
-
-State: 0%
+[[!table data="""
+Description | More Info | Branch(es) | Status |
+Policy Branches | [[VersionedPolicy]] |  `nvm.tbrownaw.policy-branches`,[[br]]  `nvm.experimental.policy-branches*` | in development |
+Daggy refinement | [[DagBasedRefinement]] | n/a | not started |
+SSL for netsync | n/a | n/a | not started |
+Partial pull | [[PartialPull]] | n/a | not started |
+Let die-die-die die | n/a | n/a | not started |
+'mountpoint'  node type | n/a | n/a | not started |
+Command naming cleanup | n/a | n/a | not started |
+Netsync preview | n/a | n/a | not started |
+Update conflict handling | n/a | n/a | not started |
+""" ]]
 
 # Original ROADMAP file, slightly updated for current monotone
 
