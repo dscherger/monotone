@@ -3103,28 +3103,18 @@ database::recalc_branch_leaves(cert_value const & branch_name)
     }
 }
 
-/// Deletes all certs referring to a particular branch.
-void
-database::delete_branch_named(cert_value const & branch)
+void database::delete_certs_locally(revision_id const & rev,
+                                    cert_name const & name)
 {
-  L(FL("Deleting all references to branch %s") % branch);
-  imp->execute(query("DELETE FROM revision_certs WHERE name='branch' AND value =?")
-               % blob(branch()));
-  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?")
-               % blob(branch()));
-  imp->cert_stamper.note_change();
-  imp->execute(query("DELETE FROM branch_epochs WHERE branch=?")
-               % blob(branch()));
+  imp->execute(query("DELETE FROM revision_certs WHERE revision_id = ? AND name = ?")
+               % blob(rev.inner()()) % text(name()));
 }
-
-/// Deletes all certs referring to a particular tag.
-void
-database::delete_tag_named(cert_value const & tag)
+void database::delete_certs_locally(revision_id const & rev,
+                                    cert_name const & name,
+                                    cert_value const & value)
 {
-  L(FL("Deleting all references to tag %s") % tag);
-  imp->execute(query("DELETE FROM revision_certs WHERE name='tag' AND value =?")
-               % blob(tag()));
-  imp->cert_stamper.note_change();
+  imp->execute(query("DELETE FROM revision_certs WHERE revision_id = ? AND name = ? AND value = ?")
+               % blob(rev.inner()()) % text(name()) % blob(value()));
 }
 
 // crypto key management

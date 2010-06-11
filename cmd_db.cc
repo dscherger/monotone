@@ -9,6 +9,7 @@
 
 #include "base.hh"
 #include <iostream>
+#include <set>
 #include <utility>
 
 #include "charset.hh"
@@ -239,29 +240,50 @@ CMD(db_kill_rev_locally, "kill_rev_locally", "", CMD_REF(db), "ID",
   db.delete_existing_rev_and_certs(revid);
 }
 
-CMD(db_kill_branch_certs_locally, "kill_branch_certs_locally", "", CMD_REF(db),
-    "BRANCH",
-    N_("Kills branch certificates from the local database"),
-    "",
-    options::opts::none)
+CMD(db_kill_certs_locally, "kill_certs_locally", "", CMD_REF(db),
+    "SELECTOR CERTNAME [CERTVAL]",
+    N_("Deletes the specified certs from the local database"),
+    N_("Deletes all certs which are on the given revision(s) and "
+       "have the given name and if a value is specified then also "
+       "the given value"),
+    options::opts::revision)
 {
-  if (args.size() != 1)
+  if (args.size() < 2 || args.size() > 3)
     throw usage(execid);
 
-  database db(app);
-  db.delete_branch_named(typecast_vocab<cert_value>(idx(args, 0)));
-}
-
-CMD(db_kill_tag_locally, "kill_tag_locally", "", CMD_REF(db), "TAG",
-    N_("Kills a tag from the local database"),
-    "",
-    options::opts::none)
-{
-  if (args.size() != 1)
-    throw usage(execid);
+  string selector = idx(args,0)();
+  cert_name name = typecast_vocab<cert_name>(idx(args,1));
 
   database db(app);
-  db.delete_tag_named(typecast_vocab<cert_value>(idx(args, 0)));
+  project_t project(db);
+
+  set<revision_id> revisions;
+  complete(app.opts, app.lua, project, selector, revisions);
+
+
+  transaction_guard guard(db);
+  if (args.size() == 2)
+    {
+      L(FL("deleting all certs named '%s' on %d revisions")
+        % name % revisions.size());
+      for (set<revision_id>::const_iterator r = revisions.begin();
+           r != revisions.end(); ++r)
+        {
+          db.delete_certs_locally(*r, name);
+        }
+    }
+  else
+    {
+      cert_value value = typecast_vocab<cert_value>(idx(args,2));
+      L(FL("deleting all certs with name '%s' and value '%s' on %d revisions")
+        % name % value % revisions.size());
+      for (set<revision_id>::const_iterator r = revisions.begin();
+           r != revisions.end(); ++r)
+        {
+          db.delete_certs_locally(*r, name, value);
+        }
+    }
+  guard.commit();
 }
 
 CMD(db_check, "check", "", CMD_REF(db), "",

@@ -174,9 +174,10 @@ CMD(ssh_agent_add, "ssh_agent_add", "", CMD_REF(key_and_cert), "",
 }
 
 CMD(cert, "cert", "", CMD_REF(key_and_cert),
-    N_("REVISION CERTNAME [CERTVAL]"),
-    N_("Creates a certificate for a revision"),
-    "",
+    N_("SELECTOR CERTNAME [CERTVAL]"),
+    N_("Creates a certificate for a revision or set of revisions"),
+    N_("Creates a certificate with the given name and value on each revision "
+       "that matches the given selector"),
     options::opts::none)
 {
   database db(app);
@@ -188,8 +189,8 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
 
   transaction_guard guard(db);
 
-  revision_id rid;
-  complete(app.opts, app.lua,  project, idx(args, 0)(), rid);
+  set<revision_id> revisions;
+  complete(app.opts, app.lua,  project, idx(args, 0)(), revisions);
 
   cert_name cname = typecast_vocab<cert_name>(idx(args, 1));
 
@@ -204,8 +205,11 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
       read_data_stdin(dat);
       val = typecast_vocab<cert_value>(dat);
     }
-
-  project.put_cert(keys, rid, cname, val);
+  for (set<revision_id>::const_iterator r = revisions.begin();
+       r != revisions.end(); ++r)
+    {
+      project.put_cert(keys, *r, cname, val);
+    }
   guard.commit();
 }
 
