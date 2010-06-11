@@ -30,9 +30,11 @@ copy("diff", "stdin")
 -- http://article.gmane.org/gmane.comp.version-control.monotone.devel/17597
 if string.match(ostype, "BSD") then
     check({"patch", "-p0", "-E"}, 0, false, false, true)
+    check(not exists("dir/file"))
 else
+    -- GNU patch should only remove the file
+    -- but it is a little aggressive and removes the dir too!
     check({"patch", "-p0"}, 0, false, false, true)
+    check(not exists("dir/file"))
+    check(not exists("dir"))
 end
-
-check(not exists("dir/file"))
-check(not exists("dir"))
