@@ -6603,33 +6603,16 @@ you do, after all, need to retrieve the data in @var{id}, then
 work you can extract @var{id}'s data.
 @end itemize
 
-@item mtn db kill_branch_certs_locally @var{branch}
+@item mtn db kill_certs_locally @var{selector} @var{certname} @var{[certval]}
 
-This command ``kills'' a branch by deleting all branch certs with that
-branch name. You should consider carefully whether you want to use it,
-because it can irrevocably delete important information. It does not
-modify or delete any revisions or any of the other certificates on
-revisions in the branch; it simply removes the branch certificates
-matching the given branch name. Because of this, it can leave
-revisions without any branch certificate at all. As with @command{db
-kill_rev_locally}, it only deletes the information from your local
-database; if there are other databases that you sync with which have
-revisions in this branch, the branch certificates will reappear when
-you sync, unless the owners of those databases also delete those
-certificates locally.
+This command deletes certs with the given name on revisions that match
+the given selector. If a value is given, it restricts itself to only
+delete certs that also have that same value.
 
-@item mtn db kill_tag_locally @var{tag}
-
-This command ``kills'' a tag by deleting all tag certs with that tag
-name. You should consider carefully whether you want to use it, because
-it can irrevocably delete important information. It does not modify or
-delete any revisions, or any of the other certificates on tagged
-revisions; it simply removes all tag certificates with the given name.
-As with @command{db kill_rev_locally}, it only deletes the information
-from your local database; if there are other databases that you sync
-with which have this tag, the tag certificates will reappear when you
-sync, unless the owners of those databases also delete those
-certificates locally.
+This only deletes the certs from your local database; if there are
+other databases that you sync with which have this tag, the tag certificates
+will reappear when you sync, unless the owners of those databases also delete
+those certificates locally.
 
 @item mtn db execute @var{sql-statement}
 
