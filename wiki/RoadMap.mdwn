@@ -77,6 +77,37 @@ Entry page(s): [[AutomateWishlist]]
 
 State: 33%
 
+## Update conflict handling
+
+Contact person(s): Stephen Leake (stephe)
+
+Branch(es): net.venge.monotone.update_conflicts
+
+Implement asynchronous conflict resolution process for update, similar
+to what we have for merge.
+
+One motivation for this is to allow update to be fully
+non-interactive, so it can be used in an automate stdio session.
+
+State: 0%
+
+## Overwritable, negatable options
+
+Contact person(s): Stephen Leake (stephe)
+
+Branch(es): net.venge.monotone.overwritable_options
+
+Implement --no- for all Boolean options (by an automatic mechanism,
+not manually). Allow options specified on the command line to override
+options specified in hooks or _MTN/options, or earlier in the command
+line.
+
+One motivation for this is to allow users to set their preferred
+default options in a hook, and then easily override them as needed.
+That makes it less significant what mtn sets as the default.
+
+State: 0%
+
 
 # Template
 
