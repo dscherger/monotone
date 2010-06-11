@@ -11,7 +11,7 @@ netsync --anonymous | n/a | `nvm.bugfest-2010.28805-rlevitte` | in development |
 Fix `rename foo foo` | n/a | `nvm.bugfest-2010.29484-rlevitte` | in development |
 `kill_certs_locally` | n/a | `nvm.kill_certs_locally` | in development |
 Overwritable, negatable options | n/a | n/a | not started |
-Fix mtn:// sync | n/a | n/a  | not started |
+Fix mtn:// sync | n/a | `nvm.connection_info_cleanup`  | in development |
 Branch name deprecation | [monotone-devel](http://article.gmane.org/gmane.comp.version-control.monotone.devel/17117/match=netsync+connection+info+cleanup) | n/a | not started |
 """ ]]
 
@@ -34,16 +34,17 @@ Remove netsync's SERVER [PATTERN] syntax | n/a | n/a | not started |
 ## Not targeted
 
 [[!table data="""
-Description | More Info | Branch(es) | Status |
-Policy Branches | [[VersionedPolicy]] |  `nvm.tbrownaw.policy-branches`,<br />`nvm.experimental.policy-branches*` | in development |
-Daggy refinement | [[DagBasedRefinement]] | n/a | not started |
-SSL for netsync | n/a | n/a | not started |
-Partial pull | [[PartialPull]] | n/a | not started |
-Let die-die-die die | n/a | n/a | not started |
-'mountpoint'  node type | n/a | n/a | not started |
-Command naming cleanup | n/a | n/a | not started |
-Netsync preview | n/a | n/a | not started |
-Update conflict handling | n/a | n/a | not started |
+Description | More Info | Branch(es) | Status | Major Version Change |
+Policy Branches | [[VersionedPolicy]] |  `nvm.tbrownaw.policy-branches`,<br />`nvm.experimental.policy-branches*` | in development | Yes |
+Daggy refinement | [[DagBasedRefinement]] | n/a | not started | No - netsync version negotiation |
+SSL for netsync | n/a | n/a | not started | No - netsync version negotiation |
+Partial pull | [[PartialPull]] | n/a | not started | No - netsync version negotiation |
+Let die-die-die die | n/a | n/a | not started | Yes - revision format change |
+'mountpoint'  node type | n/a | n/a | not started | Yes - revision format change |
+Command naming cleanup | n/a | n/a | not started | Probably - if sufficiently extensive, or it touches the automate commands |
+Netsync preview | n/a | n/a | not started | No - I don't think this would need any on-the-wire changes at all |
+Update conflict handling | n/a | n/a | not started | ??? |
+Allow `-` and `_` interchangeably in commands and options | n/a | n/a | not started | No |
 """ ]]
 
 # Original ROADMAP file, slightly updated for current monotone
