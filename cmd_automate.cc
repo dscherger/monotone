@@ -409,49 +409,55 @@ LUAEXT(mtn_automate, )
           args.push_back(next_arg);
         }
 
-      // disable user prompts, f.e. for password decryption
-      app_p->opts.non_interactive = true;
-
-      options::options_type opts;
-      opts = options::opts::all_options() - options::opts::globals();
-      opts.instantiate(&app_p->opts).reset();
-
-      // the arguments for a command are read from app.opts.args which
-      // is already cleaned from all options. this variable, however, still
-      // contains the original arguments with which the user function was
-      // called. Since we're already in lua context, it makes no sense to
-      // preserve them for the outside world, so we're just clearing them.
-      app_p->opts.args.clear();
-
       commands::command_id id;
-      for (args_vector::const_iterator iter = args.begin();
-           iter != args.end(); iter++)
-        id.push_back(*iter);
+      {
+        for (args_vector::const_iterator iter = args.begin();
+             iter != args.end(); iter++)
+          id.push_back(*iter);
 
-      E(!id.empty(), origin::user, F("no command found"));
+        E(!id.empty(), origin::user, F("no command found"));
 
-      set< commands::command_id > matches =
-        CMD_REF(automate)->complete_command(id);
+        set< commands::command_id > matches =
+          CMD_REF(automate)->complete_command(id);
 
-      if (matches.empty())
-        {
-          E(false, origin::user, F("no completions for this command"));
-        }
-      else if (matches.size() > 1)
-        {
-          E(false, origin::user,
-            F("multiple completions possible for this command"));
-        }
+        if (matches.empty())
+          {
+            E(false, origin::user, F("no completions for this command"));
+          }
+        else if (matches.size() > 1)
+          {
+            E(false, origin::user,
+              F("multiple completions possible for this command"));
+          }
 
-      id = *matches.begin();
-
-      I(args.size() >= id.size());
-      for (commands::command_id::size_type i = 0; i < id.size(); i++)
-        args.erase(args.begin());
-
+        id = *matches.begin();
+      }
       commands::command const * cmd = CMD_REF(automate)->find_command(id);
       I(cmd != NULL);
-      opts = options::opts::globals() | cmd->opts();
+
+
+      // reset and recalcualte the options
+      options::opts::all_options().instantiate(&app_p->opts).reset();
+
+      option::concrete_option_set orig_optset
+        = (options::opts::globals()
+           | commands::command_options(app_p->reset_info.cmd))
+        .instantiate(&app_p->opts);
+      orig_optset.from_command_line(app_p->reset_info.default_args, false);
+
+      // get default options for the current (sub-)command here
+      option::concrete_option_set my_optset
+        = (options::opts::globals() | cmd->opts())
+        .instantiate(&app_p->opts);
+      args_vector my_defaults;
+      {
+        command_id my_id_for_hook = id;
+        my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automate", origin::internal));
+        // group name
+        my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automation", origin::internal));
+        app_p->lua.hook_get_default_command_options(my_id_for_hook, my_defaults);
+      }
+      my_optset.from_command_line(my_defaults, false);
 
       if (cmd->use_workspace_options())
         {
@@ -462,7 +468,21 @@ LUAEXT(mtn_automate, )
           workspace::get_options(app_p->opts);
         }
 
-      opts.instantiate(&app_p->opts).from_command_line(args, false);
+      orig_optset.from_command_line(app_p->reset_info.cmdline_args, false);
+
+      // now add our given options and clean the arg list
+      app_p->opts.args.clear();
+      my_optset.from_command_line(args, false);
+      I(app_p->opts.args.size() >= id.size());
+      for (commands::command_id::size_type i = 0; i < id.size(); i++)
+        app_p->opts.args.erase(app_p->opts.args.begin());
+
+      // disable user prompts, f.e. for password decryption
+      app_p->opts.non_interactive = true;
+
+      // done recalculating options
+
+
       args_vector & parsed_args = app_p->opts.args;
 
       commands::automate const * acmd
