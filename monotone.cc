@@ -182,11 +182,10 @@ cpp_main(int argc, char ** argv)
         {
           // read global options first
           // command specific options will be read below
-          args_vector opt_args(args);
+          app.reset_info.cmdline_args = args;
 
-          option::concrete_option_set optset
-            = options::opts::all_options().instantiate(&app.opts);
-          optset.from_command_line(opt_args);
+          options::opts::all_options().instantiate(&app.opts)
+            .from_command_line(app.reset_info.cmdline_args);
 
           if (app.opts.version_given)
             {
@@ -215,38 +214,16 @@ cpp_main(int argc, char ** argv)
           // this needs to be after the hooks are loaded, because new
           // command names may have been added with the alias_command()
           // lua extension function
-          commands::command_id cmd;
           if (!app.opts.args.empty())
             {
-              cmd = commands::complete_command(app.opts.args);
-              I(!cmd.empty());
+              app.reset_info.cmd = commands::complete_command(app.opts.args);
+              I(!app.reset_info.cmd.empty());
             }
 
-          // reset the options, and apply defaults from the lua hooks
-          optset.reset();
-          {
-            // check if the user specified default arguments for this command
-            args_vector default_args;
-            if (!cmd.empty()
-                && app.lua.hook_get_default_command_options(cmd, default_args))
-              {
-                optset.from_command_line(default_args, false);
-              }
-          }
-
-          // re-parse the command-line options now that we know
-          // what the command is
-          optset = (options::opts::globals() | commands::command_options(cmd))
-            .instantiate(&app.opts);
-          optset.from_command_line(opt_args, false);
-          // trim the command itself from the positionals
-          I(cmd.empty() || app.opts.args.size() >= cmd.size() - 1);
-          for (args_vector::size_type i = 1; i < cmd.size(); i++)
-            {
-              I(cmd[i]().find(app.opts.args[0]()) == 0);
-              app.opts.args.erase(app.opts.args.begin());
-            }
-
+          // check if the user specified default arguments for this command
+          if (!app.reset_info.cmd.empty())
+            app.lua.hook_get_default_command_options(app.reset_info.cmd,
+                                                     app.reset_info.default_args);
 
           if (workspace::found)
             {
@@ -267,18 +244,18 @@ cpp_main(int argc, char ** argv)
 
           // stop here if they asked for help
           if (app.opts.help)
-            throw usage(cmd);
+            throw usage(app.reset_info.cmd);
 
           // main options processed, now invoke the
           // sub-command w/ remaining args
-          if (cmd.empty())
+          if (app.reset_info.cmd.empty())
             throw usage(commands::command_id());
 
 
           // as soon as a command requires a workspace, this is set to true
           workspace::used = false;
 
-          commands::process(app, cmd, app.opts.args);
+          commands::process(app, app.reset_info.cmd, app.opts.args);
 
           workspace::maybe_set_options(app.opts, app.lua);
 

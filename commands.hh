@@ -25,6 +25,8 @@ namespace commands {
   command_id make_command_id(std::string const & path);
   void explain_usage(command_id const & cmd, bool show_hidden, std::ostream & out);
   command_id complete_command(args_vector const & args);
+  void remove_command_name_from_args(command_id const & ident,
+                                     args_vector & args);
   void process(app_state & app, command_id const & ident,
                args_vector const & args);
   options::options_type command_options(command_id const & ident);

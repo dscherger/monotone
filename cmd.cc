@@ -84,6 +84,17 @@ CMD_GROUP(user, "user", "", CMD_REF(__root__),
 
 namespace commands {
 
+  void remove_command_name_from_args(command_id const & ident,
+                                     args_vector & args)
+  {
+    I(ident.empty() || args.size() >= ident.size() - 1);
+    for (args_vector::size_type i = 1; i < ident.size(); i++)
+      {
+        I(ident[i]().find(args[0]()) == 0);
+        args.erase(args.begin());
+      }
+  }
+
   // monotone.cc calls this function after option processing.
   void process(app_state & app, command_id const & ident,
                args_vector const & args)
@@ -98,14 +109,29 @@ namespace commands {
       origin::user,
       F("command '%s' is invalid; it is a group") % join_words(ident));
 
-    E(!(!cmd->is_leaf() && args.empty()), origin::user,
-      F("no subcommand specified for '%s'") % visibleid);
+    if (!cmd->is_leaf())
+      {
+        // args used in the command name have not been stripped yet
+        remove_command_name_from_args(app.reset_info.cmd, app.opts.args);
 
-    E(!(!cmd->is_leaf() && !args.empty()), origin::user,
-      F("could not match '%s' to a subcommand of '%s'") %
-      join_words(args) % visibleid);
+        E(!args.empty(), origin::user,
+          F("no subcommand specified for '%s'") % visibleid);
+
+        E(false, origin::user,
+          F("could not match '%s' to a subcommand of '%s'") %
+          join_words(args) % visibleid);
+      }
 
     L(FL("executing command '%s'") % visibleid);
+
+    options::opts::all_options().instantiate(&app.opts).reset();
+
+    option::concrete_option_set optset
+      = (options::opts::globals()
+         | commands::command_options(app.reset_info.cmd))
+      .instantiate(&app.opts);
+
+    optset.from_command_line(app.reset_info.default_args, false);
 
     // at this point we process the data from _MTN/options if
     // the command needs it.
@@ -114,6 +140,9 @@ namespace commands {
         workspace::check_format();
         workspace::get_options(app.opts);
       }
+
+    optset.from_command_line(app.reset_info.cmdline_args, false);
+    remove_command_name_from_args(app.reset_info.cmd, app.opts.args);
 
     cmd->exec(app, ident, args);
   }
