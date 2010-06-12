@@ -214,15 +214,16 @@ cpp_main(int argc, char ** argv)
           // this needs to be after the hooks are loaded, because new
           // command names may have been added with the alias_command()
           // lua extension function
+          commands::command_id cmd_id;
           if (!app.opts.args.empty())
             {
-              app.reset_info.cmd = commands::complete_command(app.opts.args);
-              I(!app.reset_info.cmd.empty());
+              cmd_id = commands::complete_command(app.opts.args);
+              I(!cmd_id.empty());
             }
 
           // check if the user specified default arguments for this command
-          if (!app.reset_info.cmd.empty())
-            app.lua.hook_get_default_command_options(app.reset_info.cmd,
+          if (!cmd_id.empty())
+            app.lua.hook_get_default_command_options(cmd_id,
                                                      app.reset_info.default_args);
 
           if (workspace::found)
@@ -244,18 +245,18 @@ cpp_main(int argc, char ** argv)
 
           // stop here if they asked for help
           if (app.opts.help)
-            throw usage(app.reset_info.cmd);
+            throw usage(cmd_id);
 
           // main options processed, now invoke the
           // sub-command w/ remaining args
-          if (app.reset_info.cmd.empty())
+          if (cmd_id.empty())
             throw usage(commands::command_id());
 
 
           // as soon as a command requires a workspace, this is set to true
           workspace::used = false;
 
-          commands::process(app, app.reset_info.cmd, app.opts.args);
+          commands::process(app, cmd_id, app.opts.args);
 
           workspace::maybe_set_options(app.opts, app.lua);
 

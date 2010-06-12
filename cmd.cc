@@ -85,13 +85,67 @@ CMD_GROUP(user, "user", "", CMD_REF(__root__),
 namespace commands {
 
   void remove_command_name_from_args(command_id const & ident,
-                                     args_vector & args)
+                                     args_vector & args,
+                                     size_t invisible_length)
   {
-    I(ident.empty() || args.size() >= ident.size() - 1);
-    for (args_vector::size_type i = 1; i < ident.size(); i++)
+    I(ident.empty() || args.size() >= ident.size() - invisible_length);
+    for (args_vector::size_type i = invisible_length; i < ident.size(); i++)
       {
         I(ident[i]().find(args[0]()) == 0);
         args.erase(args.begin());
+      }
+  }
+
+  void reapply_options(app_state & app,
+                       command const * cmd,
+                       command_id const & cmd_ident,
+                       command const * subcmd,
+                       command_id const & subcmd_full_ident,
+                       size_t subcmd_invisible_length,
+                       args_vector const & subcmd_cmdline)
+  {
+    I(cmd);
+    options::opts::all_options().instantiate(&app.opts).reset();
+
+    option::concrete_option_set optset
+      = (options::opts::globals() | cmd->opts())
+      .instantiate(&app.opts);
+
+    optset.from_command_line(app.reset_info.default_args, false);
+
+    if (subcmd)
+      {
+        args_vector subcmd_defaults;
+        app.lua.hook_get_default_command_options(subcmd_full_ident,
+                                                 subcmd_defaults);
+        (options::opts::globals() | subcmd->opts())
+          .instantiate(&app.opts)
+          .from_command_line(subcmd_defaults, false);
+      }
+
+    // at this point we process the data from _MTN/options if
+    // the command needs it.
+    if ((subcmd ? subcmd : cmd)->use_workspace_options())
+      {
+        workspace::check_format();
+        workspace::get_options(app.opts);
+      }
+
+    optset.from_command_line(app.reset_info.cmdline_args, false);
+
+    if (subcmd)
+      {
+        app.opts.args.clear();
+        (options::opts::globals() | subcmd->opts())
+          .instantiate(&app.opts)
+          /* the first argument here is only ever modified if the second is 'true' */
+          .from_command_line(const_cast<args_vector &>(subcmd_cmdline), false);
+        remove_command_name_from_args(subcmd_full_ident, app.opts.args,
+                                      subcmd_invisible_length);
+      }
+    else
+      {
+        remove_command_name_from_args(cmd_ident, app.opts.args);
       }
   }
 
@@ -99,7 +153,12 @@ namespace commands {
   void process(app_state & app, command_id const & ident,
                args_vector const & args)
   {
+    static bool process_called(false);
+    I(!process_called);
+    process_called = true;
+
     command const * cmd = CMD_REF(__root__)->find_command(ident);
+    app.reset_info.cmd = cmd;
 
     string visibleid = join_words(vector< utf8 >(ident.begin() + 1,
                                                  ident.end()))();
@@ -112,7 +171,7 @@ namespace commands {
     if (!cmd->is_leaf())
       {
         // args used in the command name have not been stripped yet
-        remove_command_name_from_args(app.reset_info.cmd, app.opts.args);
+        remove_command_name_from_args(ident, app.opts.args);
 
         E(!args.empty(), origin::user,
           F("no subcommand specified for '%s'") % visibleid);
@@ -124,25 +183,7 @@ namespace commands {
 
     L(FL("executing command '%s'") % visibleid);
 
-    options::opts::all_options().instantiate(&app.opts).reset();
-
-    option::concrete_option_set optset
-      = (options::opts::globals()
-         | commands::command_options(app.reset_info.cmd))
-      .instantiate(&app.opts);
-
-    optset.from_command_line(app.reset_info.default_args, false);
-
-    // at this point we process the data from _MTN/options if
-    // the command needs it.
-    if (cmd->use_workspace_options())
-      {
-        workspace::check_format();
-        workspace::get_options(app.opts);
-      }
-
-    optset.from_command_line(app.reset_info.cmdline_args, false);
-    remove_command_name_from_args(app.reset_info.cmd, app.opts.args);
+    reapply_options(app, cmd, ident);
 
     cmd->exec(app, ident, args);
   }

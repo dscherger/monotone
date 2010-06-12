@@ -14,13 +14,15 @@
 
 #include "option.hh"
 
-typedef std::vector< utf8 > command_id;
+namespace commands {
+  class command;
+}
 
 struct option_reset_info
 {
   args_vector default_args;
   args_vector cmdline_args;
-  command_id cmd;
+  commands::command const * cmd;
 };
 
 #endif // __OPTION_RESET_INFO_HH__

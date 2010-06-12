@@ -1418,7 +1418,7 @@ void perform_commit(app_state & app,
                     database & db,
                     workspace & work,
                     project_t & project,
-                    command_id const & execid,
+                    commands::command_id const & execid,
                     vector<file_path> const & paths)
 {
   key_store keys(app);

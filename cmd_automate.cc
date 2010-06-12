@@ -436,51 +436,18 @@ LUAEXT(mtn_automate, )
       I(cmd != NULL);
 
 
-      // reset and recalcualte the options
-      options::opts::all_options().instantiate(&app_p->opts).reset();
+      commands::command_id my_id_for_hook = id;
+      my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automate", origin::internal));
+      // group name
+      my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automation", origin::internal));
 
-      option::concrete_option_set orig_optset
-        = (options::opts::globals()
-           | commands::command_options(app_p->reset_info.cmd))
-        .instantiate(&app_p->opts);
-      orig_optset.from_command_line(app_p->reset_info.default_args, false);
+      commands::reapply_options(*app_p,
+                                app_p->reset_info.cmd, commands::command_id() /*doesn't matter*/,
+                                cmd, my_id_for_hook, 2,
+                                args);
 
-      // get default options for the current (sub-)command here
-      option::concrete_option_set my_optset
-        = (options::opts::globals() | cmd->opts())
-        .instantiate(&app_p->opts);
-      args_vector my_defaults;
-      {
-        command_id my_id_for_hook = id;
-        my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automate", origin::internal));
-        // group name
-        my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automation", origin::internal));
-        app_p->lua.hook_get_default_command_options(my_id_for_hook, my_defaults);
-      }
-      my_optset.from_command_line(my_defaults, false);
-
-      if (cmd->use_workspace_options())
-        {
-          // Re-read the ws options file, rather than just copying
-          // the options from the previous apts.opts object, because
-          // the file may have changed due to user activity.
-          workspace::check_format();
-          workspace::get_options(app_p->opts);
-        }
-
-      orig_optset.from_command_line(app_p->reset_info.cmdline_args, false);
-
-      // now add our given options and clean the arg list
-      app_p->opts.args.clear();
-      my_optset.from_command_line(args, false);
-      I(app_p->opts.args.size() >= id.size());
-      for (commands::command_id::size_type i = 0; i < id.size(); i++)
-        app_p->opts.args.erase(app_p->opts.args.begin());
-
-      // disable user prompts, f.e. for password decryption
+      // disable user prompts, for example for password decryption
       app_p->opts.non_interactive = true;
-
-      // done recalculating options
 
 
       args_vector & parsed_args = app_p->opts.args;
