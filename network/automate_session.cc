@@ -262,15 +262,15 @@ bool automate_session::do_work(transaction_guard & guard,
                 // options are saved back to _MTN/options, this shouldn't be
                 // any different here
                 workspace::maybe_set_options(app.opts, app.lua);
-
-                // restore app.opts
-                app.opts = original_opts;
               }
             catch (recoverable_failure & f)
               {
                 errcode = 2;
                 write_automate_packet_cmd('e', f.what());
               }
+
+            // restore app.opts
+            app.opts = original_opts;
           }
 
         if (!oss.str().empty())

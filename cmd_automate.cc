@@ -330,15 +330,15 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           // options are saved back to _MTN/options, this shouldn't be
           // any different here
           workspace::maybe_set_options(app.opts, app.lua);
-
-          // restore app.opts
-          app.opts = original_opts;
         }
       catch (recoverable_failure & f)
         {
           os.write_out_of_band('e', f.what());
           os.end_cmd(2);
         }
+
+      // restore app.opts
+      app.opts = original_opts;
     }
     global_sanity.set_out_of_band_handler();
 }
