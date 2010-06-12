@@ -12,6 +12,7 @@
 
 #include "app_state.hh"
 #include "automate_reader.hh"
+#include "simplestring_xform.hh"
 #include "ui.hh"
 #include "vocab_cast.hh"
 #include "work.hh"
@@ -143,16 +144,15 @@ bool automate_session::do_work(transaction_guard & guard,
         app.opts.non_interactive = true;
         options original_opts = app.opts;
 
-        vector<string> in_args;
-        vector<pair<string, string> > in_opts;
-        cmd_in->read_automate_command_cmd(in_args, in_opts);
+        vector<pair<string, string> > params;
+        vector<string> cmdline;
+        cmd_in->read_automate_command_cmd(cmdline, params);
         ++command_number;
 
         global_sanity.set_out_of_band_handler(&out_of_band_to_netcmd, this);
 
         automate const * acmd = 0;
         command_id id;
-        args_vector args;
 
         ostringstream oss;
         int  errcode = 0;
@@ -165,24 +165,18 @@ bool automate_session::do_work(transaction_guard & guard,
         try
           {
             E(app.lua.hook_get_remote_automate_permitted(remote_identity,
-                                                         in_args,
-                                                         in_opts),
+                                                         cmdline,
+                                                         params),
               origin::user,
               F("Sorry, you aren't allowed to do that."));
 
-            for (vector<string>::iterator i = in_args.begin();
-                 i != in_args.end(); ++i)
+            args_vector args;
+            for (vector<string>::iterator i = cmdline.begin();
+                 i != cmdline.end(); ++i)
               {
                 args.push_back(arg_type(*i, origin::user));
+                id.push_back(utf8(*i, origin::user));
               }
-
-            options::options_type opts;
-            opts = options::opts::all_options() - options::opts::globals();
-            opts.instantiate(&app.opts).reset();
-
-            for (args_vector::const_iterator iter = args.begin();
-                 iter != args.end(); iter++)
-              id.push_back(typecast_vocab<utf8>(*iter));
 
             set< command_id > matches =
               CMD_REF(automate)->complete_command(id);
@@ -200,41 +194,37 @@ bool automate_session::do_work(transaction_guard & guard,
 
             id = *matches.begin();
 
-            I(args.size() >= id.size());
-            string cmd_printable;
-            for (command_id::size_type i = 0; i < id.size(); i++)
-              {
-                if (!cmd_printable.empty())
-                  cmd_printable += " ";
-                cmd_printable += (*args.begin())();
-                args.erase(args.begin());
-              }
-
-            L(FL("Executing %s for remote peer %s")
-              % cmd_printable % get_peer());
-
             command const * cmd = CMD_REF(automate)->find_command(id);
             I(cmd != NULL);
+
             acmd = dynamic_cast< automate const * >(cmd);
             I(acmd != NULL);
 
             E(acmd->can_run_from_stdio(), origin::network,
               F("sorry, that can't be run remotely or over stdio"));
 
-            opts = options::opts::globals() | acmd->opts();
 
-            if (cmd->use_workspace_options())
-              {
-                // Re-read the ws options file, rather than just copying
-                // the options from the previous apts.opts object, because
-                // the file may have changed due to user activity.
-                workspace::check_format();
-                workspace::get_options(app.opts);
-              }
+            commands::command_id my_id_for_hook = id;
+            my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automate", origin::internal));
+            // group name
+            my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automation", origin::internal));
+            commands::reapply_options(app,
+                                      app.reset_info.cmd,
+                                      commands::command_id() /* doesn't matter */,
+                                      cmd, my_id_for_hook, 2,
+                                      args,
+                                      &params);
 
-            opts.instantiate(&app.opts).from_key_value_pairs(in_opts);
+            // disable user prompts, f.e. for password decryption
+            app.opts.non_interactive = true;
 
+
+            // set a fixed ticker type regardless what the user wants to
+            // see, because anything else would screw the stdio-encoded output
             ui.set_tick_write_stdio();
+
+            L(FL("Executing %s for remote peer %s")
+              % join_words(id) % get_peer());
           }
         // FIXME: we need to re-package and rethrow this special exception
         // since it is not based on informative_failure
@@ -256,7 +246,7 @@ bool automate_session::do_work(transaction_guard & guard,
                 // as soon as a command requires a workspace, this is set to true
                 workspace::used = false;
 
-                acmd->exec_from_automate(app, id, args, oss);
+                acmd->exec_from_automate(app, id, app.opts.args, oss);
 
                 // usually, if a command succeeds, any of its workspace-relevant
                 // options are saved back to _MTN/options, this shouldn't be
