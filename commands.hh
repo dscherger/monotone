@@ -35,7 +35,9 @@ namespace commands {
                        command const * subcmd = 0,
                        command_id const & subcmd_full_ident = command_id(),
                        size_t subcmd_invisible_length = 1,
-                       args_vector const & subcmd_cmdline = args_vector());
+                       args_vector const & subcmd_cmdline = args_vector(),
+                       std::vector<std::pair<std::string, std::string> >
+                       const * const separate_params = 0);
   void process(app_state & app, command_id const & ident,
                args_vector const & args);
   options::options_type command_options(command_id const & ident);

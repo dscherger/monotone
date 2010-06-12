@@ -236,7 +236,6 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
     {
       automate const * acmd = 0;
       command_id id;
-      args_vector args;
 
       // FIXME: what follows is largely duplicated
       // in network/automate_session.cc::do_work()
@@ -248,6 +247,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           if (!ar.get_command(params, cmdline))
             break;
 
+          args_vector args;
           vector<string>::iterator i = cmdline.begin();
           for (; i != cmdline.end(); ++i)
             {
@@ -271,10 +271,6 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
 
           id = *matches.begin();
 
-          I(args.size() >= id.size());
-          for (command_id::size_type i = 0; i < id.size(); i++)
-            args.erase(args.begin());
-
           command const * cmd = CMD_REF(automate)->find_command(id);
           I(cmd != NULL);
 
@@ -284,18 +280,21 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           E(acmd->can_run_from_stdio(), origin::network,
             F("sorry, that can't be run remotely or over stdio"));
 
-          if (cmd->use_workspace_options())
-            {
-              // Re-read the ws options file, rather than just copying
-              // the options from the previous apts.opts object, because
-              // the file may have changed due to user activity.
-              workspace::check_format();
-              workspace::get_options(app.opts);
-            }
 
-          options::options_type opts;
-          opts = options::opts::globals() | cmd->opts();
-          opts.instantiate(&app.opts).from_key_value_pairs(params);
+          commands::command_id my_id_for_hook = id;
+          my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automate", origin::internal));
+          // group name
+          my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automation", origin::internal));
+          commands::reapply_options(app,
+                                    app.reset_info.cmd,
+                                    commands::command_id() /* doesn't matter */,
+                                    cmd, my_id_for_hook, 2,
+                                    args,
+                                    &params);
+
+          // disable user prompts, f.e. for password decryption
+          app.opts.non_interactive = true;
+
 
           // set a fixed ticker type regardless what the user wants to
           // see, because anything else would screw the stdio-encoded output
@@ -323,7 +322,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           // as soon as a command requires a workspace, this is set to true
           workspace::used = false;
 
-          acmd->exec_from_automate(app, id, args, os);
+          acmd->exec_from_automate(app, id, app.opts.args, os);
           os.end_cmd(0);
 
           // usually, if a command succeeds, any of its workspace-relevant

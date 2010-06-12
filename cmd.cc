@@ -82,12 +82,19 @@ CMD_GROUP(user, "user", "", CMD_REF(__root__),
           N_("Commands defined by the user"),
           "");
 
+template<> void dump(size_t const & in, std::string & out)
+{
+  out = boost::lexical_cast<string>(in);
+}
 namespace commands {
 
   void remove_command_name_from_args(command_id const & ident,
                                      args_vector & args,
                                      size_t invisible_length)
   {
+    MM(ident);
+    MM(args);
+    MM(invisible_length);
     I(ident.empty() || args.size() >= ident.size() - invisible_length);
     for (args_vector::size_type i = invisible_length; i < ident.size(); i++)
       {
@@ -102,7 +109,8 @@ namespace commands {
                        command const * subcmd,
                        command_id const & subcmd_full_ident,
                        size_t subcmd_invisible_length,
-                       args_vector const & subcmd_cmdline)
+                       args_vector const & subcmd_cmdline,
+                       vector<pair<string, string> > const * const separate_params)
   {
     I(cmd);
     options::opts::all_options().instantiate(&app.opts).reset();
@@ -136,10 +144,19 @@ namespace commands {
     if (subcmd)
       {
         app.opts.args.clear();
-        (options::opts::globals() | subcmd->opts())
-          .instantiate(&app.opts)
-          /* the first argument here is only ever modified if the second is 'true' */
-          .from_command_line(const_cast<args_vector &>(subcmd_cmdline), false);
+        option::concrete_option_set subcmd_optset
+          = (options::opts::globals() | subcmd->opts())
+          .instantiate(&app.opts);
+        if (!separate_params)
+          {
+            /* the first argument here is only ever modified if the second is 'true' */
+            subcmd_optset.from_command_line(const_cast<args_vector &>(subcmd_cmdline), false);
+          }
+        else
+          {
+            subcmd_optset.from_key_value_pairs(*separate_params);
+            app.opts.args = subcmd_cmdline;
+          }
         remove_command_name_from_args(subcmd_full_ident, app.opts.args,
                                       subcmd_invisible_length);
       }
