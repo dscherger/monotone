@@ -77,49 +77,6 @@ pipe_cache_cleanup * global_pipe_cleanup_object;
 Botan::Pipe * unfiltered_pipe;
 static unsigned char unfiltered_pipe_cleanup_mem[sizeof(cached_botan_pipe)];
 
-option::concrete_option_set
-read_global_options(options & opts, args_vector & args)
-{
-  option::concrete_option_set optset =
-    options::opts::all_options().instantiate(&opts);
-  optset.from_command_line(args);
-
-  return optset;
-}
-
-// read command-line options and return the command name
-commands::command_id read_options(options & opts, option::concrete_option_set & optset, args_vector & args)
-{
-  commands::command_id cmd;
-
-  if (!opts.args.empty())
-    {
-      // There are some arguments remaining in the command line.  Try first
-      // to see if they are a command.
-      cmd = commands::complete_command(opts.args);
-      I(!cmd.empty());
-
-      // Reparse options now that we know what command-specific options
-      // are allowed.
-      options::options_type cmdopts = commands::command_options(cmd);
-      optset.reset();
-      optset = (options::opts::globals() | cmdopts).instantiate(&opts);
-      optset.from_command_line(args, false);
-
-      // Remove the command name from the arguments.  Rember that the group
-      // is not taken into account.
-      I(opts.args.size() >= cmd.size() - 1);
-
-      for (args_vector::size_type i = 1; i < cmd.size(); i++)
-        {
-          I(cmd[i]().find(opts.args[0]()) == 0);
-          opts.args.erase(opts.args.begin());
-        }
-    }
-
-  return cmd;
-}
-
 void
 mtn_terminate_handler()
 {
@@ -226,8 +183,10 @@ cpp_main(int argc, char ** argv)
           // read global options first
           // command specific options will be read below
           args_vector opt_args(args);
+
           option::concrete_option_set optset
-            = read_global_options(app.opts, opt_args);
+            = options::opts::all_options().instantiate(&app.opts);
+          optset.from_command_line(opt_args);
 
           if (app.opts.version_given)
             {
@@ -252,15 +211,42 @@ cpp_main(int argc, char ** argv)
           // we'll pick up _MTN/monotonerc as well as the user's monotonerc.
           app.lua.load_rcfiles(app.opts);
 
-          // now grab any command specific options and parse the command
-          // this needs to happen after the monotonercs have been read
-          commands::command_id cmd = read_options(app.opts, optset, opt_args);
+          // figure out what command is being run
+          // this needs to be after the hooks are loaded, because new
+          // command names may have been added with the alias_command()
+          // lua extension function
+          commands::command_id cmd;
+          if (!app.opts.args.empty())
+            {
+              cmd = commands::complete_command(app.opts.args);
+              I(!cmd.empty());
+            }
 
-          // check if the user specified default arguments for this command
-          args_vector default_args;
-          if (!cmd.empty()
-              && app.lua.hook_get_default_command_options(cmd, default_args))
-            optset.from_command_line(default_args, false);
+          // reset the options, and apply defaults from the lua hooks
+          optset.reset();
+          {
+            // check if the user specified default arguments for this command
+            args_vector default_args;
+            if (!cmd.empty()
+                && app.lua.hook_get_default_command_options(cmd, default_args))
+              {
+                optset.from_command_line(default_args, false);
+              }
+          }
+
+          // re-parse the command-line options now that we know
+          // what the command is
+          optset = (options::opts::globals() | commands::command_options(cmd))
+            .instantiate(&app.opts);
+          optset.from_command_line(opt_args, false);
+          // trim the command itself from the positionals
+          I(cmd.empty() || app.opts.args.size() >= cmd.size() - 1);
+          for (args_vector::size_type i = 1; i < cmd.size(); i++)
+            {
+              I(cmd[i]().find(app.opts.args[0]()) == 0);
+              app.opts.args.erase(app.opts.args.begin());
+            }
+
 
           if (workspace::found)
             {
