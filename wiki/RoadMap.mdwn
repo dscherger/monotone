@@ -10,7 +10,7 @@ Extended selectors | [[MagicSelectors]] | `nvm.extended-selectors` | in developm
 netsync --anonymous | n/a | `nvm.bugfest-2010.28805-rlevitte` | in development |
 Fix `rename foo foo` | n/a | `nvm.bugfest-2010.29484-rlevitte` | in development |
 `kill_certs_locally` | n/a | `nvm.kill_certs_locally` | in development |
-Overwritable, negatable options | n/a | n/a | not started |
+Overwritable, negatable options | [[OverwritableNegatableOptions]] | n/a | not started |
 Fix mtn:// sync | n/a | `nvm.connection_info_cleanup`  | in development |
 Branch name deprecation | [monotone-devel](http://article.gmane.org/gmane.comp.version-control.monotone.devel/17117/match=netsync+connection+info+cleanup) | n/a | not started |
 """ ]]
@@ -43,7 +43,7 @@ Let die-die-die die | n/a | n/a | not started | Yes - revision format change |
 'mountpoint'  node type | n/a | n/a | not started | Yes - revision format change |
 Command naming cleanup | n/a | n/a | not started | Probably - if sufficiently extensive, or it touches the automate commands |
 Netsync preview | n/a | n/a | not started | No - I don't think this would need any on-the-wire changes at all |
-Update conflict handling | n/a | n/a | not started | ??? |
+Update conflict handling | UpdateConflicts | n/a | not started | No |
 Allow `-` and `_` interchangeably in commands and options | n/a | n/a | not started | No |
 """ ]]
 

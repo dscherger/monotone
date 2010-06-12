@@ -138,8 +138,9 @@ Whether or not you use a separate branch, a graph visualisation tool (like monot
 can be **very** helpful to look at diffs along each side, 
 pick useful nodes to zipper together, and follow your progress.
 
-A good interactive merge assistance tool is also invaluable for 
-each of the small merges. 
+A good interactive merge assistance tool is also invaluable for each
+of the small merges. Alternately, 'mtn conflicts' can be used to
+resolve conflicts non-interactively.
 
 See [[InterfacesFrontendsAndTools]] for tools that can help with both.
 
@@ -151,13 +152,17 @@ There is another style of merging under development that will allow
 a different approach to the same problem. This is known as a workspace merge, or [[MergeViaWorkingDir]]
 and is a different user interface to the underlying merge algorithms.
 
-Zipper Merge has the advantage of being available now. But even when we 
-have a WorkspaceMerge, the Zipper Merge usage pattern will retain its other advantages. Whichever user interface you prefer, large merges will probably still be best handled in this progressive
+Zipper Merge has the advantage of being available now. But even when
+we have a WorkspaceMerge, the Zipper Merge usage pattern will retain
+its other advantages. Whichever user interface you prefer, large
+merges will probably still be best handled in this progressive
 incremental style within the DAG structure.
 
-Enhancements could be made to add a reasonable amount of smarts
-in the tool to support a zipper_merge workflow or commmand - for
-example, helping to automate the process of picking intermediate nodes to merge, rather than using manual inspection of the tree with a viualisation tool. When a conflict is detected, monotone could find the nodes that
-introduced the conflict higher up the tree, rather than trying to
-merge the current heads that have inherited this conflict as well as
-others.
+Enhancements could be made to add a reasonable amount of smarts in the
+tool to support a zipper_merge workflow or commmand - for example,
+helping to automate the process of picking intermediate nodes to
+merge, rather than using manual inspection of the tree with a
+viualisation tool. When a conflict is detected, monotone could find
+the nodes that introduced the conflict higher up the tree, rather than
+trying to merge the current heads that have inherited this conflict as
+well as others.

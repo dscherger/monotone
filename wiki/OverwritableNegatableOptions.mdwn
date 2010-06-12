@@ -1,0 +1,30 @@
+Implement --no- for all Boolean options (by an automatic mechanism,
+not manually). Allow options specified on the command line to override
+options specified in hooks or _MTN/options, or earlier in the command
+line.
+
+For example, given the options '--foo --no-foo --foo', '--foo' is used
+for the command.
+
+One motivation for this is to allow users to set their preferred
+default options in a hook, and then easily override them as needed.
+That makes it less significant what mtn sets as the default.
+
+For example (taken from [bug 17878]
+(https://savannah.nongnu.org/bugs/?func=detailitem&item_id=17878#options),
+[monotone-devel](http://lists.nongnu.org/archive/html/monotone-devel/2010-05/msg00118.html)),
+many commands (approve, disapprove, pull, merge, etc) take an option
+"--update", that updates the current workspace. If you always want
+this behavior, you can define the get_default_command_options(cmd)
+hook in your monotonerc. However, you then have no way to disable that
+behavior for a particular command; you can't specify --no-update.
+
+There is --no-workspace, but that's not the exact negation of
+--update; it has other effects (you need to specify the db and branch,
+for example).
+
+Another example: [monotone-devel]
+(http://lists.nongnu.org/archive/html/monotone-devel/2010-05/msg00138.html)
+'mtn add' is non-recursive by default but allows for --recursive. If
+you put this in get_default_command_options(cmd), there is no way to
+override it.

@@ -1,0 +1,18 @@
+Improve the way workspace conflicts that occur during Update are
+handled.
+
+Previous approaches have involved interactive solutions (pop up an
+external file merger), or adding conflicting files in the
+workspace ([[ConflictFixupPolicy]], [[MergeViaWorkingDir]]), to be
+cleaned up by the user later.
+
+Here we propose a different approach, extending 'mtn conflicts' to
+handle workspace conflicts.
+
+The process is to first identify all conflicts in a proposed update,
+and then provide a mechanism to specify resolutions for each of them.
+After all resolutions are specified, the update can take place.
+
+see also [[WorkspaceConflicts]]
+see also [[NonMergeConflicts]]
+
