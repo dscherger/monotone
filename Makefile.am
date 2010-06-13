@@ -211,7 +211,8 @@ unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
 	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
 
 tester_SOURCES = tester.cc transforms.cc gzip.cc \
-	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc
+	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc \
+	specialized_lexical_cast.cc
 nodist_tester_SOURCES = testlib.cc
 
 txt2c_SOURCES = txt2c.cc
