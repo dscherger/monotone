@@ -78,7 +78,7 @@ namespace option {
   };
 
   // Split a "long,s" option name into long and short names.
-  void splitname(char const * from, std::string & name, std::string & n);
+  void splitname(char const * from, std::string & name, std::string & n, std::string & cancelname);
 
   // An option that can be set and reset.
   struct concrete_option
@@ -86,6 +86,7 @@ namespace option {
     char const * description;
     std::string longname;
     std::string shortname;
+    std::string cancelname;
     bool has_arg;
     boost::function<void (std::string)> setter;
     boost::function<void ()> resetter;
@@ -246,7 +247,7 @@ namespace option {
     {
       concrete_option out;
       out.description = description;
-      splitname(names, out.longname, out.shortname);
+      splitname(names, out.longname, out.shortname, out.cancelname);
       out.has_arg = has_arg;
 
       if (setter)
