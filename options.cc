@@ -42,8 +42,8 @@ options::children()
       val[&options::opts::all_options].insert(&options::opts::name);
 #     define OPTVAR(optset, type, name, default_)
 #     define OPTION(optset, name, hasarg, optstring, description) \
-      val[&options::opts:: optset].insert(&options::opts:: name); \
-      val[&options::opts::all_options].insert(&options::opts::name);
+      val[&options::opts:: optset].insert(&options::opts:: name ## _opt); \
+      val[&options::opts::all_options].insert(&options::opts::name ## _opt);
 #     define OPTSET_REL(parent, child) \
       val[&options::opts:: parent].insert(&options::opts:: child);
 
@@ -179,7 +179,7 @@ options::options_type const & options::opts::all_options()
   }
 
 # define OPTION(optset, name, hasarg, optstring, description)           \
-  options::options_type const & options::opts::name()                   \
+  options::options_type const & options::opts::name ## _opt()           \
   {                                                                     \
     static options::options_type val(optstring,                         \
                                      description, hasarg,               \
@@ -190,7 +190,7 @@ options::options_type const & options::opts::all_options()
   void options::reset_opt_ ## name ()                                   \
   {                                                                     \
     name ## _given = false;                                             \
-    reset_optset(&opts:: name);                                         \
+    reset_optset(&opts:: optset);                                       \
   }                                                                     \
   void options::set_ ## name (std::string arg)                          \
   {                                                                     \

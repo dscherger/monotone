@@ -553,7 +553,7 @@ CMD(pull, "pull", "", CMD_REF(network),
        "from the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::maybe_auto_update)
+    options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -600,7 +600,7 @@ CMD(sync, "sync", "", CMD_REF(network),
        "with the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::key_to_push | options::opts::maybe_auto_update)
+    options::opts::key_to_push | options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -831,8 +831,8 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                  "",
                  options::opts::max_netsync_version |
                  options::opts::min_netsync_version |
-                 options::opts::bind | options::opts::pidfile |
-                 options::opts::bind_stdio | options::opts::no_transport_auth)
+                 options::opts::pidfile |
+                 options::opts::bind_opts)
 {
   if (!args.empty())
     throw usage(execid);

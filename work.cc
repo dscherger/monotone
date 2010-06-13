@@ -584,7 +584,7 @@ workspace::get_options(options & opts)
   if (!opts.key_dir_given && !opts.conf_dir_given && cur_opts.key_dir_given)
     { // if empty/missing, we want to keep the default
       opts.key_dir = cur_opts.key_dir;
-      opts.key_dir_given = true;
+      //opts.key_dir_given = true;
     }
 
   if (opts.branch().empty() && cur_opts.branch_given)
