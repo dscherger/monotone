@@ -497,7 +497,7 @@ GLOBAL_SIMPLE_OPTION(non_interactive, "non-interactive/interactive", bool,
 
 OPTSET(key)
 OPTVAR(key, external_key_name, signing_key, )
-OPTION(globals, key, true, "key,k",
+OPTION(globals, key, true, "key,k/use-default-key",
        gettext_noop("sets the key for signatures, using either the key "
                     "name or the key hash"))
 #ifdef option_bodies
