@@ -109,6 +109,36 @@ void automate_session::write_automate_packet_cmd(char stream,
   write_netcmd(net_cmd);
 }
 
+
+// lambda expressions would be really nice right about now
+// even the ability to use local classes as template arguments would help
+class remote_stdio_pre_fn {
+  app_state & app;
+  key_identity_info const & remote_identity;
+  vector<string> const & cmdline;
+  vector<pair<string,string> > const & params;
+public:
+  remote_stdio_pre_fn(app_state & app, key_identity_info const & ri,
+                      vector<string> const & c,
+                      vector<pair<string,string> > const & p)
+    : app(app), remote_identity(ri), cmdline(c), params(p)
+  { }
+  void operator()() {
+    E(app.lua.hook_get_remote_automate_permitted(remote_identity,
+                                                 cmdline, params),
+      origin::user,
+      F("Sorry, you aren't allowed to do that."));
+  }
+};
+class remote_stdio_log_fn {
+  string peer;
+public:
+  remote_stdio_log_fn(string const & p) : peer(p) { }
+  void operator()(commands::command_id const & id) {
+    L(FL("Executing %s for remote peer %s")
+      % join_words(id) % peer);
+  }
+};
 bool automate_session::do_work(transaction_guard & guard,
                                netcmd const * const cmd_in)
 {
@@ -139,10 +169,6 @@ bool automate_session::do_work(transaction_guard & guard,
       }
     case automate_command_cmd:
       {
-        // disable user prompts, f.e. for password decryption
-        app.opts.non_interactive = true;
-        options original_opts = app.opts;
-
         vector<pair<string, string> > params;
         vector<string> cmdline;
         cmd_in->read_automate_command_cmd(cmdline, params);
@@ -150,77 +176,21 @@ bool automate_session::do_work(transaction_guard & guard,
 
         global_sanity.set_out_of_band_handler(&out_of_band_to_netcmd, this);
 
-        automate const * acmd = 0;
-        command_id id;
-
         ostringstream oss;
-        int  errcode = 0;
 
-        // FIXME: what follows is largely duplicated
-        // in cmd_automate.cc::CMD(stdio)
-        //
-        // stdio decoding errors should be noted with errno 1,
-        // errno 2 is reserved for errors from the commands itself
-        try
-          {
-            E(app.lua.hook_get_remote_automate_permitted(remote_identity,
-                                                         cmdline,
-                                                         params),
-              origin::user,
-              F("Sorry, you aren't allowed to do that."));
-
-            commands::automate_stdio_shared_setup(app, cmdline, params,
-                                                  id, acmd);
-
-            L(FL("Executing %s for remote peer %s")
-              % join_words(id) % get_peer());
-          }
-        // FIXME: we need to re-package and rethrow this special exception
-        // since it is not based on informative_failure
-        catch (option::option_error & e)
-          {
-            errcode = 1;
-            write_automate_packet_cmd('e', e.what());
-          }
-        catch (recoverable_failure & f)
-          {
-             errcode = 1;
-             write_automate_packet_cmd('e', f.what());
-          }
-
-        if (errcode == 0)
-          {
-            try
-              {
-                // as soon as a command requires a workspace, this is set to true
-                workspace::used = false;
-
-                acmd->exec_from_automate(app, id, app.opts.args, oss);
-
-                // usually, if a command succeeds, any of its workspace-relevant
-                // options are saved back to _MTN/options, this shouldn't be
-                // any different here
-                workspace::maybe_set_options(app.opts, app.lua);
-              }
-            catch (recoverable_failure & f)
-              {
-                errcode = 2;
-                write_automate_packet_cmd('e', f.what());
-              }
-
-            // restore app.opts
-            app.opts = original_opts;
-          }
-
+        pair<int, string> err
+          = commands::automate_stdio_shared_body(app, cmdline, params, oss,
+                                                 remote_stdio_pre_fn(app, remote_identity, cmdline, params),
+                                                 remote_stdio_log_fn(get_peer()));
+        if (err.first != 0)
+          write_automate_packet_cmd('e', err.second);
         if (!oss.str().empty())
           write_automate_packet_cmd('m', oss.str());
-
-        write_automate_packet_cmd('l', lexical_cast<string>(errcode));
+        write_automate_packet_cmd('l', lexical_cast<string>(err.first));
 
         global_sanity.set_out_of_band_handler();
 
         return true;
-
       }
     case automate_packet_cmd:
       {

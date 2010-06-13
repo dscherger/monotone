@@ -203,6 +203,24 @@ static void out_of_band_to_automate_streambuf(char channel, std::string const& t
 // Error conditions: Errors encountered by the commands run only set
 //   the error code in the output for that command. Malformed input
 //   results in exit with a non-zero return value and an error message.
+
+class done_reading_input {};
+// lambda expressions would be really nice right about now
+// even the ability to use local classes as template arguments would help
+class local_stdio_pre_fn {
+  automate_reader & ar;
+  vector<string> & cmdline;
+  vector<pair<string,string> > & params;
+public:
+  local_stdio_pre_fn(automate_reader & a, vector<string> & c,
+                     vector<pair<string,string> > & p)
+    : ar(a), cmdline(c), params(p)
+  { }
+  void operator()() {
+    if (!ar.get_command(params, cmdline))
+      throw done_reading_input();
+  }
+};
 CMD_AUTOMATE_NO_STDIO(stdio, "",
                       N_("Automates several commands in one run"),
                       "",
@@ -217,10 +235,6 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
   // immediately if a version discrepancy exists
   db.ensure_open();
 
-  // disable user prompts, f.e. for password decryption
-  app.opts.non_interactive = true;
-  options original_opts = app.opts;
-
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);
 
@@ -234,61 +248,24 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
 
   while (true)
     {
-      automate const * acmd = 0;
-      command_id id;
-
-      // this should match what's in network/automate_session.cc::do_work()
-      //
-      // stdio decoding errors should be noted with errno 1,
-      // errno 2 is reserved for errors from the commands itself
       try
         {
-          if (!ar.get_command(params, cmdline))
-            break;
-
-          commands::automate_stdio_shared_setup(app, cmdline, params,
-                                                id, acmd);
+          pair<int, string> err
+            = commands::automate_stdio_shared_body(app, cmdline, params, os,
+                                                   local_stdio_pre_fn(ar, cmdline, params),
+                                                   boost::function<void(command_id const &)>());
+          if (err.first != 0)
+            os.write_out_of_band('e', err.second);
+          os.end_cmd(err.first);
+          if (err.first == 1)
+            ar.reset();
         }
-      // FIXME: we need to re-package and rethrow this special exception
-      // since it is not based on informative_failure
-      catch (option::option_error & e)
+      catch (done_reading_input)
         {
-          os.write_out_of_band('e', e.what());
-          os.end_cmd(1);
-          ar.reset();
-          continue;
+          break;
         }
-      catch (recoverable_failure & f)
-        {
-          os.write_out_of_band('e', f.what());
-          os.end_cmd(1);
-          ar.reset();
-          continue;
-        }
-
-      try
-        {
-          // as soon as a command requires a workspace, this is set to true
-          workspace::used = false;
-
-          acmd->exec_from_automate(app, id, app.opts.args, os);
-          os.end_cmd(0);
-
-          // usually, if a command succeeds, any of its workspace-relevant
-          // options are saved back to _MTN/options, this shouldn't be
-          // any different here
-          workspace::maybe_set_options(app.opts, app.lua);
-        }
-      catch (recoverable_failure & f)
-        {
-          os.write_out_of_band('e', f.what());
-          os.end_cmd(2);
-        }
-
-      // restore app.opts
-      app.opts = original_opts;
     }
-    global_sanity.set_out_of_band_handler();
+  global_sanity.set_out_of_band_handler();
 }
 
 LUAEXT(change_workspace, )

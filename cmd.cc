@@ -27,6 +27,7 @@
 using std::string;
 using std::vector;
 using std::ostream;
+using std::make_pair;
 using std::set;
 
 //
@@ -229,6 +230,54 @@ namespace commands {
     // set a fixed ticker type regardless what the user wants to
     // see, because anything else would screw the stdio-encoded output
     ui.set_tick_write_stdio();
+  }
+
+  std::pair<int, string>
+  automate_stdio_shared_body(app_state & app,
+                             std::vector<std::string> const & cmdline,
+                             std::vector<std::pair<std::string,std::string> >
+                             const & params,
+                             std::ostream & os,
+                             boost::function<void()> init_fn,
+                             boost::function<void(command_id const &)> pre_exec_fn)
+  {
+    options original_opts = app.opts;
+    automate const * acmd = 0;
+    command_id id;
+    try
+      {
+        if (init_fn)
+          init_fn();
+        commands::automate_stdio_shared_setup(app, cmdline, params, id, acmd);
+      }
+    catch (option::option_error & e)
+      {
+        return make_pair(1, e.what());
+      }
+    catch (recoverable_failure & f)
+      {
+        return make_pair(1, f.what());
+      }
+    if (pre_exec_fn)
+      pre_exec_fn(id);
+    try
+      {
+        // as soon as a command requires a workspace, this is set to true
+        workspace::used = false;
+
+        acmd->exec_from_automate(app, id, app.opts.args, os);
+
+        // usually, if a command succeeds, any of its workspace-relevant
+        // options are saved back to _MTN/options, this shouldn't be
+        // any different here
+        workspace::maybe_set_options(app.opts, app.lua);
+      }
+    catch (recoverable_failure & f)
+      {
+        return make_pair(2, f.what());
+      }
+    app.opts = original_opts;
+    return make_pair(0, string());
   }
 
   // monotone.cc calls this function after option processing.
