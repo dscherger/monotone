@@ -386,11 +386,7 @@ building and installation process for monotone
     be free to share it with others or make changes and submit them to
     us:
 
-        mtn --db=mt.mtn db init
-
-        mtn --db=mt.mtn pull monotone.ca net.venge.monotone
-
-        mtn --db=mt.mtn --branch=net.venge.monotone checkout monotone-sources
+        mtn clone monotone.ca net.venge.monotone
 
 5. upgrading
 

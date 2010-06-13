@@ -32,7 +32,6 @@ null_node(node_id n)
   return n == the_null_node;
 }
 
-template <> void dump(node_id const & val, std::string & out);
 template <> void dump(attr_map_t const & val, std::string & out);
 
 enum roster_node_type { node_type_none, node_type_file, node_type_dir };
