@@ -226,6 +226,10 @@ cpp_main(int argc, char ** argv)
             app.lua.hook_get_default_command_options(cmd_id,
                                                      app.reset_info.default_args);
 
+          if (app.opts.log_given)
+            {
+              ui.redirect_log_to(app.opts.log);
+            }
           if (app.opts.dump_given)
             {
               global_sanity.set_dump_path(app.opts.dump.as_external());

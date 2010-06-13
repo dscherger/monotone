@@ -532,12 +532,7 @@ OPT(last, "last", long, -1,
 }
 #endif
 
-OPTION(globals, log, true, "log", gettext_noop("file to write the log to"))
-#ifdef option_bodies
-{
-  ui.redirect_log_to(system_path(arg, origin::user));
-}
-#endif
+GLOBAL_SIMPLE_OPTION(log, "log", system_path, gettext_noop("file to write the log to"))
 
 OPTSET(messages)
 OPTVAR(messages, std::vector<std::string>, message, )
