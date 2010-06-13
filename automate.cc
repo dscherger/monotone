@@ -1014,10 +1014,7 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
              "",
              options::opts::depth |
              options::opts::exclude |
-             options::opts::no_ignored |
-             options::opts::no_unknown |
-             options::opts::no_unchanged |
-             options::opts::no_corresponding_renames)
+             options::opts::automate_inventory_opts)
 {
   database db(app);
   workspace work(app);

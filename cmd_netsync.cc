@@ -831,8 +831,8 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                  "",
                  options::opts::max_netsync_version |
                  options::opts::min_netsync_version |
-                 options::opts::bind | options::opts::pidfile |
-                 options::opts::bind_stdio | options::opts::no_transport_auth)
+                 options::opts::pidfile |
+                 options::opts::bind_opts)
 {
   if (!args.empty())
     throw usage(execid);

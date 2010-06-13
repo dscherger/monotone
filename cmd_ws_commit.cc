@@ -1728,7 +1728,7 @@ void perform_commit(app_state & app,
 CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     N_("Commits workspace changes to the database"),
     "",
-    options::opts::branch | options::opts::message | options::opts::msgfile |
+    options::opts::branch | options::opts::messages |
     options::opts::date | options::opts::author | options::opts::depth |
     options::opts::exclude)
 {
@@ -1789,7 +1789,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   N_("Imports the contents of a directory into a branch"),
   "",
   options::opts::branch | options::opts::revision |
-  options::opts::message | options::opts::msgfile |
+  options::opts::messages |
   options::opts::dryrun |
   options::opts::no_ignore | options::opts::exclude |
   options::opts::author | options::opts::date)

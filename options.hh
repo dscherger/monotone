@@ -48,7 +48,7 @@ struct options
 # define OPTVAR(optset, type, name, default_)
 
 #define OPTION(optset, name, hasarg, optstring, description)     \
-    static options_type const & name ();
+    static options_type const & name ## _opt ();
 
 # define OPTSET_REL(parent, child)
 

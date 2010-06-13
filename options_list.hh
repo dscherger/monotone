@@ -49,7 +49,8 @@
 
 // This is a shortcut for an option which has its own variable and optset.
 // It will take an argument unless 'type' is 'bool'.
-#define OPT(name, string, type, default_, description)               \
+#define OPT(name, string, type, default_, description)                  \
+  OPTSET(name)                                                          \
   OPTVAR(name, type, name, default_)                                    \
   OPTION(name, name, has_arg<type >(), string, description)
 
@@ -57,8 +58,47 @@
 // 'globals' optset. These are global options, not specific to a particular
 // command.
 #define GOPT(name, string, type, default_, description)                 \
-  OPTVAR(globals, type, name, default_)                                 \
-  OPTION(globals, name, has_arg<type >(), string, description)
+  OPTSET(name)                                                          \
+  OPTSET_REL(globals, name)                                             \
+  OPTVAR(name, type, name, default_)                                    \
+  OPTION(name, name, has_arg<type >(), string, description)
+
+#ifdef option_bodies
+template<typename T>
+void set_simple_option(T & t, std::string const & arg)
+{ t = T(arg, origin::user); }
+template<typename T>
+void set_simple_option(std::vector<T> & t, std::string const & arg)
+{ t.push_back(T(arg, origin::user)); }
+template<typename T>
+void set_simple_option(std::set<T> & t, std::string const & arg)
+{ t.insert(T(arg, origin::user)); }
+template<>
+void set_simple_option(bool & t, std::string const & arg)
+{ t = true; }
+template<>
+void set_simple_option(std::string & t, std::string const & arg)
+{ t = arg; }
+template<>
+void set_simple_option(std::vector<string> & t, std::string const & arg)
+{ t.push_back(arg); }
+template<>
+void set_simple_option(std::set<string> & t, std::string const & arg)
+{ t.insert(arg); }
+# define SIMPLE_OPTION_BODY(name) { set_simple_option(name, arg); }
+#else
+# define SIMPLE_OPTION_BODY
+#endif
+#define SIMPLE_OPTION(name, optstring, type, description)               \
+  OPTSET(name)                                                          \
+  OPTVAR(name, type, name, )                                            \
+  OPTION(name, name, has_arg<type >(), optstring, description)  \
+  SIMPLE_OPTION_BODY
+
+// Like SIMPLE_OPTION, but the declared option is a member of the globals
+#define GLOBAL_SIMPLE_OPTION(name, optstring, type, description) \
+  OPTSET_REL(globals, name) \
+  SIMPLE_OPTION(name, optstring, type, description)
 
 // because 'default_' is constructor arguments, and may need to be a list
 // This doesn't work if fed through the OPT / GOPT shorthand versions
@@ -296,6 +336,8 @@ OPT(depth, "depth", long, -1,
 
 
 OPTSET(diff_options)
+OPTSET(au_diff_options)
+OPTSET_REL(diff_options, au_diff_options)
 
 OPTVAR(diff_options, std::string, external_diff_args, )
 OPTION(diff_options, external_diff_args, true, "diff-args",
@@ -306,8 +348,8 @@ OPTION(diff_options, external_diff_args, true, "diff-args",
 }
 #endif
 
-OPTVAR(diff_options, bool, reverse, false)
-OPTION(diff_options, reverse, false, "reverse",
+OPTVAR(au_diff_options, bool, reverse, false)
+OPTION(au_diff_options, reverse, false, "reverse",
         gettext_noop("reverse order of diff"))
 #ifdef option_bodies
 {
@@ -345,9 +387,9 @@ OPTION(diff_options, no_show_encloser, false, "no-show-encloser",
 }
 #endif
 
-OPTVAR(diff_options, bool, without_header, false);
-OPTVAR(diff_options, bool, with_header, false);
-OPTION(diff_options, without_header, false, "without-header",
+OPTVAR(au_diff_options, bool, without_header, false);
+OPTVAR(au_diff_options, bool, with_header, false);
+OPTION(au_diff_options, without_header, false, "without-header",
        gettext_noop("show the matching cset in the diff header"))
 #ifdef option_bodies
 {
@@ -355,7 +397,7 @@ OPTION(diff_options, without_header, false, "without-header",
   without_header = true;
 }
 #endif
-OPTION(diff_options, with_header, false, "with-header",
+OPTION(au_diff_options, with_header, false, "with-header",
        gettext_noop("do not show the matching cset in the diff header"))
 #ifdef option_bodies
 {
@@ -371,6 +413,7 @@ OPT(diffs, "diffs", bool, false, gettext_noop("print diffs along with logs"))
 }
 #endif
 
+OPTSET(drop_attr)
 OPTVAR(drop_attr, std::set<std::string>, attrs_to_drop, )
 OPTION(drop_attr, drop_attr, true, "drop-attr",
         gettext_noop("when rosterifying, drop attrs entries with the given key"))
@@ -404,6 +447,7 @@ OPTION(globals, dump, true, "dump",
 }
 #endif
 
+OPTSET(exclude)
 OPTVAR(exclude, args_vector, exclude_patterns, )
 OPTION(exclude, exclude, true, "exclude",
         gettext_noop("leave out anything described by its argument"))
@@ -484,6 +528,7 @@ OPT(show_hidden_commands, "hidden", bool, false,
 }
 #endif
 
+OPTSET(include)
 OPTVAR(include, args_vector, include_patterns, )
 OPTION(include, include, true, "include",
         gettext_noop("include anything described by its argument"))
@@ -509,6 +554,7 @@ GOPT(non_interactive, "non-interactive", bool, false,
 }
 #endif
 
+OPTSET(key)
 OPTVAR(key, external_key_name, signing_key, )
 OPTION(globals, key, true, "key,k",
        gettext_noop("sets the key for signatures, using either the key "
@@ -530,6 +576,7 @@ OPTION(globals, key_dir, true, "keydir", gettext_noop("set location of key store
 }
 #endif
 
+OPTSET(key_to_push)
 OPTVAR(key_to_push, std::vector<external_key_name>, keys_to_push, )
 OPTION(key_to_push, key_to_push, true, "key-to-push",
         gettext_noop("push the specified key even if it hasn't signed anything"))
@@ -701,6 +748,7 @@ OPT(recursive, "recursive,R", bool, false,
 }
 #endif
 
+OPTSET(revision)
 OPTVAR(revision, args_vector, revision_selectors, )
 OPTION(revision, revision, true, "revision,r",
      gettext_noop("select revision id for operation"))
@@ -945,6 +993,14 @@ OPT(export_marks, "export-marks", system_path, ,
   export_marks = system_path(arg, origin::user);
 }
 #endif
+
+// clean up after ourselves
+#undef OPT
+#undef GOPT
+#undef SIMPLE_OPTION
+#undef SIMPLE_OPTION_BODY
+#undef GLOBAL_SIMPLE_OPTION
+#undef COMMA
 
 // Local Variables:
 // mode: C++
