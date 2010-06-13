@@ -208,7 +208,7 @@ SIMPLE_OPTION(remote_stdio_host, "remote-stdio-host", utf8,
 
 SIMPLE_OPTION(branch, "branch,b", branch_name, gettext_noop("select branch cert for operation"))
 
-SIMPLE_OPTION(brief, "brief", bool, gettext_noop("print a brief version of the normal output"))
+SIMPLE_OPTION(brief, "brief/no-brief", bool, gettext_noop("print a brief version of the normal output"))
 
 OPT(revs_only, "revs-only", bool, false,
      gettext_noop("annotate using full revision ids only"))
@@ -232,7 +232,7 @@ OPTION(globals, conf_dir, true, "confdir",
 }
 #endif
 
-GLOBAL_SIMPLE_OPTION(no_default_confdir, "no-default-confdir", bool,
+GLOBAL_SIMPLE_OPTION(no_default_confdir, "no-default-confdir/allow-default-confdir", bool,
                      gettext_noop("forbid use of the default confdir"))
 
 OPT(date, "date", date_t, ,
@@ -250,7 +250,7 @@ OPT(date, "date", date_t, ,
 }
 #endif
 
-GLOBAL_SIMPLE_OPTION(date_fmt, "date-format", std::string,
+GLOBAL_SIMPLE_OPTION(date_fmt, "date-format/default-date-format", std::string,
                      gettext_noop("strftime(3) format specification for printing dates"))
 
 GOPT(format_dates, "no-format-dates", bool, true,
@@ -470,10 +470,10 @@ OPTION(include, include, true, "include",
 }
 #endif
 
-GLOBAL_SIMPLE_OPTION(ignore_suspend_certs, "ignore-suspend-certs", bool,
+GLOBAL_SIMPLE_OPTION(ignore_suspend_certs, "ignore-suspend-certs/no-ignore-suspend-certs", bool,
                      gettext_noop("do not ignore revisions marked as suspended"))
 
-GLOBAL_SIMPLE_OPTION(non_interactive, "non-interactive", bool,
+GLOBAL_SIMPLE_OPTION(non_interactive, "non-interactive/interactive", bool,
                      gettext_noop("do not prompt the user for input"))
 
 OPTSET(key)
@@ -582,7 +582,7 @@ GLOBAL_SIMPLE_OPTION(norc, "norc/yesrc", bool,
 GLOBAL_SIMPLE_OPTION(nostd, "nostd/stdhooks", bool,
                      gettext_noop("do not load standard lua hooks"))
 
-SIMPLE_OPTION(pidfile, "pid-file", system_path,
+SIMPLE_OPTION(pidfile, "pid-file/no-pid-file", system_path,
               gettext_noop("record process id of server"))
 
 GOPT(quiet, "quiet", bool, false,
@@ -633,10 +633,10 @@ OPTION(revision, revision, true, "revision,r",
 GLOBAL_SIMPLE_OPTION(root, "root", std::string,
                      gettext_noop("limit search for workspace to specified root"))
 
-GLOBAL_SIMPLE_OPTION(no_workspace, "no-workspace", bool,
+GLOBAL_SIMPLE_OPTION(no_workspace, "no-workspace/allow-workspace", bool,
                      gettext_noop("don't look for a workspace"))
 
-SIMPLE_OPTION(set_default, "set-default", bool,
+SIMPLE_OPTION(set_default, "set-default/no-set-default", bool,
               gettext_noop("use the current netsync arguments and options "
                            "as the future default"))
 
@@ -656,16 +656,16 @@ GOPT(ticker, "ticker", std::string, ,
 }
 #endif
 
-SIMPLE_OPTION(from, "from", args_vector,
+SIMPLE_OPTION(from, "from/clear-from", args_vector,
               gettext_noop("revision(s) to start logging at"))
 
-SIMPLE_OPTION(to, "to", args_vector,
+SIMPLE_OPTION(to, "to/clear-to", args_vector,
               gettext_noop("revision(s) to stop logging at"))
 
 SIMPLE_OPTION(unknown, "unknown", bool,
               gettext_noop("perform the operations for unknown files from workspace"))
 
-SIMPLE_OPTION(verbose, "verbose", bool,
+SIMPLE_OPTION(verbose, "verbose/no-verbose", bool,
               gettext_noop("verbose completion output"))
 
 GLOBAL_SIMPLE_OPTION(version, "version", bool,
@@ -774,10 +774,10 @@ OPT(refs, "refs", std::set<std::string>, ,
 }
 #endif
 
-SIMPLE_OPTION(log_revids, "log-revids", bool,
+SIMPLE_OPTION(log_revids, "log-revids/no-log-revids", bool,
               gettext_noop("include revision ids in commit logs"))
 
-SIMPLE_OPTION(log_certs, "log-certs", bool,
+SIMPLE_OPTION(log_certs, "log-certs/no-log-certs", bool,
               gettext_noop("include standard cert values in commit logs"))
 
 SIMPLE_OPTION(import_marks, "import-marks", system_path,
