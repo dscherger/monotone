@@ -6,7 +6,7 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
     <div class="boxes">
         <div class="box box-small">
             <h1 class="getit">Get it here</h1>
-            <p>Latest version: <strong>0.47</strong></p>
+            <p>Latest version: <strong>0.48</strong></p>
             <ul>
                 <li>Check the <b><a href="NEWS">NEWS</a></b></li>
                 <li>Need to <a href="UPGRADE">UPGRADE</a>?</li>
