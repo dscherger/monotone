@@ -466,8 +466,6 @@ SIMPLE_OPTION(force_duplicate_key, "force-duplicate-key", bool,
               gettext_noop("force genkey to not error out when the named key "
                            "already exists"))
 
-SIMPLE_OPTION(full, "full", bool,
-              gettext_noop("print detailed information"))
 
 GLOBAL_SIMPLE_OPTION(help, "help,h", bool, gettext_noop("display help message"))
 
@@ -616,11 +614,33 @@ OPTION(verbosity, inc_verbosity, false, "v",
 }
 #endif
 
+OPTSET(full)
+OPTION(full, full, false, "full",
+       gettext_noop("print detailed information"))
+#ifdef option_bodies
+{
+  if (verbosity < 1)
+    verbosity = 1;
+}
+#endif
+
+OPTSET(verbose)
+OPTSET_REL(verbosity, verbose)
+OPTION(verbose, verbose, false, "verbose/no-verbose",
+       gettext_noop("verbose completion output"))
+#ifdef option_bodies
+{
+  if (verbosity < 1)
+    verbosity = 1;
+}
+#endif
+
 OPTION(verbosity, quiet, false, "quiet",
      gettext_noop("suppress verbose, informational and progress messages"))
 #ifdef option_bodies
 {
-  verbosity = -1;
+  if (verbosity > -1)
+    verbosity = -1;
 }
 #endif
 
@@ -683,9 +703,6 @@ SIMPLE_OPTION(to, "to/clear-to", args_vector,
 
 SIMPLE_OPTION(unknown, "unknown", bool,
               gettext_noop("perform the operations for unknown files from workspace"))
-
-SIMPLE_OPTION(verbose, "verbose/no-verbose", bool,
-              gettext_noop("verbose completion output"))
 
 GLOBAL_SIMPLE_OPTION(version, "version", bool,
                      gettext_noop("print version number, then exit"))

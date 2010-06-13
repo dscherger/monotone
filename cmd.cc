@@ -514,7 +514,7 @@ CMD_NO_WORKSPACE(version, "version", "", CMD_REF(informative), "",
   E(args.empty(), origin::user,
     F("no arguments allowed"));
 
-  if (app.opts.full)
+  if (global_sanity.get_verbosity() > 0)
     print_full_version();
   else
     print_version();

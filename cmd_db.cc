@@ -61,7 +61,7 @@ CMD(db_info, "info", "", CMD_REF(db), "",
     F("no arguments needed"));
 
   database db(app);
-  db.info(cout, app.opts.full);
+  db.info(cout, global_sanity.get_verbosity() > 0);
 }
 
 CMD(db_version, "version", "", CMD_REF(db), "",
@@ -501,7 +501,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
   database db(app);
   project_t project(db);
 
-  bool verbose = app.opts.verbose;
+  bool verbose = global_sanity.get_verbosity() > 0;
 
   E(idx(args, 1)().find_first_not_of("abcdef0123456789") == string::npos,
     origin::user,
