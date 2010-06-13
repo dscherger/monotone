@@ -576,7 +576,7 @@ SIMPLE_OPTION(no_ignore, "no-respect-ignore", bool,
 SIMPLE_OPTION(no_merges, "no-merges", bool,
               gettext_noop("exclude merges when printing logs"))
 
-GLOBAL_SIMPLE_OPTION(norc, "norc", bool,
+GLOBAL_SIMPLE_OPTION(norc, "norc/yesrc", bool,
                      gettext_noop("do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"))
 
 GLOBAL_SIMPLE_OPTION(nostd, "nostd", bool,

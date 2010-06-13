@@ -190,7 +190,7 @@ options::options_type const & options::opts::all_options()
   void options::reset_opt_ ## name ()                                   \
   {                                                                     \
     name ## _given = false;                                             \
-    reset_optset(&opts:: name ## _opt);                                 \
+    reset_optset(&opts:: optset);                                       \
   }                                                                     \
   void options::set_ ## name (std::string arg)                          \
   {                                                                     \
