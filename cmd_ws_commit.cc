@@ -578,7 +578,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
     N_("Disapproves a particular revision"),
     "",
     options::opts::branch | options::opts::messages | options::opts::date |
-    options::opts::author | options::opts::maybe_auto_update)
+    options::opts::author | options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);

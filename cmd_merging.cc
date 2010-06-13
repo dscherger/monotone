@@ -497,7 +497,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     "",
     options::opts::branch | options::opts::date | options::opts::author |
     options::opts::messages | options::opts::resolve_conflicts_opts |
-    options::opts::maybe_auto_update)
+    options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -769,7 +769,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
     N_("Merges one branch into a subdirectory in another branch"),
     "",
     options::opts::date | options::opts::author | options::opts::messages |
-    options::opts::resolve_conflicts_opts | options::opts::maybe_auto_update)
+    options::opts::resolve_conflicts_opts | options::opts::auto_update)
 {
   perform_merge_into_dir(app, execid, args);
 }
@@ -898,7 +898,7 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
        "DEST-BRANCH."),
     options::opts::date | options::opts::author |
     options::opts::messages | options::opts::resolve_conflicts_opts |
-    options::opts::maybe_auto_update)
+    options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
