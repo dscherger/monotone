@@ -279,11 +279,11 @@ get_by_name(std::set<concrete_option> const & options)
        i != options.end(); ++i)
     {
       if (!i->longname.empty())
-        by_name.insert(make_pair(i->longname, *i));
+        I(by_name.insert(make_pair(i->longname, *i)).second);
       if (!i->shortname.empty())
-        by_name.insert(make_pair(i->shortname, *i));
+        I(by_name.insert(make_pair(i->shortname, *i)).second);
       if (!i->cancelname.empty())
-        by_name.insert(make_pair(i->cancelname, *i));
+        I(by_name.insert(make_pair(i->cancelname, *i)).second);
     }
   return by_name;
 }
@@ -465,6 +465,9 @@ static string usagestr(concrete_option const & opt)
   if (out.empty())
     return out;
 
+  if (opt.has_arg)
+    out += " <arg>";
+
   if (!opt.cancelname.empty())
     {
       if (!out.empty())
@@ -472,10 +475,7 @@ static string usagestr(concrete_option const & opt)
       out += "--" + opt.cancelname;
     }
 
-  if (opt.has_arg)
-    return out + " <arg>";
-  else
-    return out;
+  return out;
 }
 
 void

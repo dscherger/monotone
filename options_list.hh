@@ -378,7 +378,7 @@ OPTION(au_diff_options, with_header, false, "with-header",
 }
 #endif
 
-SIMPLE_OPTION(diffs, "diffs", bool, gettext_noop("print diffs along with logs"))
+SIMPLE_OPTION(diffs, "diffs/no-diffs", bool, gettext_noop("print diffs along with logs"))
 
 OPTSET(drop_attr)
 OPTVAR(drop_attr, std::set<std::string>, attrs_to_drop, )
@@ -390,7 +390,7 @@ OPTION(drop_attr, drop_attr, true, "drop-attr",
 }
 #endif
 
-SIMPLE_OPTION(dryrun, "dry-run", bool,
+SIMPLE_OPTION(dryrun, "dry-run/no-dry-run", bool,
               gettext_noop("don't perform the operation, just show what would have happened"))
 
 SIMPLE_OPTION(drop_bad_certs, "drop-bad-certs", bool,
@@ -457,7 +457,7 @@ SIMPLE_OPTION(full, "full", bool,
 
 GLOBAL_SIMPLE_OPTION(help, "help,h", bool, gettext_noop("display help message"))
 
-SIMPLE_OPTION(show_hidden_commands, "hidden", bool,
+SIMPLE_OPTION(show_hidden_commands, "hidden/no-hidden", bool,
               gettext_noop("show hidden commands"))
 
 OPTSET(include)
@@ -564,22 +564,22 @@ OPT(next, "next", long, -1,
 }
 #endif
 
-SIMPLE_OPTION(no_files, "no-files", bool,
+SIMPLE_OPTION(no_files, "no-files/files", bool,
               gettext_noop("exclude files when printing logs"))
 
-SIMPLE_OPTION(no_graph, "no-graph", bool,
+SIMPLE_OPTION(no_graph, "no-graph/graph", bool,
               gettext_noop("do not use ASCII graph to display ancestry"))
 
-SIMPLE_OPTION(no_ignore, "no-respect-ignore", bool,
+SIMPLE_OPTION(no_ignore, "no-respect-ignore/respect-ignore", bool,
               gettext_noop("do not ignore any files"))
 
-SIMPLE_OPTION(no_merges, "no-merges", bool,
+SIMPLE_OPTION(no_merges, "no-merges/merges", bool,
               gettext_noop("exclude merges when printing logs"))
 
 GLOBAL_SIMPLE_OPTION(norc, "norc/yesrc", bool,
                      gettext_noop("do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"))
 
-GLOBAL_SIMPLE_OPTION(nostd, "nostd", bool,
+GLOBAL_SIMPLE_OPTION(nostd, "nostd/stdhooks", bool,
                      gettext_noop("do not load standard lua hooks"))
 
 SIMPLE_OPTION(pidfile, "pid-file", system_path,
@@ -595,7 +595,7 @@ GOPT(quiet, "quiet", bool, false,
 }
 #endif
 
-GLOBAL_SIMPLE_OPTION(extra_rcfiles, "rcfile", args_vector,
+GLOBAL_SIMPLE_OPTION(extra_rcfiles, "rcfile/clear-rcfiles", args_vector,
                      gettext_noop("load extra rc file"))
 
 GOPT(reallyquiet, "reallyquiet", bool, false,
@@ -617,7 +617,7 @@ GOPT(timestamps, "timestamps", bool, false,
 }
 #endif
 
-SIMPLE_OPTION(recursive, "recursive,R", bool,
+SIMPLE_OPTION(recursive, "recursive,R/no-recursive", bool,
               gettext_noop("also operate on the contents of any listed directories"))
 
 OPTSET(revision)
