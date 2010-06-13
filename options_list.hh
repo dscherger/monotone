@@ -415,13 +415,8 @@ SIMPLE_OPTION(dryrun, "dry-run/no-dry-run", bool,
 SIMPLE_OPTION(drop_bad_certs, "drop-bad-certs", bool,
               gettext_noop("drop certs signed by keys we don't know about"))
 
-OPTION(globals, dump, true, "dump",
+GLOBAL_SIMPLE_OPTION(dump, "dump", system_path,
         gettext_noop("file to dump debugging log to, on failure"))
-#ifdef option_bodies
-{
-  global_sanity.set_dump_path(system_path(arg, origin::user).as_external());
-}
-#endif
 
 OPTSET(exclude)
 OPTVAR(exclude, args_vector, exclude_patterns, )

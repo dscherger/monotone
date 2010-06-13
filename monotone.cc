@@ -226,7 +226,11 @@ cpp_main(int argc, char ** argv)
             app.lua.hook_get_default_command_options(cmd_id,
                                                      app.reset_info.default_args);
 
-          if (workspace::found)
+          if (app.opts.dump_given)
+            {
+              global_sanity.set_dump_path(app.opts.dump.as_external());
+            }
+          else if (workspace::found)
             {
               bookkeeping_path dump_path;
               workspace::get_local_dump_path(dump_path);
