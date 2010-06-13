@@ -3,7 +3,7 @@
 <title>Network Service Revisited - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Tutorial.html#Tutorial" title="Tutorial">
 <link rel="prev" href="Branching-and-Merging.html#Branching-and-Merging" title="Branching and Merging">
@@ -23,8 +23,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Network-Service-Revisited"></a>
+<p>
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Branching-and-Merging.html#Branching-and-Merging">Branching and Merging</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
 <hr>
@@ -125,7 +125,7 @@ the beta-testers, Jim wants to allow them read-only access just to the
 main JuiceBot 7 development line, but not to any of the sub-branches
 where other experimental development is going on. He adds some lines at
 the top of the <samp><span class="file">~/.monotone/read-permissions</span></samp> on the server, above
-the broader permissions given to team-members. See the <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a> for <code>get_netsync_read_permitted</code> for more details; the
+the broader permissions given to team-members. See the <a href="Lua-Reference.html#Lua-Reference">Lua Reference</a> for <code>get_netsync_read_permitted</code> for more details; the
 resulting file looks like this:
 
 <pre class="smallexample">comment "Provide beta-testers with specific read-only access"

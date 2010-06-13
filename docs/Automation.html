@@ -3,7 +3,7 @@
 <title>Automation - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
 <link rel="prev" href="Database.html#Database" title="Database">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Automation"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="RCS.html#RCS">RCS</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Database.html#Database">Database</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
@@ -40,7 +40,7 @@ also give useful chatter on <code>stderr</code>, including warnings and error
 messages.
 
      <dl>
-<dt><samp><span class="command">mtn automate interface_version</span></samp><a name="index-mtn-automate-interface_005fversion-162"></a><dd>
+<dt><samp><span class="command">mtn automate interface_version</span></samp><a name="index-mtn-automate-interface_005fversion-166"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -55,8 +55,7 @@ command; minor number increments whenever any change is made (but is
 reset when major number increments).
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          1.2
+<pre class="verbatim">          1.2
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -69,7 +68,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate heads [</span><var>branch</var><span class="command">]</span></samp><a name="index-mtn-automate-heads-_005b_0040var_007bbranch_007d_005d-163"></a><dd>
+     <br><dt><samp><span class="command">mtn automate heads [</span><var>branch</var><span class="command">]</span></samp><a name="index-mtn-automate-heads-_005b_0040var_007bbranch_007d_005d-167"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One branch name,  <var>branch</var>. If none is given, the current default branch is used.
@@ -81,8 +80,7 @@ One branch name,  <var>branch</var>. If none is given, the current default branc
 Prints the heads of branch <var>branch</var>.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -96,7 +94,7 @@ If the given branch contains no members or does not exist, then no lines are pri
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate ancestors </span><var>rev1</var><span class="command"> [</span><var>rev2</var><span class="command"> [...]]</span></samp><a name="index-mtn-automate-ancestors-_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d-164"></a><dd>
+     <br><dt><samp><span class="command">mtn automate ancestors </span><var>rev1</var><span class="command"> [</span><var>rev2</var><span class="command"> [...]]</span></samp><a name="index-mtn-automate-ancestors-_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d-168"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more revision IDs, <var>rev1</var>, <var>rev2</var>, etc.
@@ -108,8 +106,7 @@ One or more revision IDs, <var>rev1</var>, <var>rev2</var>, etc.
 Prints the ancestors of one or more revisions.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -129,7 +126,7 @@ an error message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate common_ancestors </span><var>rev1</var><span class="command"> [</span><var>rev2</var><span class="command"> [...]]</span></samp><a name="index-mtn-automate-common_005fancestors-_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d-165"></a><dd>
+     <br><dt><samp><span class="command">mtn automate common_ancestors </span><var>rev1</var><span class="command"> [</span><var>rev2</var><span class="command"> [...]]</span></samp><a name="index-mtn-automate-common_005fancestors-_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d-169"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more revision IDs, <var>rev1</var>, <var>rev2</var>, etc.
@@ -142,8 +139,7 @@ Prints all revisions which are ancestors of all of the revisions given as
 arguments.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -162,7 +158,7 @@ an error message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate parents </span><var>rev</var></samp><a name="index-mtn-automate-parents-_0040var_007brev_007d-166"></a><dd>
+     <br><dt><samp><span class="command">mtn automate parents </span><var>rev</var></samp><a name="index-mtn-automate-parents-_0040var_007brev_007d-170"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One revision ID, <var>rev</var>.
@@ -175,8 +171,7 @@ Prints the immediate parents of a revision.  This is like a
 non-recursive version of <samp><span class="command">automate ancestors</span></samp>.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -192,7 +187,7 @@ stdout, prints an error message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate descendents </span><var>rev1</var><span class="command"> [</span><var>rev2</var><span class="command"> [...]]</span></samp><a name="index-mtn-automate-descendents-_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d-167"></a><dd>
+     <br><dt><samp><span class="command">mtn automate descendents </span><var>rev1</var><span class="command"> [</span><var>rev2</var><span class="command"> [...]]</span></samp><a name="index-mtn-automate-descendents-_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d-171"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more revision IDs, <var>rev1</var>, <var>rev2</var>, etc.
@@ -204,8 +199,7 @@ One or more revision IDs, <var>rev1</var>, <var>rev2</var>, etc.
 Prints the descendants of one or more revisions.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -225,7 +219,7 @@ an error message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate children </span><var>rev</var></samp><a name="index-mtn-automate-children-_0040var_007brev_007d-168"></a><dd>
+     <br><dt><samp><span class="command">mtn automate children </span><var>rev</var></samp><a name="index-mtn-automate-children-_0040var_007brev_007d-172"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One revision ID, <var>rev</var>.
@@ -238,8 +232,7 @@ Prints the immediate children of a revision.  This is like a
 non-recursive version of <samp><span class="command">automate descendents</span></samp>.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -255,7 +248,7 @@ stdout, prints an error message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate graph</span></samp><a name="index-mtn-automate-graph-169"></a><dd>
+     <br><dt><samp><span class="command">mtn automate graph</span></samp><a name="index-mtn-automate-graph-173"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -267,8 +260,7 @@ None.
 Prints out the complete ancestry graph of this database.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          0c05e8ec9c6af4224672c7cc4c9ef05ae8bdb794
+<pre class="verbatim">          0c05e8ec9c6af4224672c7cc4c9ef05ae8bdb794
           27ebcae50e1814e35274cb89b5031a423c29f95a 5830984dec5c41d994bcadfeab4bf1bf67747b89
           4e284617c80bec7da03925062a84f715c1b042bd 27ebcae50e1814e35274cb89b5031a423c29f95a 657c756d24fb65213d59f4ae07e117d830dcc95b
      </pre>
@@ -292,7 +284,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate erase_ancestors [</span><var>rev1</var><span class="command"> [</span><var>rev2</var><span class="command"> [...]]]</span></samp><a name="index-mtn-automate-erase_005fancestors-_005b_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d_005d-170"></a><dd>
+     <br><dt><samp><span class="command">mtn automate erase_ancestors [</span><var>rev1</var><span class="command"> [</span><var>rev2</var><span class="command"> [...]]]</span></samp><a name="index-mtn-automate-erase_005fancestors-_005b_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d_005d-174"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more revision IDs, <var>rev1</var>, <var>rev2</var>, etc.
@@ -309,8 +301,7 @@ branch, then we would print the heads of that branch.  If there
 are no arguments, prints nothing.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -326,7 +317,7 @@ an error message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate toposort [</span><var>rev1</var><span class="command"> [</span><var>rev2</var><span class="command"> [...]]]</span></samp><a name="index-mtn-automate-toposort-_005b_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d_005d-171"></a><dd>
+     <br><dt><samp><span class="command">mtn automate toposort [</span><var>rev1</var><span class="command"> [</span><var>rev2</var><span class="command"> [...]]]</span></samp><a name="index-mtn-automate-toposort-_005b_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d_005d-175"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more revision IDs, <var>rev1</var>, <var>rev2</var>, etc.
@@ -343,8 +334,7 @@ ancestor of the other, then they may appear in either order.  If there
 are no arguments, prints nothing.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -358,7 +348,7 @@ an error message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate ancestry_difference </span><var>new</var><span class="command"> [</span><var>old1</var><span class="command"> [</span><var>old2</var><span class="command"> [...]]]</span></samp><a name="index-mtn-automate-ancestry_005fdifference-_0040var_007bnew_007d-_005b_0040var_007bold1_007d-_005b_0040var_007bold2_007d-_005b_002e_002e_002e_005d_005d_005d-172"></a><dd>
+     <br><dt><samp><span class="command">mtn automate ancestry_difference </span><var>new</var><span class="command"> [</span><var>old1</var><span class="command"> [</span><var>old2</var><span class="command"> [...]]]</span></samp><a name="index-mtn-automate-ancestry_005fdifference-_0040var_007bnew_007d-_005b_0040var_007bold1_007d-_005b_0040var_007bold2_007d-_005b_002e_002e_002e_005d_005d_005d-176"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A &ldquo;new&rdquo; revision ID <var>new</var>, followed by zero or more &ldquo;old&rdquo;
@@ -380,8 +370,7 @@ have processed before, then this command tells you which revisions are
 new since then.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -395,7 +384,7 @@ an error message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate leaves</span></samp><a name="index-mtn-automate-leaves-173"></a><dd>
+     <br><dt><samp><span class="command">mtn automate leaves</span></samp><a name="index-mtn-automate-leaves-177"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -412,8 +401,7 @@ the same branch, then they would be identical.  Generally, every leaf is
 the head of some branch, but not every branch head is a leaf.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -427,7 +415,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate roots</span></samp><a name="index-mtn-automate-roots-174"></a><dd>
+     <br><dt><samp><span class="command">mtn automate roots</span></samp><a name="index-mtn-automate-roots-178"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -440,8 +428,7 @@ Prints the roots of the revision graph, i.e. all revisions that have
 no parents.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f
+<pre class="verbatim">          276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -454,7 +441,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate branches</span></samp><a name="index-mtn-automate-branches-175"></a><dd>
+     <br><dt><samp><span class="command">mtn automate branches</span></samp><a name="index-mtn-automate-branches-179"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -467,8 +454,7 @@ Prints all branch certs present in the revision graph, that are not
 excluded by the Lua hook <code>ignore_branch</code>.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          net.venge.monotone
+<pre class="verbatim">          net.venge.monotone
           net.venge.monotone.win32
      </pre>
 
@@ -481,7 +467,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate tags [</span><var>branch_pattern</var><span class="command">]</span></samp><a name="index-mtn-automate-tags-_005b_0040var_007bbranch_005fpattern_007d_005d-176"></a><dd>
+     <br><dt><samp><span class="command">mtn automate tags [</span><var>branch_pattern</var><span class="command">]</span></samp><a name="index-mtn-automate-tags-_005b_0040var_007bbranch_005fpattern_007d_005d-180"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A branch pattern (optional).
@@ -504,8 +490,7 @@ tags of the revision graph.
 a pattern.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-               tag "monotree-0.1"
+<pre class="verbatim">               tag "monotree-0.1"
           revision [8a121346ce2920b6f85df68b3b620de96bd14a8d]
             signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
           branches "net.venge.monotone.contrib" "net.venge.monotone.contrib.monotree"
@@ -552,7 +537,7 @@ specified.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate select </span><var>selector</var></samp><a name="index-mtn-automate-select-_0040var_007bselector_007d-177"></a><dd>
+     <br><dt><samp><span class="command">mtn automate select </span><var>selector</var></samp><a name="index-mtn-automate-select-_0040var_007bselector_007d-181"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One selector (or combined selector).
@@ -564,8 +549,7 @@ One selector (or combined selector).
 Print all revisions that match the given selector.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
           75156724e0e2e3245838f356ec373c50fa469f1f
      </pre>
 
@@ -580,7 +564,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate identify </span><var>path</var></samp><a name="index-mtn-automate-identify-_0040var_007bpath_007d-178"></a><dd>
+     <br><dt><samp><span class="command">mtn automate identify </span><var>path</var></samp><a name="index-mtn-automate-identify-_0040var_007bpath_007d-182"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A file path.
@@ -592,8 +576,7 @@ A file path.
 Prints the file ID (aka hash) of the given file.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          6265ab1312fbe38bdc3aafa92441139cb2b779b0
+<pre class="verbatim">          6265ab1312fbe38bdc3aafa92441139cb2b779b0
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -607,7 +590,7 @@ marker.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate inventory [<samp>options...</samp>] [</span><var>files...</var><span class="command">]</span></samp><a name="index-mtn-automate-inventory-_005b_0040option_007boptions_002e_002e_002e_007d_005d-_005b_0040var_007bfiles_002e_002e_002e_007d_005d-179"></a><dd>
+     <br><dt><samp><span class="command">mtn automate inventory [</span><samp><span class="option">options...</span></samp><span class="command">] [</span><var>files...</var><span class="command">]</span></samp><a name="index-mtn-automate-inventory-_005b_0040option_007boptions_002e_002e_002e_007d_005d-_005b_0040var_007bfiles_002e_002e_002e_007d_005d-183"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more file paths (optional). If present, only show an inventory for the
@@ -645,8 +628,7 @@ listed in a basic_io stanza. Stanzas are separated by blank lines.
 
           <br><dt><strong>Sample output:</strong><dd>
 All basic status cases:
-<pre class="verbatim">          
-              path "added"
+<pre class="verbatim">              path "added"
           new_type "file"
            fs_type "file"
             status "added" "known"
@@ -720,8 +702,7 @@ All basic status cases:
      </pre>
 
           <p>Two files swapped in both the revision manifest and the workspace:
-<pre class="verbatim">          
-              path "original"
+<pre class="verbatim">              path "original"
           old_type "file"
           new_path "unchanged"
           new_type "file"
@@ -743,8 +724,7 @@ All basic status cases:
           <p>Recorded in the revision manifest that two files were swapped, but
 they were not actually swapped in the workspace. Thus they both appear
 as patched:
-<pre class="verbatim">          
-              path "original"
+<pre class="verbatim">              path "original"
           old_type "file"
           new_path "unchanged"
           new_type "file"
@@ -768,8 +748,7 @@ as patched:
 
           <p>Rename (in the manifest and the workspace) <samp><span class="file">foo</span></samp> to <samp><span class="file">bar</span></samp>;
 add (in the manifest and the workspace) new file <samp><span class="file">foo</span></samp>:
-<pre class="verbatim">          
-              path "foo"
+<pre class="verbatim">              path "foo"
           old_type "file"
           new_path "bar"
           new_type "file"
@@ -787,8 +766,7 @@ add (in the manifest and the workspace) new file <samp><span class="file">foo</s
 
           <p>Rotated files <samp><span class="file">foo</span></samp> -&gt; <samp><span class="file">bar</span></samp> -&gt; <samp><span class="file">baz</span></samp> -&gt; <samp><span class="file">foo</span></samp> (in
 the manifest and the workspace):
-<pre class="verbatim">          
-              path "foo"
+<pre class="verbatim">              path "foo"
           old_type "file"
           new_path "bar"
           new_type "file"
@@ -820,8 +798,7 @@ the manifest and the workspace):
 <samp><span class="file">bar</span></samp> -&gt; <samp><span class="file">baz</span></samp> -&gt; <samp><span class="file">foo</span></samp>, but the actual files in the
 workspace were not moved, so monotone interprets all files as having
 been patched:
-<pre class="verbatim">          
-              path "foo"
+<pre class="verbatim">              path "foo"
           old_type "file"
           new_path "bar"
           new_type "file"
@@ -854,8 +831,7 @@ been patched:
 
           <p>Dropped from the manifest but not removed in the workspace and thus
 unknown:
-<pre class="verbatim">          
-              path "dropped"
+<pre class="verbatim">              path "dropped"
           old_type "file"
            fs_type "file"
              birth [cb271687054afd3c2b873c8994f206f08fb240d3]
@@ -863,8 +839,7 @@ unknown:
      </pre>
 
           <p>Added in the manifest but not in the workspace, and thus missing:
-<pre class="verbatim">          
-              path "added"
+<pre class="verbatim">              path "added"
           new_type "file"
            fs_type "none"
             status "added" "missing"
@@ -872,8 +847,7 @@ unknown:
 
           <p>Recorded a rename in the manifest, but not moved in the workspace,
 and thus unknown source and missing target:
-<pre class="verbatim">          
-              path "original"
+<pre class="verbatim">              path "original"
           old_type "file"
           new_path "renamed"
            fs_type "file"
@@ -890,8 +864,7 @@ and thus unknown source and missing target:
 
           <p>Moved in the workspace but no rename recorded in the manifest, and
 thus missing source and unknown target:
-<pre class="verbatim">          
-              path "original"
+<pre class="verbatim">              path "original"
           old_type "file"
           new_type "file"
            fs_type "none"
@@ -903,8 +876,7 @@ thus missing source and unknown target:
      </pre>
 
           <p>Renamed in the manifest and the workspace and patched:
-<pre class="verbatim">          
-              path "original"
+<pre class="verbatim">              path "original"
           old_type "file"
           new_path "renamed"
            fs_type "none"
@@ -921,8 +893,7 @@ thus missing source and unknown target:
      </pre>
 
           <p>Renamed and restricted to <samp><span class="file">original</span></samp> or <samp><span class="file">renamed</span></samp>:
-<pre class="verbatim">          
-              path "original"
+<pre class="verbatim">              path "original"
           old_type "file"
           new_path "renamed"
            fs_type "none"
@@ -939,8 +910,7 @@ thus missing source and unknown target:
      </pre>
 
           <p>Renamed and restricted to <samp><span class="file">original</span></samp> with the <samp><span class="option">--no-corresponding-renames</span></samp> option:
-<pre class="verbatim">          
-              path "original"
+<pre class="verbatim">              path "original"
           old_type "file"
           new_path "renamed"
            fs_type "none"
@@ -949,8 +919,7 @@ thus missing source and unknown target:
      </pre>
 
           <p>Renamed and restricted to <samp><span class="file">renamed</span></samp> with the <samp><span class="option">--no-corresponding-renames</span></samp> option:
-<pre class="verbatim">          
-              path "renamed"
+<pre class="verbatim">              path "renamed"
           new_type "file"
           old_path "original"
            fs_type "file"
@@ -960,8 +929,7 @@ thus missing source and unknown target:
      </pre>
 
           <p>File is missing, an unversioned directory is in the way:
-<pre class="verbatim">          
-              path "missing_file"
+<pre class="verbatim">              path "missing_file"
           old_type "file"
           new_type "file"
            fs_type "directory"
@@ -971,8 +939,7 @@ thus missing source and unknown target:
      </pre>
 
           <p>Directory is missing, an unversioned file is in the way:
-<pre class="verbatim">          
-              path "missing_directory"
+<pre class="verbatim">              path "missing_directory"
           old_type "directory"
           new_type "directory"
            fs_type "file"
@@ -981,8 +948,7 @@ thus missing source and unknown target:
 
           <p>Directory <samp><span class="file">source</span></samp> renamed to <samp><span class="file">target</span></samp>, <samp><span class="file">target</span></samp> is missing, an
 unversioned file is in the way:
-<pre class="verbatim">          
-              path "source"
+<pre class="verbatim">              path "source"
           old_type "directory"
           new_path "target"
            fs_type "none"
@@ -1096,7 +1062,7 @@ message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate certs </span><var>id</var></samp><a name="index-mtn-automate-certs-_0040var_007bid_007d-180"></a><dd>
+     <br><dt><samp><span class="command">mtn automate certs </span><var>id</var></samp><a name="index-mtn-automate-certs-_0040var_007bid_007d-184"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A revision ID <var>id</var>, for which any certificates will be printed.
@@ -1111,8 +1077,7 @@ A revision ID <var>id</var>, for which any certificates will be printed.
 Prints all certificates associated with the given revision ID. 
 Each certificate is contained in a basic IO stanza. For each certificate,
 the following values are provided:
-<pre class="verbatim">          
-          'key'
+<pre class="verbatim">          'key'
                 the hex-encoded hash of the key used to sign this certificate.
           'signature'
                 a string indicating the status of the signature. Possible
@@ -1132,8 +1097,7 @@ the following values are provided:
      </pre>
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-                key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
+<pre class="verbatim">                key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
           signature "ok"
                name "author"
               value "emile@alumni.reed.edu"
@@ -1172,7 +1136,7 @@ or invalid prints an error message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate stdio</span></samp><a name="index-mtn-automate-stdio-181"></a><dd>
+     <br><dt><samp><span class="command">mtn automate stdio</span></samp><a name="index-mtn-automate-stdio-185"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 none
@@ -1193,15 +1157,13 @@ break anything.
 Allow multiple automate commands to be run from one instance of monotone.
 
           <br><dt><strong>Sample input:</strong><dd>
-<pre class="verbatim">          
-          l6:leavese
+<pre class="verbatim">          l6:leavese
           l7:parents40:0e3171212f34839c2e3263e7282cdeea22fc5378e
           o3:key11:foo@bar.come l4:cert40:0e3171212f34839c2e3263e7282cdeea22fc53783:foo3:bare
      </pre>
 
           <br><dt><strong>Input format:</strong><dd>
-<pre class="verbatim">          
-          [ 'o' &lt;string> &lt;string> [ &lt;string> &lt;string> [ ... ] ] 'e' ]
+<pre class="verbatim">          [ 'o' &lt;string> &lt;string> [ &lt;string> &lt;string> [ ... ] ] 'e' ]
           'l' &lt;string> [ &lt;string> [ ... ] ] 'e'
      </pre>
 
@@ -1217,8 +1179,7 @@ don't take values, specify the second string as zero length; <code>0:</code>.
 will cause an error.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          format-version: 2
+<pre class="verbatim">          format-version: 2
           
           0:m:41:7706a422ccad41621c958affa999b1a1dd644e79
           0:l:1:0
@@ -1256,8 +1217,7 @@ characters.
           <p>After a command has been issued, one or more packets are returned for it. 
 A packet looks like:
 
-          <pre class="verbatim">          
-          &lt;command number>:&lt;stream>:&lt;size>:&lt;output>
+          <pre class="verbatim">          &lt;command number>:&lt;stream>:&lt;size>:&lt;output>
      </pre>
 
           <p><code>&lt;command number&gt;</code> is a decimal number specifying which command this output
@@ -1366,7 +1326,7 @@ types for other useful purposes in the future as needs arise.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate remote_stdio [</span><var>hostname</var><span class="command">]</span></samp><a name="index-mtn-automate-remote_005fstdio-_005b_0040var_007bhostname_007d_005d-182"></a><dd>
+     <br><dt><samp><span class="command">mtn automate remote_stdio [</span><var>hostname</var><span class="command">]</span></samp><a name="index-mtn-automate-remote_005fstdio-_005b_0040var_007bhostname_007d_005d-186"></a><dd>
           <dl>
 <dt><strong>Arguments</strong><dd>
 <var>hostname</var> is the host (and optionally port) of the monotone server
@@ -1406,7 +1366,7 @@ operations on password-encrypted private keys will therefor fail unless the
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate remote <samp>--remote-stdio-host=host</samp> </span><var>command</var> <var>args-and-opts</var></samp><a name="index-mtn-automate-remote-_0040option_007b_002d_002dremote_002dstdio_002dhost_003dhost_007d-_0040var_007bcommand_007d-_0040var_007bargs_002dand_002dopts_007d-183"></a><dd>
+     <br><dt><samp><span class="command">mtn automate remote </span><samp><span class="option">--remote-stdio-host=host</span></samp> <var>command</var> <var>args-and-opts</var></samp><a name="index-mtn-automate-remote-_0040option_007b_002d_002dremote_002dstdio_002dhost_003dhost_007d-_0040var_007bcommand_007d-_0040var_007bargs_002dand_002dopts_007d-187"></a><dd>
           <dl>
 <dt><strong>Arguments</strong><dd>
 A command and its arguments, to execute on the remote server specified
@@ -1458,7 +1418,7 @@ therefor fail unless a <code>get_passphrase</code> hook is set up remotely.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate pull [--set-default] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-automate-pull-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-184"></a><dt><samp><span class="command">mtn automate push [--set-default] [--keys-to-push=</span><var>key</var><span class="command">] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-automate-push-_005b_002d_002dset_002ddefault_005d-_005b_002d_002dkeys_002dto_002dpush_003d_0040var_007bkey_007d_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-185"></a><dt><samp><span class="command">mtn automate sync [--set-default] [--keys-to-push=</span><var>key</var><span class="command">] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-automate-sync-_005b_002d_002dset_002ddefault_005d-_005b_002d_002dkeys_002dto_002dpush_003d_0040var_007bkey_007d_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-186"></a><dd>
+     <br><dt><samp><span class="command">mtn automate pull [--set-default] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-automate-pull-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-188"></a><dt><samp><span class="command">mtn automate push [--set-default] [--keys-to-push=</span><var>key</var><span class="command">] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-automate-push-_005b_002d_002dset_002ddefault_005d-_005b_002d_002dkeys_002dto_002dpush_003d_0040var_007bkey_007d_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-189"></a><dt><samp><span class="command">mtn automate sync [--set-default] [--keys-to-push=</span><var>key</var><span class="command">] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-automate-sync-_005b_002d_002dset_002ddefault_005d-_005b_002d_002dkeys_002dto_002dpush_003d_0040var_007bkey_007d_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-190"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The automate versions of pull, push and sync have the same set of arguments and
@@ -1479,8 +1439,7 @@ and eight certs.
           <p><em>Note:</em> The linebreaks are not part of the actual format, but have been
 added for better readability.
 
-          <pre class="verbatim">          
-          0:p:62:doing anonymous pull; use -kKEYNAME if you need authentication
+          <pre class="verbatim">          0:p:62:doing anonymous pull; use -kKEYNAME if you need authentication
           0:p:25:connecting to monotone.ca0:0:p:29:finding items to synchronize:
           0:t:34:c:certificates;k:keys;r:revisions;
           0:t:12:c=0;k=0;r=0;
@@ -1535,7 +1494,7 @@ If a netsync error occurs, the command outputs an error and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate genkey </span><var>name</var> <var>passphrase</var></samp><a name="index-mtn-automate-genkey-_0040var_007bname_007d-_0040var_007bpassphrase_007d-187"></a><dd>
+     <br><dt><samp><span class="command">mtn automate genkey </span><var>name</var> <var>passphrase</var></samp><a name="index-mtn-automate-genkey-_0040var_007bname_007d-_0040var_007bpassphrase_007d-191"></a><dd>
           <dl>
 <dt><strong>Aguments</strong><dd>
 <var>name</var> is the name to associate with the new key, and <var>passphrase</var> is
@@ -1553,8 +1512,7 @@ make much sense; have one <code>hash [...]</code> line instead of separate
 Generate a key with the given name and passphrase.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-                      name "tbrownaw@gmail.com"
+<pre class="verbatim">                      name "tbrownaw@gmail.com"
                       hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
            public_location "database" "keystore"
           private_location "keystore"
@@ -1572,7 +1530,7 @@ prints an error message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_revision </span><var>id</var></samp><a name="index-mtn-automate-get_005frevision-_0040var_007bid_007d-188"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_revision </span><var>id</var></samp><a name="index-mtn-automate-get_005frevision-_0040var_007bid_007d-192"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The argument <var>id</var> specifies the revision id for which the changeset
@@ -1588,8 +1546,7 @@ information should be printed.
 Prints change information for the specified revision id.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          format_version "1"
+<pre class="verbatim">          format_version "1"
           
           new_manifest [bfe2df785c07bebeb369e537116ab9bb7a4b5e19]
           
@@ -1616,8 +1573,7 @@ by a blank line. Values will be escaped, '\' to '\\' and
           <p>Possible values of this first value are along with an ordered list of
 basic_io formatted stanzas that will be provided are:
 
-          <pre class="verbatim">          
-          'format_version'
+          <pre class="verbatim">          'format_version'
                 used in case this format ever needs to change.
                 format: ('format_version', the string "1")
                 occurs: exactly once
@@ -1670,7 +1626,7 @@ to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_current_revision [--exclude </span><var>excl</var><span class="command">] [--depth=</span><var>depth</var><span class="command">] [</span><var>path</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-get_005fcurrent_005frevision-_005b_002d_002dexclude-_0040var_007bexcl_007d_005d-_005b_002d_002ddepth_003d_0040var_007bdepth_007d_005d-_005b_0040var_007bpath_007d-_002e_002e_002e_005d-189"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_current_revision [--exclude </span><var>excl</var><span class="command">] [--depth=</span><var>depth</var><span class="command">] [</span><var>path</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-get_005fcurrent_005frevision-_005b_002d_002dexclude-_0040var_007bexcl_007d_005d-_005b_002d_002ddepth_003d_0040var_007bdepth_007d_005d-_005b_0040var_007bpath_007d-_002e_002e_002e_005d-193"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more <var>path</var> arguments restrict the revision to these paths,
@@ -1697,7 +1653,7 @@ invalid, prints an error message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_base_revision_id</span></samp><a name="index-mtn-automate-get_005fbase_005frevision_005fid-190"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_base_revision_id</span></samp><a name="index-mtn-automate-get_005fbase_005frevision_005fid-194"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -1710,8 +1666,7 @@ Prints the revision id the current workspace is based on. This is the
 &ldquo;old_revision&rdquo; value stored in <samp><span class="file">_MTN/revision</span></samp>.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -1723,7 +1678,7 @@ message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_current_revision_id</span></samp><a name="index-mtn-automate-get_005fcurrent_005frevision_005fid-191"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_current_revision_id</span></samp><a name="index-mtn-automate-get_005fcurrent_005frevision_005fid-195"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -1737,8 +1692,7 @@ of the revision that would be committed by an unrestricted commit
 in the workspace.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+<pre class="verbatim">          28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -1750,7 +1704,7 @@ message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_manifest_of</span></samp><a name="index-mtn-automate-get_005fmanifest_005fof-192"></a><br><dt><samp><span class="command">mtn automate get_manifest_of </span><var>revid</var></samp><a name="index-mtn-automate-get_005fmanifest_005fof-_0040var_007brevid_007d-193"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_manifest_of</span></samp><a name="index-mtn-automate-get_005fmanifest_005fof-196"></a><br><dt><samp><span class="command">mtn automate get_manifest_of </span><var>revid</var></samp><a name="index-mtn-automate-get_005fmanifest_005fof-_0040var_007brevid_007d-197"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 Specifying the optional <var>revid</var> argument outputs the manifest for the
@@ -1765,8 +1719,7 @@ as meaning &ldquo;give me the manifest of THIS&rdquo;.)
 Prints the contents of the manifest associated with the given roster.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          format_version "1"
+<pre class="verbatim">          format_version "1"
           
           dir ""
           
@@ -1858,8 +1811,7 @@ by a blank line. Values will be escaped, '\' to '\\' and
           <p>Possible values of this first value are along with an ordered list of
 basic_io formatted stanzas that will be provided are:
 
-          <pre class="verbatim">          
-          'format_version'
+          <pre class="verbatim">          'format_version'
                 used in case this format ever needs to change.
                 format: ('format_version', the string "1")
                 occurs: exactly once
@@ -1887,7 +1839,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_attributes </span><var>path</var></samp><a name="index-mtn-automate-get_005fattributes-_0040var_007bpath_007d-194"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_attributes </span><var>path</var></samp><a name="index-mtn-automate-get_005fattributes-_0040var_007bpath_007d-198"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The argument <var>path</var> determines which path's attributes should be printed.
@@ -1903,8 +1855,7 @@ The argument <var>path</var> determines which path's attributes should be printe
 Prints all attributes of the given file and the attribute states.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-           attr "foo" "bar"
+<pre class="verbatim">           attr "foo" "bar"
           state "added"
           
            attr "baz" "bat"
@@ -1934,8 +1885,7 @@ of attribute. This entry can have one of the following four values:
           <p>The status 'changed' can come up if an attribute foo has been dropped and
 added afterwards with another value, like
 
-          <pre class="verbatim">          
-          $ mtn attr drop file.txt foo ; mtn attr set file.txt foo baz
+          <pre class="verbatim">          $ mtn attr drop file.txt foo ; mtn attr set file.txt foo baz
      </pre>
 
           <p>If an attribute has been dropped, the output will still return the previously
@@ -1944,8 +1894,7 @@ recorded in the current workspace).
 
           <p>The complete format:
 
-          <pre class="verbatim">          
-          'attr':
+          <pre class="verbatim">          'attr':
                 represents an attribute.
                 format: ('attr', key, value), ('state', [unchanged|changed|added|dropped])
                 occurs: zero or more times
@@ -1957,7 +1906,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate set_attribute </span><var>path</var> <var>key</var> <var>value</var></samp><a name="index-mtn-automate-set_005fattribute-_0040var_007bpath_007d-_0040var_007bkey_007d-_0040var_007bvalue_007d-195"></a><dd>
+     <br><dt><samp><span class="command">mtn automate set_attribute </span><var>path</var> <var>key</var> <var>value</var></samp><a name="index-mtn-automate-set_005fattribute-_0040var_007bpath_007d-_0040var_007bkey_007d-_0040var_007bvalue_007d-199"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A path, an attribute key and an attribute value.
@@ -1979,7 +1928,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate drop_attribute </span><var>path</var><span class="command"> [</span><var>key</var><span class="command">]</span></samp><a name="index-mtn-automate-drop_005fattribute-_0040var_007bpath_007d-_005b_0040var_007bkey_007d_005d-196"></a><dd>
+     <br><dt><samp><span class="command">mtn automate drop_attribute </span><var>path</var><span class="command"> [</span><var>key</var><span class="command">]</span></samp><a name="index-mtn-automate-drop_005fattribute-_0040var_007bpath_007d-_005b_0040var_007bkey_007d_005d-200"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A path and an attribute key (optional).
@@ -2003,7 +1952,7 @@ status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate content_diff [--revision=</span><var>id1</var><span class="command"> [--revision=</span><var>id2</var><span class="command">]] [--reverse] [</span><var>files</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-content_005fdiff-_005b_002d_002drevision_003d_0040var_007bid1_007d-_005b_002d_002drevision_003d_0040var_007bid2_007d_005d_005d-_005b_002d_002dreverse_005d-_005b_0040var_007bfiles_007d-_002e_002e_002e_005d-197"></a><dd>
+     <br><dt><samp><span class="command">mtn automate content_diff [--revision=</span><var>id1</var><span class="command"> [--revision=</span><var>id2</var><span class="command">]] [--reverse] [</span><var>files</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-content_005fdiff-_005b_002d_002drevision_003d_0040var_007bid1_007d-_005b_002d_002drevision_003d_0040var_007bid2_007d_005d_005d-_005b_002d_002dreverse_005d-_005b_0040var_007bfiles_007d-_002e_002e_002e_005d-201"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more <var>file</var> arguments restrict the diff output to these files,
@@ -2036,8 +1985,7 @@ header of <samp><span class="command">mtn diff</span></samp> is omitted unless <
 and is omitted regardless if there are no changes.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          ============================================================
+<pre class="verbatim">          ============================================================
           --- guitone/res/i18n/guitone_de.ts      9857927823e1d6a0339b531c120dcaadd22d25e9
           +++ guitone/res/i18n/guitone_de.ts      0b4715dc296b1955b0707923d45d79ca7769dd3f
           @@ -1,6 +1,14 @@
@@ -2060,7 +2008,7 @@ restrictions can't be applied, the command prints to stderr and exits as well.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_file </span><var>id</var></samp><a name="index-mtn-automate-get_005ffile-_0040var_007bid_007d-198"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_file </span><var>id</var></samp><a name="index-mtn-automate-get_005ffile-_0040var_007bid_007d-202"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The  <var>id</var> argument specifies the file hash of the file to be output.
@@ -2072,8 +2020,7 @@ The  <var>id</var> argument specifies the file hash of the file to be output.
 Prints the contents of the specified file.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          If you've downloaded a release, see INSTALL for installation
+<pre class="verbatim">          If you've downloaded a release, see INSTALL for installation
           instructions.  If you've checked this out, the generated files are not
           included, and you must use "autoreconf --install" to create them.
           
@@ -2089,7 +2036,7 @@ to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_file_of </span><var>filename</var><span class="command"> [--revision=</span><var>id</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005ffile_005fof-_0040var_007bfilename_007d-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-199"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_file_of </span><var>filename</var><span class="command"> [--revision=</span><var>id</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005ffile_005fof-_0040var_007bfilename_007d-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-203"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The  <var>filename</var> argument specifies the filename of the file to be output.
@@ -2104,8 +2051,7 @@ are printed. If no revision is given, the workspace's revision is used.
 Prints the contents of the specified file.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          If you've downloaded a release, see INSTALL for installation
+<pre class="verbatim">          If you've downloaded a release, see INSTALL for installation
           instructions.  If you've checked this out, the generated files are not
           included, and you must use "autoreconf --install" to create them.
           
@@ -2122,7 +2068,7 @@ with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate file_merge </span><var>left-rid</var> <var>left-path</var> <var>right-rid</var> <var>right-path</var></samp><a name="index-mtn-automate-file_005fmerge-_0040var_007bleft_002drid_007d-_0040var_007bleft_002dpath_007d-_0040var_007bright_002drid_007d-_0040var_007bright_002dpath_007d-200"></a><dd>
+     <br><dt><samp><span class="command">mtn automate file_merge </span><var>left-rid</var> <var>left-path</var> <var>right-rid</var> <var>right-path</var></samp><a name="index-mtn-automate-file_005fmerge-_0040var_007bleft_002drid_007d-_0040var_007bleft_002dpath_007d-_0040var_007bright_002drid_007d-_0040var_007bright_002dpath_007d-204"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 <var>left-rid</var>, <var>left-fid</var>, <var>right-rid</var>, <var>right-fid</var>
@@ -2140,8 +2086,7 @@ and paths are needed to check for manual merge and file encoding
 attributes.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          If you've downloaded a release, see INSTALL for installation
+<pre class="verbatim">          If you've downloaded a release, see INSTALL for installation
           instructions.  If you've checked this out, the generated files are not
           included, and you must use "autoreconf --install" to create them.
           
@@ -2158,7 +2103,7 @@ merger fails, prints an error message to stderr and exits with status
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_option </span><var>option</var></samp><a name="index-mtn-automate-get_005foption-_0040var_007boption_007d-201"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_option </span><var>option</var></samp><a name="index-mtn-automate-get_005foption-_0040var_007boption_007d-205"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>option</var> argument specifies the option name of the option to be output.
@@ -2170,8 +2115,7 @@ The <var>option</var> argument specifies the option name of the option to be out
 Prints an option from _MTN/option of the current workspace.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          net.venge.monotone
+<pre class="verbatim">          net.venge.monotone
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -2183,7 +2127,7 @@ with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate keys</span></samp><a name="index-mtn-automate-keys-202"></a><dd>
+     <br><dt><samp><span class="command">mtn automate keys</span></samp><a name="index-mtn-automate-keys-206"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -2203,8 +2147,7 @@ make much sense; have one <code>hash [...]</code> line instead of separate
 Print all keys in basic_io format.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-                      hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+<pre class="verbatim">                      hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
                 given_name "tbrownaw@gmail.com"
                 local_name "tbrownaw@gmail.com"
            public_location "database" "keystore"
@@ -2238,7 +2181,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_rdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-203"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_rdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-207"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies the revision to output an rdata packet for.
@@ -2250,8 +2193,7 @@ The <var>id</var> specifies the revision to output an rdata packet for.
 Prints the revision data in packet format
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          [rdata bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed]
+<pre class="verbatim">          [rdata bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed]
           H4sIAAAAAAAA/0XQS27DMAwE0L1PIfgArb4kte62NzACg5SoJEBsF7aRurev0UVzgJl5mLas
           E+/jU9ftvsymd33Xzfo9Tjzfm267GSgGwVarz6Valx0KtFYwii9VqUFCqJQ5X7puedRx1ef9
           r2rwHlSbi+BUSrF4xn1p0RInkmxTbmwREp/BL97LzfQfN56v+rlc+860dZnMED01jhILkURJ
@@ -2270,7 +2212,7 @@ and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_certs </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005fcerts-_0040var_007bid_007d-204"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_certs </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005fcerts-_0040var_007bid_007d-208"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies the revision to output cert packets for.
@@ -2282,8 +2224,7 @@ The <var>id</var> specifies the revision to output cert packets for.
 Prints the certs associated with a revision in packet format
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          [rcert bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed
+<pre class="verbatim">          [rcert bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed
                  branch
                  njs@pobox.com
                  bmV0LnZlbmdlLm1vbm90b25l]
@@ -2328,7 +2269,7 @@ and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_fdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-205"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_fdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-209"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies the file to output an fdata packet for.
@@ -2340,8 +2281,7 @@ The <var>id</var> specifies the file to output an fdata packet for.
 Prints the file data in packet format
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          [fdata 229c7f621b65f7e4970ae5aaec993812b9daa1d4]
+<pre class="verbatim">          [fdata 229c7f621b65f7e4970ae5aaec993812b9daa1d4]
           H4sIAAAAAAAA/z2OO27DMBBEe51ioMaNrJzBpQAjTXKBBTW0CJPcgFw6yO1DCkG62Q/em83j
           R9vlRez6naPKzh2CwkipXFBJbO8fn7f7HV4LQq4mMYoFzdMYSnMj1xXY/lnuoHt2kB2hQpst
           PREPZhaxvvchskIKkdU6xsXWvQsk76MOUquGVolZmmmh0+xxvf7JZ5jCFXbU4KZ1muYkT+Kw
@@ -2358,7 +2298,7 @@ and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_fdelta </span><var>from-id</var> <var>to-id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bfrom_002did_007d-_0040var_007bto_002did_007d-206"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_fdelta </span><var>from-id</var> <var>to-id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bfrom_002did_007d-_0040var_007bto_002did_007d-210"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>from-id</var> specifies the file to use as the base of the delta,
@@ -2371,8 +2311,7 @@ and <var>to-id</var> specifies the file to use as the target of the delta.
 Prints the file delta in packet format
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          [fdelta 597049a62d0a2e6af7df0b19f4945ec7d6458727
+<pre class="verbatim">          [fdelta 597049a62d0a2e6af7df0b19f4945ec7d6458727
                   229c7f621b65f7e4970ae5aaec993812b9daa1d4]
           H4sIAAAAAAAA/0WOy0oEMRBF9/mKS2/c9LQg4t5lw+BGf6BIKtNhkpSkKop/b9II7m49OOfu
           eHp5dnvEj/SHL0aQ75qFAgcQGmcm5RXKjP3t/eP1ekWUhlTVKGeyJNXNoXU/s27AP8sf7O8D
@@ -2390,7 +2329,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_content_changed </span><var>id</var> <var>file</var></samp><a name="index-mtn-automate-get_005fcontent_005fchanged-_0040var_007bid_007d-_0040var_007bfile_007d-207"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_content_changed </span><var>id</var> <var>file</var></samp><a name="index-mtn-automate-get_005fcontent_005fchanged-_0040var_007bid_007d-_0040var_007bfile_007d-211"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies a revision ID, from which content change calculations will be based. 
@@ -2400,19 +2339,31 @@ and <var>file</var> specifies the file for which to calculate revisions in which
 4.0
 
           <br><dt><strong>Purpose:</strong><dd>
-Returns a list of revision IDs in which the content  was most recently changed, relative to the revision ID specified as <var>id</var>. This equates to a content mark following the *-merge algorithm.
+Returns a list of revision IDs in which the content  was most recently changed,
+relative to the revision ID specified as <var>id</var>. This equates to a content mark
+following the *-merge algorithm.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-            content_mark [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
+<pre class="verbatim">            content_mark [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
-Zero or more basic_io stanzas, each specifying a revision ID in which a content mark is set.
+Zero or more basic_io stanzas, each specifying a revision ID in which a content
+mark is set:
+
+               <ul>
+<li>No content mark is returned if <var>file</var> is a directory. 
+<li>One content mark is returned if <var>file</var> is a file and has recently been
+changed exclusively in one revision (be it by a commit or merge). 
+<li>Multiple content marks are returned if <var>file</var> is a file and has recently
+been part of a clean merge case. 
+A clean merge happens when the same change to <var>file</var> is made on both sides
+of the particular merge, together with other unrelated changes, which make the
+resulting revisions not collapse into one revision. 
+</ul>
 
           <p>The complete format:
-<pre class="verbatim">          
-          'content_mark'
+<pre class="verbatim">          'content_mark'
                    the hexadecimal id of the revision the content mark is attached to
      </pre>
 
@@ -2422,7 +2373,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_corresponding_path </span><var>source_id</var> <var>file</var> <var>target_id</var></samp><a name="index-mtn-automate-get_005fcorresponding_005fpath-_0040var_007bsource_005fid_007d-_0040var_007bfile_007d-_0040var_007btarget_005fid_007d-208"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_corresponding_path </span><var>source_id</var> <var>file</var> <var>target_id</var></samp><a name="index-mtn-automate-get_005fcorresponding_005fpath-_0040var_007bsource_005fid_007d-_0040var_007bfile_007d-_0040var_007btarget_005fid_007d-212"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>source_id</var> specifies a revision ID in which <var>file</var> is current extant. 
@@ -2439,16 +2390,14 @@ This allows the same file to be matched between revisions, accounting
 for renames and other changes.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          file "foo"
+<pre class="verbatim">          file "foo"
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
 Zero or one basic_io stanzas. Zero stanzas will be output if the file does not exist within the target revision; this is not considered an error. If the file does exist in the target revision, a single stanza with the  following details is output.
 
           <p>The complete format:
-<pre class="verbatim">          
-             'file'
+<pre class="verbatim">             'file'
                    the file name corresponding to "file name" (arg 2) in the target revision
      </pre>
 
@@ -2460,7 +2409,7 @@ revision <var>source_id</var> or is invalid, prints an error message to stderr a
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_db_variables [</span><var>domain</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005fdb_005fvariables-_005b_0040var_007bdomain_007d_005d-209"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_db_variables [</span><var>domain</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005fdb_005fvariables-_005b_0040var_007bdomain_007d_005d-213"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The optional <var>domain</var> restricts the output to variables only within
@@ -2477,8 +2426,7 @@ Reads and outputs database variables. For more information about variables,
 see <a href="Vars.html#Vars">Vars</a>.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          domain "database"
+<pre class="verbatim">          domain "database"
            entry "default-exclude-pattern" ""
            entry "default-include-pattern" "net.venge.monotone*"
            entry "default-server" "monotone.ca"
@@ -2500,7 +2448,7 @@ to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate set_db_variable </span><var>domain</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-set_005fdb_005fvariable-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-210"></a><dd>
+     <br><dt><samp><span class="command">mtn automate set_db_variable </span><var>domain</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-set_005fdb_005fvariable-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-214"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>domain</var> and <var>name</var> specify the database variable
@@ -2516,8 +2464,7 @@ which is changed to <var>value</var>.
 Change a database variable, see also <a href="Vars.html#Vars">Vars</a>.
 
           <br><dt><strong>Sample usage:</strong><dd>
-<pre class="verbatim">          
-          mtn automate set_db_variable database default-server off.net
+<pre class="verbatim">          mtn automate set_db_variable database default-server off.net
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -2528,7 +2475,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate drop_db_variables </span><var>domain</var><span class="command"> [</span><var>name</var><span class="command">]</span></samp><a name="index-mtn-automate-drop_005fdb_005fvariables-_0040var_007bdomain_007d-_005b_0040var_007bname_007d_005d-211"></a><dd>
+     <br><dt><samp><span class="command">mtn automate drop_db_variables </span><var>domain</var><span class="command"> [</span><var>name</var><span class="command">]</span></samp><a name="index-mtn-automate-drop_005fdb_005fvariables-_0040var_007bdomain_007d-_005b_0040var_007bname_007d_005d-215"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>domain</var> and <var>name</var> specify the database variable
@@ -2542,8 +2489,7 @@ variables in the <var>domain</var> are dropped.
 Drops one or more database variables, see also <a href="Vars.html#Vars">Vars</a>.
 
           <br><dt><strong>Sample usage:</strong><dd>
-<pre class="verbatim">          
-          mtn automate drop_db_variables known-servers
+<pre class="verbatim">          mtn automate drop_db_variables known-servers
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -2555,7 +2501,7 @@ prints to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate put_file [</span><var>base-id</var><span class="command">] </span><var>contents</var></samp><a name="index-mtn-automate-put_005ffile-_005b_0040var_007bbase_002did_007d_005d-_0040var_007bcontents_007d-212"></a><dd>
+     <br><dt><samp><span class="command">mtn automate put_file [</span><var>base-id</var><span class="command">] </span><var>contents</var></samp><a name="index-mtn-automate-put_005ffile-_005b_0040var_007bbase_002did_007d_005d-_0040var_007bcontents_007d-216"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The optional <var>base-id</var> specifies a file-id on which the contents are
@@ -2571,8 +2517,7 @@ See also <samp><span class="command">automate put_revision</span></samp>. Normal
 <samp><span class="command">automate stdio</span></samp>.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          70a0f283898a18815a83df37c902e5f1492e9aa2
+<pre class="verbatim">          70a0f283898a18815a83df37c902e5f1492e9aa2
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -2584,7 +2529,7 @@ exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate put_revision </span><var>revision-data</var></samp><a name="index-mtn-automate-put_005frevision-_0040var_007brevision_002ddata_007d-213"></a><dd>
+     <br><dt><samp><span class="command">mtn automate put_revision </span><var>revision-data</var></samp><a name="index-mtn-automate-put_005frevision-_0040var_007brevision_002ddata_007d-217"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 <var>revision-data</var> is the new revision. See example below.  Note that
@@ -2614,10 +2559,9 @@ Workspace-less commit. Normally used via <samp><span class="command">automate st
           
           add_file "foo"
           content [5bf1fd927dfb8679496a2e6cf00cbe50c1c87145]
-     </pre>
+</pre>
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          4c2c1d846fa561601254200918fba1fd71e6795d
+<pre class="verbatim">          4c2c1d846fa561601254200918fba1fd71e6795d
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -2631,7 +2575,7 @@ this fact, but otherwise works as normal.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate cert </span><var>revision</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-cert-_0040var_007brevision_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-214"></a><dd>
+     <br><dt><samp><span class="command">mtn automate cert </span><var>revision</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-cert-_0040var_007brevision_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-218"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 <var>revision</var> is an existing revision, <var>name</var> is the certificate name
@@ -2645,8 +2589,7 @@ and <var>value</var> its value.
 cert with a specific private key, use <samp><span class="option">--key</span></samp>.
 
           <br><dt><strong>Sample usage:</strong><dd>
-<pre class="verbatim">          
-          mtn automate cert 4c2c1d846fa561601254200918fba1fd71e6795d author tester@test.net
+<pre class="verbatim">          mtn automate cert 4c2c1d846fa561601254200918fba1fd71e6795d author tester@test.net
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -2658,7 +2601,7 @@ exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate show_conflicts [</span><var>&ndash;branch BRANCH</var><span class="command">] [</span><var>left_rev right_rev</var><span class="command">]</span></samp><a name="index-mtn-automate-show_005fconflicts-_005b_0040var_007b_002d_002dbranch-BRANCH_007d_005d-_005b_0040var_007bleft_005frev-right_005frev_007d_005d-215"></a><dd>
+     <br><dt><samp><span class="command">mtn automate show_conflicts [</span><var>&ndash;branch BRANCH</var><span class="command">] [</span><var>left_rev right_rev</var><span class="command">]</span></samp><a name="index-mtn-automate-show_005fconflicts-_005b_0040var_007b_002d_002dbranch-BRANCH_007d_005d-_005b_0040var_007bleft_005frev-right_005frev_007d_005d-219"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 Optional left and right revision ids.
@@ -2698,8 +2641,7 @@ set them directly.
 
           <br><dt><strong>Sample output:</strong><dd>
 The output starts by listing the revisions and their common ancestor:
-<pre class="verbatim">          
-              left [532ab5011ea9e64aa212d4ea52363b1b8133d5ba]
+<pre class="verbatim">              left [532ab5011ea9e64aa212d4ea52363b1b8133d5ba]
              right [b94a03a922c2c281a88d8988db64e76a32edb6a1]
           ancestor [ead03530f5fefe50c9010157c42c0ebe18086559]
      </pre>
@@ -2708,8 +2650,7 @@ The output starts by listing the revisions and their common ancestor:
 conflict stanzas are output.
 
           <p>Attribute changed in both branches, or dropped in one:
-<pre class="verbatim">          
-                  conflict attribute
+<pre class="verbatim">                  conflict attribute
                  node_type "file"
                  attr_name "attr1"
              ancestor_name "foo"
@@ -2735,8 +2676,7 @@ conflict stanzas are output.
      </pre>
 
           <p>Missing root directory:
-<pre class="verbatim">          
-               conflict missing_root
+<pre class="verbatim">               conflict missing_root
               left_type "pivoted root"
           ancestor_name "foo"
              right_type "deleted directory"
@@ -2744,8 +2684,7 @@ conflict stanzas are output.
      </pre>
 
           <p>Directory deleted and/or renamed:
-<pre class="verbatim">          
-               conflict orphaned_directory
+<pre class="verbatim">               conflict orphaned_directory
              right_type "deleted directory"
           ancestor_name ""
               left_type "renamed directory"
@@ -2794,8 +2733,7 @@ conflict stanzas are output.
      </pre>
 
           <p>Directory loop created:
-<pre class="verbatim">          
-               conflict directory_loop
+<pre class="verbatim">               conflict directory_loop
               left_type "renamed directory"
           ancestor_name "foo"
               left_name "bar/foo"
@@ -2806,8 +2744,7 @@ conflict stanzas are output.
 
           <p>File content changed (this may be resolvable by the internal line
 merger), file also renamed:
-<pre class="verbatim">          
-                   conflict content
+<pre class="verbatim">                   conflict content
                   node_type "file"
               ancestor_name "bar"
            ancestor_file_id [f0ef49fe92167fe2a086588019ffcff7ea561786]
@@ -2831,8 +2768,7 @@ contents in the two revs can be successfully merged by the internal
 line merger, <code>resolved_internal</code> is output.
 
           <p>File added and/or renamed:
-<pre class="verbatim">          
-               conflict duplicate_name
+<pre class="verbatim">               conflict duplicate_name
               left_type "added file"
               left_name "bar"
            left_file_id [ba4637112ee3e55a6106d647d6c4e04a6643f8eb]
@@ -2864,8 +2800,7 @@ line merger, <code>resolved_internal</code> is output.
      </pre>
 
           <p>File renamed to different names:
-<pre class="verbatim">          
-                  conflict multiple_names
+<pre class="verbatim">                  conflict multiple_names
                  left_type "renamed file"
              ancestor_name "foo"
           ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
@@ -2879,8 +2814,7 @@ line merger, <code>resolved_internal</code> is output.
      </pre>
 
           <p>Invalid file name (<samp><span class="file">_MTN</span></samp> in root directory):
-<pre class="verbatim">          
-               conflict invalid_name
+<pre class="verbatim">               conflict invalid_name
               left_type "pivoted root"
           ancestor_name "foo"
              right_type "added directory"
@@ -2897,8 +2831,7 @@ line merger, <code>resolved_internal</code> is output.
      </pre>
 
           <p>Revisions that don't share a common ancestor:
-<pre class="verbatim">          
-              left [161e426c3b0c3f98d0be225f69d6f893ce8e0442]
+<pre class="verbatim">              left [161e426c3b0c3f98d0be225f69d6f893ce8e0442]
              right [0e3260f51acd1e98c40666557eb6c0eefeae5f02]
           ancestor []
           
@@ -2912,8 +2845,7 @@ line merger, <code>resolved_internal</code> is output.
      </pre>
 
           <p>All possible conflict resolutions:
-<pre class="verbatim">          
-             resolved_drop_left
+<pre class="verbatim">             resolved_drop_left
             resolved_drop_right
              resolved_keep_left
             resolved_keep_right
@@ -2954,7 +2886,7 @@ invalid, prints an error message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_workspace_root</span></samp><a name="index-mtn-automate-get_005fworkspace_005froot-216"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_workspace_root</span></samp><a name="index-mtn-automate-get_005fworkspace_005froot-220"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -2966,8 +2898,7 @@ None.
 To show the path of the workspace root for the current directory.
 
           <br><dt><strong>Sample output:</strong><dd>
-<pre class="verbatim">          
-          /home/jim/juice
+<pre class="verbatim">          /home/jim/juice
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -2979,7 +2910,40 @@ stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate read_packets </span><var>packet-data</var></samp><a name="index-mtn-automate-read_005fpackets-_0040var_007bpacket_002ddata_007d-217"></a><dd>
+     <br><dt><samp><span class="command">mtn automate update</span></samp><a name="index-mtn-automate-update-221"></a><dd>
+          <dl>
+<dt><strong>Arguments:</strong><dd>
+Same as <samp><span class="command">mtn update</span></samp>; no arguments, options
+<var>&ndash;move-conflicting-paths</var>, <var>&ndash;revision=revision</var>
+
+          <br><dt><strong>Added in:</strong><dd>
+12.1
+
+          <br><dt><strong>Purpose:</strong><dd>
+Update the current workspace to the latest or given revision; see
+<samp><span class="command">update</span></samp> in <a href="Workspace.html#Workspace">Workspace</a>.
+
+          <br><dt><strong>Sample output:</strong><dd>
+Nothing on stdout. stderr gives progress messages of the form:
+<pre class="verbatim">          mtn: updating along branch 'mms.work_stephe'
+          mtn: selected update target 233afb8c4832bf33d5f5734225164de5f5a6278c
+          mtn: [left]  4a368a6b217c40b2ff3b12bb7cfa00987e0f191c
+          mtn: [right] 233afb8c4832bf33d5f5734225164de5f5a6278c
+          mtn: renaming build/windows_common.make to build/utf_common.make
+          mtn: adding build/x86_gnu_linux_release
+     </pre>
+
+          <p>These messages are in the 'p' stream in automate stdio.
+
+          <br><dt><strong>Output format:</strong><dd>
+Free form, prefixed by &ldquo;mtn:&rdquo;.
+
+          <br><dt><strong>Error conditions:</strong><dd>
+see <samp><span class="command">update</span></samp> in <a href="Workspace.html#Workspace">Workspace</a>.
+
+     </dl>
+
+     <br><dt><samp><span class="command">mtn automate read_packets </span><var>packet-data</var></samp><a name="index-mtn-automate-read_005fpackets-_0040var_007bpacket_002ddata_007d-222"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A data packet, <var>packet-data</var>, as produced by <samp><span class="command">mtn pubkey </span><var>keyname</var></samp>.
@@ -2999,7 +2963,7 @@ An error will be produced if the argument is not a valid packet.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate lua </span><var>function_name</var><span class="command"> [</span><var>function_args...</var><span class="command">]</span></samp><a name="index-mtn-automate-lua-_0040var_007bfunction_005fname_007d-_005b_0040var_007bfunction_005fargs_002e_002e_002e_007d_005d-218"></a><dd>
+     <br><dt><samp><span class="command">mtn automate lua </span><var>function_name</var><span class="command"> [</span><var>function_args...</var><span class="command">]</span></samp><a name="index-mtn-automate-lua-_0040var_007bfunction_005fname_007d-_005b_0040var_007bfunction_005fargs_002e_002e_002e_007d_005d-223"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A valid Lua function name and zero or more function arguments. Note that string
@@ -3029,21 +2993,18 @@ programming languages do.
           <br><dt><strong>Sample output:</strong><dd>
 A single string return value:
 
-          <pre class="verbatim">          
-          [1] = "Output";
+          <pre class="verbatim">          [1] = "Output";
      </pre>
 
           <p>Two numeric return values:
 
-          <pre class="verbatim">          
-          [1] = 3;
+          <pre class="verbatim">          [1] = 3;
           [2] = 4.4;
      </pre>
 
           <p>A nested table:
 
-          <pre class="verbatim">          
-          [1] = {
+          <pre class="verbatim">          [1] = {
               ["bar"] = {
                   [1] = 1;
                   [2] = 2;
@@ -3054,8 +3015,7 @@ A single string return value:
 
           <p>A callback function:
 
-          <pre class="verbatim">          
-          [1] = nil --[[function]];
+          <pre class="verbatim">          [1] = nil --[[function]];
      </pre>
 
           <br><dt><strong>Error conditions:</strong><dd>

@@ -3,10 +3,11 @@
 <title>Additional Lua Functions - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
-<link rel="up" href="Hook-Reference.html#Hook-Reference" title="Hook Reference">
+<link rel="up" href="Lua-Reference.html#Lua-Reference" title="Lua Reference">
 <link rel="prev" href="Hooks.html#Hooks" title="Hooks">
+<link rel="next" href="Implementation-Differences.html#Implementation-Differences" title="Implementation Differences">
 <link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
 <meta http-equiv="Content-Style-Type" content="text/css">
 <style type="text/css"><!--
@@ -23,10 +24,11 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Additional-Lua-Functions"></a>
+<p>
+Next:&nbsp;<a rel="next" accesskey="n" href="Implementation-Differences.html#Implementation-Differences">Implementation Differences</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Hooks.html#Hooks">Hooks</a>,
-Up:&nbsp;<a rel="up" accesskey="u" href="Hook-Reference.html#Hook-Reference">Hook Reference</a>
+Up:&nbsp;<a rel="up" accesskey="u" href="Lua-Reference.html#Lua-Reference">Lua Reference</a>
 <hr>
 </div>
 
@@ -36,11 +38,23 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Hook-Reference.html#Hook-Reference">Hoo
 hook writers.
 
      <dl>
-<dt><code>alias_command(</code><var>original</var><code>, </code><var>alias</var><code>)</code><a name="index-alias_005fcommand_0028_0040var_007boriginal_007d_002c-_0040var_007balias_007d_0029-268"></a><dd>
+<dt><code>alias_command(</code><var>original</var><code>, </code><var>alias</var><code>)</code><a name="index-alias_005fcommand_0028_0040var_007boriginal_007d_002c-_0040var_007balias_007d_0029-275"></a><dd>
 This function adds a new alias for a monotone command.  A call to this function would
 normally be placed directly in the <samp><span class="file">monotonerc</span></samp> file, rather than in a hook function.
 
-     <br><dt><code>existonpath(</code><var>possible_command</var><code>)</code><a name="index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-269"></a><dd>
+     <br><dt><code>change_workspace(</code><var>directory</var><code>)</code><a name="index-change_005fworkspace_0028_0040var_007bdirectory_007d_0029-276"></a><dd>
+Change to workspace <var>directory</var>, which may be absolute or
+relative to the directory that was current when mtn was started.
+
+     <p>Throws an error if <var>directory</var> does not exist or is not a
+workspace (does not contain <samp><span class="file">_MTN</span></samp>).
+
+     <p>After calling change_workspace, the next operation should read the
+workspace options. <samp><span class="command">mtn_automate</span></samp> does this; other Lua
+extensions do not. In addition, <samp><span class="command">automate stio</span></samp> reads the
+workspace options before executing each command.
+
+     <br><dt><code>existonpath(</code><var>possible_command</var><code>)</code><a name="index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-277"></a><dd>
 This function receives a string containing the name of an external
 program and returns 0 if it exists on path and is executable, -1
 otherwise. 
@@ -50,56 +64,57 @@ On Windows, this function automatically appends &ldquo;.exe&rdquo; to the
 program name. In the previous example, <code>existonpath</code> would search
 for &ldquo;xxdiff.exe&rdquo;.
 
-     <br><dt><code>get_confdir()</code><a name="index-get_005fconfdir_0028_0029-270"></a><dd>
+     <br><dt><code>get_confdir()</code><a name="index-get_005fconfdir_0028_0029-278"></a><dd>
 Returns the path to the configuration directory, either implied or given
 with <samp><span class="option">--confdir</span></samp>.
 
-     <br><dt><code>get_ostype()</code><a name="index-get_005fostype_0028_0029-271"></a><dd>
+     <br><dt><code>get_ostype()</code><a name="index-get_005fostype_0028_0029-279"></a><dd>
 Returns the operating system flavor as a string.
 
-     <br><dt><code>guess_binary_file_contents(</code><var>filespec</var><code>)</code><a name="index-guess_005fbinary_005ffile_005fcontents_0028_0040var_007bfilespec_007d_0029-272"></a><dd>
+     <br><dt><code>guess_binary_file_contents(</code><var>filespec</var><code>)</code><a name="index-guess_005fbinary_005ffile_005fcontents_0028_0040var_007bfilespec_007d_0029-280"></a><dd>
 Returns true if the file appears to be binary, i.e. contains one or
 more of the following characters:
      <pre class="smallexample">     0x00 thru 0x06
      0x0E thru 0x1a
      0x1c thru 0x1f
 </pre>
-     <br><dt><code>include(</code><var>scriptfile</var><code>)</code><a name="index-include_0028_0040var_007bscriptfile_007d_0029-273"></a><dd>
+     <br><dt><code>include(</code><var>scriptfile</var><code>)</code><a name="index-include_0028_0040var_007bscriptfile_007d_0029-281"></a><dd>
 This function tries to load and execute the script contained into
 scriptfile.  It returns true for success and false if there is an
 error.
 
-     <br><dt><code>includedir(</code><var>scriptpath</var><code>)</code><a name="index-includedir_0028_0040var_007bscriptpath_007d_0029-274"></a><dd>
+     <br><dt><code>includedir(</code><var>scriptpath</var><code>)</code><a name="index-includedir_0028_0040var_007bscriptpath_007d_0029-282"></a><dd>
 This function loads and executes in alphabetical order all the scripts
-contained into the directory scriptpath. 
-If one of the scripts has an error, the functions doesn't process the
+contained in the directory scriptpath.
+
+     <p>If one of the scripts has an error, the function doesn't process the
 remaining scripts and immediately returns false.
 
-     <br><dt><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code><a name="index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-275"></a><dd>
+     <br><dt><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code><a name="index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-283"></a><dd>
 This function loads and executes in alphabetical order all the scripts
 contained into the directory scriptpath that match the given pattern. 
 If one of the scripts has an error, the functions doesn't process the
 remaining scripts and immediately returns false.
 
-     <br><dt><code>is_executable(</code><var>filespec</var><code>)</code><a name="index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-276"></a><dd>
+     <br><dt><code>is_executable(</code><var>filespec</var><code>)</code><a name="index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-284"></a><dd>
 This function returns true if the file is executable, false
 otherwise.  On Windows this function returns always false.
 
-     <br><dt><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code><a name="index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-277"></a><dd>
+     <br><dt><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code><a name="index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-285"></a><dd>
 This function calls the kill() C library function on POSIX systems and
 TerminateProcess on Win32 (in that case <var>pid</var> is the process
 handle).  If the optional <var>signal</var> parameter is missing, SIGTERM
 will be used. 
 Returns 0 on success, -1 on error.
 
-     <br><dt><code>make_executable(</code><var>filespec</var><code>)</code><a name="index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-278"></a><dd>
+     <br><dt><code>make_executable(</code><var>filespec</var><code>)</code><a name="index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-286"></a><dd>
 This function marks the named file as executable.  On Windows has no
 effect.
 
-     <br><dt><code>match(</code><var>glob</var><code>, </code><var>string</var><code>)</code><a name="index-match_0028_0040var_007bglob_007d_002c-_0040var_007bstring_007d_0029-279"></a><dd>
+     <br><dt><code>match(</code><var>glob</var><code>, </code><var>string</var><code>)</code><a name="index-match_0028_0040var_007bglob_007d_002c-_0040var_007bstring_007d_0029-287"></a><dd>
 Returns true if <var>glob</var> matches <var>str</var>, return false otherwise.
 
-     <br><dt><code>mkstemp(</code><var>template</var><code>)</code><a name="index-mkstemp_0028_0040var_007btemplate_007d_0029-280"></a><dd>
+     <br><dt><code>mkstemp(</code><var>template</var><code>)</code><a name="index-mkstemp_0028_0040var_007btemplate_007d_0029-288"></a><dd>
 Like its C library counterpart,  mkstemp creates a unique name and
 returns a file descriptor for the newly created file. 
 The value of template should be a pointer to a character buffer loaded
@@ -121,7 +136,7 @@ option.  <code>temp_file()</code> builds on <code>mkstemp()</code> and creates a
 file in the standard TMP/TEMP directories. 
 For the definition of <code>temp_file()</code>, see <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
 
-     <br><dt><code>mtn_automate( ... )</code><a name="index-mtn_005fautomate_0028-_002e_002e_002e-_0029-281"></a><dd>
+     <br><dt><code>mtn_automate( ... )</code><a name="index-mtn_005fautomate_0028-_002e_002e_002e-_0029-289"></a><dd>
 The <code>mtn_automate</code> Lua function calls the Monotone
 <samp><span class="command">automate</span></samp> command passed in its arguments. The result of the
 call is a pair consisting of a boolean return code, indicating whether
@@ -134,7 +149,7 @@ the Lua function <code>register_command</code>.
 is specified. Actions which require operations on password-encrypted private
 keys will therefor fail unless the <code>get_passphrase</code> hook is set up locally.
 
-     <br><dt><code>parse_basic_io(</code><var>data</var><code>)</code><a name="index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-282"></a><dd>
+     <br><dt><code>parse_basic_io(</code><var>data</var><code>)</code><a name="index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-290"></a><dd>
 Parse the string <var>data</var>, which should be in basic_io format. It returns nil
 if it can't parse the string; otherwise it returns a table. This will be a list
 of all statements, with each entry being a table having a "name" element that is
@@ -156,17 +171,17 @@ the arguments.
         4 = { name = "frob", values = { 1 = "oops" } }
      }
 </pre>
-     <br><dt><code>regex.search(</code><var>regexp</var><code>, </code><var>string</var><code>)</code><a name="index-regex_002esearch_0028_0040var_007bregexp_007d_002c-_0040var_007bstring_007d_0029-283"></a><dd>
+     <br><dt><code>regex.search(</code><var>regexp</var><code>, </code><var>string</var><code>)</code><a name="index-regex_002esearch_0028_0040var_007bregexp_007d_002c-_0040var_007bstring_007d_0029-291"></a><dd>
 Returns true if a match for <var>regexp</var> is found in <var>str</var>, return
 false otherwise.  See <a href="Regexps.html#Regexps">Regexps</a>, for the syntax of <var>regexp</var>.
 
-     <br><dt><code>register_command(</code><var>name</var><code>, </code><var>params</var><code>, </code><var>abstract</var><code>, </code><var>description</var><code>, </code><var>function</var><code>)</code><a name="index-register_005fcommand_0028_0040var_007bname_007d_002c-_0040var_007bparams_007d_002c-_0040var_007babstract_007d_002c-_0040var_007bdescription_007d_002c-_0040var_007bfunction_007d_0029-284"></a><dd>
+     <br><dt><code>register_command(</code><var>name</var><code>, </code><var>params</var><code>, </code><var>abstract</var><code>, </code><var>description</var><code>, </code><var>function</var><code>)</code><a name="index-register_005fcommand_0028_0040var_007bname_007d_002c-_0040var_007bparams_007d_002c-_0040var_007babstract_007d_002c-_0040var_007bdescription_007d_002c-_0040var_007bfunction_007d_0029-292"></a><dd>
 Add a command named <var>name</var> to the <var>user</var> command group in monotone.  This function is
 normally called directly from a <samp><span class="file">monotonerc</span></samp> file rather than a hook.  When the user issues the
 registered command, monotone will call the lua <var>function</var> name supplied.  That function would
 then normally use mtn_automate() calls to service the request.
 
-     <br><dt><code>server_request_sync(</code><var>what</var><code>, </code><var>address</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code><a name="index-server_005frequest_005fsync_0028_0040var_007bwhat_007d_002c-_0040var_007baddress_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-285"></a><dd>
+     <br><dt><code>server_request_sync(</code><var>what</var><code>, </code><var>address</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code><a name="index-server_005frequest_005fsync_0028_0040var_007bwhat_007d_002c-_0040var_007baddress_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-293"></a><dd>
 Initiate a netsync connection to the server at <var>address</var>, with the
 given include and exclude patterns, of type <samp><span class="option">sync</span></samp>, <samp><span class="option">push</span></samp>,
 or <samp><span class="option">pull</span></samp>, as given by the <var>what</var> argument.
@@ -174,16 +189,16 @@ or <samp><span class="option">pull</span></samp>, as given by the <var>what</var
      <p>When called by a monotone instance which is not running the <samp><span class="option">serve</span></samp>
 command, this function has no effect.
 
-     <br><dt><code>server_set_listening(</code><var>boolean</var><code>)</code><a name="index-server_005fset_005flistening_0028_0040var_007bboolean_007d_0029-286"></a><dd>
+     <br><dt><code>server_set_listening(</code><var>boolean</var><code>)</code><a name="index-server_005fset_005flistening_0028_0040var_007bboolean_007d_0029-294"></a><dd>
 If the argument is <var>false</var>, make the server not listen for incoming
 connections, and exit when all existing connections have closed.
 
      <p>If the argument is <var>true</var>, cancel an earlier call with <var>false</var> given.
 
-     <br><dt><code>sleep(</code><var>seconds</var><code>)</code><a name="index-sleep_0028_0040var_007bseconds_007d_0029-287"></a><dd>
+     <br><dt><code>sleep(</code><var>seconds</var><code>)</code><a name="index-sleep_0028_0040var_007bseconds_007d_0029-295"></a><dd>
 Makes the calling process sleep for the specified number of seconds.
 
-     <br><dt><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-288"></a><dd>
+     <br><dt><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-296"></a><dd>
 Starts the named executable with the given arguments.  Returns the
 process PID on POSIX systems, the process handle on Win32 or -1 if
 there was an error. 
@@ -195,17 +210,17 @@ function, unless you need to run monotone with the <samp><span class="option">--
 option.  <code>execute()</code> builds on <code>spawn()</code> and <code>wait()</code>
 in a standardized way.
 
-     <br><dt><code>spawn_pipe(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_005fpipe_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-289"></a><dd>
+     <br><dt><code>spawn_pipe(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_005fpipe_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-297"></a><dd>
 Like spawn(), but returns three values, where the first two are the
 subprocess' standard input and standard output, and the last is the
 process PID on POSIX systems, the process handle on Win32 or -1 if
 there was an error.
 
-     <br><dt><code>spawn_redirected(</code><var>infile</var><code>, </code><var>outfile</var><code>, </code><var>errfile</var><code>, </code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_005fredirected_0028_0040var_007binfile_007d_002c-_0040var_007boutfile_007d_002c-_0040var_007berrfile_007d_002c-_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-290"></a><dd>
+     <br><dt><code>spawn_redirected(</code><var>infile</var><code>, </code><var>outfile</var><code>, </code><var>errfile</var><code>, </code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_005fredirected_0028_0040var_007binfile_007d_002c-_0040var_007boutfile_007d_002c-_0040var_007berrfile_007d_002c-_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-298"></a><dd>
 Like spawn(), but with standard input, standard output and standard
 error redirected to the given files.
 
-     <br><dt><code>wait(</code><var>pid</var><code>)</code><a name="index-wait_0028_0040var_007bpid_007d_0029-291"></a><dd>
+     <br><dt><code>wait(</code><var>pid</var><code>)</code><a name="index-wait_0028_0040var_007bpid_007d_0029-299"></a><dd>
 Wait until the process with given PID (process handle on Win32) exits. 
 Returns two values: a result value and the exit code of the waited-for
 process. 

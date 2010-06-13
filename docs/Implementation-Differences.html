@@ -1,0 +1,64 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Implementation Differences - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.13">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Lua-Reference.html#Lua-Reference" title="Lua Reference">
+<link rel="prev" href="Additional-Lua-Functions.html#Additional-Lua-Functions" title="Additional Lua Functions">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<a name="Implementation-Differences"></a>
+<p>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Additional-Lua-Functions.html#Additional-Lua-Functions">Additional Lua Functions</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Lua-Reference.html#Lua-Reference">Lua Reference</a>
+<hr>
+</div>
+
+<h3 class="section">6.3 Implementation Differences</h3>
+
+<p>This section documents disabled and overwritten functions from the standard
+Lua libraries.
+
+     <dl>
+<dt><code>print, io.write</code><a name="index-print_002c-io_002ewrite-300"></a><dd>
+Both functions are overwritten to print to standard error (instead of
+standard output), formatted as monotone progress message with the prefix
+"lua:" in front of every line.
+
+     <p>The rationale behind this is to catch most of the informational
+messages from hooks which use these functions and present them via
+monotone's user interface. This allows them to be logged just as other
+progress messages, and prevents unexpected out-of-band output in the
+<a href="Automation.html#Automation">Automation</a> interface.
+
+     <p>If you explicitely need to write to either stdout or stderr, please use
+<code>io.stdout:write</code> and <code>io.stderr.write</code>.
+
+     <br><dt><code>os.execute, io.popen</code><a name="index-os_002eexecute_002c-io_002epopen-301"></a><dd>
+Both functions have been disabled for security reasons. You should use
+their replacements <code>spawn</code> and <code>spawn_pipe</code>.
+
+     <p>The original versions do not apply any kind of shell character escaping,
+which might lead to serious problems f.e. when a merger is automatically
+invoked by such a function.
+
+</dl>
+
+</body></html>
+

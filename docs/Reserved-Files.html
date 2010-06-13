@@ -3,7 +3,7 @@
 <title>Reserved Files - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
 <link rel="prev" href="Vars.html#Vars" title="Vars">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Reserved-Files"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Reserved-Certs.html#Reserved-Certs">Reserved Certs</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Vars.html#Vars">Vars</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
@@ -80,7 +80,7 @@ for you whenever it is appropriate.  However, both are documented
 here, just in case a situation arises where you need to go &ldquo;under the
 hood&rdquo;.
 
-<h3 class="heading">Existing control files</h3>
+<h3 class="heading">Existing control files and directories</h3>
 
 <p>The following control files are currently used. More control files may be added
 in the future, but they will follow the patterns given above.
@@ -107,10 +107,24 @@ after checking out a particular workspace.
 commit. The user may add content to this file while they work.  Upon a
 successful commit monotone will empty the file making it ready for the
 next edit/commit cycle. 
+<br><dt><samp><span class="file">_MTN/commit</span></samp><dd>If a commit fails, f.e. because a header field could not be parsed
+properly, then this file will contain a dump of the complete contents
+which have been saved through the editor.  After the information has
+been recovered from this file, it has to be removed explicitly, since
+a new commit won't be possible as long as this file exists. 
 <br><dt><samp><span class="file">_MTN/inodeprints</span></samp><dd>If this file exists, monotone considers the directory to be in
 <a href="Inodeprints.html#Inodeprints">Inodeprints</a> mode, and uses this file to cache the inodeprints. 
 <br><dt><samp><span class="file">_MTN/debug</span></samp><dd>If monotone detects a bug in itself or crashes, then before exiting it
 dumps a log of its recent activity to this file, to aid in debugging. 
+<br><dt><samp><span class="file">_MTN/bisect</span></samp><dd>Contains the current state of an ongoing bisection.  See <a href="Bisecting.html#Bisecting">Bisecting</a>
+for more information. 
+<br><dt><samp><span class="file">_MTN/update</span></samp><dd>Remembers the update / previous base revision of the workspace when
+the <code>u:</code> selector is used.  See <a href="Selectors.html#Selectors">Selectors</a> for more information. 
+<br><dt><samp><span class="file">_MTN/conflicts</span></samp><dd>The default file which is used by monotone to read and write merge conflicts
+for conflict resolution.  See <a href="Conflicts.html#Conflicts">Conflicts</a> for more information. 
+<br><dt><samp><span class="file">_MTN/resolutions</span></samp><dd>The directory in which monotone moves unversioned, conflicting files from
+a workspace to, in case <samp><span class="command">update</span></samp> or other commands are called with
+the <samp><span class="option">--move-conflicting-paths</span></samp> option. 
 </dl>
 
 </body></html>

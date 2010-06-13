@@ -3,7 +3,7 @@
 <title>Certificate - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
 <link rel="prev" href="Key-and-Cert-Trust.html#Key-and-Cert-Trust" title="Key and Cert Trust">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Certificate"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Packet-I_002fO.html#Packet-I_002fO">Packet I/O</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Key-and-Cert-Trust.html#Key-and-Cert-Trust">Key and Cert Trust</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
@@ -35,7 +35,7 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Referenc
 <h3 class="section">5.6 Certificate</h3>
 
      <dl>
-<dt><samp><span class="command">mtn cert </span><var>id</var> <var>certname</var></samp><a name="index-mtn-cert-_0040var_007bid_007d-_0040var_007bcertname_007d-132"></a><dt><samp><span class="command">mtn cert </span><var>id</var> <var>certname</var> <var>certval</var></samp><a name="index-mtn-cert-_0040var_007bid_007d-_0040var_007bcertname_007d-_0040var_007bcertval_007d-133"></a><dd>
+<dt><samp><span class="command">mtn cert </span><var>id</var> <var>certname</var></samp><a name="index-mtn-cert-_0040var_007bid_007d-_0040var_007bcertname_007d-133"></a><dt><samp><span class="command">mtn cert </span><var>id</var> <var>certname</var> <var>certval</var></samp><a name="index-mtn-cert-_0040var_007bid_007d-_0040var_007bcertname_007d-_0040var_007bcertval_007d-134"></a><dd>
 These commands create a new certificate with name <var>certname</var>, for a
 revision with version <var>id</var>.  The <var>id</var> argument can be a selector
 using certs already on the revision, such as <code>h:</code><var>branchname</var>.
@@ -43,24 +43,24 @@ using certs already on the revision, such as <code>h:</code><var>branchname</var
      <p>If <var>certval</var> is provided, it is the value of the certificate. 
 Otherwise the certificate value is read from <code>stdin</code>.
 
-     <br><dt><samp><span class="command">mtn approve </span><var>id</var></samp><a name="index-mtn-approve-_0040var_007bid_007d-134"></a><dd>
+     <br><dt><samp><span class="command">mtn approve </span><var>id</var></samp><a name="index-mtn-approve-_0040var_007bid_007d-135"></a><dd>
 This command is a synonym for <samp><span class="command">mtn cert </span><var>id</var><span class="command"> branch
 </span><var>branchname</var></samp> where <var>branchname</var> is the current branch name
 (either deduced from the workspace or from the <samp><span class="option">--branch</span></samp>
 option).
 
-     <br><dt><samp><span class="command">mtn comment </span><var>id</var></samp><a name="index-mtn-comment-_0040var_007bid_007d-135"></a><dt><samp><span class="command">mtn comment </span><var>id</var> <var>comment</var></samp><a name="index-mtn-comment-_0040var_007bid_007d-_0040var_007bcomment_007d-136"></a><dd>
+     <br><dt><samp><span class="command">mtn comment </span><var>id</var></samp><a name="index-mtn-comment-_0040var_007bid_007d-136"></a><dt><samp><span class="command">mtn comment </span><var>id</var> <var>comment</var></samp><a name="index-mtn-comment-_0040var_007bid_007d-_0040var_007bcomment_007d-137"></a><dd>
 These commands are synonyms for <samp><span class="command">mtn cert </span><var>id</var><span class="command">
 comment </span><var>comment</var></samp>. If <var>comment</var> is not provided, it is read
 from <code>stdin</code>.
 
-     <br><dt><samp><span class="command">mtn suspend </span><var>id</var></samp><a name="index-mtn-suspend-_0040var_007bid_007d-137"></a><dd>
+     <br><dt><samp><span class="command">mtn suspend </span><var>id</var></samp><a name="index-mtn-suspend-_0040var_007bid_007d-138"></a><dd>
 This command is a synonym for <samp><span class="command">mtn cert </span><var>id</var><span class="command"> suspend
 </span><var>branchname</var></samp> where <var>branchname</var> is the current branch name
 (either deduced from the workspace or from the <samp><span class="option">--branch</span></samp>
 option).
 
-     <br><dt><samp><span class="command">mtn tag </span><var>id</var> <var>tagname</var></samp><a name="index-mtn-tag-_0040var_007bid_007d-_0040var_007btagname_007d-138"></a><dd>
+     <br><dt><samp><span class="command">mtn tag </span><var>id</var> <var>tagname</var></samp><a name="index-mtn-tag-_0040var_007bid_007d-_0040var_007btagname_007d-139"></a><dd>
 This command associates the symbolic name <var>tagname</var> with the
 revision <var>id</var>, so that symbolic name can later be used in
 <a href="Selectors.html#Selectors">Selectors</a> for specifying revisions for commands like
@@ -69,7 +69,7 @@ revision <var>id</var>, so that symbolic name can later be used in
      <p>This command is a synonym for <samp><span class="command">mtn cert </span><var>id</var><span class="command"> tag
 </span><var>tagname</var></samp>.
 
-     <br><dt><samp><span class="command">mtn testresult </span><var>id</var><span class="command"> 0</span></samp><a name="index-mtn-testresult-_0040var_007bid_007d-0-139"></a><dt><samp><span class="command">mtn testresult </span><var>id</var><span class="command"> 1</span></samp><a name="index-mtn-testresult-_0040var_007bid_007d-1-140"></a><dd>
+     <br><dt><samp><span class="command">mtn testresult </span><var>id</var><span class="command"> 0</span></samp><a name="index-mtn-testresult-_0040var_007bid_007d-0-140"></a><dt><samp><span class="command">mtn testresult </span><var>id</var><span class="command"> 1</span></samp><a name="index-mtn-testresult-_0040var_007bid_007d-1-141"></a><dd>
 These commands are synonyms for <samp><span class="command">mtn cert </span><var>id</var><span class="command">
 testresult 0</span></samp> or <samp><span class="command">mtn cert </span><var>id</var><span class="command"> testresult 1</span></samp>.
 

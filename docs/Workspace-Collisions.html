@@ -3,7 +3,7 @@
 <title>Workspace Collisions - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
 <link rel="prev" href="Merge-Conflicts.html#Merge-Conflicts" title="Merge Conflicts">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Workspace-Collisions"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Quality-Assurance.html#Quality-Assurance">Quality Assurance</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Merge-Conflicts.html#Merge-Conflicts">Merge Conflicts</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
@@ -74,7 +74,7 @@ so monotone is conservative and will refuse to destroy the information
 in your workspace contents. Furthermore, all workspace-changing commands have
 an option <samp><span class="option">--move-conflicting-paths</span></samp>, which moves unversioned, but
 conflicting files and directories from the workspace into a new subdirectory
-under _MTN/conflicts. This is useful if you want to ensure that an update
+under _MTN/resolutions. This is useful if you want to ensure that an update
 always succeeds and you just want to move blocking paths out of the way.
 
 <p>However, monotone cannot detect all kinds of failures and collisions in

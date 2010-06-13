@@ -3,7 +3,7 @@
 <title>Dealing with a Fork - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Tutorial.html#Tutorial" title="Tutorial">
 <link rel="prev" href="Making-Changes.html#Making-Changes" title="Making Changes">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Dealing-with-a-Fork"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Branching-and-Merging.html#Branching-and-Merging">Branching and Merging</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Making-Changes.html#Making-Changes">Making Changes</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
@@ -53,9 +53,9 @@ worker was fully informed of the &ldquo;up-stream&rdquo; worker's actions, and
 produced purely derivative, &ldquo;down-stream&rdquo; work:
 
      <ol type=1 start=1>
-<li>Jim made revision 2e24d... 
-<li>Abe changed revision 2e24d... into revision 70dec... 
-<li>Beth derived revision 70dec... into revision 80ef9...
+<li>Jim made revision 493bd... 
+<li>Abe changed revision 493bd... into revision 42eae... 
+<li>Beth derived revision 42eae... into revision 85573...
      </ol>
 
 <p>This is a simple, but sadly unrealistic, ordering of events. In real
@@ -76,7 +76,7 @@ in the fork.
 sends out an email saying that the current polling juice dispensers
 use too much CPU time, and must be rewritten to use the JuiceBot's
 interrupt system. Beth wakes up first and begins working immediately,
-basing her work off the revision 80ef9... which is currently in her
+basing her work off the revision 85573... which is currently in her
 workspace:
 
 <pre class="smallexample">$ vi src/banana.c
@@ -86,15 +86,15 @@ workspace:
 
 <pre class="smallexample">$ mtn diff
 #
-# old_revision [80ef9c9d251d39074d37e72abf4897e0bbae1cfb]
+# old_revision [85573a54105cd3220db10aa6a0713643cdf5ce6f]
 #
 # patch "src/banana.c"
-#  from [7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a]
-#    to [5e6622cf5c8805bcbd50921ce7db86dad40f2ec6]
+#  from [d7e28a01cf6fc0f9ac04c6901dcafd77c2d32fb8]
+#    to [dd979c3c880e6a7221fcecd7148bd4afcfb3e964]
 #
-============================================================================
---- src/banana.c 7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a
-+++ src/banana.c 5e6622cf5c8805bcbd50921ce7db86dad40f2ec6
+============================================================
+--- src/banana.c	d7e28a01cf6fc0f9ac04c6901dcafd77c2d32fb8
++++ src/banana.c	dd979c3c880e6a7221fcecd7148bd4afcfb3e964
 @ -1,10 +1,15 @
  #include "jb.h"
 
@@ -106,8 +106,7 @@ workspace:
 +}
 +
  void
--dispense_banana_juice()
-+dispense_banana_juice()
+ dispense_banana_juice()
  {
 +  spoutctl(BANANA_SPOUT, SET_INTR, &amp;shut_off_banana);
    spoutctl(BANANA_SPOUT, FLOW_JUICE, 1);
@@ -120,7 +119,7 @@ workspace:
 
 <pre class="smallexample">$ mtn commit --message="interrupt implementation of src/banana.c"
 mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-mtn: committed revision 8b41b5399a564494993063287a737d26ede3dee4
+mtn: committed revision 90abe0f1bc354a73d42d3bff1b02946559682bd9
 </pre>
 <p>And she syncs with Jim:
 
@@ -128,8 +127,7 @@ mtn: committed revision 8b41b5399a564494993063287a737d26ede3dee4
 </pre>
 <p>Unfortunately, before Beth managed to sync with Jim, Abe had woken up
 and implemented a similar interrupt-based apple juice dispenser, but
-his workspace is 70dec..., which is still &ldquo;upstream&rdquo; of
-Beth's.
+his workspace is 42eae..., which is still &ldquo;upstream&rdquo; of Beth's.
 
 <pre class="smallexample">$ vi apple.c
 <i>&lt;Abe changes his apple-juice dispenser to use interrupts&gt;</i>
@@ -150,8 +148,8 @@ the branch:
 
 <pre class="smallexample">$ mtn heads
 mtn: branch 'jp.co.juicebot.jb7' is currently unmerged:
-39969614e5a14316c7ffefc588771f491c709152 abe@juicebot.co.jp 2004-10-26T02:53:16
-8b41b5399a564494993063287a737d26ede3dee4 beth@juicebot.co.jp 2004-10-26T02:53:15
+90abe0f1bc354a73d42d3bff1b02946559682bd9 abe@juicebot.co.jp 2004-10-26T02:53:16
+951da88860a4cf7419d66ed9094d8bf24df5fb8b beth@juicebot.co.jp 2004-10-26T02:53:15
 </pre>
 <p>Clearly there are two heads to the branch: it contains an un-merged
 fork. Beth will not yet know about the fork, but in this case it
@@ -159,14 +157,13 @@ doesn't matter: anyone can merge the fork, and since there are no
 conflicts Jim does so himself:
 
 <pre class="smallexample">$ mtn merge
-mtn: starting with revision 1 / 2
-mtn: merging with revision 2 / 2
-mtn: [source] 39969614e5a14316c7ffefc588771f491c709152
-mtn: [source] 8b41b5399a564494993063287a737d26ede3dee4
-mtn: common ancestor 70decb4b31a8227a629c0e364495286c5c75f979 abe@juicebot.co.jp  2004-10-26T:02:50:01 found
-mtn: trying 3-way merge
-mtn: [merged] da499b9d9465a0e003a4c6b2909102ef98bf4e6d
-mtn: your workspaces have not been updated
+mtn: 2 heads on branch 'jp.co.juicebot.jb7'
+mtn: merge 1 / 1:
+mtn: calculating best pair of heads to merge next
+mtn: [left]  90abe0f1bc354a73d42d3bff1b02946559682bd9
+mtn: [right] 951da88860a4cf7419d66ed9094d8bf24df5fb8b
+mtn: [merged] 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
+mtn: note: your workspaces have not been updated
 </pre>
 <p>The output of this command shows Jim that two heads were found,
 combined via a 3-way merge with their ancestor, and saved to a new
@@ -180,10 +177,13 @@ commands to resolve it (see <a href="Conflicts.html#Conflicts">Conflicts</a>).
 his workspace.
 
 <pre class="smallexample">$ mtn update
-mtn: selected update target da499b9d9465a0e003a4c6b2909102ef98bf4e6d
-mtn: updating src/apple.c to f088e24beb43ab1468d7243e36ce214a559bdc96
-mtn: updating src/banana.c to 5e6622cf5c8805bcbd50921ce7db86dad40f2ec6
-mtn: updated to base revision da499b9d9465a0e003a4c6b2909102ef98bf4e6d
+mtn: updating along branch 'jp.co.juicebot.jb7'
+mtn: selected update target 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
+mtn: [left]  d60c18ec5e0cf1163b276f0bfdd908c1dfd53b4a
+mtn: [right] 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
+mtn: updating src/apple.c
+mtn: updating src/banana.c
+mtn: updated to base revision 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
 </pre>
 <p>The update command selected an update target &mdash; in this case the newly merged
 head &mdash; and performed an in-memory merge between Jim's workspace

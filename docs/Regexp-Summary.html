@@ -3,7 +3,7 @@
 <title>Regexp Summary - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Regexps.html#Regexps" title="Regexps">
 <link rel="next" href="Regexp-Details.html#Regexp-Details" title="Regexp Details">
@@ -23,8 +23,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Regexp-Summary"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Regexp-Details.html#Regexp-Details">Regexp Details</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Regexps.html#Regexps">Regexps</a>
 <hr>
@@ -79,10 +79,10 @@ used in Monotone.
 <br><dt><code>\X</code><dd>  an extended Unicode sequence
 </dl>
 
-<p class="noindent">`<samp><span class="samp">\d</span></samp>', `<samp><span class="samp">\D</span></samp>', `<samp><span class="samp">\s</span></samp>', `<samp><span class="samp">\S</span></samp>', `<samp><span class="samp">\w</span></samp>', and `<samp><span class="samp">\W</span></samp>'
+<p class="noindent">&lsquo;<samp><span class="samp">\d</span></samp>&rsquo;, &lsquo;<samp><span class="samp">\D</span></samp>&rsquo;, &lsquo;<samp><span class="samp">\s</span></samp>&rsquo;, &lsquo;<samp><span class="samp">\S</span></samp>&rsquo;, &lsquo;<samp><span class="samp">\w</span></samp>&rsquo;, and &lsquo;<samp><span class="samp">\W</span></samp>&rsquo;
 recognize only ASCII characters.
 
-<h5 class="subsubheading">General category property codes for `<samp><span class="samp">\p</span></samp>' and `<samp><span class="samp">\P</span></samp>'</h5>
+<h5 class="subsubheading">General category property codes for &lsquo;<samp><span class="samp">\p</span></samp>&rsquo; and &lsquo;<samp><span class="samp">\P</span></samp>&rsquo;</h5>
 
      <dl>
 <dt><code>C</code><dd>  Other
@@ -131,7 +131,7 @@ recognize only ASCII characters.
 <br><dt><code>Zs</code><dd>  Space separator
 </dl>
 
-<h5 class="subsubheading">Script names for `<samp><span class="samp">\p</span></samp>' and `<samp><span class="samp">\P</span></samp>'</h5>
+<h5 class="subsubheading">Script names for &lsquo;<samp><span class="samp">\p</span></samp>&rsquo; and &lsquo;<samp><span class="samp">\P</span></samp>&rsquo;</h5>
 
 <p>Arabic,
 Armenian,
@@ -221,12 +221,12 @@ Yi.
 <br><dt><code>punct</code><dd>  printing, excluding alphanumeric
 <br><dt><code>space</code><dd>  whitespace
 <br><dt><code>upper</code><dd>  upper case letter
-<br><dt><code>word</code><dd>  same as `<samp><span class="samp">\w</span></samp>'
+<br><dt><code>word</code><dd>  same as &lsquo;<samp><span class="samp">\w</span></samp>&rsquo;
 <br><dt><code>xdigit</code><dd>  hexadecimal digit
 </dl>
 
 <p>In PCRE, POSIX character set names recognize only ASCII
-characters. You can use `<samp><span class="samp">\Q...\E</span></samp>' inside a character class.
+characters. You can use &lsquo;<samp><span class="samp">\Q...\E</span></samp>&rsquo; inside a character class.
 
 <h5 class="subsubheading">Quantifiers</h5>
 
@@ -372,7 +372,7 @@ characters. You can use `<samp><span class="samp">\Q...\E</span></samp>' inside 
 
      <dl>
 <dt><code>(*ACCEPT)</code><dd>  force successful match
-<br><dt><code>(*FAIL)</code><dd>  force backtrack; synonym `<samp><span class="samp">(*F)</span></samp>'
+<br><dt><code>(*FAIL)</code><dd>  force backtrack; synonym &lsquo;<samp><span class="samp">(*F)</span></samp>&rsquo;
 </dl>
 
 <p>The following act only when a subsequent match failure causes a backtrack to
@@ -390,15 +390,15 @@ pattern is not anchored.
 <h5 class="subsubheading">Newline Conventions</h5>
 
 <p>These are recognized only at the very start of the pattern or after a
-`<samp><span class="samp">(*BSR_...)</span></samp>' option.
+&lsquo;<samp><span class="samp">(*BSR_...)</span></samp>&rsquo; option.
 
      <dl>
 <dt><code>(*CR)</code><br><dt><code>(*LF)</code><br><dt><code>(*CRLF)</code><br><dt><code>(*ANYCRLF)</code><br><dt><code>(*ANY)</code><dd></dl>
 
-<h5 class="subsubheading">What `<samp><span class="samp">\R</span></samp>' Matches</h5>
+<h5 class="subsubheading">What &lsquo;<samp><span class="samp">\R</span></samp>&rsquo; Matches</h5>
 
 <p>These are recognized only at the very start of the pattern or after a
-`<samp><span class="samp">(*...)</span></samp>' option that sets the newline convention.
+&lsquo;<samp><span class="samp">(*...)</span></samp>&rsquo; option that sets the newline convention.
 
      <dl>
 <dt><code>(*BSR_ANYCRLF)</code><br><dt><code>(*BSR_UNICODE)</code><dd></dl>

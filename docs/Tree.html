@@ -3,7 +3,7 @@
 <title>Tree - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
 <link rel="prev" href="Command-Reference.html#Command-Reference" title="Command Reference">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Tree"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Workspace.html#Workspace">Workspace</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Command-Reference.html#Command-Reference">Command Reference</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
@@ -83,12 +83,14 @@ occur.
      <br><dt><samp><span class="command">mtn clone </span><var>address</var><span class="command">[:</span><var>port</var><span class="command">] </span><var>branchname</var><span class="command"> [</span><var>directory</var><span class="command">]</span></samp><a name="index-mtn-clone-_0040var_007baddress_007d_005b_003a_0040var_007bport_007d_005d-_0040var_007bbranchname_007d-_005b_0040var_007bdirectory_007d_005d-7"></a><dd>
 The clone command is a helper command that performs the roles of a
 number of other commands all at once.  Firstly, it constructs a new
-database.  It then populates this database by <samp><span class="command">pull</span></samp>ing any data
+database. If no database is given, the configured default
+database is created or re-used (see the hook
+<code>get_default_database_alias</code> in the <a href="Lua-Reference.html#Lua-Reference">Lua Reference</a> for
+more details). Then it populates this database by <samp><span class="command">pull</span></samp>ing any data
 in the branch <var>branchname</var> from the remote database, <var>address</var>. 
 Finally, it copies the files out of the newly created database into a
 local directory, just as <samp><span class="command">checkout</span></samp> would.  If no <var>directory</var>
-is given, the <var>branchname</var> is used as directory.  The created
-database is placed in the new workspace as <samp><var>directory</var><span class="file">/_MTN/mtn.db</span></samp>.
+is given, the <var>branchname</var> is used as directory.
 
      <br><dt><samp><span class="command">mtn disapprove </span><var>id</var></samp><a name="index-mtn-disapprove-_0040var_007bid_007d-8"></a><dd>
 This command records a disapproval of the changes between <var>id</var>'s

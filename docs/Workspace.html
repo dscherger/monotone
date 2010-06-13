@@ -3,7 +3,7 @@
 <title>Workspace - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
 <link rel="prev" href="Tree.html#Tree" title="Tree">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Workspace"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Network.html#Network">Network</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Tree.html#Tree">Tree</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
@@ -35,10 +35,14 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Referenc
 <h3 class="section">5.2 Workspace</h3>
 
      <dl>
-<dt><samp><span class="command">mtn setup [</span><var>directory</var><span class="command">]</span></samp><a name="index-mtn-setup-_005b_0040var_007bdirectory_007d_005d-31"></a><dd>This command prepares <var>directory</var> as a monotone workspace,
+<dt><samp><span class="command">mtn setup -b </span><var>branchname</var><span class="command"> [-d </span><var>database</var><span class="command">] [</span><var>directory</var><span class="command">]</span></samp><a name="index-mtn-setup-_002db-_0040var_007bbranchname_007d-_005b_002dd-_0040var_007bdatabase_007d_005d-_005b_0040var_007bdirectory_007d_005d-31"></a><dd>This command prepares <var>directory</var> as a monotone workspace,
 by creating and populating the <samp><span class="file">_MTN</span></samp> directory with basic
-information.  This information must include at least the branch and the
-database to be used, both of which will be placed in the
+information.  This information must include at least the branch
+to be used.  If no database is given, the configured default
+database is created or re-used (see the hook
+<code>get_default_database_alias</code> in the <a href="Lua-Reference.html#Lua-Reference">Lua Reference</a> for
+more details). 
+Both settings, branch and database name, will be placed in the
 <samp><span class="file">_MTN/options</span></samp> file.
 
      <p>This can be used with an empty directory to start a new blank project,
@@ -98,7 +102,11 @@ to remove the file from the revision at commit time, but where it will
 is if the <samp><span class="option">--bookkeep-only</span></samp> option is supplied.  Another is
 if a file has un-committed changes or if a directory is not empty.
 
-     <br><dt><samp><span class="command">mtn [--bookkeep-only] rename </span><var>src</var> <var>dst</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-rename-_0040var_007bsrc_007d-_0040var_007bdst_007d-37"></a><br><dt><samp><span class="command">mtn [--bookkeep-only] mv </span><var>src</var> <var>dst</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-mv-_0040var_007bsrc_007d-_0040var_007bdst_007d-38"></a><dt><samp><span class="command">mtn [--bookkeep-only] rename </span><var>src1</var> <var>...</var> <var>dst/</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-rename-_0040var_007bsrc1_007d-_0040var_007b_002e_002e_002e_007d-_0040var_007bdst_002f_007d-39"></a><dt><samp><span class="command">mtn [--bookkeep-only] mv </span><var>src1</var> <var>...</var> <var>dst/</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-mv-_0040var_007bsrc1_007d-_0040var_007b_002e_002e_002e_007d-_0040var_007bdst_002f_007d-40"></a><dd>This command places &ldquo;rename&rdquo; entries for the paths specified in
+     <br><dt><samp><span class="command">mtn undrop </span><var>pathname...</var></samp><a name="index-mtn-undrop-_0040var_007bpathname_002e_002e_002e_007d-37"></a><dd>Undoes a previous &ldquo;drop&rdquo;; useful when you make a mistake. If the
+file was deleted from the workspace, this reverts it. If it was not
+deleted (because it was changed), it just removes the pending drop.
+
+     <br><dt><samp><span class="command">mtn [--bookkeep-only] rename </span><var>src</var> <var>dst</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-rename-_0040var_007bsrc_007d-_0040var_007bdst_007d-38"></a><dt><samp><span class="command">mtn [--bookkeep-only] mv </span><var>src</var> <var>dst</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-mv-_0040var_007bsrc_007d-_0040var_007bdst_007d-39"></a><dt><samp><span class="command">mtn [--bookkeep-only] rename </span><var>src1</var> <var>...</var> <var>dst/</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-rename-_0040var_007bsrc1_007d-_0040var_007b_002e_002e_002e_007d-_0040var_007bdst_002f_007d-40"></a><dt><samp><span class="command">mtn [--bookkeep-only] mv </span><var>src1</var> <var>...</var> <var>dst/</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-mv-_0040var_007bsrc1_007d-_0040var_007b_002e_002e_002e_007d-_0040var_007bdst_002f_007d-41"></a><dd>This command places &ldquo;rename&rdquo; entries for the paths specified in
 <var>src</var> and <var>dst</var> in the workspace's &ldquo;work list&rdquo;. The second form
 renames a number of source paths to the given destination. The work
 list of your workspace is stored in <samp><span class="file">_MTN/revision</span></samp>, and is a list of
@@ -112,7 +120,7 @@ physically in the filesystem as a directory or is specified as a
 directory by convention (a trailing /), it will be automatically added
 to the workspace if it is not already versioned.
 
-     <br><dt><samp><span class="command">mtn commit</span></samp><a name="index-mtn-commit-41"></a><br><dt><samp><span class="command">mtn ci</span></samp><a name="index-mtn-ci-42"></a><dt><samp><span class="command">mtn commit --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...]</span></samp><a name="index-mtn-commit-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-43"></a><dt><samp><span class="command">mtn ci --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...]</span></samp><a name="index-mtn-ci-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-44"></a><dt><samp><span class="command">mtn commit --message-file=</span><var>logfile</var></samp><a name="index-mtn-commit-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-45"></a><dt><samp><span class="command">mtn ci --message-file=</span><var>logfile</var></samp><a name="index-mtn-ci-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-46"></a><dt><samp><span class="command">mtn commit </span><var>pathname...</var></samp><a name="index-mtn-commit-_0040var_007bpathname_002e_002e_002e_007d-47"></a><dt><samp><span class="command">mtn ci </span><var>pathname...</var></samp><a name="index-mtn-ci-_0040var_007bpathname_002e_002e_002e_007d-48"></a><dt><samp><span class="command">mtn commit --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...] </span><var>pathname...</var></samp><a name="index-mtn-commit-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-_0040var_007bpathname_002e_002e_002e_007d-49"></a><dt><samp><span class="command">mtn ci --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...] </span><var>pathname...</var></samp><a name="index-mtn-ci-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-_0040var_007bpathname_002e_002e_002e_007d-50"></a><dt><samp><span class="command">mtn commit --message-file=</span><var>logfile</var> <var>pathname...</var></samp><a name="index-mtn-commit-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-_0040var_007bpathname_002e_002e_002e_007d-51"></a><dt><samp><span class="command">mtn ci --message-file=</span><var>logfile</var> <var>pathname...</var></samp><a name="index-mtn-ci-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-_0040var_007bpathname_002e_002e_002e_007d-52"></a><dd>
+     <br><dt><samp><span class="command">mtn commit</span></samp><a name="index-mtn-commit-42"></a><br><dt><samp><span class="command">mtn ci</span></samp><a name="index-mtn-ci-43"></a><dt><samp><span class="command">mtn commit --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...]</span></samp><a name="index-mtn-commit-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-44"></a><dt><samp><span class="command">mtn ci --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...]</span></samp><a name="index-mtn-ci-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-45"></a><dt><samp><span class="command">mtn commit --message-file=</span><var>logfile</var></samp><a name="index-mtn-commit-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-46"></a><dt><samp><span class="command">mtn ci --message-file=</span><var>logfile</var></samp><a name="index-mtn-ci-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-47"></a><dt><samp><span class="command">mtn commit </span><var>pathname...</var></samp><a name="index-mtn-commit-_0040var_007bpathname_002e_002e_002e_007d-48"></a><dt><samp><span class="command">mtn ci </span><var>pathname...</var></samp><a name="index-mtn-ci-_0040var_007bpathname_002e_002e_002e_007d-49"></a><dt><samp><span class="command">mtn commit --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...] </span><var>pathname...</var></samp><a name="index-mtn-commit-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-_0040var_007bpathname_002e_002e_002e_007d-50"></a><dt><samp><span class="command">mtn ci --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...] </span><var>pathname...</var></samp><a name="index-mtn-ci-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-_0040var_007bpathname_002e_002e_002e_007d-51"></a><dt><samp><span class="command">mtn commit --message-file=</span><var>logfile</var> <var>pathname...</var></samp><a name="index-mtn-commit-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-_0040var_007bpathname_002e_002e_002e_007d-52"></a><dt><samp><span class="command">mtn ci --message-file=</span><var>logfile</var> <var>pathname...</var></samp><a name="index-mtn-ci-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-_0040var_007bpathname_002e_002e_002e_007d-53"></a><dd>
 This command looks at your workspace, decides which files have
 changed, and saves the changes to your database. It does this by
 loading the revision named in <samp><span class="file">_MTN/revision</span></samp>, locating the base
@@ -152,14 +160,14 @@ options provided, with each one starting at the beginning of a new line.
 
      <p>The <samp><span class="file">_MTN/log</span></samp> file can be edited by the user during their daily
 work to record the changes made to the workspace. When running the
-<samp><span class="command">commit</span></samp> command without a <var>logmsg</var> supplied, the contents of
-the <samp><span class="file">_MTN/log</span></samp> file will be read and passed to the Lua hook
-<code>edit_comment</code> as a second parameter named <var>user_log_content</var>. 
-The log message will be prepended with a 'magic' string that must be
-removed to confirm the commit.  This allows the user to easily cancel a
-commit, without emptying the entire log message.  If the commit is
-successful, the <samp><span class="file">_MTN/log</span></samp> file is cleared of all content making it
-ready for another edit/commit cycle.
+<samp><span class="command">commit</span></samp> command without a <var>logmsg</var> supplied, the contents
+of the <samp><span class="file">_MTN/log</span></samp> file will be read and passed to the Lua hook
+<code>edit_comment</code> as a parameter named <var>user_log_message</var>.  The
+log message passed to the user's editor will contain a line that the
+user may remove allowing them user to easily cancel a commit, without
+emptying the entire log message.  If the commit is successful, the
+<samp><span class="file">_MTN/log</span></samp> file is cleared of all content making it ready for
+another edit/commit cycle.
 
      <p>If <samp><span class="option">--message-file=_MTN/log</span></samp> is specified, the contents of
 <samp><span class="file">_MTN/log</span></samp> will be used without confirmation.
@@ -187,12 +195,48 @@ importing &ldquo;by hand&rdquo; from another version control system.
 <li>A <code>changelog</code> cert, containing the &ldquo;log message&rdquo; for these
 changes.  If you provided <var>logmsg</var> on the command line, this text
 will be used, otherwise <samp><span class="command">commit</span></samp> will run the Lua hook
-<code>edit_comment (</code><var>commentary</var><code>, </code><var>user_log_content</var><code>)</code>, which
-typically invokes an external editor program, in which you can compose
-and/or review your log message for the change. 
+<code>edit_comment(</code><var>user_log_message</var><code>)</code>, which typically invokes
+an external editor program, in which you can compose and/or review the
+revision and log message for the change. 
 </ul>
 
-     <br><dt><samp><span class="command">mtn revert </span><var>pathname...</var></samp><a name="index-mtn-revert-_0040var_007bpathname_002e_002e_002e_007d-53"></a><dt><samp><span class="command">mtn revert --missing </span><var>pathname...</var></samp><a name="index-mtn-revert-_002d_002dmissing-_0040var_007bpathname_002e_002e_002e_007d-54"></a><dd>This command changes your workspace, so that changes you have made
+     <p>The <var>user_log_message</var> passed to the <code>edit_comment</code> hook will
+contain a full summary of the revision as it would have been displayed
+by the <samp><span class="command">status</span></samp> command prior to committing and as the
+<samp><span class="command">log</span></samp> command will display it after it has been committed:
+
+     <pre class="smallexample">     Enter a description of this change following the Changelog line below.
+     The values of Author, Date and Branch may be modified as required.
+     
+     *** REMOVE THIS LINE TO CANCEL THE COMMIT ***
+     ----------------------------------------------------------------------
+     Revision: 42eae36587508faa664b111cefc291f0b85ef83a
+     Parent:   493bda86628fd72c992eb56f73899db9ead3cf6f
+     Author:   abe@juicebot.co.jp
+     Date:     2004-10-26T02:53:08
+     Branch:   jp.co.juicebot.jb7
+     
+     Changelog:
+     
+     polling implementation of src/apple.c
+     
+     ----------------------------------------------------------------------
+     Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
+     
+       patched  src/apple.c
+</pre>
+     <p>Values specified in <samp><span class="option">--author</span></samp>, <samp><span class="option">--date</span></samp> or
+<samp><span class="option">--branch</span></samp> options on the command line will be displayed in the
+editor and may be further changed while editing the changelog
+message. The changelog message will be extracted from between the
+<code>Changelog:</code> header and the trailing line of <code>----</code>
+characters. Care must be taken to ensure no other lines are changed or
+the commit will abort to avoid extracting an incorrect message. If the
+commit needs to be cancelled the line following the leading
+instructions should be removed. Any pending text in <samp><span class="file">MTN/log</span></samp>
+will be left untouched if the commit is cancelled.
+
+     <br><dt><samp><span class="command">mtn revert </span><var>pathname...</var></samp><a name="index-mtn-revert-_0040var_007bpathname_002e_002e_002e_007d-54"></a><dt><samp><span class="command">mtn revert --missing </span><var>pathname...</var></samp><a name="index-mtn-revert-_002d_002dmissing-_0040var_007bpathname_002e_002e_002e_007d-55"></a><dd>This command changes your workspace, so that changes you have made
 since the last checkout or update are discarded. The command is
 restricted the set of files or directories given as arguments.  To
 revert the entire workspace, use <samp><span class="command">revert</span></samp> "." in the
@@ -204,7 +248,7 @@ files which monotone has listed in its manifest, but which have been
 deleted from the workspace.  Only missing files matching the given
 file or directory arguments are reverted.
 
-     <br><dt><samp><span class="command">mtn update [--move-conflicting-paths]</span></samp><a name="index-mtn-update-_005b_002d_002dmove_002dconflicting_002dpaths_005d-55"></a><dt><samp><span class="command">mtn update [--move-conflicting-paths] --revision=</span><var>revision</var></samp><a name="index-mtn-update-_005b_002d_002dmove_002dconflicting_002dpaths_005d-_002d_002drevision_003d_0040var_007brevision_007d-56"></a><dd>Without a <samp><span class="option">--revision</span></samp> argument, this command incorporates
+     <br><dt><samp><span class="command">mtn update [--move-conflicting-paths]</span></samp><a name="index-mtn-update-_005b_002d_002dmove_002dconflicting_002dpaths_005d-56"></a><dt><samp><span class="command">mtn update [--move-conflicting-paths] --revision=</span><var>revision</var></samp><a name="index-mtn-update-_005b_002d_002dmove_002dconflicting_002dpaths_005d-_002d_002drevision_003d_0040var_007brevision_007d-57"></a><dd>Without a <samp><span class="option">--revision</span></samp> argument, this command incorporates
 &ldquo;recent&rdquo; changes found in your database into your workspace. It
 does this by performing 3 separate stages. If any of these stages
 fails, the update aborts, doing nothing. The stages are:
@@ -242,11 +286,11 @@ specify an explicit <samp><span class="option">--revision</span></samp> argument
      <p>When running <samp><span class="command">update</span></samp>, it is sometimes possible for
 <a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to occur.
 
-     <br><dt><samp><span class="command">mtn pluck [--move-conflicting-paths] --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_005b_002d_002dmove_002dconflicting_002dpaths_005d-_002d_002drevision_003d_0040var_007bto_007d-57"></a><dt><samp><span class="command">mtn pluck [--move-conflicting-paths] --revision=</span><var>from</var><span class="command"> --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_005b_002d_002dmove_002dconflicting_002dpaths_005d-_002d_002drevision_003d_0040var_007bfrom_007d-_002d_002drevision_003d_0040var_007bto_007d-58"></a><dd>
+     <br><dt><samp><span class="command">mtn pluck [--move-conflicting-paths] --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_005b_002d_002dmove_002dconflicting_002dpaths_005d-_002d_002drevision_003d_0040var_007bto_007d-58"></a><dt><samp><span class="command">mtn pluck [--move-conflicting-paths] --revision=</span><var>from</var><span class="command"> --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_005b_002d_002dmove_002dconflicting_002dpaths_005d-_002d_002drevision_003d_0040var_007bfrom_007d-_002d_002drevision_003d_0040var_007bto_007d-59"></a><dd>
 This command takes changes made at any point in history, and attempts to
 edit your current workspace to include those changes.  The end result is
-identical to running <samp><span class="command">mtn diff <samp>-r</samp> </span><var>from</var><span class="command">
-<samp>-r</samp> </span><var>to</var><span class="command"> | patch <samp>-p0</samp></span></samp>, except that this command
+identical to running <samp><span class="command">mtn diff </span><samp><span class="option">-r</span></samp> <var>from</var>
+<samp><span class="option">-r</span></samp> <var>to</var><span class="command"> | patch </span><samp><span class="option">-p0</span></samp></samp>, except that this command
 uses monotone's merger, and thus intelligently handles renames,
 conflicts, and so on.
 
@@ -277,13 +321,13 @@ reduce your need for <samp><span class="command">pluck</span></samp>ing.
      <p>When running <samp><span class="command">pluck</span></samp>, it is sometimes possible for
 <a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to occur.
 
-     <br><dt><samp><span class="command">mtn refresh_inodeprints</span></samp><a name="index-mtn-refresh_005finodeprints-59"></a><dd>This command puts the current workspace into <a href="Inodeprints.html#Inodeprints">Inodeprints</a> mode,
+     <br><dt><samp><span class="command">mtn refresh_inodeprints</span></samp><a name="index-mtn-refresh_005finodeprints-60"></a><dd>This command puts the current workspace into <a href="Inodeprints.html#Inodeprints">Inodeprints</a> mode,
 if it was not already, and forces a full inodeprints cache refresh. 
 After running this command, you are guaranteed that your workspace is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
-     <br><dt><samp><span class="command">mtn pivot_root [--bookkeep-only] [--move-conflicting-paths] pivot_root </span><var>new_root</var> <var>put_old</var></samp><a name="index-mtn-pivot_005froot-_005b_002d_002dbookkeep_002donly_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-pivot_005froot-_0040var_007bnew_005froot_007d-_0040var_007bput_005fold_007d-60"></a><dd>Most users will never need this command.  It is primarily useful in
+     <br><dt><samp><span class="command">mtn pivot_root [--bookkeep-only] [--move-conflicting-paths] pivot_root </span><var>new_root</var> <var>put_old</var></samp><a name="index-mtn-pivot_005froot-_005b_002d_002dbookkeep_002donly_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-pivot_005froot-_0040var_007bnew_005froot_007d-_0040var_007bput_005fold_007d-61"></a><dd>Most users will never need this command.  It is primarily useful in
 certain tricky cases where one wishes to combine several projects
 into one, or split one project into several. See also <samp><span class="command">merge_into_dir</span></samp>.
 
@@ -311,7 +355,7 @@ records, but not in the filesystem itself.
      <p>When running <samp><span class="command">pivot_root</span></samp>, it is sometimes possible for
 <a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to occur.
 
-     <br><dt><samp><span class="command">mtn bisect good [--revision=</span><var>id</var><span class="command"> ...] [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-good-_005b_002d_002drevision_003d_0040var_007bid_007d-_002e_002e_002e_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-61"></a><dd>Mark the specified revisions as &ldquo;good&rdquo; for the current bisection
+     <br><dt><samp><span class="command">mtn bisect good [--revision=</span><var>id</var><span class="command"> ...] [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-good-_005b_002d_002drevision_003d_0040var_007bid_007d-_002e_002e_002e_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-62"></a><dd>Mark the specified revisions as &ldquo;good&rdquo; for the current bisection
 operation. If no bisection operation is in progress a new bisection is
 initialized. If a bisection operation is in progress the next update
 target is selected and the workspace is updated to the selected
@@ -323,7 +367,7 @@ the workspace this command may be re-issued with the
 <samp><span class="command">bisect update</span></samp> command can be used with this option to update
 the workspace and move the conflicting paths out of the way.
 
-     <br><dt><samp><span class="command">mtn bisect bad [--revision=</span><var>id</var><span class="command"> ...] [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-bad-_005b_002d_002drevision_003d_0040var_007bid_007d-_002e_002e_002e_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-62"></a><dd>Mark the specified revisions as &ldquo;bad&rdquo; for the current bisection
+     <br><dt><samp><span class="command">mtn bisect bad [--revision=</span><var>id</var><span class="command"> ...] [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-bad-_005b_002d_002drevision_003d_0040var_007bid_007d-_002e_002e_002e_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-63"></a><dd>Mark the specified revisions as &ldquo;bad&rdquo; for the current bisection
 operation. If no bisection operation is in progress a new bisection is
 initialized. If a bisection operation is in progress the next update
 target is selected and the workspace is updated to the selected
@@ -335,7 +379,7 @@ the workspace this command may be re-issued with the
 <samp><span class="command">bisect update</span></samp> command can be used with this option to update
 the workspace and move the conflicting paths out of the way.
 
-     <br><dt><samp><span class="command">mtn bisect skip [--revision=</span><var>id</var><span class="command"> ...] [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-skip-_005b_002d_002drevision_003d_0040var_007bid_007d-_002e_002e_002e_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-63"></a><dd>Mark the specified revisions as &ldquo;skipped&rdquo; for the current bisection
+     <br><dt><samp><span class="command">mtn bisect skip [--revision=</span><var>id</var><span class="command"> ...] [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-skip-_005b_002d_002drevision_003d_0040var_007bid_007d-_002e_002e_002e_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-64"></a><dd>Mark the specified revisions as &ldquo;skipped&rdquo; for the current bisection
 operation. If no bisection operation is in progress a new bisection is
 initialized. If a bisection operation is in progress the next update
 target is selected and the workspace is updated to the selected
@@ -347,17 +391,17 @@ the workspace this command may be re-issued with the
 <samp><span class="command">bisect update</span></samp> command can be used with this option to update
 the workspace and move the conflicting paths out of the way.
 
-     <br><dt><samp><span class="command">mtn bisect update [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-update-_005b_002d_002dmove_002dconflicting_002dpaths_005d-64"></a><dd>Update the workspace to the next revision selected by the previous
+     <br><dt><samp><span class="command">mtn bisect update [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-update-_005b_002d_002dmove_002dconflicting_002dpaths_005d-65"></a><dd>Update the workspace to the next revision selected by the previous
 bisect operation. This command can be useful when the previous bisect
 operation fails to update the workspace because of conflicting
 unversioned paths existing in the workspace.
 
-     <br><dt><samp><span class="command">mtn bisect status</span></samp><a name="index-mtn-bisect-status-65"></a><dd>Report the status of the current bisection operation including the
+     <br><dt><samp><span class="command">mtn bisect status</span></samp><a name="index-mtn-bisect-status-66"></a><dd>Report the status of the current bisection operation including the
 number of revisions that remain to be tested, the number of revisions
 that have been tested and the next revision that will selected for
 testing.
 
-     <br><dt><samp><span class="command">mtn bisect reset</span></samp><a name="index-mtn-bisect-reset-66"></a><dd>Reset the current bisection operation by updating the workspace back
+     <br><dt><samp><span class="command">mtn bisect reset</span></samp><a name="index-mtn-bisect-reset-67"></a><dd>Reset the current bisection operation by updating the workspace back
 to the revision from which the bisection was started and clearing the
 current bisection information.
 

@@ -3,7 +3,7 @@
 <title>Adding Files - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Tutorial.html#Tutorial" title="Tutorial">
 <link rel="prev" href="Starting-a-New-Project.html#Starting-a-New-Project" title="Starting a New Project">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Adding-Files"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Committing-Work.html#Committing-Work">Committing Work</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Starting-a-New-Project.html#Starting-a-New-Project">Starting a New Project</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
@@ -90,21 +90,26 @@ called <samp><span class="file">_MTN/revision</span></samp>, stored in the works
 text:
 
 <pre class="smallexample">$ cat _MTN/revision
-
 format_version "1"
 
-new_manifest [2098eddbe833046174de28172a813150a6cbda7b]
+new_manifest [0000000000000000000000000000000000000002]
 
 old_revision []
 
+add_dir ""
+
+add_dir "include"
+
+add_dir "src"
+
 add_file "include/jb.h"
- content [3b12b2d0b31439bd50976633db1895cff8b19da0]
+ content [f6996ce2dfc5d32bda8b574c3e9ce75db8d55492]
 
 add_file "src/apple.c"
- content [2650ffc660dd00a08b659b883b65a060cac7e560]
+ content [1ce885d2cc59842ff16785834391e864068fbc3c]
 
 add_file "src/banana.c"
- content [e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f]
+ content [ad88bbbb1b7507ddff26be67efd91d95e069afb6]
 </pre>
 <p>You will never have to look at this file, but it is nice to know that
 it is there.
@@ -113,35 +118,50 @@ it is there.
 he has forgotten what he was doing. He asks monotone:
 
 <pre class="smallexample">$ mtn status
-Current branch: jp.co.juicebot.jb7
-Changes against parent :
-  added   include/jb.h
-  added   src/apple.c
-  added   src/banana.c
+----------------------------------------------------------------------
+Revision: 493bda86628fd72c992eb56f73899db9ead3cf6f
+Author:   jim@juicebot.co.jp
+Date:     2004-10-26T02:53:08
+Branch:   jp.co.juicebot.jb7
+
+Changes
+
+  added
+  added    include
+  added    src
+  added    include/jb.h
+  added    src/apple.c
+  added    src/banana.c
 </pre>
 <p>The output of this command tells Jim that his edits, so far,
-constitute only the addition of some files.
+constitute only the addition of some files and directories.
 
 <p>Jim wants to see the actual details of the files he added, however, so
-he runs a command which prints out the status <em>and</em> a GNU
+he runs a command which prints out the revision <em>and</em> a GNU
 &ldquo;unified diff&rdquo; of the patches involved in the changeset:
 
 <pre class="smallexample">$ mtn diff
 #
 # old_revision []
 #
+# add_dir ""
+#
+# add_dir "include"
+#
+# add_dir "src"
+#
 # add_file "include/jb.h"
-#  content [3b12b2d0b31439bd50976633db1895cff8b19da0]
+#  content [f6996ce2dfc5d32bda8b574c3e9ce75db8d55492]
 #
 # add_file "src/apple.c"
-#  content [2650ffc660dd00a08b659b883b65a060cac7e560]
+#  content [1ce885d2cc59842ff16785834391e864068fbc3c]
 #
 # add_file "src/banana.c"
-#  content [e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f]
+#  content [ad88bbbb1b7507ddff26be67efd91d95e069afb6]
 #
-============================================================================
---- include/jb.h
-+++ include/jb.h 3b12b2d0b31439bd50976633db1895cff8b19da0
+============================================================
+--- include/jb.h	f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
++++ include/jb.h	f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
 @ -0,0 +1,13 @
 +/* Standard JuiceBot hw interface */
 +
@@ -156,9 +176,9 @@ he runs a command which prints out the status <em>and</em> a GNU
 +#define BANANA_SPOUT 0x7f
 +void dispense_apple_juice ();
 +void dispense_banana_juice ();
-============================================================================
---- src/apple.c
-+++ src/apple.c 2650ffc660dd00a08b659b883b65a060cac7e560
+============================================================
+--- src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
++++ src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
 @ -0,0 +1,7 @
 +#include "jb.h"
 +
@@ -167,9 +187,9 @@ he runs a command which prints out the status <em>and</em> a GNU
 +{
 +  /* Fill this in please, Abe. */
 +}
-============================================================================
---- src/banana.c
-+++ src/banana.c e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f
+============================================================
+--- src/banana.c	ad88bbbb1b7507ddff26be67efd91d95e069afb6
++++ src/banana.c	ad88bbbb1b7507ddff26be67efd91d95e069afb6
 @ -0,0 +1,7 @
 +#include "jb.h"
 +

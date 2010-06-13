@@ -3,7 +3,7 @@
 <title>Committing Work - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Tutorial.html#Tutorial" title="Tutorial">
 <link rel="prev" href="Adding-Files.html#Adding-Files" title="Adding Files">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Committing-Work"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Basic-Network-Service.html#Basic-Network-Service">Basic Network Service</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Adding-Files.html#Adding-Files">Adding Files</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
@@ -43,7 +43,7 @@ when he commits.
 
 <pre class="smallexample">$ mtn commit --message="initial checkin of project"
 mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-mtn: committed revision 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+mtn: committed revision 493bda86628fd72c992eb56f73899db9ead3cf6f
 </pre>
 <p>When monotone committed Jim's revision, it updated <samp><span class="file">_MTN/revision</span></samp>
 to record the workspace's new base revision ID. Jim can use this
@@ -51,14 +51,14 @@ revision ID in the future, as an argument to the <samp><span class="command">che
 command, if he wishes to return to this revision:
 
 <pre class="smallexample">$ mtn automate get_base_revision_id
-2e24d49a48adf9acf3a1b6391a080008cbef9c21
+493bda86628fd72c992eb56f73899db9ead3cf6f
 </pre>
 <p>Monotone also generated a number of certificates attached to
 the new revision, and made sure that the database contained a copy of Jim's
 public key. These certs store metadata about the commit. Jim can
 ask monotone for a list of certs on this revision.
 
-<pre class="smallexample">$ mtn ls certs 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+<pre class="smallexample">$ mtn ls certs 493bda86628fd72c992eb56f73899db9ead3cf6f
 -----------------------------------------------------------------
 Key   : jim@juicebot.co.jp (398cb10d...)
 Sig   : ok
@@ -88,7 +88,7 @@ second indicates whether this cert is &ldquo;ok&rdquo;, meaning whether the
 the cert name, and the fourth is the cert value. This list shows us
 that monotone has confirmed that, according to
 <code>jim@juicebot.co.jp</code>, the revision
-<code>2e24d49a48adf9acf3a1b6391a080008cbef9c21</code> is a member of the
+<code>493bda86628fd72c992eb56f73899db9ead3cf6f</code> is a member of the
 branch <code>jp.co.juicebot.jb7</code>, written by
 <code>jim@juicebot.co.jp</code>, with the given date and changelog.
 
@@ -104,7 +104,7 @@ command, which lists all the head revisions in the branch:
 
 <pre class="smallexample">$ mtn heads
 branch 'jp.co.juicebot.jb7' is currently merged:
-2e24d49a48adf9acf3a1b6391a080008cbef9c21 jim@juicebot.co.jp 2004-10-26T02:53:08
+493bda86628fd72c992eb56f73899db9ead3cf6f jim@juicebot.co.jp 2004-10-26T02:53:08
 </pre>
 <p>The output of this command tells us that there is only one current
 &ldquo;head&rdquo; revision in the branch <code>jp.co.juicebot.jb7</code>, and it is

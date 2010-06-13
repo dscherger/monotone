@@ -3,7 +3,7 @@
 <title>Restrictions - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
 <link rel="prev" href="Selectors.html#Selectors" title="Selectors">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Restrictions"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Scripting.html#Scripting">Scripting</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Selectors.html#Selectors">Selectors</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
@@ -64,9 +64,15 @@ ensure that the expected files are included or excluded by a
 restriction.
 
 <p>Commands which support restrictions also support the
-<samp><span class="option">--depth=</span><var>n</var> </samp> option, where <var>n</var> specifies the maximum
-number of directories to descend. For example, <var>n</var>=0 disables
-recursion, <var>n</var>=1 means descend at most one directory, and so on.
+<samp><span class="option">--depth=</span><var>n</var> </samp> and <samp><span class="option">--exclude=</span><var>path</var></samp>
+options. The value <var>n</var> given to <samp><span class="option">--depth</span></samp> specifies the
+maximum number of directories to descend. For example, <var>n</var>=0
+disables recursion, <var>n</var>=1 means descend at most one directory
+below each specified path, and so on.  The <samp><span class="option">--depth</span></samp> value
+applies individually to each path specified on the command line. The
+value <var>path</var> given to <samp><span class="option">--exclude</span></samp> specifies a path that
+should be excluded from the restriction. Multiple <samp><span class="option">--exclude</span></samp>
+options may be specified to exclude several files or subdirectories.
 
 <p>The <samp><span class="command">update</span></samp> command does not allow for updates to a
 restricted set of files, which may be slightly different than other
@@ -75,20 +81,36 @@ monotone, as they would leave the workspace based on a revision that
 doesn't exist in the database, starting an entirely new line of
 development.
 
+<p>In addition to including all of the explicitly specified paths and
+excluding all of the paths specified with <samp><span class="option">--exclude</span></samp> options a
+restriction also implicitly includes the parent directories of all
+included paths. This is done to allow commands operating on newly
+added files to succeed. For example, if a new directory <samp><span class="file">a</span></samp> is
+added and a file <samp><span class="file">a/b</span></samp> is added to this directory restricting to
+exactly <samp><span class="file">a/b</span></samp> will produce a meaningless state that doesn't
+include the required parent directory <samp><span class="file">a</span></samp>.
+
+<p>The implicit inclusion of required parent directories is done for all
+of the commands listed above with the exception of
+<samp><span class="command">revert</span></samp>. This is done to allow reverting the addition of
+files in newly added or renamed directories without reverting the
+directories themselves. If the parent directories were implicitly
+included their addition or name changes would also be reverted.
+
 <h3 class="heading">Subdirectory restrictions</h3>
 
-<p>The restrictions facility also allows commands to operate from within a
-subdirectory of the workspace.  By default, the <i>entire workspace</i> is
-always examined for changes. However, specifying an explicit "." 
-pathname to a command will restrict it to the current subdirectory. 
-Note that this is quite different from other version control systems and
-may seem somewhat surprising.
+<p>The restrictions facility also allows commands to operate from within
+a subdirectory of the workspace.  By default, the <i>entire workspace</i>
+is always examined for changes. However, specifying an explicit
+<samp><span class="file">.</span></samp>  pathname to a command will restrict it to the current
+subdirectory.  Note that this is quite different from other version
+control systems and may seem somewhat surprising.
 
-<p>The expectation is that requiring a single "." to restrict to the
+<p>The expectation is that requiring a single <samp><span class="file">.</span></samp> to restrict to the
 current subdirectory should be simple to use. While the alternative,
 defaulting to restricting to the current subdirectory, would require a
-somewhat complicated ../../.. sequence to remove the restriction and
-operate on the whole tree.
+somewhat complicated <samp><span class="file">../../..</span></samp> sequence to remove the
+restriction and operate on the whole tree.
 
 <p>This default was chosen because monotone versions whole project trees
 and generally expects to commit all changes in the workspace as a

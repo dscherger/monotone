@@ -3,7 +3,7 @@
 <title>Making Changes - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Tutorial.html#Tutorial" title="Tutorial">
 <link rel="prev" href="Synchronising-Databases.html#Synchronising-Databases" title="Synchronising Databases">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Making-Changes"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Dealing-with-a-Fork.html#Dealing-with-a-Fork">Dealing with a Fork</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Synchronising-Databases.html#Synchronising-Databases">Synchronising Databases</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
@@ -57,18 +57,16 @@ forgotten what he changed. He can ask monotone for details:
 
 <pre class="smallexample">$ mtn diff
 #
-# old_revision [2e24d49a48adf9acf3a1b6391a080008cbef9c21]
+# old_revision [493bda86628fd72c992eb56f73899db9ead3cf6f]
 #
 # patch "src/apple.c"
-#  from [2650ffc660dd00a08b659b883b65a060cac7e560]
-#    to [e2c418703c863eabe70f9bde988765406f885fd0]
+#  from [1ce885d2cc59842ff16785834391e864068fbc3c]
+#    to [e2c64f6bde75a192d48d2256385df3dd7a963349]
 #
-============================================================================
---- src/apple.c 2650ffc660dd00a08b659b883b65a060cac7e560
-+++ src/apple.c e2c418703c863eabe70f9bde988765406f885fd0
-@ -1,7 +1,10 @
- #include "jb.h"
-
+============================================================
+--- src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
++++ src/apple.c	e2c64f6bde75a192d48d2256385df3dd7a963349
+@ -3,5 +3,8 @ dispense_apple_juice()
  void
  dispense_apple_juice()
  {
@@ -82,7 +80,6 @@ forgotten what he changed. He can ask monotone for details:
 <p>Satisfied with his day's work, Abe decides to commit.
 
 <pre class="smallexample">$ mtn commit
-mtn: beginning commit on branch 'jp.co.juicebot.jb7'
 </pre>
 <p>Abe neglected to provide a <samp><span class="option">--message</span></samp> option specifying the
 change log on the command line and the file <samp><span class="file">_MTN/log</span></samp> is empty
@@ -91,24 +88,35 @@ invokes an external &ldquo;log message editor&rdquo; &mdash; typically an editor
 like <samp><span class="command">vi</span></samp> &mdash; with an explanation of the changes being
 committed and the opportunity to enter a log message.
 
-<pre class="smallexample">polling implementation of src/apple.c
-MTN: ----------------------------------------------------------------------
-MTN: Enter a description of this change.
-MTN: Lines beginning with `MTN:' are removed automatically.
-MTN:
-MTN: Current branch: jp.co.juicebot.jb7
-MTN: Changes against parent 2e24d49a48adf9acf3a1b6391a080008cbef9c21
-MTN:   patched  src/apple.c
-MTN: ----------------------------------------------------------------------
-MTN:
-</pre>
-<p>Abe enters a single line above the explanatory message, saying
-&ldquo;polling implementation of src/apple.c&rdquo;. He then saves the file and
-quits the editor. Monotone deletes all the lines beginning with
-&ldquo;MTN:&rdquo; and leaves only Abe's short message. Returning to the shell,
-Abe's commit completes:
+<pre class="smallexample">Enter a description of this change following the Changelog line below.
+The values of Author, Date and Branch may be modified as required.
 
-<pre class="smallexample">mtn: committed revision 70decb4b31a8227a629c0e364495286c5c75f979
+*** REMOVE THIS LINE TO CANCEL THE COMMIT ***
+----------------------------------------------------------------------
+Revision: 42eae36587508faa664b111cefc291f0b85ef83a
+Parent:   493bda86628fd72c992eb56f73899db9ead3cf6f
+Author:   abe@juicebot.co.jp
+Date:     2004-10-26T02:53:08
+Branch:   jp.co.juicebot.jb7
+
+Changelog:
+
+polling implementation of src/apple.c
+
+----------------------------------------------------------------------
+Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
+
+  patched  src/apple.c
+</pre>
+<p>Abe enters a single line below the Changelog: header, saying &ldquo;polling
+implementation of src/apple.c&rdquo;. He then saves the file and quits the
+editor. Monotone confirms that no other lines have been changed and
+extracts the message to be stored in the associated &ldquo;changelog&rdquo;
+cert, leaving only Abe's short message. Returning to the shell, Abe's
+commit completes:
+
+<pre class="smallexample">mtn: beginning commit on branch 'jp.co.juicebot.jb7'
+mtn: committed revision 42eae36587508faa664b111cefc291f0b85ef83a
 </pre>
 <p>Abe then sends his new revision back to Jim:
 
@@ -124,7 +132,7 @@ mtn: successful exchange with jim-laptop.juicebot.co.jp
 <p>Beth does a similar sequence. First she syncs her database with
 Jim's:
 
-<pre class="smallexample">$ mtn --db=beth.mtn sync jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
+<pre class="smallexample">$ mtn --db=:beth sync jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
 mtn: setting default server to jim-laptop.juicebot.co.jp
 mtn: setting default branch include pattern to 'jp.co.juicebot.jb7*'
 mtn: setting default branch exclude pattern to ''
@@ -143,9 +151,22 @@ mtn: successful exchange with jim-laptop.juicebot.co.jp
 </pre>
 <p>She checks out a copy of the tree from her database:
 
-<pre class="smallexample">$ mtn --db=beth.mtn --branch=jp.co.juicebot.jb7 checkout .
+<pre class="smallexample">$ mtn --db=:beth --branch=jp.co.juicebot.jb7 checkout juicebot
 </pre>
-<p>She edits the file <samp><span class="file">src/banana.c</span></samp>:
+<p>and since she is using a managed database, monotone automatically remembers
+the connection between the newly created workspace and the database.  She
+now looks at the output of <samp><span class="command">mtn list databases</span></samp> and sees the
+following:
+
+<pre class="smallexample">$ mtn list databases
+:beth.mtn (in /home/beth/.monotone/databases):
+        jp.co.juicebot.jb7 (in /home/beth/juicebot)
+</pre>
+<p>Beth realizes that, whenever the database of the workspace changes, monotone
+will adapt the known paths for the old and the new database for her.
+
+<p>But let us get back to the work, Beth now start to edits the file
+<samp><span class="file">src/banana.c</span></samp>:
 
 <pre class="smallexample">$ vi src/banana.c
 <i>&lt;Beth writes some banana-juice dispensing code&gt;</i>
@@ -163,7 +184,7 @@ before finishing her commit:
 
 <pre class="smallexample">$ mtn commit
 mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-mtn: committed revision 80ef9c9d251d39074d37e72abf4897e0bbae1cfb
+mtn: committed revision 85573a54105cd3220db10aa6a0713643cdf5ce6f
 </pre>
 <p>And she syncs with Jim again:
 

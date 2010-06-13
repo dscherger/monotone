@@ -1,0 +1,90 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Lua Reference - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.13">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="prev" href="Command-Reference.html#Command-Reference" title="Command Reference">
+<link rel="next" href="Special-Topics.html#Special-Topics" title="Special Topics">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<a name="Lua-Reference"></a>
+<p>
+Next:&nbsp;<a rel="next" accesskey="n" href="Special-Topics.html#Special-Topics">Special Topics</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Command-Reference.html#Command-Reference">Command Reference</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="index.html#Top">Top</a>
+<hr>
+</div>
+
+<h2 class="chapter">6 Lua Reference</h2>
+
+<p>Monotone makes use of the <a href="http://www.lua.org">Lua</a> programming
+language to customize and extend its behaviour.  By writing
+<dfn>functions</dfn> which are loaded and evaluated at runtime, you can
+help monotone to make a particular decision, set a suitable default or
+preference or perform a certain action.
+
+<p>You can put Lua functions in a file <samp><span class="file">$HOME/.monotone/monotonerc</span></samp>,
+or in your workspace in <samp><span class="file">_MTN/monotonerc</span></samp>, both of which will be
+read every time monotone runs. Definitions in <samp><span class="file">_MTN/monotonerc</span></samp>
+shadow (override) definitions made in your
+<samp><span class="file">$HOME/.monotone/monotonerc</span></samp>. You can also tell monotone to
+interpret extra hook functions from any other <var>file</var> using the
+<samp><span class="option">--rcfile=</span><var>file</var></samp> option; hooks defined in files specified
+on the command-line will shadow hooks from the other predefined
+locations.  By specifying <samp><span class="option">--rcfile=</span><var>directory</var></samp> you can
+automatically load all the files contained in <var>directory</var>.
+
+<p>There are two uses for Lua functions; hooks and user-defined
+commands. This section documents hooks; see <samp><span class="command">register_command</span></samp>
+in <a href="Additional-Lua-Functions.html#Additional-Lua-Functions">Additional Lua Functions</a> for user-defined commands. The source
+distribution contains some example user commands in the
+<samp><span class="file">contrib/command</span></samp> directory.
+
+<p>Hooks are Lua functions that are called from monotone code in many
+places. Monotone provides default definitions for some hooks; see
+<a href="Default-hooks.html#Default-hooks">Default hooks</a> for their complete source. For other hooks, if no
+definition is provided a default return value is used. When writing new
+hooks, it may be helpful to reuse some code from the default
+ones. Since Lua is a lexically scoped language with closures, this can
+be achieved with the following code:
+
+<pre class="smallexample">do
+    local old_hook = default_hook
+    function default_hook(arg)
+        if not old_hook(arg) then
+            -- do other stuff
+        end
+    end
+end
+</pre>
+<p>Now the default hook is trapped in a variable local to this block, and can
+only be seen by the new hook. Since in Lua variables default to the global
+scope, the new hook is seen from inside monotone.
+
+<p>Monotone also provides a number of helper functions to hook writers
+exposing functionality not available with standard Lua.
+
+<ul class="menu">
+<li><a accesskey="1" href="Hooks.html#Hooks">Hooks</a>:                        All hooks called by monotone. 
+<li><a accesskey="2" href="Additional-Lua-Functions.html#Additional-Lua-Functions">Additional Lua Functions</a>:     Extra functionality available to hook writers. 
+<li><a accesskey="3" href="Implementation-Differences.html#Implementation-Differences">Implementation Differences</a>:   Functional differences from standard Lua
+</ul>
+
+</body></html>
+

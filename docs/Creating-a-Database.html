@@ -3,7 +3,7 @@
 <title>Creating a Database - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Tutorial.html#Tutorial" title="Tutorial">
 <link rel="prev" href="Tutorial.html#Tutorial" title="Tutorial">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Creating-a-Database"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Generating-Keys.html#Generating-Keys">Generating Keys</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Tutorial.html#Tutorial">Tutorial</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
@@ -39,9 +39,7 @@ new database. This is done with the <samp><span class="command">mtn db init</spa
 providing a <samp><span class="option">--db</span></samp> option to specify the location of the new
 database. Each programmer creates their own database, which will
 reside in their home directory and store all the revisions, files and
-manifests they work on. Monotone requires this step as an explicit
-command, to prevent spurious creation of databases when an invalid
-<samp><span class="option">--db</span></samp> option is given.
+manifests they work on.
 
 <p>In real life, most people prefer to keep one database for each project
 they work on.  If we followed that convention here in the tutorial,
@@ -53,13 +51,27 @@ them each name their database after themselves.
 
 <pre class="smallexample">$ mtn db init --db=~/jim.mtn
 </pre>
-<p>Abe issues the command:
+<p>and Abe issues the command:
 
 <pre class="smallexample">$ mtn db init --db=~/abe.mtn
 </pre>
-<p>And Beth issues the command:
+<p>Beth decides to use monotone's built-in database management functionality. 
+monotone then expects to find managed database files in a couple of predefined
+places (like f.e. <samp><span class="file">~/.monotone/databases</span></samp> on Unix and
+<samp><span class="file">%APPDATA%\monotone\databases</span></samp> on Windows, this is customizable) and acts
+upon those by knowing only their file or basename from anywhere.
 
-<pre class="smallexample">$ mtn db init --db=~/beth.mtn
+<p>To create a new managed database, Beth issues the <samp><span class="command">mtn db init</span></samp> command
+like this:
+
+<pre class="smallexample">$ mtn db init --db=:beth
 </pre>
+<p>Beth can distinguish a managed database name from an unmanaged one by the
+leading colon in its name.  This special alias can now be used interchangeably
+in every monotone invocation. 
+If Beth wants to see where monotone actually created the database and what
+other databases monotone knows of, she uses the <samp><span class="command">mtn list databases</span></samp>
+command (or <samp><span class="command">mtn ls dbs</span></samp>) for that.  We'll come back to this in a bit.
+
 </body></html>
 

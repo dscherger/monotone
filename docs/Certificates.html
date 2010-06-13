@@ -3,7 +3,7 @@
 <title>Certificates - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Concepts.html#Concepts" title="Concepts">
 <link rel="prev" href="Historical-records.html#Historical-records" title="Historical records">
@@ -24,8 +24,8 @@
 </head>
 <body>
 <div class="node">
-<p>
 <a name="Certificates"></a>
+<p>
 Next:&nbsp;<a rel="next" accesskey="n" href="Storage-and-workflow.html#Storage-and-workflow">Storage and workflow</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Historical-records.html#Historical-records">Historical records</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Concepts.html#Concepts">Concepts</a>
@@ -73,11 +73,6 @@ from the <span class="sc">rsa</span> cryptography system, the details of which a
 the scope of this document.
 
 <div class="block-image"><img src="figures/cert.png" alt="figures/cert.png"></div>
-
-<p><b>Warning:</b> because our certificates give the <i>name</i> of the
-signing key instead of the <i>hash</i> (ID), all key names must be
-globally unique forever. If you lose a key and need to generate a
-replacement, make sure that you give the replacement a different name.
 
 <p>Monotone uses certs extensively. Any &ldquo;extra&rdquo; information which needs
 to be stored, transmitted or retrieved &mdash; above and beyond files,
