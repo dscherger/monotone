@@ -45,6 +45,27 @@
  *     part of the same optset as the option, or they won't get reset
  *     properly. When the function body is needed, 'option_bodies' will
  *     be defined.
+ *
+ *
+ *   Option Strings
+ *     Options can have a long name, a short name, and a 'reset' name.
+ *     The long and short names work as reasonably expected, the make
+ *     the function body in the '#ifdef option_bodies' get run. The
+ *     'reset' name is slightly different, it makes the optset that
+ *     the option belongs to get reset. This means that if you have
+ *     several related options in the same optset, you probably *don't*
+ *     want to specify a reset name for any of them.
+ *
+ *     If you want an option to belong to an optset and also be resettable,
+ *     you can use OPTSET_REL to make the desired optset include the option's
+ *     personal optset.
+ *
+ *     The option string format is "long,s/reset". "--long" and "-s" are
+ *     the long and short names, and set the option. "--reset" is the
+ *     reset name, and resets the option. An option *must* have a long
+ *     and/or short name, but isn't required to have a reset name. So
+ *     "/foo" is invalid, but "foo,f", "foo/no-foo", "f/no-f", and
+ *     "foo,f/no-foo" are all allowed.
  */
 
 // This is a shortcut for an option which has its own variable and optset.
@@ -89,6 +110,18 @@ void set_simple_option(std::set<string> & t, std::string const & arg)
 #else
 # define SIMPLE_OPTION_BODY(name)
 #endif
+/*
+ * This is a 'magic' option, and Does The Right Thing based on it's data type:
+ *  * If it's a bool, it will be true if the option is given and false if
+ *    not given (or reset), and will not take an argument.
+ *  * If it's a string or vocab type, it will be set to the argument if
+ *    given, and set to the empty value (default constructor) if reset
+ *    or not given.
+ *  * If it's a container (vector/set) of strings or vocab types, each
+ *    time the option is given the argument will be added to the collection
+ *    (with push_back or insert), and the collection will be empty if the
+ *    option is not given or is reset.
+ */
 #define SIMPLE_OPTION(name, optstring, type, description)               \
   OPTSET(name)                                                          \
   OPTVAR(name, type, name, )                                            \
