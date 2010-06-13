@@ -87,13 +87,13 @@ void set_simple_option(std::set<string> & t, std::string const & arg)
 { t.insert(arg); }
 # define SIMPLE_OPTION_BODY(name) { set_simple_option(name, arg); }
 #else
-# define SIMPLE_OPTION_BODY
+# define SIMPLE_OPTION_BODY(name)
 #endif
 #define SIMPLE_OPTION(name, optstring, type, description)               \
   OPTSET(name)                                                          \
   OPTVAR(name, type, name, )                                            \
   OPTION(name, name, has_arg<type >(), optstring, description)  \
-  SIMPLE_OPTION_BODY
+  SIMPLE_OPTION_BODY(name)
 
 // Like SIMPLE_OPTION, but the declared option is a member of the globals
 #define GLOBAL_SIMPLE_OPTION(name, optstring, type, description) \
@@ -114,12 +114,7 @@ OPTION(globals, positionals, true, "--", "")
 }
 #endif
 
-OPT(author, "author", utf8, , gettext_noop("override author for commit"))
-#ifdef option_bodies
-{
-  author = utf8(arg, origin::user);
-}
-#endif
+SIMPLE_OPTION(author, "author", utf8, gettext_noop("override author for commit"))
 
 OPT(automate_stdio_size, "automate-stdio-size", size_t, 32768,
      gettext_noop("block size in bytes for \"automate stdio\" output"))
@@ -198,31 +193,13 @@ OPT(min_netsync_version, "min-netsync-version",
 }
 #endif
 
-OPT(remote_stdio_host, "remote-stdio-host",
-    utf8, ,
+SIMPLE_OPTION(remote_stdio_host, "remote-stdio-host", utf8,
     gettext_noop("sets the host (and optionally the port) for a "
                  "remote netsync action"))
-#ifdef option_bodies
-{
-  remote_stdio_host = utf8(arg, origin::user);
-}
-#endif
 
-OPT(branch, "branch,b", branch_name, ,
-        gettext_noop("select branch cert for operation"))
-#ifdef option_bodies
-{
-  branch = branch_name(arg, origin::user);
-}
-#endif
+SIMPLE_OPTION(branch, "branch,b", branch_name, gettext_noop("select branch cert for operation"))
 
-OPT(brief, "brief", bool, false,
-     gettext_noop("print a brief version of the normal output"))
-#ifdef option_bodies
-{
-  brief = true;
-}
-#endif
+SIMPLE_OPTION(brief, "brief", bool, gettext_noop("print a brief version of the normal output"))
 
 OPT(revs_only, "revs-only", bool, false,
      gettext_noop("annotate using full revision ids only"))
