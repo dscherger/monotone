@@ -78,6 +78,7 @@ function getAllFiles($type)
 
 class cache
 {
+    private static $lifetime = 86400;
     private static $instance;
     private $basedir;
     private $cachedir;
@@ -99,11 +100,14 @@ class cache
     }
     public function get($file)
     {
-        if (!isset($this->cache[$file]))
+        if (!isset($this->cache[$file]) ||
+            !isset($this->cache[$file][2]) ||
+            $this->cache[$file][2] + self::$lifetime < time())
         {
             $this->cache[$file] = array(
                 filesize("{$this->basedir}/$file"),
-                sha1_file("{$this->basedir}/$file")
+                sha1_file("{$this->basedir}/$file"),
+                time()
             );
         }
         return $this->cache[$file];
