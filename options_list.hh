@@ -604,26 +604,41 @@ GLOBAL_SIMPLE_OPTION(nostd, "nostd/stdhooks", bool,
 SIMPLE_OPTION(pidfile, "pid-file/no-pid-file", system_path,
               gettext_noop("record process id of server"))
 
-GOPT(quiet, "quiet", bool, false,
-     gettext_noop("suppress verbose, informational and progress messages"))
-#ifdef option_bodies
-{
-  quiet = true;
-  global_sanity.set_quiet();
-  ui.set_tick_write_nothing();
-}
-#endif
-
 GLOBAL_SIMPLE_OPTION(extra_rcfiles, "rcfile/clear-rcfiles", args_vector,
                      gettext_noop("load extra rc file"))
 
-GOPT(reallyquiet, "reallyquiet", bool, false,
+OPTSET(verbosity)
+OPTSET_REL(globals, verbosity)
+OPTVAR(verbosity, int, verbosity, 0)
+OPTION(verbosity, set_verbosity, true, "verbosity",
+       gettext_noop("set verbosity level: 0 is default; 1 is verbose; "
+                    "-1 is hide tickers and progress messages; -2 is also hide warnings"))
+#ifdef option_bodies
+{
+  verbosity = boost::lexical_cast<long>(arg);
+}
+#endif
+OPTION(verbosity, inc_verbosity, false, "v",
+       gettext_noop("increase verbosity level by one"))
+#ifdef option_bodies
+{
+  ++verbosity;
+}
+#endif
+
+OPTION(verbosity, quiet, false, "quiet",
+     gettext_noop("suppress verbose, informational and progress messages"))
+#ifdef option_bodies
+{
+  verbosity = -1;
+}
+#endif
+
+OPTION(verbosity, reallyquiet, false, "reallyquiet",
      gettext_noop("suppress warning, verbose, informational and progress messages"))
 #ifdef option_bodies
 {
-  reallyquiet = true;
-  global_sanity.set_reallyquiet();
-  ui.set_tick_write_nothing();
+  verbosity = -2;
 }
 #endif
 
@@ -632,7 +647,6 @@ GOPT(timestamps, "timestamps", bool, false,
 #ifdef option_bodies
 {
   timestamps = true;
-  ui.enable_timestamps();
 }
 #endif
 
@@ -664,13 +678,9 @@ GOPT(ticker, "ticker", std::string, ,
 #ifdef option_bodies
 {
   ticker = arg;
-  if (ticker == "none" || global_sanity.quiet_p())
-    ui.set_tick_write_nothing();
-  else if (ticker == "dot")
-    ui.set_tick_write_dot();
-  else if (ticker == "count")
-    ui.set_tick_write_count();
-  else
+  if (ticker != "none" &&
+      ticker != "dot" &&
+      ticker != "count")
     throw bad_arg_internal(F("argument must be 'none', 'dot', or 'count'").str());
 }
 #endif

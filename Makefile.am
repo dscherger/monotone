@@ -116,6 +116,7 @@ MOST_SOURCES = 								\
 	netio.hh gettext.h						\
 	package_revision.cc package_full_revision.cc			\
 	option.cc option.hh options.cc options.hh options_list.hh	\
+	options_applicator.hh options_applicator.cc			\
 	option_reset_info.hh						\
 	specialized_lexical_cast.cc lexical_cast.hh			\
 	parallel_iter.hh safe_map.hh pch.hh current_exception.hh

@@ -32,6 +32,7 @@
 #include "keys.hh"
 #include "key_store.hh"
 #include "file_io.hh"
+#include "options_applicator.hh"
 #include "packet.hh"
 #include "restrictions.hh"
 #include "revision.hh"
@@ -2402,7 +2403,7 @@ automate_stdio_shared_setup(app_state & app,
 
   // set a fixed ticker type regardless what the user wants to
   // see, because anything else would screw the stdio-encoded output
-  ui.set_tick_write_stdio();
+  app.opts.ticker = "stdio";
 }
 
 std::pair<int, string> automate_stdio_helpers::
@@ -2439,6 +2440,7 @@ automate_stdio_shared_body(app_state & app,
     pre_exec_fn(id);
   try
     {
+      options_applicator oa(app.opts, options_applicator::for_automate_subcmd);
       // as soon as a command requires a workspace, this is set to true
       workspace::used = false;
 

@@ -19,6 +19,7 @@
 #include "automate_ostream.hh"
 #include "automate_reader.hh"
 #include "automate_stdio_helpers.hh"
+#include "options_applicator.hh"
 #include "ui.hh"
 #include "lua.hh"
 #include "lua_hooks.hh"
@@ -381,6 +382,9 @@ LUAEXT(mtn_automate, )
       commands::automate const * acmd
         = dynamic_cast< commands::automate const * >(cmd);
       I(acmd);
+
+
+      options_applicator oa(app_p->opts, options_applicator::for_automate_subcmd);
 
       // as soon as a command requires a workspace, this is set to true
       workspace::used = false;

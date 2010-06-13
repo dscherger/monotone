@@ -605,6 +605,26 @@ user_interface::set_tick_write_nothing()
   tick_type = none;
 }
 
+user_interface::ticker_type
+user_interface::set_ticker_type(user_interface::ticker_type type)
+{
+  ticker_type ret = tick_type;
+  switch (type)
+    {
+    case count: set_tick_write_count(); break;
+    case dot: set_tick_write_dot(); break;
+    case stdio: set_tick_write_stdio(); break;
+    case none: set_tick_write_nothing(); break;
+    }
+  return ret;
+}
+
+user_interface::ticker_type
+user_interface::get_ticker_type() const
+{
+  return tick_type;
+}
+
 
 void
 user_interface::write_ticks()
@@ -1013,10 +1033,12 @@ user_interface::inform_usage(usage const & u, options & opts)
   commands::explain_usage(u.which, opts.show_hidden_commands, usage_stream);
 }
 
-void
-user_interface::enable_timestamps()
+bool
+user_interface::enable_timestamps(bool enable)
 {
-  timestamps_enabled = true;
+  bool ret = timestamps_enabled;
+  timestamps_enabled = enable;
+  return ret;
 }
 
 // Local Variables:

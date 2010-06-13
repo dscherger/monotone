@@ -13,6 +13,7 @@
 
 #include "lua.hh"
 #include "app_state.hh"
+#include "options_applicator.hh"
 #include "work.hh"
 #include "ui.hh"
 #include "mt_version.hh"
@@ -200,6 +201,10 @@ namespace commands {
     L(FL("executing command '%s'") % visibleid);
 
     reapply_options(app, cmd, ident);
+
+    // intentional leak
+    // we don't want the options to be reset, so don't destruct this
+    new options_applicator(app.opts, options_applicator::for_primary_cmd);
 
     cmd->exec(app, ident, args);
   }
