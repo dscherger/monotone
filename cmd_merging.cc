@@ -527,7 +527,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
       % heads.size() % app.opts.branch);
 
   // avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   size_t pass = 1, todo = heads.size() - 1;
 
@@ -654,7 +654,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
       return;
     }
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   P(F("propagating %s -> %s") % idx(args,0) % idx(args,1));
   P(F("[left]  %s") % *src_i);
@@ -919,7 +919,7 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
     % right % left);
 
   // avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   merge_two(app.opts, app.lua, project, keys,
             left, right, branch, string("explicit merge"),
             std::cout, false);

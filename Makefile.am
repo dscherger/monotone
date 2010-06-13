@@ -63,7 +63,7 @@ MOST_SOURCES = 								\
 	migration.hh migrate_schema.cc migrate_ancestry.cc		\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
-	netsync.cc            						\
+	netsync.hh netsync.cc            				\
 	network/automate_session.hh network/automate_session.cc		\
 	network/connection_info.hh network/connection_info.cc		\
 	network/listener_base.hh network/listener_base.cc		\

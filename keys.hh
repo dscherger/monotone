@@ -20,7 +20,11 @@ class database;
 struct keypair;
 class globish;
 
+class netsync_connection_info;
+typedef boost::shared_ptr<netsync_connection_info> shared_conn_info;
+
 enum key_cache_flag { cache_disable, cache_enable };
+enum key_requiredness_flag {key_optional, key_required};
 
 // keys.{hh,cc} does all the "delicate" crypto (meaning: that which needs
 // to read passphrases and manipulate raw, decrypted private keys). it
@@ -30,48 +34,52 @@ enum key_cache_flag { cache_disable, cache_enable };
 // Find the key to be used for signing certs.  If possible, ensure the
 // database and the key_store agree on that key, and optionally cache it in
 // decrypted form, so as not to bother the user for their passphrase later.
-void get_user_key(options const & opts, lua_hooks & lua,
-                  database & db, key_store & keys,
-                  project_t & project, key_id & key,
-                  key_cache_flag const cache = cache_enable);
+void
+get_user_key(options const & opts, lua_hooks & lua,
+             database & db, key_store & keys,
+             project_t & project, key_id & key,
+             key_cache_flag const cache = cache_enable);
 
 // As above, but does not report which key has been selected; for use when
 // the important thing is to have selected one and cached the decrypted key.
-void cache_user_key(options const & opts, lua_hooks & lua,
-                    database & db, key_store & keys,
-                    project_t & project);
+void
+cache_user_key(options const & opts,
+               project_t & project,
+               key_store & keys,
+               lua_hooks & lua);
 
 // Find the key to be used for netsync authentication.  If possible, ensure the
 // database and the key_store agree on that key, and cache it in decrypted
 // form, so as not to bother the user for their passphrase later.
-enum netsync_key_requiredness {KEY_OPTIONAL, KEY_REQUIRED};
-void cache_netsync_key(options const & opts,
-                       database & db,
-                       key_store & keys,
-                       lua_hooks & lua,
-                       project_t & project,
-                       utf8 const & host,
-                       globish const & include,
-                       globish const & exclude,
-                       netsync_key_requiredness key_requiredness);
+void
+cache_netsync_key(options const & opts,
+                  project_t & project,
+                  key_store & keys,
+                  lua_hooks & lua,
+                  shared_conn_info const & info,
+                  key_requiredness_flag key_requiredness);
 
-void load_key_pair(key_store & keys,
-                   key_id const & id);
+void
+load_key_pair(key_store & keys,
+              key_id const & id);
 
-void load_key_pair(key_store & keys,
-                   key_id const & id,
-                   keypair & kp);
+void
+load_key_pair(key_store & keys,
+              key_id const & id,
+              keypair & kp);
 
 // netsync stuff
 
-void key_hash_code(key_name const & ident,
-                   rsa_pub_key const & pub,
-                   key_id & out);
+void
+key_hash_code(key_name const & ident,
+              rsa_pub_key const & pub,
+              key_id & out);
 
-bool keys_match(key_name const & id1,
-                rsa_pub_key const & key1,
-                key_name const & id2,
-                rsa_pub_key const & key2);
+bool
+keys_match(key_name const & id1,
+           rsa_pub_key const & key1,
+           key_name const & id2,
+           rsa_pub_key const & key2);
 
 #endif // __KEYS_HH__
 

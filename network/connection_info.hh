@@ -11,18 +11,25 @@
 #ifndef __CONNECTION_INFO_HH__
 #define __CONNECTION_INFO_HH__
 
-#include <list>
-#include <vector>
-
+#include "netxx/types.h"
 #include "automate_ostream.hh"
-#include "globish.hh"
-#include "uri.hh"
-#include "vocab.hh"
+#include "database.hh"
+#include "options.hh"
+#include <boost/shared_ptr.hpp>
+
+struct globish;
+struct server_initiated_sync_request;
+struct uri_t;
+
+struct netsync_connection_info;
+
+typedef boost::shared_ptr<netsync_connection_info> shared_conn_info;
 
 struct netsync_connection_info
 {
-  struct Server
+  class Server
   {
+  public:
     std::list<utf8> addrs;
   } server;
   enum conn_type
@@ -30,26 +37,95 @@ struct netsync_connection_info
       netsync_connection,
       automate_connection
     };
-  struct Client
+  class Client
   {
+    friend struct netsync_connection_info;
+
+    bool connection_successful;
+
+    bool use_argv;
+    uri_t uri;
+    std::vector<std::string> argv;
+
     globish include_pattern;
     globish exclude_pattern;
-    uri_t uri;
-    utf8 unparsed;
-    std::vector<std::string> argv;
-    bool use_argv;
+
     conn_type connection_type;
-  private:
     std::istream * input_stream;
     automate_ostream * output_stream;
+
+    database db;
+    options opts;
+
+    Client(database & d, options const & o);
+    ~Client();
+
+    void set_raw_uri(std::string const & uri);
+    void set_include_pattern(std::vector<arg_type> const & pat);
+    void set_exclude_pattern(std::vector<arg_type> const & pat);
+    void maybe_set_argv(lua_hooks & lua);
+    void ensure_completeness() const;
+
   public:
     std::istream & get_input_stream() const;
     automate_ostream & get_output_stream() const;
     void set_input_stream(std::istream & is);
     void set_output_stream(automate_ostream & os);
-    std::size_t get_port() const;
-    Client();
+    Netxx::port_type get_port() const;
+    globish get_include_pattern() const;
+    globish get_exclude_pattern() const;
+    uri_t get_uri() const;
+    bool get_use_argv() const;
+    std::vector<std::string> get_argv() const;
+
+    void set_connection_type(conn_type type);
+    conn_type get_connection_type() const;
+
+    void set_connection_successful();
   } client;
+
+  static void
+  setup_default(options const & opts,
+                database & db,
+                lua_hooks & lua,
+                shared_conn_info & info);
+
+  static void
+  setup_from_sync_request(options const & opts,
+                          database & db,
+                          lua_hooks & lua,
+                          server_initiated_sync_request const & request,
+                          shared_conn_info & info);
+
+  static void
+  setup_from_uri(options const & opts,
+                 database & db,
+                 lua_hooks & lua,
+                 arg_type const & uri,
+                 shared_conn_info & info);
+
+  static void
+  setup_from_server_and_pattern(options const & opts,
+                                database & db,
+                                lua_hooks & lua,
+                                arg_type const & host,
+                                std::vector<arg_type> const & includes,
+                                std::vector<arg_type> const & excludes,
+                                shared_conn_info & info);
+
+  static void
+  setup_for_serve(options const & opts,
+                  database & db,
+                  lua_hooks & lua,
+                  shared_conn_info & info);
+
+private:
+  netsync_connection_info(database & d, options const & o);
+
+  static void
+  parse_includes_excludes_from_query(std::string const & query,
+                                     std::vector<arg_type> & includes,
+                                     std::vector<arg_type> & excludes);
 };
 
 #endif

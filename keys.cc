@@ -22,6 +22,9 @@
 #include "project.hh"
 #include "key_store.hh"
 #include "database.hh"
+#include "uri.hh"
+#include "globish.hh"
+#include "network/connection_info.hh"
 
 using std::string;
 using std::vector;
@@ -91,14 +94,14 @@ namespace {
     // Decrypt and cache the key now.
     keys.cache_decrypted_key(chosen_key);
   }
-  bool get_only_key(key_store & keys, bool required, key_id & key)
+  bool get_only_key(key_store & keys, key_requiredness_flag key_requiredness, key_id & key)
   {
     vector<key_id> all_privkeys;
     keys.get_key_ids(all_privkeys);
-    E(!required || !all_privkeys.empty(), origin::user,
+    E(key_requiredness == key_optional || !all_privkeys.empty(), origin::user,
       F("you have no private key to make signatures with\n"
         "perhaps you need to 'genkey <your email>'"));
-    E(!required || all_privkeys.size() < 2, origin::user,
+    E(key_requiredness == key_optional || all_privkeys.size() < 2, origin::user,
       F("you have multiple private keys\n"
         "pick one to use for signatures by adding "
         "'-k<keyname>' to your command"));
@@ -147,7 +150,7 @@ get_user_key(options const & opts, lua_hooks & lua,
     ; // the lua hook sets the key
   else
     {
-      get_only_key(keys, true, key);
+      get_only_key(keys, key_required, key);
     }
 
   if (cache == cache_enable)
@@ -156,14 +159,11 @@ get_user_key(options const & opts, lua_hooks & lua,
 
 void
 cache_netsync_key(options const & opts,
-                  database & db,
+                  project_t & project,
                   key_store & keys,
                   lua_hooks & lua,
-                  project_t & project,
-                  utf8 const & host,
-                  globish const & include,
-                  globish const & exclude,
-                  netsync_key_requiredness key_requiredness)
+                  shared_conn_info const & info,
+                  key_requiredness_flag key_requiredness)
 {
   if (keys.have_signing_key())
     {
@@ -185,28 +185,32 @@ cache_netsync_key(options const & opts,
           found_key = true;
         }
     }
-  else if (lua.hook_get_netsync_key(host, include, exclude, keys, project, key))
+  else if (lua.hook_get_netsync_key(utf8(info->client.get_uri().resource, origin::user),
+                                    info->client.get_include_pattern(),
+                                    info->client.get_exclude_pattern(),
+                                    keys, project, key))
     {
       found_key = true;
     }
   else
     {
-      found_key = get_only_key(keys, key_requiredness == KEY_REQUIRED, key);
+      found_key = get_only_key(keys, key_requiredness, key);
     }
 
   if (found_key)
     {
-      check_and_save_chosen_key(db, keys, key);
+      check_and_save_chosen_key(project.db, keys, key);
     }
 }
 
 void
-cache_user_key(options const & opts, lua_hooks & lua,
-               database & db, key_store & keys,
-               project_t & project)
+cache_user_key(options const & opts,
+               project_t & project,
+               key_store & keys,
+               lua_hooks & lua)
 {
   key_id key;
-  get_user_key(opts, lua, db, keys, project, key);
+  get_user_key(opts, lua, project.db, keys, project, key);
 }
 
 void

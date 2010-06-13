@@ -610,7 +610,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
                                     % r).str(),
                                    origin::internal));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   // for the divergence check, below
   set<revision_id> heads;
@@ -1541,7 +1541,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   E(message_validated, origin::user,
     F("log message rejected by hook: %s") % reason);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   // for the divergence check, below
   set<revision_id> heads;
