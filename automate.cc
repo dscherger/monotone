@@ -21,6 +21,7 @@
 #include <boost/tuple/tuple.hpp>
 
 #include "app_state.hh"
+#include "automate_stdio_helpers.hh"
 #include "project.hh"
 #include "basic_io.hh"
 #include "cert.hh"
@@ -2335,6 +2336,125 @@ CMD_AUTOMATE(lua, "LUA_FUNCTION [ARG1 [ARG2 [...]]]",
   // the output already contains a trailing newline, so we don't add
   // another one here
   output << out;
+}
+
+CMD_FWD_DECL(automate);
+
+void automate_stdio_helpers::
+automate_stdio_shared_setup(app_state & app,
+                            vector<string> const & cmdline,
+                            vector<pair<string, string> > const & params,
+                            commands::command_id & id,
+                            commands::automate const * & acmd)
+{
+  using commands::command_id;
+  using commands::command;
+  using commands::automate;
+
+  args_vector args;
+  for (vector<string>::const_iterator i = cmdline.begin();
+       i != cmdline.end(); ++i)
+    {
+      args.push_back(arg_type(*i, origin::user));
+      id.push_back(utf8(*i, origin::user));
+    }
+
+  set< command_id > matches =
+    CMD_REF(automate)->complete_command(id);
+
+  if (matches.empty())
+    {
+      E(false, origin::network,
+        F("no completions for this command"));
+    }
+  else if (matches.size() > 1)
+    {
+      E(false, origin::network,
+        F("multiple completions possible for this command"));
+    }
+
+  id = *matches.begin();
+
+  command const * cmd = CMD_REF(automate)->find_command(id);
+  I(cmd != NULL);
+
+  acmd = dynamic_cast< automate const * >(cmd);
+  I(acmd != NULL);
+
+  E(acmd->can_run_from_stdio(), origin::network,
+    F("sorry, that can't be run remotely or over stdio"));
+
+
+  commands::command_id my_id_for_hook = id;
+  my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automate", origin::internal));
+  // group name
+  my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automation", origin::internal));
+  commands::reapply_options(app,
+                            app.reset_info.cmd,
+                            commands::command_id() /* doesn't matter */,
+                            cmd, my_id_for_hook, 2,
+                            args,
+                            &params);
+
+  // disable user prompts, f.e. for password decryption
+  app.opts.non_interactive = true;
+
+
+  // set a fixed ticker type regardless what the user wants to
+  // see, because anything else would screw the stdio-encoded output
+  ui.set_tick_write_stdio();
+}
+
+std::pair<int, string> automate_stdio_helpers::
+automate_stdio_shared_body(app_state & app,
+                           std::vector<std::string> const & cmdline,
+                           std::vector<std::pair<std::string,std::string> >
+                           const & params,
+                           std::ostream & os,
+                           boost::function<void()> init_fn,
+                           boost::function<void(commands::command_id const &)> pre_exec_fn)
+{
+  using commands::command_id;
+  using commands::command;
+  using commands::automate;
+
+  options original_opts = app.opts;
+  automate const * acmd = 0;
+  command_id id;
+  try
+    {
+      if (init_fn)
+        init_fn();
+      automate_stdio_shared_setup(app, cmdline, params, id, acmd);
+    }
+  catch (option::option_error & e)
+    {
+      return make_pair(1, e.what());
+    }
+  catch (recoverable_failure & f)
+    {
+      return make_pair(1, f.what());
+    }
+  if (pre_exec_fn)
+    pre_exec_fn(id);
+  try
+    {
+      // as soon as a command requires a workspace, this is set to true
+      workspace::used = false;
+
+      acmd->exec_from_automate(app, id, app.opts.args, os);
+
+      // usually, if a command succeeds, any of its workspace-relevant
+      // options are saved back to _MTN/options, this shouldn't be
+      // any different here
+      workspace::maybe_set_options(app.opts, app.lua);
+    }
+  catch (recoverable_failure & f)
+    {
+      return make_pair(2, f.what());
+    }
+  app.opts = original_opts;
+  return make_pair(0, string());
 }
 
 // Local Variables:

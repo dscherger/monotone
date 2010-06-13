@@ -41,6 +41,7 @@ MOST_SOURCES = 								\
 	automate_ostream.hh						\
 	automate_ostream_demuxed.hh					\
 	automate_reader.hh automate_reader.cc				\
+	automate_stdio_helpers.hh					\
 	botan_pipe_cache.hh						\
 	cache_logger.hh cache_logger.cc					\
 	commands.cc commands.hh $(CMD_SOURCES)				\

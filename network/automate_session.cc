@@ -12,6 +12,7 @@
 
 #include "app_state.hh"
 #include "automate_reader.hh"
+#include "automate_stdio_helpers.hh"
 #include "simplestring_xform.hh"
 #include "ui.hh"
 #include "vocab_cast.hh"
@@ -178,10 +179,10 @@ bool automate_session::do_work(transaction_guard & guard,
 
         ostringstream oss;
 
-        pair<int, string> err
-          = commands::automate_stdio_shared_body(app, cmdline, params, oss,
-                                                 remote_stdio_pre_fn(app, remote_identity, cmdline, params),
-                                                 remote_stdio_log_fn(get_peer()));
+        pair<int, string> err = automate_stdio_helpers::
+          automate_stdio_shared_body(app, cmdline, params, oss,
+                                     remote_stdio_pre_fn(app, remote_identity, cmdline, params),
+                                     remote_stdio_log_fn(get_peer()));
         if (err.first != 0)
           write_automate_packet_cmd('e', err.second);
         if (!oss.str().empty())

@@ -10,8 +10,6 @@
 #ifndef __COMMANDS_HH__
 #define __COMMANDS_HH__
 
-#include <boost/function.hpp>
-
 #include "vector.hh"
 #include "options.hh"
 class app_state;
@@ -41,23 +39,6 @@ namespace commands {
                        args_vector const & subcmd_cmdline = args_vector(),
                        std::vector<std::pair<std::string, std::string> >
                        const * const separate_params = 0);
-  // really no good place to put this
-  // used by 'automate stdio' and automate_session::do_work
-  void automate_stdio_shared_setup(app_state & app,
-                                   std::vector<std::string> const & cmdline,
-                                   std::vector<std::pair<std::string,std::string> >
-                                   const & params,
-                                   command_id & id,
-                                   /* reference-to-pointer here is intentional */
-                                   automate const * & acmd);
-  std::pair<int, std::string>
-  automate_stdio_shared_body(app_state & app,
-                             std::vector<std::string> const & cmdline,
-                             std::vector<std::pair<std::string,std::string> >
-                             const & params,
-                             std::ostream & os,
-                             boost::function<void()> init_fn,
-                             boost::function<void(command_id const &)> pre_exec_fn);
   void process(app_state & app, command_id const & ident,
                args_vector const & args);
   options::options_type command_options(command_id const & ident);

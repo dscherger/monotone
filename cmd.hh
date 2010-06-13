@@ -19,7 +19,7 @@
 
 class app_state;
 
-class automate_session;
+class automate_stdio_helpers;
 
 namespace commands
 {
@@ -113,14 +113,7 @@ namespace commands
                                     command_id const & execid,
                                     args_vector const & args,
                                     std::ostream & output) const = 0;
-    friend std::pair<int, std::string>
-  automate_stdio_shared_body(app_state & app,
-                             std::vector<std::string> const & cmdline,
-                             std::vector<std::pair<std::string,std::string> >
-                             const & params,
-                             std::ostream & os,
-                             boost::function<void()> init_fn,
-                             boost::function<void(command_id const &)> pre_exec_fn);
+    friend class ::automate_stdio_helpers;
 
   public:
     automate(std::string const & name,
