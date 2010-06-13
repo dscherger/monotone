@@ -10,6 +10,7 @@
 
 #include "base.hh"
 #include "cmd.hh"
+
 #include "lua.hh"
 #include "app_state.hh"
 #include "work.hh"
@@ -26,6 +27,7 @@
 using std::string;
 using std::vector;
 using std::ostream;
+using std::set;
 
 //
 // Definition of top-level commands, used to classify the real commands
@@ -81,6 +83,9 @@ CMD_GROUP(workspace, "workspace", "", CMD_REF(__root__),
 CMD_GROUP(user, "user", "", CMD_REF(__root__),
           N_("Commands defined by the user"),
           "");
+
+
+CMD_FWD_DECL(automate);
 
 template<> void dump(size_t const & in, std::string & out)
 {
@@ -164,6 +169,66 @@ namespace commands {
       {
         remove_command_name_from_args(cmd_ident, app.opts.args);
       }
+  }
+
+  void automate_stdio_shared_setup(app_state & app,
+                                   vector<string> const & cmdline,
+                                   vector<pair<string, string> > const & params,
+                                   command_id & id,
+                                   automate const * & acmd)
+  {
+    args_vector args;
+    for (vector<string>::const_iterator i = cmdline.begin();
+         i != cmdline.end(); ++i)
+      {
+        args.push_back(arg_type(*i, origin::user));
+        id.push_back(utf8(*i, origin::user));
+      }
+
+    set< command_id > matches =
+      CMD_REF(automate)->complete_command(id);
+
+    if (matches.empty())
+      {
+        E(false, origin::network,
+          F("no completions for this command"));
+      }
+    else if (matches.size() > 1)
+      {
+        E(false, origin::network,
+          F("multiple completions possible for this command"));
+      }
+
+    id = *matches.begin();
+
+    command const * cmd = CMD_REF(automate)->find_command(id);
+    I(cmd != NULL);
+
+    acmd = dynamic_cast< automate const * >(cmd);
+    I(acmd != NULL);
+
+    E(acmd->can_run_from_stdio(), origin::network,
+      F("sorry, that can't be run remotely or over stdio"));
+
+
+    commands::command_id my_id_for_hook = id;
+    my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automate", origin::internal));
+    // group name
+    my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automation", origin::internal));
+    commands::reapply_options(app,
+                              app.reset_info.cmd,
+                              commands::command_id() /* doesn't matter */,
+                              cmd, my_id_for_hook, 2,
+                              args,
+                              &params);
+
+    // disable user prompts, f.e. for password decryption
+    app.opts.non_interactive = true;
+
+
+    // set a fixed ticker type regardless what the user wants to
+    // see, because anything else would screw the stdio-encoded output
+    ui.set_tick_write_stdio();
   }
 
   // monotone.cc calls this function after option processing.

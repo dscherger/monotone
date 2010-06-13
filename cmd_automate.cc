@@ -237,8 +237,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       automate const * acmd = 0;
       command_id id;
 
-      // FIXME: what follows is largely duplicated
-      // in network/automate_session.cc::do_work()
+      // this should match what's in network/automate_session.cc::do_work()
       //
       // stdio decoding errors should be noted with errno 1,
       // errno 2 is reserved for errors from the commands itself
@@ -247,58 +246,8 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           if (!ar.get_command(params, cmdline))
             break;
 
-          args_vector args;
-          vector<string>::iterator i = cmdline.begin();
-          for (; i != cmdline.end(); ++i)
-            {
-              args.push_back(arg_type(*i, origin::user));
-              id.push_back(utf8(*i, origin::user));
-            }
-
-          set< command_id > matches =
-            CMD_REF(automate)->complete_command(id);
-
-          if (matches.empty())
-            {
-              E(false, origin::user,
-                F("no completions for this command"));
-            }
-          else if (matches.size() > 1)
-            {
-              E(false, origin::user,
-                F("multiple completions possible for this command"));
-            }
-
-          id = *matches.begin();
-
-          command const * cmd = CMD_REF(automate)->find_command(id);
-          I(cmd != NULL);
-
-          acmd = dynamic_cast< automate const * >(cmd);
-          I(acmd != NULL);
-
-          E(acmd->can_run_from_stdio(), origin::network,
-            F("sorry, that can't be run remotely or over stdio"));
-
-
-          commands::command_id my_id_for_hook = id;
-          my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automate", origin::internal));
-          // group name
-          my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automation", origin::internal));
-          commands::reapply_options(app,
-                                    app.reset_info.cmd,
-                                    commands::command_id() /* doesn't matter */,
-                                    cmd, my_id_for_hook, 2,
-                                    args,
-                                    &params);
-
-          // disable user prompts, f.e. for password decryption
-          app.opts.non_interactive = true;
-
-
-          // set a fixed ticker type regardless what the user wants to
-          // see, because anything else would screw the stdio-encoded output
-          ui.set_tick_write_stdio();
+          commands::automate_stdio_shared_setup(app, cmdline, params,
+                                                id, acmd);
         }
       // FIXME: we need to re-package and rethrow this special exception
       // since it is not based on informative_failure

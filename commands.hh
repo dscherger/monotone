@@ -22,6 +22,7 @@ class utf8;
 namespace commands {
   typedef std::vector< utf8 > command_id;
   class command;
+  class automate;
 
   command_id make_command_id(std::string const & path);
   void explain_usage(command_id const & cmd, bool show_hidden, std::ostream & out);
@@ -38,6 +39,15 @@ namespace commands {
                        args_vector const & subcmd_cmdline = args_vector(),
                        std::vector<std::pair<std::string, std::string> >
                        const * const separate_params = 0);
+  // really no good place to put this
+  // used by 'automate stdio' and automate_session::do_work
+  void automate_stdio_shared_setup(app_state & app,
+                                   std::vector<std::string> const & cmdline,
+                                   std::vector<std::pair<std::string,std::string> >
+                                   const & params,
+                                   command_id & id,
+                                   /* reference-to-pointer here is intentional */
+                                   automate const * & acmd);
   void process(app_state & app, command_id const & ident,
                args_vector const & args);
   options::options_type command_options(command_id const & ident);
