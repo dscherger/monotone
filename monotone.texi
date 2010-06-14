@@ -2897,7 +2897,7 @@ heads of two specific branches.
 There are also several selector functions defined, which take one or more
 selectors as arguments. The general form for these is
 @code{name '(' selector [ ';' selector ... ] ')'}, that is, arguments are
-enclosed in parantheses and separated by semicolons. These are:
+enclosed in parentheses and separated by semicolons. These are:
 @table @code
 @item difference(A;B)
 Set difference; this returns all revisions selected by A but not by B. For
