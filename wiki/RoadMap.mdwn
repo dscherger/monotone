@@ -5,8 +5,8 @@
 
 [[!table data="""
 Description | More Info | Branch(es) | Status |
+Extended selectors | [[MagicSelectors]] | `nvm.extended-selectors` | merged |
 Netsync URI refactoring | n/a | `nvm.connection_info_cleanup` | in development |
-Extended selectors | [[MagicSelectors]] | `nvm.extended-selectors` | in development |
 netsync --anonymous | n/a | `nvm.bugfest-2010.28805-rlevitte` | in development |
 Fix `rename foo foo` | n/a | `nvm.bugfest-2010.29484-rlevitte` | in development |
 `kill_certs_locally` | n/a | `nvm.kill_certs_locally` | in development |
