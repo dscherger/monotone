@@ -27,6 +27,9 @@
 #include <iosfwd>
 #include <string>  // it would be nice if there were a <stringfwd>
 
+// s32, u64, etc
+#include "numeric_vocab.hh"
+
 // this template must be specialized for each type you want to dump
 // (or apply MM() to -- see sanity.hh).  there are a few stock dumpers
 // in appropriate places.
@@ -45,6 +48,10 @@ void dump(T const &, std::string &)
 template <> void dump(std::string const & obj, std::string & out);
 template <> void dump(char const * const & obj, std::string & out);
 template <> void dump(bool const & obj, std::string & out);
+template <> void dump(s32 const & obj, std::string & out);
+template <> void dump(u32 const & obj, std::string & out);
+template <> void dump(s64 const & obj, std::string & out);
+template <> void dump(u64 const & obj, std::string & out);
 
 // NORETURN(void function()); declares a function that will never return
 // in the normal fashion. a function that invariably throws an exception
