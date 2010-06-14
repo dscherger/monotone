@@ -1100,7 +1100,7 @@ database::info(ostream & out, bool analyze)
 
   out << form.str() << '\n'; // final newline is kept out of the translation
 
-  // the following analyzation is only done for --full info
+  // the following analyzation is only done for --verbose info
   if (!analyze)
     return;
 

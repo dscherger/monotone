@@ -130,7 +130,7 @@ _monotone() {
               --db -d
               --debug
               --dump
-              --full-version
+              --verbose
               --help -h
               --key -k
               --keydir

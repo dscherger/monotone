@@ -493,7 +493,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
     N_("(revision|file|key) PARTIAL-ID"),
     N_("Completes a partial identifier"),
     "",
-    options::opts::verbose)
+    options::opts::none)
 {
   if (args.size() != 2)
     throw usage(execid);
