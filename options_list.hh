@@ -48,12 +48,16 @@
  *
  *
  *   HIDE(option)
- *     Do not show the named option in normal help output.
+ *     Do not show the named option in normal help output. Hidden options
+ *     are shown by the --hidden option.
+ *
+ *     In general, options should be hidden if they are introduced for
+ *     testing purposes.
  *
  *   DEPRECATE(option, reason)
- *     Do not show the named option in help output, and give a warning
- *     if it is used. The reason should be gettext_noopt("some text here")
- *     as it is translatable.
+ *     Do not show the named option in help output (even with --hidden), and
+ *     give a warning if it is used. The reason should be
+ *     gettext_noopt("some text here") as it is translatable.
  *
  *
  *   Option Strings
@@ -480,7 +484,7 @@ SIMPLE_OPTION(force_duplicate_key, "force-duplicate-key", bool,
 GLOBAL_SIMPLE_OPTION(help, "help,h", bool, gettext_noop("display help message"))
 
 SIMPLE_OPTION(show_hidden_commands, "hidden/no-hidden", bool,
-              gettext_noop("show hidden commands"))
+              gettext_noop("show hidden commands and options"))
 
 OPTSET(include)
 OPTVAR(include, args_vector, include_patterns, )
@@ -560,6 +564,7 @@ OPTION(messages, msgfile, true, "message-file",
   msgfile = utf8(arg, origin::user);
 }
 #endif
+HIDE(no-prefix)
 OPTION(messages, no_prefix, false, "no-prefix",
         gettext_noop("no prefix to message"))
 #ifdef option_bodies
