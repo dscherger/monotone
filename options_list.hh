@@ -47,6 +47,15 @@
  *     be defined.
  *
  *
+ *   HIDE(option)
+ *     Do not show the named option in normal help output.
+ *
+ *   DEPRECATE(option, reason)
+ *     Do not show the named option in help output, and give a warning
+ *     if it is used. The reason should be gettext_noopt("some text here")
+ *     as it is translatable.
+ *
+ *
  *   Option Strings
  *
  *     Options can have a long name, a short name, and a 'reset' name. The
@@ -303,6 +312,7 @@ GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 }
 #endif
 
+HIDE(roster_cache_performance_log)
 GLOBAL_SIMPLE_OPTION(roster_cache_performance_log, "roster-cache-performance-log",
                      system_path,
                      gettext_noop("log roster cache statistic to the given file"))
@@ -615,6 +625,7 @@ OPTION(verbosity, inc_verbosity, false, "v",
 #endif
 
 OPTSET(full)
+DEPRECATE(full, gettext_noop("please use --verbose instead"))
 OPTION(full, full, false, "full",
        gettext_noop("print detailed information"))
 #ifdef option_bodies
