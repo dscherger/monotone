@@ -98,6 +98,8 @@ concrete_option::concrete_option(char const * names,
   I((!longname.empty() || !shortname.empty()) || cancelname.empty());
   // If an option has a name (ie, can be set), it must have a setter function
   I(set || (longname.empty() && shortname.empty()));
+  // If an option can be canceled, it must have a resetter function
+  I(reset || cancelname.empty());
   has_arg = arg;
   setter = set;
   resetter = reset;

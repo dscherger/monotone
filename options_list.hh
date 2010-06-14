@@ -48,12 +48,12 @@
  *
  *
  *   Option Strings
- *     Options can have a long name, a short name, and a 'reset' name.
- *     The long and short names work as reasonably expected, the make
- *     the function body in the '#ifdef option_bodies' get run. The
- *     'reset' name is slightly different, it makes the optset that
- *     the option belongs to get reset. This means that if you have
- *     several related options in the same optset, you probably *don't*
+ *
+ *     Options can have a long name, a short name, and a 'reset' name. The
+ *     long and short names run the function body in the '#ifdef
+ *     option_bodies'. The 'reset' name is slightly different, it makes the
+ *     optset that the option belongs to get reset. This means that if you
+ *     have several related options in the same optset, you probably *don't*
  *     want to specify a reset name for any of them.
  *
  *     If you want an option to belong to an optset and also be resettable,
@@ -111,7 +111,7 @@ void set_simple_option(std::set<string> & t, std::string const & arg)
 # define SIMPLE_OPTION_BODY(name)
 #endif
 /*
- * This is a 'magic' option, and Does The Right Thing based on it's data type:
+ * This is a 'magic' option, and Does The Right Thing based on its data type:
  *  * If it's a bool, it will be true if the option is given and false if
  *    not given (or reset), and will not take an argument.
  *  * If it's a string or vocab type, it will be set to the argument if

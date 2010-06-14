@@ -77,7 +77,7 @@ namespace option {
     bad_arg_internal(std::string const & str = "");
   };
 
-  // Split a "long,s" option name into long and short names.
+  // Split a "long,s/cancel" option name into long and short names.
   void splitname(char const * from, std::string & name, std::string & n, std::string & cancelname);
 
   // An option that can be set and reset.
