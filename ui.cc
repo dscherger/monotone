@@ -655,7 +655,7 @@ user_interface::fatal(string const & fatal)
 {
   inform(F("fatal: %s\n"
            "this is almost certainly a bug in monotone.\n"
-           "please send this error message, the output of '%s version --full',\n"
+           "please send this error message, the output of '%s version --verbose',\n"
            "and a description of what you were doing to %s.")
          % fatal % prog_name % PACKAGE_BUGREPORT);
   global_sanity.dump_buffer();
@@ -668,7 +668,7 @@ user_interface::fatal_db(string const & fatal)
 {
   inform(F("fatal: %s\n"
            "this is almost certainly a bug in monotone.\n"
-           "please send this error message, the output of '%s version --full',\n"
+           "please send this error message, the output of '%s version --verbose',\n"
            "and a description of what you were doing to %s.\n"
            "This error appears to have been triggered by something in the\n"
            "database you were using, so please preserve it in case it can\n"
@@ -992,7 +992,8 @@ get_usage_str(options::options_type const & optset, options & opts)
   vector<string> descriptions;
   unsigned int maxnamelen;
 
-  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
+  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen,
+                                              opts.show_hidden_commands);
   return format_usage_strings(names, descriptions, maxnamelen);
 }
 

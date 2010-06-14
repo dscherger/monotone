@@ -303,6 +303,7 @@ GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 }
 #endif
 
+HIDE(roster_cache_performance_log)
 GLOBAL_SIMPLE_OPTION(roster_cache_performance_log, "roster-cache-performance-log",
                      system_path,
                      gettext_noop("log roster cache statistic to the given file"))
@@ -615,6 +616,7 @@ OPTION(verbosity, inc_verbosity, false, "v",
 #endif
 
 OPTSET(full)
+DEPRECATE(full, gettext_noop("please use --verbose instead"))
 OPTION(full, full, false, "full",
        gettext_noop("print detailed information"))
 #ifdef option_bodies

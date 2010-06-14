@@ -89,7 +89,9 @@ concrete_option::concrete_option(char const * names,
                                  char const * desc,
                                  bool arg,
                                  boost::function<void (std::string)> set,
-                                 boost::function<void ()> reset)
+                                 boost::function<void ()> reset,
+                                 bool hide,
+                                 char const * deprecate)
 {
   description = desc;
   splitname(names, longname, shortname, cancelname);
@@ -101,6 +103,8 @@ concrete_option::concrete_option(char const * names,
   has_arg = arg;
   setter = set;
   resetter = reset;
+  hidden = hide;
+  deprecated = deprecate;
 }
 
 bool concrete_option::operator<(concrete_option const & other) const
@@ -148,9 +152,12 @@ concrete_option_set &
 concrete_option_set::operator()(char const * names,
                                 char const * desc,
                                 boost::function<void ()> set,
-                                boost::function<void ()> reset)
+                                boost::function<void ()> reset,
+                                bool hide,
+                                char const * deprecate)
 {
-  options.insert(concrete_option(names, desc, false, discard_argument(set), reset));
+  options.insert(concrete_option(names, desc, false, discard_argument(set),
+                                 reset, hide, deprecate));
   return *this;
 }
 
@@ -158,9 +165,11 @@ concrete_option_set &
 concrete_option_set::operator()(char const * names,
                                 char const * desc,
                                 boost::function<void (string)> set,
-                                boost::function<void ()> reset)
+                                boost::function<void ()> reset,
+                                bool hide,
+                                char const * deprecate)
 {
-  options.insert(concrete_option(names, desc, true, set, reset));
+  options.insert(concrete_option(names, desc, true, set, reset, hide, deprecate));
   return *this;
 }
 
@@ -391,6 +400,8 @@ void concrete_option_set::from_command_line(args_vector & args,
             ++i;
           try
             {
+              if (o.deprecated)
+                W(F("deprated option '%s' used: %s") % name % gettext(o.deprecated));
               if (!is_cancel)
                 {
                   if (o.setter)
@@ -431,6 +442,8 @@ void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > con
 
       try
         {
+          if (o.deprecated)
+            W(F("deprated option '%s' used: %s") % i->first % gettext(o.deprecated));
           if (o.setter)
             o.setter(value());
         }
@@ -481,7 +494,8 @@ static string usagestr(concrete_option const & opt)
 void
 concrete_option_set::get_usage_strings(vector<string> & names,
                                        vector<string> & descriptions,
-                                       unsigned int & maxnamelen) const
+                                       unsigned int & maxnamelen,
+                                       bool show_hidden) const
 {
   unsigned int namelen = 0; // the longest option name string
   names.clear();
@@ -489,6 +503,10 @@ concrete_option_set::get_usage_strings(vector<string> & names,
   for (std::set<concrete_option>::const_iterator i = options.begin();
        i != options.end(); ++i)
     {
+      if (i->hidden && !show_hidden)
+        continue;
+      if (i->deprecated)
+        continue;
       string name = usagestr(*i);
       if (name.size() > namelen)
         namelen = name.size();
