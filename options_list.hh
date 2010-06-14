@@ -635,9 +635,7 @@ OPTION(full, full, false, "full",
 }
 #endif
 
-OPTSET(verbose)
-OPTSET_REL(verbosity, verbose)
-OPTION(verbose, verbose, false, "verbose/no-verbose",
+OPTION(verbosity, verbose, false, "verbose/no-verbose",
        gettext_noop("verbose completion output"))
 #ifdef option_bodies
 {
