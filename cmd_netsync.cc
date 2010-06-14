@@ -408,7 +408,7 @@ CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 }
 
 CMD(clone, "clone", "", CMD_REF(network),
-    N_("HOST[:PORTNUMBER] BRANCH [DIRECTORY], URL [DIRECTORY]"),
+    N_("HOST[:PORTNUMBER] BRANCH [DIRECTORY]\nURL [DIRECTORY]"),
     N_("Checks out a revision from a remote database into a directory"),
     N_("If a revision is given, that's the one that will be checked out.  "
        "Otherwise, it will be the head of the branch supplied.  "
