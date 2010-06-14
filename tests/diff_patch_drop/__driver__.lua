@@ -24,7 +24,17 @@ check(exists("dir/file"))
 -- but it is a little aggressive and removes the dir too!
 
 copy("diff", "stdin")
-check({"patch", "-p0"}, 0, false, false, true)
 
-check(not exists("dir/file"))
-check(not exists("dir"))
+-- patch from openBSD and possibly other BSDs as well
+-- does not automatically drop empty files / directories, see
+-- http://article.gmane.org/gmane.comp.version-control.monotone.devel/17597
+if string.match(ostype, "BSD") then
+    check({"patch", "-p0", "-E"}, 0, false, false, true)
+    check(not exists("dir/file"))
+else
+    -- GNU patch should only remove the file
+    -- but it is a little aggressive and removes the dir too!
+    check({"patch", "-p0"}, 0, false, false, true)
+    check(not exists("dir/file"))
+    check(not exists("dir"))
+end
