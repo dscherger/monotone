@@ -47,6 +47,15 @@
  *     be defined.
  *
  *
+ *   HIDE(option)
+ *     Do not show the named option in normal help output.
+ *
+ *   DEPRECATE(option, reason)
+ *     Do not show the named option in help output, and give a warning
+ *     if it is used. The reason should be gettext_noopt("some text here")
+ *     as it is translatable.
+ *
+ *
  *   Option Strings
  *     Options can have a long name, a short name, and a 'reset' name.
  *     The long and short names work as reasonably expected, the make
