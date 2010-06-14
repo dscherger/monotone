@@ -8,7 +8,7 @@ check(get("changelog.lua"))
 -- status warns with bad date format
 
 check(mtn("status"), 0, false, false)
-check(mtn("status", "--date-format", "%F"), 0, false, true)
+check(mtn("status", "--date-format", "%Y-%m-%d"), 0, false, true)
 check(qgrep("date format", "stderr"))
 
 
@@ -17,7 +17,7 @@ check(qgrep("date format", "stderr"))
 
 -- commit fails with bad date format
 
-check(mtn("commit", "--date-format", "%F"), 1, false, true)
+check(mtn("commit", "--date-format", "%Y-%m-%d"), 1, false, true)
 check(qgrep("date format", "stderr"))
 check(not exists("_MTN/commit"))
 

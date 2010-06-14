@@ -444,8 +444,7 @@ date_t::from_formatted_localtime(string const & s, string const & fmt)
   L(FL("parsing date '%s' with format '%s'") % s % fmt);
 
   // get local timezone values
-  E(parse_date(s, fmt, &tb), origin::user,
-    F("unable to parse date '%s' with format '%s'") % s % fmt);
+  parse_date(s, fmt, &tb);
 
   // strptime does *not* set the tm_isdst field in the broken down time
   // struct. setting it to -1 is apparently the way to tell mktime to

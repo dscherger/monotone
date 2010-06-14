@@ -293,11 +293,11 @@ UNIT_TEST(localtime_formats)
 
       // these all seem to work with the test setup of LANG=C and TZ=UTC
 
-      OK(date, "%F %X"); // YYYY-MM-DD hh:mm:ss
-      OK(date, "%X %F"); // hh:mm:ss YYYY-MM-DD
+      OK(date, "%Y-%m-%d %X"); // YYYY-MM-DD hh:mm:ss
+      OK(date, "%X %Y-%m-%d"); // hh:mm:ss YYYY-MM-DD
       OK(date, "%d %b %Y, %I:%M:%S %p");
       OK(date, "%a %b %d %H:%M:%S %Y");
-      OK(date, "%a %d %b %Y %I:%M:%S %p %z");
+      OK(date, "%a %d %b %Y %I:%M:%S %p");
       OK(date, "%a, %d %b %Y %H:%M:%S");
       OK(date, "%Y-%m-%d %H:%M:%S");
       OK(date, "%Y-%m-%dT%H:%M:%S");
@@ -308,9 +308,19 @@ UNIT_TEST(localtime_formats)
           OK(date, "%X %x"); // hh:mm:ss YY-MM-DD
         }
 
+      // both, %F and %z, are GNU extensions which we cannot test here
+      // universally, because e.g. openBSD doesn't know them
+      //OK(date, "%F %X"); // YYYY-MM-DD hh:mm:ss
+      //OK(date, "%a %d %b %Y %I:%M:%S %p %z");
+
       // possibly anything with a timezone label (%Z) will fail
-      //(date, "%a %d %b %Y %I:%M:%S %p %Z"); // the timezone label breaks this
+      //OK(date, "%a %d %b %Y %I:%M:%S %p %Z"); // the timezone label breaks this
     }
+
+  // check that trailing characters not matched by the date format are caught
+  UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("1988-01-01 12:12:12 gobbledygook",
+                                                         "%Y-%m-%d %X"),
+                        recoverable_failure);
 
 #undef OK
 }

@@ -129,7 +129,7 @@ private:
 };
 
 static bool
-date_fmt_valid (string date_fmt)
+date_fmt_valid(string date_fmt)
 {
   if (date_fmt.empty())
     {
@@ -880,11 +880,25 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   key_store keys(app);
   key_identity_info key;
 
-  get_user_key(app.opts, app.lua, db, keys, project, key.id, cache_disable);
-  project.complete_key_identity_from_id(keys, app.lua, key);
+  try
+    {
+      get_user_key(app.opts, app.lua, db, keys, project, key.id, cache_disable);
+      project.complete_key_identity_from_id(keys, app.lua, key);
 
-  if (!app.lua.hook_get_author(app.opts.branch, key, author))
-    author = key.official_name();
+      if (!app.lua.hook_get_author(app.opts.branch, key, author))
+        author = key.official_name();
+    }
+  catch (recoverable_failure & rf)
+    {
+      // If we can't figure out which key would be used for commit, that's no reason
+      // to make status fail.
+      if (rf.caused_by() == origin::user)
+        {
+          author = "???";
+        }
+      else
+        throw;
+    }
 
   calculate_ident(rev, rid);
 
