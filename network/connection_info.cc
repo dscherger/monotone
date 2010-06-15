@@ -429,8 +429,16 @@ netsync_connection_info::setup_from_uri(options const & opts,
   parse_includes_excludes_from_query(info->client.uri.query,
                                      includes, excludes);
 
-  info->client.set_include_pattern(includes);
-  info->client.set_exclude_pattern(excludes);
+  if (includes.size() == 0)
+    {
+      W(F("no branch pattern found in URI, will try to use "
+          "suitable database defaults if available"));
+    }
+  else
+    {
+      info->client.set_include_pattern(includes);
+      info->client.set_exclude_pattern(excludes);
+    }
 
   info->client.ensure_completeness();
   info->client.maybe_set_argv(lua);
