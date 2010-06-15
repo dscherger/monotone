@@ -123,14 +123,14 @@ call_server(app_state & app,
   shared_ptr<wrapped_session> wrapped;
   switch (info->client.get_connection_type())
     {
-    case netsync_connection_info::netsync_connection:
+    case netsync_connection:
       wrapped.reset(new netsync_session(sess.get(),
                                         app.opts, app.lua, project,
                                         keys, role,
                                         info->client.get_include_pattern(),
                                         info->client.get_exclude_pattern()));
       break;
-    case netsync_connection_info::automate_connection:
+    case automate_connection:
       wrapped.reset(new automate_session(app, sess.get(),
                                          &info->client.get_input_stream(),
                                          &info->client.get_output_stream()));

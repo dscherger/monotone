@@ -48,13 +48,14 @@ extract_client_connection_info(options & opts,
                                project_t & project,
                                key_store & keys,
                                lua_hooks & lua,
+                               connection_type type,
                                args_vector const & args,
                                shared_conn_info & info,
                                key_requiredness_flag key_requiredness = key_required)
 {
   if (opts.remote_stdio_host_given)
     {
-       netsync_connection_info::setup_from_uri(opts, project.db, lua,
+       netsync_connection_info::setup_from_uri(opts, project.db, lua, type,
                                                opts.remote_stdio_host, info);
     }
   else
@@ -64,7 +65,7 @@ extract_client_connection_info(options & opts,
           E(!opts.exclude_given, origin::user,
             F("cannot use --exclude in URL mode"));
 
-          netsync_connection_info::setup_from_uri(opts, project.db, lua,
+          netsync_connection_info::setup_from_uri(opts, project.db, lua, type,
                                                   idx(args, 0), info);
         }
       else if (args.size() >= 2)
@@ -77,7 +78,7 @@ extract_client_connection_info(options & opts,
           vector<arg_type> exclude_patterns = opts.exclude_patterns;
 
           netsync_connection_info::setup_from_server_and_pattern(opts, project.db,
-                                                                 lua, server,
+                                                                 lua, type, server,
                                                                  include_patterns,
                                                                  exclude_patterns,
                                                                  info);
@@ -87,7 +88,8 @@ extract_client_connection_info(options & opts,
          // if no argument has been given and the --remote_stdio_host
          // option has been left out, try to load the database defaults
          // at least
-         netsync_connection_info::setup_default(opts, project.db, lua, info);
+         netsync_connection_info::setup_default(opts, project.db,
+                                                lua, type, info);
        }
     }
 
@@ -126,9 +128,9 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
   project_t project(db);
 
   shared_conn_info info;
-  extract_client_connection_info(app.opts, project, keys, app.lua, args, info);
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 automate_connection, args, info);
 
-  info->client.set_connection_type(netsync_connection_info::automate_connection);
   info->client.set_input_stream(std::cin);
   automate_ostream os(output, app.opts.automate_stdio_size);
   info->client.set_output_stream(os);
@@ -224,7 +226,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   shared_conn_info info;
   extract_client_connection_info(app.opts, project, keys, app.lua,
-                                 args_vector(), info);
+                                 automate_connection, args_vector(), info);
 
   args_vector cleaned_args(args);
   std::vector<std::pair<std::string, arg_type> > opts;
@@ -254,7 +256,6 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   automate_ostream_demuxed os(output, std::cerr, app.opts.automate_stdio_size);
 
-  info->client.set_connection_type(netsync_connection_info::automate_connection);
   info->client.set_input_stream(ss);
   info->client.set_output_stream(os);
 
@@ -279,7 +280,8 @@ CMD(push, "push", "", CMD_REF(network),
   project_t project(db);
 
   shared_conn_info info;
-  extract_client_connection_info(app.opts, project, keys, app.lua, args, info);
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
@@ -298,7 +300,8 @@ CMD_AUTOMATE(push, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   project_t project(db);
 
   shared_conn_info info;
-  extract_client_connection_info(app.opts, project, keys, app.lua, args, info);
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
@@ -320,8 +323,8 @@ CMD(pull, "pull", "", CMD_REF(network),
   maybe_workspace_updater updater(app, project);
 
   shared_conn_info info;
-  extract_client_connection_info(app.opts, project, keys, app.lua, args, info,
-                                 key_optional);
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info, key_optional);
 
   if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
@@ -344,8 +347,8 @@ CMD_AUTOMATE(pull, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   project_t project(db);
 
   shared_conn_info info;
-  extract_client_connection_info(app.opts, project, keys, app.lua, args,
-                                 info, key_optional);
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info, key_optional);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
@@ -367,7 +370,8 @@ CMD(sync, "sync", "", CMD_REF(network),
   maybe_workspace_updater updater(app, project);
 
   shared_conn_info info;
-  extract_client_connection_info(app.opts, project, keys, app.lua, args, info);
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info);
 
   if (app.opts.set_default && workspace::found)
     {
@@ -394,7 +398,8 @@ CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   project_t project(db);
 
   shared_conn_info info;
-  extract_client_connection_info(app.opts, project, keys, app.lua, args, info);
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info);
 
   if (app.opts.set_default && workspace::found)
   {
@@ -453,7 +458,7 @@ CMD(clone, "clone", "", CMD_REF(network),
         F("cannot use --exclude in URL mode"));
 
       netsync_connection_info::setup_from_uri(app.opts, project.db, app.lua,
-                                              server, info);
+                                              netsync_connection, server, info);
       if (args.size() == 2)
         workspace_arg = idx(args, 1);
     }
@@ -462,8 +467,9 @@ CMD(clone, "clone", "", CMD_REF(network),
       vector<arg_type> include_patterns;
       include_patterns.push_back(idx(args, 1));
       netsync_connection_info::setup_from_server_and_pattern(app.opts, project.db,
-                                                             app.lua, server,
-                                                             include_patterns,
+                                                             app.lua,
+                                                             netsync_connection,
+                                                             server, include_patterns,
                                                              app.opts.exclude_patterns,
                                                              info);
       if (args.size() == 3)

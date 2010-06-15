@@ -32,11 +32,6 @@ struct netsync_connection_info
   public:
     std::list<utf8> addrs;
   } server;
-  enum conn_type
-    {
-      netsync_connection,
-      automate_connection
-    };
   class Client
   {
     friend struct netsync_connection_info;
@@ -50,7 +45,7 @@ struct netsync_connection_info
     globish include_pattern;
     globish exclude_pattern;
 
-    conn_type connection_type;
+    connection_type conn_type;
     std::istream * input_stream;
     automate_ostream * output_stream;
 
@@ -64,6 +59,7 @@ struct netsync_connection_info
     void set_include_pattern(std::vector<arg_type> const & pat);
     void set_exclude_pattern(std::vector<arg_type> const & pat);
     void maybe_set_argv(lua_hooks & lua);
+
     void ensure_completeness() const;
 
   public:
@@ -77,9 +73,7 @@ struct netsync_connection_info
     uri_t get_uri() const;
     bool get_use_argv() const;
     std::vector<std::string> get_argv() const;
-
-    void set_connection_type(conn_type type);
-    conn_type get_connection_type() const;
+    connection_type get_connection_type() const;
 
     void set_connection_successful();
   } client;
@@ -88,6 +82,7 @@ struct netsync_connection_info
   setup_default(options const & opts,
                 database & db,
                 lua_hooks & lua,
+                connection_type type,
                 shared_conn_info & info);
 
   static void
@@ -101,6 +96,7 @@ struct netsync_connection_info
   setup_from_uri(options const & opts,
                  database & db,
                  lua_hooks & lua,
+                 connection_type type,
                  arg_type const & uri,
                  shared_conn_info & info);
 
@@ -108,6 +104,7 @@ struct netsync_connection_info
   setup_from_server_and_pattern(options const & opts,
                                 database & db,
                                 lua_hooks & lua,
+                                connection_type type,
                                 arg_type const & host,
                                 std::vector<arg_type> const & includes,
                                 std::vector<arg_type> const & excludes,

@@ -35,7 +35,7 @@ netsync_connection_info::netsync_connection_info(database & d, options const & o
 netsync_connection_info::Client::Client(database & d, options const & o) :
   connection_successful(false),
   use_argv(false),
-  connection_type(netsync_connection),
+  conn_type(netsync_connection),
   input_stream(0),
   output_stream(0),
   db(d), opts(o)
@@ -275,16 +275,10 @@ netsync_connection_info::Client::get_uri() const
   return uri;
 }
 
-void
-netsync_connection_info::Client::set_connection_type(netsync_connection_info::conn_type type)
-{
-  connection_type = type;
-}
-
-netsync_connection_info::conn_type
+connection_type
 netsync_connection_info::Client::get_connection_type() const
 {
-  return connection_type;
+  return conn_type;
 }
 
 bool
@@ -314,7 +308,7 @@ netsync_connection_info::Client::ensure_completeness() const
   E(!uri.resource.empty(), origin::user,
     F("connection resource is empty and no default value could be loaded"));
 
-  E(!include_pattern().empty(), origin::user,
+  E(conn_type != netsync_connection || !include_pattern().empty(), origin::user,
     F("branch pattern is empty and no default value could be loaded"));
 }
 
@@ -360,9 +354,11 @@ void
 netsync_connection_info::setup_default(options const & opts,
                                        database & db,
                                        lua_hooks & lua,
+                                       connection_type type,
                                        shared_conn_info & info)
 {
   info.reset(new netsync_connection_info(db, opts));
+  info->client.conn_type = type;
 
   info->client.ensure_completeness();
   info->client.maybe_set_argv(lua);
@@ -376,6 +372,7 @@ netsync_connection_info::setup_from_sync_request(options const & opts,
                                                  shared_conn_info & info)
 {
   info.reset(new netsync_connection_info(db, opts));
+  info->client.conn_type = netsync_connection;
 
   info->client.set_raw_uri(request.address);
 
@@ -418,10 +415,12 @@ void
 netsync_connection_info::setup_from_uri(options const & opts,
                                         database & db,
                                         lua_hooks & lua,
+                                        connection_type type,
                                         arg_type const & uri,
                                         shared_conn_info & info)
 {
   info.reset(new netsync_connection_info(db, opts));
+  info->client.conn_type = type;
 
   info->client.set_raw_uri(uri());
 
@@ -448,12 +447,14 @@ void
 netsync_connection_info::setup_from_server_and_pattern(options const & opts,
                                                        database & db,
                                                        lua_hooks & lua,
+                                                       connection_type type,
                                                        arg_type const & host,
                                                        vector<arg_type> const & includes,
                                                        vector<arg_type> const & excludes,
                                                        shared_conn_info & info)
 {
   info.reset(new netsync_connection_info(db, opts));
+  info->client.conn_type = type;
 
   info->client.set_raw_uri("mtn://" + host());
   info->client.set_include_pattern(includes);
@@ -471,6 +472,7 @@ netsync_connection_info::setup_for_serve(options const & opts,
 {
   info.reset(new netsync_connection_info(db, opts));
   info->server.addrs = opts.bind_uris;
+  info->client.conn_type = netsync_connection;
 
   if (opts.use_transport_auth)
     {
