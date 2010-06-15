@@ -48,7 +48,7 @@ netsync_connection_info::Client::Client(database & d, options const & o) :
                                       var_name("default-exclude-pattern"));
 
   if (db.var_exists(default_server_key))
-  {
+    {
       var_value addr_value;
       db.get_var(default_server_key, addr_value);
       try
@@ -61,38 +61,34 @@ netsync_connection_info::Client::Client(database & d, options const & o) :
           W(F("ignoring invalid default server address '%s': %s")
             %  addr_value() % e.what());
         }
-  }
+    }
 
   if (db.var_exists(default_include_pattern_key))
-  {
-    var_value pattern_value;
-    db.get_var(default_include_pattern_key, pattern_value);
-    try
-      {
-        include_pattern = globish(pattern_value(), origin::user);
-        L(FL("loaded default branch include pattern: '%s'") % include_pattern);
-      }
-    catch (recoverable_failure & e)
-      {
-        W(F("ignoring invalid default branch include pattern '%s': %s")
-          %  include_pattern % e.what());
-      }
+    {
+      vector<arg_type> includes, excludes;
+      var_value pattern_value;
 
-    if (db.var_exists(default_exclude_pattern_key))
-      {
-        db.get_var(default_exclude_pattern_key, pattern_value);
-        try
-          {
-            exclude_pattern = globish(pattern_value(), origin::user);
-            L(FL("loaded default branch exclude pattern: '%s'") % exclude_pattern);
-          }
-        catch (recoverable_failure & e)
-          {
-            W(F("ignoring invalid default branch exclude pattern '%s': %s")
-              %  exclude_pattern % e.what());
-          }
-      }
-  }
+      db.get_var(default_include_pattern_key, pattern_value);
+      includes.push_back(typecast_vocab<arg_type>(pattern_value));
+
+      if (db.var_exists(default_exclude_pattern_key))
+        {
+          db.get_var(default_exclude_pattern_key, pattern_value);
+          excludes.push_back(typecast_vocab<arg_type>(pattern_value));
+        }
+
+      // we don't want to fail on faulty database defaults,
+      // but just ignore them altogether
+      try
+        {
+          set_include_exclude_pattern(includes, excludes);
+        }
+      catch (recoverable_failure & e)
+        {
+          W(F("ignoring invalid default include / exclude pattern: %s")
+            % e.what());
+        }
+    }
 }
 
 netsync_connection_info::Client::~Client()
@@ -194,13 +190,10 @@ netsync_connection_info::Client::get_port() const
 }
 
 void
-netsync_connection_info::Client::set_include_pattern(vector<arg_type> const & pat)
+netsync_connection_info::Client::set_include_exclude_pattern(vector<arg_type> const & inc,
+                                                             vector<arg_type> const & exc)
 {
-  // do not overwrite default patterns
-  if (pat.size() == 0)
-    return;
-
-  for (vector<arg_type>::const_iterator p = pat.begin(); p != pat.end(); p++)
+  for (vector<arg_type>::const_iterator p = inc.begin(); p != inc.end(); p++)
     {
       if ((*p)().find_first_of("'\"") != string::npos)
         {
@@ -208,31 +201,39 @@ netsync_connection_info::Client::set_include_pattern(vector<arg_type> const & pa
               "%s") % (*p)());
         }
     }
-  include_pattern = globish(pat);
+
+  globish new_include_pattern(inc);
+  L(FL("setting include pattern to '%s' (previously '%s')")
+    % new_include_pattern % include_pattern);
+  include_pattern = new_include_pattern;
+
+  if (exc.size() > 0)
+    {
+      for (vector<arg_type>::const_iterator p = exc.begin(); p != exc.end(); p++)
+        {
+          if ((*p)().find_first_of("'\"") != string::npos)
+            {
+              W(F("exclude branch pattern contains a quote character:\n"
+                  "%s") % (*p)());
+            }
+        }
+      globish new_exclude_pattern(exc);
+      L(FL("setting exclude pattern to '%s' (previously '%s')")
+        % new_exclude_pattern % exclude_pattern);
+      exclude_pattern = globish(exc);
+    }
+  else
+    {
+      // this is important, otherwise a specific include might get
+      // overwritten by an earlier default exclude
+      exclude_pattern = globish();
+    }
 }
 
 globish
 netsync_connection_info::Client::get_include_pattern() const
 {
   return include_pattern;
-}
-
-void
-netsync_connection_info::Client::set_exclude_pattern(vector<arg_type> const & pat)
-{
-  // do not overwrite default patterns
-  if (pat.size() == 0)
-    return;
-
-  for (vector<arg_type>::const_iterator p = pat.begin(); p != pat.end(); p++)
-    {
-      if ((*p)().find_first_of("'\"") != string::npos)
-        {
-          W(F("exclude branch pattern contains a quote character:\n"
-              "%s") % (*p)());
-        }
-    }
-  exclude_pattern = globish(pat);
 }
 
 globish
@@ -253,19 +254,19 @@ netsync_connection_info::Client::set_raw_uri(string const & raw_uri)
 
   if (db.var_exists(server_include))
     {
+      vector<arg_type> includes, excludes;
       var_value pattern_value;
+
       db.get_var(server_include, pattern_value);
-      include_pattern = globish(pattern_value(), origin::user);
-      L(FL("loaded default branch include pattern for resource %s: '%s'")
-        % uri.resource % include_pattern);
+      includes.push_back(typecast_vocab<arg_type>(pattern_value));
 
       if (db.var_exists(server_exclude))
         {
           db.get_var(server_exclude, pattern_value);
-          exclude_pattern = globish(pattern_value(), origin::user);
-          L(FL("loaded default branch exclude pattern for resource %s: '%s'")
-            % uri.resource % exclude_pattern);
+          excludes.push_back(typecast_vocab<arg_type>(pattern_value));
         }
+
+      set_include_exclude_pattern(includes, excludes);
     }
 }
 
@@ -404,8 +405,7 @@ netsync_connection_info::setup_from_sync_request(options const & opts,
                                        excludes);
   }
 
-  info->client.set_include_pattern(includes);
-  info->client.set_exclude_pattern(excludes);
+  info->client.set_include_exclude_pattern(includes, excludes);
 
   info->client.ensure_completeness();
   info->client.maybe_set_argv(lua);
@@ -435,8 +435,7 @@ netsync_connection_info::setup_from_uri(options const & opts,
     }
   else
     {
-      info->client.set_include_pattern(includes);
-      info->client.set_exclude_pattern(excludes);
+      info->client.set_include_exclude_pattern(includes, excludes);
     }
 
   info->client.ensure_completeness();
@@ -457,8 +456,7 @@ netsync_connection_info::setup_from_server_and_pattern(options const & opts,
   info->client.conn_type = type;
 
   info->client.set_raw_uri("mtn://" + host());
-  info->client.set_include_pattern(includes);
-  info->client.set_exclude_pattern(excludes);
+  info->client.set_include_exclude_pattern(includes, excludes);
 
   info->client.ensure_completeness();
   info->client.maybe_set_argv(lua);

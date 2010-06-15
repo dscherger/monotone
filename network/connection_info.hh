@@ -56,8 +56,8 @@ struct netsync_connection_info
     ~Client();
 
     void set_raw_uri(std::string const & uri);
-    void set_include_pattern(std::vector<arg_type> const & pat);
-    void set_exclude_pattern(std::vector<arg_type> const & pat);
+    void set_include_exclude_pattern(std::vector<arg_type> const & inc,
+                                     std::vector<arg_type> const & pat);
     void maybe_set_argv(lua_hooks & lua);
 
     void ensure_completeness() const;
