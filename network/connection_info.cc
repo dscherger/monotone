@@ -478,6 +478,10 @@ netsync_connection_info::setup_for_serve(options const & opts,
         F("need permission to store persistent passphrase "
           "(see hook persist_phrase_ok())"));
 
+      // the uri as well as the include / exclude pattern are
+      // not used directly for serve, but need to be configured
+      // in order to let keys::cache_netsync_key() call the
+      // get_netsync_key() hook properly
       if (!opts.bind_uris.empty())
         info->client.set_raw_uri((*opts.bind_uris.begin())());
 
@@ -487,9 +491,6 @@ netsync_connection_info::setup_for_serve(options const & opts,
   else if (!opts.bind_stdio)
     W(F("The --no-transport-auth option is usually only used "
         "in combination with --stdio"));
-
-  info->client.ensure_completeness();
-  info->client.maybe_set_argv(lua);
 }
 
 // Local Variables:
