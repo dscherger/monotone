@@ -24,9 +24,9 @@ check(nodb_mtn("--db=" .. test.root .. "/test-new.db", "clone", testURI, "test_d
 check(nodb_mtn("--db=" .. test.root .. "/test-new.db", "clone", testURI, "--revision", rev, "test_dir4"), 0, false, false)
 
 -- checkout fails if the specified revision is not a member of the specified branch
+testURI="file://" .. test.root .. "/test-clone.db?foobar"
 check(nodb_mtn("clone", testURI, "--revision", rev, "test_dir5"), 1, false, false)
 check(mtn("cert", rev, "branch", "foobar"), 0, false, false)
-testURI="file://" .. test.root .. "/test-clone.db?foobar"
 check(nodb_mtn("clone", testURI, "--revision", rev, "test_dir6"), 0, false, false)
 
 
