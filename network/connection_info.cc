@@ -115,28 +115,28 @@ netsync_connection_info::Client::~Client()
       if (!db.var_exists(default_server_key)
           || opts.set_default)
         {
-          P(F("setting default server to %s") % uri.resource);
+          L(FL("setting default server to %s") % uri.resource);
           db.set_var(default_server_key,
                      var_value(uri.resource, origin::user));
         }
       if (!db.var_exists(default_include_pattern_key)
           || opts.set_default)
         {
-          P(F("setting default branch include pattern to '%s'") % include_pattern);
+          L(FL("setting default branch include pattern to '%s'") % include_pattern);
           db.set_var(default_include_pattern_key,
                      typecast_vocab<var_value>(include_pattern));
         }
       if (!db.var_exists(default_exclude_pattern_key)
           || opts.set_default)
         {
-          P(F("setting default branch exclude pattern to '%s'") % exclude_pattern);
+          L(FL("setting default branch exclude pattern to '%s'") % exclude_pattern);
           db.set_var(default_exclude_pattern_key,
                      typecast_vocab<var_value>(exclude_pattern));
         }
       if (!db.var_exists(server_include)
           || opts.set_default)
         {
-          P(F("setting default include pattern for server '%s' to '%s'")
+          L(FL("setting default include pattern for server '%s' to '%s'")
             % uri.resource % include_pattern);
           db.set_var(server_include,
                      typecast_vocab<var_value>(include_pattern));
@@ -144,7 +144,7 @@ netsync_connection_info::Client::~Client()
       if (!db.var_exists(server_exclude)
           || opts.set_default)
         {
-          P(F("setting default exclude pattern for server '%s' to '%s'")
+          L(FL("setting default exclude pattern for server '%s' to '%s'")
             % uri.resource % exclude_pattern);
           db.set_var(server_exclude,
                      typecast_vocab<var_value>(exclude_pattern));
