@@ -78,7 +78,10 @@ function getAllFiles($type)
 
 class cache
 {
-    private static $lifetime = 86400;
+    // amount of time after the last modification of a file
+    // after which we cache the file's sha1 hash and size
+    private static $upload_cache_period = 3600;
+
     private static $instance;
     private $basedir;
     private $cachedir;
@@ -102,12 +105,12 @@ class cache
     {
         if (!isset($this->cache[$file]) ||
             !isset($this->cache[$file][2]) ||
-            $this->cache[$file][2] + self::$lifetime < time())
+            $this->cache[$file][2] + self::$upload_cache_period > time())
         {
             $this->cache[$file] = array(
                 filesize("{$this->basedir}/$file"),
                 sha1_file("{$this->basedir}/$file"),
-                time()
+                filemtime("{$this->basedir}/$file")
             );
         }
         return $this->cache[$file];
