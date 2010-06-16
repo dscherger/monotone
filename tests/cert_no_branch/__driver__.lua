@@ -10,7 +10,7 @@ commit("testbranch")
 rev = base_revision()
 
 -- delete the branch cert from the revision
-check(mtn("db", "kill_certs_locally", rev, "branch", "testbranch"), 0, false, false)
+check(mtn("local", "kill_certs", rev, "branch", "testbranch"), 0, false, false)
 
 -- ensure we don't find a branch option
 remove("_MTN")

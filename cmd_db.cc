@@ -168,7 +168,13 @@ CMD(db_execute, "execute", "", CMD_REF(db), "",
   db.debug(idx(args, 0)(), cout);
 }
 
-CMD(db_kill_rev_locally, "kill_rev_locally", "", CMD_REF(db), "ID",
+CMD_GROUP(db_local, "local", "", CMD_REF(database),
+          N_("Commands that delete items from the local database. Deletions "
+             "cannot be propagated through netsync, so the deleted items will "
+             "come back if you sync with a database that still has them."),
+          "");
+
+CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "ID",
     N_("Kills a revision from the local database"),
     "",
     options::opts::none)
@@ -240,7 +246,7 @@ CMD(db_kill_rev_locally, "kill_rev_locally", "", CMD_REF(db), "ID",
   db.delete_existing_rev_and_certs(revid);
 }
 
-CMD(db_kill_certs_locally, "kill_certs_locally", "", CMD_REF(db),
+CMD(db_kill_certs_locally, "kill_certs", "", CMD_REF(db_local),
     "SELECTOR CERTNAME [CERTVAL]",
     N_("Deletes the specified certs from the local database"),
     N_("Deletes all certs which are on the given revision(s) and "

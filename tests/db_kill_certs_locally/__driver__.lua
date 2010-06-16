@@ -34,7 +34,7 @@ check(qgrep("testbranch", "stdout"))
 check(mtn("heads", "-b", "otherbranch"), 0, true, false)
 check(qgrep(rev2, "stdout"))
 
-check(mtn("db", "kill_certs_locally", "i:", "branch", "somebranch"), 0, nil, false)
+check(mtn("local", "kill_certs", "i:", "branch", "somebranch"), 0, nil, false)
 check(mtn("ls", "epochs"), 0, true)
 check(not qgrep("somebranch", "stdout"))
 
@@ -54,13 +54,13 @@ check(mtn("ls", "tags"), 0, true)
 check(qgrep(rev1:sub(0,10), "stdout"))
 check(qgrep(rev2:sub(0,10), "stdout"))
 
-check(mtn("db", "kill_certs_locally", "t:*", "tag"), 0, nil, false)
+check(mtn("local", "kill_certs", "t:*", "tag"), 0, nil, false)
 check(mtn("ls", "tags"))
 
 -- check that branch heads get handled correctly
 check(mtn("heads", "-b", "otherbranch"), 0, true, false)
 check(qgrep(rev2, "stdout"))
-check(mtn("db", "kill_certs_locally", "h:otherbranch", "branch", "otherbranch"), 0, nil, false)
+check(mtn("local", "kill_certs", "h:otherbranch", "branch", "otherbranch"), 0, nil, false)
 check(mtn("heads", "-b", "otherbranch"), 0, true, false)
 check(not qgrep(rev2, "stdout"))
 check(qgrep(rev1, "stdout"))
