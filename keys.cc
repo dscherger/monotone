@@ -185,7 +185,7 @@ cache_netsync_key(options const & opts,
           found_key = true;
         }
     }
-  else if (lua.hook_get_netsync_key(utf8(info->client.get_uri().resource, origin::user),
+  else if (lua.hook_get_netsync_key(utf8(info->client.get_uri().resource(), origin::user),
                                     info->client.get_include_pattern(),
                                     info->client.get_exclude_pattern(),
                                     keys, project, key))

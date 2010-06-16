@@ -103,17 +103,17 @@ netsync_connection_info::Client::~Client()
                                           var_name("default-exclude-pattern"));
 
       var_key server_include(var_domain("server-include"),
-                             var_name(uri.resource, origin::user));
+                             var_name(uri.resource(), origin::user));
       var_key server_exclude(var_domain("server-exclude"),
-                             var_name(uri.resource, origin::user));
+                             var_name(uri.resource(), origin::user));
 
       // Maybe set the default values.
       if (!db.var_exists(default_server_key)
           || opts.set_default)
         {
-          L(FL("setting default server to %s") % uri.resource);
+          L(FL("setting default server to %s") % uri.resource());
           db.set_var(default_server_key,
-                     var_value(uri.resource, origin::user));
+                     var_value(uri.resource(), origin::user));
         }
       if (!db.var_exists(default_include_pattern_key)
           || opts.set_default)
@@ -133,7 +133,7 @@ netsync_connection_info::Client::~Client()
           || opts.set_default)
         {
           L(FL("setting default include pattern for server '%s' to '%s'")
-            % uri.resource % include_pattern);
+            % uri.resource() % include_pattern);
           db.set_var(server_include,
                      typecast_vocab<var_value>(include_pattern));
         }
@@ -141,7 +141,7 @@ netsync_connection_info::Client::~Client()
           || opts.set_default)
         {
           L(FL("setting default exclude pattern for server '%s' to '%s'")
-            % uri.resource % exclude_pattern);
+            % uri.resource() % exclude_pattern);
           db.set_var(server_exclude,
                      typecast_vocab<var_value>(exclude_pattern));
         }
@@ -247,10 +247,13 @@ netsync_connection_info::Client::set_raw_uri(string const & raw_uri)
 {
   parse_uri(raw_uri, uri, origin::user);
 
+  if (uri.scheme.empty())
+    uri.scheme = "mtn";
+
   var_key server_include(var_domain("server-include"),
-                         var_name(uri.resource, origin::user));
+                         var_name(uri.resource(), origin::user));
   var_key server_exclude(var_domain("server-exclude"),
-                         var_name(uri.resource, origin::user));
+                         var_name(uri.resource(), origin::user));
 
   if (db.var_exists(server_include))
     {
@@ -306,8 +309,8 @@ netsync_connection_info::Client::maybe_set_argv(lua_hooks & lua)
 void
 netsync_connection_info::Client::ensure_completeness() const
 {
-  E(!uri.resource.empty(), origin::user,
-    F("connection resource is empty and no default value could be loaded"));
+  E(!uri.host.empty() || !uri.path.empty(), origin::user,
+    F("connection host / path is empty and no default value could be loaded"));
 
   E(conn_type != netsync_connection || !include_pattern().empty(), origin::user,
     F("branch pattern is empty and no default value could be loaded"));
@@ -455,7 +458,7 @@ netsync_connection_info::setup_from_server_and_pattern(options const & opts,
   info.reset(new netsync_connection_info(db, opts));
   info->client.conn_type = type;
 
-  info->client.set_raw_uri("mtn://" + host());
+  info->client.set_raw_uri(host());
   info->client.set_include_exclude_pattern(includes, excludes);
 
   info->client.ensure_completeness();

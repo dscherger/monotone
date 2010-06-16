@@ -102,18 +102,6 @@ parse_uri(string const & in, uri_t & uri, origin::type made_from)
 {
   uri.clear();
 
-  {
-    size_t resource_end = in.find_first_of("?#");
-    if (resource_end == string::npos)
-      {
-        uri.resource = in;
-      }
-    else
-      {
-        uri.resource.assign(in, 0, resource_end);
-      }
-  }
-
   if (try_parse_bare_authority(in, uri, made_from))
     {
       return;

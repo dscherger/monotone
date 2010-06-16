@@ -107,7 +107,7 @@ call_server(app_state & app,
   Netxx::Timeout timeout(static_cast<long>(constants::netsync_timeout_seconds)),
     instant(0,1);
 
-  P(F("connecting to %s") % info->client.get_uri().resource);
+  P(F("connecting to %s") % info->client.get_uri().resource());
 
   shared_ptr<Netxx::StreamBase> server
     = build_stream_to_server(app.opts, app.lua, info, timeout);
@@ -119,7 +119,7 @@ call_server(app_state & app,
 
   shared_ptr<session> sess(new session(app, project, keys,
                                        client_voice,
-                                       info->client.get_uri().resource, server));
+                                       info->client.get_uri().resource(), server));
   shared_ptr<wrapped_session> wrapped;
   switch (info->client.get_connection_type())
     {
@@ -211,7 +211,7 @@ session_from_server_sync_item(app_state & app,
 
   try
     {
-      P(F("connecting to %s") % info->client.get_uri().resource);
+      P(F("connecting to %s") % info->client.get_uri().resource());
       shared_ptr<Netxx::StreamBase> server
         = build_stream_to_server(app.opts, app.lua, info,
                                  Netxx::Timeout(constants::netsync_timeout_seconds));
@@ -224,7 +224,7 @@ session_from_server_sync_item(app_state & app,
       shared_ptr<session>
         sess(new session(app, project, keys,
                          client_voice,
-                         info->client.get_uri().resource, server));
+                         info->client.get_uri().resource(), server));
       shared_ptr<wrapped_session>
         wrapped(new netsync_session(sess.get(),
                                     app.opts, app.lua, project,
