@@ -412,14 +412,14 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
                        client_voice, source_and_sink_role, info);
 }
 
-CMD(clone, "clone", "", CMD_REF(network),
-    N_("URL [DIRECTORY]\nHOST[:PORTNUMBER] BRANCH [DIRECTORY]"),
-    N_("Checks out a revision from a remote database into a directory"),
-    N_("If a revision is given, that's the one that will be checked out.  "
-       "Otherwise, it will be the head of the branch supplied.  "
-       "If no directory is given, the branch name will be used as directory"),
-    options::opts::max_netsync_version | options::opts::min_netsync_version |
-    options::opts::revision)
+CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
+                 N_("URL [DIRECTORY]\nHOST[:PORTNUMBER] BRANCH [DIRECTORY]"),
+                 N_("Checks out a revision from a remote database into a directory"),
+                 N_("If a revision is given, that's the one that will be checked out.  "
+                    "Otherwise, it will be the head of the branch supplied.  "
+                    "If no directory is given, the branch name will be used as directory"),
+                 options::opts::max_netsync_version | options::opts::min_netsync_version |
+                 options::opts::revision | options::opts::branch)
 {
 
   bool url_arg = (args.size() == 1 || args.size() == 2) &&
@@ -432,6 +432,9 @@ CMD(clone, "clone", "", CMD_REF(network),
 
   if (!(no_ambigious_revision && (url_arg || host_branch_arg)))
     throw usage(execid);
+
+  E(url_arg || (host_branch_arg && !app.opts.branch_given), origin::user,
+    F("the --branch option is only valid with an URI to clone"));
 
   // we create the database before anything else, but we
   // do not clean newly created databases up if the clone fails
@@ -476,10 +479,15 @@ CMD(clone, "clone", "", CMD_REF(network),
         workspace_arg = idx(args, 2);
     }
 
-  globish include_pattern = info->client.get_include_pattern();
-  E(!include_pattern().empty() && !include_pattern.contains_meta_chars(),
-    origin::user, F("you must specify an unambiguous branch to clone"));
-  branch_name branchname(include_pattern(), origin::user);
+  if (app.opts.branch().empty())
+    {
+      globish include_pattern = info->client.get_include_pattern();
+      E(!include_pattern().empty() && !include_pattern.contains_meta_chars(),
+        origin::user, F("you must specify an unambiguous branch to clone"));
+      app.opts.branch = branch_name(include_pattern(), origin::user);
+    }
+
+  I(!app.opts.branch().empty());
 
   app.opts.use_transport_auth =
     app.lua.hook_use_transport_auth(info->client.get_uri());
@@ -494,7 +502,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   if (workspace_arg().empty())
     {
       // No checkout dir specified, use branch name for dir.
-      workspace_dir = system_path(branchname(), origin::user);
+      workspace_dir = system_path(app.opts.branch(), origin::user);
     }
   else
     {
@@ -525,12 +533,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   // db URIs will work
   system_path start_dir(get_current_working_dir(), origin::system);
 
-  // this is actually stupid, but app.opts.branch must be set here
-  // otherwise it will not be written into _MTN/options, in case
-  // a revision is chosen which has multiple branch certs
-  app.opts.branch = branchname;
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
-  app.opts.branch = branch_name();
 
   if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
@@ -549,18 +552,18 @@ CMD(clone, "clone", "", CMD_REF(network),
   if (app.opts.revision_selectors.empty())
     {
       set<revision_id> heads;
-      project.get_branch_heads(branchname, heads,
+      project.get_branch_heads(app.opts.branch, heads,
                                app.opts.ignore_suspend_certs);
       E(!heads.empty(), origin::user,
-        F("branch '%s' is empty") % branchname);
+        F("branch '%s' is empty") % app.opts.branch);
       if (heads.size() > 1)
         {
-          P(F("branch %s has multiple heads:") % branchname);
+          P(F("branch %s has multiple heads:") % app.opts.branch);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(app.opts, app.lua, project, *i));
           P(F("choose one with '%s clone -r<id> SERVER BRANCH'") % prog_name);
-          E(false, origin::user, F("branch %s has multiple heads") % branchname);
+          E(false, origin::user, F("branch %s has multiple heads") % app.opts.branch);
         }
       ident = *(heads.begin());
     }
@@ -569,10 +572,10 @@ CMD(clone, "clone", "", CMD_REF(network),
       // use specified revision
       complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), ident);
 
-      E(project.revision_is_in_branch(ident, branchname),
+      E(project.revision_is_in_branch(ident, app.opts.branch),
         origin::user,
         F("revision %s is not a member of branch %s")
-          % ident % branchname);
+          % ident % app.opts.branch);
     }
 
   roster_t empty_roster, current_roster;

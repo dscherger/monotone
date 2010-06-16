@@ -26,7 +26,7 @@ check(nodb_mtn("--db=" .. test.root .. "/test-new.db", "clone", testURI, "--revi
 -- checkout fails if the specified revision is not a member of the specified branch
 testURI="file://" .. test.root .. "/test-clone.db?foobar"
 check(nodb_mtn("clone", testURI, "--revision", rev, "test_dir5"), 1, false, false)
-check(mtn("cert", rev, "branch", "foobar"), 0, false, false)
+check(nodb_mtn("cert", rev, "branch", "foobar", "-d", "test-clone.db"), 0, false, false)
 check(nodb_mtn("clone", testURI, "--revision", rev, "test_dir6"), 0, false, false)
 
 
@@ -34,7 +34,7 @@ for i = 1,2 do
   local dir = "test_dir"..i
   L("dir = ", dir, "\n")
   check(exists(dir.."/_MTN/options"))
-  check(qgrep("test.db", dir.."/_MTN/options"))
+  check(qgrep("default.mtn", dir.."/_MTN/options"))
   check(qgrep("testbranch", dir.."/_MTN/options"))
 end
 

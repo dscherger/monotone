@@ -4909,18 +4909,22 @@ If no @var{id} is provided, as in the latter two commands, you
 @emph{must} provide a @var{branchname}; monotone will attempt to infer
 @var{id} as the unique head of @var{branchname} if it exists.
 
+@item mtn clone @var{uri} [--branch=@var{branchname}] [@var{directory}]
 @item mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}]
 
 The clone command is a helper command that performs the roles of a
 number of other commands all at once.  Firstly, it constructs a new
 database. If no database is given, the configured default
-database is created or re-used (see the hook
-@code{get_default_database_alias} in the @ref{Lua Reference} for
-more details). Then it populates this database by @command{pull}ing any data
-in the branch @var{branchname} from the remote database, @var{address}.
+database is created or re-used (see the hook @code{get_default_database_alias}
+in the @ref{Lua Reference} for more details). Then it populates this database
+by @command{pull}ing any data which match the branch pattern in the @var{uri}
+or the given @var{branchname} argument from the remote database.
 Finally, it copies the files out of the newly created database into a
 local directory, just as @command{checkout} would.  If no @var{directory}
 is given, the @var{branchname} is used as directory.
+
+@strong{Important notice:} The @var{address}[:@var{port}] @var{branchname}
+call syntax is deprecated and subject of removal in future versions of monotone!
 
 @item mtn disapprove @var{id}
 
