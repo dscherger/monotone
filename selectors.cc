@@ -49,7 +49,9 @@ public:
                                                      project_t & project,
                                                      string const & orig);
   virtual set<revision_id> complete(project_t & project) = 0;
+  virtual ~selector();
 };
+selector::~selector() { }
 
 class author_selector : public selector
 {
