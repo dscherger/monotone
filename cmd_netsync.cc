@@ -103,7 +103,7 @@ extract_client_connection_info(options & opts,
 }
 
 CMD_AUTOMATE_NO_STDIO(remote_stdio,
-                      N_("[ADDRESS[:PORTNUMBER]]"),
+                      N_("[URL]\n[ADDRESS[:PORTNUMBER]]"),
                       N_("Opens an 'automate stdio' connection to a remote server"),
                       "",
                       options::opts::max_netsync_version |
@@ -267,7 +267,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
 }
 
 CMD(push, "push", "", CMD_REF(network),
-    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pushes branches to a netsync server"),
     N_("This will push all branches that match the pattern given in PATTERN "
        "to the netsync server at the address ADDRESS."),
@@ -287,7 +287,7 @@ CMD(push, "push", "", CMD_REF(network),
                        client_voice, source_role, info);
 }
 
-CMD_AUTOMATE(push, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Pushes branches to a netsync server"),
              "",
               options::opts::max_netsync_version |
@@ -308,7 +308,7 @@ CMD_AUTOMATE(push, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 }
 
 CMD(pull, "pull", "", CMD_REF(network),
-    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pulls branches from a netsync server"),
     N_("This pulls all branches that match the pattern given in PATTERN "
        "from the netsync server at the address ADDRESS."),
@@ -335,7 +335,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   updater.maybe_do_update();
 }
 
-CMD_AUTOMATE(pull, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Pulls branches from a netsync server"),
              "",
              options::opts::max_netsync_version |
@@ -355,7 +355,7 @@ CMD_AUTOMATE(pull, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 }
 
 CMD(sync, "sync", "", CMD_REF(network),
-    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Synchronizes branches with a netsync server"),
     N_("This synchronizes branches that match the pattern given in PATTERN "
        "with the netsync server at the address ADDRESS."),
@@ -386,7 +386,7 @@ CMD(sync, "sync", "", CMD_REF(network),
   updater.maybe_do_update();
 }
 
-CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Synchronizes branches with a netsync server"),
              "",
              options::opts::max_netsync_version | options::opts::min_netsync_version |
@@ -413,7 +413,7 @@ CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 }
 
 CMD(clone, "clone", "", CMD_REF(network),
-    N_("HOST[:PORTNUMBER] BRANCH [DIRECTORY]\nURL [DIRECTORY]"),
+    N_("URL [DIRECTORY]\nHOST[:PORTNUMBER] BRANCH [DIRECTORY]"),
     N_("Checks out a revision from a remote database into a directory"),
     N_("If a revision is given, that's the one that will be checked out.  "
        "Otherwise, it will be the head of the branch supplied.  "
