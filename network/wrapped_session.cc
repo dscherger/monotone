@@ -14,6 +14,8 @@
 
 using std::string;
 
+wrapped_session::~wrapped_session() { }
+
 wrapped_session::wrapped_session(session * owner) :
   owner(owner)
 { }
