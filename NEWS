@@ -14,6 +14,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
           'db kill_branch_certs_locally' have been replaced with a more
           flexible command 'local kill_certs'.
 
+        - The 'cert' command can now operate on multiple revisions at once.
+
         New Features
 
         Bugs Fixed

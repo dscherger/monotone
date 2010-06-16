@@ -6296,12 +6296,12 @@ work with all signing algorithms.
 @section Certificate
 
 @ftable @command
-@item mtn cert @var{id} @var{certname}
-@itemx mtn cert @var{id} @var{certname} @var{certval}
+@item mtn cert @var{selector} @var{certname}
+@itemx mtn cert @var{selector} @var{certname} @var{certval}
 
-These commands create a new certificate with name @var{certname}, for a
-revision with version @var{id}.  The @var{id} argument can be a selector
-using certs already on the revision, such as @code{h:@var{branchname}}.
+These commands create a new certificate with name @var{certname}, for all
+revisions matching @var{selector}. The @var{selector} argument can
+use certs already on the revision, such as @code{h:@var{branchname}}.
 
 If @var{certval} is provided, it is the value of the certificate.
 Otherwise the certificate value is read from @code{stdin}.
