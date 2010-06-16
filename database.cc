@@ -3108,6 +3108,7 @@ void database::delete_certs_locally(revision_id const & rev,
 {
   imp->execute(query("DELETE FROM revision_certs WHERE revision_id = ? AND name = ?")
                % blob(rev.inner()()) % text(name()));
+  imp->cert_stamper.note_change();
 }
 void database::delete_certs_locally(revision_id const & rev,
                                     cert_name const & name,
@@ -3115,6 +3116,7 @@ void database::delete_certs_locally(revision_id const & rev,
 {
   imp->execute(query("DELETE FROM revision_certs WHERE revision_id = ? AND name = ? AND value = ?")
                % blob(rev.inner()()) % text(name()) % blob(value()));
+  imp->cert_stamper.note_change();
 }
 
 // crypto key management

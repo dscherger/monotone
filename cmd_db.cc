@@ -262,6 +262,8 @@ CMD(db_kill_certs_locally, "kill_certs_locally", "", CMD_REF(db),
 
 
   transaction_guard guard(db);
+  set<cert_value> branches;
+
   if (args.size() == 2)
     {
       L(FL("deleting all certs named '%s' on %d revisions")
@@ -269,6 +271,16 @@ CMD(db_kill_certs_locally, "kill_certs_locally", "", CMD_REF(db),
       for (set<revision_id>::const_iterator r = revisions.begin();
            r != revisions.end(); ++r)
         {
+          if (name == branch_cert_name)
+            {
+              vector<cert> to_delete;
+              db.get_revision_certs(*r, name, to_delete);
+              for (vector<cert>::const_iterator i = to_delete.begin();
+                   i != to_delete.end(); ++i)
+                {
+                  branches.insert(i->value);
+                }
+            }
           db.delete_certs_locally(*r, name);
         }
     }
@@ -282,7 +294,19 @@ CMD(db_kill_certs_locally, "kill_certs_locally", "", CMD_REF(db),
         {
           db.delete_certs_locally(*r, name, value);
         }
+      branches.insert(value);
     }
+
+  for (set<cert_value>::const_iterator i = branches.begin();
+       i != branches.end(); ++i)
+    {
+      db.recalc_branch_leaves(*i);
+      set<revision_id> leaves;
+      db.get_branch_leaves(*i, leaves);
+      if (leaves.empty())
+        db.clear_epoch(typecast_vocab<branch_name>(*i));
+    }
+
   guard.commit();
 }
 
