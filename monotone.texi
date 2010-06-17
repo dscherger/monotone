@@ -5623,9 +5623,12 @@ current bisection information.
 @ftable @command
 @item mtn serve [--bind=[@var{address}][:@var{port}]]
 @item mtn serve --stdio [--no-transport-auth]
-@itemx mtn pull [--set-default] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
-@itemx mtn push [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
-@itemx mtn sync [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+@itemx mtn pull [--set-default] [@var{uri}]
+@itemx mtn push [--set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn sync [--set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn pull [--set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+@itemx mtn push [--set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+@itemx mtn sync [--set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 
 These commands operate the ``netsync'' protocol built into
 monotone. This is a custom protocol for rapidly synchronizing two
@@ -8388,10 +8391,12 @@ therefor fail unless a @code{get_passphrase} hook is set up remotely.
 
 @end table
 
-
-@item mtn automate pull [--set-default] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
-@itemx mtn automate push [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
-@itemx mtn automate sync [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+@item mtn automate pull [--set-default] [@var{uri}]
+@itemx mtn automate push [--set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn automate sync [--set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn automate pull [--set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+@itemx mtn automate push [--set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+@itemx mtn automate sync [--set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 
 @table @strong
 @item Arguments:
