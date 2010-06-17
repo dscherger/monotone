@@ -82,7 +82,7 @@ try_parse_bare_authority(string const & in, uri_t & uri, origin::type made_from)
                        "|"
                        "[:0-9a-fA-F]+" // non-bracketed ipv6
                        "|"
-                       "\[[:0-9a-fA-F]+\](:[0-9]+)?" // bracketed ipv6
+                       "\\[[:0-9a-fA-F]+\\](:[0-9]+)?" // bracketed ipv6
                        ")$",
                        origin::internal);
 
