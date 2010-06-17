@@ -5722,10 +5722,10 @@ When the operation completes, all branches matching
 databases.
 
 The @command{pull}, @command{push}, and @command{sync} commands only
-require you pass @var{address} and @var{glob} the first time you use one
-of them; monotone will memorize this use and in the future default to
-the same server and glob.  For instance, if Bob wants to @command{sync}
-with Alice again, he can simply run:
+require you pass @var{uri} (or @var{address} and @var{glob}) the first time 
+you use one of them; monotone will memorize this use and in the future default
+to the same URI (or server and glob).  For instance, if Bob wants to 
+@command{sync} with Alice again, he can simply run:
 
 @smallexample
 @group
@@ -5734,7 +5734,7 @@ $ mtn sync
 @end smallexample
 
 Of course, he can still @command{sync} with other people and other
-branches by passing an address or address plus globs on the command
+branches by passing an URI, address or address plus globs on the command
 line; this will not affect his default affinity for Alice.  If you ever
 do want to change your defaults, simply pass the @option{--set-default}
 option when connecting to the server and branch pattern that you want to
@@ -5749,8 +5749,9 @@ If a @option{--pid-file} option is specified, the command
 identifier of the server in the file.  This file can then be read to
 identify specific monotone server processes.
 
-The syntax for patterns is very simple.  @code{*} matches 0 or more
-arbitrary characters.  @code{?} matches exactly 1 arbitrary character.
+The syntax for patterns, both in globs as well as URIs, is very simple.  
+@code{*} matches 0 or more arbitrary characters.  @code{?} matches exactly
+1 arbitrary character (you need to escape that with @code{%3F} in an URI).
 @code{@{foo,bar,baz@}} matches ``foo'', or ``bar'', or ``baz''.  These
 can be combined arbitrarily.  A backslash, @code{\}, can be prefixed to
 any character, to match exactly that character --- this might be useful
