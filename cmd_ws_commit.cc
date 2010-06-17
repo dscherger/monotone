@@ -237,7 +237,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   if (!is_date_fmt_valid)
     {
-      W(F("date format '%s' cannot be used for commit; using default instead") % date_fmt);
+      W(F("date format '%s' cannot be parsed; using default instead") % date_fmt);
       revision_header(rid, rev, author, date, branch, changelog, null_date_fmt, header);
     }
   else
@@ -844,9 +844,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       else
         app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
     }
-
-  if (!date_fmt_valid(date_fmt))
-    W(F("date format '%s' cannot be used for commit") % date_fmt);
 
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
