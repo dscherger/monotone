@@ -42,6 +42,13 @@ Xxx Xxx 99 99:99:99 UTC 2010
           no longer to the database used in the workspace if no explicit
           database is given.
 
+        - Server defaults for netsync operations are now only saved if
+          the exchange was successful.  The progress messages which have
+          been issued for this previously have been removed, since they
+          would come up now unexpectedly and would clutter the output of
+          commands such as `clone`, `automate remote` and 
+          `automate remote_stdio`.
+
         New Features
 
         Bugs Fixed
