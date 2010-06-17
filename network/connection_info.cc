@@ -455,6 +455,9 @@ netsync_connection_info::setup_from_server_and_pattern(options const & opts,
                                                        vector<arg_type> const & excludes,
                                                        shared_conn_info & info)
 {
+  W(F("separate server and pattern arguments are deprecated, "
+      "please consider using the URI calling syntax instead"));
+
   info.reset(new netsync_connection_info(db, opts));
   info->client.conn_type = type;
 
