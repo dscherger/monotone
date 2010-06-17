@@ -587,7 +587,7 @@ msgstr "Kommandos zur Überprüfung von Revisionen"
 
 #: cmd.cc:73
 msgid "Commands to manipulate the tree"
-msgstr "Kommandos für die Manipulation des Baums"
+msgstr "Kommandos für die Manipulation des Revisionsbaumes"
 
 #: cmd.cc:76
 msgid "Commands to manage persistent variables"
@@ -958,7 +958,7 @@ msgstr ""
 "Dieses Kommando wird benutzt, um Informationen von der Datenbank "
 "abzufragen.  Es zeigt Datenbankobjekte oder das derzeitige Manifest des "
 "Arbeitsbereichs oder bekannte, unbekannte, absichtlich ignorierte, fehlende "
-"oder geänderte Dateien"
+"oder geänderte Dateien."
 
 #: cmd_list.cc:100
 msgid "Lists certificates attached to an identifier"
@@ -1869,7 +1869,7 @@ msgstr "Wenn keine REVID übergeben wurde, wird der Arbeitsbereich genutzt."
 
 #: cmd_db.cc:40
 msgid "Deals with the database"
-msgstr "Befasst sich mit der Datenbank"
+msgstr "Kommandos, die sich mit der Datenbank befassen"
 
 #: cmd_db.cc:44
 msgid "Initializes a database"
@@ -2689,7 +2689,7 @@ msgstr "Verwaltet Dateiattribute"
 #: cmd_ws_commit.cc:1065
 msgid "This command is used to set, get or drop file attributes."
 msgstr ""
-"Dieses Kommando wird benutzt um Dateiattribute zu setzen, zu holen oder zu "
+"Dieses Kommando wird benutzt, um Dateiattribute zu setzen, zu holen oder zu "
 "löschen."
 
 #: cmd_ws_commit.cc:1084 cmd_ws_commit.cc:1152 cmd_ws_commit.cc:1202
