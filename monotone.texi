@@ -6665,7 +6665,7 @@ you do, after all, need to retrieve the data in @var{id}, then
 work you can extract @var{id}'s data.
 @end itemize
 
-@item mtn local kill_certs @var{selector} @var{certname} @var{[certval]}
+@item mtn local kill_certs @var{selector} @var{certname} [@var{certval}]
 
 This command deletes certs with the given name on revisions that match
 the given selector. If a value is given, it restricts itself to only
