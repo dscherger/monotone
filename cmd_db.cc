@@ -169,10 +169,9 @@ CMD(db_execute, "execute", "", CMD_REF(db), "",
 }
 
 CMD_GROUP(db_local, "local", "", CMD_REF(database),
-          N_("Commands that delete items from the local database. Deletions "
-             "cannot be propagated through netsync, so the deleted items will "
-             "come back if you sync with a database that still has them."),
-          "");
+          N_("Commands that delete items from the local database"),
+          N_("Deletions cannot be propagated through netsync, so the deleted items "
+             "will come back if you sync with a database that still has them."));
 
 CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "ID",
     N_("Kills a revision from the local database"),
@@ -251,7 +250,7 @@ CMD(db_kill_certs_locally, "kill_certs", "", CMD_REF(db_local),
     N_("Deletes the specified certs from the local database"),
     N_("Deletes all certs which are on the given revision(s) and "
        "have the given name and if a value is specified then also "
-       "the given value"),
+       "the given value."),
     options::opts::revision)
 {
   if (args.size() < 2 || args.size() > 3)
