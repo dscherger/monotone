@@ -194,7 +194,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
 
   cert_name cname = typecast_vocab<cert_name>(idx(args, 1));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   cert_value val;
   if (args.size() == 3)
@@ -285,7 +285,7 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_tag(keys, r, idx(args, 1)());
 }
 
@@ -306,7 +306,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_revision_testresult(keys, r, idx(args, 1)());
 }
 
@@ -331,7 +331,7 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument for approval"));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_revision_in_branch(keys, r, app.opts.branch);
 
   updater.maybe_do_update();
@@ -357,7 +357,7 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument to suspend"));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.suspend_revision_in_branch(keys, r, app.opts.branch);
 
   updater.maybe_do_update();
@@ -394,7 +394,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_revision_comment(keys, r, comment);
 }
 

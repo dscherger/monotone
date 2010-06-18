@@ -9,6 +9,7 @@
 // PURPOSE.
 
 #include "base.hh"
+#include "netsync.hh"
 
 #include <queue>
 
@@ -34,13 +35,6 @@ using std::string;
 using boost::lexical_cast;
 using boost::shared_ptr;
 
-struct server_initiated_sync_request
-{
-  string what;
-  string address;
-  string include;
-  string exclude;
-};
 deque<server_initiated_sync_request> server_initiated_sync_requests;
 LUAEXT(server_request_sync, )
 {
@@ -48,11 +42,20 @@ LUAEXT(server_request_sync, )
   char const * a = luaL_checkstring(LS, 2);
   char const * i = luaL_checkstring(LS, 3);
   char const * e = luaL_checkstring(LS, 4);
+
   server_initiated_sync_request request;
-  request.what = string(w);
   request.address = string(a);
   request.include = string(i);
   request.exclude = string(e);
+
+  request.role = source_and_sink_role;
+  if (w == "sync")
+    request.role = source_and_sink_role;
+  else if (w == "push")
+    request.role = source_role;
+  else if (w == "pull")
+    request.role = sink_role;
+
   server_initiated_sync_requests.push_back(request);
   return 0;
 }
@@ -60,19 +63,19 @@ LUAEXT(server_request_sync, )
 
 static shared_ptr<Netxx::StreamBase>
 build_stream_to_server(options & opts, lua_hooks & lua,
-                       netsync_connection_info info,
-                       Netxx::port_type default_port,
+                       shared_conn_info const & info,
                        Netxx::Timeout timeout)
 {
   shared_ptr<Netxx::StreamBase> server;
 
-  if (info.client.use_argv)
+  if (info->client.get_use_argv())
     {
-      I(!info.client.argv.empty());
-      string cmd = info.client.argv[0];
-      info.client.argv.erase(info.client.argv.begin());
+      vector<string> args = info->client.get_argv();
+      I(!args.empty());
+      string cmd = args[0];
+      args.erase(args.begin());
       return shared_ptr<Netxx::StreamBase>
-        (new Netxx::PipeStream(cmd, info.client.argv));
+        (new Netxx::PipeStream(cmd, args));
     }
   else
     {
@@ -81,13 +84,11 @@ build_stream_to_server(options & opts, lua_hooks & lua,
 #else
       bool use_ipv6=false;
 #endif
-      string host(info.client.uri.host);
-      if (host.empty())
-        host = info.client.unparsed();
-      if (!info.client.uri.port.empty())
-        default_port = lexical_cast<Netxx::port_type>(info.client.uri.port);
-      Netxx::Address addr(info.client.unparsed().c_str(),
-                          default_port, use_ipv6);
+      string host(info->client.get_uri().host);
+      I(!host.empty());
+      Netxx::Address addr(host.c_str(),
+                          info->client.get_port(),
+                          use_ipv6);
       return shared_ptr<Netxx::StreamBase>
         (new Netxx::Stream(addr, timeout));
     }
@@ -98,7 +99,7 @@ call_server(app_state & app,
             project_t & project,
             key_store & keys,
             protocol_role role,
-            netsync_connection_info const & info)
+            shared_conn_info const & info)
 {
   Netxx::PipeCompatibleProbe probe;
   transaction_guard guard(project.db);
@@ -106,13 +107,10 @@ call_server(app_state & app,
   Netxx::Timeout timeout(static_cast<long>(constants::netsync_timeout_seconds)),
     instant(0,1);
 
-  P(F("connecting to %s") % info.client.unparsed);
+  P(F("connecting to %s") % info->client.get_uri().resource());
 
   shared_ptr<Netxx::StreamBase> server
-    = build_stream_to_server(app.opts, app.lua,
-                             info, constants::netsync_default_port,
-                             timeout);
-
+    = build_stream_to_server(app.opts, app.lua, info, timeout);
 
   // 'false' here means not to revert changes when the SockOpt
   // goes out of scope.
@@ -121,21 +119,21 @@ call_server(app_state & app,
 
   shared_ptr<session> sess(new session(app, project, keys,
                                        client_voice,
-                                       info.client.unparsed(), server));
+                                       info->client.get_uri().resource(), server));
   shared_ptr<wrapped_session> wrapped;
-  switch (info.client.connection_type)
+  switch (info->client.get_connection_type())
     {
-    case netsync_connection_info::netsync_connection:
+    case netsync_connection:
       wrapped.reset(new netsync_session(sess.get(),
                                         app.opts, app.lua, project,
                                         keys, role,
-                                        info.client.include_pattern,
-                                        info.client.exclude_pattern));
+                                        info->client.get_include_pattern(),
+                                        info->client.get_exclude_pattern()));
       break;
-    case netsync_connection_info::automate_connection:
+    case automate_connection:
       wrapped.reset(new automate_session(app, sess.get(),
-                                         &info.client.get_input_stream(),
-                                         &info.client.get_output_stream()));
+                                         &info->client.get_input_stream(),
+                                         &info->client.get_output_stream()));
       break;
     }
   sess->set_inner(wrapped);
@@ -206,20 +204,16 @@ session_from_server_sync_item(app_state & app,
                               key_store & keys,
                               server_initiated_sync_request const & request)
 {
-  netsync_connection_info info;
-  info.client.unparsed = utf8(request.address, origin::user);
-  info.client.include_pattern = globish(request.include, origin::user);
-  info.client.exclude_pattern = globish(request.exclude, origin::user);
-  info.client.use_argv = false;
-  parse_uri(info.client.unparsed(), info.client.uri,
-            origin::user /* from lua hook */);
+  shared_conn_info info;
+  netsync_connection_info::setup_from_sync_request(app.opts, project.db,
+                                                   app.lua, request,
+                                                   info);
 
   try
     {
-      P(F("connecting to %s") % info.client.unparsed);
+      P(F("connecting to %s") % info->client.get_uri().resource());
       shared_ptr<Netxx::StreamBase> server
-        = build_stream_to_server(app.opts, app.lua,
-                                 info, constants::netsync_default_port,
+        = build_stream_to_server(app.opts, app.lua, info,
                                  Netxx::Timeout(constants::netsync_timeout_seconds));
 
       // 'false' here means not to revert changes when
@@ -227,24 +221,16 @@ session_from_server_sync_item(app_state & app,
       Netxx::SockOpt socket_options(server->get_socketfd(), false);
       socket_options.set_non_blocking();
 
-      protocol_role role = source_and_sink_role;
-      if (request.what == "sync")
-        role = source_and_sink_role;
-      else if (request.what == "push")
-        role = source_role;
-      else if (request.what == "pull")
-        role = sink_role;
-
       shared_ptr<session>
         sess(new session(app, project, keys,
                          client_voice,
-                         info.client.unparsed(), server));
+                         info->client.get_uri().resource(), server));
       shared_ptr<wrapped_session>
         wrapped(new netsync_session(sess.get(),
                                     app.opts, app.lua, project,
-                                    keys, role,
-                                    info.client.include_pattern,
-                                    info.client.exclude_pattern,
+                                    keys, request.role,
+                                    info->client.get_include_pattern(),
+                                    info->client.get_exclude_pattern(),
                                     true));
       sess->set_inner(wrapped);
       return sess;
@@ -390,20 +376,8 @@ run_netsync_protocol(app_state & app,
                      project_t & project, key_store & keys,
                      protocol_voice voice,
                      protocol_role role,
-                     netsync_connection_info const & info)
+                     shared_conn_info & info)
 {
-  if (info.client.include_pattern().find_first_of("'\"") != string::npos)
-    {
-      W(F("include branch pattern contains a quote character:\n"
-          "%s") % info.client.include_pattern());
-    }
-
-  if (info.client.exclude_pattern().find_first_of("'\"") != string::npos)
-    {
-      W(F("exclude branch pattern contains a quote character:\n"
-          "%s") % info.client.exclude_pattern());
-    }
-
   // We do not want to be killed by SIGPIPE from a network disconnect.
   ignore_sigpipe();
 
@@ -423,13 +397,13 @@ run_netsync_protocol(app_state & app,
             }
           else
             serve_connections(app, opts, lua, project, keys,
-                              role, info.server.addrs);
+                              role, info->server.addrs);
         }
       else
         {
           I(voice == client_voice);
-          call_server(app, project, keys,
-                      role, info);
+          call_server(app, project, keys, role, info);
+          info->client.set_connection_successful();
         }
     }
   catch (Netxx::NetworkException & e)

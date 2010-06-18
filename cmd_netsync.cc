@@ -13,7 +13,7 @@
 
 #include "automate_ostream_demuxed.hh"
 #include "merge_content.hh"
-#include "netcmd.hh"
+#include "netsync.hh"
 #include "network/connection_info.hh"
 #include "file_io.hh"
 #include "globish.hh"
@@ -30,7 +30,6 @@
 #include "work.hh"
 #include "database.hh"
 #include "roster.hh"
-#include "vocab_cast.hh"
 #include "ui.hh"
 
 #include <fstream>
@@ -44,237 +43,67 @@ using std::vector;
 
 using boost::shared_ptr;
 
-static const var_key default_server_key(var_domain("database"),
-                                        var_name("default-server"));
-static const var_key default_include_pattern_key(var_domain("database"),
-                                                 var_name("default-include-pattern"));
-static const var_key default_exclude_pattern_key(var_domain("database"),
-                                                 var_name("default-exclude-pattern"));
-
-static void
-find_key(options & opts,
-         database & db,
-         key_store & keys,
-         lua_hooks & lua,
-         project_t & project,
-         netsync_connection_info const & info,
-         bool need_key = true)
-{
-  utf8 host(info.client.unparsed);
-  if (!info.client.uri.host.empty())
-    host = utf8(info.client.uri.host, origin::user);
-
-  cache_netsync_key(opts, db, keys, lua, project, host,
-                    info.client.include_pattern,
-                    info.client.exclude_pattern,
-                    need_key ? KEY_REQUIRED : KEY_OPTIONAL);
-}
-
-static void
-build_client_connection_info(options & opts,
-                             lua_hooks & lua,
-                             database & db,
-                             key_store & keys,
-                             project_t & project,
-                             netsync_connection_info & info,
-                             bool address_given,
-                             bool include_or_exclude_given,
-                             bool need_key = true)
-{
-  // Use the default values if needed and available.
-  if (!address_given)
-    {
-      E(db.var_exists(default_server_key), origin::user,
-        F("no server given and no default server set"));
-      var_value addr_value;
-      db.get_var(default_server_key, addr_value);
-      info.client.unparsed = typecast_vocab<utf8>(addr_value);
-      L(FL("using default server address: %s") % info.client.unparsed);
-    }
-  parse_uri(info.client.unparsed(), info.client.uri, origin::user);
-
-  var_key server_include(var_domain("server-include"),
-                         typecast_vocab<var_name>(info.client.unparsed));
-  var_key server_exclude(var_domain("server-exclude"),
-                         typecast_vocab<var_name>(info.client.unparsed));
-
-  if (info.client.uri.query.empty() && !include_or_exclude_given)
-    {
-      if (db.var_exists(server_include))
-        {
-          var_value pattern_value;
-          db.get_var(server_include, pattern_value);
-          info.client.include_pattern = globish(pattern_value(), origin::user);
-          L(FL("using default branch include pattern: '%s'")
-            % info.client.include_pattern);
-          if (db.var_exists(server_exclude))
-            {
-              db.get_var(server_exclude, pattern_value);
-              info.client.exclude_pattern = globish(pattern_value(), origin::user);
-            }
-          else
-            info.client.exclude_pattern = globish();
-          L(FL("excluding: %s") % info.client.exclude_pattern);
-        }
-      else
-        {
-          // No include/exclude given anywhere, use the defaults.
-          E(db.var_exists(default_include_pattern_key), origin::user,
-            F("no branch pattern given and no default pattern set"));
-          var_value pattern_value;
-          db.get_var(default_include_pattern_key, pattern_value);
-          info.client.include_pattern = globish(pattern_value(), origin::user);
-          L(FL("using default branch include pattern: '%s'")
-            % info.client.include_pattern);
-          if (db.var_exists(default_exclude_pattern_key))
-            {
-              db.get_var(default_exclude_pattern_key, pattern_value);
-              info.client.exclude_pattern = globish(pattern_value(), origin::user);
-            }
-          else
-            info.client.exclude_pattern = globish();
-          L(FL("excluding: %s") % info.client.exclude_pattern);
-        }
-    }
-  else if(!info.client.uri.query.empty())
-    {
-      E(!include_or_exclude_given, origin::user,
-        F("Include/exclude pattern was given both as part of the URL and as a separate argument."));
-
-      // Pull include/exclude from the query string
-      char const separator = '/';
-      char const negate = '-';
-      string const & query(info.client.uri.query);
-      std::vector<arg_type> includes, excludes;
-      string::size_type begin = 0;
-      string::size_type end = query.find(separator);
-      while (begin < query.size())
-        {
-          std::string item = query.substr(begin, end);
-          if (end == string::npos)
-            begin = end;
-          else
-            {
-              begin = end+1;
-              if (begin < query.size())
-                end = query.find(separator, begin);
-            }
-
-          bool is_exclude = false;
-          if (item.size() >= 1 && item.at(0) == negate)
-            {
-              is_exclude = true;
-              item.erase(0, 1);
-            }
-          else if (item.find("include=") == 0)
-            {
-              item.erase(0, string("include=").size());
-            }
-          else if (item.find("exclude=") == 0)
-            {
-              is_exclude = true;
-              item.erase(0, string("exclude=").size());
-            }
-
-          if (is_exclude)
-            excludes.push_back(arg_type(urldecode(item, origin::user),
-                                        origin::user));
-          else
-            includes.push_back(arg_type(urldecode(item, origin::user),
-                                        origin::user));
-        }
-      info.client.include_pattern = globish(includes);
-      info.client.exclude_pattern = globish(excludes);
-    }
-
-  // Maybe set the default values.
-  if (!db.var_exists(default_server_key)
-      || opts.set_default)
-    {
-      P(F("setting default server to %s") % info.client.unparsed());
-      db.set_var(default_server_key,
-                 typecast_vocab<var_value>(info.client.unparsed));
-    }
-  if (!db.var_exists(default_include_pattern_key)
-      || opts.set_default)
-    {
-      P(F("setting default branch include pattern to '%s'")
-        % info.client.include_pattern);
-      db.set_var(default_include_pattern_key,
-                 typecast_vocab<var_value>(info.client.include_pattern));
-    }
-  if (!db.var_exists(default_exclude_pattern_key)
-      || opts.set_default)
-    {
-      P(F("setting default branch exclude pattern to '%s'")
-        % info.client.exclude_pattern);
-      db.set_var(default_exclude_pattern_key,
-                 typecast_vocab<var_value>(info.client.exclude_pattern));
-    }
-  if (!db.var_exists(server_include)
-      || opts.set_default)
-    {
-      P(F("setting default include pattern for server '%s' to '%s'")
-        % info.client.unparsed % info.client.include_pattern);
-      db.set_var(server_include,
-                 typecast_vocab<var_value>(info.client.include_pattern));
-    }
-  if (!db.var_exists(server_exclude)
-      || opts.set_default)
-    {
-      P(F("setting default exclude pattern for server '%s' to '%s'")
-        % info.client.unparsed % info.client.exclude_pattern);
-      db.set_var(server_exclude,
-                 typecast_vocab<var_value>(info.client.exclude_pattern));
-    }
-
-  info.client.use_argv =
-    lua.hook_get_netsync_connect_command(info.client.uri,
-                                         info.client.include_pattern,
-                                         info.client.exclude_pattern,
-                                         global_sanity.debug_p(),
-                                         info.client.argv);
-  opts.use_transport_auth = lua.hook_use_transport_auth(info.client.uri);
-  if (opts.use_transport_auth)
-    {
-      find_key(opts, db, keys, lua, project, info, need_key);
-    }
-
-  info.client.connection_type = netsync_connection_info::netsync_connection;
-}
-
 static void
 extract_client_connection_info(options & opts,
-                               lua_hooks & lua,
-                               database & db,
-                               key_store & keys,
                                project_t & project,
+                               key_store & keys,
+                               lua_hooks & lua,
+                               connection_type type,
                                args_vector const & args,
-                               netsync_connection_info & info,
-                               bool need_key = true)
+                               shared_conn_info & info,
+                               key_requiredness_flag key_requiredness = key_required)
 {
-  bool have_address = false;
-  bool have_include_exclude = false;
-  if (args.size() >= 1)
+  if (opts.remote_stdio_host_given)
     {
-      have_address = true;
-      info.client.unparsed = idx(args, 0);
+       netsync_connection_info::setup_from_uri(opts, project.db, lua, type,
+                                               opts.remote_stdio_host, info);
     }
-  if (args.size() >= 2 || opts.exclude_given)
+  else
     {
-      E(args.size() >= 2, origin::user, F("no branch pattern given"));
+      if (args.size() == 1)
+        {
+          E(!opts.exclude_given, origin::user,
+            F("cannot use --exclude in URL mode"));
 
-      have_include_exclude = true;
-      info.client.include_pattern = globish(args.begin() + 1, args.end());
-      info.client.exclude_pattern = globish(opts.exclude_patterns);
+          netsync_connection_info::setup_from_uri(opts, project.db, lua, type,
+                                                  idx(args, 0), info);
+        }
+      else if (args.size() >= 2)
+        {
+          arg_type server = idx(args, 0);
+          vector<arg_type> include_patterns;
+          include_patterns.insert(include_patterns.begin(),
+                                  args.begin() + 1,
+                                  args.end());
+          vector<arg_type> exclude_patterns = opts.exclude_patterns;
+
+          netsync_connection_info::setup_from_server_and_pattern(opts, project.db,
+                                                                 lua, type, server,
+                                                                 include_patterns,
+                                                                 exclude_patterns,
+                                                                 info);
+        }
+      else
+       {
+         // if no argument has been given and the --remote_stdio_host
+         // option has been left out, try to load the database defaults
+         // at least
+         netsync_connection_info::setup_default(opts, project.db,
+                                                lua, type, info);
+       }
     }
-  build_client_connection_info(opts, lua, db, keys, project,
-                               info, have_address, have_include_exclude,
-                               need_key);
+
+  opts.use_transport_auth =
+    lua.hook_use_transport_auth(info->client.get_uri());
+
+  if (opts.use_transport_auth)
+    {
+      cache_netsync_key(opts, project, keys, lua, info, key_requiredness);
+    }
 }
 
 CMD_AUTOMATE_NO_STDIO(remote_stdio,
-                      N_("[ADDRESS[:PORTNUMBER]]"),
+                      N_("[URL]\n[ADDRESS[:PORTNUMBER]]"),
                       N_("Opens an 'automate stdio' connection to a remote server"),
                       "",
                       options::opts::max_netsync_version |
@@ -298,48 +127,13 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
   key_store keys(app);
   project_t project(db);
 
-  netsync_connection_info info;
+  shared_conn_info info;
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 automate_connection, args, info);
 
-  if (args.size() == 1)
-    {
-      info.client.unparsed = idx(args, 0);
-    }
-  else
-    {
-      E(db.var_exists(default_server_key), origin::user,
-        F("no server given and no default server set"));
-      var_value addr_value;
-      db.get_var(default_server_key, addr_value);
-      info.client.unparsed = typecast_vocab<utf8>(addr_value);
-      L(FL("using default server address: %s") % info.client.unparsed);
-    }
-
-  parse_uri(info.client.unparsed(), info.client.uri, origin::user);
-
-  if (!db.var_exists(default_server_key) || app.opts.set_default)
-    {
-      P(F("setting default server to %s") % info.client.unparsed());
-      db.set_var(default_server_key,
-                 typecast_vocab<var_value>(info.client.unparsed));
-    }
-
-  info.client.use_argv =
-    app.lua.hook_get_netsync_connect_command(info.client.uri,
-                                             info.client.include_pattern,
-                                             info.client.exclude_pattern,
-                                             global_sanity.debug_p(),
-                                             info.client.argv);
-  app.opts.use_transport_auth = app.lua.hook_use_transport_auth(info.client.uri);
-  if (app.opts.use_transport_auth)
-    {
-      find_key(app.opts, db, keys, app.lua, project, info, true);
-    }
-
-  info.client.connection_type = netsync_connection_info::automate_connection;
-
-  info.client.set_input_stream(std::cin);
+  info->client.set_input_stream(std::cin);
   automate_ostream os(output, app.opts.automate_stdio_size);
-  info.client.set_output_stream(os);
+  info->client.set_output_stream(os);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
@@ -430,42 +224,9 @@ CMD_AUTOMATE_NO_STDIO(remote,
   key_store keys(app);
   project_t project(db);
 
-  netsync_connection_info info;
-
-  if (app.opts.remote_stdio_host_given)
-    {
-      info.client.unparsed = app.opts.remote_stdio_host;
-    }
-  else
-    {
-      E(db.var_exists(default_server_key), origin::user,
-        F("no server given and no default server set"));
-      var_value addr_value;
-      db.get_var(default_server_key, addr_value);
-      info.client.unparsed = typecast_vocab<utf8>(addr_value);
-      L(FL("using default server address: %s") % info.client.unparsed);
-    }
-
-  parse_uri(info.client.unparsed(), info.client.uri, origin::user);
-
-  if (!db.var_exists(default_server_key) || app.opts.set_default)
-    {
-      P(F("setting default server to %s") % info.client.unparsed());
-      db.set_var(default_server_key,
-                 typecast_vocab<var_value>(info.client.unparsed));
-    }
-
-  info.client.use_argv =
-    app.lua.hook_get_netsync_connect_command(info.client.uri,
-                                             info.client.include_pattern,
-                                             info.client.exclude_pattern,
-                                             global_sanity.debug_p(),
-                                             info.client.argv);
-  app.opts.use_transport_auth = app.lua.hook_use_transport_auth(info.client.uri);
-  if (app.opts.use_transport_auth)
-    {
-      find_key(app.opts, db, keys, app.lua, project, info, true);
-    }
+  shared_conn_info info;
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 automate_connection, args_vector(), info);
 
   args_vector cleaned_args(args);
   std::vector<std::pair<std::string, arg_type> > opts;
@@ -493,11 +254,10 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   L(FL("stdio input: %s") % ss.str());
 
-  info.client.set_input_stream(ss);
   automate_ostream_demuxed os(output, std::cerr, app.opts.automate_stdio_size);
-  info.client.set_output_stream(os);
 
-  info.client.connection_type = netsync_connection_info::automate_connection;
+  info->client.set_input_stream(ss);
+  info->client.set_output_stream(os);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
@@ -507,7 +267,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
 }
 
 CMD(push, "push", "", CMD_REF(network),
-    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pushes branches to a netsync server"),
     N_("This will push all branches that match the pattern given in PATTERN "
        "to the netsync server at the address ADDRESS."),
@@ -519,15 +279,15 @@ CMD(push, "push", "", CMD_REF(network),
   key_store keys(app);
   project_t project(db);
 
-  netsync_connection_info info;
-  extract_client_connection_info(app.opts, app.lua, db, keys,
-                                 project, args, info);
+  shared_conn_info info;
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
 }
 
-CMD_AUTOMATE(push, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Pushes branches to a netsync server"),
              "",
               options::opts::max_netsync_version |
@@ -539,15 +299,16 @@ CMD_AUTOMATE(push, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   key_store keys(app);
   project_t project(db);
 
-  netsync_connection_info info;
-  extract_client_connection_info(app.opts, app.lua, db, keys, project, args, info);
+  shared_conn_info info;
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
 }
 
 CMD(pull, "pull", "", CMD_REF(network),
-    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pulls branches from a netsync server"),
     N_("This pulls all branches that match the pattern given in PATTERN "
        "from the netsync server at the address ADDRESS."),
@@ -561,9 +322,9 @@ CMD(pull, "pull", "", CMD_REF(network),
 
   maybe_workspace_updater updater(app, project);
 
-  netsync_connection_info info;
-  extract_client_connection_info(app.opts, app.lua, db, keys, project,
-                                 args, info, false);
+  shared_conn_info info;
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info, key_optional);
 
   if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
@@ -574,7 +335,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   updater.maybe_do_update();
 }
 
-CMD_AUTOMATE(pull, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Pulls branches from a netsync server"),
              "",
              options::opts::max_netsync_version |
@@ -585,16 +346,16 @@ CMD_AUTOMATE(pull, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   key_store keys(app);
   project_t project(db);
 
-  netsync_connection_info info;
-  extract_client_connection_info(app.opts, app.lua, db, keys, project,
-                                 args, info, false);
+  shared_conn_info info;
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info, key_optional);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
 }
 
 CMD(sync, "sync", "", CMD_REF(network),
-    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Synchronizes branches with a netsync server"),
     N_("This synchronizes branches that match the pattern given in PATTERN "
        "with the netsync server at the address ADDRESS."),
@@ -608,9 +369,9 @@ CMD(sync, "sync", "", CMD_REF(network),
 
   maybe_workspace_updater updater(app, project);
 
-  netsync_connection_info info;
-  extract_client_connection_info(app.opts, app.lua, db, keys,
-                                 project, args, info);
+  shared_conn_info info;
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info);
 
   if (app.opts.set_default && workspace::found)
     {
@@ -625,7 +386,7 @@ CMD(sync, "sync", "", CMD_REF(network),
   updater.maybe_do_update();
 }
 
-CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Synchronizes branches with a netsync server"),
              "",
              options::opts::max_netsync_version | options::opts::min_netsync_version |
@@ -636,8 +397,9 @@ CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   key_store keys(app);
   project_t project(db);
 
-  netsync_connection_info info;
-  extract_client_connection_info(app.opts, app.lua, db, keys, project, args, info);
+  shared_conn_info info;
+  extract_client_connection_info(app.opts, project, keys, app.lua,
+                                 netsync_connection, args, info);
 
   if (app.opts.set_default && workspace::found)
   {
@@ -650,40 +412,103 @@ CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
                        client_voice, source_and_sink_role, info);
 }
 
-CMD(clone, "clone", "", CMD_REF(network),
-    N_("ADDRESS[:PORTNUMBER] BRANCH [DIRECTORY]"),
-    N_("Checks out a revision from a remote database into a directory"),
-    N_("If a revision is given, that's the one that will be checked out.  "
-       "Otherwise, it will be the head of the branch supplied.  "
-       "If no directory is given, the branch name will be used as directory"),
-    options::opts::max_netsync_version | options::opts::min_netsync_version |
-    options::opts::revision)
+CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
+                 N_("URL [DIRECTORY]\nHOST[:PORTNUMBER] BRANCH [DIRECTORY]"),
+                 N_("Checks out a revision from a remote database into a directory"),
+                 N_("If a revision is given, that's the one that will be checked out.  "
+                    "Otherwise, it will be the head of the branch supplied.  "
+                    "If no directory is given, the branch name will be used as directory"),
+                 options::opts::max_netsync_version | options::opts::min_netsync_version |
+                 options::opts::revision | options::opts::branch)
 {
-  if (args.size() < 2 || args.size() > 3 || app.opts.revision_selectors.size() > 1)
+
+  bool url_arg = (args.size() == 1 || args.size() == 2) &&
+                 idx(args, 0)().find("://") != string::npos;
+
+  bool host_branch_arg = (args.size() == 2 || args.size() == 3) &&
+                         idx(args, 0)().find("://") == string::npos;
+
+  bool no_ambigious_revision = app.opts.revision_selectors.size() < 2;
+
+  if (!(no_ambigious_revision && (url_arg || host_branch_arg)))
     throw usage(execid);
 
-  revision_id ident;
-  system_path workspace_dir;
-  netsync_connection_info info;
-  info.client.unparsed = idx(args, 0);
+  E(url_arg || (host_branch_arg && !app.opts.branch_given), origin::user,
+    F("the --branch option is only valid with an URI to clone"));
 
-  branch_name branchname = typecast_vocab<branch_name>(idx(args, 1));
+  // we create the database before anything else, but we
+  // do not clean newly created databases up if the clone fails
+  // (and I think this is correct, because if the pull fails later
+  // on due to some network error, the use does not have to start
+  // again from the beginning)
+  database_path_helper helper(app.lua);
+  helper.maybe_set_default_alias(app.opts);
 
-  E(!branchname().empty(), origin::user,
-    F("you must specify a branch to clone"));
+  database db(app);
+  project_t project(db);
+  key_store keys(app);
 
-  bool target_is_current_dir = false;
-  if (args.size() == 2)
+  db.create_if_not_exists();
+  db.ensure_open();
+
+  shared_conn_info info;
+  arg_type server = idx(args, 0);
+  arg_type workspace_arg;
+
+   if (url_arg)
     {
-      // No checkout dir specified, use branch name for dir.
-      workspace_dir = system_path(branchname(), origin::user);
+      E(!app.opts.exclude_given, origin::user,
+        F("cannot use --exclude in URL mode"));
+
+      netsync_connection_info::setup_from_uri(app.opts, project.db, app.lua,
+                                              netsync_connection, server, info);
+      if (args.size() == 2)
+        workspace_arg = idx(args, 1);
     }
   else
     {
-      // Checkout to specified dir.
-      workspace_dir = system_path(idx(args, 2));
-      if (idx(args, 2) == utf8("."))
-        target_is_current_dir = true;
+      vector<arg_type> include_patterns;
+      include_patterns.push_back(idx(args, 1));
+      netsync_connection_info::setup_from_server_and_pattern(app.opts, project.db,
+                                                             app.lua,
+                                                             netsync_connection,
+                                                             server, include_patterns,
+                                                             app.opts.exclude_patterns,
+                                                             info);
+      if (args.size() == 3)
+        workspace_arg = idx(args, 2);
+    }
+
+  if (app.opts.branch().empty())
+    {
+      globish include_pattern = info->client.get_include_pattern();
+      E(!include_pattern().empty() && !include_pattern.contains_meta_chars(),
+        origin::user, F("you must specify an unambiguous branch to clone"));
+      app.opts.branch = branch_name(include_pattern(), origin::user);
+    }
+
+  I(!app.opts.branch().empty());
+
+  app.opts.use_transport_auth =
+    app.lua.hook_use_transport_auth(info->client.get_uri());
+
+  if (app.opts.use_transport_auth)
+    {
+      cache_netsync_key(app.opts, project, keys, app.lua, info, key_optional);
+    }
+
+  bool target_is_current_dir = false;
+  system_path workspace_dir;
+  if (workspace_arg().empty())
+    {
+      // No checkout dir specified, use branch name for dir.
+      workspace_dir = system_path(app.opts.branch(), origin::user);
+    }
+  else
+    {
+      target_is_current_dir =
+        workspace_arg == utf8(".");
+      workspace_dir = system_path(workspace_arg);
     }
 
   if (!target_is_current_dir)
@@ -708,28 +533,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   // db URIs will work
   system_path start_dir(get_current_working_dir(), origin::system);
 
-  database_path_helper helper(app.lua);
-  helper.maybe_set_default_alias(app.opts);
-
-  database db(app);
-  db.create_if_not_exists();
-  db.ensure_open();
-
-  // this is actually stupid, but app.opts.branch must be set here
-  // otherwise it will not be written into _MTN/options, in case
-  // a revision is chosen which has multiple branch certs
-  app.opts.branch = branchname;
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
-  app.opts.branch = branch_name();
-
-  key_store keys(app);
-  project_t project(db);
-
-  info.client.include_pattern = globish(branchname(), origin::user);
-  info.client.exclude_pattern = globish(app.opts.exclude_patterns);
-
-  build_client_connection_info(app.opts, app.lua, db, keys, project,
-                               info, true, true, false);
 
   if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
@@ -744,21 +548,22 @@ CMD(clone, "clone", "", CMD_REF(network),
 
   transaction_guard guard(db, false);
 
+  revision_id ident;
   if (app.opts.revision_selectors.empty())
     {
       set<revision_id> heads;
-      project.get_branch_heads(branchname, heads,
+      project.get_branch_heads(app.opts.branch, heads,
                                app.opts.ignore_suspend_certs);
       E(!heads.empty(), origin::user,
-        F("branch '%s' is empty") % branchname);
+        F("branch '%s' is empty") % app.opts.branch);
       if (heads.size() > 1)
         {
-          P(F("branch %s has multiple heads:") % branchname);
+          P(F("branch %s has multiple heads:") % app.opts.branch);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(app.opts, app.lua, project, *i));
           P(F("choose one with '%s clone -r<id> SERVER BRANCH'") % prog_name);
-          E(false, origin::user, F("branch %s has multiple heads") % branchname);
+          E(false, origin::user, F("branch %s has multiple heads") % app.opts.branch);
         }
       ident = *(heads.begin());
     }
@@ -767,10 +572,10 @@ CMD(clone, "clone", "", CMD_REF(network),
       // use specified revision
       complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), ident);
 
-      E(project.revision_is_in_branch(ident, branchname),
+      E(project.revision_is_in_branch(ident, app.opts.branch),
         origin::user,
         F("revision %s is not a member of branch %s")
-          % ident % branchname);
+          % ident % app.opts.branch);
     }
 
   roster_t empty_roster, current_roster;
@@ -844,24 +649,13 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
 
   db.ensure_open();
 
-  netsync_connection_info info;
-  info.server.addrs = app.opts.bind_uris;
+  shared_conn_info info;
+  netsync_connection_info::setup_for_serve(app.opts, project.db, app.lua, info);
 
   if (app.opts.use_transport_auth)
     {
-      E(app.lua.hook_persist_phrase_ok(), origin::user,
-        F("need permission to store persistent passphrase "
-          "(see hook persist_phrase_ok())"));
-
-      info.client.include_pattern = globish("*", origin::internal);
-      info.client.exclude_pattern = globish("", origin::internal);
-      if (!app.opts.bind_uris.empty())
-        info.client.unparsed = *app.opts.bind_uris.begin();
-      find_key(app.opts, db, keys, app.lua, project, info);
+      cache_netsync_key(app.opts, project, keys, app.lua, info, key_required);
     }
-  else if (!app.opts.bind_stdio)
-    W(F("The --no-transport-auth option is usually only used "
-        "in combination with --stdio"));
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        server_voice, source_and_sink_role, info);

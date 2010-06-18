@@ -16,6 +16,47 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         - The 'cert' command can now operate on multiple revisions at once.
 
+        - The SERVER [BRANCH] call syntax for network-related commands
+          has been deprecated in favour of the existing, universal
+          URI syntax.  Additionally, file:// and ssh:// URIs are now
+          parsed for include and exclude patterns just as the native
+          mtn:// URIs.
+          
+          The possibility to specify include patterns by using
+          "include=" and exclude patterns by using "exclude=" 
+          in the query string has been removed.
+
+          Monotone's native protocol (mtn://) is still the default 
+          protocol if nothing is specified.
+
+          The format for the server part of the `default-server`, 
+          `known-server`, `server-include` and `server-exclude`
+          database variables has been changed and now always includes
+          the complete (normalized) URI resource, consisting of the 
+          used protocol, user, host, port and path parts.  Older entries
+          in existing databases which do not match the new format are
+          preserved and not changed by monotone.
+
+          Please check the manual section 5.3 for more details on the
+          URI syntax.
+
+        - Naturally, the `clone` command now also accepts mtn:// URIs,
+          though the usage of branch globs is forbidden, as long as
+          no branch is specified separately with the new --branch option.
+
+          To avoid confusion with an existing workspace, clone no longer
+          looks for and loads the options of such a workspace, therefor
+          it now also falls back to the configured default database and
+          no longer to the database used in the workspace if no explicit
+          database is given.
+
+        - Server defaults for netsync operations are now only saved if
+          the exchange was successful.  The progress messages which have
+          been issued for this previously have been removed, since they
+          would come up now unexpectedly and would clutter the output of
+          commands such as `clone`, `automate remote` and 
+          `automate remote_stdio`.
+
         New Features
 
         Bugs Fixed
