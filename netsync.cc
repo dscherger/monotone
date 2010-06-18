@@ -49,11 +49,12 @@ LUAEXT(server_request_sync, )
   request.exclude = string(e);
 
   request.role = source_and_sink_role;
-  if (w == "sync")
+  string what(w);
+  if (what == "sync")
     request.role = source_and_sink_role;
-  else if (w == "push")
+  else if (what == "push")
     request.role = source_role;
-  else if (w == "pull")
+  else if (what == "pull")
     request.role = sink_role;
 
   server_initiated_sync_requests.push_back(request);
