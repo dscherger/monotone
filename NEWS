@@ -41,8 +41,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
           URI syntax.
 
         - Naturally, the `clone` command now also accepts mtn:// URIs,
-          though the usage of branch globs is forbidden, as long as
-          no branch is specified separately with the new --branch option.
+          though the use of branch globs is forbidden unless a branch is
+          specified separately with the new --branch option.
 
           To avoid confusion with an existing workspace, clone no longer
           looks for and loads the options of such a workspace, therefor
