@@ -9,6 +9,13 @@ Xxx Xxx 99 99:99:99 UTC 2010
           '/'). See section 3.2 in the documentation for details.
           (fixes monotone bug #18302).
 
+        - The command 'db kill_rev_locally' has been renamed to
+          'local kill_revision', and 'db kill_tag_locally' and
+          'db kill_branch_certs_locally' have been replaced with a more
+          flexible command 'local kill_certs'.
+
+        - The 'cert' command can now operate on multiple revisions at once.
+
         New Features
 
         Bugs Fixed
