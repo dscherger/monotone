@@ -167,14 +167,14 @@ remove("_MTN/commit")
 
 -- commit succeeds with bad date format (uses default format instead)
 
-remove("_MTN/log")
-check(mtn("commit", "--message=ok", "--date-format", "%Y-%m-%d"), 0, false, true)
+writefile("_MTN/log", "ok")
+check(mtn("commit", "--date-format", "%Y-%m-%d", "--rcfile=changelog.lua"), 0, false, true)
 if ostype == "Windows" then
    -- date parsing never works on Win32, so
    -- get_default_command_options specifies --no-format-dates, and
    -- we don't get a warning message.
 else
-   check(qgrep("using default date format", "stderr"))
+   check(qgrep("warning: .* using default instead", "stderr"))
 end
 
 

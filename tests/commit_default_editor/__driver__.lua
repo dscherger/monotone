@@ -15,5 +15,5 @@ check(mtn("--branch", "testbranch", "commit", "--date-format", "foo"), 0, false,
 
 if ostype ~= "Windows" then
    -- date parsing never works on Win32, so warning is suppressed
-   check(qgrep("date format 'foo' cannot be parsed; using default instead", "stderr"))
+   check(qgrep("warning: date format 'foo' cannot be parsed; using default instead", "stderr"))
 end
