@@ -12,4 +12,8 @@ check(get("test_hooks.lua")) -- this restores the default edit_comment
                              -- and provides a fake "editor" executable
 
 check(mtn("--branch", "testbranch", "commit", "--date-format", "foo"), 0, false, true)
-check(qgrep("date format 'foo' cannot be used for commit; using default instead", "stderr"))
+
+if ostype ~= "Windows" then
+   -- date parsing never works on Win32, so warning is suppressed
+   check(qgrep("date format 'foo' cannot be parsed; using default instead", "stderr"))
+end
