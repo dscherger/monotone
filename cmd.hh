@@ -19,7 +19,7 @@
 
 class app_state;
 
-class automate_session;
+class automate_stdio_helpers;
 
 namespace commands
 {
@@ -113,8 +113,7 @@ namespace commands
                                     command_id const & execid,
                                     args_vector const & args,
                                     std::ostream & output) const = 0;
-    friend class automate_stdio;
-    friend class ::automate_session;
+    friend class ::automate_stdio_helpers;
 
   public:
     automate(std::string const & name,

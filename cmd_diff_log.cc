@@ -466,9 +466,9 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
 CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
              N_("Calculates diffs of files"),
              "",
-             options::opts::with_header | options::opts::without_header |
+             options::opts::au_diff_options |
              options::opts::revision | options::opts::depth |
-             options::opts::exclude | options::opts::reverse)
+             options::opts::exclude)
 {
   roster_t old_roster, new_roster;
   string dummy_header;

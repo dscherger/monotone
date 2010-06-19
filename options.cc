@@ -42,10 +42,12 @@ options::children()
       val[&options::opts::all_options].insert(&options::opts::name);
 #     define OPTVAR(optset, type, name, default_)
 #     define OPTION(optset, name, hasarg, optstring, description) \
-      val[&options::opts:: optset].insert(&options::opts:: name); \
-      val[&options::opts::all_options].insert(&options::opts::name);
+      val[&options::opts:: optset].insert(&options::opts:: name ## _opt); \
+      val[&options::opts::all_options].insert(&options::opts::name ## _opt);
 #     define OPTSET_REL(parent, child) \
       val[&options::opts:: parent].insert(&options::opts:: child);
+#     define HIDE(option)
+#     define DEPRECATE(option, reason)
 
 #     include "options_list.hh"
 
@@ -53,6 +55,8 @@ options::children()
 #     undef OPTVAR
 #     undef OPTION
 #     undef OPTSET_REL
+#     undef HIDE
+#     undef DEPRECATE
 
       first = false;
     }
@@ -71,6 +75,8 @@ options::var_membership()
       val[&opts:: optset ].push_back(&options::reset_ ## name );
 #     define OPTION(optset, name, hasarg, optstring, description)
 #     define OPTSET_REL(parent, child)
+#     define HIDE(option)
+#     define DEPRECATE(option, reason)
 
 #     include "options_list.hh"
 
@@ -78,7 +84,65 @@ options::var_membership()
 #     undef OPTVAR
 #     undef OPTION
 #     undef OPTSET_REL
+#     undef HIDE
+#     undef DEPRECATE
 
+      first = false;
+    }
+  return val;
+}
+
+std::map<options::static_options_fun, bool> &
+options::hidden()
+{
+  static map<static_options_fun, bool> val;
+  static bool first(true);
+  if (first)
+    {
+#     define OPTSET(name)
+#     define OPTVAR(optset, type, name, default_)
+#     define OPTION(optset, name, hasarg, optstring, description)
+#     define OPTSET_REL(parent, child)
+#     define HIDE(option)                       \
+      val[&opts:: option ## _opt ] = true;
+#     define DEPRECATE(option, reason)
+
+#     include "options_list.hh"
+
+#     undef OPTSET
+#     undef OPTVAR
+#     undef OPTION
+#     undef OPTSET_REL
+#     undef HIDE
+#     undef DEPRECATE
+      first = false;
+    }
+  return val;
+}
+
+std::map<options::static_options_fun, char const *> &
+options::deprecated()
+{
+  static map<static_options_fun, char const *> val;
+  static bool first(true);
+  if (first)
+    {
+#     define OPTSET(name)
+#     define OPTVAR(optset, type, name, default_)
+#     define OPTION(optset, name, hasarg, optstring, description)
+#     define OPTSET_REL(parent, child)
+#     define HIDE(option)
+#     define DEPRECATE(option, reason)          \
+      val[&opts:: option ## _opt ] = reason ;
+
+#     include "options_list.hh"
+
+#     undef OPTSET
+#     undef OPTVAR
+#     undef OPTION
+#     undef OPTSET_REL
+#     undef HIDE
+#     undef DEPRECATE
       first = false;
     }
   return val;
@@ -93,6 +157,8 @@ options::options()
 # define OPTION(optset, name, hasarg, optstring, description)   \
     name ## _given = false;
 # define OPTSET_REL(parent, child)
+# define HIDE(option)
+# define DEPRECATE(option, reason)
 
 # include "options_list.hh"
 
@@ -100,6 +166,8 @@ options::options()
 # undef OPTVAR
 # undef OPTION
 # undef OPTSET_REL
+# undef HIDE
+# undef DEPRECATE
 }
 
 const options &
@@ -111,6 +179,8 @@ options::operator = (options const & other)
 # define OPTION(optset, name, hasarg, optstring, description)   \
     name ## _given = other.name ## _given;
 # define OPTSET_REL(parent, child)
+# define HIDE(option)
+# define DEPRECATE(option, reason)
 
 # include "options_list.hh"
 
@@ -118,6 +188,8 @@ options::operator = (options const & other)
 # undef OPTVAR
 # undef OPTION
 # undef OPTSET_REL
+# undef HIDE
+# undef DEPRECATE
 
   return *this;
 }
@@ -164,7 +236,8 @@ options::options_type const & options::opts::all_options()
     static options::options_type val =                                  \
       collect_children(&options::opts::name)                            \
       | options::option_type("", #name, false, 0,                       \
-                             &options::reset_optset_ ## name );         \
+                             &options::reset_optset_ ## name ,          \
+                             true, 0);                                  \
     return val;                                                         \
   }                                                                     \
   void options::reset_optset_ ## name ()                                \
@@ -179,18 +252,20 @@ options::options_type const & options::opts::all_options()
   }
 
 # define OPTION(optset, name, hasarg, optstring, description)           \
-  options::options_type const & options::opts::name()                   \
+  options::options_type const & options::opts::name ## _opt()           \
   {                                                                     \
     static options::options_type val(optstring,                         \
                                      description, hasarg,               \
                                      &options::set_ ## name ,           \
-                                     &options::reset_opt_ ## name );    \
+                                     &options::reset_opt_ ## name ,     \
+                                     hidden()[&opts:: name ## _opt],    \
+                                     deprecated()[&opts:: name ## _opt]); \
     return val;                                                         \
   }                                                                     \
   void options::reset_opt_ ## name ()                                   \
   {                                                                     \
     name ## _given = false;                                             \
-    reset_optset(&opts:: name);                                         \
+    reset_optset(&opts:: optset);                                       \
   }                                                                     \
   void options::set_ ## name (std::string arg)                          \
   {                                                                     \
@@ -200,6 +275,8 @@ options::options_type const & options::opts::all_options()
   void options::real_set_ ## name (std::string arg)
 
 # define OPTSET_REL(parent, child)
+# define HIDE(option)
+# define DEPRECATE(option, reason)
 
 #define option_bodies
 # include "options_list.hh"
@@ -209,6 +286,8 @@ options::options_type const & options::opts::all_options()
 # undef OPTVAR
 # undef OPTION
 # undef OPTSET_REL
+# undef HIDE
+# undef DEPRECATE
 
 option::option_set<options>
 operator | (option::option_set<options> const & opts,

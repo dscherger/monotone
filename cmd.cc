@@ -10,8 +10,10 @@
 
 #include "base.hh"
 #include "cmd.hh"
+
 #include "lua.hh"
 #include "app_state.hh"
+#include "options_applicator.hh"
 #include "work.hh"
 #include "ui.hh"
 #include "mt_version.hh"
@@ -26,6 +28,8 @@
 using std::string;
 using std::vector;
 using std::ostream;
+using std::make_pair;
+using std::set;
 
 //
 // Definition of top-level commands, used to classify the real commands
@@ -84,11 +88,94 @@ CMD_GROUP(user, "user", "", CMD_REF(__root__),
 
 namespace commands {
 
+  void remove_command_name_from_args(command_id const & ident,
+                                     args_vector & args,
+                                     size_t invisible_length)
+  {
+    MM(ident);
+    MM(args);
+    MM(invisible_length);
+    I(ident.empty() || args.size() >= ident.size() - invisible_length);
+    for (args_vector::size_type i = invisible_length; i < ident.size(); i++)
+      {
+        I(ident[i]().find(args[0]()) == 0);
+        args.erase(args.begin());
+      }
+  }
+
+  void reapply_options(app_state & app,
+                       command const * cmd,
+                       command_id const & cmd_ident,
+                       command const * subcmd,
+                       command_id const & subcmd_full_ident,
+                       size_t subcmd_invisible_length,
+                       args_vector const & subcmd_cmdline,
+                       vector<pair<string, string> > const * const separate_params)
+  {
+    I(cmd);
+    options::opts::all_options().instantiate(&app.opts).reset();
+
+    option::concrete_option_set optset
+      = (options::opts::globals() | cmd->opts())
+      .instantiate(&app.opts);
+
+    optset.from_command_line(app.reset_info.default_args, false);
+
+    if (subcmd)
+      {
+        args_vector subcmd_defaults;
+        app.lua.hook_get_default_command_options(subcmd_full_ident,
+                                                 subcmd_defaults);
+        (options::opts::globals() | subcmd->opts())
+          .instantiate(&app.opts)
+          .from_command_line(subcmd_defaults, false);
+      }
+
+    // at this point we process the data from _MTN/options if
+    // the command needs it.
+    if ((subcmd ? subcmd : cmd)->use_workspace_options())
+      {
+        workspace::check_format();
+        workspace::get_options(app.opts);
+      }
+
+    optset.from_command_line(app.reset_info.cmdline_args, false);
+
+    if (subcmd)
+      {
+        app.opts.args.clear();
+        option::concrete_option_set subcmd_optset
+          = (options::opts::globals() | subcmd->opts())
+          .instantiate(&app.opts);
+        if (!separate_params)
+          {
+            /* the first argument here is only ever modified if the second is 'true' */
+            subcmd_optset.from_command_line(const_cast<args_vector &>(subcmd_cmdline), false);
+          }
+        else
+          {
+            subcmd_optset.from_key_value_pairs(*separate_params);
+            app.opts.args = subcmd_cmdline;
+          }
+        remove_command_name_from_args(subcmd_full_ident, app.opts.args,
+                                      subcmd_invisible_length);
+      }
+    else
+      {
+        remove_command_name_from_args(cmd_ident, app.opts.args);
+      }
+  }
+
   // monotone.cc calls this function after option processing.
   void process(app_state & app, command_id const & ident,
                args_vector const & args)
   {
+    static bool process_called(false);
+    I(!process_called);
+    process_called = true;
+
     command const * cmd = CMD_REF(__root__)->find_command(ident);
+    app.reset_info.cmd = cmd;
 
     string visibleid = join_words(vector< utf8 >(ident.begin() + 1,
                                                  ident.end()))();
@@ -98,22 +185,26 @@ namespace commands {
       origin::user,
       F("command '%s' is invalid; it is a group") % join_words(ident));
 
-    E(!(!cmd->is_leaf() && args.empty()), origin::user,
-      F("no subcommand specified for '%s'") % visibleid);
+    if (!cmd->is_leaf())
+      {
+        // args used in the command name have not been stripped yet
+        remove_command_name_from_args(ident, app.opts.args);
 
-    E(!(!cmd->is_leaf() && !args.empty()), origin::user,
-      F("could not match '%s' to a subcommand of '%s'") %
-      join_words(args) % visibleid);
+        E(!args.empty(), origin::user,
+          F("no subcommand specified for '%s'") % visibleid);
+
+        E(false, origin::user,
+          F("could not match '%s' to a subcommand of '%s'") %
+          join_words(args) % visibleid);
+      }
 
     L(FL("executing command '%s'") % visibleid);
 
-    // at this point we process the data from _MTN/options if
-    // the command needs it.
-    if (cmd->use_workspace_options())
-      {
-        workspace::check_format();
-        workspace::get_options(app.opts);
-      }
+    reapply_options(app, cmd, ident);
+
+    // intentional leak
+    // we don't want the options to be reset, so don't destruct this
+    new options_applicator(app.opts, options_applicator::for_primary_cmd);
 
     cmd->exec(app, ident, args);
   }
@@ -423,7 +514,7 @@ CMD_NO_WORKSPACE(version, "version", "", CMD_REF(informative), "",
   E(args.empty(), origin::user,
     F("no arguments allowed"));
 
-  if (app.opts.full)
+  if (global_sanity.get_verbosity() > 0)
     print_full_version();
   else
     print_version();
