@@ -10147,6 +10147,48 @@ stderr and exits with status 1.
 
 @end table
 
+@item mtn automate log
+
+@table @strong
+@item Arguments:
+
+[--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]]
+[--to=@var{id} [...]] [--no-merges] [--no-files]
+[@var{pathname...}]
+
+Same as @command{mtn log}, but without the output control options; see
+@ref{Informative}.
+
+@item Added in:
+
+12.2
+
+@item Purpose:
+
+Print the selected revisions on stdout, in topological order. The user
+can then use other automate commands to retrieve additional
+information about each revision.
+
+@item Sample output:
+
+@verbatim
+233afb8c4832bf33d5f5734225164de5f5a6278c
+4a368a6b217c40b2ff3b12bb7cfa00987e0f191c
+233afb8c4832bf33d5f5734225164de5f5a6278c
+@end verbatim
+
+These messages are in the 'm' stream in automate stdio.
+
+@item Output format:
+
+One revision per line.
+
+@item Error conditions:
+
+see @command{mtn log} in @ref{Informative}.
+
+@end table
+
 @item mtn automate update
 
 @table @strong
