@@ -47,7 +47,7 @@ options::children()
 #     define OPTSET_REL(parent, child) \
       val[&options::opts:: parent].insert(&options::opts:: child);
 #     define HIDE(option)
-#     define DEPRECATE(option, reason)
+#     define DEPRECATE(option, reason, deprecated_in, will_remove_in)
 
 #     include "options_list.hh"
 
@@ -76,7 +76,7 @@ options::var_membership()
 #     define OPTION(optset, name, hasarg, optstring, description)
 #     define OPTSET_REL(parent, child)
 #     define HIDE(option)
-#     define DEPRECATE(option, reason)
+#     define DEPRECATE(option, reason, deprecated_in, will_remove_in)
 
 #     include "options_list.hh"
 
@@ -105,7 +105,7 @@ options::hidden()
 #     define OPTSET_REL(parent, child)
 #     define HIDE(option)                       \
       val[&opts:: option ## _opt ] = true;
-#     define DEPRECATE(option, reason)
+#     define DEPRECATE(option, reason, deprecated_in, will_remove_in)
 
 #     include "options_list.hh"
 
@@ -132,7 +132,7 @@ options::deprecated()
 #     define OPTION(optset, name, hasarg, optstring, description)
 #     define OPTSET_REL(parent, child)
 #     define HIDE(option)
-#     define DEPRECATE(option, reason)          \
+#     define DEPRECATE(option, reason, deprecated_in, will_remove_in)   \
       val[&opts:: option ## _opt ] = reason ;
 
 #     include "options_list.hh"
@@ -158,7 +158,7 @@ options::options()
     name ## _given = false;
 # define OPTSET_REL(parent, child)
 # define HIDE(option)
-# define DEPRECATE(option, reason)
+# define DEPRECATE(option, reason, deprecated_in, will_remove_in)
 
 # include "options_list.hh"
 
@@ -180,7 +180,7 @@ options::operator = (options const & other)
     name ## _given = other.name ## _given;
 # define OPTSET_REL(parent, child)
 # define HIDE(option)
-# define DEPRECATE(option, reason)
+# define DEPRECATE(option, reason, deprecated_in, will_remove_in)
 
 # include "options_list.hh"
 
@@ -276,7 +276,7 @@ options::options_type const & options::opts::all_options()
 
 # define OPTSET_REL(parent, child)
 # define HIDE(option)
-# define DEPRECATE(option, reason)
+# define DEPRECATE(option, reason, deprecated_in, will_remove_in)
 
 #define option_bodies
 # include "options_list.hh"

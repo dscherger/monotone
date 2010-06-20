@@ -54,7 +54,7 @@
  *     In general, options should be hidden if they are introduced for
  *     testing purposes.
  *
- *   DEPRECATE(option, reason)
+ *   DEPRECATE(option, reason, deprecated_in, will_remove_in)
  *     Do not show the named option in help output (even with --hidden), and
  *     give a warning if it is used. The reason should be
  *     gettext_noopt("some text here") as it is translatable.
@@ -630,7 +630,7 @@ OPTION(verbosity, inc_verbosity, false, "v",
 #endif
 
 OPTSET(full)
-DEPRECATE(full, gettext_noop("please use --verbose instead"))
+DEPRECATE(full, gettext_noop("please use --verbose instead"), 1.0, 2.0)
 OPTION(full, full, false, "full",
        gettext_noop("print detailed information"))
 #ifdef option_bodies

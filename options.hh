@@ -54,7 +54,7 @@ struct options
 
 # define OPTSET_REL(parent, child)
 # define HIDE(option)
-# define DEPRECATE(option, reason)
+# define DEPRECATE(option, reason, deprecated_in, will_remove_in)
 
 # include "options_list.hh"
 
@@ -85,7 +85,7 @@ private:                                                         \
 
 # define OPTSET_REL(parent, child)
 # define HIDE(option)
-# define DEPRECATE(option, reason)
+# define DEPRECATE(option, reason, deprecated_in, will_remove_in)
 
 # include "options_list.hh"
 
