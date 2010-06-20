@@ -254,7 +254,7 @@ building and installation process for monotone
            dependencies is usually available soon after release.
 
            The following is needed to succesfully configure:
-             CXXFLAGS+="-I/usr/include/boost-1_33_1/"
+             export CXXFLAGS="-I/usr/include/boost-1_33_1/"; configure
 
            Easiest way to create a Cygwin package is using cygport
            (which must be installed separately as a Cygwin package)
