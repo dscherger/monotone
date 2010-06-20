@@ -32,6 +32,7 @@
 #include "maybe_workspace_updater.hh"
 #include "simplestring_xform.hh"
 #include "database.hh"
+#include "date_format.hh"
 #include "roster.hh"
 #include "rev_output.hh"
 #include "vocab_cast.hh"
@@ -850,14 +851,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   project_t project(db);
   workspace work(app);
 
-  string date_fmt;
-  if (app.opts.format_dates)
-    {
-      if (!app.opts.date_fmt.empty())
-        date_fmt = app.opts.date_fmt;
-      else
-        app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
-    }
+  string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 
   if (!date_fmt_valid(date_fmt))
     W(F("date format '%s' cannot be used for commit") % date_fmt);
@@ -1431,14 +1425,7 @@ void perform_commit(app_state & app,
   temp_node_id_source nis;
   cset excluded;
 
-  string date_fmt;
-  if (app.opts.format_dates)
-    {
-      if (!app.opts.date_fmt.empty())
-        date_fmt = app.opts.date_fmt;
-      else
-        app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
-    }
+  string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);

@@ -107,7 +107,7 @@ MOST_SOURCES = 								\
 	rev_height.cc rev_height.hh					\
 	rev_output.cc rev_output.hh					\
 	asciik.cc asciik.hh						\
-	dates.cc dates.hh						\
+	dates.cc dates.hh date_format.hh				\
 									\
 	lru_writeback_cache.hh hybrid_map.hh lazy_rng.hh		\
 									\

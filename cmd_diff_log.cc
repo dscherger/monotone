@@ -17,6 +17,7 @@
 #include "asciik.hh"
 #include "charset.hh"
 #include "cmd.hh"
+#include "date_format.hh"
 #include "diff_output.hh"
 #include "file_io.hh"
 #include "parallel_iter.hh"
@@ -559,14 +560,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
   database db(app);
   project_t project(db);
 
-  string date_fmt;
-  if (app.opts.format_dates)
-    {
-      if (!app.opts.date_fmt.empty())
-        date_fmt = app.opts.date_fmt;
-      else
-        app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
-    }
+  string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 
   long last = app.opts.last;
   long next = app.opts.next;
