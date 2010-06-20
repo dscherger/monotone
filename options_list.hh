@@ -450,7 +450,9 @@ OPT(bookkeep_only, "bookkeep-only", bool, false,
 }
 #endif
 
-SIMPLE_OPTION(move_conflicting_paths, "move-conflicting-paths", bool,
+SIMPLE_OPTION(move_conflicting_paths,
+              "move-conflicting-paths/no-move-conflicting-paths",
+              bool,
               gettext_noop("move conflicting, unversioned paths into _MTN/resolutions "
                            "before proceeding with any workspace change"))
 
