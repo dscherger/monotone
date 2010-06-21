@@ -23,9 +23,14 @@
 #include <signal.h>
 #endif
 
+#include <iostream>
+
 using std::string;
 using std::vector;
+using std::set;
 using std::ostream;
+using std::cout;
+using boost::lexical_cast;
 
 //
 // Definition of top-level commands, used to classify the real commands
@@ -499,6 +504,247 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
     }
 #undef maybe_throw
 #undef maybe_throw_bare
+}
+
+static string
+man_italic(string const & content)
+{
+  return "\\fI" + content + "\\fP";
+}
+
+static string
+man_roman(string const & content)
+{
+  return "\\fR" + content + "\\fP";
+}
+
+static string
+man_bold(string const & content)
+{
+  return "\\fB" + content + "\\fP";
+}
+
+static string
+man_definition(vector<string> const & labels, string const & content, int width = -1)
+{
+  string out;
+  out += ".IP \"" + (*labels.begin()) + "\"";
+
+  if (width != -1)
+    out += " " + lexical_cast<string>(width);
+  out += "\n";
+
+  if (labels.size() > 1)
+    {
+      out += ".PD 0\n";
+      for (vector<string>::const_iterator i = labels.begin() + 1;
+           i < labels.end(); ++i)
+        {
+          out += ".IP \"" + (*i) + "\"\n";
+        }
+      out += ".PD\n";
+    }
+  out += content;
+  if (content.rfind('\n') != (content.size() - 1))
+     out += "\n";
+  return out;
+}
+
+static string
+man_definition(string const & label, string const & content, int width = -1)
+{
+  vector<string> labels;
+  labels.push_back(label);
+  return man_definition(labels, content, width);
+}
+
+static string
+man_indent(string const & content)
+{
+  return ".RS\n" + content + ".RE\n";
+}
+
+static string
+man_subsection(string const & content)
+{
+  return ".SS \"" + content + "\"\n";
+}
+
+static string
+man_section(string const & content)
+{
+  return ".SH \"" + uppercase(content) + "\"\n";
+}
+
+static string
+man_title(string const & title)
+{
+  return ".TH \"" + title + "\" 1" + "\n";
+}
+
+static string
+get_options_string(options::options_type const & optset, options & opts, int width = -1)
+{
+  vector<string> names;
+  vector<string> descriptions;
+  unsigned int maxnamelen;
+
+  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
+
+  string out;
+  vector<string>::const_iterator name;
+  vector<string>::const_iterator desc;
+  for (name = names.begin(), desc = descriptions.begin();
+       name != names.end(); ++name, ++desc)
+    {
+      if (name->empty())
+        continue;
+      out += man_definition(*name, *desc, width);
+    }
+  return out;
+}
+
+static string
+get_command_tree(options & opts, commands::command const * cmd)
+{
+  string out;
+
+  commands::command::children_set subcmds = cmd->children();
+  for (commands::command::children_set::const_iterator iter = subcmds.begin();
+       iter != subcmds.end(); iter++)
+    {
+      commands::command * subcmd = *iter;
+      if (subcmd->hidden() && !opts.show_hidden_commands)
+        continue;
+
+      if (!subcmd->is_leaf())
+        {
+          if (subcmd->parent() == CMD_REF(__root__))
+            {
+              out += man_subsection(
+                  (F("command group '%s'") % subcmd->primary_name()).str()
+              );
+              out += subcmd->desc() + "\n";
+            }
+
+          // we ignore cascaded groups and go right down to the
+          // individual commands
+          out += get_command_tree(opts, subcmd);
+        }
+      else
+        {
+          // this builds a list of already formatted command calls
+          // which are used as label for the specific command section
+          vector<string> cmd_calls;
+
+          //
+          // newline characters in the parameter section mark
+          // alternative call syntaxes which we expand here, i.e.
+          // a command "do-foo" with an alias of "foo" and an argument
+          // list of "BAR\nBAR BAZ" will be expanded to
+          //
+          //  do-foo BAR
+          //  do-foo BAR BAZ
+          //  foo BAR
+          //  foo BAR BAZ
+          //
+          vector<string> params;
+          if (!subcmd->params().empty())
+            split_into_lines(subcmd->params(), params);
+
+          vector<utf8> main_ident = subcmd->ident();
+          typedef set<vector<string> > ident_set;
+          ident_set idents;
+
+          commands::command::names_set allnames = subcmd->names();
+          for (set<utf8>::const_iterator i = allnames.begin();
+               i != allnames.end(); ++i)
+            {
+              vector<string> full_ident;
+              for (vector<utf8>::const_iterator j = main_ident.begin() + 1;
+                    j < main_ident.end() - 1;  ++j)
+                {
+                  full_ident.push_back((*j)());
+                }
+              full_ident.push_back((*i)());
+              idents.insert(full_ident);
+            }
+
+          for (ident_set::const_iterator i = idents.begin();
+               i != idents.end();  ++i)
+            {
+              string call, name;
+              // cannot use join_words here, since this only
+              // works on containers
+              join_lines(*i, name, " ");
+
+              if (params.size() == 0)
+                {
+                  call = man_bold(name);
+                  cmd_calls.push_back(call);
+                  continue;
+                }
+
+              for (vector<string>::const_iterator j = params.begin();
+                   j < params.end(); ++j)
+                {
+                  call = man_bold(name) + " " + *j;
+                  cmd_calls.push_back(call);
+                }
+            }
+
+          string cmd_desc;
+          cmd_desc += subcmd->desc() + "\n";
+
+          // this prints an indented list of available command options
+          options::options_type cmd_options =
+            commands::command_options(main_ident);
+          if (!cmd_options.empty())
+            {
+              cmd_desc += man_indent(get_options_string(cmd_options, opts, 4));
+            }
+
+          // compile everything into a man definition
+          out += man_definition(cmd_calls, cmd_desc, 4);
+        }
+    }
+    return out;
+}
+
+CMD_HIDDEN(manpage, "manpage", "", CMD_REF(informative), "",
+    N_("Dumps monotone's command tree in a (g)roff compatible format"),
+    "",
+    options::opts::show_hidden_commands)
+{
+  cout << man_title("monotone");
+  cout << man_section(_("Name"));
+
+  cout << _("monotone - a distributed version control system") << "\n";
+  cout << man_section(_("Synopsis"));
+  cout << man_bold(prog_name) << " "
+            << man_italic(_("[options...] command [arguments...]"))
+            << "\n";
+
+  cout << man_section(_("Description"));
+  cout << _("TODO: write a really fancy and catchy description") << "\n";
+
+  cout << man_section(_("Global Options"));
+  cout << get_options_string(options::opts::globals(), app.opts, 25) << "\n";
+
+  cout << man_section(_("Commands"));
+  cout << get_command_tree(app.opts, CMD_REF(__root__));
+
+  cout << man_section(_("See Also"));
+  cout << (F("info %s and the documentation on <%s>")
+                % prog_name % man_bold("http://monotone.ca/docs")).str() << "\n";
+
+  cout << man_section("Bugs");
+  cout << (F("Please report bugs to <%s>.")
+                % man_bold("http://savannah.nongnu.org/bugs/?group=monotone")).str()<< "\n";
+
+  cout << man_section("Authors");
+  cout << (F("The monotone development team <%s>")
+                % man_bold("http://www.monotone.ca")).str() << "\n";
 }
 
 // There isn't really a better place for this function.

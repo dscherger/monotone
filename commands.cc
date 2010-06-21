@@ -179,6 +179,8 @@ namespace commands
   std::string
   command::desc() const
   {
+    if (m_desc().empty())
+        return abstract() + ".";
     return abstract() + ".\n" + safe_gettext(m_desc().c_str());
   }
 
