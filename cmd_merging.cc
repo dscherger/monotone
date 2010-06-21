@@ -1126,7 +1126,7 @@ static void get_conflicts_rids(args_vector const & args,
 //   two heads, prints an error message to stderr and exits with status 1.
 //
 CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
-             N_("Shows the conflicts between two revisions."),
+             N_("Shows the conflicts between two revisions"),
              N_("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
                 "first two heads that would be chosen by the 'merge' command."),
              options::opts::branch | options::opts::ignore_suspend_certs)
@@ -1141,7 +1141,7 @@ CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
 
 CMD(store, "store", "", CMD_REF(conflicts),
     "[LEFT_REVID RIGHT_REVID]",
-    N_("Store the conflicts from merging two revisions."),
+    N_("Store the conflicts from merging two revisions"),
     N_("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
        "first two heads that would be chosen by the 'merge' command. If "
        "--conflicts-file is not given, '_MTN/conflicts' is used."),
