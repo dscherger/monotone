@@ -325,6 +325,7 @@ PNG_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.pn
 EPS_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.eps)))
 TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
+man1_MANS = mtn.1
 info_TEXINFOS = monotone.texi
 EXTRA_DIST =								\
 	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
@@ -762,6 +763,10 @@ html: monotone.texi version.texi std_hooks.lua texinfo.css
 		sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $$f.bak >$$f; \
 		rm -f $$f.bak; \
 	done
+
+mtn.1: mtn
+	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
+	(cd $(srcdir) && $$REAL_BLDDIR/mtn manpage) 2>/dev/null >$@ || rm -f $@
 
 # Verbosity goo.
 V_bcxx       = $(V_bcxx_$(V))
