@@ -21,7 +21,7 @@ get_date_format(options const & opts,
 		date_format_spec spec)
 {
   std::string date_fmt;
-  if (opts.format_dates)
+  if (!opts.no_format_dates)
     {
       if (!opts.date_fmt.empty())
         date_fmt = opts.date_fmt;

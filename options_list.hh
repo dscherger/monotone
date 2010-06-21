@@ -135,11 +135,14 @@ void set_simple_option(std::set<string> & t, std::string const & arg)
  *    (with push_back or insert), and the collection will be empty if the
  *    option is not given or is reset.
  */
+#define GROUPED_SIMPLE_OPTION(group, name, optstring, type, description) \
+  OPTVAR(group, type, name, )                                           \
+  OPTION(group, name, has_arg<type >(), optstring, description)          \
+  SIMPLE_OPTION_BODY(name)
+
 #define SIMPLE_OPTION(name, optstring, type, description)               \
   OPTSET(name)                                                          \
-  OPTVAR(name, type, name, )                                            \
-  OPTION(name, name, has_arg<type >(), optstring, description)  \
-  SIMPLE_OPTION_BODY(name)
+  GROUPED_SIMPLE_OPTION(name, name, optstring, type, description)
 
 // Like SIMPLE_OPTION, but the declared option is a member of the globals
 #define GLOBAL_SIMPLE_OPTION(name, optstring, type, description) \
@@ -282,16 +285,14 @@ OPT(date, "date", date_t, ,
 }
 #endif
 
-GLOBAL_SIMPLE_OPTION(date_fmt, "date-format/default-date-format", std::string,
-                     gettext_noop("strftime(3) format specification for printing dates"))
-
-GOPT(format_dates, "no-format-dates", bool, true,
-     gettext_noop("print date certs exactly as stored in the database"))
-#ifdef option_bodies
-{
-  format_dates = false;
-}
-#endif
+OPTSET(date_formats)
+OPTSET_REL(globals, date_formats)
+GROUPED_SIMPLE_OPTION(date_formats, date_fmt,
+                      "date-format/default-date-format", std::string,
+                      gettext_noop("strftime(3) format specification for printing dates"))
+GROUPED_SIMPLE_OPTION(date_formats, no_format_dates,
+                      "no-format-dates", bool,
+                      gettext_noop("print date certs exactly as stored in the database"))
 
 
 OPTVAR(globals, db_type, dbname_type, );
@@ -441,7 +442,6 @@ OPTION(exclude, exclude, true, "exclude",
   exclude_patterns.push_back(arg_type(arg, origin::user));
 }
 #endif
-
 OPT(bookkeep_only, "bookkeep-only", bool, false,
         gettext_noop("only update monotone's internal bookkeeping, not the filesystem"))
 #ifdef option_bodies
