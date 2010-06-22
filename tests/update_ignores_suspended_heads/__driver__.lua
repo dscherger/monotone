@@ -1,7 +1,3 @@
--- this is an accompanying test for monotone bug #29843
--- right now it succeeds, so we still have to find the exact
--- cause what went wrong in #29843
-
 mtn_setup()
 
 addfile("foofile", "foo")
