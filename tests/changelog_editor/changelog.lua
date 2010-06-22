@@ -6,8 +6,10 @@ function edit_comment(user_log_file)
        return string.gsub(user_log_file, "\nempty message\n", "")
     elseif (string.find(user_log_file, "\nmissing instructions\n")) then
        return "foobar" .. user_log_file
-    elseif (string.find(user_log_file, "\ncancel\n")) then
+    elseif (string.find(user_log_file, "\ncancel hint removed\n")) then
        return string.gsub(user_log_file, "... REMOVE THIS LINE TO CANCEL THE COMMIT ...\n", "")
+    elseif (string.find(user_log_file, "\ncancel hint moved\n")) then
+       return string.gsub(user_log_file, "(... REMOVE THIS LINE TO CANCEL THE COMMIT ...)", "\n\n%1")
     elseif (string.find(user_log_file, "\nmissing separator\n")) then
        return string.gsub(user_log_file, "---------------\n", "\n")
     elseif (string.find(user_log_file, "\nmissing revision\n")) then

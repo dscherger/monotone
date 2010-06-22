@@ -48,10 +48,19 @@ remove("_MTN/commit")
 
 -- commit can be cancelled
 
-writefile("_MTN/log", "cancel")
+writefile("_MTN/log", "cancel hint removed")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
 check(qgrep("Commit cancelled.", "stderr"))
 check(not exists("_MTN/commit"))
+
+-- and we notice if the cancel message is still intact and
+-- hasn't been moved
+
+writefile("_MTN/log", "cancel hint moved")
+check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
+check(qgrep("Cancel hint not found.", "stderr"))
+check(exists("_MTN/commit"))
+remove("_MTN/commit")
 
 -- commit fails with modified/missing separator, Revision: or Parent: lines
 

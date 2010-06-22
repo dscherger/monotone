@@ -260,6 +260,14 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   system_to_utf8(output_message, full_message);
 
+  // look for the cancel notification anywhere in the text.
+  // this might be needed in case the user moves it down accidentially
+  // and the previous instructions are kept intact
+  if (full_message().find(cancel()) == string::npos)
+    {
+      E(false, origin::user, F("Commit cancelled."));
+    }
+
   // save the message in _MTN/commit so its not lost if something fails below
   work.save_commit_text(full_message);
 
@@ -277,13 +285,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   E(message.read(instructions()), origin::user,
     F("Commit failed. Instructions not found."));
 
-  if (!message.read(cancel()))
-    {
-      // clear the backup file if the commit was explicitly cancelled
-      work.clear_commit_text();
-      E(message.read(cancel()), origin::user,
-        F("Commit cancelled."));
-    }
+  E(message.read(cancel()), origin::user,
+    F("Commit failed. Cancel hint not found."));
 
   utf8 const AUTHOR(trim_right(_("Author: ")).c_str());
   utf8 const DATE(trim_right(_("Date: ")).c_str());

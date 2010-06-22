@@ -61,6 +61,10 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         Bugs Fixed
 
+        - monotone now tries harder to find the cancel hint in a commit
+          message and only aborts if it can't find it anywhere
+          (fixes monotone bug #30215)
+
         Other
 
 Sun Jun 13 22:13:53 UTC 2010
