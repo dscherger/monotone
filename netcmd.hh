@@ -232,15 +232,6 @@ public:
 
 };
 
-class netsync_connection_info;
-
-void run_netsync_protocol(app_state & app,
-                          options & opts, lua_hooks & lua,
-                          project_t & project, key_store & keys,
-                          protocol_voice voice,
-                          protocol_role role,
-                          netsync_connection_info const & info);
-
 #endif // __NETCMD_HH__
 
 // Local Variables:

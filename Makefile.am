@@ -63,7 +63,7 @@ MOST_SOURCES = 								\
 	migration.hh migrate_schema.cc migrate_ancestry.cc		\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
-	netsync.cc            						\
+	netsync.hh netsync.cc            				\
 	network/automate_session.hh network/automate_session.cc		\
 	network/connection_info.hh network/connection_info.cc		\
 	network/listener_base.hh network/listener_base.cc		\
@@ -194,7 +194,7 @@ UNIT_TESTERS_PRIV =							\
 UNIT_TEST_SUPPORT =							\
 	constants.cc file_io.cc gzip.cc hmac.cc lcs.cc merkle_tree.cc   \
 	randomizer.cc randomizer.hh roster_delta.cc roster_tests.hh	\
-	sanity.cc specialized_lexical_cast.cc
+	sanity.cc specialized_lexical_cast.cc pcrewrap.cc
 
 # primaries
 

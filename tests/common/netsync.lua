@@ -83,6 +83,7 @@ function netsync.start(opts, n, min)
   local argv = fn(unpack(args))
   local out = bg(argv, false, false, false)
   out.address = addr
+  out.url = "mtn://" .. addr
   out.argv = argv
   local mt = getmetatable(out)
   mt.client = netsync.internal.client

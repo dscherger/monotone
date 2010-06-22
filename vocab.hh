@@ -119,6 +119,13 @@ enum db_type
   unmanaged_db
 };
 
+// to distinguish the payload type of a sync
+enum connection_type
+{
+  netsync_connection,
+  automate_connection
+};
+
 static const std::string memory_db_identifier = ":memory:";
 
 // do these belong here?
