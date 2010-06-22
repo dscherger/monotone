@@ -1,4 +1,4 @@
--- this is an accompanying xfailing test for #29843
+-- this is an accompanying test for #29843
 
 mtn_setup()
 
@@ -17,4 +17,4 @@ check(mtn("update", "-r", base), 0, false, false)
 
 -- this should directly update the workspace to the child
 -- revision and not ask us which branch to choose
-xfail(mtn("update", "-r", child), 0, false, false)
+check(mtn("update", "-r", child), 0, false, false)

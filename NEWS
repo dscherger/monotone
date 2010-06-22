@@ -61,6 +61,10 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         Bugs Fixed
 
+        - monotone no longer asks to pick a branch from a set of branches
+          of a revision in which all but one branch have been suspended
+          (fixes monotone bug #29843)
+
         - monotone now tries harder to find the cancel hint in a commit
           message and only aborts if it can't find it anywhere
           (fixes monotone bug #30215)

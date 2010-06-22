@@ -136,10 +136,27 @@ pick_branch_for_update(options & opts, database & db,
   db.get_revision_certs(chosen_rid, branch_cert_name, certs);
   db.erase_bogus_certs(project, certs);
 
-  set< branch_name > branches;
+  set<branch_name> branches;
   for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); i++)
     branches.insert(typecast_vocab<branch_name>(i->value));
+
+  if (!opts.ignore_suspend_certs)
+    {
+      vector<cert> suspend_certs;
+      db.get_revision_certs(chosen_rid, suspend_cert_name, suspend_certs);
+
+      for (vector<cert>::const_iterator i = suspend_certs.begin();
+           i != suspend_certs.end(); i++)
+        {
+          branch_name susp_branch = typecast_vocab<branch_name>(i->value);
+          set<branch_name>::iterator pos = branches.find(susp_branch);
+          if (pos != branches.end())
+            {
+              branches.erase(pos);
+            }
+        }
+    }
 
   if (branches.find(opts.branch) != branches.end())
     {
@@ -167,7 +184,6 @@ pick_branch_for_update(options & opts, database & db,
         }
       else
         {
-          I(branches.empty());
           W(F("target revision not in any branch\n"
               "next commit will use branch %s")
             % opts.branch);
