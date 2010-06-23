@@ -35,6 +35,7 @@ Remove netsync's SERVER [PATTERN] syntax | n/a | n/a | not started |
 
 [[!table data="""
 Description | More Info | Branch(es) | Status | Major Version Change |
+Sane SQLite locking | [monotone-devel](http://thread.gmane.org/gmane.comp.version-control.monotone.devel/13327/focus=13343) | n/a | not started | No |
 Policy Branches | [[VersionedPolicy]] |  `nvm.tbrownaw.policy-branches`,<br />`nvm.experimental.policy-branches*` | in development | Yes |
 Daggy refinement | [[DagBasedRefinement]] | n/a | not started | No - netsync version negotiation |
 SSL for netsync | n/a | n/a | not started | No - netsync version negotiation |
