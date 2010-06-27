@@ -3693,15 +3693,16 @@ There are several pre-defined domains that monotone knows about:
 
 @item database
 Contains database-global configuration information.  Defined names are:
+
 @table @code
-@item default-exclude-pattern
-The default branch exclusion glob pattern for netsync operations to
-use. Automatically set by first use of netsync, and by any netsync
-that uses the @option{--set-default} option.
 @item default-include-pattern
-The default branch glob pattern for netsync operations to use.
+The default global branch glob pattern for netsync operations to use.
 Automatically set by first use of netsync, and by any netsync that
 uses the @option{--set-default} option.
+@item default-exclude-pattern
+The default global branch exclusion glob pattern for netsync operations to
+use. Automatically set by first use of netsync, and by any netsync
+that uses the @option{--set-default} option.
 @item default-server
 The default server for netsync operations to use.  Automatically set
 by first use of netsync, and by any netsync that uses the
@@ -3719,6 +3720,9 @@ receiving new revisions unless your particular history graph is highly
 linear.
 
 Changing this value does not affect deltas that have already been stored.
+@item known-workspaces
+Records all registered workspaces for the current databases.  monotone will
+track the contents of this variable automatically for you in the background.
 @end table
 
 @item known-servers
@@ -3728,6 +3732,18 @@ needed to detect man-in-the-middle attacks.  Automatically set the first
 time you netsync with any given server.  If that server's key later
 changes, monotone will notice, and refuse to connect until you have run
 @command{mtn unset known-servers @var{server-name}}.
+
+@item server-include
+Contains server-specific branch inclusion globs.  These overrule
+@var{default-include-pattern} if existant and are recorded automatically
+the first time you connect to a specific server or use the 
+@option{--set-default} option for a netsync operation.
+
+@item server-exclude
+Likewise, this variable contains server-specific branch exclusion
+globs, which overrule @var{default-exclude-pattern} if existant and
+are also automatically set on the first connection or when the option
+@option{--set-default} is present.
 
 @end table
 
