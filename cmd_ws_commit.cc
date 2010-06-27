@@ -1825,48 +1825,52 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
      F("import directory '%s' doesn't exists") % dir,
      F("import directory '%s' is a file") % dir);
 
+  system_path _MTN_dir = dir / path_component("_MTN");
+
+  require_path_is_nonexistent
+    (_MTN_dir, F("bookkeeping directory already exists in '%s'") % dir);
+
+  directory_cleanup_helper remove_on_fail(_MTN_dir);
+
   workspace::create_workspace(app.opts, app.lua, dir);
   workspace work(app);
 
-  try
+  revision_t rev;
+  make_revision_for_workspace(ident, cset(), rev);
+  work.put_work_rev(rev);
+
+  // prepare stuff for 'add' and so on.
+  args_vector empty_args;
+  options save_opts;
+  // add --unknown
+  save_opts.exclude_patterns = app.opts.exclude_patterns;
+  app.opts.exclude_patterns = args_vector();
+  app.opts.unknown = true;
+  app.opts.recursive = true;
+  process(app, make_command_id("workspace add"), empty_args);
+  app.opts.recursive = false;
+  app.opts.unknown = false;
+  app.opts.exclude_patterns = save_opts.exclude_patterns;
+
+  // drop --missing
+  save_opts.no_ignore = app.opts.no_ignore;
+  app.opts.missing = true;
+  process(app, make_command_id("workspace drop"), empty_args);
+  app.opts.missing = false;
+  app.opts.no_ignore = save_opts.no_ignore;
+
+  // commit
+  if (!app.opts.dryrun)
     {
-      revision_t rev;
-      make_revision_for_workspace(ident, cset(), rev);
-      work.put_work_rev(rev);
-
-      // prepare stuff for 'add' and so on.
-      args_vector empty_args;
-      options save_opts;
-      // add --unknown
-      save_opts.exclude_patterns = app.opts.exclude_patterns;
-      app.opts.exclude_patterns = args_vector();
-      app.opts.unknown = true;
-      app.opts.recursive = true;
-      process(app, make_command_id("workspace add"), empty_args);
-      app.opts.recursive = false;
-      app.opts.unknown = false;
-      app.opts.exclude_patterns = save_opts.exclude_patterns;
-
-      // drop --missing
-      save_opts.no_ignore = app.opts.no_ignore;
-      app.opts.missing = true;
-      process(app, make_command_id("workspace drop"), empty_args);
-      app.opts.missing = false;
-      app.opts.no_ignore = save_opts.no_ignore;
-
-      // commit
-      if (!app.opts.dryrun)
-        process(app, make_command_id("workspace commit"), empty_args);
+      process(app, make_command_id("workspace commit"), empty_args);
+      remove_on_fail.commit();
     }
-  catch (...)
+  else
     {
-      // clean up before rethrowing
-      delete_dir_recursive(bookkeeping_root);
-      throw;
+      // since the _MTN directory gets removed, don't try to write out
+      // _MTN/options at the end
+      workspace::used = false;
     }
-
-  // clean up
-  delete_dir_recursive(bookkeeping_root);
 }
 
 CMD_NO_WORKSPACE(migrate_workspace, "migrate_workspace", "", CMD_REF(tree),
