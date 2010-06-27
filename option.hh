@@ -138,9 +138,18 @@ namespace option {
                            unsigned int & maxnamelen,
                            bool show_hidden
                            /*no way to see deprecated*/) const;
-    void from_command_line(args_vector & args, bool allow_xargs = true);
-    void from_command_line(int argc, char const * const * argv);
-    void from_key_value_pairs(std::vector<std::pair<std::string, std::string> > const & keyvals);
+    enum option_parse_type { forbid_duplicates, allow_duplicates };
+    enum allow_xargs_t { xargs_forbidden, xargs_allowed };
+    void from_command_line(args_vector & args,
+                           allow_xargs_t allow_xargs = xargs_allowed,
+                           option_parse_type ty = forbid_duplicates);
+    void from_command_line(int argc,
+                           char const * const * argv,
+                           option_parse_type ty = forbid_duplicates);
+    typedef std::pair<std::string, std::string> key_value_pair;
+    typedef std::vector<key_value_pair> key_value_list;
+    void from_key_value_pairs(key_value_list const & keyvals,
+                              option_parse_type ty = forbid_duplicates);
   };
   concrete_option_set
   operator | (concrete_option const & a, concrete_option const & b);

@@ -121,7 +121,8 @@ namespace commands {
       = (options::opts::globals() | cmd->opts())
       .instantiate(&app.opts);
 
-    optset.from_command_line(app.reset_info.default_args, false);
+    optset.from_command_line(app.reset_info.default_args,
+                             option::concrete_option_set::xargs_forbidden);
 
     if (subcmd)
       {
@@ -130,7 +131,8 @@ namespace commands {
                                                  subcmd_defaults);
         (options::opts::globals() | subcmd->opts())
           .instantiate(&app.opts)
-          .from_command_line(subcmd_defaults, false);
+          .from_command_line(subcmd_defaults,
+                             option::concrete_option_set::xargs_forbidden);
       }
 
     // at this point we process the data from _MTN/options if
@@ -141,7 +143,8 @@ namespace commands {
         workspace::get_options(app.opts);
       }
 
-    optset.from_command_line(app.reset_info.cmdline_args, false);
+    optset.from_command_line(app.reset_info.cmdline_args,
+                             option::concrete_option_set::xargs_forbidden);
 
     if (subcmd)
       {
@@ -152,7 +155,8 @@ namespace commands {
         if (!separate_params)
           {
             /* the first argument here is only ever modified if the second is 'true' */
-            subcmd_optset.from_command_line(const_cast<args_vector &>(subcmd_cmdline), false);
+            subcmd_optset.from_command_line(const_cast<args_vector &>(subcmd_cmdline),
+                                            option::concrete_option_set::xargs_forbidden);
           }
         else
           {

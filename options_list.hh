@@ -702,7 +702,7 @@ SIMPLE_OPTION(from, "from/clear-from", args_vector,
 SIMPLE_OPTION(to, "to/clear-to", args_vector,
               gettext_noop("revision(s) to stop logging at"))
 
-SIMPLE_OPTION(unknown, "unknown", bool,
+SIMPLE_OPTION(unknown, "unknown/no-unknown", bool,
               gettext_noop("perform the operations for unknown files from workspace"))
 
 GLOBAL_SIMPLE_OPTION(version, "version", bool,
@@ -715,7 +715,7 @@ OPTVAR(automate_inventory_opts, bool, no_unknown, false)
 OPTVAR(automate_inventory_opts, bool, no_unchanged, false)
 OPTVAR(automate_inventory_opts, bool, no_corresponding_renames, false)
 
-OPTION(automate_inventory_opts, no_ignored, false, "no-ignored",
+OPTION(automate_inventory_opts, no_ignored, false, "no-ignored/ignored",
        gettext_noop("don't output ignored files"))
 #ifdef option_bodies
 {
@@ -723,7 +723,7 @@ OPTION(automate_inventory_opts, no_ignored, false, "no-ignored",
 }
 #endif
 
-OPTION(automate_inventory_opts, no_unknown, false, "no-unknown",
+OPTION(automate_inventory_opts, no_unknown, false, "no-unknown/unknown",
        gettext_noop("don't output unknown files"))
 #ifdef option_bodies
 {
@@ -731,7 +731,7 @@ OPTION(automate_inventory_opts, no_unknown, false, "no-unknown",
 }
 #endif
 
-OPTION(automate_inventory_opts, no_unchanged, false, "no-unchanged",
+OPTION(automate_inventory_opts, no_unchanged, false, "no-unchanged/unchanged",
        gettext_noop("don't output unchanged files"))
 #ifdef option_bodies
 {

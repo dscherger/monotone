@@ -264,12 +264,14 @@ tokenize_for_command_line(string const & from, args_vector & to)
     to.push_back(arg_type(cur, origin::user));
 }
 
-void concrete_option_set::from_command_line(int argc, char const * const * argv)
+void concrete_option_set::from_command_line(int argc,
+                                            char const * const * argv,
+                                            concrete_option_set::option_parse_type ty)
 {
   args_vector arguments;
   for (int i = 1; i < argc; ++i)
     arguments.push_back(arg_type(argv[i], origin::user));
-  from_command_line(arguments, true);
+  from_command_line(arguments, xargs_allowed, ty);
 }
 
 static concrete_option const &
@@ -282,27 +284,55 @@ getopt(map<string, concrete_option> const & by_name, string const & name)
     throw unknown_option(name);
 }
 
+typedef pair<map<string, concrete_option>::iterator, bool> by_name_res_type;
+static void check_by_name_insertion(by_name_res_type const & res,
+                                    concrete_option const & opt,
+                                    concrete_option_set::option_parse_type ty)
+{
+  switch (ty)
+    {
+    case concrete_option_set::allow_duplicates:
+      if (!res.second)
+        {
+          string const & name = res.first->first;
+          concrete_option const & them = res.first->second;
+          bool const i_have_arg = (name != opt.cancelname && opt.has_arg);
+          bool const they_have_arg = (name != them.cancelname && them.has_arg);
+          I(i_have_arg == they_have_arg);
+        }
+      break;
+    case concrete_option_set::forbid_duplicates:
+      I(res.second);
+      break;
+    }
+}
+
 static map<string, concrete_option>
-get_by_name(std::set<concrete_option> const & options)
+get_by_name(std::set<concrete_option> const & options,
+            concrete_option_set::option_parse_type ty)
 {
   map<string, concrete_option> by_name;
   for (std::set<concrete_option>::const_iterator i = options.begin();
        i != options.end(); ++i)
     {
       if (!i->longname.empty())
-        I(by_name.insert(make_pair(i->longname, *i)).second);
+        check_by_name_insertion(by_name.insert(make_pair(i->longname, *i)),
+                                *i, ty);
       if (!i->shortname.empty())
-        I(by_name.insert(make_pair(i->shortname, *i)).second);
+        check_by_name_insertion(by_name.insert(make_pair(i->shortname, *i)),
+                                *i, ty);
       if (!i->cancelname.empty())
-        I(by_name.insert(make_pair(i->cancelname, *i)).second);
+        check_by_name_insertion(by_name.insert(make_pair(i->cancelname, *i)),
+                                *i, ty);
     }
   return by_name;
 }
 
 void concrete_option_set::from_command_line(args_vector & args,
-                                            bool allow_xargs)
+                                            allow_xargs_t allow_xargs,
+                                            concrete_option_set::option_parse_type ty)
 {
-  map<string, concrete_option> by_name = get_by_name(options);
+  map<string, concrete_option> by_name = get_by_name(options, ty);
 
   bool seen_dashdash = false;
   for (args_vector::size_type i = 0; i < args.size(); ++i)
@@ -317,7 +347,7 @@ void concrete_option_set::from_command_line(args_vector & args,
           if (!seen_dashdash)
             {
               seen_dashdash = true;
-              allow_xargs = false;
+              allow_xargs = xargs_forbidden;
               continue;
             }
           name = "--";
@@ -382,7 +412,7 @@ void concrete_option_set::from_command_line(args_vector & args,
           is_cancel = false;
         }
 
-      if (allow_xargs && (name == "xargs" || name == "@"))
+      if (allow_xargs == xargs_allowed && (name == "xargs" || name == "@"))
         {
           // expand the --xargs in place
           data dat;
@@ -430,9 +460,10 @@ void concrete_option_set::from_command_line(args_vector & args,
     }
 }
 
-void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > const & keyvals)
+void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > const & keyvals,
+                                               concrete_option_set::option_parse_type ty)
 {
-  map<string, concrete_option> by_name = get_by_name(options);
+  map<string, concrete_option> by_name = get_by_name(options, ty);
 
   for (vector<pair<string, string> >::const_iterator i = keyvals.begin();
        i != keyvals.end(); ++i)
@@ -441,13 +472,23 @@ void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > con
       arg_type const & value(arg_type(i->second, origin::user));
 
       concrete_option o = getopt(by_name, key);
+      bool const is_cancel = (key == o.cancelname);
 
       try
         {
           if (o.deprecated)
             W(F("deprated option '%s' used: %s") % i->first % gettext(o.deprecated));
-          if (o.setter)
-            o.setter(value());
+
+          if (!is_cancel)
+            {
+              if (o.setter)
+                o.setter(value());
+            }
+          else
+            {
+              if (o.resetter)
+                o.resetter();
+            }
         }
       catch (boost::bad_lexical_cast)
         {
