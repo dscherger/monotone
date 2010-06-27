@@ -513,7 +513,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     "",
     options::opts::branch | options::opts::date | options::opts::author |
     options::opts::messages | options::opts::resolve_conflicts_opts |
-    options::opts::maybe_auto_update)
+    options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -587,20 +587,6 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   updater.maybe_do_update();
 }
 
-CMD(propagate, "propagate", "", CMD_REF(tree),
-    N_("SOURCE-BRANCH DEST-BRANCH"),
-    N_("Merges from one branch to another asymmetrically"),
-    "",
-    options::opts::date | options::opts::author | options::opts::messages |
-    options::opts::resolve_conflicts_opts)
-{
-  if (args.size() != 2)
-    throw usage(execid);
-  args_vector a = args;
-  a.push_back(arg_type());
-  process(app, make_command_id("tree merge_into_dir"), a);
-}
-
 //   This is a special merge operator, but very useful for people
 //   maintaining "slightly disparate but related" trees. It does a one-way
 //   merge; less powerful than putting things in the same branch and also
@@ -627,12 +613,9 @@ CMD(propagate, "propagate", "", CMD_REF(tree),
 //   If dir is not the empty string, rename the root of N1 to have the name
 //   'dir' in the merged tree. (ie, it has name "basename(dir)", and its
 //   parent node is "N2.get_node(dirname(dir))")
-CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
-    N_("SOURCE-BRANCH DEST-BRANCH DIR"),
-    N_("Merges one branch into a subdirectory in another branch"),
-    "",
-    options::opts::date | options::opts::author | options::opts::messages |
-    options::opts::resolve_conflicts_opts | options::opts::maybe_auto_update)
+void perform_merge_into_dir(app_state & app,
+                            commands::command_id const & execid,
+                            args_vector const & args)
 {
   database db(app);
   key_store keys(app);
@@ -783,6 +766,30 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
   updater.maybe_do_update();
 }
 
+CMD(propagate, "propagate", "", CMD_REF(tree),
+    N_("SOURCE-BRANCH DEST-BRANCH"),
+    N_("Merges from one branch to another asymmetrically"),
+    "",
+    options::opts::date | options::opts::author | options::opts::messages |
+    options::opts::resolve_conflicts_opts)
+{
+  if (args.size() != 2)
+    throw usage(execid);
+  args_vector a = args;
+  a.push_back(arg_type());
+  perform_merge_into_dir(app, make_command_id("tree merge_into_dir"), a);
+}
+
+CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
+    N_("SOURCE-BRANCH DEST-BRANCH DIR"),
+    N_("Merges one branch into a subdirectory in another branch"),
+    "",
+    options::opts::date | options::opts::author | options::opts::messages |
+    options::opts::resolve_conflicts_opts | options::opts::auto_update)
+{
+  perform_merge_into_dir(app, execid, args);
+}
+
 CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
     N_("OTHER-REVISION"),
     N_("Merges a revision into the current workspace's base revision"),
@@ -907,7 +914,7 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
        "DEST-BRANCH."),
     options::opts::date | options::opts::author |
     options::opts::messages | options::opts::resolve_conflicts_opts |
-    options::opts::maybe_auto_update)
+    options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);

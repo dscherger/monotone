@@ -17,6 +17,7 @@
 #include "asciik.hh"
 #include "charset.hh"
 #include "cmd.hh"
+#include "date_format.hh"
 #include "diff_output.hh"
 #include "file_io.hh"
 #include "parallel_iter.hh"
@@ -416,6 +417,10 @@ void dump_header(std::string const & revs,
   out << "#\n";
 }
 
+CMD_PRESET_OPTIONS(diff)
+{
+  opts.with_header = true;
+}
 CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
     N_("Shows current differences"),
     N_("Compares the current tree with the files in the repository and "
@@ -440,7 +445,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
 
   prepare_diff(app, db, old_roster, new_roster, args, old_from_db, new_from_db, revs);
 
-  if (!app.opts.without_header)
+  if (app.opts.with_header)
     {
       dump_header(revs, old_roster, new_roster, cout, true);
     }
@@ -466,9 +471,9 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
 CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
              N_("Calculates diffs of files"),
              "",
-             options::opts::with_header | options::opts::without_header |
+             options::opts::au_diff_options |
              options::opts::revision | options::opts::depth |
-             options::opts::exclude | options::opts::reverse)
+             options::opts::exclude)
 {
   roster_t old_roster, new_roster;
   string dummy_header;
@@ -559,14 +564,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
   database db(app);
   project_t project(db);
 
-  string date_fmt;
-  if (app.opts.format_dates)
-    {
-      if (!app.opts.date_fmt.empty())
-        date_fmt = app.opts.date_fmt;
-      else
-        app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
-    }
+  string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 
   long last = app.opts.last;
   long next = app.opts.next;

@@ -253,7 +253,7 @@ lua_hooks::load_rcfile(any_path const & rc, bool required)
 }
 
 void
-lua_hooks::load_rcfiles(options & opts)
+lua_hooks::load_rcfiles(options const & opts)
 {
   // Built-in rc settings are defaults.
   if (!opts.nostd)

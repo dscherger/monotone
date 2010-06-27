@@ -605,6 +605,26 @@ user_interface::set_tick_write_nothing()
   tick_type = none;
 }
 
+user_interface::ticker_type
+user_interface::set_ticker_type(user_interface::ticker_type type)
+{
+  ticker_type ret = tick_type;
+  switch (type)
+    {
+    case count: set_tick_write_count(); break;
+    case dot: set_tick_write_dot(); break;
+    case stdio: set_tick_write_stdio(); break;
+    case none: set_tick_write_nothing(); break;
+    }
+  return ret;
+}
+
+user_interface::ticker_type
+user_interface::get_ticker_type() const
+{
+  return tick_type;
+}
+
 
 void
 user_interface::write_ticks()
@@ -635,7 +655,7 @@ user_interface::fatal(string const & fatal)
 {
   inform(F("fatal: %s\n"
            "this is almost certainly a bug in monotone.\n"
-           "please send this error message, the output of '%s version --full',\n"
+           "please send this error message, the output of '%s version --verbose',\n"
            "and a description of what you were doing to %s.")
          % fatal % prog_name % PACKAGE_BUGREPORT);
   global_sanity.dump_buffer();
@@ -648,7 +668,7 @@ user_interface::fatal_db(string const & fatal)
 {
   inform(F("fatal: %s\n"
            "this is almost certainly a bug in monotone.\n"
-           "please send this error message, the output of '%s version --full',\n"
+           "please send this error message, the output of '%s version --verbose',\n"
            "and a description of what you were doing to %s.\n"
            "This error appears to have been triggered by something in the\n"
            "database you were using, so please preserve it in case it can\n"
@@ -972,7 +992,8 @@ get_usage_str(options::options_type const & optset, options & opts)
   vector<string> descriptions;
   unsigned int maxnamelen;
 
-  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
+  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen,
+                                              opts.show_hidden_commands);
   return format_usage_strings(names, descriptions, maxnamelen);
 }
 
@@ -1013,10 +1034,12 @@ user_interface::inform_usage(usage const & u, options & opts)
   commands::explain_usage(u.which, opts.show_hidden_commands, usage_stream);
 }
 
-void
-user_interface::enable_timestamps()
+bool
+user_interface::enable_timestamps(bool enable)
 {
-  timestamps_enabled = true;
+  bool ret = timestamps_enabled;
+  timestamps_enabled = enable;
+  return ret;
 }
 
 // Local Variables:

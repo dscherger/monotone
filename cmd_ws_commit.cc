@@ -32,6 +32,7 @@
 #include "maybe_workspace_updater.hh"
 #include "simplestring_xform.hh"
 #include "database.hh"
+#include "date_format.hh"
 #include "roster.hh"
 #include "rev_output.hh"
 #include "vocab_cast.hh"
@@ -581,7 +582,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
     N_("Disapproves a particular revision"),
     "",
     options::opts::branch | options::opts::messages | options::opts::date |
-    options::opts::author | options::opts::maybe_auto_update)
+    options::opts::author | options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -697,20 +698,11 @@ CMD(mkdir, "mkdir", "", CMD_REF(workspace), N_("[DIRECTORY...]"),
   work.perform_additions(db, paths, false, !app.opts.no_ignore);
 }
 
-CMD(add, "add", "", CMD_REF(workspace), N_("[PATH]..."),
-    N_("Adds files to the workspace"),
-    "",
-    options::opts::unknown | options::opts::no_ignore |
-    options::opts::recursive)
+void perform_add(app_state & app,
+                 database & db,
+                 workspace & work,
+                 vector<file_path> roots)
 {
-  if (!app.opts.unknown && (args.size() < 1))
-    throw usage(execid);
-
-  database db(app);
-  workspace work(app);
-
-  vector<file_path> roots = args_to_paths(args);
-
   set<file_path> paths;
   bool add_recursive = app.opts.recursive;
   if (app.opts.unknown)
@@ -734,6 +726,48 @@ CMD(add, "add", "", CMD_REF(workspace), N_("[PATH]..."),
   work.perform_additions(db, paths, add_recursive, !app.opts.no_ignore);
 }
 
+CMD(add, "add", "", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Adds files to the workspace"),
+    "",
+    options::opts::unknown | options::opts::no_ignore |
+    options::opts::recursive)
+{
+  if (!app.opts.unknown && (args.size() < 1))
+    throw usage(execid);
+
+  database db(app);
+  workspace work(app);
+
+  vector<file_path> roots = args_to_paths(args);
+
+  perform_add(app, db, work, roots);
+}
+
+void perform_drop(app_state & app,
+                  database & db,
+                  workspace & work,
+                  vector<file_path> roots)
+{
+  set<file_path> paths;
+  if (app.opts.missing)
+    {
+      temp_node_id_source nis;
+      roster_t current_roster_shape;
+      work.get_current_roster_shape(db, nis, current_roster_shape);
+      node_restriction mask(roots,
+                            args_to_paths(app.opts.exclude_patterns),
+                            app.opts.depth,
+                            current_roster_shape, ignored_file(work));
+      work.find_missing(current_roster_shape, mask, paths);
+    }
+  else
+    {
+      paths = set<file_path>(roots.begin(), roots.end());
+    }
+
+  work.perform_deletions(db, paths,
+                             app.opts.recursive, app.opts.bookkeep_only);
+}
 CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
     N_("Drops files from the workspace"),
     "",
@@ -745,26 +779,7 @@ CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
   database db(app);
   workspace work(app);
 
-  set<file_path> paths;
-  if (app.opts.missing)
-    {
-      temp_node_id_source nis;
-      roster_t current_roster_shape;
-      work.get_current_roster_shape(db, nis, current_roster_shape);
-      node_restriction mask(args_to_paths(args),
-                            args_to_paths(app.opts.exclude_patterns),
-                            app.opts.depth,
-                            current_roster_shape, ignored_file(work));
-      work.find_missing(current_roster_shape, mask, paths);
-    }
-  else
-    {
-      vector<file_path> roots = args_to_paths(args);
-      paths = set<file_path>(roots.begin(), roots.end());
-    }
-
-  work.perform_deletions(db, paths,
-                             app.opts.recursive, app.opts.bookkeep_only);
+  perform_drop(app, db, work, args_to_paths(args));
 }
 
 
@@ -839,14 +854,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   project_t project(db);
   workspace work(app);
 
-  string date_fmt;
-  if (app.opts.format_dates)
-    {
-      if (!app.opts.date_fmt.empty())
-        date_fmt = app.opts.date_fmt;
-      else
-        app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
-    }
+  string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 
   if (!date_fmt_valid(date_fmt))
     W(F("date format '%s' cannot be used for commit") % date_fmt);
@@ -1403,18 +1411,14 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
 
   drop_attr(app, args);
 }
-
-CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
-    N_("Commits workspace changes to the database"),
-    "",
-    options::opts::branch | options::opts::message | options::opts::msgfile |
-    options::opts::date | options::opts::author | options::opts::depth |
-    options::opts::exclude)
+void perform_commit(app_state & app,
+                    database & db,
+                    workspace & work,
+                    project_t & project,
+                    commands::command_id const & execid,
+                    vector<file_path> const & paths)
 {
-  database db(app);
   key_store keys(app);
-  workspace work(app);
-  project_t project(db);
 
   utf8 log_message("");
   bool log_message_given;
@@ -1424,19 +1428,12 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   temp_node_id_source nis;
   cset excluded;
 
-  string date_fmt;
-  if (app.opts.format_dates)
-    {
-      if (!app.opts.date_fmt.empty())
-        date_fmt = app.opts.date_fmt;
-      else
-        app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
-    }
+  string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
 
-  node_restriction mask(args_to_paths(args),
+  node_restriction mask(paths,
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
                         old_rosters, new_roster, ignored_file(work));
@@ -1718,6 +1715,19 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   }
 }
 
+CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Commits workspace changes to the database"),
+    "",
+    options::opts::branch | options::opts::messages |
+    options::opts::date | options::opts::author | options::opts::depth |
+    options::opts::exclude)
+{
+  database db(app);
+  workspace work(app);
+  project_t project(db);
+  perform_commit(app, db, work, project, execid, args_to_paths(args));
+}
+
 CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
     N_("Sets up a new workspace directory"),
     N_("If no directory is specified, uses the current directory."),
@@ -1769,7 +1779,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   N_("Imports the contents of a directory into a branch"),
   "",
   options::opts::branch | options::opts::revision |
-  options::opts::message | options::opts::msgfile |
+  options::opts::messages |
   options::opts::dryrun |
   options::opts::no_ignore | options::opts::exclude |
   options::opts::author | options::opts::date)
@@ -1835,14 +1845,13 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
       work.put_work_rev(rev);
 
       // prepare stuff for 'add' and so on.
-      args_vector empty_args;
       options save_opts;
       // add --unknown
       save_opts.exclude_patterns = app.opts.exclude_patterns;
       app.opts.exclude_patterns = args_vector();
       app.opts.unknown = true;
       app.opts.recursive = true;
-      process(app, make_command_id("workspace add"), empty_args);
+      perform_add(app, db, work, vector<file_path>());
       app.opts.recursive = false;
       app.opts.unknown = false;
       app.opts.exclude_patterns = save_opts.exclude_patterns;
@@ -1850,13 +1859,15 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
       // drop --missing
       save_opts.no_ignore = app.opts.no_ignore;
       app.opts.missing = true;
-      process(app, make_command_id("workspace drop"), empty_args);
+      perform_drop(app, db, work, vector<file_path>());
       app.opts.missing = false;
       app.opts.no_ignore = save_opts.no_ignore;
 
       // commit
       if (!app.opts.dryrun)
-        process(app, make_command_id("workspace commit"), empty_args);
+        perform_commit(app, db, work, project,
+                       make_command_id("workspace commit"),
+                       vector<file_path>());
     }
   catch (...)
     {

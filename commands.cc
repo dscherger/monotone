@@ -13,6 +13,7 @@
 #include "simplestring_xform.hh"
 
 using std::map;
+using std::make_pair;
 using std::set;
 using std::string;
 using std::vector;
@@ -55,6 +56,17 @@ namespace commands
               (*iter).second->children().insert((*iter).first);
           }
       }
+  }
+
+  typedef std::map<command const *, cmdpreset const *> presetter_map_t;
+  presetter_map_t * presetter_map = 0;
+  cmdpreset::~cmdpreset() { }
+  void cmdpreset::register_for(command const * cmd)
+  {
+    if (!presetter_map)
+      presetter_map = new presetter_map_t;
+
+    presetter_map->insert(make_pair(cmd, this));
   }
 
   //
@@ -208,6 +220,15 @@ namespace commands
   command::use_workspace_options(void) const
   {
     return m_use_workspace_options;
+  }
+
+  void
+  command::preset_options(options & opts) const
+  {
+    I(presetter_map);
+    presetter_map_t::const_iterator i = presetter_map->find(this);
+    if (i != presetter_map->end())
+      i->second->preset(opts);
   }
 
   command::children_set &
