@@ -71,6 +71,10 @@ Xxx Xxx 99 99:99:99 UTC 2010
           of a revision in which all but one branch have been suspended
           (fixes monotone bug #29843)
 
+        - The annotate command no longer fails if it should print out
+          empty or untrusted date cert values
+          (fixes monotone bug #30150)
+
         - monotone now tries harder to find the cancel hint in a commit
           message and only aborts if it can't find it anywhere
           (fixes monotone bug #30215)
