@@ -393,24 +393,9 @@ OPTION(diff_options, no_show_encloser, false, "no-show-encloser",
 }
 #endif
 
-OPTVAR(au_diff_options, bool, without_header, false);
-OPTVAR(au_diff_options, bool, with_header, false);
-OPTION(au_diff_options, without_header, false, "without-header",
-       gettext_noop("show the matching cset in the diff header"))
-#ifdef option_bodies
-{
-  with_header = false;
-  without_header = true;
-}
-#endif
-OPTION(au_diff_options, with_header, false, "with-header",
-       gettext_noop("do not show the matching cset in the diff header"))
-#ifdef option_bodies
-{
-  with_header = true;
-  without_header = false;
-}
-#endif
+OPTSET_REL(au_diff_options, with_header)
+SIMPLE_OPTION(with_header, "with-header/without-header", bool,
+              gettext_noop("show the matching cset in the diff header"))
 
 SIMPLE_OPTION(diffs, "diffs/no-diffs", bool, gettext_noop("print diffs along with logs"))
 

@@ -115,6 +115,8 @@ namespace commands {
     I(cmd);
     options::opts::all_options().instantiate(&app.opts).reset();
 
+    cmd->preset_options(app.opts);
+
     option::concrete_option_set optset
       = (options::opts::globals() | cmd->opts())
       .instantiate(&app.opts);

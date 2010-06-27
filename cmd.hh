@@ -107,7 +107,7 @@ namespace commands
   {
   public:
     void register_for(command const * cmd);
-    virtual void preset(options const & opts) const = 0;
+    virtual void preset(options & opts) const = 0;
     virtual ~cmdpreset();
   };
 
@@ -194,6 +194,7 @@ namespace commands { \
       cmdpreset_ ## C () { register_for(CMD_REF(C)); }          \
       virtual void preset(options & opts) const;                \
     };                                                          \
+    cmdpreset_ ## C C ## _cmdpreset;                            \
   }                                                             \
   void commands::cmdpreset_ ## C ::preset(options & opts) const
   

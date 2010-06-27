@@ -417,6 +417,10 @@ void dump_header(std::string const & revs,
   out << "#\n";
 }
 
+CMD_PRESET_OPTIONS(diff)
+{
+  opts.with_header = true;
+}
 CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
     N_("Shows current differences"),
     N_("Compares the current tree with the files in the repository and "
@@ -441,7 +445,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
 
   prepare_diff(app, db, old_roster, new_roster, args, old_from_db, new_from_db, revs);
 
-  if (!app.opts.without_header)
+  if (app.opts.with_header)
     {
       dump_header(revs, old_roster, new_roster, cout, true);
     }
