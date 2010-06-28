@@ -2344,9 +2344,10 @@ CMD_FWD_DECL(automate);
 void automate_stdio_helpers::
 automate_stdio_shared_setup(app_state & app,
                             vector<string> const & cmdline,
-                            vector<pair<string, string> > const & params,
+                            vector<pair<string, string> > const * const params,
                             commands::command_id & id,
-                            commands::automate const * & acmd)
+                            commands::automate const * & acmd,
+                            force_ticker_t ft)
 {
   using commands::command_id;
   using commands::command;
@@ -2395,7 +2396,7 @@ automate_stdio_shared_setup(app_state & app,
                             commands::command_id() /* doesn't matter */,
                             cmd, my_id_for_hook, 2,
                             args,
-                            &params);
+                            params);
 
   // disable user prompts, f.e. for password decryption
   app.opts.non_interactive = true;
@@ -2403,7 +2404,8 @@ automate_stdio_shared_setup(app_state & app,
 
   // set a fixed ticker type regardless what the user wants to
   // see, because anything else would screw the stdio-encoded output
-  app.opts.ticker = "stdio";
+  if (ft == force_stdio_ticker)
+    app.opts.ticker = "stdio";
 }
 
 std::pair<int, string> automate_stdio_helpers::
@@ -2426,7 +2428,7 @@ automate_stdio_shared_body(app_state & app,
     {
       if (init_fn)
         init_fn();
-      automate_stdio_shared_setup(app, cmdline, params, id, acmd);
+      automate_stdio_shared_setup(app, cmdline, &params, id, acmd);
     }
   catch (option::option_error & e)
     {

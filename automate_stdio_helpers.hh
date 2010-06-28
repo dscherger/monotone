@@ -23,14 +23,16 @@
 class automate_stdio_helpers
 {
 public:
+  enum force_ticker_t { force_stdio_ticker, no_force_stdio_ticker };
   static void
   automate_stdio_shared_setup(app_state & app,
                               std::vector<std::string> const & cmdline,
                               std::vector<std::pair<std::string,std::string> >
-                              const & params,
+                              const * const params,
                               commands::command_id & id,
                               /* reference-to-pointer here is intentional */
-                              commands::automate const * & acmd);
+                              commands::automate const * & acmd,
+                              force_ticker_t ft = force_stdio_ticker);
   static std::pair<int, std::string>
   automate_stdio_shared_body(app_state & app,
                              std::vector<std::string> const & cmdline,

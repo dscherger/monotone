@@ -305,7 +305,6 @@ LUAEXT(change_workspace, )
 
 LUAEXT(mtn_automate, )
 {
-  args_vector args;
   std::stringstream output;
   bool result = true;
   std::stringstream & os = output;
@@ -329,55 +328,22 @@ LUAEXT(mtn_automate, )
 
       L(FL("Starting call to mtn_automate lua hook"));
 
+      vector<string> args;
       for (int i=1; i<=n; i++)
         {
-          arg_type next_arg(luaL_checkstring(LS, i), origin::user);
-          L(FL("arg: %s")%next_arg());
+          string next_arg(luaL_checkstring(LS, i));
+          L(FL("arg: %s") % next_arg);
           args.push_back(next_arg);
         }
 
       commands::command_id id;
-      {
-        for (args_vector::const_iterator iter = args.begin();
-             iter != args.end(); iter++)
-          id.push_back(*iter);
+      commands::automate const * cmd;
 
-        E(!id.empty(), origin::user, F("no command found"));
+      automate_stdio_helpers::
+        automate_stdio_shared_setup(*app_p, args, 0,
+                                    id, cmd,
+                                    automate_stdio_helpers::no_force_stdio_ticker);
 
-        set< commands::command_id > matches =
-          CMD_REF(automate)->complete_command(id);
-
-        if (matches.empty())
-          {
-            E(false, origin::user, F("no completions for this command"));
-          }
-        else if (matches.size() > 1)
-          {
-            E(false, origin::user,
-              F("multiple completions possible for this command"));
-          }
-
-        id = *matches.begin();
-      }
-      commands::command const * cmd = CMD_REF(automate)->find_command(id);
-      I(cmd != NULL);
-
-
-      commands::command_id my_id_for_hook = id;
-      my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automate", origin::internal));
-      // group name
-      my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automation", origin::internal));
-
-      commands::reapply_options(*app_p,
-                                app_p->reset_info.cmd, commands::command_id() /*doesn't matter*/,
-                                cmd, my_id_for_hook, 2,
-                                args);
-
-      // disable user prompts, for example for password decryption
-      app_p->opts.non_interactive = true;
-
-
-      args_vector & parsed_args = app_p->opts.args;
 
       commands::automate const * acmd
         = dynamic_cast< commands::automate const * >(cmd);
