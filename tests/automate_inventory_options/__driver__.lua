@@ -17,6 +17,7 @@ check(get("expected-no-unchanged.stdout"))
 check(get("expected-renames-both.stdout"))
 check(get("expected-renames-source.stdout"))
 check(get("expected-renames-target.stdout"))
+check(get("expected-renames-target-no-unchanged.stdout"))
 check(get("expected-renames-target-no-ignored.stdout"))
 check(get("expected-renames-target-no-unknown.stdout"))
 
@@ -94,7 +95,7 @@ check(readfile("expected-renames-target.stdout") == readfile("stdout"))
 -- marked as changed
 check(mtn("automate", "inventory", "target", "--no-corresponding-renames", "--no-unchanged"), 0, true, false)
 canonicalize("stdout")
-check(readfile("expected-renames-target.stdout") == readfile("stdout"))
+check(readfile("expected-renames-target-no-unchanged.stdout") == readfile("stdout"))
 
 check(mtn("automate", "inventory", "target", "--no-corresponding-renames", "--no-ignored"), 0, true, false)
 canonicalize("stdout")

@@ -33,7 +33,7 @@ class outdated_indicator
 public:
   outdated_indicator();
   explicit outdated_indicator(boost::shared_ptr<outdated_indicator_factory_impl> p);
-  bool outdated();
+  bool outdated() const;
 };
 
 

@@ -25,6 +25,7 @@
 #include "work.hh"
 #include "safe_map.hh"
 #include "app_state.hh"
+#include "maybe_workspace_updater.hh"
 #include "project.hh"
 #include "simplestring_xform.hh"
 #include "keys.hh"
@@ -135,10 +136,27 @@ pick_branch_for_update(options & opts, database & db,
   db.get_revision_certs(chosen_rid, branch_cert_name, certs);
   db.erase_bogus_certs(project, certs);
 
-  set< branch_name > branches;
+  set<branch_name> branches;
   for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); i++)
     branches.insert(typecast_vocab<branch_name>(i->value));
+
+  if (!opts.ignore_suspend_certs)
+    {
+      vector<cert> suspend_certs;
+      db.get_revision_certs(chosen_rid, suspend_cert_name, suspend_certs);
+
+      for (vector<cert>::const_iterator i = suspend_certs.begin();
+           i != suspend_certs.end(); i++)
+        {
+          branch_name susp_branch = typecast_vocab<branch_name>(i->value);
+          set<branch_name>::iterator pos = branches.find(susp_branch);
+          if (pos != branches.end())
+            {
+              branches.erase(pos);
+            }
+        }
+    }
 
   if (branches.find(opts.branch) != branches.end())
     {
@@ -166,7 +184,6 @@ pick_branch_for_update(options & opts, database & db,
         }
       else
         {
-          I(branches.empty());
           W(F("target revision not in any branch\n"
               "next commit will use branch %s")
             % opts.branch);
@@ -175,7 +192,8 @@ pick_branch_for_update(options & opts, database & db,
   return switched_branch;
 }
 
-static void
+// also used from maybe_workspace_updater.cc
+void
 update(app_state & app,
        args_vector const & args)
 {
@@ -241,7 +259,7 @@ update(app_state & app,
       P(F("already up to date at %s") % old_rid);
       // do still switch the workspace branch, in case they have used
       // update to switch branches.
-      work.set_options(app.opts, true);
+      work.set_options(app.opts, app.lua, true);
       return;
     }
 
@@ -331,7 +349,7 @@ update(app_state & app,
   work.put_update_id(old_rid);
   work.put_work_rev(remaining);
   work.maybe_update_inodeprints(db);
-  work.set_options(app.opts, true);
+  work.set_options(app.opts, app.lua, true);
 
   if (switched_branch)
     P(F("switched branch; next commit will use branch %s") % app.opts.branch());
@@ -494,11 +512,14 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     N_("Merges unmerged heads of a branch"),
     "",
     options::opts::branch | options::opts::date | options::opts::author |
-    options::opts::messages | options::opts::resolve_conflicts_opts)
+    options::opts::messages | options::opts::resolve_conflicts_opts |
+    options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
   project_t project(db);
+
+  maybe_workspace_updater updater(app, project);
 
   if (!args.empty())
     throw usage(execid);
@@ -522,7 +543,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
       % heads.size() % app.opts.branch);
 
   // avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   size_t pass = 1, todo = heads.size() - 1;
 
@@ -563,7 +584,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   if (heads.size() > 1)
     P(F("note: branch '%s' still has %d heads; run merge again") % app.opts.branch % heads.size());
 
-  P(F("note: your workspaces have not been updated"));
+  updater.maybe_do_update();
 }
 
 CMD(propagate, "propagate", "", CMD_REF(tree),
@@ -611,7 +632,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
     N_("Merges one branch into a subdirectory in another branch"),
     "",
     options::opts::date | options::opts::author | options::opts::messages |
-    options::opts::resolve_conflicts_opts)
+    options::opts::resolve_conflicts_opts | options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -620,6 +641,8 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
 
   if (args.size() != 3)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   project.get_branch_heads(typecast_vocab<branch_name>(idx(args, 0)), src_heads,
                            app.opts.ignore_suspend_certs);
@@ -647,7 +670,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
       return;
     }
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   P(F("propagating %s -> %s") % idx(args,0) % idx(args,1));
   P(F("[left]  %s") % *src_i);
@@ -756,6 +779,8 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
       guard.commit();
       P(F("[merged] %s") % merged);
     }
+
+  updater.maybe_do_update();
 }
 
 CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
@@ -881,7 +906,8 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
     N_("The results of the merge are placed on the branch specified by "
        "DEST-BRANCH."),
     options::opts::date | options::opts::author |
-    options::opts::messages | options::opts::resolve_conflicts_opts)
+    options::opts::messages | options::opts::resolve_conflicts_opts |
+    options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -891,6 +917,8 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
 
   if (args.size() != 3)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   complete(app.opts, app.lua, project, idx(args, 0)(), left);
   complete(app.opts, app.lua, project, idx(args, 1)(), right);
@@ -907,10 +935,12 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
     % right % left);
 
   // avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   merge_two(app.opts, app.lua, project, keys,
             left, right, branch, string("explicit merge"),
             std::cout, false);
+
+  updater.maybe_do_update();
 }
 
 namespace
@@ -1112,7 +1142,7 @@ static void get_conflicts_rids(args_vector const & args,
 //   two heads, prints an error message to stderr and exits with status 1.
 //
 CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
-             N_("Shows the conflicts between two revisions."),
+             N_("Shows the conflicts between two revisions"),
              N_("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
                 "first two heads that would be chosen by the 'merge' command."),
              options::opts::branch | options::opts::ignore_suspend_certs)
@@ -1127,7 +1157,7 @@ CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
 
 CMD(store, "store", "", CMD_REF(conflicts),
     "[LEFT_REVID RIGHT_REVID]",
-    N_("Store the conflicts from merging two revisions."),
+    N_("Store the conflicts from merging two revisions"),
     N_("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
        "first two heads that would be chosen by the 'merge' command. If "
        "--conflicts-file is not given, '_MTN/conflicts' is used."),

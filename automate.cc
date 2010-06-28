@@ -2114,7 +2114,7 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
   E(db.revision_exists(rid), origin::user,
     F("no such revision '%s'") % hrid);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   project.put_cert(keys, rid,
                    typecast_vocab<cert_name>(idx(args, 1)),

@@ -13,30 +13,30 @@ revs = {}
 -- make and tag revision 1
 
 check(mtn("add", "file1"), 0, false, false)
-commit()
+commit("branch1")
 revs[1] = base_revision()
 check(mtn("tag", revs[1], "tag1"), 0, false, false)
 
 -- make and tag revision 2
 
 check(mtn("add", "file2"), 0, false, false)
-commit()
+commit("branch2")
 revs[2] = base_revision()
 check(mtn("tag", revs[2], "tag2"), 0, false, false)
 
 -- make and tag revision 3
 
 check(mtn("add", "file3"), 0, false, false)
-commit()
+commit("branch3")
 revs[3] = base_revision()
 check(mtn("tag", revs[3], "tag3"), 0, true, true)
 
 -- check tags created above
 
 check(mtn("ls", "tags"), 0, true, false)
-check(qgrep("tag1", "stdout"))
-check(qgrep("tag2", "stdout"))
-check(qgrep("tag3", "stdout"))
+check(qgrep("tag1 .* branch1 ", "stdout"))
+check(qgrep("tag2 .* branch2 ", "stdout"))
+check(qgrep("tag3 .* branch3 ", "stdout"))
 
 -- make sure 'ls tags' output is sorted
 if existsonpath("sort") then

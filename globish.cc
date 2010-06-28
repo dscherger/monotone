@@ -326,6 +326,26 @@ globish::operator()() const
   return decode(compiled_pattern.begin(), compiled_pattern.end());
 }
 
+bool
+globish::contains_meta_chars() const
+{
+  string::const_iterator p = compiled_pattern.begin();
+  for (; p != compiled_pattern.end(); p++)
+    switch (*p)
+      {
+      case META_STAR:
+      case META_QUES:
+      case META_CC_BRA:
+      case META_CC_KET:
+      case META_CC_INV_BRA:
+      case META_ALT_BRA:
+      case META_ALT_KET:
+      case META_ALT_OR:
+          return true;
+      }
+  return false;
+}
+
 template <> void dump(globish const & g, string & s)
 {
   s = g();

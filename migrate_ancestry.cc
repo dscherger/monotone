@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -16,6 +17,7 @@
 #include "database.hh"
 #include "graph.hh"
 #include "key_store.hh"
+#include "lazy_rng.hh"
 #include "legacy.hh"
 #include "outdated_indicator.hh"
 #include "simplestring_xform.hh"
@@ -199,7 +201,7 @@ void anc_graph::write_certs()
       {
         char buf[constants::epochlen_bytes];
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-        keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
+        lazy_rng::get().randomize(reinterpret_cast<Botan::byte *>(buf),
                                  constants::epochlen_bytes);
 #else
         Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
@@ -986,31 +988,58 @@ regenerate_caches(database & db)
 
   db.ensure_open_for_cache_reset();
 
-  transaction_guard guard(db);
+  {
+    transaction_guard guard(db);
 
-  db.delete_existing_rosters();
-  db.delete_existing_heights();
+    db.delete_existing_rosters();
+    db.delete_existing_heights();
 
-  vector<revision_id> sorted_ids;
-  allrevs_toposorted(db, sorted_ids);
+    vector<revision_id> sorted_ids;
+    allrevs_toposorted(db, sorted_ids);
 
-  ticker done(_("regenerated"), "r", 5);
-  done.set_total(sorted_ids.size());
+    ticker done(_("regenerated"), "r", 5);
+    done.set_total(sorted_ids.size());
 
-  for (std::vector<revision_id>::const_iterator i = sorted_ids.begin();
-       i != sorted_ids.end(); ++i)
-    {
-      revision_t rev;
-      revision_id const & rev_id = *i;
-      db.get_revision(rev_id, rev);
-      db.put_roster_for_revision(rev_id, rev);
-      db.put_height_for_revision(rev_id, rev);
-      ++done;
-    }
+    for (std::vector<revision_id>::const_iterator i = sorted_ids.begin();
+         i != sorted_ids.end(); ++i)
+      {
+        revision_t rev;
+        revision_id const & rev_id = *i;
+        db.get_revision(rev_id, rev);
+        db.put_roster_for_revision(rev_id, rev);
+        db.put_height_for_revision(rev_id, rev);
+        ++done;
+      }
 
-  guard.commit();
+    guard.commit();
+  }
 
   P(F("finished regenerating cached rosters and heights"));
+
+  P(F("regenerating cached branches"));
+  {
+    transaction_guard guard(db);
+
+    db.delete_existing_branch_leaves();
+
+    vector<cert> all_branch_certs;
+    db.get_revision_certs(branch_cert_name, all_branch_certs);
+    set<string> seen_branches;
+    for (vector<cert>::const_iterator i = all_branch_certs.begin(); i != all_branch_certs.end(); ++i)
+      {
+        string const name = i->value();
+
+        std::pair<set<string>::iterator, bool> inserted = seen_branches.insert(name);
+
+        if (inserted.second)
+          {
+            db.recalc_branch_leaves (i->value);
+          }
+      }
+    guard.commit();
+  }
+  P(F("finished regenerating cached branches"));
+
 }
 
 // Local Variables:

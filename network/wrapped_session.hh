@@ -73,6 +73,7 @@ public:
 
   virtual void note_bytes_in(int count) { return; }
   virtual void note_bytes_out(int count) { return; }
+  virtual ~wrapped_session();
 };
 
 #endif

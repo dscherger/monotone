@@ -214,6 +214,7 @@ dl dd ol {
 
 dl dd dl {
     font-size: 0.7692em;
+    margin-top: 1em;
 }
 
 dl dt + dd {

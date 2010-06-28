@@ -21,7 +21,7 @@ srv:pull("testbranch", nil, 1)
 check(mtn2("pubkey", "foo@bar"), 1, true, false)
 
 -- But if we then clear the client's known_hosts entry, it should be fine
-check(mtn2("unset", "known-servers", srv.address), 0, false, false)
+check(mtn2("unset", "known-servers", srv.url), 0, false, false)
 
 -- Now it should succeed
 srv:pull("testbranch")

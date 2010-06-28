@@ -63,7 +63,7 @@ MOST_SOURCES = 								\
 	migration.hh migrate_schema.cc migrate_ancestry.cc		\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
-	netsync.cc            						\
+	netsync.hh netsync.cc            				\
 	network/automate_session.hh network/automate_session.cc		\
 	network/connection_info.hh network/connection_info.cc		\
 	network/listener_base.hh network/listener_base.cc		\
@@ -95,6 +95,7 @@ MOST_SOURCES = 								\
 	restrictions.cc	restrictions.hh					\
 	hmac.cc hmac.hh							\
 	string_queue.hh							\
+	maybe_workspace_updater.cc maybe_workspace_updater.hh		\
 	merge_roster.cc merge_conflict.cc merge_roster.hh		\
 	merge_content.cc merge_3way.cc merge_content.hh			\
 	legacy.cc legacy.hh uri.cc uri.hh				\
@@ -103,6 +104,7 @@ MOST_SOURCES = 								\
 	sha1.cc								\
 	pcrewrap.cc pcrewrap.hh						\
 	rev_height.cc rev_height.hh					\
+	rev_output.cc rev_output.hh					\
 	asciik.cc asciik.hh						\
 	dates.cc dates.hh						\
 									\
@@ -143,14 +145,14 @@ UNIX_PLATFORM_SOURCES =							\
 	unix/process.cc unix/terminal.cc unix/inodeprint.cc		\
 	unix/fs.cc unix/make_io_binary.cc unix/os_strerror.cc           \
 	unix/cputime.cc unix/ssh_agent_platform.cc			\
-	unix/ssh_agent_platform.hh
+	unix/ssh_agent_platform.hh unix/parse_date.cc
 
 WIN32_PLATFORM_SOURCES =						\
 	win32/read_password.cc win32/get_system_flavour.cc		\
 	win32/process.cc win32/terminal.cc win32/inodeprint.cc		\
 	win32/fs.cc win32/make_io_binary.cc win32/os_strerror.cc	\
 	win32/cputime.cc win32/ssh_agent_platform.cc			\
-	win32/ssh_agent_platform.hh
+	win32/ssh_agent_platform.hh win32/parse_date.cc
 
 # these files (part of the main program) contain code subject to unit testing
 
@@ -192,7 +194,7 @@ UNIT_TESTERS_PRIV =							\
 UNIT_TEST_SUPPORT =							\
 	constants.cc file_io.cc gzip.cc hmac.cc lcs.cc merkle_tree.cc   \
 	randomizer.cc randomizer.hh roster_delta.cc roster_tests.hh	\
-	sanity.cc specialized_lexical_cast.cc
+	sanity.cc specialized_lexical_cast.cc pcrewrap.cc
 
 # primaries
 
@@ -209,7 +211,8 @@ unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
 	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
 
 tester_SOURCES = tester.cc transforms.cc gzip.cc \
-	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc
+	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc \
+	specialized_lexical_cast.cc
 nodist_tester_SOURCES = testlib.cc
 
 txt2c_SOURCES = txt2c.cc
@@ -328,7 +331,8 @@ EXTRA_DIST =								\
 	audit-includes do-editor-vars.sh doxygen.cfg			\
 	$(wildcard $(srcdir)/m4/*.m4) monotone.html images		\
 	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
-	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
+	win32/monotone.iss.in win32/modpath.iss win32/monotone.bmp	\
+	win32/dlls.sh                                                   \
 									\
 	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
 	figures/monotone-logo.svg figures/oo-figures.sxd		\
@@ -481,6 +485,30 @@ monotone-$(PACKAGE_VERSION).dmg: monotone-$(PACKAGE_VERSION).pkg
 	hdiutil create -srcfolder "$(top_builddir)/dmg_root" \
 		"$@" -format UDZO -scrub -imagekey zlib-level=9 \
 		-volname monotone-$(PACKAGE_VERSION)
+
+# build win32 installer using INNO setup
+ISCC=@ISCC@
+
+win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe 
+
+monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
+	$(ISCC) monotone.iss
+
+mtn-stripped.exe: mtn.exe
+	strip $< -o $@
+
+dlls.iss: mtn-stripped.exe ${top_srcdir}/Makefile.am
+	rm -f $@
+	for DLL in $$( ${top_srcdir}/win32/dlls.sh mtn-stripped.exe | xargs cmd //c echo) ; do \
+	    echo "Source: \"$$DLL\"; DestDir: \"{app}\"" >> $@ ; \
+	done
+
+linguas.iss: ${top_srcdir}/Makefile.am
+	rm -rf $@
+	for LANG in $(INST_LINGUAS) ; do \
+		echo "Source: \"{#BUILDDIR}\\$${LANG}.gmo\"; DestDir: \"{app}\\locale\\$${LANG}\\LC_MESSAGES\"; DestName: \"monotone.mo\"; Flags: ignoreversion" >> $@ ; \
+	done
+
 
 # testsuite stuff (could this possibly be more ugly?)  To get
 # parallelism, we cannot use Automake's TESTS feature at all.  The

@@ -11,6 +11,7 @@
 #include "base.hh"
 #include "dates.hh"
 #include "sanity.hh"
+#include "platform.hh"
 
 #include <ctime>
 #include <climits>
@@ -50,6 +51,9 @@
 #undef SEC
 #undef MILLISEC
 
+using std::localtime;
+using std::mktime;
+using std::numeric_limits;
 using std::ostream;
 using std::string;
 using std::time_t;
@@ -143,7 +147,7 @@ static void
 our_gmtime(s64 ts, broken_down_time & tb)
 {
   // validate our assumptions about which basic type is u64 (see above).
-  I(PROBABLE_S64_MAX == std::numeric_limits<s64>::max());
+  I(PROBABLE_S64_MAX == numeric_limits<s64>::max());
   I(LATEST_SUPPORTED_DATE < PROBABLE_S64_MAX);
 
   I(valid_ms_count(ts));
@@ -312,7 +316,8 @@ date_t::date_t(int year, int month, int day,
   broken_down_time t;
   t.millisec = millisec;
   t.sec = sec;
-  t.min = min;  t.hour = hour;
+  t.min = min;
+  t.hour = hour;
   t.day = day;
   t.month = month;
   t.year = year;
@@ -327,7 +332,7 @@ date_t
 date_t::now()
 {
   time_t t = std::time(0);
-  s64 tu = s64(t) * 1000 + get_epoch_offset();
+  s64 tu = MILLISEC(t) + get_epoch_offset();
   E(valid_ms_count(tu), origin::system,
     F("current date '%s' is outside usable range\n"
       "(your system clock may not be set correctly)")
@@ -363,8 +368,41 @@ dump(date_t const & d, string & s)
 string
 date_t::as_formatted_localtime(string const & fmt) const
 {
-  time_t t(d/1000 - get_epoch_offset());
-  tm tb(*std::localtime(&t));
+  L(FL("formatting date '%s' with format '%s'") % *this % fmt);
+
+  // note that the time_t value here may underflow or overflow if our date
+  // is outside of the representable range. for 32 bit time_t's the earliest
+  // representable time is 1901-12-13 20:45:52 UTC and the latest
+  // representable time is 2038-01-19 03:14:07 UTC. assert that the value is
+  // within range for the current time_t type so that localtime doesn't
+  // produce a bad result.
+
+  s64 seconds = d/1000 - get_epoch_offset();
+
+  L(FL("%s seconds UTC since unix epoch") % seconds);
+
+  E(seconds >= numeric_limits<time_t>::min(), origin::user,
+    F("date '%s' is out of range and cannot be formatted")
+    % as_iso_8601_extended());
+
+  E(seconds <= numeric_limits<time_t>::max(), origin::user,
+    F("date '%s' is out of range and cannot be formatted")
+    % as_iso_8601_extended());
+
+  time_t t(seconds); // seconds since unix epoch in UTC
+  tm tb(*localtime(&t)); // converted to local timezone values
+
+  L(FL("localtime %4s/%02s/%02s %02s:%02s:%02s WD %s YD %s DST %d")
+    % (tb.tm_year + 1900)
+    % (tb.tm_mon + 1)
+    % tb.tm_mday
+    % tb.tm_hour
+    % tb.tm_min
+    % tb.tm_sec
+    % tb.tm_wday
+    % tb.tm_yday
+    % tb.tm_isdst);
+
   char buf[128];
 
   // Poison the buffer so we can tell whether strftime() produced
@@ -374,7 +412,11 @@ date_t::as_formatted_localtime(string const & fmt) const
   size_t wrote = strftime(buf, sizeof buf, fmt.c_str(), &tb);
 
   if (wrote > 0)
-    return string(buf); // yay, it worked
+    {
+      string formatted(buf);
+      L(FL("formatted date '%s'") % formatted);
+      return formatted; // yay, it worked
+    }
 
   if (wrote == 0 && buf[0] == '\0') // no output
     {
@@ -391,6 +433,72 @@ date_t::as_formatted_localtime(string const & fmt) const
     F("date '%s' is too long when formatted using '%s'"
       " (the result must fit in %d characters)")
     % (sizeof buf - 1));
+}
+
+date_t
+date_t::from_formatted_localtime(string const & s, string const & fmt)
+{
+  tm tb;
+  memset(&tb, 0, sizeof(tb));
+
+  L(FL("parsing date '%s' with format '%s'") % s % fmt);
+
+  // get local timezone values
+  parse_date(s, fmt, &tb);
+
+  // strptime does *not* set the tm_isdst field in the broken down time
+  // struct. setting it to -1 is apparently the way to tell mktime to
+  // determine whether DST is in effect or not.
+
+  tb.tm_isdst = -1;
+
+  L(FL("localtime %4s/%02s/%02s %02s:%02s:%02s WD %s YD %s DST %d")
+    % (tb.tm_year + 1900)
+    % (tb.tm_mon + 1)
+    % tb.tm_mday
+    % tb.tm_hour
+    % tb.tm_min
+    % tb.tm_sec
+    % tb.tm_wday
+    % tb.tm_yday
+    % tb.tm_isdst);
+
+  // note that the time_t value here may underflow or overflow if our date
+  // is outside of the representable range. for 32 bit time_t's the earliest
+  // representable time is 1901-12-13 20:45:52 UTC and the latest
+  // representable time is 2038-01-19 03:14:07 UTC. mktime seems to detect
+  // this and return -1 for values it cannot handle, which strptime will
+  // happily produce.
+
+  time_t t = mktime(&tb); // convert to seconds since unix epoch in UTC
+
+  L(FL("%s seconds UTC since unix epoch") % t);
+
+  // mktime may return a time_t that has the value -1 to indicate an error.
+  // however this is also the valid date 1969-12-31 23:59:59. so we ignore this
+  // error indication and convert the resulting time_t back to a struct tm
+  // for comparison with the input to mktime to detect out of range errors.
+
+  tm check(*localtime(&t)); // back to local timezone values
+
+  E(tb.tm_sec   == check.tm_sec &&
+    tb.tm_min   == check.tm_min &&
+    tb.tm_hour  == check.tm_hour &&
+    tb.tm_mday  == check.tm_mday &&
+    tb.tm_mon   == check.tm_mon &&
+    tb.tm_year  == check.tm_year &&
+    tb.tm_wday  == check.tm_wday &&
+    tb.tm_yday  == check.tm_yday &&
+    tb.tm_isdst == check.tm_isdst,
+    origin::user,
+    F("date '%s' is out of range and cannot be parsed")
+    % s);
+
+  date_t date(MILLISEC(t) + get_epoch_offset());
+
+  L(FL("parsed date '%s'") % date);
+
+  return date;
 }
 
 s64

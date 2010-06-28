@@ -20,6 +20,7 @@
 #include "project.hh"
 #include "keys.hh"
 #include "key_store.hh"
+#include "maybe_workspace_updater.hh"
 #include "transforms.hh"
 #include "vocab_cast.hh"
 
@@ -71,7 +72,9 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
 
   key_identity_info identity;
   project_t project(db);
-  project.get_key_identity(keys, app.lua, idx(args, 0), identity);
+  project.get_key_identity(keys, app.lua,
+                           typecast_vocab<external_key_name>(idx(args, 0)),
+                           identity);
 
   if (db.database_specified())
     {
@@ -116,7 +119,9 @@ CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
   project_t project(db);
   key_identity_info identity;
 
-  project.get_key_identity(keys, app.lua, idx(args, 0), identity);
+  project.get_key_identity(keys, app.lua,
+                           typecast_vocab<external_key_name>(idx(args, 0)),
+                           identity);
 
   keys.change_key_passphrase(identity.id);
   P(F("passphrase changed"));
@@ -169,9 +174,10 @@ CMD(ssh_agent_add, "ssh_agent_add", "", CMD_REF(key_and_cert), "",
 }
 
 CMD(cert, "cert", "", CMD_REF(key_and_cert),
-    N_("REVISION CERTNAME [CERTVAL]"),
-    N_("Creates a certificate for a revision"),
-    "",
+    N_("SELECTOR CERTNAME [CERTVAL]"),
+    N_("Creates a certificate for a revision or set of revisions"),
+    N_("Creates a certificate with the given name and value on each revision "
+       "that matches the given selector"),
     options::opts::none)
 {
   database db(app);
@@ -183,12 +189,12 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
 
   transaction_guard guard(db);
 
-  revision_id rid;
-  complete(app.opts, app.lua,  project, idx(args, 0)(), rid);
+  set<revision_id> revisions;
+  complete(app.opts, app.lua,  project, idx(args, 0)(), revisions);
 
   cert_name cname = typecast_vocab<cert_name>(idx(args, 1));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   cert_value val;
   if (args.size() == 3)
@@ -199,8 +205,11 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
       read_data_stdin(dat);
       val = typecast_vocab<cert_value>(dat);
     }
-
-  project.put_cert(keys, rid, cname, val);
+  for (set<revision_id>::const_iterator r = revisions.begin();
+       r != revisions.end(); ++r)
+    {
+      project.put_cert(keys, *r, cname, val);
+    }
   guard.commit();
 }
 
@@ -232,7 +241,9 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
   for (unsigned int i = 3; i != args.size(); ++i)
     {
       key_identity_info identity;
-      project.get_key_identity(keys, app.lua, idx(args, i), identity);
+      project.get_key_identity(keys, app.lua,
+                               typecast_vocab<external_key_name>(idx(args, i)),
+                               identity);
       signers.insert(identity);
     }
 
@@ -274,7 +285,7 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_tag(keys, r, idx(args, 1)());
 }
 
@@ -295,7 +306,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_revision_testresult(keys, r, idx(args, 1)());
 }
 
@@ -303,7 +314,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
 CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
     N_("Approves a particular revision"),
     "",
-    options::opts::branch)
+    options::opts::branch | options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -311,6 +322,8 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
 
   if (args.size() != 1)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
@@ -318,14 +331,16 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument for approval"));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_revision_in_branch(keys, r, app.opts.branch);
+
+  updater.maybe_do_update();
 }
 
 CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
     N_("Suspends a particular revision"),
     "",
-    options::opts::branch)
+    options::opts::branch | options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -334,14 +349,18 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   if (args.size() != 1)
     throw usage(execid);
 
+  maybe_workspace_updater updater(app, project);
+
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument to suspend"));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.suspend_revision_in_branch(keys, r, app.opts.branch);
+
+  updater.maybe_do_update();
 }
 
 CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
@@ -362,7 +381,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   else
     {
       external comment_external;
-      E(app.lua.hook_edit_comment(external(""), external(""), comment_external),
+      E(app.lua.hook_edit_comment(external(""), comment_external),
         origin::user,
         F("edit comment failed"));
       system_to_utf8(comment_external, comment);
@@ -375,7 +394,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_revision_comment(keys, r, comment);
 }
 
