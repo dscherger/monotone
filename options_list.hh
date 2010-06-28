@@ -288,7 +288,7 @@ OPT(date, "date", date_t, ,
 OPTSET(date_formats)
 OPTSET_REL(globals, date_formats)
 GROUPED_SIMPLE_OPTION(date_formats, date_fmt,
-                      "date-format/default-date-format", std::string,
+                      "date-format", std::string,
                       gettext_noop("strftime(3) format specification for printing dates"))
 GROUPED_SIMPLE_OPTION(date_formats, no_format_dates,
                       "no-format-dates", bool,
