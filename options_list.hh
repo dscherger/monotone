@@ -201,6 +201,7 @@ OPTION(bind_opts, bind, true, "bind",
   bind_stdio = false;
 }
 #endif
+HIDE(no_transport_auth)
 OPTION(bind_opts, no_transport_auth, false, "no-transport-auth",
        gettext_noop("disable transport authentication"))
 #ifdef option_bodies
@@ -208,6 +209,7 @@ OPTION(bind_opts, no_transport_auth, false, "no-transport-auth",
   use_transport_auth = false;
 }
 #endif
+HIDE(bind_stdio)
 OPTION(bind_opts, bind_stdio, false, "stdio",
        gettext_noop("serve netsync on stdio"))
 #ifdef option_bodies
