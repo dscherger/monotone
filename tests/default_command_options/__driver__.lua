@@ -24,7 +24,7 @@ check(samefile("stdout", "normallog"))
 check(mtn("log", "--rcfile=default_options.lua", "--no-brief"), 0, true, false)
 check(samefile("stdout", "normallog"))
 
-check(mtn("version", "--no-verbose"), 0, true, false)
+check(mtn("version", "--verbosity=0"), 0, true, false)
 rename("stdout", "normalversion")
 
 check(mtn("version", "--verbose"), 0, true, false)
@@ -33,10 +33,10 @@ rename("stdout", "fullversion")
 check(mtn("version", "--rcfile=default_options.lua"), 0, true, false)
 check(samefile("stdout", "fullversion"))
 
-check(mtn("version", "--verbose", "--no-verbose"), 0, true, false)
+check(mtn("version", "--verbose", "--verbosity=0"), 0, true, false)
 check(samefile("stdout", "normalversion"))
 
-check(mtn("version", "--rcfile=default_options.lua", "--no-verbose"), 0, true, false)
+check(mtn("version", "--rcfile=default_options.lua", "--verbosity=0"), 0, true, false)
 check(samefile("stdout", "normalversion"))
 
 check(mtn("status", "--rcfile=default_options.lua"), 1, false, false)

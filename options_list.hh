@@ -629,8 +629,8 @@ OPTION(full, full, false, "full",
 }
 #endif
 
-OPTION(verbosity, verbose, false, "verbose/no-verbose",
-       gettext_noop("verbose completion output"))
+OPTION(verbosity, verbose, false, "verbose",
+       gettext_noop("verbose completion output (set verbosity to 1)"))
 #ifdef option_bodies
 {
   if (verbosity < 1)
@@ -638,8 +638,8 @@ OPTION(verbosity, verbose, false, "verbose/no-verbose",
 }
 #endif
 
-OPTION(verbosity, quiet, false, "quiet",
-     gettext_noop("suppress verbose, informational and progress messages"))
+OPTION(verbosity, quiet, false, "quiet,q",
+     gettext_noop("suppress verbose, informational and progress messages (set verbosity to -1)"))
 #ifdef option_bodies
 {
   if (verbosity > -1)
@@ -648,7 +648,7 @@ OPTION(verbosity, quiet, false, "quiet",
 #endif
 
 OPTION(verbosity, reallyquiet, false, "reallyquiet",
-     gettext_noop("suppress warning, verbose, informational and progress messages"))
+     gettext_noop("suppress warning, verbose, informational and progress messages (set verbosity to -2)"))
 #ifdef option_bodies
 {
   verbosity = -2;
