@@ -603,7 +603,8 @@ walk_revisions(database & db, const revision_id & from_rev,
   while (r != to_rev);
 }
 
-CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION [REVISION]"),
+CMD(disapprove, "disapprove", "", CMD_REF(review),
+    N_("[PARENT-REVISION] CHILD-REVISION"),
     N_("Disapproves a particular revision or revision range"),
     "",
     options::opts::branch | options::opts::messages | options::opts::date |
@@ -654,7 +655,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION [REVISION]"),
 
       erase_ancestors(db, rev_set);
       E(rev_set.size() < 2, origin::user,
-        F("revision %s is not a child of %s, cannot invert")
+        F("revisions %s and %s do not share common history, cannot invert")
         % parent_rev % child_rev);
 
       walk_revisions(db, child_rev, parent_rev);
