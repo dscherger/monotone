@@ -528,25 +528,35 @@ static string
 man_definition(vector<string> const & labels, string const & content, int width = -1)
 {
   string out;
-  out += ".IP \"" + (*labels.begin()) + "\"";
-
+  // FIXME: this is a hack - what I actually want to achieve is
+  // a display like this:
+  //
+  //    definition 1
+  //    definition 2
+  //        text bla bla
+  //
+  // but letting one .It follow another prints a new line between both
+  // to circumvent that, I create the list with -compact and add an
+  // additional paragraph / newline .Pp between the previous display and
+  // the now following one
+  if (labels.size() > 1)
+      out += ".Pp\n";
+  out += ".Bl -tag";
   if (width != -1)
-    out += " " + lexical_cast<string>(width);
+      out += " -width " + lexical_cast<string>(width);
+  if (labels.size() > 1)
+      out += " -compact";
   out += "\n";
 
-  if (labels.size() > 1)
+  for (vector<string>::const_iterator i = labels.begin();
+       i < labels.end(); ++i)
     {
-      out += ".PD 0\n";
-      for (vector<string>::const_iterator i = labels.begin() + 1;
-           i < labels.end(); ++i)
-        {
-          out += ".IP \"" + (*i) + "\"\n";
-        }
-      out += ".PD\n";
+      out += ".It \"" + (*i) + "\"\n";
     }
   out += content;
   if (content.rfind('\n') != (content.size() - 1))
      out += "\n";
+  out += ".El\n";
   return out;
 }
 
@@ -567,23 +577,23 @@ man_indent(string const & content)
 static string
 man_subsection(string const & content)
 {
-  return ".SS \"" + content + "\"\n";
+  return ".Ss \"" + content + "\"\n";
 }
 
 static string
 man_section(string const & content)
 {
-  return ".SH \"" + uppercase(content) + "\"\n";
+  return ".Sh \"" + uppercase(content) + "\"\n";
 }
 
 static string
 man_title(string const & title)
 {
-  return ".TH \"" + title + "\" 1" + "\n";
+  return ".Dt \"" + uppercase(title) + "\" 1" + "\n";
 }
 
 static string
-get_options_string(options::options_type const & optset, options & opts, int width = -1)
+get_options_string(options::options_type const & optset, options & opts)
 {
   vector<string> names;
   vector<string> descriptions;
@@ -599,7 +609,7 @@ get_options_string(options::options_type const & optset, options & opts, int wid
     {
       if (name->empty())
         continue;
-      out += man_definition(*name, *desc, width);
+      out += man_definition(*name, *desc, maxnamelen);
     }
   return out;
 }
@@ -680,7 +690,7 @@ get_command_tree(options & opts, commands::command const * cmd)
 
               if (params.size() == 0)
                 {
-                  call = man_bold(name);
+                  call = ".Nm " + name;
                   cmd_calls.push_back(call);
                   continue;
                 }
@@ -688,7 +698,7 @@ get_command_tree(options & opts, commands::command const * cmd)
               for (vector<string>::const_iterator j = params.begin();
                    j < params.end(); ++j)
                 {
-                  call = man_bold(name) + " " + *j;
+                  call = ".Nm " + name + "\n.Ar " + *j;
                   cmd_calls.push_back(call);
                 }
             }
@@ -701,7 +711,7 @@ get_command_tree(options & opts, commands::command const * cmd)
             commands::command_options(main_ident);
           if (!cmd_options.empty())
             {
-              cmd_desc += man_indent(get_options_string(cmd_options, opts, 4));
+              cmd_desc += man_indent(get_options_string(cmd_options, opts));
             }
 
           // compile everything into a man definition
@@ -716,10 +726,14 @@ CMD_HIDDEN(manpage, "manpage", "", CMD_REF(informative), "",
     "",
     options::opts::show_hidden_commands)
 {
-  cout << man_title("monotone");
-  cout << man_section(_("Name"));
 
-  cout << _("monotone - a distributed version control system") << "\n";
+  cout << ".Dd " << date_t::now().as_formatted_localtime("%B %d, %Y") << "\n";
+  cout << man_title("monotone");
+
+  cout << man_section(_("Name"));
+  cout << ".Nm " << "monotone" << "\n";
+  cout << ".Nd " <<_("a distributed version control system") << "\n";
+
   cout << man_section(_("Synopsis"));
   cout << man_bold(prog_name) << " "
             << man_italic(_("[options...] command [arguments...]"))
@@ -732,7 +746,7 @@ CMD_HIDDEN(manpage, "manpage", "", CMD_REF(informative), "",
             "monotone has an easy-to-learn command set and comes with a rich "
             "interface for scripting purposes and thorough documentation.")
        << "\n\n";
-  cout << (F("For more information on monotone, visit %s.") 
+  cout << (F("For more information on monotone, visit %s.")
             % man_bold("http://www.monotone.ca")).str()
        << "\n\n";
   cout << (F("The complete documentation, including a tutorial for a quick start "
@@ -740,7 +754,7 @@ CMD_HIDDEN(manpage, "manpage", "", CMD_REF(informative), "",
             % man_bold("http://www.monotone.ca/docs")).str() << "\n";
 
   cout << man_section(_("Global Options"));
-  cout << get_options_string(options::opts::globals(), app.opts, 25) << "\n";
+  cout << get_options_string(options::opts::globals(), app.opts) << "\n";
 
   cout << man_section(_("Commands"));
   cout << get_command_tree(app.opts, CMD_REF(__root__));
