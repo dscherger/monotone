@@ -726,7 +726,18 @@ CMD_HIDDEN(manpage, "manpage", "", CMD_REF(informative), "",
             << "\n";
 
   cout << man_section(_("Description"));
-  cout << _("TODO: write a really fancy and catchy description") << "\n";
+  cout << _("monotone is a highly reliable, very customizable distributed "
+            "version control system that provides lightweight branches, "
+            "history-sensitive merging and a flexible trust setup. "
+            "monotone has an easy-to-learn command set and comes with a rich "
+            "interface for scripting purposes and thorough documentation.")
+       << "\n\n";
+  cout << (F("For more information on monotone, visit %s.") 
+            % man_bold("http://www.monotone.ca")).str()
+       << "\n\n";
+  cout << (F("The complete documentation, including a tutorial for a quick start "
+             "with the system, can be found online on %s.")
+            % man_bold("http://www.monotone.ca/docs")).str() << "\n";
 
   cout << man_section(_("Global Options"));
   cout << get_options_string(options::opts::globals(), app.opts, 25) << "\n";
@@ -735,16 +746,21 @@ CMD_HIDDEN(manpage, "manpage", "", CMD_REF(informative), "",
   cout << get_command_tree(app.opts, CMD_REF(__root__));
 
   cout << man_section(_("See Also"));
-  cout << (F("info %s and the documentation on <%s>")
+  cout << (F("info %s and the documentation on %s")
                 % prog_name % man_bold("http://monotone.ca/docs")).str() << "\n";
 
   cout << man_section("Bugs");
-  cout << (F("Please report bugs to <%s>.")
+  cout << (F("Please report bugs to %s.")
                 % man_bold("http://savannah.nongnu.org/bugs/?group=monotone")).str()<< "\n";
 
   cout << man_section("Authors");
-  cout << (F("The monotone development team <%s>")
-                % man_bold("http://www.monotone.ca")).str() << "\n";
+  cout << _("monotone was written originally by Graydon Hoare "
+            "<graydon@pobox.com> in 2004 and has since then received "
+            "numerous contributions from many individuals. "
+            "A complete list of authors can be found in AUTHORS.")
+       << "\n\n";
+  cout << _("Nowadays, monotone is maintained by a collective of enthusiastic "
+            "programmers, known as the monotone developement team.") << "\n";
 }
 
 // There isn't really a better place for this function.
