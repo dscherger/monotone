@@ -48,14 +48,19 @@ my @files_to_clean_up = ();
 for my $d (("read-permissions", "write-permissions")) {
     if (opendir D,catdir($user_config,$d.".d")) {
 	if (open OUT_PERM,">".catdir($user_config,$d)) {
-	    foreach my $d2 (readdir D) {
-		open IN_PERM,catfile($user_config,$d.".d",$d2);
-		while (<IN_PERM>) {
-		    print OUT_PERM $_;
+	    my %lines = ();
+	    foreach my $d2 (sort readdir D) {
+		# Skip over file names starting with ., following Unix standards
+		if ( $d2 !~ m/^\./ ) {
+		    open IN_PERM,catfile($user_config,$d.".d",$d2);
+		    while (<IN_PERM>) {
+			chomp;
+			$lines{$_} = 1;
+		    }
+		    close IN_PERM;
 		}
-		print OUT_PERM "\n";
-		close IN_PERM;
 	    }
+	    print OUT_PERM join("\n", sort keys %lines), "\n";
 	    close OUT_PERM;
 	}
 	closedir D;
