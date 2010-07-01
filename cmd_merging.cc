@@ -547,7 +547,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
 
   size_t pass = 1, todo = heads.size() - 1;
 
-  if (app.opts.resolve_conflicts_given || app.opts.resolve_conflicts_file_given)
+  if (app.opts.resolve_conflicts)
     {
       // conflicts and resolutions only apply to first merge, so only do that one.
       todo = 1;

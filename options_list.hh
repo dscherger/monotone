@@ -750,8 +750,8 @@ OPTION(automate_inventory_opts, no_corresponding_renames, false, "no-correspondi
 #endif
 
 OPTSET(resolve_conflicts_opts)
-OPTVAR(resolve_conflicts_opts, bookkeeping_path, resolve_conflicts_file, )
-OPTVAR(resolve_conflicts_opts, bool, resolve_conflicts, )
+OPTVAR(resolve_conflicts_opts, bookkeeping_path,
+       resolve_conflicts_file, "_MTN/conflicts")
 
 OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-file",
        gettext_noop("use file to resolve conflicts"))
@@ -763,18 +763,13 @@ OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-
     origin::user,
     F("conflicts file must be under _MTN"));
   resolve_conflicts_file = bookkeeping_path(arg, origin::user);
+  resolve_conflicts = true;
 }
 #endif
 
-OPTION(resolve_conflicts_opts, resolve_conflicts, false, "resolve-conflicts",
-       gettext_noop("use _MTN/conflicts to resolve conflicts"))
-#ifdef option_bodies
-{
-  E(!resolve_conflicts_file_given, origin::user,
-    F("only one of --resolve-conflicts or --resolve-conflicts-file may be given"));
-  resolve_conflicts_file = bookkeeping_path("_MTN/conflicts");
-}
-#endif
+OPTSET_REL(resolve_conflicts_opts, resolve_conflicts)
+SIMPLE_OPTION(resolve_conflicts, "resolve-conflicts/no-resolve-conflicts", bool,
+       gettext_noop("specify conflict resolutions in a file, instead of interactively"))
 
 OPTSET(conflicts_opts)
 OPTVAR(conflicts_opts, bookkeeping_path, conflicts_file, bookkeeping_path("_MTN/conflicts"))
