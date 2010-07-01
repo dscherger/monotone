@@ -37,6 +37,24 @@ using std::inserter;
 
 using boost::shared_ptr;
 
+void
+diagnose_ambiguous_expansion(options const & opts, lua_hooks & lua,
+                             project_t & project,
+                             string const & str,
+                             set<revision_id> const & completions)
+{
+  if (completions.size() <= 1)
+    return;
+
+  string err = (F("selection '%s' has multiple ambiguous expansions:")
+                % str).str();
+  for (set<revision_id>::const_iterator i = completions.begin();
+       i != completions.end(); ++i)
+    err += ("\n" + describe_revision(opts, lua, project, *i));
+
+  E(false, origin::user, i18n_format(err));
+}
+
 class selector
 {
 public:
@@ -904,36 +922,8 @@ expand_selector(options const & opts, lua_hooks & lua,
                 set<revision_id> & completions)
 {
   shared_ptr<selector> sel = selector::create(opts, lua, project, str);
-
-  // avoid logging if there's no expansion to be done
-  shared_ptr<ident_selector> isel = boost::dynamic_pointer_cast<ident_selector>(sel);
-  if (isel && isel->is_full_length())
-    {
-      completions.insert(isel->get_assuming_full_length());
-      return;
-    }
-
   completions = sel->complete(project);
 }
-
-void
-diagnose_ambiguous_expansion(options const & opts, lua_hooks & lua,
-                             project_t & project,
-                             string const & str,
-                             set<revision_id> const & completions)
-{
-  if (completions.size() <= 1)
-    return;
-
-  string err = (F("selection '%s' has multiple ambiguous expansions:")
-                % str).str();
-  for (set<revision_id>::const_iterator i = completions.begin();
-       i != completions.end(); ++i)
-    err += ("\n" + describe_revision(opts, lua, project, *i));
-
-  E(false, origin::user, i18n_format(err));
-}
-
 
 // Local Variables:
 // mode: C++

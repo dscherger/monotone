@@ -380,7 +380,7 @@ cert_date_value(vector<cert> const & certs,
                 string const & fmt)
 {
     string certval = cert_string_value(certs, name, from_start, from_end, "");
-    if (fmt.empty())
+    if (fmt.empty() || certval.empty())
         return certval;
     return date_t(certval).as_formatted_localtime(fmt);
 }
@@ -416,9 +416,23 @@ annotate_context::build_revisions_to_annotations
       string date(cert_date_value(certs, date_cert_name, true, false, date_fmt));
 
       string hex_rev_str(encode_hexenc(i->inner()(), i->inner().made_from));
-      string result = (F("%s.. by %s %s: ")
-            % hex_rev_str.substr(0, 8)
-            % author % date).str();
+
+      string result;
+      // author and / or date could be empty for two reasons
+      //   a) the specific certs are untrusted by the user, and as such
+      //      got erased earlier from the set
+      //   b) the specific revision does not contain (for whatever reason)
+      //      the needed certificate
+      // for both reasons we change the output slightly so that no unwanted
+      // spaces pop up
+      if (!author.empty() && !date.empty())
+        result = (F("%s.. by %s %s: ") % hex_rev_str.substr(0, 8) % author % date).str();
+      else if (!author.empty())
+        result = (F("%s.. by %s: ") % hex_rev_str.substr(0, 8) % author).str();
+      else if (!date.empty())
+        result = (F("%s.. %s: ") % hex_rev_str.substr(0, 8) % date).str();
+      else
+        result = (F("%s..: ") % hex_rev_str.substr(0, 8)).str();
 
       max_note_length = ((result.size() > max_note_length)
                          ? result.size()

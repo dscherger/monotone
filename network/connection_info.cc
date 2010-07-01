@@ -431,7 +431,7 @@ netsync_connection_info::setup_from_uri(options const & opts,
   parse_includes_excludes_from_query(info->client.uri.query,
                                      includes, excludes);
 
-  if (includes.size() == 0)
+  if (includes.size() == 0 && type == netsync_connection)
     {
       W(F("no branch pattern found in URI, will try to use "
           "suitable database defaults if available"));
