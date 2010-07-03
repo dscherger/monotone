@@ -7,8 +7,8 @@ commit()
 rev_a = base_revision()
 
 -- a simple command w/o the use of options
-check(mtn("check_head", "--rcfile=extra_rc", rev_a), 0, true, false)
-check(samelines("stdout", {"heads are equal", "end of command"}))
+check(mtn("check_head", "--rcfile=extra_rc", rev_a), 0, false, true)
+check(samelines("stderr", {"mtn: lua: heads are equal", "mtn: lua: end of command"}))
 
 addfile("bar", "more random info\n")
 commit()

@@ -1,3 +1,10 @@
+    path ""
+old_type "directory"
+new_type "directory"
+ fs_type "directory"
+   birth [cb271687054afd3c2b873c8994f206f08fb240d3]
+  status "known"
+
     path "source"
 old_type "directory"
 new_path "target"

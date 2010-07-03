@@ -277,7 +277,7 @@ function get_encloser_pattern(name)
    return "^[[:alnum:]$_]"
 end
 
-function edit_comment(basetext, user_log_message)
+function edit_comment(user_log_message)
    local exe = nil
 
    -- top priority is VISUAL, then EDITOR, then a series of hardcoded
@@ -299,12 +299,10 @@ function edit_comment(basetext, user_log_message)
 
    local tmp, tname = temp_file()
    if (tmp == nil) then return nil end
-   basetext = "MTN: " .. string.gsub(basetext, "\n", "\nMTN: ") .. "\n"
    tmp:write(user_log_message)
    if user_log_message == "" or string.sub(user_log_message, -1) ~= "\n" then
       tmp:write("\n")
    end
-   tmp:write(basetext)
    io.close(tmp)
 
    -- By historical convention, VISUAL and EDITOR can contain arguments
@@ -316,22 +314,22 @@ function edit_comment(basetext, user_log_message)
    if (not string.find(exe, "[^%w_.+-]")) then
       -- safe to call spawn directly
       if (execute(exe, tname) ~= 0) then
-     io.write(string.format(gettext("Error running editor '%s' "..
-                    "to enter log message\n"),
+         io.write(string.format(gettext("Error running editor '%s' "..
+                                        "to enter log message\n"),
                                 exe))
-     os.remove(tname)
-     return nil
+         os.remove(tname)
+         return nil
       end
    else
       -- must use shell
       local shell = os.getenv("SHELL")
       if (shell == nil) then shell = "sh" end
       if (not program_exists_in_path(shell)) then
-     io.write(string.format(gettext("Editor command '%s' needs a shell, "..
-                    "but '%s' is not to be found"),
-                    exe, shell))
-     os.remove(tname)
-     return nil
+         io.write(string.format(gettext("Editor command '%s' needs a shell, "..
+                                        "but '%s' is not to be found"),
+                                exe, shell))
+         os.remove(tname)
+         return nil
       end
 
       -- Single-quoted strings in both Bourne shell and csh can contain
@@ -339,24 +337,17 @@ function edit_comment(basetext, user_log_message)
       local safe_tname = " '" .. string.gsub(tname, "'", "'\\''") .. "'"
 
       if (execute(shell, "-c", editor .. safe_tname) ~= 0) then
-     io.write(string.format(gettext("Error running editor '%s' "..
-                    "to enter log message\n"),
+         io.write(string.format(gettext("Error running editor '%s' "..
+                                        "to enter log message\n"),
                                 exe))
-     os.remove(tname)
-     return nil
+         os.remove(tname)
+         return nil
       end
    end
 
    tmp = io.open(tname, "r")
    if (tmp == nil) then os.remove(tname); return nil end
-   local res = ""
-   local line = tmp:read()
-   while(line ~= nil) do
-      if (not string.find(line, "^MTN:")) then
-         res = res .. line .. "\n"
-      end
-      line = tmp:read()
-   end
+   local res = tmp:read("*a")
    io.close(tmp)
    os.remove(tname)
    return res
@@ -1018,21 +1009,21 @@ function expand_date(str)
    if str == "now"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%FT%T", t)
+      return os.date("%Y-%m-%dT%H:%M:%S", t)
    end
 
    -- today don't uses the time         # for xgettext's sake, an extra quote
    if str == "today"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%F", t)
+      return os.date("%Y-%m-%d", t)
    end
 
    -- "yesterday", the source of all hangovers
    if str == "yesterday"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%F", t - 86400)
+      return os.date("%Y-%m-%d", t - 86400)
    end
 
    -- "CVS style" relative dates such as "3 weeks ago"
@@ -1050,9 +1041,9 @@ function expand_date(str)
       local t = os.time(os.date('!*t'))
       if trans[type] <= 3600
       then
-        return os.date("%FT%T", t - (n * trans[type]))
+        return os.date("%Y-%m-%dT%H:%M:%S", t - (n * trans[type]))
       else
-        return os.date("%F", t - (n * trans[type]))
+        return os.date("%Y-%m-%d", t - (n * trans[type]))
       end
    end
 
@@ -1256,8 +1247,18 @@ function get_remote_unix_socket_command(host)
 end
 
 function get_default_command_options(command)
-   local default_args = {}
-   return default_args
+    local default_args = {}
+    return default_args
+end
+
+function get_default_database_alias()
+    return ":default.mtn"
+end
+
+function get_default_database_locations()
+    local paths = {}
+    table.insert(paths, get_confdir() .. "/databases")
+    return paths
 end
 
 hook_wrapper_dump                = {}

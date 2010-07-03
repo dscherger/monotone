@@ -19,6 +19,7 @@
 #include <botan/botan.h>
 
 #include "app_state.hh"
+#include "database.hh"
 #include "botan_pipe_cache.hh"
 #include "commands.hh"
 #include "sanity.hh"
@@ -160,6 +161,12 @@ cpp_main(int argc, char ** argv)
       unfiltered_pipe = new Botan::Pipe;
       new (unfiltered_pipe_cleanup_mem) cached_botan_pipe(unfiltered_pipe);
 
+      class _DbCacheEmptier {
+      public:
+        _DbCacheEmptier() { }
+        ~_DbCacheEmptier() { database::reset_cache(); }
+      } db_cache_emptier;
+
       // Record where we are.  This has to happen before any use of
       // paths.hh objects.
       save_initial_path();
@@ -287,7 +294,7 @@ cpp_main(int argc, char ** argv)
 
           commands::process(app, cmd, app.opts.args);
 
-          workspace::maybe_set_options(app.opts);
+          workspace::maybe_set_options(app.opts, app.lua);
 
           // The command will raise any problems itself through
           // exceptions.  If we reach this point, it is because it

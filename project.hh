@@ -59,8 +59,8 @@ operator<<(std::ostream & os,
 class tag_t
 {
 public:
-  revision_id ident;
-  utf8 name;
+  revision_id const ident;
+  utf8 const name;
   key_id key;
   tag_t(revision_id const & ident, utf8 const & name, key_id const & key);
 };
@@ -80,47 +80,50 @@ public:
   database & db;
 
 private:
-  std::map<std::pair<branch_name, suspended_indicator>,
-           std::pair<outdated_indicator, std::set<revision_id> >
-           > branch_heads;
-  std::set<branch_name> branches;
-  outdated_indicator indicator;
+  // These are caches of what's in the database. They are updated when
+  // they're noticed to be out of date, which will always be during a
+  // logically read-only operation.
+  mutable std::map<std::pair<branch_name, suspended_indicator>,
+                   std::pair<outdated_indicator, std::set<revision_id> >
+                   > branch_heads;
+  mutable std::set<branch_name> branches;
+  mutable outdated_indicator indicator;
 
 public:
   project_t(database & db);
 
   void get_branch_list(std::set<branch_name> & names,
-                       bool check_heads = false);
+                       bool check_heads = false) const;
   void get_branch_list(globish const & glob, std::set<branch_name> & names,
-                       bool check_heads = false);
+                       bool check_heads = false) const;
   void get_branch_heads(branch_name const & name, std::set<revision_id> & heads,
                         bool ignore_suspend_certs,
-                        std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
+                        std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL) const;
 
-  outdated_indicator get_tags(std::set<tag_t> & tags);
+  outdated_indicator get_tags(std::set<tag_t> & tags) const;
   void put_tag(key_store & keys, revision_id const & id, std::string const & name);
 
-  bool revision_is_in_branch(revision_id const & id, branch_name const & branch);
+  bool revision_is_in_branch(revision_id const & id, branch_name const & branch) const;
   void put_revision_in_branch(key_store & keys,
                               revision_id const & id,
                               branch_name const & branch);
 
-  bool revision_is_suspended_in_branch(revision_id const & id, branch_name const & branch);
+  bool revision_is_suspended_in_branch(revision_id const & id, branch_name const & branch) const;
   void suspend_revision_in_branch(key_store & keys,
                                   revision_id const & id,
                                   branch_name const & branch);
 
   outdated_indicator get_revision_cert_hashes(revision_id const & rid,
-                                              std::vector<id> & hashes);
+                                              std::vector<id> & hashes) const;
   outdated_indicator get_revision_certs(revision_id const & id,
-                                        std::vector<cert> & certs);
+                                        std::vector<cert> & certs) const;
   outdated_indicator get_revision_certs_by_name(revision_id const & id,
                                                 cert_name const & name,
-                                                std::vector<cert> & certs);
+                                                std::vector<cert> & certs) const;
   outdated_indicator get_revision_branches(revision_id const & id,
-                                           std::set<branch_name> & branches);
+                                           std::set<branch_name> & branches) const;
   outdated_indicator get_branch_certs(branch_name const & branch,
-                                      std::vector<std::pair<id, cert> > & certs);
+                                      std::vector<std::pair<id, cert> > & certs) const;
 
   void put_standard_certs(key_store & keys,
                           revision_id const & id,
@@ -153,38 +156,31 @@ private:
   void lookup_key_by_name(key_store * const keys,
                           lua_hooks & lua,
                           key_name const & name,
-                          key_id & id);
+                          key_id & id) const;
   // get the name given when creating the key
-  void get_canonical_name_of_key(key_store * const keys,
-                                 key_id const & id,
-                                 key_name & name);
-  void complete_key_identity(key_store * const keys,
-                             lua_hooks & lua,
-                             key_identity_info & info);
+  void get_given_name_of_key(key_store * const keys,
+                             key_id const & id,
+                             key_name & name) const;
+  void complete_key_identity_from_id(key_store * const keys,
+                                     lua_hooks & lua,
+                                     key_identity_info & info) const;
   void get_key_identity(key_store * const keys,
                         lua_hooks & lua,
                         external_key_name const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
 public:
-  void complete_key_identity(key_store & keys,
-                             lua_hooks & lua,
-                             key_identity_info & info);
-  void complete_key_identity(lua_hooks & lua,
-                             key_identity_info & info);
+  void complete_key_identity_from_id(key_store & keys,
+                                     lua_hooks & lua,
+                                     key_identity_info & info) const;
+  void complete_key_identity_from_id(lua_hooks & lua,
+                                     key_identity_info & info) const;
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,
                         external_key_name const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
   void get_key_identity(lua_hooks & lua,
                         external_key_name const & input,
-                        key_identity_info & output);
-  void get_key_identity(key_store & keys,
-                        lua_hooks & lua,
-                        arg_type const & input,
-                        key_identity_info & output);
-  void get_key_identity(lua_hooks & lua,
-                        arg_type const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
 };
 
 std::string

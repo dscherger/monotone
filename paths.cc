@@ -1048,6 +1048,12 @@ go_to_workspace(system_path const & new_workspace)
 }
 
 void
+get_current_workspace(system_path & workspace)
+{
+  workspace = working_root.get_but_unused();
+}
+
+void
 mark_std_paths_used(void)
 {
   working_root.get();

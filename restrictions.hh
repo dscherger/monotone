@@ -56,7 +56,14 @@
 
 namespace restricted_path
 {
-  enum status { included, excluded };
+  enum status
+    {
+      included,
+      excluded,
+      required, 
+      included_required,
+      excluded_required
+    };
 }
 
 class restriction
@@ -64,6 +71,12 @@ class restriction
  public:
   bool empty() const
   { return included_paths.empty() && excluded_paths.empty(); }
+
+  enum include_rules
+    {
+      explicit_includes, 
+      implicit_includes
+    };
 
  protected:
   restriction() : depth(-1) {}
@@ -94,7 +107,8 @@ class node_restriction : public restriction
                    roster_t const & roster1,
                    roster_t const & roster2,
                    path_predicate<file_path> const & ignore_file
-                   = path_always_false<file_path>());
+                   = path_always_false<file_path>(),
+                   include_rules const & rules = implicit_includes);
 
   node_restriction(std::vector<file_path> const & includes,
                    std::vector<file_path> const & excludes,

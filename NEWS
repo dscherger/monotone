@@ -1,16 +1,202 @@
-xxx xxx xx xx:xx:xx UTC 2010
+Xxx Xxx 99 99:99:99 UTC 2010
+
+        0.99 release.
+
+        Changes
+
+        - Selectors are much more powerful now, and the characters '(',
+          ')', and ';' need to be quoted if mean literally (just like
+          '/'). See section 3.2 in the documentation for details.
+          (fixes monotone bug #18302).
+
+        - The command 'db kill_rev_locally' has been renamed to
+          'local kill_revision', and 'db kill_tag_locally' and
+          'db kill_branch_certs_locally' have been replaced with a more
+          flexible command 'local kill_certs'.
+
+        - The 'cert' command can now operate on multiple revisions at once.
+
+        - The SERVER [BRANCH] call syntax for network-related commands
+          has been deprecated in favour of the existing, universal
+          URI syntax.  Additionally, file:// and ssh:// URIs are now
+          parsed for include and exclude patterns just as the native
+          mtn:// URIs.
+          
+          The possibility to specify include patterns by using
+          "include=" and exclude patterns by using "exclude=" 
+          in the query string has been removed.
+
+          Monotone's native protocol (mtn://) is still the default 
+          protocol if nothing is specified.
+
+          The format for the server part of the `default-server`, 
+          `known-server`, `server-include` and `server-exclude`
+          database variables has been changed and now always includes
+          the complete (normalized) URI resource, consisting of the 
+          used protocol, user, host, port and path parts.  Older entries
+          in existing databases which do not match the new format are
+          preserved and not changed by monotone.
+
+          Please check the manual section 5.3 for more details on the
+          URI syntax.
+
+        - Naturally, the `clone` command now also accepts mtn:// URIs,
+          though the use of branch globs is forbidden unless a branch is
+          specified separately with the new --branch option.
+
+          To avoid confusion with an existing workspace, clone no longer
+          looks for and loads the options of such a workspace, therefor
+          it now also falls back to the configured default database and
+          no longer to the database used in the workspace if no explicit
+          database is given.
+
+        - Server defaults for netsync operations are now only saved if
+          the exchange was successful.  The progress messages which have
+          been issued for this previously have been removed, since they
+          would come up now unexpectedly and would clutter the output of
+          commands such as `clone`, `automate remote` and 
+          `automate remote_stdio`.
+
+        - The `import` command now keeps the created bookkeeping root if
+          --dry-run is not specified.  This makes it possible to re-use
+          the import directory as workspace and is also more closely
+          to what our documentation states, when it says that import
+          is basically "setup with a twist".
+
+        - monotone no longer passes syntactically correct, but non-existent
+          revision ids through the selector machinery.  The most visible
+          place for this change is `automate select`, which no longer
+          echoes every possible 40 hex-byte string. 
+
+        New Features
+
+        Bugs Fixed
+
+        - monotone no longer asks to pick a branch from a set of branches
+          of a revision in which all but one branch have been suspended
+          (fixes monotone bug #29843)
+
+        - the 'mv' command now warns when a source is being renamed onto
+          itself (fixes monotone bug #29484).
+
+        - The annotate command no longer fails if it should print out
+          empty or untrusted date cert values
+          (fixes monotone bug #30150)
+
+        - monotone now tries harder to find the cancel hint in a commit
+          message and only aborts if it can't find it anywhere
+          (fixes monotone bug #30215)
+
+        - The import command no longer warns about not being able
+          to write out _MTN/options on --dry-run
+          (fixes monotone bug #30225)
+
+        - `mtn trusted` will no longer accept single bogus revision ids,    
+          but instead validates if the given revision really exists in the
+          current database.
+
+        Other
+
+Sun Jun 13 22:13:53 UTC 2010
 
         0.48 release.
 
         Changes
 
-        - The 'setup' command now creates a new internal database if no
-          database is given either as command line or workspace option.
+        - Much more information is now passed to the editor when composing a
+          commit message for a new revision. The Author, Date, Branch and
+          Changelog values may now all be changed directly in the editor
+          allowing new branches to be created without using the --branch option.
+          Changes to other lines of this information must not be made or the
+          commit will abort.
+
+        - The edit_comment lua hook now only takes one argument which is the
+          text to be passed to the editor to edit a commit. Existing hooks that
+          override the default hook will need to be changed to work properly.
+
+        - The long date/time format used by 'status', 'commit' and 'log' must
+          be sufficient to preserve a date through a formatting and parsing
+          cycle. The 'status' command now checks for this and warns if the
+          format is unsuitable and 'commit' will refuse to operate with an
+          unsuitable format.
+
+        - The output of the 'status' and 'log' commands has changed to align
+          with the new information displayed by 'commit' so that all three
+          commands display revisions similarly.
+
+        - The 'setup' as well as the 'clone' command check if no managed default
+          database exists and if no database is given either as command line
+          or as workspace option and eventually create a new default database
+          outside of the bookkeeping directory of the new workspace (see below
+          for more information on the new management features).
+
+        - The output of monotone diff has changed to use /dev/null as the source
+          for added files and as the target for deleted files. This is
+          compatible with patch(1) and will cause it to add and delete files
+          where appropriate. As part of this change diff will now include the
+          removed contents of deleted files which were omitted in earlier
+          versions of monotone.
+
+        - Monotone will only warn about bad certs if there are not also matching
+          trusted certs. So if someone commits a bad branch cert, monotone will
+          only warn about that bad cert until someone else approves that
+          revision into the same branch (fixes monotone bug #8033).
+
+        - 'db check' now checks for errors in the branch heads cache,
+          and 'db regenerate_caches' fixes them.
+
+        - The output of the Lua functions print() and io.write() is now
+          redirected to the standard progress message stream of monotone.
+          See chapter 6.3 in the documentation for details.
 
         New features
 
+        - Monotone has now database management capabilities: If you place your
+          databases in one or more specific locations (defaults to
+          %APPDIR%/monotone/databases on Windows and $HOME/.monotone/databases
+          on Linux, configurable by a hook), it is able to discover these
+          databases and access them only by giving the (base) name of their
+          filename, for example ":my-database.mtn".
+
+          You can also directly create new databases in the first found default
+          location by issuing 'mtn db init -d ":my-database.mtn".
+
+          Some commands, like 'setup' and 'clone' automatically fall back to
+          a default database (":default.mtn", also configurable by a hook) if
+          no database option is explicitely given.
+
+          Additionally, monotone remembers checked out workspaces for every
+          managed database and displays these "known" registered paths together
+          with other information in the new 'list databases' command
+          (closes monotone bug #8916).
+
+        - A set of accompanying management commands - 'register_workspace',
+          'unregister_workspace' and 'cleanup_workspace_list' - to handle moved
+          or removed workspaces for managed databases have been added.
+
+        - Many commands that change the heads of a branch (approve, disapprove,
+          pull, merge, etc) can now take an option "--update". If run from
+          a workspace which is based on a head of the branch and has no local
+          changes, this option makes these commands update that workspace to
+          the new head. If you always want this behavior, you can define the
+             get_default_command_options(cmd)
+          hook in your monotonerc (fixes monotone bug #17878).
+
+        - New command 'undrop' which undoes a 'drop' done by mistake
+          (fixes monotone bug #13604).
+
         - New automation command 'update' which behaves identical to
           the normal 'update' command.
+
+        - 'ls tags' now outputs the branch name(s) a tagged revision is on.
+          The revision id is shortened to the first ten characters to get some
+          more space for this (fixes monotone bug #12773).
+
+        - Default include and exclude patterns are now remembered per server.
+          This means that you can have for example one server that you sync
+          everything to, and one that you only sync some branches to, and you
+          don't have to worry about forgetting to give the include pattern and
+          accidentally trying to sync everything to the second server.
 
         - A new Lua extension function change_workspace(directory) has been
           added. This should be most useful for custom commands which need
@@ -20,23 +206,55 @@ xxx xxx xx xx:xx:xx UTC 2010
           function available since 0.47, which can be used to let a monotone
           server exit gracefully instead of having to be killed.
 
-        - Default include and exclude patterns are now remembered per server.
-          This means that you can have for example one server that you sync
-          everything to, and one that you only sync some branches to, and you
-          don't have to worry about forgetting to give the include pattern and
-          accidentally trying to sync everything to the second server.
-
         Bugs fixed
 
         - A regression in 0.47 prevent successful execution of push / pull /
           sync over pipes (Debian bug 574512); this has been fixed.
 
+        - A bug in 0.46 and 0.47 could lead to pulls or possibly commits taking
+          approximately forever, if any of the previous branch heads was not a
+          "close" relation of the new head. This has been fixed.
+
+        - Several bugs related to restrictions not including the required parent
+          directories of included files have been fixed. It is now possible to
+          say 'mtn add a/b/c' followed by 'mtn commit a/b/c' and have the commit
+          succeed. See the restrictions section in the manual for more details
+          (fixes monotone bugs #15994, #17499, #20447 and #22044).
+
         - monotone no longer saves changed options from the command line back
-          to _MTN/options in case the command execution was unsuccessful.
+          to _MTN/options in case the command execution was unsuccessful
+          (fixes monotone bug #22928).
+
+        - When monotone reads packets from files, like f.e. keys in a directory
+          given by the --keydir option, and these files are large and do
+          not contain packet data at all, monotone no longer uses an excessive
+          amount of time and memory to figure this out
+          (fixes monotone bug #28799).
 
         - The 'log' command no longer crashes if it is executed in a workspace
           whose parent revision(s) do not exist in the specified database
           (fixes monotone bug #29677).
+
+        - The 'clone' command no longer removes an existing bookkeeping
+          directory if the target directory "." points to a workspace
+          (fixes monotone bug #29927).
+
+        - The commands in monotone's help output are now sorted alphabetically.
+
+        - monotone on Windows will now have a non-zero exit code when
+          interrupted (^C). This was broken in 0.47 when it was fixed to not
+          throw an exception on being interrupted.
+
+        - In 0.46 and 0.47, monotone could sometimes get confused
+          about which revisions were the heads of a particular branch.
+          This would happen when a new branch cert was added to a
+          revision that was an ancestor of one or more of the current
+          heads of the branch, most commonly during netsync when
+          multiple people had performed identical merges. This is
+          fixed now. 'db check' will identify the problem; if your
+          database currently gives incorrect 'heads' results, or 'mtn
+          bug' on 'merge', you can fix it by running 'mtn db
+          regenerate_caches'.
 
         - In 0.46, spurious network disconnects could occur when transferring
           sufficiently large items (files, diffs, revisions). This was fixed

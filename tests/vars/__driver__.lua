@@ -9,7 +9,6 @@ check(mtn("set", "domain2", "key2", "yet_another_value"), 0, false, false)
 check(mtn("unset", "domain2", "key2"))
 check(mtn("unset", "domain2", "key2"), 1, false, false)
 
--- FIXME: use a less lame output format
 writefile("domain1_vars", "domain1: key1 overwritten_value\n"..
                           "domain1: key2 other_value\n")
 writefile("domain2_vars", "domain2: key1 other_domain_value\n")

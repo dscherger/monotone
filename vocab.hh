@@ -111,6 +111,23 @@ enum date_format_spec
   date_time_short
 };
 
+// to distinguish different database types
+enum db_type
+{
+  memory_db,
+  managed_db,
+  unmanaged_db
+};
+
+// to distinguish the payload type of a sync
+enum connection_type
+{
+  netsync_connection,
+  automate_connection
+};
+
+static const std::string memory_db_identifier = ":memory:";
+
 // do these belong here?
 inline bool
 null_id(id const & i)

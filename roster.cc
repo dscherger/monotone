@@ -62,12 +62,6 @@ namespace
 }
 
 template <> void
-dump(node_id const & val, string & out)
-{
-  out = lexical_cast<string>(val);
-}
-
-template <> void
 dump(attr_map_t const & val, string & out)
 {
   ostringstream oss;

@@ -18,6 +18,6 @@ rev = base_revision()
 
 -- see if they're right
 
-check(mtn("checkout", "--revision", rev, "co-dir"), 0, true, true)
-check(qgrep("test:test_attr:foo/foodata:true", "stdout"))
-check(qgrep("test:test_attr:foo/bar/bardata:false", "stdout"))
+check(mtn("checkout", "--revision", rev, "co-dir"), 0, false, true)
+check(qgrep("test:test_attr:foo/foodata:true", "stderr"))
+check(qgrep("test:test_attr:foo/bar/bardata:false", "stderr"))

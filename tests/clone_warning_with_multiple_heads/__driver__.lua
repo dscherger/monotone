@@ -15,9 +15,10 @@ addfile("otherfile", "splork")
 commit()
 REV3=base_revision()
 
-testURI="file:" .. test.root .. "/test.db"
+copy("test.db", "test-clone.db")
+testURI="file://" .. test.root .. "/test-clone.db?testbranch"
 
-check(nodb_mtn("clone", testURI, "testbranch", "test_dirA"),
+check(nodb_mtn("clone", testURI, "test_dirA"),
          1, false, true)
 check(qgrep(REV2, "stderr"))
 check(qgrep(REV3, "stderr"))

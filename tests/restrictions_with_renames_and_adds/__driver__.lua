@@ -38,9 +38,9 @@ check(not exists("newdir"))
 check(mtn("mv", "testdir", "newdir"), 0, false, false)
 mkdir("testdir")
 addfile("testdir/newfile", "asdfasdf")
--- these are nonsensical, and should error out gracefully
-check(mtn("diff", "newdir", "testdir/newfile"), 1, false, false)
-check(mtn("commit", "newdir", "testdir/newfile"), 1, false, false)
+-- these were once nonsensical, but should now include their parents
+check(mtn("diff", "newdir", "testdir/newfile"), 0, false, false)
+check(mtn("commit", "-m", "foobar", "newdir", "testdir/newfile"), 0, false, false)
 
 -- or: rename A, then rename B under it, and use a restriction that includes
 --   only B
