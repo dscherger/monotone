@@ -7,6 +7,7 @@ check(mtn("automate", "log"), 1, false, true)
 check(qgrep("misuse: workspace parent revision '' not found", "stderr"))
 
 include("/common/automate_ancestry.lua")
+include("/common/automate_stdio.lua")
 
 revs = make_graph()
 --   A
@@ -28,5 +29,8 @@ revmap("log", {"--to", revs.c, "--from", revs.d}, {revs.d}, false)
 -- show missing revisions
 revert_to(revs.c)
 revmap("log", {"--to", "w:", "--from", "h:"}, {revs.b, revs.f, revs.d, revs.e}, false)
+
+-- test automate stdio log
+check(run_stdio("l3:loge", 0, 0, "m") == revs.c .. "\n" .. revs.a .. "\n")
 
 -- end of file

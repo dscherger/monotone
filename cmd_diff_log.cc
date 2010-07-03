@@ -638,7 +638,8 @@ log_print_rev (app_state &      app,
 void
 log_common (app_state & app,
             args_vector args,
-            bool automate)
+            bool automate,
+            std::ostream & output)
 {
   database db(app);
   project_t project(db);
@@ -829,7 +830,7 @@ log_common (app_state & app,
   set<revision_id> seen;
   revision_t rev;
   // this is instantiated even when not used, but it's lightweight
-  asciik graph(cout);
+  asciik graph(output);
   while(!frontier.empty() && last != 0 && next != 0)
     {
       revision_id const & rid = frontier.top().second;
@@ -921,7 +922,7 @@ log_common (app_state & app,
       if (print_this)
         {
           if (automate)
-            log_print_rev (app, db, project, rid, rev, date_fmt, mask, automate, cout);
+            log_print_rev (app, db, project, rid, rev, date_fmt, mask, automate, output);
           else
             {
               ostringstream out;
@@ -930,7 +931,7 @@ log_common (app_state & app,
               string out_system;
               utf8_to_system_best_effort(utf8(out.str(), origin::internal), out_system);
               if (app.opts.no_graph)
-                cout << out_system;
+                output << out_system;
               else
                 graph.print(rid, interesting, out_system);
             }
@@ -944,7 +945,7 @@ log_common (app_state & app,
         graph.print(rid, interesting,
                     (F("(Revision: %s)") % rid).str());
 
-      cout.flush();
+      output.flush();
 
       frontier.pop(); // beware: rid is invalid from now on
 
@@ -975,7 +976,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     options::opts::no_merges | options::opts::no_files |
     options::opts::no_graph)
 {
-  log_common (app, args, false);
+  log_common (app, args, false, cout);
 }
 
 CMD_AUTOMATE(log, N_("[PATH] ..."),
@@ -986,7 +987,7 @@ CMD_AUTOMATE(log, N_("[PATH] ..."),
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges | options::opts::no_files)
 {
-  log_common (app, args, true);
+  log_common (app, args, true, output);
 }
 
 // Local Variables:
