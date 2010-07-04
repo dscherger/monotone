@@ -11,5 +11,5 @@ check(qgrep("destination file/ is not a directory", "stderr"))
 check(mtn("mv", "dir", "dir"), 0, false, true)
 check(qgrep("cannot move `dir' to a subdirectory of itself, `dir/dir'", "stderr"))
 
-xfail(mtn("mv", "dir", "dir/subdir"), 0, false, true)
---check(qgrep("cannot move `dir' to a subdirectory of itself, `dir/subdir/dir'", "stderr"))
+check(mtn("mv", "dir", "dir/subdir"), 0, false, true)
+check(qgrep("cannot move `dir' to a subdirectory of itself, `dir/subdir/dir'", "stderr"))

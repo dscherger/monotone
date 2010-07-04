@@ -77,7 +77,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           (fixes monotone bug #29843)
 
         - the 'mv' command now warns when a source is being renamed onto
-          itself (fixes monotone bug #29484).
+          itself or one of its children (fixes monotone bug #29484).
 
         - The annotate command no longer fails if it should print out
           empty or untrusted date cert values

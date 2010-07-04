@@ -1962,7 +1962,7 @@ workspace::perform_rename(database & db,
       E(new_roster.has_node(src), origin::user,
         F("source file %s is not versioned") % src);
 
-      if (src == dst)
+      if (src == dst || dst.is_beneath_of(src))
         {
           if (get_path_status(dst) == path::directory)
             W(F("cannot move `%s' to a subdirectory of itself, `%s/%s'") % src % dst % src);
@@ -2010,7 +2010,7 @@ workspace::perform_rename(database & db,
           E(!new_roster.has_node(d), origin::user,
             F("destination %s already exists in the workspace manifest") % d);
 
-          if (*i == dst)
+          if (*i == dst || dst.is_beneath_of(*i))
             {
               W(F("cannot move `%s' to a subdirectory of itself, `%s/%s'")
                 % *i % dst % *i);
