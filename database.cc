@@ -3612,6 +3612,24 @@ database::put_revision_cert(cert const & cert)
       return false;
     }
 
+  if (cert.name() == "branch")
+    {
+      string branch_name = cert.value();
+      if (branch_name.find_first_of("?,*%%+{}[]!^") != string::npos ||
+          branch_name.find_first_of('-') == 0)
+        {
+          W(F("The branch name\n"
+              "  '%s'\n"
+              "contains meta characters (one or more of '?,*%%+{}[]!^') or\n"
+              "starts with a dash, which might cause malfunctions when used\"
+              "in a netsync branch pattern.\n\n"
+              "If you want to undo this operation, please use the\n"
+              "'%s local kill_certs' command to delete the particular branch\n"
+              "cert and re-add a valid one.")
+            % cert.value() % prog_name);
+        }
+    }
+
   imp->put_cert(cert, "revision_certs");
 
   if (cert.name() == "branch")
