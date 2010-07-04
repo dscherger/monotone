@@ -12,10 +12,10 @@ Fix mtn:// sync | n/a | `nvm`  | completed |
 Fix `rename foo foo` | n/a | `nvm.bugfest-2010.29484-rlevitte` | completed, merged |
 netsync --anonymous | n/a | `nvm.bugfest-2010.28805-rlevitte` | in development |
 Overwritable, negatable options | [[OverwritableNegatableOptions]] | `nvm.options` | in development |
-Branch name deprecation | [monotone-devel](http://article.gmane.org/gmane.comp.version-control.monotone.devel/17117/match=netsync+connection+info+cleanup) | n/a | not started |
+Branch name deprecation | [monotone-devel](http://article.gmane.org/gmane.comp.version-control.monotone.devel/17117/match=netsync+connection+info+cleanup) | nvm.deprecate_weird_branch_names | in development |
 Less verbose restrictions | [savannah](https://savannah.nongnu.org/bugs/?30291) | n/a | not started |
 Fix anonymous remote_stdio (might break netsync BC) | [savannah](https://savannah.nongnu.org/bugs/?30237) | n/a | not started |
-Key management in automate | [savannah](https://savannah.nongnu.org/bugs/?30345) | n/a | not started | 
+Key management in automate | [savannah](https://savannah.nongnu.org/bugs/?30345) | n/a | not started |
 """ ]]
 
 ## Release 1.x - 2010 / 2011
