@@ -101,7 +101,7 @@ How to release a new version of monotone
     # The rest is done via monotone.
     #
     $ mtn -d DATABASE co -b net.venge.monotone.web WEBDIR
-    $ cp monotone-<NEW VERSION>/{NEWS,INSTALL,UPGRADE,README,monotone.pdf,monotone.html} \
+    $ cp monotone-<NEW VERSION>/{NEWS,INSTALL,UPGRADE,monotone.pdf,monotone.html} \
           WEBDIR/
     $ rm -rf WEBDIR/docs
     $ cp -r monotone-<NEW VERSION>/html WEBDIR/docs
