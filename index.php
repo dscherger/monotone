@@ -57,7 +57,7 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
                 <li><a href="http://monotone.thomaskeller.biz/autobuild/index.php"><strong>nightly builds for openSUSE and Fedora</strong></a></li>
                 <li><a href="wiki/SelfHostingInfo/">self-hosting info</a></li>
                 <li><a href="http://mtn-view.1erlei.de/branch/changes/net.venge.monotone">browse source</a></li>
-                <li><a href="http://cia.navi.cx/stats/project/monotone">latest work</a> (<a class="lesser" href="https://cia.navi.cx/stats/project/monotone/.rss">RSS</a>)</li>
+                <li><a href="http://cia.navi.cx/stats/project/monotone">latest work</a> (<a class="lesser" href="http://cia.navi.cx/stats/project/monotone/.rss">RSS</a>)</li>
                 <li>commit mailing list:<br />
                   <a href="http://lists.nongnu.org/mailman/listinfo/monotone-commits-diffs">with</a> /
                   <a href="http://lists.nongnu.org/mailman/listinfo/monotone-commits-nodiffs">without</a> diffs</li>
