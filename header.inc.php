@@ -6,8 +6,8 @@
 <!--[if IE 7]>
 <link rel="stylesheet" type="text/css" href="res/ie7.css" />
 <![endif]-->
-<link rel="alternate" type="application/rss+xml" title="monotone news" href="rss.php" />
-<link rel="alternate" type="application/rss+xml" title="monotone releases" href="releases.xml" />
+<link rel="alternate" type="application/rss+xml" title="monotone news" href="news.xml.php" />
+<link rel="alternate" type="application/rss+xml" title="monotone releases" href="releases.xml.php" />
 </head>
 <body>
 
