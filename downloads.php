@@ -155,7 +155,7 @@ END;
             foreach ($latestFiles[$type] as $file):
                 $name = basename($file);
                 $release = dirname($file);
-                list($size, $sha1) = 
+                list($size, $sha1) =
                     cache::instance($CFG['download_dir'], $CFG['cache_dir'])
                         ->get($file);
                 $size = round($size / (1024*1024), 2)."MB";
@@ -200,6 +200,46 @@ END;
 <?php endif; ?>
     </div>
 </div>
+<div class="boxes">
+    <div class="box box-wide">
+        <h1 class="getit">Related downloads</h1>
+    </div>
+</div>
+
+<div class="boxes">
+    <div class="box box-small">
+        <h1 class="relateddownload">mtn-browse</h1>
+        <p>Perl/Gtk+-based browser application for monotone databases</p>
+        <p><a href="http://sourceforge.net/projects/mtn-browse/">&#187; download site</a></p>
+    </div>
+
+    <div class="box box-small">
+        <h1 class="relateddownload">guitone</h1>
+        <p>A Qt-based cross-platform GUI for monotone</p>
+        <p><a href="http://guitone.thomaskeller.biz/g/download">&#187; download site</a></p>
+    </div>
+
+    <div class="box box-small">
+        <h1 class="relateddownload">monotone-viz</h1>
+        <p>A Gtk+-based application to visualize monotone ancestry graphs</p>
+        <p><a href="http://oandrieu.nerim.net/monotone-viz/">&#187; download site</a></p>
+    </div>
+</div>
+
+<div class="boxes">
+    <div class="box box-small">
+        <h1 class="relateddownload">ViewMTN</h1>
+        <p>A Python-based web frontend for monotone</p>
+        <p><a href="http://viewmtn.1erlei.de/">&#187; download site</a></p>
+    </div>
+
+    <div class="box box-small">
+        <h1 class="relateddownload">TracMonotone</h1>
+        <p>A <a href="http://trac.edgewall.org/">Trac</a> plugin for monotone</p>
+        <p><a href="http://tracmtn.1erlei.de/">&#187; download site</a></p>
+    </div>
+</div>
+
 <?php
 require_once("footer.inc.php");
 ?>
