@@ -197,7 +197,7 @@ $self = "http://{$_SERVER['SERVER_NAME']}{$_SERVER['SCRIPT_NAME']}";
 
                         // link monotone bugs
                         $entry = preg_replace_callback(
-                           '/monotone bugs?(?:(?:, |,and | and | )#\d+)+/',
+                           '/monotone bugs?(?:(?:, |, and | and | )#\d+)+/',
                            create_function('$matches', '
                                 return preg_replace(
                                    "/#(\d+)/",
