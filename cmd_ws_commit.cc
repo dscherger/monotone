@@ -654,9 +654,18 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
       rev_set.insert(parent_rev);
 
       erase_ancestors(db, rev_set);
-      E(rev_set.size() < 2, origin::user,
-        F("revisions %s and %s do not share common history, cannot invert")
-        % parent_rev % child_rev);
+      if (rev_set.size() > 1)
+        {
+          set<revision_id> ancestors;
+          db.get_common_ancestors (rev_set, ancestors);
+          E(ancestors.size() > 0, origin::user,
+            F("revisions %s and %s do not share common history, cannot invert")
+            % parent_rev % child_rev);
+          E(ancestors.size() < 1, origin::user,
+            F("revisions share common history"
+              ", but %s is not an ancestor of %s, cannot invert")
+            % parent_rev % child_rev);
+        }
 
       walk_revisions(db, child_rev, parent_rev);
       db.get_revision(parent_rev, rev);
