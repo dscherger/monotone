@@ -553,84 +553,76 @@ log_print_rev (app_state &      app,
                revision_t &     rev,
                string           date_fmt,
                node_restriction mask,
-               bool             automate,
                ostream &        out)
 {
-  if (automate)
+  cert_name const author_name(author_cert_name);
+  cert_name const date_name(date_cert_name);
+  cert_name const branch_name(branch_cert_name);
+  cert_name const tag_name(tag_cert_name);
+  cert_name const changelog_name(changelog_cert_name);
+  cert_name const comment_name(comment_cert_name);
+  vector<cert> certs;
+  project.get_revision_certs(rid, certs);
+
+  if (app.opts.brief)
     {
-      out << rid << "\n";
+      out << rid;
+      log_certs(certs, out, author_name);
+      if (app.opts.no_graph)
+        log_certs(certs, out, date_name, date_fmt);
+      else
+        {
+          out << '\n';
+          log_certs(certs, out, date_name, date_fmt);
+        }
+      log_certs(certs, out, branch_name);
+      out << '\n';
     }
   else
     {
-      cert_name const author_name(author_cert_name);
-      cert_name const date_name(date_cert_name);
-      cert_name const branch_name(branch_cert_name);
-      cert_name const tag_name(tag_cert_name);
-      cert_name const changelog_name(changelog_cert_name);
-      cert_name const comment_name(comment_cert_name);
-      vector<cert> certs;
-      project.get_revision_certs(rid, certs);
+      utf8 header;
+      revision_header(rid, rev, certs, date_fmt, header);
 
-      if (app.opts.brief)
+      external header_external;
+      utf8_to_system_best_effort(header, header_external);
+      out << header_external;
+
+      if (!app.opts.no_files)
         {
-          out << rid;
-          log_certs(certs, out, author_name);
-          if (app.opts.no_graph)
-            log_certs(certs, out, date_name, date_fmt);
-          else
-            {
-              out << '\n';
-              log_certs(certs, out, date_name, date_fmt);
-            }
-          log_certs(certs, out, branch_name);
-          out << '\n';
+          utf8 summary;
+          revision_summary(rev, summary);
+          external summary_external;
+          utf8_to_system_best_effort(summary, summary_external);
+          out << summary_external;
         }
-      else
+    }
+
+  if (app.opts.diffs)
+    {
+      // if the current roster was loaded above this should hit the
+      // cache and not cost much... logging diffs isn't superfast
+      // regardless.
+      roster_t current_roster;
+      db.get_roster(rid, current_roster);
+
+      for (edge_map::const_iterator e = rev.edges.begin();
+           e != rev.edges.end(); ++e)
         {
-          utf8 header;
-          revision_header(rid, rev, certs, date_fmt, header);
+          roster_t parent_roster, restricted_roster;
 
-          external header_external;
-          utf8_to_system_best_effort(header, header_external);
-          out << header_external;
+          db.get_roster(edge_old_revision(e), parent_roster);
 
-          if (!app.opts.no_files)
-            {
-              utf8 summary;
-              revision_summary(rev, summary);
-              external summary_external;
-              utf8_to_system_best_effort(summary, summary_external);
-              out << summary_external;
-            }
-        }
+          // always show forward diffs from the parent roster to
+          // the current roster regardless of the log direction
+          make_restricted_roster(parent_roster, current_roster,
+                                 restricted_roster, mask);
 
-      if (app.opts.diffs)
-        {
-          // if the current roster was loaded above this should hit the
-          // cache and not cost much... logging diffs isn't superfast
-          // regardless.
-          roster_t current_roster;
-          db.get_roster(rid, current_roster);
-
-          for (edge_map::const_iterator e = rev.edges.begin();
-               e != rev.edges.end(); ++e)
-            {
-              roster_t parent_roster, restricted_roster;
-
-              db.get_roster(edge_old_revision(e), parent_roster);
-
-              // always show forward diffs from the parent roster to
-              // the current roster regardless of the log direction
-              make_restricted_roster(parent_roster, current_roster,
-                                     restricted_roster, mask);
-
-              dump_diffs(app.lua, db, parent_roster, restricted_roster,
-                         out, app.opts.diff_format,
-                         app.opts.external_diff_args_given,
-                         app.opts.external_diff_args,
-                         true, true,
-                         !app.opts.no_show_encloser);
-            }
+          dump_diffs(app.lua, db, parent_roster, restricted_roster,
+                     out, app.opts.diff_format,
+                     app.opts.external_diff_args_given,
+                     app.opts.external_diff_args,
+                     true, true,
+                     !app.opts.no_show_encloser);
         }
     }
 }
@@ -922,11 +914,11 @@ log_common (app_state & app,
       if (print_this)
         {
           if (automate)
-            log_print_rev (app, db, project, rid, rev, date_fmt, mask, automate, output);
+            output << rid << "\n";
           else
             {
               ostringstream out;
-              log_print_rev (app, db, project, rid, rev, date_fmt, mask, automate, out);
+              log_print_rev (app, db, project, rid, rev, date_fmt, mask, out);
 
               string out_system;
               utf8_to_system_best_effort(utf8(out.str(), origin::internal), out_system);
@@ -985,7 +977,7 @@ CMD_AUTOMATE(log, N_("[PATH] ..."),
     options::opts::last | options::opts::next |
     options::opts::from | options::opts::to |
     options::opts::depth | options::opts::exclude |
-    options::opts::no_merges | options::opts::no_files)
+    options::opts::no_merges)
 {
   log_common (app, args, true, output);
 }
