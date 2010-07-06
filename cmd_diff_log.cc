@@ -144,7 +144,7 @@ dump_diffs(lua_hooks & lua,
               file_path left_path, right_path;
               left_roster.get_name(i.left_key(), left_path);
               // right_path is null
-          
+
               file_id left_id, right_id;
               left_id = downcast_to_file_t(i.left_data())->content;
               // right_id is null
@@ -157,7 +157,7 @@ dump_diffs(lua_hooks & lua,
               if (show_encloser)
                 lua.hook_get_encloser_pattern(left_path, encloser);
 
-              dump_diff(lua, 
+              dump_diff(lua,
                         left_path, right_path,
                         left_id, right_id,
                         left_data, right_data,
@@ -173,7 +173,7 @@ dump_diffs(lua_hooks & lua,
               file_path left_path, right_path;
               // left_path is null
               right_roster.get_name(i.right_key(), right_path);
-           
+
               file_id left_id, right_id;
               // left_id is null
               right_id = downcast_to_file_t(i.right_data())->content;
@@ -186,7 +186,7 @@ dump_diffs(lua_hooks & lua,
               if (show_encloser)
                 lua.hook_get_encloser_pattern(right_path, encloser);
 
-              dump_diff(lua, 
+              dump_diff(lua,
                         left_path, right_path,
                         left_id, right_id,
                         left_data, right_data,
@@ -199,7 +199,7 @@ dump_diffs(lua_hooks & lua,
           // moved/renamed/patched/attribute changes
           if (is_file_t(i.left_data()))
             {
-          
+
               file_id left_id, right_id;
               left_id = downcast_to_file_t(i.left_data())->content;
               right_id = downcast_to_file_t(i.right_data())->content;
@@ -210,7 +210,7 @@ dump_diffs(lua_hooks & lua,
               file_path left_path, right_path;
               left_roster.get_name(i.left_key(), left_path);
               right_roster.get_name(i.right_key(), right_path);
-          
+
               data left_data, right_data;
               get_data(db, left_path, left_id, left_from_db, left_data);
               get_data(db, right_path, right_id, right_from_db, right_data);
@@ -219,7 +219,7 @@ dump_diffs(lua_hooks & lua,
               if (show_encloser)
                 lua.hook_get_encloser_pattern(right_path, encloser);
 
-              dump_diff(lua, 
+              dump_diff(lua,
                         left_path, right_path,
                         left_id, right_id,
                         left_data, right_data,
@@ -514,7 +514,7 @@ log_certs(vector<cert> const & certs, ostream & os, cert_name const & name,
               I(name == date_cert_name);
               os << date_t(i->value()).as_formatted_localtime(date_fmt);
             }
-            
+
           first = false;
         }
     }
@@ -695,7 +695,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
           mask = node_restriction(args_to_paths(args),
                                   args_to_paths(app.opts.exclude_patterns),
                                   app.opts.depth, parents, new_roster,
-                                  ignored_file(work));
+                                  ignored_file(work),
+                                  restriction::explicit_includes);
         }
       else
         {
@@ -707,7 +708,9 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
 
           mask = node_restriction(args_to_paths(args),
                                   args_to_paths(app.opts.exclude_patterns),
-                                  app.opts.depth, roster);
+                                  app.opts.depth, roster,
+                                  path_always_false<file_path>(),
+                                  restriction::explicit_includes);
         }
     }
 
@@ -900,7 +903,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
                                          restricted_roster, mask);
 
                   dump_diffs(app.lua, db, parent_roster, restricted_roster,
-                             out, app.opts.diff_format, 
+                             out, app.opts.diff_format,
                              app.opts.external_diff_args_given,
                              app.opts.external_diff_args,
                              true, true,

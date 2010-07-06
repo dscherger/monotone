@@ -44,8 +44,8 @@ revs[7] = base_revision()
 
 for n,x in pairs{[""]  = {0,0,0,0,0,0,0},
                  ["."] = {0,0,0,0,0,0,0},
-                 dir1  = {0,0,1,0,0,1,1},
-                 dir2  = {0,1,0,0,1,0,0}} do
+                 dir1  = {1,0,1,0,0,1,1},
+                 dir2  = {1,1,0,0,1,0,0}} do
   if n == "" then
     check(mtn("log", "--no-graph"), 0, true)
   else

@@ -250,11 +250,15 @@ node_restriction::node_restriction(vector<file_path> const & includes,
                                    vector<file_path> const & excludes,
                                    long depth,
                                    roster_t const & roster,
-                                   path_predicate<file_path> const & ignore)
+                                   path_predicate<file_path> const & ignore,
+                                   include_rules const & rules)
   : restriction(includes, excludes, depth)
 {
   map_nodes(node_map, roster, included_paths, excluded_paths, known_paths);
-  add_parents(node_map, roster);
+
+  if (rules == implicit_includes)
+    add_parents(node_map, roster);
+
   validate_paths(included_paths, excluded_paths,
                  unknown_unignored_node(known_paths, ignore));
 }
@@ -286,7 +290,8 @@ node_restriction::node_restriction(vector<file_path> const & includes,
                                    long depth,
                                    parent_map const & rosters1,
                                    roster_t const & roster2,
-                                   path_predicate<file_path> const & ignore)
+                                   path_predicate<file_path> const & ignore,
+                                   include_rules const & rules)
   : restriction(includes, excludes, depth)
 {
   for (parent_map::const_iterator i = rosters1.begin();
@@ -295,10 +300,13 @@ node_restriction::node_restriction(vector<file_path> const & includes,
               included_paths, excluded_paths, known_paths);
   map_nodes(node_map, roster2, included_paths, excluded_paths, known_paths);
 
-  for (parent_map::const_iterator i = rosters1.begin();
-       i != rosters1.end(); i++)
-    add_parents(node_map, parent_roster(i));
-  add_parents(node_map, roster2);
+  if (rules == implicit_includes)
+    {
+      for (parent_map::const_iterator i = rosters1.begin();
+           i != rosters1.end(); i++)
+        add_parents(node_map, parent_roster(i));
+      add_parents(node_map, roster2);
+    }
 
   validate_paths(included_paths, excluded_paths,
                  unknown_unignored_node(known_paths, ignore));
