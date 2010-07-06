@@ -10,6 +10,7 @@ Extended selectors | [[MagicSelectors]] | `nvm.extended-selectors` | completed, 
 Netsync URI refactoring | n/a | `nvm.connection_info_cleanup` | completed, merged |
 Fix mtn:// sync | n/a | `nvm`  | completed |
 Fix `rename foo foo` | n/a | `nvm.bugfest-2010.29484-rlevitte` | completed, merged |
+Disapprove multiple revisions | n/a | `nvm.tkoskine.disapprove-multirev` | completed, merged |
 netsync --anonymous | n/a | `nvm.bugfest-2010.28805-rlevitte` | in development |
 Overwritable, negatable options | [[OverwritableNegatableOptions]] | `nvm.options` | in development |
 Branch name deprecation | [monotone-devel](http://article.gmane.org/gmane.comp.version-control.monotone.devel/17117/match=netsync+connection+info+cleanup) | nvm.deprecate_weird_branch_names | in development |
@@ -23,7 +24,6 @@ Key management in automate | [savannah](https://savannah.nongnu.org/bugs/?30345)
 [[!table data="""
 Description | More Info | Branch(es) | Status |
 `rename --guess` | n/a | `nvm.rename-guess` | somewhat abandoned |
-Disapprove multiple revisions | n/a | `nvm.tkoskine.disapprove-multirev` | in development |
 Clean workspace from unknown / ignored files | n/a | `nvm.tkoskine.purge` | in development |
 """ ]]
 
