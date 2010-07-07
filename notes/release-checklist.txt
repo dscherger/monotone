@@ -59,14 +59,8 @@ How to release a new version of monotone
 
 7) Update version numbers.  The following files need to be touched:
      configure.ac: change the call to AC_INIT
-     win32/monotone.iss: look out for "#define APPVERS"
      visualc/config.h: the version number is mentioned several times,
        don't miss any.
-     debian/changelog: rather than modifying this file directly, run
-       the command "debchange -v <NEW VERSION>-0.1".  (If you screw up
-       and need to roll a new unofficial package, use "debchange -i"
-       to increment this number.)
-
    Commit your changes.
 
 8) Okay, everything should be ready to go... double-check that:
@@ -107,7 +101,7 @@ How to release a new version of monotone
     # The rest is done via monotone.
     #
     $ mtn -d DATABASE co -b net.venge.monotone.web WEBDIR
-    $ cp monotone-<NEW VERSION>/{NEWS,INSTALL,UPGRADE,README,monotone.pdf,monotone.html} \
+    $ cp monotone-<NEW VERSION>/{NEWS,INSTALL,UPGRADE,monotone.pdf,monotone.html} \
           WEBDIR/
     $ rm -rf WEBDIR/docs
     $ cp -r monotone-<NEW VERSION>/html WEBDIR/docs
@@ -123,31 +117,15 @@ How to release a new version of monotone
     $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
     $ mtn sync
 
-12) Update index.html on the website to state the latest version at the
-    top, and modify the list of download links to point to the new
-    version.
+12) Update index.php on the website to state the latest version in the left
+    column:
 
     $ cd WEBDIR
-    $ vi index.html
+    $ vi index.php
     $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
     $ mtn sync
 
-13) Update releases.xml on the website so the RSS feed contains information
-    for the newly released version. Don't forget to update the feed's
-    global pubDate date as well as the invididual item's pubDate
-    and ensure you use the correct datetime format. Add an <enclosure>
-    which links to the monotone source tarball and add the proper length
-    as attribute.
-    Finally you should just copy'n'paste the NEWS entry for the NEW VERSION
-    directly into the description inside a CDATA field and do a couple of
-    searches and replaces to add HTML formatting for a nicer display.
-
-    $ cd WEBDIR
-    $ vi releases.xml
-    $ mtn ci -m "Updates RSS feed for monotone <NEW VERSION>"
-    $ mtn sync
-
-14) Once you're pretty sure things have gone well, tag the source:
+13) Once you're pretty sure things have gone well, tag the source:
 
     $ mtn tag <REVISION> monotone-<NEW VERSION>
 
@@ -155,10 +133,10 @@ How to release a new version of monotone
 
     $ mtn sync
 
-15) Change the topic in the IRC channel to state the new version
+14) Change the topic in the IRC channel to state the new version
     number.
 
-16) Send out a release announcement.  Format is something like:
+15) Send out a release announcement.  Format is something like:
 
     To: monotone-announce@nongnu.org
     CC: monotone-devel@nongnu.org
@@ -170,9 +148,9 @@ How to release a new version of monotone
 
     <sign off>
 
-17) Submit a release announcement to freshmeat.net.
+16) Submit a release announcement to freshmeat.net.
 
-18) Note any mistakes you made and update this file accordingly for
+17) Note any mistakes you made and update this file accordingly for
     next time.
 
-19) Party!
+18) Party!

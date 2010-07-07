@@ -84,7 +84,7 @@ namespace commands {
 // This number is only raised once, during the process of releasing a new
 // version of monotone, by the release manager. For more details, see
 // point (4) in notes/release-checklist.txt
-static string const interface_version = "12.0";
+static string const interface_version = "12.1";
 
 // This number determines the format version of the stdio packet format.
 // The original format which came without a version notification was "1".
@@ -329,7 +329,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           // usually, if a command succeeds, any of its workspace-relevant
           // options are saved back to _MTN/options, this shouldn't be
           // any different here
-          workspace::maybe_set_options(app.opts);
+          workspace::maybe_set_options(app.opts, app.lua);
 
           // restore app.opts
           app.opts = original_opts;
@@ -477,7 +477,7 @@ LUAEXT(mtn_automate, )
       // usually, if a command succeeds, any of its workspace-relevant
       // options are saved back to _MTN/options, this shouldn't be
       // any different here
-      workspace::maybe_set_options(app_p->opts);
+      workspace::maybe_set_options(app_p->opts, app_p->lua);
 
       // allow further calls
       app_p->mtn_automate_allowed = true;

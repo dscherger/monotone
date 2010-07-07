@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -127,6 +128,41 @@ private:
   size_t offset;
 };
 
+static bool
+date_fmt_valid(string date_fmt)
+{
+  if (date_fmt.empty())
+    {
+      return true;
+    }
+  else
+    {
+      // check that the specified date format can be used to format and
+      // parse a date
+      date_t now = date_t::now();
+      date_t parsed;
+      try
+        {
+          string formatted = now.as_formatted_localtime(date_fmt);
+          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
+        }
+      catch (recoverable_failure const & e)
+        {
+          L(FL("date check failed: %s") % e.what());
+        }
+
+      if (parsed != now)
+        {
+          L(FL("date check failed: %s != %s") % now % parsed);
+          return false;
+        }
+      else
+        {
+          return true;
+        }
+    }
+}
+
 static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               project_t & project,
@@ -196,12 +232,23 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   utf8 header;
   utf8 summary;
 
-  revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
+  bool is_date_fmt_valid = date_fmt_valid(date_fmt);
+  string null_date_fmt("");
+
+  if (!is_date_fmt_valid)
+    {
+      W(F("date format '%s' cannot be used for commit; using default instead") % date_fmt);
+      revision_header(rid, rev, author, date, branch, changelog, null_date_fmt, header);
+    }
+  else
+    {
+      revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
+    }
   revision_summary(rev, summary);
 
-  utf8 full_message(instructions() + cancel() + header() + notes() + summary(), 
+  utf8 full_message(instructions() + cancel() + header() + notes() + summary(),
                     origin::internal);
-  
+
   external input_message;
   external output_message;
 
@@ -212,6 +259,14 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
     F("edit of log message failed"));
 
   system_to_utf8(output_message, full_message);
+
+  // look for the cancel notification anywhere in the text.
+  // this might be needed in case the user moves it down accidentially
+  // and the previous instructions are kept intact
+  if (full_message().find(cancel()) == string::npos)
+    {
+      E(false, origin::user, F("Commit cancelled."));
+    }
 
   // save the message in _MTN/commit so its not lost if something fails below
   work.save_commit_text(full_message);
@@ -230,13 +285,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   E(message.read(instructions()), origin::user,
     F("Commit failed. Instructions not found."));
 
-  if (!message.read(cancel()))
-    {
-      // clear the backup file if the commit was explicitly cancelled
-      work.clear_commit_text();
-      E(message.read(cancel()), origin::user,
-        F("Commit cancelled."));
-    }
+  E(message.read(cancel()), origin::user,
+    F("Commit failed. Cancel hint not found."));
 
   utf8 const AUTHOR(trim_right(_("Author: ")).c_str());
   utf8 const DATE(trim_right(_("Date: ")).c_str());
@@ -276,7 +326,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   E(!d.empty(), origin::user,
     F("Commit failed. Date value empty."));
 
-  if (date_fmt.empty())
+  if (!is_date_fmt_valid || date_fmt.empty())
     date = date_t(d);
   else
     date = date_t::from_formatted_localtime(d, date_fmt);
@@ -323,11 +373,10 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   work.clear_commit_text();
 }
 
-CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
-    N_("Reverts files and/or directories"),
-    N_("In order to revert the entire workspace, specify \".\" as the "
-       "file name."),
-    options::opts::depth | options::opts::exclude | options::opts::missing)
+void
+revert(app_state & app,
+       args_vector const & args,
+       bool undrop)
 {
   roster_t old_roster, new_roster;
   cset preserved;
@@ -353,7 +402,8 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        old_roster, new_roster, ignored_file(work));
+                        old_roster, new_roster, ignored_file(work),
+                        restriction::explicit_includes);
 
   if (app.opts.missing)
     {
@@ -431,7 +481,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
         {
           file_t f = downcast_to_file_t(node);
 
-          bool changed = true;
+          bool revert = true;
 
           if (file_exists(path))
             {
@@ -441,11 +491,15 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
               if (ident == f->content)
                 {
                   L(FL("skipping unchanged %s") % path);
-                  changed = false;;
+                  revert = false;
+                }
+              else
+                {
+                  revert = !undrop;
                 }
             }
 
-          if (changed)
+          if (revert)
             {
               P(F("reverting %s") % path);
               L(FL("reverting %s to [%s]") % path
@@ -505,8 +559,53 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   work.maybe_update_inodeprints(db);
 }
 
-CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
-    N_("Disapproves a particular revision"),
+CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Reverts files and/or directories"),
+    N_("In order to revert the entire workspace, specify \".\" as the "
+       "file name."),
+    options::opts::depth | options::opts::exclude | options::opts::missing)
+{
+  revert(app, args, false);
+}
+
+CMD(undrop, "undrop", "", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Reverses a mistaken 'drop'"),
+    N_("If the file was deleted from the workspace, this is the same as 'revert'. "
+       "Otherwise, it just removes the 'drop' from the manifest."),
+    options::opts::none)
+{
+  revert(app, args, true);
+}
+
+static void
+walk_revisions(database & db, const revision_id & from_rev,
+               const revision_id & to_rev)
+{
+  revision_id r = from_rev;
+  revision_t rev;
+
+  do
+    {
+      E(!null_id(r), origin::user,
+        F("revision %s it not a child of %s, cannot invert")
+        % from_rev % to_rev);
+
+      db.get_revision(r, rev);
+      E(rev.edges.size() < 2, origin::user,
+        F("revision %s has %d parents, cannot invert")
+        % r % rev.edges.size());
+
+      E(rev.edges.size() > 0, origin::user,
+        F("revision %s it not a child of %s, cannot invert")
+        % from_rev % to_rev);
+      r = edge_old_revision (rev.edges.begin());
+    }
+  while (r != to_rev);
+}
+
+CMD(disapprove, "disapprove", "", CMD_REF(review),
+    N_("[PARENT-REVISION] CHILD-REVISION"),
+    N_("Disapproves a particular revision or revision range"),
     "",
     options::opts::branch | options::opts::messages | options::opts::date |
     options::opts::author | options::opts::maybe_auto_update)
@@ -515,33 +614,78 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
   key_store keys(app);
   project_t project(db);
 
-  if (args.size() != 1)
+  if (args.size() < 1 || args.size() > 2)
     throw usage(execid);
 
   maybe_workspace_updater updater(app, project);
 
   utf8 log_message("");
   bool log_message_given;
-  revision_id r;
+  revision_id child_rev, parent_rev;
   revision_t rev, rev_inverse;
   shared_ptr<cset> cs_inverse(new cset());
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
-  db.get_revision(r, rev);
 
-  E(rev.edges.size() == 1, origin::user,
-    F("revision %s has %d changesets, cannot invert")
-      % r % rev.edges.size());
+  if (args.size() == 1)
+    {
+      complete(app.opts, app.lua, project, idx(args, 0)(), child_rev);
+      db.get_revision(child_rev, rev);
 
-  guess_branch(app.opts, project, r);
-  E(!app.opts.branch().empty(), origin::user,
-    F("need --branch argument for disapproval"));
+      E(rev.edges.size() == 1, origin::user,
+        F("revision %s has %d parents, cannot invert")
+        % child_rev % rev.edges.size());
 
-  process_commit_message_args(app.opts, log_message_given, log_message,
-                              utf8((FL("disapproval of revision '%s'")
-                                    % r).str(),
-                                   origin::internal));
+      guess_branch(app.opts, project, child_rev);
+      E(!app.opts.branch().empty(), origin::user,
+        F("need --branch argument for disapproval"));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+      process_commit_message_args(app.opts, log_message_given, log_message,
+                                  utf8((FL("disapproval of revision '%s'")
+                                        % child_rev).str(),
+                                       origin::internal));
+    }
+  else if (args.size() == 2)
+    {
+      complete(app.opts, app.lua, project, idx(args, 0)(), parent_rev);
+      complete(app.opts, app.lua, project, idx(args, 1)(), child_rev);
+
+      set<revision_id> rev_set;
+
+      rev_set.insert(child_rev);
+      rev_set.insert(parent_rev);
+
+      erase_ancestors(db, rev_set);
+      if (rev_set.size() > 1)
+        {
+          set<revision_id> ancestors;
+          db.get_common_ancestors (rev_set, ancestors);
+          E(ancestors.size() > 0, origin::user,
+            F("revisions %s and %s do not share common history, cannot invert")
+            % parent_rev % child_rev);
+          E(ancestors.size() < 1, origin::user,
+            F("revisions share common history"
+              ", but %s is not an ancestor of %s, cannot invert")
+            % parent_rev % child_rev);
+        }
+
+      walk_revisions(db, child_rev, parent_rev);
+      db.get_revision(parent_rev, rev);
+
+      E(rev.edges.size() == 1, origin::user,
+        F("revision %s has %d parents, cannot invert")
+        % child_rev % rev.edges.size());
+
+      guess_branch(app.opts, project, child_rev);
+      E(!app.opts.branch().empty(), origin::user,
+        F("need --branch argument for disapproval"));
+
+      process_commit_message_args(app.opts, log_message_given, log_message,
+                                  utf8((FL("disapproval of revisions "
+                                           "'%s'..'%s'")
+                                        % parent_rev % child_rev).str(),
+                                       origin::internal));
+    }
+
+  cache_user_key(app.opts, project, keys, app.lua);
 
   // for the divergence check, below
   set<revision_id> heads;
@@ -555,10 +699,10 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
   {
     roster_t old_roster, new_roster;
     db.get_roster(edge_old_revision(old_edge), old_roster);
-    db.get_roster(r, new_roster);
+    db.get_roster(child_rev, new_roster);
     make_cset(new_roster, old_roster, *cs_inverse);
   }
-  rev_inverse.edges.insert(make_pair(r, cs_inverse));
+  rev_inverse.edges.insert(make_pair(child_rev, cs_inverse));
 
   {
     transaction_guard guard(db);
@@ -776,27 +920,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
     }
 
-  if (!date_fmt.empty())
-    {
-      // check that the specified date format can be parsed (for commit)
-      date_t now = date_t::now();
-      date_t parsed;
-      try
-        {
-          string formatted = now.as_formatted_localtime(date_fmt);
-          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
-        }
-      catch (recoverable_failure const & e) 
-        { 
-          L(FL("date check failed: %s") % e.what());
-        }
-
-      if (parsed != now)
-        {
-          L(FL("date check failed: %s != %s") % now % parsed);
-          W(F("date format '%s' cannot be used for commit") % date_fmt);
-        }
-    }
+  if (!date_fmt_valid(date_fmt))
+    W(F("date format '%s' cannot be used for commit") % date_fmt);
 
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
@@ -830,11 +955,25 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   key_store keys(app);
   key_identity_info key;
 
-  get_user_key(app.opts, app.lua, db, keys, project, key.id, cache_disable);
-  project.complete_key_identity(keys, app.lua, key);
+  try
+    {
+      get_user_key(app.opts, app.lua, db, keys, project, key.id, cache_disable);
+      project.complete_key_identity_from_id(keys, app.lua, key);
 
-  if (!app.lua.hook_get_author(app.opts.branch, key, author))
-    author = key.official_name();
+      if (!app.lua.hook_get_author(app.opts.branch, key, author))
+        author = key.official_name();
+    }
+  catch (recoverable_failure & rf)
+    {
+      // If we can't figure out which key would be used for commit, that's no reason
+      // to make status fail.
+      if (rf.caused_by() == origin::user)
+        {
+          author = "???";
+        }
+      else
+        throw;
+    }
 
   calculate_ident(rev, rid);
 
@@ -1445,33 +1584,10 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     {
       key_identity_info key;
       get_user_key(app.opts, app.lua, db, keys, project, key.id, cache_disable);
-      project.complete_key_identity(keys, app.lua, key);
+      project.complete_key_identity_from_id(keys, app.lua, key);
 
       if (!app.lua.hook_get_author(app.opts.branch, key, author))
         author = key.official_name();
-    }
-
-  if (!date_fmt.empty())
-    {
-      // check that the current date format can be parsed
-      date_t parsed;
-      try
-        {
-          string formatted = date.as_formatted_localtime(date_fmt);
-          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
-        }
-      catch (recoverable_failure const & e) 
-        { 
-          L(FL("date check failed: %s") % e.what());
-        }
-      
-      if (parsed != date)
-        {
-          L(FL("date check failed: %s != %s") % date % parsed);
-        }
-      
-      E(parsed == date, origin::user,
-        F("date format '%s' cannot be used for commit") % date_fmt);
     }
 
   if (!log_message_given)
@@ -1514,7 +1630,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   E(message_validated, origin::user,
     F("log message rejected by hook: %s") % reason);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   // for the divergence check, below
   set<revision_id> heads;
@@ -1632,7 +1748,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   }
 
   // the workspace should remember the branch we just committed to.
-  work.set_options(app.opts, true);
+  work.set_options(app.opts, app.lua, true);
 
   // the work revision is now whatever changes remain on top of the revision
   // we just checked in.
@@ -1692,32 +1808,26 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
       dir = ".";
 
   system_path workspace_dir(dir, origin::user);
+  system_path _MTN_dir(workspace_dir / bookkeeping_root_component);
+
+  require_path_is_nonexistent
+    (_MTN_dir, F("bookkeeping directory already exists in '%s'")
+     % workspace_dir);
 
   // only try to remove the complete workspace directory
   // if we're about to create it anyways
   directory_cleanup_helper remove_on_fail(
-    directory_exists(workspace_dir)
-        ? workspace_dir / bookkeeping_root_component
-        : workspace_dir
+    directory_exists(workspace_dir) ? _MTN_dir : workspace_dir
   );
 
-  workspace::create_workspace(app.opts, app.lua, workspace_dir);
-
-  if (!app.opts.dbname_given || app.opts.dbname.empty())
-    {
-      app.opts.dbname = system_path(workspace_dir
-                                    / bookkeeping_root_component
-                                    / bookkeeping_internal_db_file_name);
-    }
+  database_path_helper helper(app.lua);
+  helper.maybe_set_default_alias(app.opts);
 
   database db(app);
-  if (get_path_status(db.get_filename()) == path::nonexistent)
-    {
-      P(F("initializing new database '%s'") % db.get_filename());
-      db.initialize();
-    }
-
+  db.create_if_not_exists();
   db.ensure_open();
+
+  workspace::create_workspace(app.opts, app.lua, workspace_dir);
 
   workspace work(app);
   revision_t rev;
@@ -1787,48 +1897,52 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
      F("import directory '%s' doesn't exists") % dir,
      F("import directory '%s' is a file") % dir);
 
+  system_path _MTN_dir = dir / path_component("_MTN");
+
+  require_path_is_nonexistent
+    (_MTN_dir, F("bookkeeping directory already exists in '%s'") % dir);
+
+  directory_cleanup_helper remove_on_fail(_MTN_dir);
+
   workspace::create_workspace(app.opts, app.lua, dir);
   workspace work(app);
 
-  try
+  revision_t rev;
+  make_revision_for_workspace(ident, cset(), rev);
+  work.put_work_rev(rev);
+
+  // prepare stuff for 'add' and so on.
+  args_vector empty_args;
+  options save_opts;
+  // add --unknown
+  save_opts.exclude_patterns = app.opts.exclude_patterns;
+  app.opts.exclude_patterns = args_vector();
+  app.opts.unknown = true;
+  app.opts.recursive = true;
+  process(app, make_command_id("workspace add"), empty_args);
+  app.opts.recursive = false;
+  app.opts.unknown = false;
+  app.opts.exclude_patterns = save_opts.exclude_patterns;
+
+  // drop --missing
+  save_opts.no_ignore = app.opts.no_ignore;
+  app.opts.missing = true;
+  process(app, make_command_id("workspace drop"), empty_args);
+  app.opts.missing = false;
+  app.opts.no_ignore = save_opts.no_ignore;
+
+  // commit
+  if (!app.opts.dryrun)
     {
-      revision_t rev;
-      make_revision_for_workspace(ident, cset(), rev);
-      work.put_work_rev(rev);
-
-      // prepare stuff for 'add' and so on.
-      args_vector empty_args;
-      options save_opts;
-      // add --unknown
-      save_opts.exclude_patterns = app.opts.exclude_patterns;
-      app.opts.exclude_patterns = args_vector();
-      app.opts.unknown = true;
-      app.opts.recursive = true;
-      process(app, make_command_id("workspace add"), empty_args);
-      app.opts.recursive = false;
-      app.opts.unknown = false;
-      app.opts.exclude_patterns = save_opts.exclude_patterns;
-
-      // drop --missing
-      save_opts.no_ignore = app.opts.no_ignore;
-      app.opts.missing = true;
-      process(app, make_command_id("workspace drop"), empty_args);
-      app.opts.missing = false;
-      app.opts.no_ignore = save_opts.no_ignore;
-
-      // commit
-      if (!app.opts.dryrun)
-        process(app, make_command_id("workspace commit"), empty_args);
+      process(app, make_command_id("workspace commit"), empty_args);
+      remove_on_fail.commit();
     }
-  catch (...)
+  else
     {
-      // clean up before rethrowing
-      delete_dir_recursive(bookkeeping_root);
-      throw;
+      // since the _MTN directory gets removed, don't try to write out
+      // _MTN/options at the end
+      workspace::used = false;
     }
-
-  // clean up
-  delete_dir_recursive(bookkeeping_root);
 }
 
 CMD_NO_WORKSPACE(migrate_workspace, "migrate_workspace", "", CMD_REF(tree),

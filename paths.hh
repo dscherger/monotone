@@ -215,6 +215,9 @@ public:
   // does dirname() and basename() at the same time, for efficiency
   void dirname_basename(file_path &, path_component &) const;
 
+  // returns true if this path is beneath other
+  bool is_beneath_of(const file_path & other) const;
+
   // returns the number of /-separated components of the path.
   // The empty path has depth zero.
   unsigned int depth() const;
@@ -348,7 +351,6 @@ private:
 
 #define bookkeeping_root (bookkeeping_path("_MTN"))
 #define bookkeeping_root_component (path_component("_MTN"))
-#define bookkeeping_internal_db_file_name (path_component("mtn.db"))
 // for migration
 #define old_bookkeeping_root_component (path_component("MT"))
 
@@ -468,6 +470,10 @@ find_and_go_to_workspace(std::string const & search_root);
 // root paths that are needed to interpret paths
 void
 go_to_workspace(system_path const & new_workspace);
+
+// returns the currently active workspace path
+void
+get_current_workspace(system_path & workspace);
 
 void mark_std_paths_used(void);
 

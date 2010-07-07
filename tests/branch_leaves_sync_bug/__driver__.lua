@@ -6,8 +6,16 @@
 -- The bug does not occur if the two workspaces use the same author
 -- name and key.
 
+-- The bug was about logic in the branch leaves cache, not
+-- specifically about sync; it's tested adequately on Linux. 'sync
+-- file:' doesn't work on Win32, but it's not worth setting up a
+-- server for this test.
+skip_if(ostype == "Windows")
+
+check(getstd("test_hooks.lua"))
+
 function abe_mtn(...)
-  return raw_mtn("--rcfile", test.root .. "/min_hooks.lua",
+  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua",
          "--db=" .. test.root .. "/abe.db",
          "--keydir", test.root .. "/keys",
          "--key=abe@test.net",
@@ -15,7 +23,7 @@ function abe_mtn(...)
 end
 
 function beth_mtn(...)
-  return raw_mtn("--rcfile", test.root .. "/min_hooks.lua",
+  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua",
          "--db=" .. test.root .. "/beth.db",
          "--keydir", test.root .. "/keys",
          "--key=beth@test.net",
@@ -38,7 +46,7 @@ base = base_revision()
 
 -- Create Beth's workspace via checkout, so 'update' works
 chdir(test.root)
-check(abe_mtn("sync", "file://" .. test.root .. "/beth.db", "*"), 0, false, false)
+check(abe_mtn("sync", "file://" .. test.root .. "/beth.db?*"), 0, false, false)
 check(beth_mtn("checkout", "--branch", "testbranch", "Beth"), 0, false, false)
 chdir("Beth")
 check(beth_mtn("genkey", "beth@test.net"), 0, false, false, string.rep("beth@test.net\n", 2))
@@ -56,7 +64,7 @@ commit("testbranch", "rev_b", abe_mtn)
 rev_b = base_revision()
 
 -- Sync dbs
-check(abe_mtn("sync", "file://" .. test.root .. "/beth.db", "*"), 0, false, false)
+check(abe_mtn("sync", "file://" .. test.root .. "/beth.db?*"), 0, false, false)
 
 -- Abe merges
 chdir("Abe")
@@ -72,7 +80,7 @@ commit("testbranch", "rev_d", beth_mtn)
 rev_d = base_revision()
 
 -- Sync dbs (not clear if direction of sync matters)
-check(beth_mtn("sync", "file://" .. test.root .. "/abe.db", "*"), 0, false, false)
+check(beth_mtn("sync", "file://" .. test.root .. "/abe.db?*"), 0, false, false)
 
 -- bug; rev_d and rev_c are both heads according to branch_leaves table.
 check(beth_mtn("db", "check"), 0, false, false)

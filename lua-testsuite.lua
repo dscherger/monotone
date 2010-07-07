@@ -44,6 +44,7 @@ function mtn_outside_ws(...)
     end
   end
   return {monotone_path,
+         "--no-workspace",
          "--ssh-sign=no",
          "--norc", "--rcfile", test.root .. "/test_hooks.lua",
          "--confdir="..test.root,

@@ -15,6 +15,7 @@
 
 
 #include <stdio.h>
+#include <time.h>
 
 void read_password(std::string const & prompt, char * buf, size_t bufsz);
 void get_system_flavour(std::string & ident);
@@ -163,6 +164,12 @@ double cpu_now();
 
 // determine directory to load locale data from
 std::string get_locale_dir();
+
+// Fill tp from s, using format fmt.
+// throws on failure.
+//
+// This is strptime on Unix, something else on MinGW.
+void parse_date(const std::string s, const std::string fmt, struct tm *tp);
 
 #endif // __PLATFORM_HH__
 

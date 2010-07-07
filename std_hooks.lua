@@ -1009,21 +1009,21 @@ function expand_date(str)
    if str == "now"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%FT%T", t)
+      return os.date("%Y-%m-%dT%H:%M:%S", t)
    end
 
    -- today don't uses the time         # for xgettext's sake, an extra quote
    if str == "today"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%F", t)
+      return os.date("%Y-%m-%d", t)
    end
 
    -- "yesterday", the source of all hangovers
    if str == "yesterday"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%F", t - 86400)
+      return os.date("%Y-%m-%d", t - 86400)
    end
 
    -- "CVS style" relative dates such as "3 weeks ago"
@@ -1041,9 +1041,9 @@ function expand_date(str)
       local t = os.time(os.date('!*t'))
       if trans[type] <= 3600
       then
-        return os.date("%FT%T", t - (n * trans[type]))
+        return os.date("%Y-%m-%dT%H:%M:%S", t - (n * trans[type]))
       else
-        return os.date("%F", t - (n * trans[type]))
+        return os.date("%Y-%m-%d", t - (n * trans[type]))
       end
    end
 
@@ -1247,8 +1247,18 @@ function get_remote_unix_socket_command(host)
 end
 
 function get_default_command_options(command)
-   local default_args = {}
-   return default_args
+    local default_args = {}
+    return default_args
+end
+
+function get_default_database_alias()
+    return ":default.mtn"
+end
+
+function get_default_database_locations()
+    local paths = {}
+    table.insert(paths, get_confdir() .. "/databases")
+    return paths
 end
 
 hook_wrapper_dump                = {}

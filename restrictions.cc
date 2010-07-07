@@ -28,6 +28,60 @@ using std::vector;
 // old roster. at this point log should stop because no earlier roster will
 // include these nodes.
 
+typedef map<node_id, restricted_path::status>::const_iterator
+        node_status_iterator;
+
+typedef map<file_path, restricted_path::status>::const_iterator
+        path_status_iterator;
+
+typedef set<file_path>::const_iterator path_iterator;
+
+static void
+add_parents(map<node_id, restricted_path::status> & node_map,
+            roster_t const & roster)
+{
+  set<node_id> parents;
+
+  // accumulate the set of parents of all included nodes
+  for (node_status_iterator i = node_map.begin(); i != node_map.end(); ++i)
+    {
+      if (i->second == restricted_path::included && roster.has_node(i->first))
+        {
+          node_id parent = roster.get_node(i->first)->parent;
+          while (!null_node(parent) && parents.find(parent) == parents.end())
+            {
+              parents.insert(parent);
+              parent = roster.get_node(parent)->parent;
+            }
+        }
+    }
+
+  // add implicit includes for all required parents
+  for (set<node_id>::const_iterator i = parents.begin();
+       i != parents.end(); ++i)
+    {
+      node_status_iterator n = node_map.find(*i);
+      if (n == node_map.end())
+        {
+          file_path fp;
+          roster.get_name(*i, fp);
+          W(F("including missing parent '%s'") % fp);
+          node_map[*i] = restricted_path::required;
+        }
+      else if (n->second == restricted_path::included)
+        {
+          node_map[*i] = restricted_path::included_required;
+        }
+      else if (n->second == restricted_path::excluded)
+        {
+          file_path fp;
+          roster.get_name(*i, fp);
+          W(F("including required parent '%s'") % fp);
+          node_map[*i] = restricted_path::excluded_required;
+        }
+    }
+}
+
 static void
 map_nodes(map<node_id, restricted_path::status> & node_map,
           roster_t const & roster,
@@ -35,20 +89,20 @@ map_nodes(map<node_id, restricted_path::status> & node_map,
           set<file_path> & known_paths,
           restricted_path::status const status)
 {
-  for (set<file_path>::const_iterator i = paths.begin(); i != paths.end(); ++i)
+  for (path_iterator i = paths.begin(); i != paths.end(); ++i)
     {
       if (roster.has_node(*i))
         {
           known_paths.insert(*i);
           node_id nid = roster.get_node(*i)->self;
 
-          map<node_id, restricted_path::status>::iterator n
-            = node_map.find(nid);
+          node_status_iterator n = node_map.find(nid);
           if (n != node_map.end())
             E(n->second == status, origin::user,
               F("conflicting include/exclude on path '%s'") % *i);
           else
-            node_map.insert(make_pair(nid, status));
+            node_map[nid] = status;
+
         }
     }
 }
@@ -67,18 +121,61 @@ map_nodes(map<node_id, restricted_path::status> & node_map,
 }
 
 static void
+add_parents(map<file_path, restricted_path::status> & path_map)
+{
+  set<file_path> parents;
+
+  // accumulate the set of parents of all included paths
+  for (path_status_iterator i = path_map.begin(); i != path_map.end(); ++i)
+    {
+      if (i->second == restricted_path::included)
+        {
+          file_path parent = i->first.dirname();
+          while (!parent.empty() && parents.find(parent) == parents.end())
+            {
+              parents.insert(parent);
+              parent = parent.dirname();
+            }
+          parents.insert(parent);
+        }
+    }
+
+  // add implicit includes for all required parents
+  for (set<file_path>::const_iterator i = parents.begin();
+       i != parents.end(); ++i)
+    {
+      path_status_iterator p = path_map.find(*i);
+      if (p == path_map.end())
+        {
+          W(F("including missing parent '%s'") % *i);
+          path_map[*i] = restricted_path::required;
+        }
+      else if (p->second == restricted_path::included)
+        {
+          path_map[*i] = restricted_path::included_required;
+        }
+      else if (p->second == restricted_path::excluded)
+        {
+          W(F("including required parent '%s'") % *i);
+          path_map[*i] = restricted_path::excluded_required;
+        }
+    }
+
+}
+
+static void
 map_paths(map<file_path, restricted_path::status> & path_map,
           set<file_path> const & paths,
           restricted_path::status const status)
 {
-  for (set<file_path>::const_iterator i = paths.begin(); i != paths.end(); ++i)
+  for (path_iterator i = paths.begin(); i != paths.end(); ++i)
     {
-      map<file_path, restricted_path::status>::iterator p = path_map.find(*i);
+      path_status_iterator p = path_map.find(*i);
       if (p != path_map.end())
         E(p->second == status, origin::user,
           F("conflicting include/exclude on path '%s'") % *i);
       else
-        path_map.insert(make_pair(*i, status));
+        path_map[*i] = status;
     }
 }
 
@@ -123,16 +220,14 @@ validate_paths(set<file_path> const & included_paths,
 {
   int bad = 0;
 
-  for (set<file_path>::const_iterator i = included_paths.begin();
-       i != included_paths.end(); ++i)
+  for (path_iterator i = included_paths.begin(); i != included_paths.end(); ++i)
     if (is_unknown(*i))
       {
         bad++;
         W(F("restriction includes unknown path '%s'") % *i);
       }
 
-  for (set<file_path>::const_iterator i = excluded_paths.begin();
-       i != excluded_paths.end(); ++i)
+  for (path_iterator i = excluded_paths.begin(); i != excluded_paths.end(); ++i)
     if (is_unknown(*i))
       {
         bad++;
@@ -143,43 +238,51 @@ validate_paths(set<file_path> const & included_paths,
     FP("%d unknown path", "%d unknown paths", bad) % bad);
 }
 
-restriction::restriction(std::vector<file_path> const & includes,
-                         std::vector<file_path> const & excludes,
+restriction::restriction(vector<file_path> const & includes,
+                         vector<file_path> const & excludes,
                          long depth)
   : included_paths(includes.begin(), includes.end()),
     excluded_paths(excludes.begin(), excludes.end()),
     depth(depth)
 {}
 
-node_restriction::node_restriction(std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+node_restriction::node_restriction(vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    roster_t const & roster,
                                    path_predicate<file_path> const & ignore)
   : restriction(includes, excludes, depth)
 {
   map_nodes(node_map, roster, included_paths, excluded_paths, known_paths);
+  add_parents(node_map, roster);
   validate_paths(included_paths, excluded_paths,
                  unknown_unignored_node(known_paths, ignore));
 }
 
-node_restriction::node_restriction(std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+node_restriction::node_restriction(vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    roster_t const & roster1,
                                    roster_t const & roster2,
-                                   path_predicate<file_path> const & ignore)
+                                   path_predicate<file_path> const & ignore,
+                                   include_rules const & rules)
   : restriction(includes, excludes, depth)
 {
   map_nodes(node_map, roster1, included_paths, excluded_paths, known_paths);
   map_nodes(node_map, roster2, included_paths, excluded_paths, known_paths);
 
+  if (rules == implicit_includes)
+    {
+      add_parents(node_map, roster1);
+      add_parents(node_map, roster2);
+    }
+
   validate_paths(included_paths, excluded_paths,
                  unknown_unignored_node(known_paths, ignore));
 }
 
-node_restriction::node_restriction(std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+node_restriction::node_restriction(vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    parent_map const & rosters1,
                                    roster_t const & roster2,
@@ -191,31 +294,38 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
     map_nodes(node_map, parent_roster(i),
               included_paths, excluded_paths, known_paths);
   map_nodes(node_map, roster2, included_paths, excluded_paths, known_paths);
+
+  for (parent_map::const_iterator i = rosters1.begin();
+       i != rosters1.end(); i++)
+    add_parents(node_map, parent_roster(i));
+  add_parents(node_map, roster2);
+
   validate_paths(included_paths, excluded_paths,
                  unknown_unignored_node(known_paths, ignore));
 }
 
-path_restriction::path_restriction(std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+path_restriction::path_restriction(vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    path_predicate<file_path> const & ignore)
   : restriction(includes, excludes, depth)
 {
   map_paths(path_map, included_paths, restricted_path::included);
   map_paths(path_map, excluded_paths, restricted_path::excluded);
-
+  add_parents(path_map);
   validate_paths(included_paths, excluded_paths,
                  unknown_unignored_path(ignore));
 }
 
-path_restriction::path_restriction(std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+path_restriction::path_restriction(vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    path_restriction::skip_check_t)
   : restriction(includes, excludes, depth)
 {
   map_paths(path_map, included_paths, restricted_path::included);
   map_paths(path_map, excluded_paths, restricted_path::excluded);
+  add_parents(path_map);
 }
 
 bool
@@ -256,22 +366,32 @@ node_restriction::includes(roster_t const & roster, node_id nid) const
 
   while (!null_node(current) && (depth == -1 || path_depth <= depth))
     {
-      map<node_id, restricted_path::status>::const_iterator
-        r = node_map.find(current);
+      node_status_iterator r = node_map.find(current);
 
       if (r != node_map.end())
         {
           switch (r->second)
             {
             case restricted_path::included:
-              L(FL("explicit include of nid %d path '%s'")
-                % current % fp);
+            case restricted_path::included_required:
+              L(FL("explicit include of nid %d path '%s'") % current % fp);
               return true;
 
             case restricted_path::excluded:
-              L(FL("explicit exclude of nid %d path '%s'")
-                % current % fp);
+              L(FL("explicit exclude of nid %d path '%s'") % current % fp);
               return false;
+
+            case restricted_path::required:
+            case restricted_path::excluded_required:
+              if (path_depth == 0)
+                {
+                  L(FL("implicit include of nid %d path '%s'") % current % fp);
+                  return true;
+                }
+              else
+                {
+                  return false;
+                }
             }
         }
 
@@ -324,20 +444,32 @@ path_restriction::includes(file_path const & pth) const
   file_path fp = pth;
   while (depth == -1 || path_depth <= depth)
     {
-      map<file_path, restricted_path::status>::const_iterator
-        r = path_map.find(fp);
+      path_status_iterator r = path_map.find(fp);
 
       if (r != path_map.end())
         {
           switch (r->second)
             {
             case restricted_path::included:
+            case restricted_path::included_required:
               L(FL("explicit include of path '%s'") % pth);
               return true;
 
             case restricted_path::excluded:
               L(FL("explicit exclude of path '%s'") % pth);
               return false;
+
+            case restricted_path::required:
+            case restricted_path::excluded_required:
+              if (path_depth == 0)
+                {
+                  L(FL("implicit include of path '%s'") % pth);
+                  return true;
+                }
+              else
+                {
+                  return false;
+                }
             }
         }
 
@@ -358,11 +490,6 @@ path_restriction::includes(file_path const & pth) const
       return false;
     }
 }
-
-///////////////////////////////////////////////////////////////////////
-// tests
-///////////////////////////////////////////////////////////////////////
-
 
 // Local Variables:
 // mode: C++

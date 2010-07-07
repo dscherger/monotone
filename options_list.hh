@@ -158,18 +158,17 @@ OPT(min_netsync_version, "min-netsync-version",
 }
 #endif
 
-OPT(remote_stdio_host, "remote-stdio-host",
-    utf8, ,
+OPT(remote_stdio_host, "remote-stdio-host", arg_type, ,
     gettext_noop("sets the host (and optionally the port) for a "
                  "remote netsync action"))
 #ifdef option_bodies
 {
-  remote_stdio_host = utf8(arg, origin::user);
+  remote_stdio_host = arg_type(arg, origin::user);
 }
 #endif
 
 OPT(branch, "branch,b", branch_name, ,
-        gettext_noop("select branch cert for operation"))
+    gettext_noop("select branch cert for operation"))
 #ifdef option_bodies
 {
   branch = branch_name(arg, origin::user);
@@ -245,12 +244,26 @@ GOPT(format_dates, "no-format-dates", bool, true,
 }
 #endif
 
-OPTVAR(globals, bool, dbname_is_memory, false);
+
+OPTVAR(globals, db_type, dbname_type, );
+OPTVAR(globals, std::string, dbname_alias, );
 GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #ifdef option_bodies
 {
-  dbname = system_path(arg, origin::user);
-  dbname_is_memory = (arg == ":memory:");
+  if (arg == memory_db_identifier)
+    {
+      dbname_type = memory_db;
+    }
+  else if (arg.size() > 0 && arg.substr(0, 1) == ":")
+    {
+      dbname_alias = arg;
+      dbname_type = managed_db;
+    }
+  else
+    {
+      dbname = system_path(arg, origin::user);
+      dbname_type = unmanaged_db;
+    }
 }
 #endif
 

@@ -11,6 +11,7 @@
 #include "base.hh"
 #include "dates.hh"
 #include "sanity.hh"
+#include "platform.hh"
 
 #include <ctime>
 #include <climits>
@@ -442,13 +443,8 @@ date_t::from_formatted_localtime(string const & s, string const & fmt)
 
   L(FL("parsing date '%s' with format '%s'") % s % fmt);
 
-  char *p = strptime(s.c_str(), fmt.c_str(), &tb); // local timezone values
-
-  E(p, origin::user, // strptime failed to match all of the format string
-    F("unable to parse date '%s' with format '%s'") % s % fmt);
-  
-  E(*p == 0, origin::user, // extraneous characters in input string
-    F("invalid date '%s' not matched by format '%s'") % s % fmt);
+  // get local timezone values
+  parse_date(s, fmt, &tb);
 
   // strptime does *not* set the tm_isdst field in the broken down time
   // struct. setting it to -1 is apparently the way to tell mktime to
@@ -494,7 +490,7 @@ date_t::from_formatted_localtime(string const & s, string const & fmt)
     tb.tm_wday  == check.tm_wday &&
     tb.tm_yday  == check.tm_yday &&
     tb.tm_isdst == check.tm_isdst,
-    origin::user, 
+    origin::user,
     F("date '%s' is out of range and cannot be parsed")
     % s);
 

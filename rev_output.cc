@@ -148,31 +148,32 @@ revision_summary(revision_t const & rev, utf8 & summary)
 
       for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
             i != cs.nodes_deleted.end(); ++i)
-        out << _("  dropped  ") << *i << '\n';
+        out << (F("  dropped  %s") %*i) << '\n';
 
       for (map<file_path, file_path>::const_iterator
             i = cs.nodes_renamed.begin();
             i != cs.nodes_renamed.end(); ++i)
-        out << _("  renamed  ") << i->first << '\n'
-            << _("       to  ") << i->second << '\n';
+        out << (F("  renamed  %s\n"
+                  "       to  %s") % i->first % i->second) << '\n';
 
       for (set<file_path>::const_iterator i = cs.dirs_added.begin();
             i != cs.dirs_added.end(); ++i)
-        out << _("  added    ") << *i << '\n';
+        out << (F("  added    %s") % *i) << '\n';
 
       for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
             i != cs.files_added.end(); ++i)
-        out << _("  added    ") << i->first << '\n';
+        out << (F("  added    %s") % i->first) << '\n';
 
       for (map<file_path, pair<file_id, file_id> >::const_iterator
               i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
-        out << _("  patched  ") << i->first << '\n';
+        out << (F("  patched  %s") % i->first) << '\n';
 
       for (map<pair<file_path, attr_key>, attr_value >::const_iterator
              i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
-        out << _("  attr on  ") << i->first.first << '\n'
-            << _("      set  ") << i->first.second << '\n'
-            << _("       to  ") << i->second << '\n';
+        out << (F("  attr on  %s\n"
+                  "      set  %s\n"
+                  "       to  %s")
+                % i->first.first % i->first.second % i->second) << '\n';
 
       // FIXME: naming here could not be more inconsistent
       // the cset calls it attrs_cleared
@@ -182,8 +183,8 @@ revision_summary(revision_t const & rev, utf8 & summary)
 
       for (set<pair<file_path, attr_key> >::const_iterator
              i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
-        out << _("  attr on  ") << i->first << '\n'
-            << _("    unset  ") << i->second << '\n';
+        out << (F("  attr on  %s\n"
+                  "    unset  %s") % i->first % i->second) << '\n';
 
       out << '\n';
     }

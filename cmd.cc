@@ -142,6 +142,15 @@ namespace commands {
     out << format_text(desc, colabstract, col) << '\n';
   }
 
+  class cmd_ptr_compare
+  {
+  public:
+    bool operator()(command const * const a, command const * const b) const
+    {
+      return a->primary_name()() < b->primary_name()();
+    }
+  };
+
   static void explain_children(command::children_set const & children,
                                bool show_hidden_commands,
                                ostream & out)
@@ -167,7 +176,7 @@ namespace commands {
         sorted.push_back(child);
       }
 
-    sort(sorted.begin(), sorted.end(), std::greater< command const * >());
+    sort(sorted.begin(), sorted.end(), cmd_ptr_compare());
 
     for (vector< command const * >::const_iterator i = sorted.begin();
          i != sorted.end(); i++)

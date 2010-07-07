@@ -10,7 +10,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT([monotone], [0.48dev], [monotone-devel@nongnu.org])
+AC_INIT([monotone], [0.99dev], [monotone-devel@nongnu.org])
 AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_HEADERS([config.h])
@@ -48,6 +48,10 @@ case "$host" in
     AC_MSG_RESULT([Windows])
     WIN32_PLATFORM="true"
     os_err_t="unsigned int"
+    
+    # Inno setup configuration
+    AC_CONFIG_FILES([monotone.iss:win32/monotone.iss.in])
+    AC_PATH_PROG(ISCC, [ISCC]) 
   ;;
 
   *-ibm-aix* )
