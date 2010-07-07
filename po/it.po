@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: monotone 0.48dev\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-06-13 23:48+0200\n"
-"PO-Revision-Date: 2010-06-09 15:37+0100\n"
+"PO-Revision-Date: 2010-07-07 11:43+0100\n"
 "Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -120,7 +120,7 @@ msgstr "percorso assoluto ‘%s’ non valido"
 #: paths.cc:446 paths.cc:466
 #, c-format
 msgid "path '%s' is in bookkeeping dir"
-msgstr "il path ‘%s’ è nella cartella di bookkeeping"
+msgstr "path '%s' is in bookkeeping dir"
 
 #: paths.cc:460
 #, c-format
@@ -136,7 +136,7 @@ msgstr "Path non in forma normalizzata"
 #: paths.cc:486
 #, c-format
 msgid "Bookkeeping path is not in bookkeeping dir"
-msgstr ""
+msgstr "Il percorso contabilità non è nella dir contabilità"
 
 #: paths.cc:809
 #, c-format
@@ -171,7 +171,7 @@ msgstr "la radice di ricerca ‘%s’ non è una directory"
 #: luaext_parse_basic_io.cc:44
 #, c-format
 msgid "bad input to parse_basic_io"
-msgstr ""
+msgstr "Input non valido per parse_basic_io"
 
 #: lua.cc:485 lua.cc:497 lua.cc:509 cmd.cc:364 cmd.cc:388
 #, c-format
@@ -462,7 +462,7 @@ msgstr "Uso: %s [OPZIONI…] comando [ARGOMENTI…]"
 #: ui.cc:1006
 #, c-format
 msgid "Options specific to '%s %s' (run '%s help' to see global options):"
-msgstr ""
+msgstr "Opzioni specifiche per '%s %s' (esegui '%s help' per vedere le opzioni globali): "
 
 #: automate_ostream_demuxed.hh:62
 #, c-format
@@ -477,12 +477,12 @@ msgstr "%s: errore da remoto: "
 #: automate_ostream_demuxed.hh:66
 #, c-format
 msgid "%s: remote message: "
-msgstr ""
+msgstr "%s: messaggio da remoto:"
 
 #: automate_ostream_demuxed.hh:76
 #, c-format
 msgid "%s: remote header: "
-msgstr ""
+msgstr "%s: intestazione da remoto:"
 
 #: automate_reader.cc:46
 #, c-format
@@ -758,7 +758,7 @@ msgstr "[INDIRIZZO[:NUMERO_PORTA]]"
 
 #: cmd_netsync.cc:278
 msgid "Opens an 'automate stdio' connection to a remote server"
-msgstr ""
+msgstr "Apre una connessione 'automate stdio' per un server remoto "
 
 #: cmd_netsync.cc:291 cmd_netsync.cc:423
 #, c-format
@@ -766,6 +766,8 @@ msgid ""
 "No database given; assuming '%s' database. This means that we can't\n"
 "verify the server key, because we have no record of what it should be."
 msgstr ""
+"Nessun database specificato, si userà '%s'. Questo sighifica che\n"
+"non possiamo verificare la chiave del server, perché non è nota."
 
 #: cmd_netsync.cc:410
 msgid "COMMAND [ARGS]"
@@ -773,7 +775,7 @@ msgstr "COMANDO [PARAMETRI]"
 
 #: cmd_netsync.cc:411
 msgid "Executes COMMAND on a remote server"
-msgstr ""
+msgstr "Esegue COMMAND su un server remoto"
 
 #: cmd_netsync.cc:419 cmd_list.cc:981 cmd_packet.cc:182 cmd_merging.cc:368
 #: cmd_merging.cc:1108 cmd_merging.cc:1177 cmd_ws_commit.cc:1263
@@ -990,7 +992,7 @@ msgstr "sconosciuto"
 msgid ""
 "Lists duplicate files in the specified revision. If no revision is "
 "specified, use the workspace"
-msgstr ""
+msgstr "Elenca file duplicati nella revisione specificata. Se nessuna revisione è specificata, usa lo spazio di lavoro"
 
 #: cmd_list.cc:221
 #, c-format
@@ -1025,7 +1027,7 @@ msgstr "(*) - solo in ‘%s/’"
 #: cmd_list.cc:465
 #, c-format
 msgid "Some key names refer to multiple keys"
-msgstr ""
+msgstr "Alcuni nomi chiave fanno riferimento a chiavi multiple"
 
 #: cmd_list.cc:469
 #, c-format
@@ -1055,7 +1057,7 @@ msgstr "Elenca le variabili presenti in un intero database o un dominio"
 
 #: cmd_list.cc:618
 msgid "Lists managed databases and their known workspaces"
-msgstr ""
+msgstr "Elenca database gestiti e i loro spazi di lavoro conosciuti"
 
 #: cmd_list.cc:625 database.cc:4753
 #, c-format
@@ -1065,7 +1067,7 @@ msgstr ""
 #: cmd_list.cc:671
 #, c-format
 msgid ":%s (in %s):"
-msgstr ""
+msgstr ":%s (in %s):"
 
 #: cmd_list.cc:706
 msgid "<no branch set>"
@@ -1074,12 +1076,12 @@ msgstr ""
 #: cmd_list.cc:708
 #, c-format
 msgid "\t%s (in %s)"
-msgstr ""
+msgstr "\t%s (in %s)"
 
 #: cmd_list.cc:712
 #, c-format
 msgid "\tno known valid workspaces"
-msgstr ""
+msgstr "\tno spazi di lavoro conosciuti validi"
 
 #: cmd_list.cc:718
 msgid "Lists workspace files that belong to the current branch"
@@ -1493,7 +1495,7 @@ msgstr ""
 #: cmd_merging.cc:371
 #, c-format
 msgid "at most one revision selector may be specified"
-msgstr ""
+msgstr "al massimo un selettore di revisione può essere specificato"
 
 #: cmd_merging.cc:436 cmd_merging.cc:764
 #, c-format
@@ -1681,8 +1683,8 @@ msgstr "nessun conflitto individuato"
 #, c-format
 msgid "warning: %d conflict with no supported resolutions."
 msgid_plural "warning: %d conflicts with no supported resolutions."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "attenzione: conflitto %d senza soluzioni supportate"
+msgstr[1] "attenzione: conflitti %d senza soluzioni supportate"
 
 #: cmd_merging.cc:1059
 msgid "REV REV"
@@ -1718,18 +1720,18 @@ msgstr "Mostra i conflitti presenti tra due revisioni."
 msgid ""
 "If no arguments are given, LEFT_REVID and RIGHT_REVID default to the first "
 "two heads that would be chosen by the 'merge' command."
-msgstr ""
+msgstr "Se non vengono dati argomenti, LEFT_REVID e RIGHT_REVID default per le due prime teste che sarebbero scelte dal comando 'merge'."
 
 #: cmd_merging.cc:1144
 msgid "Store the conflicts from merging two revisions."
-msgstr ""
+msgstr "Immagazzina i conflitti derivati dala fusione di due revisioni."
 
 #: cmd_merging.cc:1145
 msgid ""
 "If no arguments are given, LEFT_REVID and RIGHT_REVID default to the first "
 "two heads that would be chosen by the 'merge' command. If --conflicts-file "
 "is not given, '_MTN/conflicts' is used."
-msgstr ""
+msgstr "Se non vengono dati argomenti, LEFT_REVID e RIGHT_REVID default per le due prime teste che sarebbero scelte dal comando 'merge'. Se --conflicts-file non è dato, viene usato '_MTN/conflicts'."
 
 #: cmd_merging.cc:1163
 msgid "LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME"
@@ -1739,12 +1741,12 @@ msgstr "REVID_SX NOME_FILE_SX REVID_DX NOME_FILE_DX"
 msgid ""
 "Prints the results of the internal line merger, given two child revisions "
 "and file names"
-msgstr ""
+msgstr "Stampa i risultati della linea fusione interna, date due revisioni figlo e nomi del file"
 
 #: cmd_merging.cc:1216
 #, c-format
 msgid "internal line merger failed"
-msgstr ""
+msgstr "fusione linea interna fallita"
 
 #: cmd_merging.cc:1221
 msgid "[-r FROM] -r TO [PATH...]"
@@ -1857,7 +1859,7 @@ msgstr "Mostra la versione del database"
 
 #: cmd_db.cc:80
 msgid "Attempt to fix bad certs"
-msgstr ""
+msgstr "Tentativo di riparare certificati cattivi"
 
 #: cmd_db.cc:81
 msgid ""
@@ -2061,16 +2063,16 @@ msgstr "[PATH_SPAZIO_DI_LAVORO]"
 
 #: cmd_db.cc:405
 msgid "Registers a new workspace for the current database"
-msgstr ""
+msgstr "Registra un nuovo spazio di lavoro per il database corrente"
 
 #: cmd_db.cc:406
 msgid "This command adds WORKSPACE_PATH to the list of `known-workspaces'."
-msgstr ""
+msgstr "Questo comando aggiunge PATH_SPAZIO_DI_LAVORO alla lista degli spazi di lavoro conosciuti."
 
 #: cmd_db.cc:413 cmd_db.cc:435
 #, c-format
 msgid "No workspace given"
-msgstr ""
+msgstr "Nessuno spazio di lavoro dato"
 
 #: cmd_db.cc:427
 msgid "Unregisters an existing workspace for the current database"
@@ -2078,12 +2080,12 @@ msgstr ""
 
 #: cmd_db.cc:428
 msgid "This command removes WORKSPACE_PATH to the list of `known-workspaces'."
-msgstr ""
+msgstr "Questo comando toglie PATH_SPAZIO_DI_LAVORO dalla lista degli spazi di lavoro conosciuti."
 
 #: cmd_db.cc:448
 msgid ""
 "Removes all invalid, registered workspace paths for the current database"
-msgstr ""
+msgstr "Rimuove tutti i percorsi invalidi registrati nello spazio di lavoro per il database corrente"
 
 #: cmd_db.cc:493
 msgid "(revision|file|key) PARTIAL-ID"
@@ -2129,7 +2131,7 @@ msgstr "carica tutte le revisioni dal database"
 msgid ""
 "This command loads all revisions from the database and is intended to be "
 "used for timing revision loading performance."
-msgstr ""
+msgstr "Questo comando carica tutte le revisioni dal database ed è pensato per verificarne le performance."
 
 #: cmd_db.cc:593
 #, c-format
@@ -2149,7 +2151,7 @@ msgstr "carica tutti i roster dal database"
 msgid ""
 "This command loads all roster versions from the database and is intended to "
 "be used for timing roster reconstruction performance."
-msgstr ""
+msgstr "Questo comanda carica tutte le versioni roster dal database ed è ppensato per verificarne le performance."
 
 #: cmd_db.cc:622
 #, c-format
@@ -2168,7 +2170,7 @@ msgstr "carica le versioni di tutti i file dal database"
 msgid ""
 "This command loads all files versions from the database and is intended to "
 "be used for timing file reconstruction performance."
-msgstr ""
+msgstr "Questo comando carica le versioni di tutti i file dal database e è progettato per calcolare il tempo di esecuzione della ricostruzione del file."
 
 #: cmd_db.cc:647
 #, c-format
@@ -2188,7 +2190,7 @@ msgstr "carica tutti i certificati dal database"
 msgid ""
 "This command loads all certs from the database and is intended to be used "
 "for timing cert loading performance."
-msgstr ""
+msgstr "Questo comando carica tutti i certificati dal database e è progettato per calcolare il tempo di esecuzione del caricamento certificati."
 
 #: cmd_db.cc:672 database.cc:1285
 #, c-format
@@ -2208,7 +2210,7 @@ msgstr "selezionate più di due revisioni"
 #: cmd_diff_log.cc:257
 #, c-format
 msgid "--reverse only allowed with exactly one revision"
-msgstr ""
+msgstr "--reverse permesso soltanto con una precisa revisione"
 
 #: cmd_diff_log.cc:270
 #, c-format
@@ -2296,7 +2298,7 @@ msgstr "prova a specificare una revisione da cui partire con ‘--from’"
 #, c-format
 msgid ""
 "workspace parent revision '%s' not found - did you specify a wrong database?"
-msgstr ""
+msgstr "revisione genitore dello spazio di lavoro '%s' non trovata - hai specificato un database sbagliato?"
 
 #: cmd_diff_log.cc:925
 #, c-format
@@ -2310,6 +2312,9 @@ msgid ""
 "This file must be removed before commit will proceed.\n"
 "You may recover the previous message from this file if necessary."
 msgstr ""
+"Un backup di un commit precedentemente fallito esiste in _MTN/commit.\n"
+"Questo file deve essere rimosso prima di procedere col commit. \n"
+"Puoi ricuperare il messaggio precedente da questo file se necessario."
 
 #: cmd_ws_commit.cc:183
 msgid ""
@@ -2317,14 +2322,17 @@ msgid ""
 "The values of Author, Date and Branch may be modified as required.\n"
 "\n"
 msgstr ""
+"Immettere una descrizione del seguente cambiamento nella linea Changelog sottostante. \n"
+"I valori di Autore, Data e Ramo possono essere modificati come richiesto. \n"
+"\n"
 
 #: cmd_ws_commit.cc:187
 msgid "*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"
-msgstr ""
+msgstr "*** RIMUOVERE QUESTA LINEA PER CANCELAREL IL COMMIT ***\n"
 
 #: cmd_ws_commit.cc:209 cmd_ws_commit.cc:930
 msgid "*** THIS REVISION WILL CREATE A NEW BRANCH ***"
-msgstr ""
+msgstr "*** QUESTA REVISIONE CREERÀ UN NUOVO RAMO ***"
 
 #: cmd_ws_commit.cc:212 cmd_ws_commit.cc:933
 msgid "Old Branch: "
@@ -2336,12 +2344,12 @@ msgstr "Ramo nuovo: "
 
 #: cmd_ws_commit.cc:224 cmd_ws_commit.cc:945
 msgid "*** THIS REVISION WILL CREATE DIVERGENCE ***"
-msgstr ""
+msgstr "*** QUESTA REVISIONE CREERÀ UNA DIVERGENZA ***"
 
 #: cmd_ws_commit.cc:240
 #, c-format
 msgid "date format '%s' cannot be used for commit; using default instead"
-msgstr ""
+msgstr "formato data '%s' non può essere usato per il commit; usa invece il default"
 
 #: cmd_ws_commit.cc:259
 #, c-format
@@ -2351,12 +2359,12 @@ msgstr "modifica del messaggio di log fallita"
 #: cmd_ws_commit.cc:278
 #, c-format
 msgid "Commit failed. Instructions not found."
-msgstr ""
+msgstr "Commit fallito. Istruzioni non trovate."
 
 #: cmd_ws_commit.cc:285
 #, c-format
 msgid "Commit cancelled."
-msgstr ""
+msgstr "Commit cancellato."
 
 #: cmd_ws_commit.cc:288
 msgid "Author: "
@@ -2372,62 +2380,62 @@ msgstr "Ramo: "
 
 #: cmd_ws_commit.cc:291 rev_output.cc:106
 msgid "Changelog: "
-msgstr ""
+msgstr "Changelog: "
 
 #: cmd_ws_commit.cc:304
 #, c-format
 msgid "Commit failed. Revision/Parent header not found."
-msgstr ""
+msgstr "Commit fallito. Revisione/genitore non trovato."
 
 #: cmd_ws_commit.cc:309
 #, c-format
 msgid "Commit failed. Author header not found."
-msgstr ""
+msgstr "Commit fallito. Intestazione autore non trovato."
 
 #: cmd_ws_commit.cc:314
 #, c-format
 msgid "Commit failed. Author value empty."
-msgstr ""
+msgstr "Commit fallito. Valore autore vuoto."
 
 #: cmd_ws_commit.cc:319
 #, c-format
 msgid "Commit failed. Date header not found."
-msgstr ""
+msgstr "Commit fallito. Data intestazione non trovata."
 
 #: cmd_ws_commit.cc:324
 #, c-format
 msgid "Commit failed. Date value empty."
-msgstr ""
+msgstr "Commit fallito. Valore data vuoto."
 
 #: cmd_ws_commit.cc:334
 #, c-format
 msgid "Commit failed. Branch header not found."
-msgstr ""
+msgstr "Commit fallito. Valore del ramo non trovato."
 
 #: cmd_ws_commit.cc:339
 #, c-format
 msgid "Commit failed. Branch value empty."
-msgstr ""
+msgstr "Commit fallito. Valore del ramo vuoto."
 
 #: cmd_ws_commit.cc:345
 #, c-format
 msgid "Commit failed. Blank line before Changelog header not found."
-msgstr ""
+msgstr "Commit fallito. Linea in bianco prima dell'intestazione Changelog non trovata."
 
 #: cmd_ws_commit.cc:350
 #, c-format
 msgid "Commit failed. Changelog header not found."
-msgstr ""
+msgstr "Commit fallito. Intestazione Changelog non trovata."
 
 #: cmd_ws_commit.cc:359
 #, c-format
 msgid "Commit failed. Change summary not found."
-msgstr ""
+msgstr "Commit fallito. Sommario Change non trovato."
 
 #: cmd_ws_commit.cc:362
 #, c-format
 msgid "Commit failed. Text following Change summary."
-msgstr ""
+msgstr "Commit fallito: è persente del testo dopo il sommario delle modifiche."
 
 #: cmd_ws_commit.cc:383
 #, c-format
@@ -2466,13 +2474,13 @@ msgstr ""
 
 #: cmd_ws_commit.cc:569
 msgid "Reverses a mistaken 'drop'"
-msgstr ""
+msgstr "Inverte un 'drop' sbagliato"
 
 #: cmd_ws_commit.cc:570
 msgid ""
 "If the file was deleted from the workspace, this is the same as 'revert'. "
 "Otherwise, it just removes the 'drop' from the manifest."
-msgstr ""
+msgstr "Se il file era stato cancellato dallo spazio di lavoro, questo è lo stesso come 'revert'. Altrimenti, solo rimuove il 'drop' dal manifesto."
 
 #: cmd_ws_commit.cc:578
 msgid "Disapproves a particular revision"
@@ -2568,12 +2576,12 @@ msgstr "Mostra informazioni sullo spazio di lavoro"
 #: cmd_ws_commit.cc:849
 #, c-format
 msgid "date format '%s' cannot be used for commit"
-msgstr ""
+msgstr "formato data '%s' non può essere usato per il commit"
 
 #: cmd_ws_commit.cc:874
 #, c-format
 msgid "bisection from revision %s in progress"
-msgstr ""
+msgstr "bisezione dalla revisione %s in corso"
 
 #: cmd_ws_commit.cc:954 cmd_ws_commit.cc:1718 cmd_ws_commit.cc:1870
 msgid "[DIRECTORY]"
@@ -2853,7 +2861,7 @@ msgstr "Aggiorna la cache degli inodeprint"
 
 #: cmd_ws_commit.cc:1907
 msgid "Search revisions to find where a change first appeared"
-msgstr ""
+msgstr "Cerca revisioni per trovare dove un cambiamentoè apparso per la prima volta"
 
 #: cmd_ws_commit.cc:1908
 msgid ""
@@ -2862,21 +2870,22 @@ msgid ""
 "that introduced some change."
 msgstr ""
 
+# TODO: "ricerca con bisezione"? o forse "bisezione" e basta?
 #: cmd_ws_commit.cc:1913
 msgid "Reset the current bisection search"
-msgstr ""
+msgstr "Resetta l'attuale ricerca con bisezione"
 
 #: cmd_ws_commit.cc:1914
 msgid ""
 "Update the workspace back to the revision from which the bisection was "
 "started and remove all current search information, allowing a new search to "
 "be started."
-msgstr ""
+msgstr "Aggiorna lo spazio di lavoro riportandolo alla versione dalla quale era iniziata la besezione e rimuove ogni informazione di ricerca corrente, permettendo di cominciare una nuova ricerca."
 
 #: cmd_ws_commit.cc:1929 cmd_ws_commit.cc:1985
 #, c-format
 msgid "no bisection in progress"
-msgstr ""
+msgstr "nessuna bisezione in corso"
 
 #: cmd_ws_commit.cc:1944 cmd_ws_commit.cc:2172
 #, c-format
@@ -2886,9 +2895,9 @@ msgstr ""
 "cambiamenti in sospeso"
 
 #: cmd_ws_commit.cc:1950
-#, c-format
+#, fuzzy, c-format
 msgid "reset back to %s"
-msgstr ""
+msgstr "riportato a %s"
 
 #: cmd_ws_commit.cc:2016
 #, c-format
@@ -2912,22 +2921,22 @@ msgstr ""
 #: cmd_ws_commit.cc:2103
 #, c-format
 msgid "bisection finished at revision %s"
-msgstr ""
+msgstr "bisezione finita alla revisione %s"
 
 #: cmd_ws_commit.cc:2196
 #, c-format
 msgid "bisection started at revision %s"
-msgstr ""
+msgstr "bisezione iniziata alla revisione %s"
 
 #: cmd_ws_commit.cc:2212
 #, c-format
 msgid "ignored redundant bisect %s on revision %s"
-msgstr ""
+msgstr "ignorata bisezione %s ridondante nella revisione %s"
 
 #: cmd_ws_commit.cc:2217
 #, c-format
 msgid "conflicting bisect %s/%s on revision %s"
-msgstr ""
+msgstr "bisezione %s/%s conflittuale nella revisione %s"
 
 #: cmd_ws_commit.cc:2235
 #, c-format
@@ -2954,16 +2963,16 @@ msgstr ""
 #: cmd_ws_commit.cc:2290
 #, c-format
 msgid "however this workspace is currently at %s\n"
-msgstr ""
+msgstr "comunque questo spazio di lavoro è attualmente a %s\n"
 
 #: cmd_ws_commit.cc:2291
 #, c-format
 msgid "run 'bisect update' to update to this revision before testing"
-msgstr ""
+msgstr "esequi  'bisect update' per aggiornare questa revisione prima di verificare"
 
 #: cmd_ws_commit.cc:2296
 msgid "Updates the workspace to the next revision to be tested by bisection"
-msgstr ""
+msgstr "Aggiorna lo spazio di lavoro alla prossima revisione per essere verificato dalla bisezione"
 
 #: cmd_ws_commit.cc:2297
 msgid ""
@@ -2973,7 +2982,7 @@ msgstr ""
 
 #: cmd_ws_commit.cc:2307
 msgid "Excludes the current revision or specified revisions from the search"
-msgstr ""
+msgstr "Esclude dalla ricerca la revisione attuale o revisioni speficate"
 
 #: cmd_ws_commit.cc:2308
 msgid ""
@@ -2983,19 +2992,19 @@ msgstr ""
 
 #: cmd_ws_commit.cc:2318
 msgid "Marks the current revision or specified revisions as bad"
-msgstr ""
+msgstr "Segna come cattive la revisione attuale o revisioni speficate"
 
 #: cmd_ws_commit.cc:2319
 msgid "Known bad revisions are removed from the set being searched."
-msgstr ""
+msgstr "Cattive revisioni conosciute vengono rimosse dall'nsieme che viene ricercato"
 
 #: cmd_ws_commit.cc:2328
 msgid "Marks the current revision or specified revisions as good"
-msgstr ""
+msgstr "Segna come buone la revisione attuale o revisioni speficate"
 
 #: cmd_ws_commit.cc:2329
 msgid "Known good revisions are removed from the set being searched."
-msgstr ""
+msgstr "Buone revisioni conosciute vengono rimosse dall'nsieme che viene ricercato"
 
 #: cmd_othervcs.cc:28
 msgid "RCSFILE..."
@@ -3073,12 +3082,12 @@ msgstr ""
 #: cmd_automate.cc:138
 #, c-format
 msgid "this is an informational message"
-msgstr ""
+msgstr "questo è un messaggio informativo"
 
 #: cmd_automate.cc:140
 #, c-format
 msgid "this is a warning"
-msgstr ""
+msgstr "questo è un avvertimento"
 
 #: cmd_automate.cc:142
 #, c-format
@@ -3102,7 +3111,7 @@ msgstr "sono possibili vari completamenti per questo comando"
 #: cmd_automate.cc:285 network/automate_session.cc:222
 #, c-format
 msgid "sorry, that can't be run remotely or over stdio"
-msgstr ""
+msgstr "spiacente, ciò non può essere eseguito da remoto o su stdio"
 
 #: cmd_automate.cc:372
 #, c-format
@@ -3394,17 +3403,17 @@ msgstr ""
 #: cmd_conflicts.cc:404
 #, c-format
 msgid "no resolvable yet unresolved left side conflicts"
-msgstr ""
+msgstr "non risolvibili ancora non risolti conflitti lato sinistro "
 
 #: cmd_conflicts.cc:408
 #, c-format
 msgid "no resolvable yet unresolved right side conflicts"
-msgstr ""
+msgstr "non risolvibili ancora non risolti conflitti lato deistro"
 
 #: cmd_conflicts.cc:412
 #, c-format
 msgid "no resolvable yet unresolved single-file conflicts"
-msgstr ""
+msgstr "non risolvibili ancora non risolti conflitti file-singolo"
 
 #: cmd_conflicts.cc:426
 msgid ""
@@ -3649,7 +3658,7 @@ msgstr "%d conflitti nello spazio di lavoro"
 #: work.cc:1614
 #, c-format
 msgid "moved conflicting path %s to %s"
-msgstr ""
+msgstr "rimosso percorso contraddittorio %s in %s"
 
 #: work.cc:1678
 #, c-format
@@ -3817,7 +3826,7 @@ msgstr ""
 #: work.cc:2188
 #, c-format
 msgid "moved some conflicting files into %s/%s"
-msgstr ""
+msgstr "rimossi alcuni file contraddittori in %s/%s"
 
 #: migrate_work.cc:79
 #, c-format
@@ -4122,29 +4131,29 @@ msgstr "versione dello schema del database: %s"
 #: database.cc:1294
 #, c-format
 msgid "checking"
-msgstr ""
+msgstr "verificando"
 
 #: database.cc:1296
 msgid "checked"
-msgstr ""
+msgstr "verificato"
 
 #: database.cc:1298
 msgid "fixed"
-msgstr ""
+msgstr "riparato"
 
 #: database.cc:1301
 msgid "dropped"
-msgstr ""
+msgstr "abbandonato"
 
 #: database.cc:1356
 #, c-format
 msgid "checked %d certs, found %d bad, fixed %d, dropped %d"
-msgstr ""
+msgstr "verificati certificati %d, trovati %d cattivi, riparati %d, abbandonati %d"
 
 #: database.cc:1361
 #, c-format
 msgid "checked %d certs, found %d bad, fixed %d"
-msgstr ""
+msgstr "verificati certificati %d, trovati %d cattivi, riparati %d"
 
 #: database.cc:1424
 #, c-format
@@ -4242,7 +4251,7 @@ msgstr "Impossibile trovare la chiave RSA di verifica per %s"
 #: database.cc:3456
 #, c-format
 msgid "Your database contains multiple keys named %s"
-msgstr ""
+msgstr "Il tuo database contiene chiavi multiple chiamate %s"
 
 # TODO: specificare "il certificato della"?
 #: database.cc:3617
@@ -4957,7 +4966,7 @@ msgstr ""
 #: network/automate_session.cc:171
 #, c-format
 msgid "Sorry, you aren't allowed to do that."
-msgstr ""
+msgstr "Spiacente, non ti è permesso fare ciò."
 
 #: network/automate_session.cc:310
 #, c-format
@@ -6236,7 +6245,7 @@ msgstr ""
 #: selectors.cc:210
 #, c-format
 msgid "no value is allowed with the update selector u:"
-msgstr ""
+msgstr "nessun valore è permesso con il selettore aggiornamento u:"
 
 #: selectors.cc:212
 #, c-format
@@ -6250,7 +6259,7 @@ msgstr ""
 #: selectors.cc:222
 #, c-format
 msgid "no value is allowed with the base revision selector w:"
-msgstr ""
+msgstr "nessun valore è permesso con il selettore base di revisione w:"
 
 # TODO: viene usato ‘revisione base’ altrove?
 #: selectors.cc:371
@@ -6282,17 +6291,17 @@ msgstr "la selezione ‘%s’ ha espansioni multiple ambigue:"
 #: annotate.cc:425
 #, c-format
 msgid "%s.. by %s %s: "
-msgstr ""
+msgstr "%s.. da %s %s: "
 
 #: restrictions.cc:68 restrictions.cc:150
 #, c-format
 msgid "including missing parent '%s'"
-msgstr ""
+msgstr "includendo genitore mancante '%s'"
 
 #: restrictions.cc:79 restrictions.cc:159
 #, c-format
 msgid "including required parent '%s'"
-msgstr ""
+msgstr "includendo genitore richiesto '%s'"
 
 # TODO: sul o nel?
 #: restrictions.cc:102 restrictions.cc:176
@@ -7236,7 +7245,7 @@ msgstr "argomenti da passare all'hook per le diff esterne"
 
 #: options_list.hh:311
 msgid "reverse order of diff"
-msgstr ""
+msgstr "inverte ordine di diff"
 
 #: options_list.hh:319
 msgid "use context diff format"
@@ -7380,7 +7389,7 @@ msgstr "legge il messaggio di ChangeLog del commit da un file"
 
 #: options_list.hh:578
 msgid "no prefix to message"
-msgstr ""
+msgstr "nessun prefisso per il messaggio"
 
 #: options_list.hh:586
 msgid "perform the operations for files missing from workspace"
@@ -7539,7 +7548,7 @@ msgstr ""
 
 #: options_list.hh:890
 msgid "file mapping author names from original to new values"
-msgstr ""
+msgstr "mappatura file nomi autore dall'originale a nuovi valori"
 
 #: options_list.hh:898
 msgid "file mapping branch names from original to new values "
@@ -7758,7 +7767,7 @@ msgstr "ssh_agent: ricevuti %u byte extra dall'agent"
 #: unix/parse_date.cc:21
 #, c-format
 msgid "unable to parse date '%s' with format '%s'"
-msgstr ""
+msgstr "impossibile analizzare data '%s' con formato '%s'"
 
 #: unix/parse_date.cc:24
 #, c-format
