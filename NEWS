@@ -21,18 +21,18 @@ Xxx Xxx 99 99:99:99 UTC 2010
           URI syntax.  Additionally, file:// and ssh:// URIs are now
           parsed for include and exclude patterns just as the native
           mtn:// URIs.
-          
+
           The possibility to specify include patterns by using
-          "include=" and exclude patterns by using "exclude=" 
+          "include=" and exclude patterns by using "exclude="
           in the query string has been removed.
 
-          Monotone's native protocol (mtn://) is still the default 
+          Monotone's native protocol (mtn://) is still the default
           protocol if nothing is specified.
 
-          The format for the server part of the `default-server`, 
+          The format for the server part of the `default-server`,
           `known-server`, `server-include` and `server-exclude`
           database variables has been changed and now always includes
-          the complete (normalized) URI resource, consisting of the 
+          the complete (normalized) URI resource, consisting of the
           used protocol, user, host, port and path parts.  Older entries
           in existing databases which do not match the new format are
           preserved and not changed by monotone.
@@ -54,7 +54,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           the exchange was successful.  The progress messages which have
           been issued for this previously have been removed, since they
           would come up now unexpectedly and would clutter the output of
-          commands such as `clone`, `automate remote` and 
+          commands such as `clone`, `automate remote` and
           `automate remote_stdio`.
 
         - The `import` command now keeps the created bookkeeping root if
@@ -66,12 +66,16 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - monotone no longer passes syntactically correct, but non-existent
           revision ids through the selector machinery.  The most visible
           place for this change is `automate select`, which no longer
-          echoes every possible 40 hex-byte string. 
+          echoes every possible 40 hex-byte string.
 
         New Features
 
         - the 'disapprove' command now accepts a revision range in
           addition to a single revision.
+
+        - New automation command 'log' which behaves identical to the
+          normal 'log' command, except that it only outputs the
+          revision ids.
 
         Bugs Fixed
 
@@ -94,7 +98,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           to write out _MTN/options on --dry-run
           (fixes monotone bug #30225)
 
-        - `mtn trusted` will no longer accept single bogus revision ids,    
+        - `mtn trusted` will no longer accept single bogus revision ids,
           but instead validates if the given revision really exists in the
           current database.
 

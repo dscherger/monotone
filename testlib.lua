@@ -414,7 +414,7 @@ function runcmd(cmd, prefix, bgnd)
   else
     prepare_redirect(prefix.."stdin", prefix.."stdout", prefix.."stderr")
   end
-  
+
   local result
   if cmd.logline ~= nil then
     L(locheader(), cmd.logline, "\n")
@@ -436,7 +436,7 @@ function runcmd(cmd, prefix, bgnd)
 	"(first entry is a " .. type(cmd[1]) ..")")
  end
  execute = oldexec
-  
+
   if local_redir then
     files.stdin:close()
     files.stdout:close()
@@ -446,8 +446,8 @@ function runcmd(cmd, prefix, bgnd)
 end
 
 function samefile(left, right)
-  if left == "-" or right == "-" then 
-    err("tests may not rely on standard input") 
+  if left == "-" or right == "-" then
+    err("tests may not rely on standard input")
   end
   if fsize(left) ~= fsize(right) then
     return false
@@ -473,8 +473,8 @@ function samelines(f, t)
   for i=1,table.getn(t) do
     if fl[i] ~= t[i] then
       if fl[i] then
-        L(locheader(), string.format("file[i] = '%s'; table[i] = '%s'\n",
-                                     fl[i], t[i]))
+        L(locheader(), string.format("file[%d] = '%s'; table[%d] = '%s'\n",
+                                     i, fl[i], i, t[i]))
       else
         L(locheader(), string.format("file[i] = ''; table[i] = '%s'\n",
                                      t[i]))
@@ -705,7 +705,7 @@ function bg(torun, ret, stdout, stderr, stdin)
   mt.__index = mt
   mt.finish = function(obj, timeout)
                 if obj.retval ~= nil then return end
-                
+
                 if timeout == nil then timeout = 0 end
                 if type(timeout) ~= "number" then
                   err("Bad timeout of type "..type(timeout))
@@ -723,7 +723,7 @@ function bg(torun, ret, stdout, stderr, stdin)
                     obj.retval, res = timed_wait(obj.pid, 2)
                   end
                 end
-                
+
                 test.bglist[obj.id] = nil
                 L(locheader(), "checking background command from ", out.locstr,
 		  cmd_as_str(out.cmd), "\n")
@@ -962,7 +962,7 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
   local s = prepare_to_run_tests(P)
   if s ~= 0 then
     P("Test suite preparation failed.\n")
-    return s 
+    return s
   end
   P("Running tests...\n")
 
@@ -1161,7 +1161,7 @@ function run_one_test(tname)
       test.log:write("\n")
    end
    test.log:close()
-    
+
    -- record the short status where report_one_test can find it
    local s = io.open(test.root .. "/STATUS", "w")
    if r then
