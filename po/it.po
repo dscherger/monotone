@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: monotone 0.48dev\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-06-09 12:50+0200\n"
-"PO-Revision-Date: 2010-07-04 18:05-0500\n"
-"Last-Translator: Roberta Lazzeri <ripley@lapo.it>\n"
+"PO-Revision-Date: 2010-07-07 11:43+0100\n"
+"Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -751,16 +751,15 @@ msgstr "[INDIRIZZO[:NUMERO_PORTA]]"
 msgid "Opens an 'automate stdio' connection to a remote server"
 msgstr "Apre una connessione 'automate stdio' per un server remoto "
 
-# controllare
 #: cmd_netsync.cc:291
 #: cmd_netsync.cc:423
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "No database given; assuming '%s' database. This means that we can't\n"
 "verify the server key, because we have no record of what it should be."
 msgstr ""
-"Nessun databse dato; presuppone database '%s'. Questo sighifica che non possiamo\n"
-"verificare la chiave del server, perché non abbiamo nessun record di ciò che dovremmo avere."
+"Nessun database specificato, si userà '%s'. Questo sighifica che\n"
+"non possiamo verificare la chiave del server, perché non è nota."
 
 #: cmd_netsync.cc:410
 msgid "COMMAND [ARGS]"
@@ -2044,11 +2043,9 @@ msgstr "[PATH_SPAZIO_DI_LAVORO]"
 msgid "Registers a new workspace for the current database"
 msgstr "Registra un nuovo spazio di lavoro per il database corrente"
 
-# non so se il testo M va tradotto
 #: cmd_db.cc:406
-#, fuzzy
 msgid "This command adds WORKSPACE_PATH to the list of `known-workspaces'."
-msgstr "Questo comando aggiunge WORKSPACE_PATH alla lista 'spazi di lavoro conosciuti'."
+msgstr "Questo comando aggiunge PATH_SPAZIO_DI_LAVORO alla lista degli spazi di lavoro conosciuti."
 
 #: cmd_db.cc:413
 #: cmd_db.cc:435
@@ -2061,9 +2058,8 @@ msgid "Unregisters an existing workspace for the current database"
 msgstr ""
 
 #: cmd_db.cc:428
-#, fuzzy
 msgid "This command removes WORKSPACE_PATH to the list of `known-workspaces'."
-msgstr "Questo comando toglie WORKSPACE_PATH dalla lista 'spazi di lavoro conosciuti'."
+msgstr "Questo comando toglie PATH_SPAZIO_DI_LAVORO dalla lista degli spazi di lavoro conosciuti."
 
 #: cmd_db.cc:448
 msgid "Removes all invalid, registered workspace paths for the current database"
@@ -2105,11 +2101,9 @@ msgstr "altezza in cache: %s"
 msgid "load all revisions from the database"
 msgstr "carica tutte le revisioni dal database"
 
-# TODO non sono sicura
 #: cmd_db.cc:582
-#, fuzzy
 msgid "This command loads all revisions from the database and is intended to be used for timing revision loading performance."
-msgstr "Questo comando carica tutte le revisioni dal database ed è progettato per essere usato per datare l'esecuzione di revisioni che vengono caricate"
+msgstr "Questo comando carica tutte le revisioni dal database ed è pensato per verificarne le performance."
 
 #: cmd_db.cc:593
 #, c-format
@@ -2127,11 +2121,9 @@ msgstr "revisioni"
 msgid "load all roster versions from the database"
 msgstr "carica tutti i roster dal database"
 
-# mah, non so se è così
 #: cmd_db.cc:611
-#, fuzzy
 msgid "This command loads all roster versions from the database and is intended to be used for timing roster reconstruction performance."
-msgstr "Questo comanda carica tutte le versioni roster dal database ed è progettato per essere usato per l'esecuzione di ricostruzione coordinata del roster."
+msgstr "Questo comanda carica tutte le versioni roster dal database ed è ppensato per verificarne le performance."
 
 #: cmd_db.cc:622
 #, c-format
@@ -2410,11 +2402,10 @@ msgstr "Commit fallito. Intestazione Changelog non trovata."
 msgid "Commit failed. Change summary not found."
 msgstr "Commit fallito. Sommario Change non trovato."
 
-# TODO: testo orrendo.
 #: cmd_ws_commit.cc:362
-#, fuzzy, c-format
+#, c-format
 msgid "Commit failed. Text following Change summary."
-msgstr "Commit fallito. Il testo seguente sommario Change."
+msgstr "Commit fallito: è persente del testo dopo il sommario delle modifiche."
 
 #: cmd_ws_commit.cc:383
 #, c-format
@@ -2815,10 +2806,10 @@ msgstr "Cerca revisioni per trovare dove un cambiamentoè apparso per la prima v
 msgid "These commands subdivide a set of revisions into good, bad and untested subsets and successively narrow the untested set to find the first revision that introduced some change."
 msgstr ""
 
+# TODO: "ricerca con bisezione"? o forse "bisezione" e basta?
 #: cmd_ws_commit.cc:1899
-#, fuzzy
 msgid "Reset the current bisection search"
-msgstr "Risetta la corrente ricerca di bisezione"
+msgstr "Resetta l'attuale ricerca con bisezione"
 
 #: cmd_ws_commit.cc:1900
 msgid "Update the workspace back to the revision from which the bisection was started and remove all current search information, allowing a new search to be started."
@@ -7218,9 +7209,7 @@ msgstr "imposta il messaggio di ChangeLog del commit"
 msgid "set filename containing commit changelog message"
 msgstr "legge il messaggio di ChangeLog del commit da un file"
 
-# TOSO: message dovrebbe essere un verbo, con mi convince traduzione
 #: options_list.hh:578
-#, fuzzy
 msgid "no prefix to message"
 msgstr "nessun prefisso per il messaggio"
 
