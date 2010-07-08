@@ -4942,21 +4942,24 @@ is given, the @var{branchname} is used as directory.
 @strong{Important notice:} The @var{address}[:@var{port}] @var{branchname}
 call syntax is deprecated and subject of removal in future versions of monotone!
 
-@item mtn disapprove @var{id}
+@item mtn disapprove [@var{parent}] @var{child}
 
-This command records a disapproval of the changes between @var{id}'s
-ancestor and @var{id}. It does this by committing the @i{inverse}
-changes as a new revision descending from @var{id}. The new revision
-will show up as a new head and thus a subsequent @command{merge} will
-incorporate the inverse of the disapproved changes in the other head(s).
+This command records a disapproval of the changes between @var{parent}'s
+ancestor and @var{child}.  If @var{parent} is omitted, only @var{child}
+is disapproved.  The command does the disapproval by committing
+the @i{inverse} changes as a new revision descending from @var{child}.
+The new revision will show up as a new head and thus a subsequent
+@command{merge} will incorporate the inverse of the disapproved changes
+in the other head(s).
 
 Conceptually, @command{disapprove}s contract is that disapprove(A) gives a
 revision B such that whenever B is merged with a descendant D of A the merge
 will result in what D ``would have looked like'' if A had never happened.
 
 Note that as a consequence of this contract the @command{disapprove} command
-only works if @var{id} has exactly one ancestor, since it hasn't been
-worked out how to generate such a descendant in the multi-ancestor case.
+only works if all changesets from @var{parent} to @var{child} have exactly
+one ancestor, since it hasn't been worked out how to generate such
+a descendant in the multi-ancestor case.
 
 
 @item mtn heads --branch=@var{branchname}
@@ -10183,6 +10186,46 @@ A path.
 
 If the current directory isn't part of a workspace, prints an error to
 stderr and exits with status 1.
+
+@end table
+
+@item mtn automate log
+
+@table @strong
+@item Arguments:
+
+[--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]]
+[--to=@var{id} [...]] [--no-merges]
+[@var{pathname...}]
+
+Same as @command{mtn log}, but without the output control options; see
+@ref{Informative}.
+
+@item Added in:
+
+12.2
+
+@item Purpose:
+
+Print the selected revisions on stdout, in topological order. The user
+can then use other automate commands to retrieve additional
+information about each revision.
+
+@item Sample output:
+
+@verbatim
+233afb8c4832bf33d5f5734225164de5f5a6278c
+4a368a6b217c40b2ff3b12bb7cfa00987e0f191c
+233afb8c4832bf33d5f5734225164de5f5a6278c
+@end verbatim
+
+@item Output format:
+
+One revision per line.
+
+@item Error conditions:
+
+see @command{mtn log} in @ref{Informative}.
 
 @end table
 

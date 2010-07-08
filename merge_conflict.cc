@@ -2261,6 +2261,8 @@ parse_resolve_conflicts_opts (options const & opts,
           pars.sym();
           pars.hex(temp);
 
+          // if there is no ancestor revision, then left is an ancestor of
+          // right, or vice versa, and there can be no conflicts.
           read_conflict_file_core (pars, left_roster, right_roster, result, true);
         }
     }
