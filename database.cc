@@ -3621,7 +3621,7 @@ database::put_revision_cert(cert const & cert)
           W(F("The branch name\n"
               "  '%s'\n"
               "contains meta characters (one or more of '?,*%%+{}[]!^') or\n"
-              "starts with a dash, which might cause malfunctions when used\"
+              "starts with a dash, which might cause malfunctions when used\n"
               "in a netsync branch pattern.\n\n"
               "If you want to undo this operation, please use the\n"
               "'%s local kill_certs' command to delete the particular branch\n"
