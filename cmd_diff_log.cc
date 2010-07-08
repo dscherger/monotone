@@ -677,7 +677,13 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
 
   L(FL("%d selected revisions") % selected_revs.size());
 
+  // the first restriction mask only includes the actual selected nodes
+  // of the user, so he doesn't get revisions reported in which not the
+  // selected node, but only one of its parents changed
+  // the second restriction mask includes the parent nodes implicitely,
+  // so we can use it to make a restricted roster with it later on
   node_restriction mask;
+  node_restriction mask_diff;
 
   if (!args.empty() || !app.opts.exclude_patterns.empty())
     {
@@ -697,6 +703,14 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
                                   app.opts.depth, parents, new_roster,
                                   ignored_file(work),
                                   restriction::explicit_includes);
+          if (app.opts.diffs)
+            {
+              mask_diff = node_restriction(args_to_paths(args),
+                                           args_to_paths(app.opts.exclude_patterns),
+                                           app.opts.depth, parents, new_roster,
+                                           ignored_file(work),
+                                           restriction::implicit_includes);
+            }
         }
       else
         {
@@ -711,6 +725,15 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
                                   app.opts.depth, roster,
                                   path_always_false<file_path>(),
                                   restriction::explicit_includes);
+
+          if (app.opts.diffs)
+            {
+              mask_diff = node_restriction(args_to_paths(args),
+                                           args_to_paths(app.opts.exclude_patterns),
+                                           app.opts.depth, roster,
+                                           path_always_false<file_path>(),
+                                           restriction::explicit_includes);
+            }
         }
     }
 
@@ -900,7 +923,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
                   // always show forward diffs from the parent roster to
                   // the current roster regardless of the log direction
                   make_restricted_roster(parent_roster, current_roster,
-                                         restricted_roster, mask);
+                                         restricted_roster, mask_diff);
 
                   dump_diffs(app.lua, db, parent_roster, restricted_roster,
                              out, app.opts.diff_format,
