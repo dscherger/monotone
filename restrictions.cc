@@ -65,7 +65,7 @@ add_parents(map<node_id, restricted_path::status> & node_map,
         {
           file_path fp;
           roster.get_name(*i, fp);
-          W(F("including missing parent '%s'") % fp);
+          L(FL("including missing parent '%s'") % fp);
           node_map[*i] = restricted_path::required;
         }
       else if (n->second == restricted_path::included)
@@ -147,7 +147,7 @@ add_parents(map<file_path, restricted_path::status> & path_map)
       path_status_iterator p = path_map.find(*i);
       if (p == path_map.end())
         {
-          W(F("including missing parent '%s'") % *i);
+          L(FL("including missing parent '%s'") % *i);
           path_map[*i] = restricted_path::required;
         }
       else if (p->second == restricted_path::included)
