@@ -352,7 +352,7 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
 CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
     N_("Converts the database to the rosters format"),
     "",
-    options::opts::drop_attr)
+    options::opts::attrs_to_drop)
 {
   database db(app);
   key_store keys(app);

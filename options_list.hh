@@ -243,17 +243,14 @@ SIMPLE_OPTION(remote_stdio_host, "remote-stdio-host", arg_type,
     gettext_noop("sets the host (and optionally the port) for a "
                  "remote netsync action"))
 
-SIMPLE_OPTION(branch, "branch,b", branch_name, gettext_noop("select branch cert for operation"))
+SIMPLE_OPTION(branch, "branch,b", branch_name,
+              gettext_noop("select branch cert for operation"))
 
-SIMPLE_OPTION(brief, "brief/no-brief", bool, gettext_noop("print a brief version of the normal output"))
+SIMPLE_OPTION(brief, "brief/no-brief", bool,
+              gettext_noop("print a brief version of the normal output"))
 
-OPT(revs_only, "revs-only", bool, false,
-     gettext_noop("annotate using full revision ids only"))
-#ifdef option_bodies
-{
-  revs_only = true;
-}
-#endif
+SIMPLE_OPTION(revs_only, "revs-only", bool,
+              gettext_noop("annotate using full revision ids only"))
 
 // Remember COMMA doesn't work with GOPT, use long form.
 //GOPT(conf_dir, "confdir", system_path, get_default_confdir() COMMA origin::user,
@@ -383,15 +380,8 @@ OPTION(diff_options, diff_unified, false, "unified",
 
 SIMPLE_OPTION(diffs, "diffs/no-diffs", bool, gettext_noop("print diffs along with logs"))
 
-OPTSET(drop_attr)
-OPTVAR(drop_attr, std::set<std::string>, attrs_to_drop, )
-OPTION(drop_attr, drop_attr, true, "drop-attr",
-        gettext_noop("when rosterifying, drop attrs entries with the given key"))
-#ifdef option_bodies
-{
-  attrs_to_drop.insert(arg);
-}
-#endif
+SIMPLE_OPTION(attrs_to_drop, "drop-attr", std::set<std::string>,
+              gettext_noop("when rosterifying, drop attrs entries with the given key"))
 
 SIMPLE_OPTION(dryrun, "dry-run/no-dry-run", bool,
               gettext_noop("don't perform the operation, just show what would have happened"))
@@ -411,13 +401,9 @@ OPTION(exclude, exclude, true, "exclude",
   exclude_patterns.push_back(arg_type(arg, origin::user));
 }
 #endif
-OPT(bookkeep_only, "bookkeep-only", bool, false,
+
+SIMPLE_OPTION(bookkeep_only, "bookkeep-only", bool,
         gettext_noop("only update monotone's internal bookkeeping, not the filesystem"))
-#ifdef option_bodies
-{
-  bookkeep_only = true;
-}
-#endif
 
 SIMPLE_OPTION(move_conflicting_paths,
               "move-conflicting-paths/no-move-conflicting-paths",
@@ -689,42 +675,20 @@ GLOBAL_SIMPLE_OPTION(version, "version", bool,
 
 
 OPTSET(automate_inventory_opts)
-OPTVAR(automate_inventory_opts, bool, no_ignored, false)
-OPTVAR(automate_inventory_opts, bool, no_unknown, false)
-OPTVAR(automate_inventory_opts, bool, no_unchanged, false)
-OPTVAR(automate_inventory_opts, bool, no_corresponding_renames, false)
 
-OPTION(automate_inventory_opts, no_ignored, false, "no-ignored/ignored",
-       gettext_noop("don't output ignored files"))
-#ifdef option_bodies
-{
-  no_ignored = true;
-}
-#endif
+OPTSET_REL(automate_inventory_opts, no_ignored)
+SIMPLE_OPTION(no_ignored, "no-ignored/ignored", bool,
+              gettext_noop("don't output ignored files"))
+OPTSET_REL(automate_inventory_opts, no_unknown)
+SIMPLE_OPTION(no_unknown, "no-unknown/unknown",bool,
+              gettext_noop("don't output unknown files"))
+OPTSET_REL(automate_inventory_opts, no_unchanged)
+SIMPLE_OPTION(no_unchanged, "no-unchanged/unchanged", bool,
+              gettext_noop("don't output unchanged files"))
+OPTSET_REL(automate_inventory_opts, no_corresponding_renames)
+SIMPLE_OPTION(no_corresponding_renames, "no-corresponding-renames", bool,
+              gettext_noop("don't output corresponding renames if restricted on such nodes"))
 
-OPTION(automate_inventory_opts, no_unknown, false, "no-unknown/unknown",
-       gettext_noop("don't output unknown files"))
-#ifdef option_bodies
-{
-  no_unknown = true;
-}
-#endif
-
-OPTION(automate_inventory_opts, no_unchanged, false, "no-unchanged/unchanged",
-       gettext_noop("don't output unchanged files"))
-#ifdef option_bodies
-{
-  no_unchanged = true;
-}
-#endif
-
-OPTION(automate_inventory_opts, no_corresponding_renames, false, "no-corresponding-renames",
-       gettext_noop("don't output corresponding renames if restricted on such nodes"))
-#ifdef option_bodies
-{
-  no_corresponding_renames = true;
-}
-#endif
 
 OPTSET(resolve_conflicts_opts)
 OPTVAR(resolve_conflicts_opts, bookkeeping_path,
