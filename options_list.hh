@@ -347,23 +347,16 @@ OPTSET(diff_options)
 OPTSET(au_diff_options)
 OPTSET_REL(diff_options, au_diff_options)
 
-OPTVAR(diff_options, std::string, external_diff_args, )
-OPTION(diff_options, external_diff_args, true, "diff-args",
+GROUPED_SIMPLE_OPTION(diff_options, external_diff_args, "diff-args", std::string,
         gettext_noop("argument to pass external diff hook"))
-#ifdef option_bodies
-{
-  external_diff_args = arg;
-}
-#endif
-
-OPTVAR(au_diff_options, bool, reverse, false)
-OPTION(au_diff_options, reverse, false, "reverse",
+GROUPED_SIMPLE_OPTION(au_diff_options, reverse, "reverse", bool,
         gettext_noop("reverse order of diff"))
-#ifdef option_bodies
-{
-  reverse = true;
-}
-#endif
+GROUPED_SIMPLE_OPTION(diff_options, no_show_encloser, "no-show-encloser", bool,
+     gettext_noop("do not show the function containing each block of changes"))
+OPTSET_REL(au_diff_options, with_header)
+SIMPLE_OPTION(with_header, "with-header/without-header", bool,
+              gettext_noop("show the matching cset in the diff header"))
+
 OPTVAR(diff_options, diff_type, diff_format, unified_diff)
 OPTION(diff_options, diff_context, false, "context",
         gettext_noop("use context diff format"))
@@ -386,18 +379,7 @@ OPTION(diff_options, diff_unified, false, "unified",
   diff_format = unified_diff;
 }
 #endif
-OPTVAR(diff_options, bool, no_show_encloser, false)
-OPTION(diff_options, no_show_encloser, false, "no-show-encloser",
-     gettext_noop("do not show the function containing each block of changes"))
-#ifdef option_bodies
-{
-  no_show_encloser = true;
-}
-#endif
 
-OPTSET_REL(au_diff_options, with_header)
-SIMPLE_OPTION(with_header, "with-header/without-header", bool,
-              gettext_noop("show the matching cset in the diff header"))
 
 SIMPLE_OPTION(diffs, "diffs/no-diffs", bool, gettext_noop("print diffs along with logs"))
 
@@ -655,13 +637,8 @@ OPTION(verbosity, reallyquiet, false, "reallyquiet",
 }
 #endif
 
-GOPT(timestamps, "timestamps", bool, false,
+GLOBAL_SIMPLE_OPTION(timestamps, "timestamps", bool,
      gettext_noop("show timestamps in front of errors, warnings and progress messages"))
-#ifdef option_bodies
-{
-  timestamps = true;
-}
-#endif
 
 SIMPLE_OPTION(recursive, "recursive,R/no-recursive", bool,
               gettext_noop("also operate on the contents of any listed directories"))
