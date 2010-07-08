@@ -57,14 +57,18 @@ Xxx Xxx 99 99:99:99 UTC 2010
           commands such as `clone`, `automate remote` and
           `automate remote_stdio`.
 
-        - The following characters have been deprecated in branch names:
+        - The following characters have been deprecated in branch names
 
                 ?,*%+{}[]!^
 
           as they denote either meta characters in monotone's URI syntax
-          or in globs which are used to resolve branch patterns.
-          monotone now warns on the creation of branches with those
-          characters and gives further directions.
+          or are used in globs to resolve branch patterns.
+          Furthermore, branch names should no longer start with a dash
+          (-), since this character is used to denote an exclude pattern
+          in the aforementioned URI syntax.
+
+          monotone warns on the creation of branches which violate these
+          restrictions and gives further directions.
 
         - The `import` command now keeps the created bookkeeping root if
           --dry-run is not specified.  This makes it possible to re-use
