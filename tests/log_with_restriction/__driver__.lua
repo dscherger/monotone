@@ -104,9 +104,8 @@ rename("stdout", "log")
 
 check(grep("^Revision:", "log"), 0, true, false)
 rename("stdout", "revs")
-check(numlines("revs") == 4)
+check(numlines("revs") == 3)
 
-check(grep("^Revision: " .. rev_root, "log"), 0, true)
 check(grep("^Revision: " .. rev_foo1, "log"), 0, true)
 check(grep("^Revision: " .. rev_foo2, "log"), 0, true)
 check(grep("^Revision: " .. rev_foo3, "log"), 0, true)
