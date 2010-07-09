@@ -1042,7 +1042,7 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
 
   inventory_map inventory;
   vector<file_path> includes = args_to_paths(args);
-  vector<file_path> excludes = args_to_paths(app.opts.exclude_patterns);
+  vector<file_path> excludes = args_to_paths(app.opts.exclude);
 
   if (!app.opts.no_corresponding_renames)
     {
@@ -1285,7 +1285,7 @@ CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
   work.get_current_roster_shape(db, nis, new_roster);
 
   node_restriction mask(args_to_paths(args),
-                        args_to_paths(app.opts.exclude_patterns),
+                        args_to_paths(app.opts.exclude),
                         app.opts.depth,
                         old_rosters, new_roster);
 

@@ -509,7 +509,7 @@ read_options_file(any_path const & optspath,
         }
       else if (opt == "key")
         {
-          opts.signing_key = external_key_name(val, origin::workspace);
+          opts.key = external_key_name(val, origin::workspace);
           opts.key_given = true;
         }
       else if (opt == "keydir")
@@ -544,8 +544,8 @@ write_options_file(bookkeeping_path const & optspath,
 
   if (!opts.branch().empty())
     st.push_str_pair(symbol("branch"), opts.branch());
-  if (!opts.signing_key().empty())
-    st.push_str_pair(symbol("key"), opts.signing_key());
+  if (!opts.key().empty())
+    st.push_str_pair(symbol("key"), opts.key());
   if (!opts.key_dir.as_internal().empty())
     st.push_str_pair(symbol("keydir"), opts.key_dir.as_internal());
 
@@ -596,7 +596,7 @@ workspace::get_options(options & opts)
   L(FL("branch name is '%s'") % opts.branch);
 
   if (!opts.key_given)
-    opts.signing_key = cur_opts.signing_key;
+    opts.key = cur_opts.key;
 }
 
 void
@@ -683,9 +683,9 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
       options_changed = true;
     }
 
-  if (opts.key_given && cur_opts.signing_key != opts.signing_key)
+  if (opts.key_given && cur_opts.key != opts.key)
     {
-      cur_opts.signing_key = opts.signing_key;
+      cur_opts.key = opts.key;
       options_changed = true;
     }
 
@@ -713,7 +713,7 @@ workspace::print_option(utf8 const & opt, std::ostream & output)
   else if (opt() == "branch")
     output << opts.branch << '\n';
   else if (opt() == "key")
-    output << opts.signing_key << '\n';
+    output << opts.key << '\n';
   else if (opt() == "keydir")
     output << opts.key_dir << '\n';
   else

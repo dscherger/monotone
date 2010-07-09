@@ -217,7 +217,7 @@ update(app_state & app,
     F("cannot determine branch for update"));
 
   revision_id chosen_rid;
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       P(F("updating along branch '%s'") % app.opts.branch);
       set<revision_id> candidates;
@@ -244,7 +244,7 @@ update(app_state & app,
     }
   else
     {
-      complete(app.opts, app.lua, project, app.opts.revision_selectors[0](), chosen_rid);
+      complete(app.opts, app.lua, project, app.opts.revision[0](), chosen_rid);
     }
   I(!null_id(chosen_rid));
 
@@ -368,7 +368,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   if (!args.empty())
     throw usage(execid);
 
-  if (app.opts.revision_selectors.size() > 1)
+  if (app.opts.revision.size() > 1)
     throw usage(execid);
 
   update(app, args);
@@ -383,7 +383,7 @@ CMD_AUTOMATE(update, "",
   E(args.empty(), origin::user,
     F("wrong argument count"));
 
-  E(app.opts.revision_selectors.size() <= 1, origin::user,
+  E(app.opts.revision.size() <= 1, origin::user,
     F("at most one revision selector may be specified"));
 
   update(app, args);
@@ -1261,9 +1261,9 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
 
   // Work out our arguments
   revision_id from_rid, to_rid;
-  if (app.opts.revision_selectors.size() == 1)
+  if (app.opts.revision.size() == 1)
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), to_rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), to_rid);
       std::set<revision_id> parents;
       db.get_revision_parents(to_rid, parents);
       E(parents.size() == 1, origin::user,
@@ -1275,10 +1275,10 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
         % to_rid);
       from_rid = *parents.begin();
     }
-  else if (app.opts.revision_selectors.size() == 2)
+  else if (app.opts.revision.size() == 2)
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), from_rid);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 1)(), to_rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), from_rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 1)(), to_rid);
     }
   else
     throw usage(execid);
@@ -1333,7 +1333,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
     roster_t to_true_roster;
     db.get_roster(to_rid, to_true_roster);
     node_restriction mask(args_to_paths(args),
-                          args_to_paths(app.opts.exclude_patterns),
+                          args_to_paths(app.opts.exclude),
                           app.opts.depth,
                           *from_roster, to_true_roster,
                           ignored_file(work));

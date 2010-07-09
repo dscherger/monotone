@@ -269,6 +269,8 @@ OPTION(globals, conf_dir, true, "confdir",
 GLOBAL_SIMPLE_OPTION(no_default_confdir, "no-default-confdir/allow-default-confdir", bool,
                      gettext_noop("forbid use of the default confdir"))
 
+// If we get more date arguments, add a specialization for set_simple_option
+// and make this a SIMPLE_OPTION
 OPT(date, "date", date_t, ,
      gettext_noop("override date/time for commit"))
 #ifdef option_bodies
@@ -284,6 +286,7 @@ OPT(date, "date", date_t, ,
 }
 #endif
 
+// FIXME: --date-format and --no-format-dates should override eachother
 OPTSET(date_formats)
 OPTSET_REL(globals, date_formats)
 GROUPED_SIMPLE_OPTION(date_formats, date_fmt,
@@ -321,6 +324,7 @@ GLOBAL_SIMPLE_OPTION(roster_cache_performance_log, "roster-cache-performance-log
                      system_path,
                      gettext_noop("log roster cache statistic to the given file"))
 
+// FIXME this needs to be a flag, not a function call
 OPTION(globals, debug, false, "debug",
         gettext_noop("print debug log to stderr while running"))
 #ifdef option_bodies
@@ -392,15 +396,10 @@ SIMPLE_OPTION(drop_bad_certs, "drop-bad-certs", bool,
 GLOBAL_SIMPLE_OPTION(dump, "dump", system_path,
         gettext_noop("file to dump debugging log to, on failure"))
 
-OPTSET(exclude)
-OPTVAR(exclude, args_vector, exclude_patterns, )
-OPTION(exclude, exclude, true, "exclude",
-        gettext_noop("leave out anything described by its argument"))
-#ifdef option_bodies
-{
-  exclude_patterns.push_back(arg_type(arg, origin::user));
-}
-#endif
+SIMPLE_OPTION(exclude, "exclude", args_vector,
+              gettext_noop("leave out anything described by its argument"))
+SIMPLE_OPTION(include, "include", args_vector,
+        gettext_noop("include anything described by its argument"))
 
 SIMPLE_OPTION(bookkeep_only, "bookkeep-only", bool,
         gettext_noop("only update monotone's internal bookkeeping, not the filesystem"))
@@ -443,32 +442,15 @@ GLOBAL_SIMPLE_OPTION(help, "help,h", bool, gettext_noop("display help message"))
 SIMPLE_OPTION(show_hidden_commands, "hidden/no-hidden", bool,
               gettext_noop("show hidden commands and options"))
 
-OPTSET(include)
-OPTVAR(include, args_vector, include_patterns, )
-OPTION(include, include, true, "include",
-        gettext_noop("include anything described by its argument"))
-#ifdef option_bodies
-{
-  include_patterns.push_back(arg_type(arg, origin::user));
-}
-#endif
-
 GLOBAL_SIMPLE_OPTION(ignore_suspend_certs, "ignore-suspend-certs/no-ignore-suspend-certs", bool,
                      gettext_noop("do not ignore revisions marked as suspended"))
 
 GLOBAL_SIMPLE_OPTION(non_interactive, "non-interactive/interactive", bool,
                      gettext_noop("do not prompt the user for input"))
 
-OPTSET(key)
-OPTVAR(key, external_key_name, signing_key, )
-OPTION(globals, key, true, "key,k/use-default-key",
+GLOBAL_SIMPLE_OPTION(key, "key,k/use-default-key", external_key_name,
        gettext_noop("sets the key for signatures, using either the key "
                     "name or the key hash"))
-#ifdef option_bodies
-{
-  signing_key = external_key_name(arg, origin::user);
-}
-#endif
 
 // Remember COMMA doesn't work with GOPT, use long form.
 //GOPT(key_dir, "keydir", system_path, get_default_keydir() COMMA origin::user,
@@ -481,15 +463,8 @@ OPTION(globals, key_dir, true, "keydir", gettext_noop("set location of key store
 }
 #endif
 
-OPTSET(key_to_push)
-OPTVAR(key_to_push, std::vector<external_key_name>, keys_to_push, )
-OPTION(key_to_push, key_to_push, true, "key-to-push",
+SIMPLE_OPTION(keys_to_push, "key-to-push", std::vector<external_key_name>,
         gettext_noop("push the specified key even if it hasn't signed anything"))
-#ifdef option_bodies
-{
-  keys_to_push.push_back(external_key_name(arg, origin::user));
-}
-#endif
 
 OPT(last, "last", long, -1,
     gettext_noop("limit log output to the last number of entries"))
@@ -501,34 +476,17 @@ OPT(last, "last", long, -1,
 }
 #endif
 
-GLOBAL_SIMPLE_OPTION(log, "log", system_path, gettext_noop("file to write the log to"))
+GLOBAL_SIMPLE_OPTION(log, "log", system_path,
+                     gettext_noop("file to write the log to"))
 
 OPTSET(messages)
-OPTVAR(messages, std::vector<std::string>, message, )
-OPTVAR(messages, utf8, msgfile, )
-OPTVAR(messages, bool, no_prefix, false)
-OPTION(messages, message, true, "message,m",
+GROUPED_SIMPLE_OPTION(messages, message, "message,m", std::vector<std::string>,
         gettext_noop("set commit changelog message"))
-#ifdef option_bodies
-{
-  message.push_back(arg);
-}
-#endif
-OPTION(messages, msgfile, true, "message-file",
+GROUPED_SIMPLE_OPTION(messages, msgfile, "message-file", utf8,
         gettext_noop("set filename containing commit changelog message"))
-#ifdef option_bodies
-{
-  msgfile = utf8(arg, origin::user);
-}
-#endif
 HIDE(no_prefix)
-OPTION(messages, no_prefix, false, "no-prefix",
+GROUPED_SIMPLE_OPTION(messages, no_prefix, "no-prefix", bool,
         gettext_noop("no prefix to message"))
-#ifdef option_bodies
-{
-  no_prefix = true;
-}
-#endif
 
 SIMPLE_OPTION(missing, "missing", bool,
               gettext_noop("perform the operations for files missing from workspace"))
@@ -555,8 +513,13 @@ SIMPLE_OPTION(no_ignore, "no-respect-ignore/respect-ignore", bool,
 SIMPLE_OPTION(no_merges, "no-merges/merges", bool,
               gettext_noop("exclude merges when printing logs"))
 
+// FIXME: ~/.monotone/monotonerc should be
+// %APPDATA%\monotone\monotonerc on Windows
+// ...but, there's no way currently to make a option description
+// vary like that
 GLOBAL_SIMPLE_OPTION(norc, "norc/yesrc", bool,
-                     gettext_noop("do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"))
+                     gettext_noop("do not load ~/.monotone/monotonerc or "
+                                  "_MTN/monotonerc lua files"))
 
 GLOBAL_SIMPLE_OPTION(nostd, "nostd/stdhooks", bool,
                      gettext_noop("do not load standard lua hooks"))
@@ -629,15 +592,8 @@ GLOBAL_SIMPLE_OPTION(timestamps, "timestamps", bool,
 SIMPLE_OPTION(recursive, "recursive,R/no-recursive", bool,
               gettext_noop("also operate on the contents of any listed directories"))
 
-OPTSET(revision)
-OPTVAR(revision, args_vector, revision_selectors, )
-OPTION(revision, revision, true, "revision,r",
+SIMPLE_OPTION(revision, "revision,r",args_vector,
      gettext_noop("select revision id for operation"))
-#ifdef option_bodies
-{
-  revision_selectors.push_back(arg_type(arg, origin::user));
-}
-#endif
 
 GLOBAL_SIMPLE_OPTION(root, "root", std::string,
                      gettext_noop("limit search for workspace to specified root"))

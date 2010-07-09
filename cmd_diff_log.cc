@@ -251,13 +251,13 @@ prepare_diff(app_state & app,
   // initialize before transaction so we have a database to work with.
   project_t project(db);
 
-  E(app.opts.revision_selectors.size() <= 2, origin::user,
+  E(app.opts.revision.size() <= 2, origin::user,
     F("more than two revisions given"));
 
-  E(!app.opts.reverse || app.opts.revision_selectors.size() == 1, origin::user,
+  E(!app.opts.reverse || app.opts.revision.size() == 1, origin::user,
     F("--reverse only allowed with exactly one revision"));
 
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       roster_t left_roster, restricted_roster, right_roster;
       revision_id old_rid;
@@ -276,7 +276,7 @@ prepare_diff(app_state & app,
       work.get_current_roster_shape(db, nis, right_roster);
 
       node_restriction mask(args_to_paths(args),
-                            args_to_paths(app.opts.exclude_patterns),
+                            args_to_paths(app.opts.exclude),
                             app.opts.depth,
                             left_roster, right_roster, ignored_file(work));
 
@@ -293,19 +293,19 @@ prepare_diff(app_state & app,
 
       header << "# old_revision [" << old_rid << "]\n";
     }
-  else if (app.opts.revision_selectors.size() == 1)
+  else if (app.opts.revision.size() == 1)
     {
       roster_t left_roster, restricted_roster, right_roster;
       revision_id r_old_id;
       workspace work(app);
 
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), r_old_id);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), r_old_id);
 
       db.get_roster(r_old_id, left_roster);
       work.get_current_roster_shape(db, nis, right_roster);
 
       node_restriction mask(args_to_paths(args),
-                            args_to_paths(app.opts.exclude_patterns),
+                            args_to_paths(app.opts.exclude),
                             app.opts.depth,
                             left_roster, right_roster, ignored_file(work));
 
@@ -331,13 +331,13 @@ prepare_diff(app_state & app,
 
       header << "# old_revision [" << r_old_id << "]\n";
     }
-  else if (app.opts.revision_selectors.size() == 2)
+  else if (app.opts.revision.size() == 2)
     {
       roster_t left_roster, restricted_roster, right_roster;
       revision_id r_old_id, r_new_id;
 
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), r_old_id);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 1)(), r_new_id);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), r_old_id);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 1)(), r_new_id);
 
       db.get_roster(r_old_id, left_roster);
       db.get_roster(r_new_id, right_roster);
@@ -365,7 +365,7 @@ prepare_diff(app_state & app,
       //   since versioned paths are required to be relative.
 
       node_restriction mask(args_to_paths(args),
-                            args_to_paths(app.opts.exclude_patterns),
+                            args_to_paths(app.opts.exclude),
                             app.opts.depth,
                             left_roster, right_roster);
 
@@ -663,7 +663,7 @@ log_common (app_state & app,
   // start at revisions specified and implied by --from selectors
 
   set<revision_id> starting_revs;
-  if (app.opts.from.empty() && app.opts.revision_selectors.empty())
+  if (app.opts.from.empty() && app.opts.revision.empty())
     {
       // only set default --from revs if no --revision selectors were specified
       workspace work(app, F("try passing a --from revision to start at"));
@@ -731,10 +731,10 @@ log_common (app_state & app,
   // select revisions specified by --revision selectors
 
   set<revision_id> selected_revs;
-  if (!app.opts.revision_selectors.empty())
+  if (!app.opts.revision.empty())
     {
-      for (args_vector::const_iterator i = app.opts.revision_selectors.begin();
-           i != app.opts.revision_selectors.end(); i++)
+      for (args_vector::const_iterator i = app.opts.revision.begin();
+           i != app.opts.revision.end(); i++)
         {
           set<revision_id> rids;
           MM(rids);
@@ -745,7 +745,7 @@ log_common (app_state & app,
           set_difference(rids.begin(), rids.end(),
                          ending_revs.begin(), ending_revs.end(),
                          inserter(selected_revs, selected_revs.end()));
-          if (null_id(first_rid) && i == app.opts.revision_selectors.begin())
+          if (null_id(first_rid) && i == app.opts.revision.begin())
             first_rid = *rids.begin();
         }
     }
@@ -754,7 +754,7 @@ log_common (app_state & app,
 
   node_restriction mask;
 
-  if (!args.empty() || !app.opts.exclude_patterns.empty())
+  if (!args.empty() || !app.opts.exclude.empty())
     {
       // User wants to trace only specific files
       if (app.opts.from.empty())
@@ -768,7 +768,7 @@ log_common (app_state & app,
           work.get_current_roster_shape(db, nis, new_roster);
 
           mask = node_restriction(args_to_paths(args),
-                                  args_to_paths(app.opts.exclude_patterns),
+                                  args_to_paths(app.opts.exclude),
                                   app.opts.depth, parents, new_roster,
                                   ignored_file(work));
         }
@@ -781,13 +781,13 @@ log_common (app_state & app,
           db.get_roster(first_rid, roster);
 
           mask = node_restriction(args_to_paths(args),
-                                  args_to_paths(app.opts.exclude_patterns),
+                                  args_to_paths(app.opts.exclude),
                                   app.opts.depth, roster);
         }
     }
 
   // if --revision was specified without --from log only the selected revs
-  bool log_selected(!app.opts.revision_selectors.empty() &&
+  bool log_selected(!app.opts.revision.empty() &&
                     app.opts.from.empty());
 
   if (log_selected)
@@ -887,7 +887,7 @@ log_common (app_state & app,
 
       if (app.opts.no_merges && rev.is_merge_node())
         print_this = false;
-      else if (!app.opts.revision_selectors.empty() &&
+      else if (!app.opts.revision.empty() &&
           selected_revs.find(rid) == selected_revs.end())
         print_this = false;
 

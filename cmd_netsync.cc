@@ -71,16 +71,16 @@ extract_client_connection_info(options & opts,
       else if (args.size() >= 2)
         {
           arg_type server = idx(args, 0);
-          vector<arg_type> include_patterns;
-          include_patterns.insert(include_patterns.begin(),
+          vector<arg_type> include;
+          include.insert(include.begin(),
                                   args.begin() + 1,
                                   args.end());
-          vector<arg_type> exclude_patterns = opts.exclude_patterns;
+          vector<arg_type> exclude = opts.exclude;
 
           netsync_connection_info::setup_from_server_and_pattern(opts, project.db,
                                                                  lua, type, server,
-                                                                 include_patterns,
-                                                                 exclude_patterns,
+                                                                 include,
+                                                                 exclude,
                                                                  info);
         }
       else
@@ -273,7 +273,7 @@ CMD(push, "push", "", CMD_REF(network),
        "to the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::key_to_push)
+    options::opts::keys_to_push)
 {
   database db(app);
   key_store keys(app);
@@ -293,7 +293,7 @@ CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
               options::opts::max_netsync_version |
               options::opts::min_netsync_version |
               options::opts::set_default | options::opts::exclude |
-              options::opts::key_to_push)
+              options::opts::keys_to_push)
 {
   database db(app);
   key_store keys(app);
@@ -361,7 +361,7 @@ CMD(sync, "sync", "", CMD_REF(network),
        "with the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::key_to_push | options::opts::auto_update)
+    options::opts::keys_to_push | options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -391,7 +391,7 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              "",
              options::opts::max_netsync_version | options::opts::min_netsync_version |
              options::opts::set_default | options::opts::exclude |
-             options::opts::key_to_push)
+             options::opts::keys_to_push)
 {
   database db(app);
   key_store keys(app);
@@ -428,7 +428,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
   bool host_branch_arg = (args.size() == 2 || args.size() == 3) &&
                          idx(args, 0)().find("://") == string::npos;
 
-  bool no_ambigious_revision = app.opts.revision_selectors.size() < 2;
+  bool no_ambigious_revision = app.opts.revision.size() < 2;
 
   if (!(no_ambigious_revision && (url_arg || host_branch_arg)))
     throw usage(execid);
@@ -467,13 +467,13 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
     }
   else
     {
-      vector<arg_type> include_patterns;
-      include_patterns.push_back(idx(args, 1));
+      vector<arg_type> include;
+      include.push_back(idx(args, 1));
       netsync_connection_info::setup_from_server_and_pattern(app.opts, project.db,
                                                              app.lua,
                                                              netsync_connection,
-                                                             server, include_patterns,
-                                                             app.opts.exclude_patterns,
+                                                             server, include,
+                                                             app.opts.exclude,
                                                              info);
       if (args.size() == 3)
         workspace_arg = idx(args, 2);
@@ -549,7 +549,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
   transaction_guard guard(db, false);
 
   revision_id ident;
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       set<revision_id> heads;
       project.get_branch_heads(app.opts.branch, heads,
@@ -567,10 +567,10 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
         }
       ident = *(heads.begin());
     }
-  else if (app.opts.revision_selectors.size() == 1)
+  else if (app.opts.revision.size() == 1)
     {
       // use specified revision
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), ident);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), ident);
 
       E(project.revision_is_in_branch(ident, app.opts.branch),
         origin::user,
