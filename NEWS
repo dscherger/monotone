@@ -79,12 +79,12 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         Bugs Fixed
 
+        - the 'mv' command now warns when a source is being renamed onto
+          itself or one of its children (fixes monotone bug #29484).
+
         - monotone no longer asks to pick a branch from a set of branches
           of a revision in which all but one branch have been suspended
           (fixes monotone bug #29843)
-
-        - the 'mv' command now warns when a source is being renamed onto
-          itself or one of its children (fixes monotone bug #29484).
 
         - The annotate command no longer fails if it should print out
           empty or untrusted date cert values
@@ -97,6 +97,14 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - The import command no longer warns about not being able
           to write out _MTN/options on --dry-run
           (fixes monotone bug #30225)
+
+        - monotone does no longer warn about missing implicit includes
+          when dealing with restricted file sets
+          (fixes monotone bug #30291)
+
+        - A regression in 0.48 made a path-restricted `mtn log' show
+          revisions, in which not the picked path(s), but one of its parents
+          were changed.  This has been fixed.
 
         - `mtn trusted` will no longer accept single bogus revision ids,
           but instead validates if the given revision really exists in the

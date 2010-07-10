@@ -752,7 +752,13 @@ log_common (app_state & app,
 
   L(FL("%d selected revisions") % selected_revs.size());
 
+  // the first restriction mask only includes the actual selected nodes
+  // of the user, so he doesn't get revisions reported in which not the
+  // selected node, but only one of its parents changed
+  // the second restriction mask includes the parent nodes implicitely,
+  // so we can use it to make a restricted roster with it later on
   node_restriction mask;
+  node_restriction mask_diff;
 
   if (!args.empty() || !app.opts.exclude.empty())
     {
@@ -770,7 +776,17 @@ log_common (app_state & app,
           mask = node_restriction(args_to_paths(args),
                                   args_to_paths(app.opts.exclude),
                                   app.opts.depth, parents, new_roster,
-                                  ignored_file(work));
+                                  ignored_file(work),
+                                  restriction::explicit_includes);
+
+          if (app.opts.diffs)
+            {
+              mask_diff = node_restriction(args_to_paths(args),
+                                           args_to_paths(app.opts.exclude),
+                                           app.opts.depth, parents, new_roster,
+                                           ignored_file(work),
+                                           restriction::implicit_includes);
+            }
         }
       else
         {
@@ -782,7 +798,18 @@ log_common (app_state & app,
 
           mask = node_restriction(args_to_paths(args),
                                   args_to_paths(app.opts.exclude),
-                                  app.opts.depth, roster);
+                                  app.opts.depth, roster,
+                                  path_always_false<file_path>(),
+                                  restriction::explicit_includes);
+
+          if (app.opts.diffs)
+            {
+              mask_diff = node_restriction(args_to_paths(args),
+                                           args_to_paths(app.opts.exclude),
+                                           app.opts.depth, roster,
+                                           path_always_false<file_path>(),
+                                           restriction::explicit_includes);
+            }
         }
     }
 
@@ -916,7 +943,7 @@ log_common (app_state & app,
           else
             {
               ostringstream out;
-              log_print_rev (app, db, project, rid, rev, date_fmt, mask, out);
+              log_print_rev (app, db, project, rid, rev, date_fmt, mask_diff, out);
 
               string out_system;
               utf8_to_system_best_effort(utf8(out.str(), origin::internal), out_system);
