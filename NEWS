@@ -98,6 +98,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
           to write out _MTN/options on --dry-run
           (fixes monotone bug #30225)
 
+        - `automate remote' and `automate remote_stdio' can now be used
+          without transport authentication (e.g. on file:// or ssh://
+          transports) as well as anonymously over netsync
+          (fixes monotone bug #30237)  
+
         - monotone does no longer warn about missing implicit includes
           when dealing with restricted file sets
           (fixes monotone bug #30291)
