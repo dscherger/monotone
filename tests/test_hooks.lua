@@ -79,6 +79,11 @@ do
       if argv and argv[1] then
 	 table.insert(argv, "--confdir="..get_confdir())
 	 table.insert(argv, "--rcfile="..get_confdir().."/test_hooks.lua")
+	 local x = io.open("custom_test_hooks.lua", "rb")
+	 if (x ~= nil) then
+	    table.insert(argv, "--rcfile="..get_confdir().."/custom_test_hooks.lua")
+	    x:close()
+	 end
       end
 
       return argv;
