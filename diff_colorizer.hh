@@ -16,6 +16,7 @@
 struct diff_colorizer {
 
   typedef enum { normal = 0,
+                 bold,
                  encloser,
                  add,
                  del,

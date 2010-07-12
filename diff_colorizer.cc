@@ -23,11 +23,12 @@ diff_colorizer::diff_colorizer(bool enable)
   if (enable)
     {
       colormap.insert(std::make_pair(normal,   ""));
-      colormap.insert(std::make_pair(encloser, "\033[36m"));
+      colormap.insert(std::make_pair(bold,     "\033[1m"));
+      colormap.insert(std::make_pair(encloser, "\033[1;34m"));
       colormap.insert(std::make_pair(add,      "\033[32m"));
       colormap.insert(std::make_pair(del,      "\033[31m"));
       colormap.insert(std::make_pair(change,   "\033[33m"));
-      colormap.insert(std::make_pair(comment,  "\033[37m"));
+      colormap.insert(std::make_pair(comment,  "\033[36m"));
       colormap.insert(std::make_pair(reset,    "\033[m"));
     }
 }
