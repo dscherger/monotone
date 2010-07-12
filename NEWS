@@ -74,7 +74,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           addition to a single revision.
 
         - The commands 'diff', 'fdiff' and 'log' now accept the new
-          '--colorize' option and render colored diffs if terminals which
+          '--colorize' option and render colored diffs in terminals which
           support that.
 
         - New automation command 'log' which behaves identical to the
