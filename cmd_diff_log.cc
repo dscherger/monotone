@@ -393,6 +393,7 @@ void dump_header(std::string const & revs,
                  roster_t const & old_roster,
                  roster_t const & new_roster,
                  std::ostream & out,
+                 diff_colorizer const & colorizer,
                  bool show_if_empty)
 {
   cset changes;
@@ -405,19 +406,22 @@ void dump_header(std::string const & revs,
 
   vector<string> lines;
   split_into_lines(summary(), lines);
-  out << "#\n";
+  out << colorizer.colorize("#", diff_colorizer::comment) << "\n";
   if (!summary().empty())
     {
-      out << revs << "#\n";
+      out << colorizer.colorize(revs + "#",
+                                diff_colorizer::comment) << "\n";
       for (vector<string>::iterator i = lines.begin();
            i != lines.end(); ++i)
-        out << "# " << *i << '\n';
+        out << colorizer.colorize(string("# ") + *i,
+                                  diff_colorizer::comment) << "\n";
     }
   else
     {
-      out << "# " << _("no changes") << '\n';
+      out << colorizer.colorize(string("# ") + _("no changes"),
+                                diff_colorizer::comment) << "\n";
     }
-  out << "#\n";
+  out << colorizer.colorize("#", diff_colorizer::comment) << "\n";
 }
 
 CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
@@ -444,9 +448,11 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
 
   prepare_diff(app, db, old_roster, new_roster, args, old_from_db, new_from_db, revs);
 
+  diff_colorizer colorizer(app.opts.colorize);
+
   if (!app.opts.without_header)
     {
-      dump_header(revs, old_roster, new_roster, cout, true);
+      dump_header(revs, old_roster, new_roster, cout, colorizer, true);
     }
 
   dump_diffs(app.lua, db, old_roster, new_roster, cout,
@@ -455,7 +461,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
              app.opts.external_diff_args,
              old_from_db, new_from_db,
              !app.opts.no_show_encloser,
-             diff_colorizer(app.opts.colorize));
+             colorizer);
 }
 
 
@@ -484,10 +490,12 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
   prepare_diff(app, db, old_roster, new_roster, args, old_from_db, new_from_db,
                dummy_header);
 
+  // never colorize the diff output
+  diff_colorizer colorizer(false);
 
   if (app.opts.with_header)
     {
-      dump_header(dummy_header, old_roster, new_roster, output, false);
+      dump_header(dummy_header, old_roster, new_roster, output, colorizer, false);
     }
 
   dump_diffs(app.lua, db, old_roster, new_roster, output,
@@ -495,7 +503,7 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
              app.opts.external_diff_args_given, app.opts.external_diff_args,
              old_from_db, new_from_db,
              !app.opts.no_show_encloser,
-             diff_colorizer(false));    // never colorize the diff output
+             colorizer);
 }
 
 

@@ -27,6 +27,7 @@ diff_colorizer::diff_colorizer(bool enable)
       colormap.insert(std::make_pair(add,      "\033[32m"));
       colormap.insert(std::make_pair(del,      "\033[31m"));
       colormap.insert(std::make_pair(change,   "\033[33m"));
+      colormap.insert(std::make_pair(comment,  "\033[37m"));
       colormap.insert(std::make_pair(reset,    "\033[m"));
     }
 }

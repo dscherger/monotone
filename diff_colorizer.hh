@@ -15,7 +15,13 @@
 
 struct diff_colorizer {
 
-  typedef enum { normal = 0, encloser, add, del, change, reset } purpose;
+  typedef enum { normal = 0,
+                 encloser,
+                 add,
+                 del,
+                 change,
+                 comment,
+                 reset } purpose;
 
   diff_colorizer(bool enable);
 

@@ -496,7 +496,8 @@ make_diff(string const & filename1,
 {
   if (guess_binary(data1()) || guess_binary(data2()))
     {
-      ost << "# " << filename2 << " is binary\n";
+      ost << colorizer.colorize(string("# ") + filename2 + " is binary",
+                                diff_colorizer::comment) << "\n";
       return;
     }
 
