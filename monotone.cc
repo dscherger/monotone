@@ -232,6 +232,10 @@ cpp_main(int argc, char ** argv)
             {
               ui.redirect_log_to(app.opts.log);
             }
+          if (app.opts.debug_given)
+            {
+              global_sanity.set_debug();
+            }
           if (app.opts.dump_given)
             {
               global_sanity.set_dump_path(app.opts.dump.as_external());

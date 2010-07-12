@@ -33,6 +33,7 @@ options_applicator::options_applicator(options const & opts,
 
   // --dump is handled in monotone.cc
   // --log is handled in monotone.cc
+  // --debug is handled in monotone.cc
 
   _impl->were_timestamps_enabled = ui.enable_timestamps(opts.timestamps);
 

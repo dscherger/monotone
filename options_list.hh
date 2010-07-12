@@ -324,14 +324,8 @@ GLOBAL_SIMPLE_OPTION(roster_cache_performance_log, "roster-cache-performance-log
                      system_path,
                      gettext_noop("log roster cache statistic to the given file"))
 
-// FIXME this needs to be a flag, not a function call
-OPTION(globals, debug, false, "debug",
-        gettext_noop("print debug log to stderr while running"))
-#ifdef option_bodies
-{
-  global_sanity.set_debug();
-}
-#endif
+GLOBAL_SIMPLE_OPTION(debug, "debug", bool,
+                     gettext_noop("print debug log to stderr while running"))
 
 OPT(depth, "depth", long, -1,
      gettext_noop("limit the number of levels of directories to descend"))
