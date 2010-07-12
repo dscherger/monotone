@@ -409,8 +409,9 @@ void dump_header(std::string const & revs,
   out << colorizer.colorize("#", diff_colorizer::comment) << "\n";
   if (!summary().empty())
     {
-      out << colorizer.colorize(revs + "#",
-                                diff_colorizer::comment) << "\n";
+      out << colorizer.colorize(revs, diff_colorizer::comment);
+      out << colorizer.colorize("#", diff_colorizer::comment) << "\n";
+
       for (vector<string>::iterator i = lines.begin();
            i != lines.end(); ++i)
         out << colorizer.colorize(string("# ") + *i,
