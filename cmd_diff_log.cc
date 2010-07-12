@@ -17,6 +17,7 @@
 #include "asciik.hh"
 #include "charset.hh"
 #include "cmd.hh"
+#include "diff_colorizer.hh"
 #include "diff_output.hh"
 #include "file_io.hh"
 #include "parallel_iter.hh"
@@ -69,6 +70,7 @@ dump_diff(lua_hooks & lua,
           bool external_diff_args_given,
           string external_diff_args,
           string const & encloser,
+          diff_colorizer const & colorizer,
           ostream & output)
 {
   if (diff_format == external_diff)
@@ -110,7 +112,8 @@ dump_diff(lua_hooks & lua,
       make_diff(left, right,
                 left_id, right_id,
                 left_data, right_data,
-                output, diff_format, encloser);
+                output, diff_format,
+                encloser, colorizer);
     }
 
 }
@@ -126,7 +129,8 @@ dump_diffs(lua_hooks & lua,
            string external_diff_args,
            bool left_from_db,
            bool right_from_db,
-           bool show_encloser)
+           bool show_encloser,
+           diff_colorizer const & colorizer)
 {
   parallel::iter<node_map> i(left_roster.all_nodes(), right_roster.all_nodes());
   while (i.next())
@@ -162,7 +166,7 @@ dump_diffs(lua_hooks & lua,
                         left_id, right_id,
                         left_data, right_data,
                         diff_format, external_diff_args_given, external_diff_args,
-                        encloser, output);
+                        encloser, colorizer, output);
             }
           break;
 
@@ -191,7 +195,7 @@ dump_diffs(lua_hooks & lua,
                         left_id, right_id,
                         left_data, right_data,
                         diff_format, external_diff_args_given, external_diff_args,
-                        encloser, output);
+                        encloser, colorizer, output);
             }
           break;
 
@@ -224,7 +228,7 @@ dump_diffs(lua_hooks & lua,
                         left_id, right_id,
                         left_data, right_data,
                         diff_format, external_diff_args_given, external_diff_args,
-                        encloser, output);
+                        encloser, colorizer, output);
             }
           break;
         }
@@ -425,7 +429,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
        "between them is given.  If no format is specified, unified is "
        "used by default."),
     options::opts::revision | options::opts::depth | options::opts::exclude |
-    options::opts::diff_options)
+    options::opts::diff_options | options::opts::colorize)
 {
   if (app.opts.external_diff_args_given)
     E(app.opts.diff_format == external_diff, origin::user,
@@ -450,7 +454,8 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
              app.opts.external_diff_args_given,
              app.opts.external_diff_args,
              old_from_db, new_from_db,
-             !app.opts.no_show_encloser);
+             !app.opts.no_show_encloser,
+             diff_colorizer(app.opts.colorize));
 }
 
 
@@ -488,7 +493,9 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
   dump_diffs(app.lua, db, old_roster, new_roster, output,
              app.opts.diff_format,
              app.opts.external_diff_args_given, app.opts.external_diff_args,
-             old_from_db, new_from_db, !app.opts.no_show_encloser);
+             old_from_db, new_from_db,
+             !app.opts.no_show_encloser,
+             diff_colorizer(false));    // never colorize the diff output
 }
 
 
@@ -622,7 +629,8 @@ log_print_rev (app_state &      app,
                      app.opts.external_diff_args_given,
                      app.opts.external_diff_args,
                      true, true,
-                     !app.opts.no_show_encloser);
+                     !app.opts.no_show_encloser,
+                     diff_colorizer(app.opts.colorize));
         }
     }
 }
@@ -993,7 +1001,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     options::opts::brief | options::opts::diffs |
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges | options::opts::no_files |
-    options::opts::no_graph)
+    options::opts::no_graph | options::opts::colorize )
 {
   log_common (app, args, false, cout);
 }

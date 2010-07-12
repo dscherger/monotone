@@ -370,6 +370,14 @@ OPT(diffs, "diffs", bool, false, gettext_noop("print diffs along with logs"))
 }
 #endif
 
+
+OPT(colorize, "colorize", bool, false, gettext_noop("colorize diff output"))
+#ifdef option_bodies
+{
+    colorize = true;
+}
+#endif
+
 OPTVAR(drop_attr, std::set<std::string>, attrs_to_drop, )
 OPTION(drop_attr, drop_attr, true, "drop-attr",
         gettext_noop("when rosterifying, drop attrs entries with the given key"))
