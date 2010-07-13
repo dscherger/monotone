@@ -1068,10 +1068,10 @@ was initially developed on the branch @code{net.venge.monotone.win32}
 
 It has to be noted that earlier versions of monotone enforced no restrictions
 on branch names.  Newer versions, starting with 0.99, exclude a set of control
-characters though, which mostly denote either meta characters in monotone's 
+characters though, which mostly denote either meta characters in monotone's
 URI syntax or are used in globs to resolve branch patterns.  These characters are
 @code{?}, @code{,}, @code{*}, @code{%}, @code{+}, @code{@{}, @code{@}}, @code{[},
-@code{]}, @code{!} and @code{^}.  Additionally, @code{-} is deprecated as first 
+@code{]}, @code{!} and @code{^}.  Additionally, @code{-} is deprecated as first
 character of a branch name, since it is used to denote branch exclude patterns
 in the aforementioned URI syntax.
 
@@ -3751,7 +3751,7 @@ changes, monotone will notice, and refuse to connect until you have run
 @item server-include
 Contains server-specific branch inclusion globs.  These overrule
 @var{default-include-pattern} if existant and are recorded automatically
-the first time you connect to a specific server or use the 
+the first time you connect to a specific server or use the
 @option{--set-default} option for a netsync operation.
 
 @item server-exclude
@@ -5756,9 +5756,9 @@ When the operation completes, all branches matching
 databases.
 
 The @command{pull}, @command{push}, and @command{sync} commands only
-require you pass @var{uri} (or @var{address} and @var{glob}) the first time 
+require you pass @var{uri} (or @var{address} and @var{glob}) the first time
 you use one of them; monotone will memorize this use and in the future default
-to the same URI (or server and glob).  For instance, if Bob wants to 
+to the same URI (or server and glob).  For instance, if Bob wants to
 @command{sync} with Alice again, he can simply run:
 
 @smallexample
@@ -5783,7 +5783,7 @@ If a @option{--pid-file} option is specified, the command
 identifier of the server in the file.  This file can then be read to
 identify specific monotone server processes.
 
-The syntax for patterns, both in globs as well as URIs, is very simple.  
+The syntax for patterns, both in globs as well as URIs, is very simple.
 @code{*} matches 0 or more arbitrary characters.  @code{?} matches exactly
 1 arbitrary character (you need to escape that with @code{%3F} in an URI).
 @code{@{foo,bar,baz@}} matches ``foo'', or ``bar'', or ``baz''.  These
@@ -11639,14 +11639,29 @@ If there is a policy decision to make, Monotone defines certain hooks to
 allow a client to validate or reject certain behaviors.
 
 @ftable @code
+@item validate_changes (@var{revision_text}, @var{branchname})
+
+This hook is called just after the to-be-committed changes and the branch
+have been logically verified and before the user enters his/her commit message.
+@var{revision_text} is the full text of the changes for this revision,
+which can be parsed with the parse_basic_io function. The second parameter,
+@var{branchname}, is the branch for this commit - unless it gets changed
+in the editor later on.
+
+If the hook finds the changes satisfactory, it can return @code{true,
+""}. If it finds fault, then it can return @code{false, reason} where
+@var{reason} is the reason the changes were rejected. By default, this hook
+is not defined and is thus ignored during a commit.
+
 @item validate_commit_message (@var{message}, @var{revision_text}, @var{branchname})
 
 This hook is called after the user has entered his/her commit message.
 @var{message} is the commit message that the user has entered and
 @var{revision_text} is the full text of the changes for this revision,
-which can be parsed with the parse_basic_io function. The @var{branchname} on
-which the new revision will be committed if all goes well is passed in as the third
-parameter.
+which, again, can be parsed with the parse_basic_io function.
+The @var{branchname} on which the new revision will be committed if all goes
+well is passed in as the third parameter.
+
 If the hook finds the commit message satisfactory, it can return @code{true,
 ""}. If it finds fault, then it can return @code{false, reason} where
 @var{reason} is the reason the message was rejected. By default, this hook
