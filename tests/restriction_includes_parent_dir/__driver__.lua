@@ -12,12 +12,9 @@ addfile("file", "file")
 
 check(mtn("st", "file"), 0, true, true)
 rename("stdout", "additions")
-rename("stderr", "warnings")
 
 check(grep("added", "additions"), 0, true, false)
 check(numlines("stdout") == 2)
-check(grep("including missing parent", "warnings"), 0, true, false)
-check(numlines("stdout") == 1)
 
 commit()
 
@@ -30,11 +27,8 @@ addfile("foo/bar", "foobar")
 
 check(mtn("st", "foo/bar"), 0, true, true)
 rename("stdout", "additions")
-rename("stderr", "warnings")
 
 check(grep("added", "additions"), 0, true, false)
-check(numlines("stdout") == 2)
-check(grep("including missing parent", "warnings"), 0, true, false)
 check(numlines("stdout") == 2)
 
 -- ensure that --depth=0 means "directory without contents" rather
