@@ -11650,7 +11650,7 @@ parameter.
 If the hook finds the commit message satisfactory, it can return @code{true,
 ""}. If it finds fault, then it can return @code{false, reason} where
 @var{reason} is the reason the message was rejected. By default, this hook
-rejects empty log messages.
+is not defined and is thus ignored during a commit.
 
 @end ftable
 
