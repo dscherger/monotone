@@ -95,6 +95,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - the 'mv' command now warns when a source is being renamed onto
           itself or one of its children (fixes monotone bug #29484).
 
+        - the 'mv' command now handles this usage properly, where
+          'foo' is a directory:
+          mv foo bar
+          mtn mv --bookkeep-only foo bar
+
         - monotone no longer asks to pick a branch from a set of branches
           of a revision in which all but one branch have been suspended
           (fixes monotone bug #29843)
@@ -114,7 +119,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - `automate remote' and `automate remote_stdio' can now be used
           without transport authentication (e.g. on file:// or ssh://
           transports) as well as anonymously over netsync
-          (fixes monotone bug #30237)  
+          (fixes monotone bug #30237)
 
         - monotone does no longer warn about missing implicit includes
           when dealing with restricted file sets
