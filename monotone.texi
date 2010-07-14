@@ -927,6 +927,8 @@ keep separate.
 
 You can see all the available branches using @command{mtn list branches}.
 
+@subsection Heads and merging
+
 Branches are indicated with certs.  The cert name @code{branch} is
 reserved for use by monotone, for the purpose of identifying the
 revisions which are members of a branch. A @code{branch} cert has a
@@ -1046,12 +1048,12 @@ branch names must be @emph{globally} unique, over all branches in the
 world.  Otherwise, bad things can happen.  Fortunately, we have a handy
 source of globally unique names --- the DNS system.
 
-When naming a branch, always prepend the reversed, fully qualified, domain name of a host that
-you control or are otherwise authorized to use.  For example, monotone
-development happens on the branch @code{net.venge.monotone}, because
-@code{venge.net} belongs to monotone's primary author.  The idea is that
-this way, you can coordinate with other people using a host to make sure
-there are no conflicts --- in the example, monotone's primary author can
+When naming a branch, always prepend the reversed, fully qualified, domain
+name of a host that you control or are otherwise authorized to use.  For
+example, monotone development happens on the branch @code{net.venge.monotone},
+because @code{venge.net} belongs to monotone's original author.  The idea is
+that this way, you can coordinate with other people using a host to make sure
+there are no conflicts --- in the example, monotone's original author can
 be certain that no-one else using @code{venge.net} will start up a
 different program named @code{monotone}.  If you work for Yoyodyne,
 Inc. (owners of yoyodyne.com), then all your branch names should look
@@ -1061,9 +1063,22 @@ What the @code{@emph{something}} part looks like is up to you, but
 usually the first part is the project name (the @code{monotone} in
 @code{net.venge.monotone}), and then possibly more stuff after that to
 describe a particular branch.  For example, monotone's win32 support
-was initially developed on the branch @code{net.venge.monotone.win32}.
+was initially developed on the branch @code{net.venge.monotone.win32}
+(for more information, see @ref{Naming Conventions}).
 
-(For more information, see @ref{Naming Conventions}.)
+It has to be noted that earlier versions of monotone enforced no restrictions
+on branch names.  Newer versions, starting with 0.99, exclude a set of control
+characters though, which mostly denote either meta characters in monotone's 
+URI syntax or are used in globs to resolve branch patterns.  These characters are
+@code{?}, @code{,}, @code{*}, @code{%}, @code{+}, @code{@{}, @code{@}}, @code{[},
+@code{]}, @code{!} and @code{^}.  Additionally, @code{-} is deprecated as first 
+character of a branch name, since it is used to denote branch exclude patterns
+in the aforementioned URI syntax.
+
+monotone warns on the creation of branch names which violate one of the above
+restrictions and gives further directions.  Future versions of monotone are
+likely to enforce these restrictions by disallowing such branch names completely.
+
 
 @page
 @node    Tutorial, Advanced Uses, Concepts, Top
@@ -11635,7 +11650,7 @@ parameter.
 If the hook finds the commit message satisfactory, it can return @code{true,
 ""}. If it finds fault, then it can return @code{false, reason} where
 @var{reason} is the reason the message was rejected. By default, this hook
-rejects empty log messages.
+is not defined and is thus ignored during a commit.
 
 @end ftable
 

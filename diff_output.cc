@@ -560,8 +560,7 @@ make_diff(string const & filename1,
   //      renames are basically hopeless (you can do them by hand _after_
   //      running patch), adds work so long as the first line says either
   //      the new file's name or "/dev/null", nothing else, and deletes work
-  //      if the new file name is "/dev/null", nothing else.  (ATM we don't
-  //      write out patches for deletes anyway.)
+  //      if the new file name is "/dev/null", nothing else.
   switch (type)
     {
       case unified_diff:
