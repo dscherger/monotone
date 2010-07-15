@@ -93,10 +93,10 @@ extract_client_connection_info(options & opts,
        }
     }
 
-  opts.use_transport_auth =
-    lua.hook_use_transport_auth(info->client.get_uri());
+  opts.no_transport_auth =
+    !lua.hook_use_transport_auth(info->client.get_uri());
 
-  if (opts.use_transport_auth)
+  if (!opts.no_transport_auth)
     {
       cache_netsync_key(opts, project, keys, lua, info, key_requiredness);
     }
@@ -489,10 +489,10 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
 
   I(!app.opts.branch().empty());
 
-  app.opts.use_transport_auth =
-    app.lua.hook_use_transport_auth(info->client.get_uri());
+  app.opts.no_transport_auth =
+    !app.lua.hook_use_transport_auth(info->client.get_uri());
 
-  if (app.opts.use_transport_auth)
+  if (!app.opts.no_transport_auth)
     {
       cache_netsync_key(app.opts, project, keys, app.lua, info, key_optional);
     }
@@ -652,7 +652,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
   shared_conn_info info;
   netsync_connection_info::setup_for_serve(app.opts, project.db, app.lua, info);
 
-  if (app.opts.use_transport_auth)
+  if (!app.opts.no_transport_auth)
     {
       cache_netsync_key(app.opts, project, keys, app.lua, info, key_required);
     }

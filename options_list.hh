@@ -189,34 +189,14 @@ SIMPLE_OPTION(auto_update, "update/no-update", bool,
                            "revision is a head of an affected branch"))
 
 OPTSET(bind_opts)
-OPTVAR(bind_opts, std::list<utf8>, bind_uris, )
-OPTVAR(bind_opts, bool, bind_stdio, false)
-OPTVAR(bind_opts, bool, use_transport_auth, true)
-
-OPTION(bind_opts, bind, true, "bind",
-       gettext_noop("address:port to listen on (default :4691)"))
-#ifdef option_bodies
-{
-  bind_uris.push_back(utf8(arg, origin::user));
-  bind_stdio = false;
-}
-#endif
+GROUPED_SIMPLE_OPTION(bind_opts, bind_uris, "bind", std::vector<utf8>,
+                      gettext_noop("address:port to listen on (default :4691)"))
 HIDE(no_transport_auth)
-OPTION(bind_opts, no_transport_auth, false, "no-transport-auth",
-       gettext_noop("disable transport authentication"))
-#ifdef option_bodies
-{
-  use_transport_auth = false;
-}
-#endif
+GROUPED_SIMPLE_OPTION(bind_opts, no_transport_auth, "no-transport-auth", bool,
+                      gettext_noop("disable transport authentication"))
 HIDE(bind_stdio)
-OPTION(bind_opts, bind_stdio, false, "stdio",
-       gettext_noop("serve netsync on stdio"))
-#ifdef option_bodies
-{
-  bind_stdio = true;
-}
-#endif
+GROUPED_SIMPLE_OPTION(bind_opts, bind_stdio, "stdio", bool,
+                      gettext_noop("serve netsync on stdio"))
 
 OPT(max_netsync_version, "max-netsync-version",
     u8, constants::netcmd_current_protocol_version,
@@ -446,16 +426,8 @@ GLOBAL_SIMPLE_OPTION(key, "key,k/use-default-key", external_key_name,
        gettext_noop("sets the key for signatures, using either the key "
                     "name or the key hash"))
 
-// Remember COMMA doesn't work with GOPT, use long form.
-//GOPT(key_dir, "keydir", system_path, get_default_keydir() COMMA origin::user,
-//     gettext_noop("set location of key store"))
-OPTVAR(globals, system_path, key_dir, get_default_keydir() COMMA origin::user)
-OPTION(globals, key_dir, true, "keydir", gettext_noop("set location of key store"))
-#ifdef option_bodies
-{
-  key_dir = system_path(arg, origin::user);
-}
-#endif
+GLOBAL_SIMPLE_OPTION(key_dir, "keydir", system_path,
+                     gettext_noop("set location of key store"))
 
 SIMPLE_OPTION(keys_to_push, "key-to-push", std::vector<external_key_name>,
         gettext_noop("push the specified key even if it hasn't signed anything"))
