@@ -2,7 +2,10 @@
 function get_default_command_options(command)
     local default_opts = {}
     if (command[1] == "version") then
-        table.insert(default_opts, "--full")
+        table.insert(default_opts, "--verbose")
+    end
+    if (command[1] == "log") then
+        table.insert(default_opts, "--brief")
     end
     -- should trigger an invalid option error
     if (command[1] == "status") then

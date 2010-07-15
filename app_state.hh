@@ -13,6 +13,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "options.hh"
+#include "option_reset_info.hh"
 #include "lua_hooks.hh"
 
 // This class holds any state that needs to be persistent across multiple
@@ -26,6 +27,7 @@ public:
   ~app_state();
 
   options opts;
+  option_reset_info reset_info;
   lua_hooks lua;
   bool mtn_automate_allowed;
 };

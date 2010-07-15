@@ -35,6 +35,8 @@ struct options
 
   static std::map<static_options_fun, std::set<static_options_fun> > &children();
   static std::map<static_options_fun, std::list<void(options::*)()> > &var_membership();
+  static std::map<static_options_fun, bool> &hidden();
+  static std::map<static_options_fun, char const *> &deprecated();
 
   void reset_optset(static_options_fun opt);
 
@@ -48,9 +50,11 @@ struct options
 # define OPTVAR(optset, type, name, default_)
 
 #define OPTION(optset, name, hasarg, optstring, description)     \
-    static options_type const & name ();
+    static options_type const & name ## _opt ();
 
 # define OPTSET_REL(parent, child)
+# define HIDE(option)
+# define DEPRECATE(option, reason, deprecated_in, will_remove_in)
 
 # include "options_list.hh"
 
@@ -58,6 +62,8 @@ struct options
 # undef OPTVAR
 # undef OPTION
 # undef OPTSET_REL
+# undef HIDE
+# undef DEPRECATE
   };
 
 # define OPTSET(name)                           \
@@ -78,6 +84,8 @@ private:                                                         \
   void reset_opt_ ## name ();
 
 # define OPTSET_REL(parent, child)
+# define HIDE(option)
+# define DEPRECATE(option, reason, deprecated_in, will_remove_in)
 
 # include "options_list.hh"
 
@@ -85,6 +93,8 @@ private:                                                         \
 # undef OPTVAR
 # undef OPTION
 # undef OPTSET_REL
+# undef HIDE
+# undef DEPRECATE
 };
 
 option::option_set<options>

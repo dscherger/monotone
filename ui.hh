@@ -65,13 +65,18 @@ public:
   int fatal_exception(std::exception const & ex);
   int fatal_exception();
   void set_tick_trailer(std::string const & trailer);
+
+  enum ticker_type { count=1, dot, stdio, none };
   void set_tick_write_dot();
   void set_tick_write_count();
   void set_tick_write_stdio();
   void set_tick_write_nothing();
+  ticker_type set_ticker_type(ticker_type type);
+  ticker_type get_ticker_type() const;
+
   void ensure_clean_line();
   void redirect_log_to(system_path const & filename);
-  void enable_timestamps();
+  bool enable_timestamps(bool enable);
 
   std::string output_prefix();
 
@@ -82,7 +87,7 @@ private:
   struct impl;
   impl * imp;
   bool timestamps_enabled;
-  enum ticker_type { count=1, dot, stdio, none } tick_type;
+  ticker_type tick_type;
 
   friend struct ticker;
   friend struct tick_write_count;
