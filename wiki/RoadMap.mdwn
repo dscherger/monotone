@@ -17,6 +17,7 @@ Branch name deprecation | [monotone-devel](http://article.gmane.org/gmane.comp.v
 netsync --anonymous | n/a | `nvm.bugfest-2010.28805-rlevitte` | in development |
 Overwritable, negatable options | [[OverwritableNegatableOptions]] | `nvm.options` | in development |
 Key management in automate | [savannah](https://savannah.nongnu.org/bugs/?30345) | n/a | not started |
+Fix changelog editor issues | [monotone-devel](http://thread.gmane.org/gmane.comp.version-control.monotone.devel/17851) | n/a | not started |
 """ ]]
 
 ## Release 1.x - 2010 / 2011
