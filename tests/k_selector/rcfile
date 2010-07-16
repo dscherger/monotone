@@ -1,0 +1,6 @@
+function get_local_key_name(identity)
+    if identity.given_name == "local_name_test@test.net" then
+        return "custom_name@test.net"
+    end
+    return identity.given_name
+end
