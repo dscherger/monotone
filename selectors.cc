@@ -22,6 +22,7 @@
 #include "transforms.hh"
 #include "roster.hh"
 #include "vector.hh"
+#include "vocab_cast.hh"
 
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
@@ -80,6 +81,23 @@ public:
   {
     set<revision_id> ret;
     project.db.select_cert(author_cert_name(), value, ret);
+    return ret;
+  }
+};
+class key_selector : public selector
+{
+  key_identity_info identity;
+public:
+  key_selector(string const & arg, lua_hooks & lua, project_t & project)
+  {
+    project.get_key_identity(lua,
+                             external_key_name(arg, origin::user),
+                             identity);
+  }
+  virtual set<revision_id> complete(project_t & project)
+  {
+    set<revision_id> ret;
+    project.db.select_key(identity.id, ret);
     return ret;
   }
 };
@@ -145,7 +163,7 @@ string preprocess_date_for_selector(string sel, lua_hooks & lua, bool equals)
     tmp += "T00:00:00";
   E(tmp.size()==19 || equals, origin::user,
     F("selector '%s' is not a valid date (%s)") % sel % tmp);
-  
+
   if (sel != tmp)
     {
       P (F ("expanded date '%s' -> '%s'\n") % sel % tmp);
@@ -650,6 +668,8 @@ selector::create_simple_selector(options const & opts,
       return shared_ptr<selector>(new head_selector(sel, opts));
     case 'i':
       return shared_ptr<selector>(new ident_selector(sel));
+    case 'k':
+      return shared_ptr<selector>(new key_selector(sel, lua, project));
     case 'l':
       return shared_ptr<selector>(new later_than_selector(sel, lua));
     case 'm':
