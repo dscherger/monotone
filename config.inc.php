@@ -7,9 +7,11 @@ $CFG["cache_dir"] = "/data/monotone.ca/cache";
 
 $CFG["aggregated_feeds"] = array(
     "http://www.thomaskeller.biz/blog/category/coding/monotone/feed/",
-    "http://tero.stronglytyped.org/blosxom.cgi/monotone/index.rss",
+    "http://tero.stronglytyped.org/blosxom.cgi/monotone/index.atom",
     "http://identi.ca/lapo/tag/monotone/rss",
 );
+
+$CFG['new_msgs_from_feeds_count'] = 3;
 
 $CFG["download_dir"] = dirname(__FILE__) . "/downloads";
 

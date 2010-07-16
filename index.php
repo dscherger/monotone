@@ -76,11 +76,10 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
     $feed = new SimplePie();
     $feed->set_cache_location($CFG['cache_dir']);
     $feed->set_feed_url($CFG['aggregated_feeds']);
-    $feed->set_item_limit(3);
     $feed->init();
     $feed->handle_content_type();
 
-    $items = $feed->get_items();
+    $items = $feed->get_items(0, $CFG['new_msgs_from_feeds_count']);
     if (count($items) == 0):
 ?>
             <p>No blog posts found.</p>
@@ -94,7 +93,13 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
                 <h2><?php echo $item->get_title() ?></h2>
                 <h3>by <?php echo $author ?>, <?php echo $item->get_date("j F Y | g:i a") ?></h3>
                 <p>
-                    <?php echo $item->get_description() ?>
+                    <?php 
+                        $desc = strip_tags($item->get_description());
+                        if (strlen($desc) > 350):
+                            $desc = substr($desc, 0, 350). " [...]";
+                        endif;
+                        echo $desc;
+                    ?>
                     <a href="<?php echo $item->get_link(0) ?>" target="_blank">&#187; read more</a>
                 </p>
             </div>
@@ -102,7 +107,7 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
         endforeach;
 ?>
         <p style="text-align: center">
-            <a href="intheblogs.php">&#187; view all entries</a>
+            <a href="intheblogs.php">&#187; view older entries</a>
         </p>
 <?php
     endif;
