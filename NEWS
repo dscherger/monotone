@@ -125,6 +125,14 @@ Xxx Xxx 99 99:99:99 UTC 2010
           when dealing with restricted file sets
           (fixes monotone bug #30291)
 
+        - The 'passphrase' and 'dropkey' commands now handle private keys
+          in old-style key files (without the hash part in the file name)
+          properly.
+          monotone also makes it very sure now that the key file of a 
+          private key which is about to be deleted really and only
+          contains the key which should be deleted and nothing else 
+          (fixes monotone bug #30376)
+
         - monotone no longer throws an unrecoverable error if a public or 
           private key is addressed with some non-existing key id
           (fixes monotone bug #30462)
