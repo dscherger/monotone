@@ -83,8 +83,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         New Features
 
-        - the 'disapprove' command now accepts a revision range in
+        - The 'disapprove' command now accepts a revision range in
           addition to a single revision.
+
+        - New 'k:' selector type to query revisions where at least one
+          certificate was signed with the given key.
 
         - New automation command 'log' which behaves identical to the
           normal 'log' command, except that it only outputs the
