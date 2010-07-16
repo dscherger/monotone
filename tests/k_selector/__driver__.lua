@@ -35,9 +35,8 @@ check(qgrep("must not be empty", "stderr"))
 check(mtn("au", "select", "k:tester"), 1, false, true)
 check(qgrep("there is no key named", "stderr"))
 
--- blocked by bug #30462
---check(mtn("au", "select", "k:1000000000000000000000000000000000000001"), 1, false, true)
---check(qgrep("does not exist", "stderr"))
+check(mtn("au", "select", "k:1000000000000000000000000000000000000001"), 1, false, true)
+check(qgrep("there is no key named", "stderr"))
 
 -- positive checks
 selmap("k:tester@test.net", {REV1})
