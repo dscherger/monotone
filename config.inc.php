@@ -7,6 +7,7 @@ $CFG["cache_dir"] = "/data/monotone.ca/cache";
 
 $CFG["aggregated_feeds"] = array(
     "http://www.thomaskeller.biz/blog/category/coding/monotone/feed/",
+    "http://tero.stronglytyped.org/blosxom.cgi/monotone/index.rss",
     "http://identi.ca/lapo/tag/monotone/rss",
 );
 
