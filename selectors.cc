@@ -90,6 +90,9 @@ class key_selector : public selector
 public:
   key_selector(string const & arg, lua_hooks & lua, project_t & project)
   {
+    E(!arg.empty(), origin::user,
+      F("the key selector k: must not be empty"));
+
     project.get_key_identity(lua,
                              external_key_name(arg, origin::user),
                              identity);
