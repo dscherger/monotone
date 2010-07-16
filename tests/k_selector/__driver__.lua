@@ -15,7 +15,7 @@ local basicio = parse_basic_io(readfile("stdout"))
 local hash = nil
 for _,l in pairs(basicio) do
   if l.name == "hash" then hash = l.values[1] end
-  if l.name == "given_name" and 
+  if l.name == "given_name" and
      l.values[1] == "local_name_test@test.net" then break end
 end
 check(hash ~= nil)
@@ -41,6 +41,11 @@ check(qgrep("there is no key named", "stderr"))
 
 -- positive checks
 selmap("k:tester@test.net", {REV1})
-selmap("k:local_name_test@test.net", {REV2})
+-- if the user chosed a local name for a specific key, we can't query
+-- the key by its original given name anywhere. this is actually wanted
+-- in case the user chosed a local name for one of two keys with the
+-- same given names which would otherwise not be distinguishable (beside
+-- their hash id)
 selmap("k:custom_name@test.net", {REV2})
 selmap("k:" .. hash, {REV2})
+
