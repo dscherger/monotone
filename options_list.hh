@@ -110,6 +110,14 @@ void set_simple_option(std::set<T> & t, std::string const & arg)
 template<>
 void set_simple_option(bool & t, std::string const & arg)
 { t = true; }
+void set_simple_option(u8 & t, std::string const & arg)
+{
+  long l = boost::lexical_cast<long>(arg);
+  if (l < 0 || l > 255)
+    throw bad_arg_internal(F("must be between 0 and 255").str());
+  else
+    t = (u8)l;
+}
 template<>
 void set_simple_option(std::string & t, std::string const & arg)
 { t = arg; }
@@ -198,26 +206,13 @@ HIDE(bind_stdio)
 GROUPED_SIMPLE_OPTION(bind_opts, bind_stdio, "stdio", bool,
                       gettext_noop("serve netsync on stdio"))
 
-OPT(max_netsync_version, "max-netsync-version",
-    u8, constants::netcmd_current_protocol_version,
-    gettext_noop("cause monotone to lie about the maximum netsync "
-                 "protocol version that it supports, mostly for debugging"))
-#ifdef option_bodies
-{
-  max_netsync_version = (u8)boost::lexical_cast<u32>(arg);
-}
-#endif
-
-OPT(min_netsync_version, "min-netsync-version",
-    u8, constants::netcmd_minimum_protocol_version,
-    gettext_noop("cause monotone to lie about the minimum netsync "
-                 "protocol version it supports, useful for debugging or "
-                 "if you want to prevent use of older protocol versions"))
-#ifdef option_bodies
-{
-  min_netsync_version = (u8)boost::lexical_cast<u32>(arg);
-}
-#endif
+SIMPLE_OPTION(max_netsync_version, "max-netsync-version", u8,
+              gettext_noop("cause monotone to lie about the maximum netsync "
+                           "protocol version that it supports, mostly for debugging"))
+SIMPLE_OPTION(min_netsync_version, "min-netsync-version", u8,
+              gettext_noop("cause monotone to lie about the minimum netsync "
+                           "protocol version it supports, useful for debugging or "
+                           "if you want to prevent use of older protocol versions"))
 
 SIMPLE_OPTION(remote_stdio_host, "remote-stdio-host", arg_type,
     gettext_noop("sets the host (and optionally the port) for a "

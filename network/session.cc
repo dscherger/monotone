@@ -62,6 +62,13 @@ session::session(app_state & app, project_t & project,
   unnoted_bytes_in(0),
   unnoted_bytes_out(0)
 {
+  if (!app.opts.max_netsync_version_given)
+    {
+      max_version = constants::netcmd_current_protocol_version;
+      version = max_version;
+    }
+  if (!app.opts.min_netsync_version_given)
+    min_version = constants::netcmd_minimum_protocol_version;
 }
 
 session::~session()
