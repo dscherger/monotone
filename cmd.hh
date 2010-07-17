@@ -19,7 +19,7 @@
 
 class app_state;
 
-class automate_session;
+class automate_stdio_helpers;
 
 namespace commands
 {
@@ -79,8 +79,11 @@ namespace commands
     virtual std::string abstract(void) const;
     virtual std::string desc(void) const;
     virtual names_set subcommands(bool hidden) const;
+
     options::options_type const & opts(void) const;
     bool use_workspace_options(void) const;
+    void preset_options(options & opts) const;
+
     children_set & children(void);
     children_set const & children(void) const;
     bool is_leaf(void) const;
@@ -100,6 +103,14 @@ namespace commands
                        bool completion_ok = true) const;
   };
 
+  class cmdpreset
+  {
+  public:
+    void register_for(command const * cmd);
+    virtual void preset(options & opts) const = 0;
+    virtual ~cmdpreset();
+  };
+
   class automate : public command
   {
     bool stdio_ok;
@@ -113,8 +124,7 @@ namespace commands
                                     command_id const & execid,
                                     args_vector const & args,
                                     std::ostream & output) const = 0;
-    friend class automate_stdio;
-    friend class ::automate_session;
+    friend class ::automate_stdio_helpers;
 
   public:
     automate(std::string const & name,
@@ -174,6 +184,20 @@ namespace commands { \
 }
 
 #define CMD_REF(C) ((commands::command *)&(commands::C ## _cmd))
+
+#define CMD_PRESET_OPTIONS(C)                                   \
+  CMD_FWD_DECL(C)                                               \
+  namespace commands{                                           \
+    class cmdpreset_ ## C : public cmdpreset                    \
+    {                                                           \
+    public:                                                     \
+      cmdpreset_ ## C () { register_for(CMD_REF(C)); }          \
+      virtual void preset(options & opts) const;                \
+    };                                                          \
+    cmdpreset_ ## C C ## _cmdpreset;                            \
+  }                                                             \
+  void commands::cmdpreset_ ## C ::preset(options & opts) const
+  
 
 #define _CMD2(C, name, aliases, parent, hidden, params, abstract, desc, opts) \
 namespace commands {                                                 \

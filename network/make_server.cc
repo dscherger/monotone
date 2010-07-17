@@ -14,14 +14,14 @@
 #include "lexical_cast.hh"
 #include "vocab.hh"
 
-using std::list;
+using std::vector;
 using std::string;
 
 using boost::lexical_cast;
 using boost::shared_ptr;
 
 shared_ptr<Netxx::StreamServer>
-make_server(list<utf8> const & addresses,
+make_server(vector<utf8> const & addresses,
             Netxx::port_type default_port,
             Netxx::Timeout timeout,
             bool use_ipv6,
@@ -35,7 +35,7 @@ make_server(list<utf8> const & addresses,
         addr.add_all_addresses(default_port);
       else
         {
-          for (std::list<utf8>::const_iterator it = addresses.begin();
+          for (std::vector<utf8>::const_iterator it = addresses.begin();
                it != addresses.end(); ++it)
             {
               const utf8 & address = *it;

@@ -460,7 +460,7 @@ _mtn_update() {
 (( $+functions[_mtn_version] )) ||
 _mtn_version() {
     _arguments -s : \
-	'--full[print detailed version number]'
+	'--verbose[print detailed version number]'
 }
 
 # define completion functions for files maintained by monotone.

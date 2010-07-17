@@ -46,7 +46,7 @@ namespace {
 
 maybe_workspace_updater::maybe_workspace_updater(app_state & app,
                                                  project_t & project)
-  : can_do_update(app.opts.do_auto_update),
+  : can_do_update(app.opts.auto_update),
     app(app), project(project)
 {
   if (can_do_update)

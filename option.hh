@@ -77,8 +77,8 @@ namespace option {
     bad_arg_internal(std::string const & str = "");
   };
 
-  // Split a "long,s" option name into long and short names.
-  void splitname(char const * from, std::string & name, std::string & n);
+  // Split a "long,s/cancel" option name into long and short names.
+  void splitname(char const * from, std::string & name, std::string & n, std::string & cancelname);
 
   // An option that can be set and reset.
   struct concrete_option
@@ -86,16 +86,21 @@ namespace option {
     char const * description;
     std::string longname;
     std::string shortname;
+    std::string cancelname;
     bool has_arg;
     boost::function<void (std::string)> setter;
     boost::function<void ()> resetter;
+    bool hidden;
+    char const * deprecated;
 
     concrete_option();
     concrete_option(char const * names,
                     char const * desc,
                     bool arg,
                     boost::function<void (std::string)> set,
-                    boost::function<void ()> reset);
+                    boost::function<void ()> reset,
+                    bool hide = false,
+                    char const * deprecate = 0);
 
     bool operator<(concrete_option const & other) const;
   };
@@ -115,21 +120,36 @@ namespace option {
     operator()(char const * names,
                char const * desc,
                boost::function<void ()> set,
-               boost::function<void ()> reset = 0);
+               boost::function<void ()> reset = 0,
+               bool hide = false,
+               char const * deprecate = 0);
     concrete_option_set &
     operator()(char const * names,
                char const * desc,
                boost::function<void (std::string)> set,
-               boost::function<void ()> reset = 0);
+               boost::function<void ()> reset = 0,
+               bool hide = false,
+               char const * deprecate = 0);
 
     concrete_option_set operator | (concrete_option_set const & other) const;
     void reset() const;
     void get_usage_strings(std::vector<std::string> & names,
                            std::vector<std::string> & descriptions,
-                           unsigned int & maxnamelen) const;
-    void from_command_line(args_vector & args, bool allow_xargs = true);
-    void from_command_line(int argc, char const * const * argv);
-    void from_key_value_pairs(std::vector<std::pair<std::string, std::string> > const & keyvals);
+                           unsigned int & maxnamelen,
+                           bool show_hidden
+                           /*no way to see deprecated*/) const;
+    enum option_parse_type { forbid_duplicates, allow_duplicates };
+    enum allow_xargs_t { xargs_forbidden, xargs_allowed };
+    void from_command_line(args_vector & args,
+                           allow_xargs_t allow_xargs = xargs_allowed,
+                           option_parse_type ty = forbid_duplicates);
+    void from_command_line(int argc,
+                           char const * const * argv,
+                           option_parse_type ty = forbid_duplicates);
+    typedef std::pair<std::string, std::string> key_value_pair;
+    typedef std::vector<key_value_pair> key_value_list;
+    void from_key_value_pairs(key_value_list const & keyvals,
+                              option_parse_type ty = forbid_duplicates);
   };
   concrete_option_set
   operator | (concrete_option const & a, concrete_option const & b);
@@ -227,12 +247,16 @@ namespace option {
     bool has_arg;
     boost::function<void (T*, std::string)> setter;
     boost::function<void (T*)> resetter;
+    bool hidden;
+    char const * deprecated;
 
     option(char const * name,
            char const * desc,
            bool arg,
            void(T::*set)(std::string),
-           void(T::*reset)())
+           void(T::*reset)(),
+           bool hide,
+           char const * deprecate)
     {
       I((name && name[0]) || (desc && desc[0]));
       description = desc;
@@ -240,19 +264,25 @@ namespace option {
       has_arg = arg;
       setter = set;
       resetter = reset;
+      hidden = hide;
+      deprecated = deprecate;
     }
 
     concrete_option instantiate(T * obj) const
     {
       concrete_option out;
       out.description = description;
-      splitname(names, out.longname, out.shortname);
+      splitname(names, out.longname, out.shortname, out.cancelname);
       out.has_arg = has_arg;
 
       if (setter)
         out.setter = std::bind1st(setter, obj);
       if (resetter)
         out.resetter = binder_only<T>(resetter, obj);
+
+      out.hidden = hidden;
+      out.deprecated = deprecated;
+
       return out;
     }
 
@@ -283,9 +313,11 @@ namespace option {
                char const * desc,
                bool arg,
                void(T::*set)(std::string),
-               void(T::*reset)())
+               void(T::*reset)(),
+               bool hidden = false,
+               char const * deprecated = 0)
     {
-      options.insert(option<T>(name, desc, arg, set, reset));
+      options.insert(option<T>(name, desc, arg, set, reset, hidden, deprecated));
     }
     concrete_option_set instantiate(T * obj) const
     {

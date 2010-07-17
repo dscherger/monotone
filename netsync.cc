@@ -269,7 +269,7 @@ serve_connections(app_state & app,
                   project_t & project,
                   key_store & keys,
                   protocol_role role,
-                  std::list<utf8> const & addresses)
+                  std::vector<utf8> const & addresses)
 {
 #ifdef USE_IPV6
   bool use_ipv6=true;

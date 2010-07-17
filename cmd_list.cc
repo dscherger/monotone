@@ -217,10 +217,10 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
   database db(app);
   project_t project(db);
 
-  E(app.opts.revision_selectors.size() <= 1, origin::user,
+  E(app.opts.revision.size() <= 1, origin::user,
     F("more than one revision given"));
 
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       workspace work(app);
       temp_node_id_source nis;
@@ -230,7 +230,7 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
   else
     {
       complete(app.opts, app.lua, project,
-               idx(app.opts.revision_selectors, 0)(), rev_id);
+               idx(app.opts.revision, 0)(), rev_id);
       E(db.revision_exists(rev_id), origin::user,
         F("no revision %s found in database") % rev_id);
       db.get_roster(rev_id, roster);
@@ -485,7 +485,7 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
 
   database db(app);
   project_t project(db);
-  globish exc(app.opts.exclude_patterns);
+  globish exc(app.opts.exclude);
   set<branch_name> names;
   project.get_branch_list(inc, names, !app.opts.ignore_suspend_certs);
 
@@ -558,7 +558,7 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
       vector<cert> certs;
       project.get_revision_certs(i->ident, certs);
 
-      globish exc(app.opts.exclude_patterns);
+      globish exc(app.opts.exclude);
 
       if (inc.matches(i->name()) && !exc.matches(i->name()))
         {
@@ -727,7 +727,7 @@ CMD(known, "known", "", CMD_REF(list), "",
   work.get_current_roster_shape(db, nis, new_roster);
 
   node_restriction mask(args_to_paths(args),
-                        args_to_paths(app.opts.exclude_patterns),
+                        args_to_paths(app.opts.exclude),
                         app.opts.depth,
                         new_roster, ignored_file(work));
 
@@ -763,7 +763,7 @@ CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
   workspace work(app);
 
   vector<file_path> roots = args_to_paths(args);
-  path_restriction mask(roots, args_to_paths(app.opts.exclude_patterns),
+  path_restriction mask(roots, args_to_paths(app.opts.exclude),
                         app.opts.depth, ignored_file(work));
   set<file_path> unknown, ignored;
 
@@ -796,7 +796,7 @@ CMD(missing, "missing", "", CMD_REF(list), "",
   roster_t current_roster_shape;
   work.get_current_roster_shape(db, nis, current_roster_shape);
   node_restriction mask(args_to_paths(args),
-                        args_to_paths(app.opts.exclude_patterns),
+                        args_to_paths(app.opts.exclude),
                         app.opts.depth,
                         current_roster_shape, ignored_file(work));
 
@@ -825,7 +825,7 @@ CMD(changed, "changed", "", CMD_REF(list), "",
   work.get_parent_rosters(db, parents);
 
   node_restriction mask(args_to_paths(args),
-                        args_to_paths(app.opts.exclude_patterns),
+                        args_to_paths(app.opts.exclude),
                         app.opts.depth,
                         parents, new_roster, ignored_file(work));
 
