@@ -479,13 +479,15 @@ SIMPLE_OPTION(no_ignore, "no-respect-ignore/respect-ignore", bool,
 SIMPLE_OPTION(no_merges, "no-merges/merges", bool,
               gettext_noop("exclude merges when printing logs"))
 
-// FIXME: ~/.monotone/monotonerc should be
-// %APPDATA%\monotone\monotonerc on Windows
-// ...but, there's no way currently to make a option description
-// vary like that
-GLOBAL_SIMPLE_OPTION(norc, "norc/yesrc", bool,
-                     gettext_noop("do not load ~/.monotone/monotonerc or "
-                                  "_MTN/monotonerc lua files"))
+#ifdef WIN32
+# define NORC_TEXT gettext_noop("do not load %APPDATA%\\monotone\\monotonerc or " \
+                                "_MTN\\monotonerc lua files")
+#else
+# define NORC_TEXT gettext_noop("do not load ~/.monotone/monotonerc or " \
+                                "_MTN/monotonerc lua files")
+#endif
+GLOBAL_SIMPLE_OPTION(norc, "norc/yesrc", bool, NORC_TEXT)
+#undef NORC_TEXT
 
 GLOBAL_SIMPLE_OPTION(nostd, "nostd/stdhooks", bool,
                      gettext_noop("do not load standard lua hooks"))
