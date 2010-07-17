@@ -180,15 +180,9 @@ OPTION(globals, xargs, true, "xargs,@",
 
 SIMPLE_OPTION(author, "author", utf8, gettext_noop("override author for commit"))
 
-OPT(automate_stdio_size, "automate-stdio-size", size_t, 32768,
-     gettext_noop("block size in bytes for \"automate stdio\" output"))
-#ifdef option_bodies
-{
-  automate_stdio_size = boost::lexical_cast<long>(arg);
-  if (automate_stdio_size <= 0)
-    throw bad_arg_internal(F("cannot be zero or negative").str());
-}
-#endif
+SIMPLE_OPTION(automate_stdio_size, "automate-stdio-size",
+              restricted_long<1>,
+              gettext_noop("block size in bytes for \"automate stdio\" output"))
 
 SIMPLE_OPTION(auto_update, "update/no-update", bool,
               gettext_noop("automatically update the workspace, if it is clean and the base "
@@ -299,15 +293,8 @@ GLOBAL_SIMPLE_OPTION(roster_cache_performance_log, "roster-cache-performance-log
 GLOBAL_SIMPLE_OPTION(debug, "debug", bool,
                      gettext_noop("print debug log to stderr while running"))
 
-OPT(depth, "depth", long, -1,
-     gettext_noop("limit the number of levels of directories to descend"))
-#ifdef option_bodies
-{
-  depth = boost::lexical_cast<long>(arg);
-  if (depth < 0)
-    throw bad_arg_internal(F("cannot be negative").str());
-}
-#endif
+SIMPLE_OPTION(depth, "depth", restricted_long<0>,
+              gettext_noop("limit the number of levels of directories to descend"))
 
 
 OPTSET(diff_options)
@@ -424,15 +411,8 @@ GLOBAL_SIMPLE_OPTION(key_dir, "keydir", system_path,
 SIMPLE_OPTION(keys_to_push, "key-to-push", std::vector<external_key_name>,
         gettext_noop("push the specified key even if it hasn't signed anything"))
 
-OPT(last, "last", long, -1,
-    gettext_noop("limit log output to the last number of entries"))
-#ifdef option_bodies
-{
-  last = boost::lexical_cast<long>(arg);
-  if (last <= 0)
-    throw bad_arg_internal(F("cannot be zero or negative").str());
-}
-#endif
+SIMPLE_OPTION(last, "last", restricted_long<1>,
+              gettext_noop("limit log output to the last number of entries"))
 
 GLOBAL_SIMPLE_OPTION(log, "log", system_path,
                      gettext_noop("file to write the log to"))
@@ -449,15 +429,8 @@ GROUPED_SIMPLE_OPTION(messages, no_prefix, "no-prefix", bool,
 SIMPLE_OPTION(missing, "missing", bool,
               gettext_noop("perform the operations for files missing from workspace"))
 
-OPT(next, "next", long, -1,
-     gettext_noop("limit log output to the next number of entries"))
-#ifdef option_bodies
-{
-  next = boost::lexical_cast<long>(arg);
-  if (next <= 0)
-    throw bad_arg_internal(F("cannot be zero or negative").str());
-}
-#endif
+SIMPLE_OPTION(next, "next", restricted_long<1>,
+              gettext_noop("limit log output to the next number of entries"))
 
 SIMPLE_OPTION(no_files, "no-files/files", bool,
               gettext_noop("exclude files when printing logs"))

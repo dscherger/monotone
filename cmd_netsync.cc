@@ -132,7 +132,10 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
                                  automate_connection, args, info);
 
   info->client.set_input_stream(std::cin);
-  automate_ostream os(output, app.opts.automate_stdio_size);
+  long packet_size = constants::default_stdio_packet_size;
+  if (app.opts.automate_stdio_size_given)
+    packet_size = app.opts.automate_stdio_size;
+  automate_ostream os(output, packet_size);
   info->client.set_output_stream(os);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
@@ -254,7 +257,10 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   L(FL("stdio input: %s") % ss.str());
 
-  automate_ostream_demuxed os(output, std::cerr, app.opts.automate_stdio_size);
+  long packet_size = constants::default_stdio_packet_size;
+  if (app.opts.automate_stdio_size_given)
+    packet_size = app.opts.automate_stdio_size;
+  automate_ostream_demuxed os(output, std::cerr, packet_size);
 
   info->client.set_input_stream(ss);
   info->client.set_output_stream(os);

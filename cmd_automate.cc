@@ -19,6 +19,7 @@
 #include "automate_ostream.hh"
 #include "automate_reader.hh"
 #include "automate_stdio_helpers.hh"
+#include "constants.hh"
 #include "options_applicator.hh"
 #include "ui.hh"
 #include "lua.hh"
@@ -237,7 +238,10 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
   // immediately if a version discrepancy exists
   db.ensure_open();
 
-  automate_ostream os(output, app.opts.automate_stdio_size);
+  long packet_size = constants::default_stdio_packet_size;
+  if (app.opts.automate_stdio_size_given)
+    packet_size = app.opts.automate_stdio_size;
+  automate_ostream os(output, packet_size);
   automate_reader ar(std::cin);
 
   std::vector<std::pair<std::string, std::string> > headers;

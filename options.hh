@@ -18,10 +18,34 @@
  */
 
 #include <list>
+#include <climits>
 
 #include "option.hh"
 #include "paths.hh"
 #include "dates.hh"
+
+#include "lexical_cast.hh"
+
+template<long low>
+class restricted_long
+{
+  long value;
+public:
+  restricted_long()
+  {
+    if (-1 < low)
+      value = -1;
+    else
+      value = low - 1;
+  }
+  restricted_long(std::string const & x, origin::type o)
+  {
+    value = boost::lexical_cast<long>(x);
+    if (value < low)
+      throw option::bad_arg_internal((F("must not be less than %d") % low).str());
+  }
+  operator long() const { return value; }
+};
 
 struct options
 {
