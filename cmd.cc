@@ -513,12 +513,6 @@ man_italic(string const & content)
 }
 
 static string
-man_roman(string const & content)
-{
-  return "\\fR" + content + "\\fP";
-}
-
-static string
 man_bold(string const & content)
 {
   return "\\fB" + content + "\\fP";
@@ -633,6 +627,11 @@ get_command_tree(options & opts, commands::command const * cmd)
         }
       else
         {
+          // there are no top level commands, so this must be an
+          // empty group - skip it
+          if (subcmd->parent() == CMD_REF(__root__))
+            continue;
+
           // this builds a list of already formatted command calls
           // which are used as label for the specific command section
           vector<string> cmd_calls;
@@ -732,7 +731,7 @@ CMD_HIDDEN(manpage, "manpage", "", CMD_REF(informative), "",
             "monotone has an easy-to-learn command set and comes with a rich "
             "interface for scripting purposes and thorough documentation.")
        << "\n\n";
-  cout << (F("For more information on monotone, visit %s.") 
+  cout << (F("For more information on monotone, visit %s.")
             % man_bold("http://www.monotone.ca")).str()
        << "\n\n";
   cout << (F("The complete documentation, including a tutorial for a quick start "
