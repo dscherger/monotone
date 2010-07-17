@@ -573,7 +573,9 @@ man_section(string const & content)
 static string
 man_title(string const & title)
 {
-  return ".TH \"" + title + "\" 1" + "\n";
+  return ".TH \"" + title + "\" 1 " +
+         date_t::now().as_formatted_localtime("%Y-%m-%d") +
+         "\n";
 }
 
 static string
