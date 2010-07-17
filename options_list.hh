@@ -113,6 +113,12 @@ void set_simple_option(bool & t, std::string const & arg)
 template<>
 void set_simple_option(std::string & t, std::string const & arg)
 { t = arg; }
+void set_simple_option(date_t & t, std::string const & arg)
+{
+  try { t = date_t(arg); }
+  catch (std::exception & e)
+    { throw bad_arg_internal(e.what()); }
+}
 template<>
 void set_simple_option(std::vector<string> & t, std::string const & arg)
 { t.push_back(arg); }
@@ -249,22 +255,8 @@ OPTION(globals, conf_dir, true, "confdir",
 GLOBAL_SIMPLE_OPTION(no_default_confdir, "no-default-confdir/allow-default-confdir", bool,
                      gettext_noop("forbid use of the default confdir"))
 
-// If we get more date arguments, add a specialization for set_simple_option
-// and make this a SIMPLE_OPTION
-OPT(date, "date", date_t, ,
-     gettext_noop("override date/time for commit"))
-#ifdef option_bodies
-{
-  try
-    {
-      date = date_t(arg);
-    }
-  catch (std::exception &e)
-    {
-      throw bad_arg_internal(e.what());
-    }
-}
-#endif
+SIMPLE_OPTION(date, "date", date_t,
+              gettext_noop("override date/time for commit"))
 
 // FIXME: --date-format and --no-format-dates should override eachother
 OPTSET(date_formats)
