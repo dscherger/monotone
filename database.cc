@@ -4209,6 +4209,21 @@ database::select_date(string const & date, string const & comparison,
     completions.insert(revision_id(res[i][0], origin::database));
 }
 
+void
+database::select_key(key_id const & id, set<revision_id> & completions)
+{
+  results res;
+  completions.clear();
+
+  imp->fetch(res, 1, any_rows,
+             query("SELECT DISTINCT revision_id FROM revision_certs"
+                   " WHERE keypair_id = ?")
+             % blob(id.inner()()));
+
+  for (size_t i = 0; i < res.size(); ++i)
+    completions.insert(revision_id(res[i][0], origin::database));
+}
+
 // epochs
 
 void

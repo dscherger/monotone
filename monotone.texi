@@ -1068,10 +1068,10 @@ was initially developed on the branch @code{net.venge.monotone.win32}
 
 It has to be noted that earlier versions of monotone enforced no restrictions
 on branch names.  Newer versions, starting with 0.99, exclude a set of control
-characters though, which mostly denote either meta characters in monotone's 
+characters though, which mostly denote either meta characters in monotone's
 URI syntax or are used in globs to resolve branch patterns.  These characters are
 @code{?}, @code{,}, @code{*}, @code{%}, @code{+}, @code{@{}, @code{@}}, @code{[},
-@code{]}, @code{!} and @code{^}.  Additionally, @code{-} is deprecated as first 
+@code{]}, @code{!} and @code{^}.  Additionally, @code{-} is deprecated as first
 character of a branch name, since it is used to denote branch exclude patterns
 in the aforementioned URI syntax.
 
@@ -2814,6 +2814,11 @@ example, @code{c:tag} matches all revisions that have a tag, and
 @item Author selection
 Uses selector type @code{a}. For example, @code{a:graydon} matches
 @code{author} certs where the cert value contains @code{graydon}.
+@item Key selection
+Uses selector type @code{k}. For example, @code{k:graydon@@pobox.com} matches
+all revisions where at least one cert was signed by the key
+@code{graydon@@pobox.com}.  Instead of the key's given name, the local
+name or the full hash ID of the key can be specified as well.
 @item Branch selection
 Uses selector type @code{b}. For example, @code{b:net.venge.monotone} matches
 @code{branch} certs where the cert value is @code{net.venge.monotone}.
@@ -3751,7 +3756,7 @@ changes, monotone will notice, and refuse to connect until you have run
 @item server-include
 Contains server-specific branch inclusion globs.  These overrule
 @var{default-include-pattern} if existant and are recorded automatically
-the first time you connect to a specific server or use the 
+the first time you connect to a specific server or use the
 @option{--set-default} option for a netsync operation.
 
 @item server-exclude
@@ -5756,9 +5761,9 @@ When the operation completes, all branches matching
 databases.
 
 The @command{pull}, @command{push}, and @command{sync} commands only
-require you pass @var{uri} (or @var{address} and @var{glob}) the first time 
+require you pass @var{uri} (or @var{address} and @var{glob}) the first time
 you use one of them; monotone will memorize this use and in the future default
-to the same URI (or server and glob).  For instance, if Bob wants to 
+to the same URI (or server and glob).  For instance, if Bob wants to
 @command{sync} with Alice again, he can simply run:
 
 @smallexample
@@ -5783,7 +5788,7 @@ If a @option{--pid-file} option is specified, the command
 identifier of the server in the file.  This file can then be read to
 identify specific monotone server processes.
 
-The syntax for patterns, both in globs as well as URIs, is very simple.  
+The syntax for patterns, both in globs as well as URIs, is very simple.
 @code{*} matches 0 or more arbitrary characters.  @code{?} matches exactly
 1 arbitrary character (you need to escape that with @code{%3F} in an URI).
 @code{@{foo,bar,baz@}} matches ``foo'', or ``bar'', or ``baz''.  These
