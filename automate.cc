@@ -2410,7 +2410,7 @@ automate_stdio_shared_setup(app_state & app,
   // set a fixed ticker type regardless what the user wants to
   // see, because anything else would screw the stdio-encoded output
   if (ft == force_stdio_ticker)
-    app.opts.ticker = "stdio";
+    app.opts.ticker.unchecked_set("stdio");
 }
 
 std::pair<int, string> automate_stdio_helpers::

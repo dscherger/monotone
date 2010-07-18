@@ -47,6 +47,60 @@ public:
   operator long() const { return value; }
 };
 
+class enum_string
+{
+  std::string allowed;
+  std::string value;
+public:
+  enum_string() { }
+  enum_string(std::string const & a) : allowed(a)
+  {
+    size_t x = allowed.find(",");
+    value = allowed.substr(0, x);
+  }
+  void set(std::string const & v)
+  {
+    if (v.find(",") != std::string::npos
+        || allowed.find(v) == std::string::npos)
+      {
+        throw option::bad_arg_internal((F("must be one of the following: %s")
+                                        % allowed).str());
+      }
+    else
+      value = v;
+  }
+  void unchecked_set(std::string const & v) { value = v; }
+  operator std::string() const { return value; }
+  bool operator<(enum_string const & e) const { return value < e.value; }
+  bool operator==(std::string const & s) const { return value == s; }
+  bool empty() const { return value.empty(); }
+};
+class enum_string_set
+{
+  std::string allowed;
+  std::set<enum_string> value;
+public:
+  enum_string_set() { }
+  enum_string_set(std::string const & a) : allowed(a) { }
+  void add(std::string const & v)
+  {
+    enum_string e(allowed);
+    e.set(v);
+    value.insert(e);
+  }
+  operator std::set<enum_string>() const { return value; }
+  std::set<enum_string>::const_iterator find(std::string const & s) const
+  {
+    enum_string e(allowed);
+    e.set(s);
+    return value.find(e);
+  }
+  std::set<enum_string>::const_iterator end() const
+  {
+    return value.end();
+  }
+};
+
 struct options
 {
   options();

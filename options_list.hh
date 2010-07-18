@@ -133,6 +133,13 @@ void set_simple_option(std::vector<string> & t, std::string const & arg)
 template<>
 void set_simple_option(std::set<string> & t, std::string const & arg)
 { t.insert(arg); }
+template<>
+void set_simple_option(enum_string & t, std::string const & arg)
+{ t.set(arg); }
+template<>
+void set_simple_option(enum_string_set & t, std::string const & arg)
+{ t.add(arg); }
+
 # define SIMPLE_OPTION_BODY(name) { set_simple_option(name, arg); }
 #else
 # define SIMPLE_OPTION_BODY(name)
@@ -157,6 +164,12 @@ void set_simple_option(std::set<string> & t, std::string const & arg)
 #define SIMPLE_OPTION(name, optstring, type, description)               \
   OPTSET(name)                                                          \
   GROUPED_SIMPLE_OPTION(name, name, optstring, type, description)
+
+#define SIMPLE_INITIALIZED_OPTION(name, optstring, type, init, description) \
+  OPTSET(name)                                                          \
+  OPTVAR(name, type, name, init)                                        \
+  OPTION(name, name, has_arg<type >(), optstring, description)          \
+  SIMPLE_OPTION_BODY(name)
 
 // Like SIMPLE_OPTION, but the declared option is a member of the globals
 #define GLOBAL_SIMPLE_OPTION(name, optstring, type, description) \
@@ -363,27 +376,13 @@ SIMPLE_OPTION(move_conflicting_paths,
               gettext_noop("move conflicting, unversioned paths into _MTN/resolutions "
                            "before proceeding with any workspace change"))
 
-GOPT(ssh_sign, "ssh-sign", std::string, "yes",
+OPTSET_REL(globals, ssh_sign)
+SIMPLE_INITIALIZED_OPTION(ssh_sign, "ssh-sign", enum_string, "yes,no,only,check",
      gettext_noop("controls use of ssh-agent.  valid arguments are: "
                   "'yes' to use ssh-agent to make signatures if possible, "
                   "'no' to force use of monotone's internal code, "
                   "'only' to force use of ssh-agent, "
                   "'check' to sign with both and compare"))
-#ifdef option_bodies
-{
-  if (arg.empty())
-    throw bad_arg_internal(F("--ssh-sign requires a value "
-                             "['yes', 'no', 'only', or 'check']").str());
-  if (arg != "yes"
-      && arg != "no"
-      && arg != "check"
-      && arg != "only") // XXX what does "only" do? not documented
-    throw bad_arg_internal(F("--ssh-sign must be set to 'yes', 'no', "
-                             "'only', or 'check'").str());
-
-  ssh_sign = arg;
-}
-#endif
 
 SIMPLE_OPTION(force_duplicate_key, "force-duplicate-key", bool,
               gettext_noop("force genkey to not error out when the named key "
@@ -538,17 +537,9 @@ SIMPLE_OPTION(set_default, "set-default/no-set-default", bool,
               gettext_noop("use the current netsync arguments and options "
                            "as the future default"))
 
-GOPT(ticker, "ticker", std::string, ,
+OPTSET_REL(globals, ticker)
+SIMPLE_INITIALIZED_OPTION(ticker, "ticker", enum_string, "count,dot,none",
      gettext_noop("set ticker style (count|dot|none)"))
-#ifdef option_bodies
-{
-  ticker = arg;
-  if (ticker != "none" &&
-      ticker != "dot" &&
-      ticker != "count")
-    throw bad_arg_internal(F("argument must be 'none', 'dot', or 'count'").str());
-}
-#endif
 
 SIMPLE_OPTION(from, "from/clear-from", args_vector,
               gettext_noop("revision(s) to start logging at"))
@@ -626,17 +617,8 @@ SIMPLE_OPTION(authors_file, "authors-file", system_path,
 SIMPLE_OPTION(branches_file, "branches-file", system_path,
               gettext_noop("file mapping branch names from original to new values "))
 
-OPT(refs, "refs", std::set<std::string>, ,
-    gettext_noop("include git refs for 'revs', 'roots' or 'leaves'"))
-#ifdef option_bodies
-{
-  if (arg == "revs" || arg == "roots" || arg == "leaves")
-    refs.insert(arg);
-  else
-    throw bad_arg_internal
-      (F("git ref type must be 'revs', 'roots', or 'leaves'").str());
-}
-#endif
+SIMPLE_INITIALIZED_OPTION(refs, "refs", enum_string_set, "revs,roots,leaves",
+                          gettext_noop("include git refs for 'revs', 'roots' or 'leaves'"))
 
 SIMPLE_OPTION(log_revids, "log-revids/no-log-revids", bool,
               gettext_noop("include revision ids in commit logs"))
