@@ -478,7 +478,7 @@ netsync_connection_info::setup_for_serve(options const & opts,
   info->server.addrs = opts.bind_uris;
   info->client.conn_type = netsync_connection;
 
-  if (opts.use_transport_auth)
+  if (!opts.no_transport_auth)
     {
       E(lua.hook_persist_phrase_ok(), origin::user,
         F("need permission to store persistent passphrase "

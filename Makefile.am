@@ -41,6 +41,7 @@ MOST_SOURCES = 								\
 	automate_ostream.hh						\
 	automate_ostream_demuxed.hh					\
 	automate_reader.hh automate_reader.cc				\
+	automate_stdio_helpers.hh					\
 	botan_pipe_cache.hh						\
 	cache_logger.hh cache_logger.cc					\
 	commands.cc commands.hh $(CMD_SOURCES)				\
@@ -106,7 +107,7 @@ MOST_SOURCES = 								\
 	rev_height.cc rev_height.hh					\
 	rev_output.cc rev_output.hh					\
 	asciik.cc asciik.hh						\
-	dates.cc dates.hh						\
+	dates.cc dates.hh date_format.hh				\
 									\
 	lru_writeback_cache.hh hybrid_map.hh lazy_rng.hh		\
 									\
@@ -115,6 +116,8 @@ MOST_SOURCES = 								\
 	netio.hh gettext.h						\
 	package_revision.cc package_full_revision.cc			\
 	option.cc option.hh options.cc options.hh options_list.hh	\
+	options_applicator.hh options_applicator.cc			\
+	option_reset_info.hh						\
 	specialized_lexical_cast.cc lexical_cast.hh			\
 	parallel_iter.hh safe_map.hh pch.hh current_exception.hh
 
