@@ -247,12 +247,17 @@ GLOBAL_SIMPLE_OPTION(no_default_confdir, "no-default-confdir/allow-default-confd
 SIMPLE_OPTION(date, "date", date_t,
               gettext_noop("override date/time for commit"))
 
-// FIXME: --date-format and --no-format-dates should override eachother
 OPTSET(date_formats)
 OPTSET_REL(globals, date_formats)
-GROUPED_SIMPLE_OPTION(date_formats, date_fmt,
-                      "date-format", std::string,
-                      gettext_noop("strftime(3) format specification for printing dates"))
+OPTVAR(date_formats, std::string, date_fmt, )
+OPTION(date_formats, date_fmt, true, "date-format",
+       gettext_noop("strftime(3) format specification for printing dates"))
+#ifdef option_bodies
+{
+  date_fmt = arg;
+  no_format_dates = false;
+}
+#endif
 GROUPED_SIMPLE_OPTION(date_formats, no_format_dates,
                       "no-format-dates", bool,
                       gettext_noop("print date certs exactly as stored in the database"))
