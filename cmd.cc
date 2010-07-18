@@ -762,6 +762,11 @@ CMD_HIDDEN(manpage, "manpage", "", CMD_REF(informative), "",
        << "\n\n";
   cout << _("Nowadays, monotone is maintained by a collective of enthusiastic "
             "programmers, known as the monotone developement team.") << "\n";
+
+  cout << man_section("Copyright");
+  cout << (F("monotone and this man page is Copyright (c) 2004 - %s by "
+             "the monotone development team.")
+             % date_t::now().as_formatted_localtime("%Y")).str() << "\n";
 }
 
 // There isn't really a better place for this function.
