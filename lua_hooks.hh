@@ -149,6 +149,11 @@ public:
                             file_path const & filename);
 
   // validation hooks
+  bool hook_validate_changes(revision_data const & new_rev,
+                             branch_name const & branchname,
+                             bool & validated,
+                             string & reason);
+
   bool hook_validate_commit_message(utf8 const & message,
                                     revision_data const & new_rev,
                                     branch_name const & branchname,

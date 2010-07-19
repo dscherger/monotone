@@ -621,6 +621,24 @@ file_path::dirname_basename(file_path & dir, path_component & base) const
     }
 }
 
+// returns true if this path is beneath other
+bool
+file_path::is_beneath_of(const file_path & other) const
+{
+  if (other.empty())
+    return true;
+
+  file_path basedir = dirname();
+  while (!basedir.empty())
+    {
+      L(FL("base: %s, other: %s") % basedir % other);
+      if (basedir == other)
+        return true;
+      basedir = basedir.dirname();
+    }
+  return false;
+}
+
 // count the number of /-separated components of the path.
 unsigned int
 file_path::depth() const

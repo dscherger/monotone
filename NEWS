@@ -21,18 +21,18 @@ Xxx Xxx 99 99:99:99 UTC 2010
           URI syntax.  Additionally, file:// and ssh:// URIs are now
           parsed for include and exclude patterns just as the native
           mtn:// URIs.
-          
+
           The possibility to specify include patterns by using
-          "include=" and exclude patterns by using "exclude=" 
+          "include=" and exclude patterns by using "exclude="
           in the query string has been removed.
 
-          Monotone's native protocol (mtn://) is still the default 
+          Monotone's native protocol (mtn://) is still the default
           protocol if nothing is specified.
 
-          The format for the server part of the `default-server`, 
+          The format for the server part of the `default-server`,
           `known-server`, `server-include` and `server-exclude`
           database variables has been changed and now always includes
-          the complete (normalized) URI resource, consisting of the 
+          the complete (normalized) URI resource, consisting of the
           used protocol, user, host, port and path parts.  Older entries
           in existing databases which do not match the new format are
           preserved and not changed by monotone.
@@ -54,12 +54,102 @@ Xxx Xxx 99 99:99:99 UTC 2010
           the exchange was successful.  The progress messages which have
           been issued for this previously have been removed, since they
           would come up now unexpectedly and would clutter the output of
-          commands such as `clone`, `automate remote` and 
+          commands such as `clone`, `automate remote` and
           `automate remote_stdio`.
+
+        - The following characters have been deprecated in branch names
+
+                ?,*%+{}[]!^
+
+          as they denote either meta characters in monotone's URI syntax
+          or are used in globs to resolve branch patterns.
+          Furthermore, branch names should no longer start with a dash
+          (-), since this character is used to denote an exclude pattern
+          in the aforementioned URI syntax.
+
+          monotone warns on the creation of branches which violate these
+          restrictions and gives further directions.
+
+        - The `import` command now keeps the created bookkeeping root if
+          --dry-run is not specified.  This makes it possible to re-use
+          the import directory as workspace and is also more closely
+          to what our documentation states, when it says that import
+          is basically "setup with a twist".
+
+        - monotone no longer passes syntactically correct, but non-existent
+          revision ids through the selector machinery.  The most visible
+          place for this change is `automate select`, which no longer
+          echoes every possible 40 hex-byte string.
 
         New Features
 
+        - The 'disapprove' command now accepts a revision range in
+          addition to a single revision.
+
+        - New 'k:' selector type to query revisions where at least one
+          certificate was signed with the given key.
+
+        - New automation command 'log' which behaves identical to the
+          normal 'log' command, except that it only outputs the
+          revision ids.
+
         Bugs Fixed
+
+        - the 'mv' command now warns when a source is being renamed onto
+          itself or one of its children (fixes monotone bug #29484).
+
+        - the 'mv' command now handles this usage properly, where
+          'foo' is a directory:
+          mv foo bar
+          mtn mv --bookkeep-only foo bar
+
+        - monotone no longer asks to pick a branch from a set of branches
+          of a revision in which all but one branch have been suspended
+          (fixes monotone bug #29843)
+
+        - The annotate command no longer fails if it should print out
+          empty or untrusted date cert values
+          (fixes monotone bug #30150)
+
+        - monotone now tries harder to find the cancel hint in a commit
+          message and only aborts if it can't find it anywhere
+          (fixes monotone bug #30215)
+
+        - The import command no longer warns about not being able
+          to write out _MTN/options on --dry-run
+          (fixes monotone bug #30225)
+
+        - `automate remote' and `automate remote_stdio' can now be used
+          without transport authentication (e.g. on file:// or ssh://
+          transports) as well as anonymously over netsync
+          (fixes monotone bug #30237)
+
+        - monotone does no longer warn about missing implicit includes
+          when dealing with restricted file sets
+          (fixes monotone bug #30291)
+
+        - The 'passphrase' and 'dropkey' commands now handle private keys
+          in old-style key files (without the hash part in the file name)
+          properly.
+          monotone also makes it very sure now that the key file of a
+          private key which is about to be deleted really and only
+          contains the key which should be deleted and nothing else
+          (fixes monotone bug #30376)
+
+        - monotone no longer throws an unrecoverable error if a public or
+          private key is addressed with some non-existing key id
+          (fixes monotone bug #30462)
+
+        - A regression in 0.48 made a path-restricted `mtn log' show
+          revisions, in which not the picked path(s), but one of its parents
+          were changed.  This has been fixed.
+
+        - `mtn trusted` will no longer accept single bogus revision ids,
+          but instead validates if the given revision really exists in the
+          current database.
+
+        - `mtn conflicts store` now gives a nice error message when
+          run outside a workspace (fixes bug #30473)
 
         Other
 
@@ -226,6 +316,13 @@ Sun Jun 13 22:13:53 UTC 2010
           sufficiently large items (files, diffs, revisions). This was fixed
           in 0.47 but not noted in the release notes at that time
           (fixes monotone bug #28991).
+
+        - monotone on Windows will now have a non-zero exit code when
+          interrupted (^C). This was broken in 0.47 when it was fixed to not
+          throw an exception on being interrupted.
+
+        - the 'mv' command now warns when a source is being renamed onto
+          itself (fixes monotone bug #29484).
 
         Other
 

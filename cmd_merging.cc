@@ -136,10 +136,27 @@ pick_branch_for_update(options & opts, database & db,
   db.get_revision_certs(chosen_rid, branch_cert_name, certs);
   db.erase_bogus_certs(project, certs);
 
-  set< branch_name > branches;
+  set<branch_name> branches;
   for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); i++)
     branches.insert(typecast_vocab<branch_name>(i->value));
+
+  if (!opts.ignore_suspend_certs)
+    {
+      vector<cert> suspend_certs;
+      db.get_revision_certs(chosen_rid, suspend_cert_name, suspend_certs);
+
+      for (vector<cert>::const_iterator i = suspend_certs.begin();
+           i != suspend_certs.end(); i++)
+        {
+          branch_name susp_branch = typecast_vocab<branch_name>(i->value);
+          set<branch_name>::iterator pos = branches.find(susp_branch);
+          if (pos != branches.end())
+            {
+              branches.erase(pos);
+            }
+        }
+    }
 
   if (branches.find(opts.branch) != branches.end())
     {
@@ -167,7 +184,6 @@ pick_branch_for_update(options & opts, database & db,
         }
       else
         {
-          I(branches.empty());
           W(F("target revision not in any branch\n"
               "next commit will use branch %s")
             % opts.branch);
@@ -1126,7 +1142,7 @@ static void get_conflicts_rids(args_vector const & args,
 //   two heads, prints an error message to stderr and exits with status 1.
 //
 CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
-             N_("Shows the conflicts between two revisions."),
+             N_("Shows the conflicts between two revisions"),
              N_("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
                 "first two heads that would be chosen by the 'merge' command."),
              options::opts::branch | options::opts::ignore_suspend_certs)
@@ -1141,7 +1157,7 @@ CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
 
 CMD(store, "store", "", CMD_REF(conflicts),
     "[LEFT_REVID RIGHT_REVID]",
-    N_("Store the conflicts from merging two revisions."),
+    N_("Store the conflicts from merging two revisions"),
     N_("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
        "first two heads that would be chosen by the 'merge' command. If "
        "--conflicts-file is not given, '_MTN/conflicts' is used."),
@@ -1150,6 +1166,8 @@ CMD(store, "store", "", CMD_REF(conflicts),
   database    db(app);
   project_t   project(db);
   revision_id left_id, right_id;
+
+  workspace::require_workspace(F("conflicts file must be under _MTN"));
 
   get_conflicts_rids(args, db, project, app, left_id, right_id);
 

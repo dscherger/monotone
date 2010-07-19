@@ -1,5 +1,5 @@
 --
--- data: stdio input data
+-- data: stdio data (as read from a stdout file)
 -- err: expected error code (0, 1 or 2)
 -- which: which command to check if data contains input of several command
 --        (0 by default)

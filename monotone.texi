@@ -927,6 +927,8 @@ keep separate.
 
 You can see all the available branches using @command{mtn list branches}.
 
+@subsection Heads and merging
+
 Branches are indicated with certs.  The cert name @code{branch} is
 reserved for use by monotone, for the purpose of identifying the
 revisions which are members of a branch. A @code{branch} cert has a
@@ -1046,12 +1048,12 @@ branch names must be @emph{globally} unique, over all branches in the
 world.  Otherwise, bad things can happen.  Fortunately, we have a handy
 source of globally unique names --- the DNS system.
 
-When naming a branch, always prepend the reversed, fully qualified, domain name of a host that
-you control or are otherwise authorized to use.  For example, monotone
-development happens on the branch @code{net.venge.monotone}, because
-@code{venge.net} belongs to monotone's primary author.  The idea is that
-this way, you can coordinate with other people using a host to make sure
-there are no conflicts --- in the example, monotone's primary author can
+When naming a branch, always prepend the reversed, fully qualified, domain
+name of a host that you control or are otherwise authorized to use.  For
+example, monotone development happens on the branch @code{net.venge.monotone},
+because @code{venge.net} belongs to monotone's original author.  The idea is
+that this way, you can coordinate with other people using a host to make sure
+there are no conflicts --- in the example, monotone's original author can
 be certain that no-one else using @code{venge.net} will start up a
 different program named @code{monotone}.  If you work for Yoyodyne,
 Inc. (owners of yoyodyne.com), then all your branch names should look
@@ -1061,9 +1063,22 @@ What the @code{@emph{something}} part looks like is up to you, but
 usually the first part is the project name (the @code{monotone} in
 @code{net.venge.monotone}), and then possibly more stuff after that to
 describe a particular branch.  For example, monotone's win32 support
-was initially developed on the branch @code{net.venge.monotone.win32}.
+was initially developed on the branch @code{net.venge.monotone.win32}
+(for more information, see @ref{Naming Conventions}).
 
-(For more information, see @ref{Naming Conventions}.)
+It has to be noted that earlier versions of monotone enforced no restrictions
+on branch names.  Newer versions, starting with 0.99, exclude a set of control
+characters though, which mostly denote either meta characters in monotone's
+URI syntax or are used in globs to resolve branch patterns.  These characters are
+@code{?}, @code{,}, @code{*}, @code{%}, @code{+}, @code{@{}, @code{@}}, @code{[},
+@code{]}, @code{!} and @code{^}.  Additionally, @code{-} is deprecated as first
+character of a branch name, since it is used to denote branch exclude patterns
+in the aforementioned URI syntax.
+
+monotone warns on the creation of branch names which violate one of the above
+restrictions and gives further directions.  Future versions of monotone are
+likely to enforce these restrictions by disallowing such branch names completely.
+
 
 @page
 @node    Tutorial, Advanced Uses, Concepts, Top
@@ -2799,6 +2814,11 @@ example, @code{c:tag} matches all revisions that have a tag, and
 @item Author selection
 Uses selector type @code{a}. For example, @code{a:graydon} matches
 @code{author} certs where the cert value contains @code{graydon}.
+@item Key selection
+Uses selector type @code{k}. For example, @code{k:graydon@@pobox.com} matches
+all revisions where at least one cert was signed by the key
+@code{graydon@@pobox.com}.  Instead of the key's given name, the local
+name or the full hash ID of the key can be specified as well.
 @item Branch selection
 Uses selector type @code{b}. For example, @code{b:net.venge.monotone} matches
 @code{branch} certs where the cert value is @code{net.venge.monotone}.
@@ -3693,15 +3713,16 @@ There are several pre-defined domains that monotone knows about:
 
 @item database
 Contains database-global configuration information.  Defined names are:
+
 @table @code
-@item default-exclude-pattern
-The default branch exclusion glob pattern for netsync operations to
-use. Automatically set by first use of netsync, and by any netsync
-that uses the @option{--set-default} option.
 @item default-include-pattern
-The default branch glob pattern for netsync operations to use.
+The default global branch glob pattern for netsync operations to use.
 Automatically set by first use of netsync, and by any netsync that
 uses the @option{--set-default} option.
+@item default-exclude-pattern
+The default global branch exclusion glob pattern for netsync operations to
+use. Automatically set by first use of netsync, and by any netsync
+that uses the @option{--set-default} option.
 @item default-server
 The default server for netsync operations to use.  Automatically set
 by first use of netsync, and by any netsync that uses the
@@ -3719,6 +3740,9 @@ receiving new revisions unless your particular history graph is highly
 linear.
 
 Changing this value does not affect deltas that have already been stored.
+@item known-workspaces
+Records all registered workspaces for the current databases.  monotone will
+track the contents of this variable automatically for you in the background.
 @end table
 
 @item known-servers
@@ -3728,6 +3752,18 @@ needed to detect man-in-the-middle attacks.  Automatically set the first
 time you netsync with any given server.  If that server's key later
 changes, monotone will notice, and refuse to connect until you have run
 @command{mtn unset known-servers @var{server-name}}.
+
+@item server-include
+Contains server-specific branch inclusion globs.  These overrule
+@var{default-include-pattern} if existant and are recorded automatically
+the first time you connect to a specific server or use the
+@option{--set-default} option for a netsync operation.
+
+@item server-exclude
+Likewise, this variable contains server-specific branch exclusion
+globs, which overrule @var{default-exclude-pattern} if existant and
+are also automatically set on the first connection or when the option
+@option{--set-default} is present.
 
 @end table
 
@@ -3953,7 +3989,7 @@ For branch names, select any name you like but prefix it with the
 authorized to use. This behavior mimics the package naming convention
 in the java programming language. For example, monotone itself is
 developed within the @code{net.venge.monotone} branch, because the
-author owns the DNS domain @code{venge.net}.
+original author owned the DNS domain @code{venge.net}.
 @end itemize
 
 @page
@@ -4926,21 +4962,24 @@ is given, the @var{branchname} is used as directory.
 @strong{Important notice:} The @var{address}[:@var{port}] @var{branchname}
 call syntax is deprecated and subject of removal in future versions of monotone!
 
-@item mtn disapprove @var{id}
+@item mtn disapprove [@var{parent}] @var{child}
 
-This command records a disapproval of the changes between @var{id}'s
-ancestor and @var{id}. It does this by committing the @i{inverse}
-changes as a new revision descending from @var{id}. The new revision
-will show up as a new head and thus a subsequent @command{merge} will
-incorporate the inverse of the disapproved changes in the other head(s).
+This command records a disapproval of the changes between @var{parent}'s
+ancestor and @var{child}.  If @var{parent} is omitted, only @var{child}
+is disapproved.  The command does the disapproval by committing
+the @i{inverse} changes as a new revision descending from @var{child}.
+The new revision will show up as a new head and thus a subsequent
+@command{merge} will incorporate the inverse of the disapproved changes
+in the other head(s).
 
 Conceptually, @command{disapprove}s contract is that disapprove(A) gives a
 revision B such that whenever B is merged with a descendant D of A the merge
 will result in what D ``would have looked like'' if A had never happened.
 
 Note that as a consequence of this contract the @command{disapprove} command
-only works if @var{id} has exactly one ancestor, since it hasn't been
-worked out how to generate such a descendant in the multi-ancestor case.
+only works if all changesets from @var{parent} to @var{child} have exactly
+one ancestor, since it hasn't been worked out how to generate such
+a descendant in the multi-ancestor case.
 
 
 @item mtn heads --branch=@var{branchname}
@@ -5722,9 +5761,9 @@ When the operation completes, all branches matching
 databases.
 
 The @command{pull}, @command{push}, and @command{sync} commands only
-require you pass @var{uri} (or @var{address} and @var{glob}) the first time 
+require you pass @var{uri} (or @var{address} and @var{glob}) the first time
 you use one of them; monotone will memorize this use and in the future default
-to the same URI (or server and glob).  For instance, if Bob wants to 
+to the same URI (or server and glob).  For instance, if Bob wants to
 @command{sync} with Alice again, he can simply run:
 
 @smallexample
@@ -5749,7 +5788,7 @@ If a @option{--pid-file} option is specified, the command
 identifier of the server in the file.  This file can then be read to
 identify specific monotone server processes.
 
-The syntax for patterns, both in globs as well as URIs, is very simple.  
+The syntax for patterns, both in globs as well as URIs, is very simple.
 @code{*} matches 0 or more arbitrary characters.  @code{?} matches exactly
 1 arbitrary character (you need to escape that with @code{%3F} in an URI).
 @code{@{foo,bar,baz@}} matches ``foo'', or ``bar'', or ``baz''.  These
@@ -10170,6 +10209,46 @@ stderr and exits with status 1.
 
 @end table
 
+@item mtn automate log
+
+@table @strong
+@item Arguments:
+
+[--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]]
+[--to=@var{id} [...]] [--no-merges]
+[@var{pathname...}]
+
+Same as @command{mtn log}, but without the output control options; see
+@ref{Informative}.
+
+@item Added in:
+
+12.2
+
+@item Purpose:
+
+Print the selected revisions on stdout, in topological order. The user
+can then use other automate commands to retrieve additional
+information about each revision.
+
+@item Sample output:
+
+@verbatim
+233afb8c4832bf33d5f5734225164de5f5a6278c
+4a368a6b217c40b2ff3b12bb7cfa00987e0f191c
+233afb8c4832bf33d5f5734225164de5f5a6278c
+@end verbatim
+
+@item Output format:
+
+One revision per line.
+
+@item Error conditions:
+
+see @command{mtn log} in @ref{Informative}.
+
+@end table
+
 @item mtn automate update
 
 @table @strong
@@ -11565,18 +11644,33 @@ If there is a policy decision to make, Monotone defines certain hooks to
 allow a client to validate or reject certain behaviors.
 
 @ftable @code
+@item validate_changes (@var{revision_text}, @var{branchname})
+
+This hook is called just after the to-be-committed changes and the branch
+have been logically verified and before the user enters his/her commit message.
+@var{revision_text} is the full text of the changes for this revision,
+which can be parsed with the parse_basic_io function. The second parameter,
+@var{branchname}, is the branch for this commit - unless it gets changed
+in the editor later on.
+
+If the hook finds the changes satisfactory, it can return @code{true,
+""}. If it finds fault, then it can return @code{false, reason} where
+@var{reason} is the reason the changes were rejected. By default, this hook
+is not defined and is thus ignored during a commit.
+
 @item validate_commit_message (@var{message}, @var{revision_text}, @var{branchname})
 
 This hook is called after the user has entered his/her commit message.
 @var{message} is the commit message that the user has entered and
 @var{revision_text} is the full text of the changes for this revision,
-which can be parsed with the parse_basic_io function. The @var{branchname} on
-which the new revision will be committed if all goes well is passed in as the third
-parameter.
+which, again, can be parsed with the parse_basic_io function.
+The @var{branchname} on which the new revision will be committed if all goes
+well is passed in as the third parameter.
+
 If the hook finds the commit message satisfactory, it can return @code{true,
 ""}. If it finds fault, then it can return @code{false, reason} where
 @var{reason} is the reason the message was rejected. By default, this hook
-rejects empty log messages.
+is not defined and is thus ignored during a commit.
 
 @end ftable
 

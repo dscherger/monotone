@@ -22,6 +22,7 @@
 #include "transforms.hh"
 #include "roster.hh"
 #include "vector.hh"
+#include "vocab_cast.hh"
 
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
@@ -36,6 +37,24 @@ using std::set_intersection;
 using std::inserter;
 
 using boost::shared_ptr;
+
+void
+diagnose_ambiguous_expansion(options const & opts, lua_hooks & lua,
+                             project_t & project,
+                             string const & str,
+                             set<revision_id> const & completions)
+{
+  if (completions.size() <= 1)
+    return;
+
+  string err = (F("selection '%s' has multiple ambiguous expansions:")
+                % str).str();
+  for (set<revision_id>::const_iterator i = completions.begin();
+       i != completions.end(); ++i)
+    err += ("\n" + describe_revision(opts, lua, project, *i));
+
+  E(false, origin::user, i18n_format(err));
+}
 
 class selector
 {
@@ -62,6 +81,26 @@ public:
   {
     set<revision_id> ret;
     project.db.select_cert(author_cert_name(), value, ret);
+    return ret;
+  }
+};
+class key_selector : public selector
+{
+  key_identity_info identity;
+public:
+  key_selector(string const & arg, lua_hooks & lua, project_t & project)
+  {
+    E(!arg.empty(), origin::user,
+      F("the key selector k: must not be empty"));
+
+    project.get_key_identity(lua,
+                             external_key_name(arg, origin::user),
+                             identity);
+  }
+  virtual set<revision_id> complete(project_t & project)
+  {
+    set<revision_id> ret;
+    project.db.select_key(identity.id, ret);
     return ret;
   }
 };
@@ -127,7 +166,7 @@ string preprocess_date_for_selector(string sel, lua_hooks & lua, bool equals)
     tmp += "T00:00:00";
   E(tmp.size()==19 || equals, origin::user,
     F("selector '%s' is not a valid date (%s)") % sel % tmp);
-  
+
   if (sel != tmp)
     {
       P (F ("expanded date '%s' -> '%s'\n") % sel % tmp);
@@ -632,6 +671,8 @@ selector::create_simple_selector(options const & opts,
       return shared_ptr<selector>(new head_selector(sel, opts));
     case 'i':
       return shared_ptr<selector>(new ident_selector(sel));
+    case 'k':
+      return shared_ptr<selector>(new key_selector(sel, lua, project));
     case 'l':
       return shared_ptr<selector>(new later_than_selector(sel, lua));
     case 'm':
@@ -904,36 +945,8 @@ expand_selector(options const & opts, lua_hooks & lua,
                 set<revision_id> & completions)
 {
   shared_ptr<selector> sel = selector::create(opts, lua, project, str);
-
-  // avoid logging if there's no expansion to be done
-  shared_ptr<ident_selector> isel = boost::dynamic_pointer_cast<ident_selector>(sel);
-  if (isel && isel->is_full_length())
-    {
-      completions.insert(isel->get_assuming_full_length());
-      return;
-    }
-
   completions = sel->complete(project);
 }
-
-void
-diagnose_ambiguous_expansion(options const & opts, lua_hooks & lua,
-                             project_t & project,
-                             string const & str,
-                             set<revision_id> const & completions)
-{
-  if (completions.size() <= 1)
-    return;
-
-  string err = (F("selection '%s' has multiple ambiguous expansions:")
-                % str).str();
-  for (set<revision_id>::const_iterator i = completions.begin();
-       i != completions.end(); ++i)
-    err += ("\n" + describe_revision(opts, lua, project, *i));
-
-  E(false, origin::user, i18n_format(err));
-}
-
 
 // Local Variables:
 // mode: C++

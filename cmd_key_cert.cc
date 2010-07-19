@@ -227,8 +227,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
     throw usage(execid);
 
   set<revision_id> rids;
-  expand_selector(app.opts, app.lua, project, idx(args, 0)(), rids);
-  diagnose_ambiguous_expansion(app.opts, app.lua, project, idx(args, 0)(), rids);
+  complete(app.opts, app.lua,  project, idx(args, 0)(), rids);
 
   revision_id ident;
   if (!rids.empty())

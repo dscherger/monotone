@@ -1074,6 +1074,25 @@ lua_hooks::hook_clear_attribute(string const & attr,
 }
 
 bool
+lua_hooks::hook_validate_changes(revision_data const & new_rev,
+                                 branch_name const & branchname,
+                                 bool & validated,
+                                 string & reason)
+{
+  validated = true;
+  return Lua(st)
+    .func("validate_changes")
+    .push_str(new_rev.inner()())
+    .push_str(branchname())
+    .call(2, 2)
+    .extract_str(reason)
+    // XXX When validated, the extra returned string is superfluous.
+    .pop()
+    .extract_bool(validated)
+    .ok();
+}
+
+bool
 lua_hooks::hook_validate_commit_message(utf8 const & message,
                                         revision_data const & new_rev,
                                         branch_name const & branchname,
