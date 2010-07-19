@@ -131,12 +131,12 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - The 'passphrase' and 'dropkey' commands now handle private keys
           in old-style key files (without the hash part in the file name)
           properly.
-          monotone also makes it very sure now that the key file of a 
+          monotone also makes it very sure now that the key file of a
           private key which is about to be deleted really and only
-          contains the key which should be deleted and nothing else 
+          contains the key which should be deleted and nothing else
           (fixes monotone bug #30376)
 
-        - monotone no longer throws an unrecoverable error if a public or 
+        - monotone no longer throws an unrecoverable error if a public or
           private key is addressed with some non-existing key id
           (fixes monotone bug #30462)
 
@@ -147,6 +147,9 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - `mtn trusted` will no longer accept single bogus revision ids,
           but instead validates if the given revision really exists in the
           current database.
+
+        - `mtn conflicts store` now gives a nice error message when
+          run outside a workspace (fixes bug #30473)
 
         Other
 

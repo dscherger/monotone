@@ -91,4 +91,10 @@ check(grep("-v", "detected at", "stderr"), 0, true)
 canonicalize("stdout")
 check("mtn: misuse: other resolution must be 'drop' or 'rename'\n" == readfile("stdout"))
 
+-- not in workspace; report nice error; conflicts file must be under
+-- _MTN, so need workspace. Fixes bug 30473
+check(indir("..", mtn("conflicts", "store", "--db", "resolve_conflicts_errors/test.db", "--branch=testbranch")), 1, nil, true)
+check(grep("workspace required but not found", "stderr"), 0, true)
+check(grep("conflicts file must be under _MTN", "stderr"), 0, true)
+
 -- end of file
