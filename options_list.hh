@@ -140,25 +140,19 @@ void set_simple_option(enum_string_set & t, std::string const & arg)
  *    (with push_back or insert), and the collection will be empty if the
  *    option is not given or is reset.
  */
-#define GROUPED_SIMPLE_OPTION(group, name, optstring, type, description) \
-  OPTVAR(group, type, name, )                                           \
-  OPTION(group, name, has_arg<type >(), optstring, description)          \
-  SIMPLE_OPTION_BODY(name)
-
-#define SIMPLE_OPTION(name, optstring, type, description)               \
-  OPTSET(name)                                                          \
-  GROUPED_SIMPLE_OPTION(name, name, optstring, type, description)
-
 #define SIMPLE_INITIALIZED_OPTION(name, optstring, type, init, description) \
   OPTSET(name)                                                          \
   OPTVAR(name, type, name, init)                                        \
   OPTION(name, name, has_arg<type >(), optstring, description)          \
   SIMPLE_OPTION_BODY(name)
 
-// Like SIMPLE_OPTION, but the declared option is a member of the globals
-#define GLOBAL_SIMPLE_OPTION(name, optstring, type, description) \
-  OPTSET_REL(globals, name) \
+#define SIMPLE_OPTION(name, optstring, type, description)               \
+  SIMPLE_INITIALIZED_OPTION(name, optstring, type, , description)
+
+#define GROUPED_SIMPLE_OPTION(group, name, optstring, type, description) \
+  OPTSET_REL(group, name)                                               \
   SIMPLE_OPTION(name, optstring, type, description)
+
 
 // because 'default_' is constructor arguments, and may need to be a list
 // This doesn't work if fed through the OPT / GOPT shorthand versions
@@ -235,7 +229,7 @@ OPTION(globals, conf_dir, true, "confdir",
 }
 #endif
 
-GLOBAL_SIMPLE_OPTION(no_default_confdir, "no-default-confdir/allow-default-confdir", bool,
+GROUPED_SIMPLE_OPTION(globals, no_default_confdir, "no-default-confdir/allow-default-confdir", bool,
                      gettext_noop("forbid use of the default confdir"))
 
 SIMPLE_OPTION(date, "date", date_t,
@@ -281,11 +275,11 @@ OPTION(globals, dbname, true, "db,d", gettext_noop("set name of database"))
 #endif
 
 HIDE(roster_cache_performance_log)
-GLOBAL_SIMPLE_OPTION(roster_cache_performance_log, "roster-cache-performance-log",
+GROUPED_SIMPLE_OPTION(globals, roster_cache_performance_log, "roster-cache-performance-log",
                      system_path,
                      gettext_noop("log roster cache statistic to the given file"))
 
-GLOBAL_SIMPLE_OPTION(debug, "debug", bool,
+GROUPED_SIMPLE_OPTION(globals, debug, "debug", bool,
                      gettext_noop("print debug log to stderr while running"))
 
 SIMPLE_OPTION(depth, "depth", restricted_long<0>,
@@ -341,7 +335,7 @@ SIMPLE_OPTION(dryrun, "dry-run/no-dry-run", bool,
 SIMPLE_OPTION(drop_bad_certs, "drop-bad-certs", bool,
               gettext_noop("drop certs signed by keys we don't know about"))
 
-GLOBAL_SIMPLE_OPTION(dump, "dump", system_path,
+GROUPED_SIMPLE_OPTION(globals, dump, "dump", system_path,
         gettext_noop("file to dump debugging log to, on failure"))
 
 SIMPLE_OPTION(exclude, "exclude", args_vector,
@@ -371,22 +365,22 @@ SIMPLE_OPTION(force_duplicate_key, "force-duplicate-key", bool,
                            "already exists"))
 
 
-GLOBAL_SIMPLE_OPTION(help, "help,h", bool, gettext_noop("display help message"))
+GROUPED_SIMPLE_OPTION(globals, help, "help,h", bool, gettext_noop("display help message"))
 
 SIMPLE_OPTION(show_hidden_commands, "hidden/no-hidden", bool,
               gettext_noop("show hidden commands and options"))
 
-GLOBAL_SIMPLE_OPTION(ignore_suspend_certs, "ignore-suspend-certs/no-ignore-suspend-certs", bool,
+GROUPED_SIMPLE_OPTION(globals, ignore_suspend_certs, "ignore-suspend-certs/no-ignore-suspend-certs", bool,
                      gettext_noop("do not ignore revisions marked as suspended"))
 
-GLOBAL_SIMPLE_OPTION(non_interactive, "non-interactive/interactive", bool,
+GROUPED_SIMPLE_OPTION(globals, non_interactive, "non-interactive/interactive", bool,
                      gettext_noop("do not prompt the user for input"))
 
-GLOBAL_SIMPLE_OPTION(key, "key,k/use-default-key", external_key_name,
+GROUPED_SIMPLE_OPTION(globals, key, "key,k/use-default-key", external_key_name,
        gettext_noop("sets the key for signatures, using either the key "
                     "name or the key hash"))
 
-GLOBAL_SIMPLE_OPTION(key_dir, "keydir", system_path,
+GROUPED_SIMPLE_OPTION(globals, key_dir, "keydir", system_path,
                      gettext_noop("set location of key store"))
 
 SIMPLE_OPTION(keys_to_push, "key-to-push", std::vector<external_key_name>,
@@ -395,7 +389,7 @@ SIMPLE_OPTION(keys_to_push, "key-to-push", std::vector<external_key_name>,
 SIMPLE_OPTION(last, "last", restricted_long<1>,
               gettext_noop("limit log output to the last number of entries"))
 
-GLOBAL_SIMPLE_OPTION(log, "log", system_path,
+GROUPED_SIMPLE_OPTION(globals, log, "log", system_path,
                      gettext_noop("file to write the log to"))
 
 OPTSET(messages)
@@ -432,16 +426,16 @@ SIMPLE_OPTION(no_merges, "no-merges/merges", bool,
 # define NORC_TEXT gettext_noop("do not load ~/.monotone/monotonerc or " \
                                 "_MTN/monotonerc lua files")
 #endif
-GLOBAL_SIMPLE_OPTION(norc, "norc/yesrc", bool, NORC_TEXT)
+GROUPED_SIMPLE_OPTION(globals, norc, "norc/yesrc", bool, NORC_TEXT)
 #undef NORC_TEXT
 
-GLOBAL_SIMPLE_OPTION(nostd, "nostd/stdhooks", bool,
+GROUPED_SIMPLE_OPTION(globals, nostd, "nostd/stdhooks", bool,
                      gettext_noop("do not load standard lua hooks"))
 
 SIMPLE_OPTION(pidfile, "pid-file/no-pid-file", system_path,
               gettext_noop("record process id of server"))
 
-GLOBAL_SIMPLE_OPTION(extra_rcfiles, "rcfile/clear-rcfiles", args_vector,
+GROUPED_SIMPLE_OPTION(globals, extra_rcfiles, "rcfile/clear-rcfiles", args_vector,
                      gettext_noop("load extra rc file"))
 
 OPTSET(verbosity)
@@ -500,8 +494,8 @@ OPTION(verbosity, reallyquiet, false, "reallyquiet",
 }
 #endif
 
-GLOBAL_SIMPLE_OPTION(timestamps, "timestamps", bool,
-     gettext_noop("show timestamps in front of errors, warnings and progress messages"))
+GROUPED_SIMPLE_OPTION(globals, timestamps, "timestamps", bool,
+                      gettext_noop("show timestamps in front of errors, warnings and progress messages"))
 
 SIMPLE_OPTION(recursive, "recursive,R/no-recursive", bool,
               gettext_noop("also operate on the contents of any listed directories"))
@@ -509,11 +503,11 @@ SIMPLE_OPTION(recursive, "recursive,R/no-recursive", bool,
 SIMPLE_OPTION(revision, "revision,r",args_vector,
      gettext_noop("select revision id for operation"))
 
-GLOBAL_SIMPLE_OPTION(root, "root", std::string,
-                     gettext_noop("limit search for workspace to specified root"))
+GROUPED_SIMPLE_OPTION(globals, root, "root", std::string,
+                      gettext_noop("limit search for workspace to specified root"))
 
-GLOBAL_SIMPLE_OPTION(no_workspace, "no-workspace/allow-workspace", bool,
-                     gettext_noop("don't look for a workspace"))
+GROUPED_SIMPLE_OPTION(globals, no_workspace, "no-workspace/allow-workspace", bool,
+                      gettext_noop("don't look for a workspace"))
 
 SIMPLE_OPTION(set_default, "set-default/no-set-default", bool,
               gettext_noop("use the current netsync arguments and options "
@@ -521,7 +515,7 @@ SIMPLE_OPTION(set_default, "set-default/no-set-default", bool,
 
 OPTSET_REL(globals, ticker)
 SIMPLE_INITIALIZED_OPTION(ticker, "ticker", enum_string, "count,dot,none",
-     gettext_noop("set ticker style (count|dot|none)"))
+                          gettext_noop("set ticker style (count|dot|none)"))
 
 SIMPLE_OPTION(from, "from/clear-from", args_vector,
               gettext_noop("revision(s) to start logging at"))
@@ -532,8 +526,8 @@ SIMPLE_OPTION(to, "to/clear-to", args_vector,
 SIMPLE_OPTION(unknown, "unknown/no-unknown", bool,
               gettext_noop("perform the operations for unknown files from workspace"))
 
-GLOBAL_SIMPLE_OPTION(version, "version", bool,
-                     gettext_noop("print version number, then exit"))
+GROUPED_SIMPLE_OPTION(globals, version, "version", bool,
+                      gettext_noop("print version number, then exit"))
 
 
 OPTSET(automate_inventory_opts)
@@ -617,7 +611,8 @@ SIMPLE_OPTION(export_marks, "export-marks", system_path,
 // clean up after ourselves
 #undef SIMPLE_OPTION
 #undef SIMPLE_OPTION_BODY
-#undef GLOBAL_SIMPLE_OPTION
+#undef GROUPED_SIMPLE_OPTION
+#undef SIMPLE_INITIALIZED_OPTION
 #undef COMMA
 
 // Local Variables:
