@@ -1952,7 +1952,7 @@ workspace::perform_rename(database & db,
   // source does not exist as a file.
   if (srcs.size() == 1 && !new_roster.has_node(dst))
     {
-      // "rename SRC DST" case
+      // "rename SRC DST", DST is a file
       file_path const & src = *srcs.begin();
       file_path dpath = dst;
 
@@ -1975,17 +1975,15 @@ workspace::perform_rename(database & db,
           //all cases.  previously, mtn mv fileA dir/ woudl fail if dir/ wasn't
           //versioned whereas mtn mv fileA dir/fileA would add dir/ if necessary
           //and then reparent fileA.
-          if (get_path_status(dst) == path::directory)
-            dpath = dst / src.basename();
-          else
-            {
-              //this handles the case where:
-              // touch foo
-              // mtn mv foo bar/foo where bar doesn't exist
-              file_path parent = dst.dirname();
-              E(get_path_status(parent) == path::directory, origin::user,
-                F("destination path's parent directory %s/ doesn't exist") % parent);
-            }
+          //
+          //Note that we checked above that dst is not a directory
+
+          //this handles the case where:
+          // touch foo
+          // mtn mv foo bar/foo where bar doesn't exist
+          file_path parent = dst.dirname();
+          E(get_path_status(parent) == path::directory, origin::user,
+            F("destination path's parent directory %s/ doesn't exist") % parent);
 
           renames.insert(make_pair(src, dpath));
           add_parent_dirs(db, nis, *this, dpath, new_roster);
@@ -1993,7 +1991,14 @@ workspace::perform_rename(database & db,
     }
   else
     {
-      // "rename SRC1 [SRC2 ...] DSTDIR" case
+      // Either srcs has more than one element, or dst is an existing
+      // directory (or both). So we have one of:
+      //
+      // 1) rename SRC1 [SRC2 ...] DSTDIR
+      //
+      // 2) mv foo bar
+      //    mtn mv --bookkeep-only foo bar
+
       E(get_path_status(dst) == path::directory, origin::user,
         F("destination %s/ is not a directory") % dst);
 
@@ -2007,8 +2012,22 @@ workspace::perform_rename(database & db,
             F("source file %s is not versioned") % *i);
 
           file_path d = dst / i->basename();
-          E(!new_roster.has_node(d), origin::user,
-            F("destination %s already exists in the workspace manifest") % d);
+          if (bookkeep_only &&
+              srcs.size() == 1 &&
+              get_path_status(*srcs.begin()) == path::directory &&
+              get_path_status(dst) == path::directory)
+            {
+              // case 2)
+              d = dst;
+            }
+          else
+            {
+              // case 1)
+              d = dst / i->basename();
+
+              E(!new_roster.has_node(d), origin::user,
+                F("destination %s already exists in the workspace manifest") % d);
+            }
 
           if (*i == dst || dst.is_beneath_of(*i))
             {

@@ -2814,6 +2814,11 @@ example, @code{c:tag} matches all revisions that have a tag, and
 @item Author selection
 Uses selector type @code{a}. For example, @code{a:graydon} matches
 @code{author} certs where the cert value contains @code{graydon}.
+@item Key selection
+Uses selector type @code{k}. For example, @code{k:graydon@@pobox.com} matches
+all revisions where at least one cert was signed by the key
+@code{graydon@@pobox.com}.  Instead of the key's given name, the local
+name or the full hash ID of the key can be specified as well.
 @item Branch selection
 Uses selector type @code{b}. For example, @code{b:net.venge.monotone} matches
 @code{branch} certs where the cert value is @code{net.venge.monotone}.
