@@ -81,22 +81,6 @@
  *     "foo,f/no-foo" are all allowed.
  */
 
-// This is a shortcut for an option which has its own variable and optset.
-// It will take an argument unless 'type' is 'bool'.
-#define OPT(name, string, type, default_, description)                  \
-  OPTSET(name)                                                          \
-  OPTVAR(name, type, name, default_)                                    \
-  OPTION(name, name, has_arg<type >(), string, description)
-
-// This is the same, except that the option and variable belong to the
-// 'globals' optset. These are global options, not specific to a particular
-// command.
-#define GOPT(name, string, type, default_, description)                 \
-  OPTSET(name)                                                          \
-  OPTSET_REL(globals, name)                                             \
-  OPTVAR(name, type, name, default_)                                    \
-  OPTION(name, name, has_arg<type >(), string, description)
-
 #ifdef option_bodies
 template<typename T>
 void set_simple_option(T & t, std::string const & arg)
@@ -240,9 +224,6 @@ SIMPLE_OPTION(brief, "brief/no-brief", bool,
 SIMPLE_OPTION(revs_only, "revs-only", bool,
               gettext_noop("annotate using full revision ids only"))
 
-// Remember COMMA doesn't work with GOPT, use long form.
-//GOPT(conf_dir, "confdir", system_path, get_default_confdir() COMMA origin::user,
-//     gettext_noop("set location of configuration directory"))
 OPTVAR(globals, system_path, conf_dir, get_default_confdir() COMMA origin::user)
 OPTION(globals, conf_dir, true, "confdir",
        gettext_noop("set location of configuration directory"))
@@ -276,9 +257,10 @@ GROUPED_SIMPLE_OPTION(date_formats, no_format_dates,
                       gettext_noop("print date certs exactly as stored in the database"))
 
 
-OPTVAR(globals, db_type, dbname_type, );
-OPTVAR(globals, std::string, dbname_alias, );
-GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
+OPTVAR(globals, db_type, dbname_type, )
+OPTVAR(globals, std::string, dbname_alias, )
+OPTVAR(globals, system_path, dbname, )
+OPTION(globals, dbname, true, "db,d", gettext_noop("set name of database"))
 #ifdef option_bodies
 {
   if (arg == memory_db_identifier)
@@ -633,8 +615,6 @@ SIMPLE_OPTION(export_marks, "export-marks", system_path,
               gettext_noop("save the internal marks table after exporting revisions"))
 
 // clean up after ourselves
-#undef OPT
-#undef GOPT
 #undef SIMPLE_OPTION
 #undef SIMPLE_OPTION_BODY
 #undef GLOBAL_SIMPLE_OPTION
