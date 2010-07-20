@@ -62,7 +62,7 @@ CMD(db_info, "info", "", CMD_REF(db), "",
     F("no arguments needed"));
 
   database db(app);
-  db.info(cout, app.opts.full);
+  db.info(cout, global_sanity.get_verbosity() > 0);
 }
 
 CMD(db_version, "version", "", CMD_REF(db), "",
@@ -352,7 +352,7 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
 CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
     N_("Converts the database to the rosters format"),
     "",
-    options::opts::drop_attr)
+    options::opts::attrs_to_drop)
 {
   database db(app);
   key_store keys(app);
@@ -544,7 +544,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
     N_("(revision|file|key) PARTIAL-ID"),
     N_("Completes a partial identifier"),
     "",
-    options::opts::verbose)
+    options::opts::none)
 {
   if (args.size() != 2)
     throw usage(execid);
@@ -552,7 +552,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
   database db(app);
   project_t project(db);
 
-  bool verbose = app.opts.verbose;
+  bool verbose = global_sanity.get_verbosity() > 0;
 
   E(idx(args, 1)().find_first_not_of("abcdef0123456789") == string::npos,
     origin::user,

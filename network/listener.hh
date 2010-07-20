@@ -11,7 +11,7 @@
 #ifndef __LISTENER_HH__
 #define __LISTENER_HH__
 
-#include <list>
+#include "vector.hh"
 
 #include "netcmd.hh"
 #include "network/listener_base.hh"
@@ -45,7 +45,7 @@ public:
            key_store & keys,
            reactor & react,
            protocol_role role,
-           std::list<utf8> const & addresses,
+           std::vector<utf8> const & addresses,
            boost::shared_ptr<transaction_guard> &guard,
            bool use_ipv6);
 

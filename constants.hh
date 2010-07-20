@@ -38,6 +38,9 @@ namespace constants
   // number of characters in a raw epoch
   std::size_t const epochlen_bytes = idlen_bytes;
 
+  // default packet size for 'automate stdio'
+  std::size_t const default_stdio_packet_size = 32768;
+
   // number of seconds in window, in which to consider CVS commits equivalent
   // if they have otherwise compatible contents (author, changelog)
   std::time_t const cvs_window = 60 * 5;

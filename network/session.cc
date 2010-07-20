@@ -41,7 +41,7 @@ session::session(app_state & app, project_t & project,
   version(app.opts.max_netsync_version),
   max_version(app.opts.max_netsync_version),
   min_version(app.opts.min_netsync_version),
-  use_transport_auth(app.opts.use_transport_auth),
+  use_transport_auth(!app.opts.no_transport_auth),
   signing_key(keys.signing_key),
   cmd_in(0),
   armed(false),
@@ -62,6 +62,13 @@ session::session(app_state & app, project_t & project,
   unnoted_bytes_in(0),
   unnoted_bytes_out(0)
 {
+  if (!app.opts.max_netsync_version_given)
+    {
+      max_version = constants::netcmd_current_protocol_version;
+      version = max_version;
+    }
+  if (!app.opts.min_netsync_version_given)
+    min_version = constants::netcmd_minimum_protocol_version;
 }
 
 session::~session()
