@@ -44,7 +44,7 @@ MOST_SOURCES = 								\
 	botan_pipe_cache.hh						\
 	cache_logger.hh cache_logger.cc					\
 	commands.cc commands.hh $(CMD_SOURCES)				\
-	diff_colorizer.cc diff_colorizer.hh                             \
+	colorizer.cc colorizer.hh					\
 	diff_output.cc diff_output.hh					\
 	lua_hooks.cc lua_hooks.hh 					\
 	transforms.cc transforms.hh					\

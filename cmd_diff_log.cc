@@ -17,7 +17,7 @@
 #include "asciik.hh"
 #include "charset.hh"
 #include "cmd.hh"
-#include "diff_colorizer.hh"
+#include "colorizer.hh"
 #include "diff_output.hh"
 #include "file_io.hh"
 #include "parallel_iter.hh"
@@ -70,7 +70,7 @@ dump_diff(lua_hooks & lua,
           bool external_diff_args_given,
           string external_diff_args,
           string const & encloser,
-          diff_colorizer const & colorizer,
+          colorizer const & colorizer,
           ostream & output)
 {
   if (diff_format == external_diff)
@@ -130,7 +130,7 @@ dump_diffs(lua_hooks & lua,
            bool left_from_db,
            bool right_from_db,
            bool show_encloser,
-           diff_colorizer const & colorizer)
+           colorizer const & colorizer)
 {
   parallel::iter<node_map> i(left_roster.all_nodes(), right_roster.all_nodes());
   while (i.next())
@@ -393,7 +393,7 @@ void dump_header(std::string const & revs,
                  roster_t const & old_roster,
                  roster_t const & new_roster,
                  std::ostream & out,
-                 diff_colorizer const & colorizer,
+                 colorizer const & colorizer,
                  bool show_if_empty)
 {
   cset changes;
@@ -406,23 +406,23 @@ void dump_header(std::string const & revs,
 
   vector<string> lines;
   split_into_lines(summary(), lines);
-  out << colorizer.colorize("#", diff_colorizer::comment) << "\n";
+  out << colorizer.colorize("#", colorizer::diff_comment) << "\n";
   if (!summary().empty())
     {
-      out << colorizer.colorize(revs, diff_colorizer::comment);
-      out << colorizer.colorize("#", diff_colorizer::comment) << "\n";
+      out << colorizer.colorize(revs, colorizer::diff_comment);
+      out << colorizer.colorize("#", colorizer::diff_comment) << "\n";
 
       for (vector<string>::iterator i = lines.begin();
            i != lines.end(); ++i)
         out << colorizer.colorize(string("# ") + *i,
-                                  diff_colorizer::comment) << "\n";
+                                  colorizer::diff_comment) << "\n";
     }
   else
     {
       out << colorizer.colorize(string("# ") + _("no changes"),
-                                diff_colorizer::comment) << "\n";
+                                colorizer::diff_comment) << "\n";
     }
-  out << colorizer.colorize("#", diff_colorizer::comment) << "\n";
+  out << colorizer.colorize("#", colorizer::diff_comment) << "\n";
 }
 
 CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
@@ -434,7 +434,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
        "between them is given.  If no format is specified, unified is "
        "used by default."),
     options::opts::revision | options::opts::depth | options::opts::exclude |
-    options::opts::diff_options | options::opts::colorize)
+    options::opts::diff_options)
 {
   if (app.opts.external_diff_args_given)
     E(app.opts.diff_format == external_diff, origin::user,
@@ -449,7 +449,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
 
   prepare_diff(app, db, old_roster, new_roster, args, old_from_db, new_from_db, revs);
 
-  diff_colorizer colorizer(app.opts.colorize);
+  colorizer colorizer(app.opts.colorize);
 
   if (!app.opts.without_header)
     {
@@ -492,7 +492,7 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
                dummy_header);
 
   // never colorize the diff output
-  diff_colorizer colorizer(false);
+  colorizer colorizer(false);
 
   if (app.opts.with_header)
     {
@@ -562,27 +562,27 @@ typedef priority_queue<pair<rev_height, revision_id>,
                        rev_cmp> frontier_t;
 
 void
-log_print_rev (app_state &      app,
-               database &       db,
-               project_t &      project,
-               revision_id      rid,
-               revision_t &     rev,
-               string           date_fmt,
-               node_restriction mask,
-               ostream &        out)
+log_print_rev(app_state & app,
+              database & db,
+              project_t const & project,
+              revision_id const & rid,
+              revision_t const & rev,
+              string const & date_fmt,
+              node_restriction const & mask,
+              colorizer const & color,
+              ostream & out)
 {
-  cert_name const author_name(author_cert_name);
-  cert_name const date_name(date_cert_name);
-  cert_name const branch_name(branch_cert_name);
-  cert_name const tag_name(tag_cert_name);
-  cert_name const changelog_name(changelog_cert_name);
-  cert_name const comment_name(comment_cert_name);
   vector<cert> certs;
   project.get_revision_certs(rid, certs);
 
   if (app.opts.brief)
     {
-      out << rid;
+      cert_name const author_name(author_cert_name);
+      cert_name const date_name(date_cert_name);
+      cert_name const branch_name(branch_cert_name);
+
+      out << color.colorize(encode_hexenc(rid.inner()(), rid.inner().made_from),
+                            colorizer::log_revision);
       log_certs(certs, out, author_name);
       if (app.opts.no_graph)
         log_certs(certs, out, date_name, date_fmt);
@@ -597,7 +597,7 @@ log_print_rev (app_state &      app,
   else
     {
       utf8 header;
-      revision_header(rid, rev, certs, date_fmt, header);
+      revision_header(rid, rev, certs, date_fmt, color, header);
 
       external header_external;
       utf8_to_system_best_effort(header, header_external);
@@ -606,7 +606,7 @@ log_print_rev (app_state &      app,
       if (!app.opts.no_files)
         {
           utf8 summary;
-          revision_summary(rev, summary);
+          revision_summary(rev, color, summary);
           external summary_external;
           utf8_to_system_best_effort(summary, summary_external);
           out << summary_external;
@@ -639,16 +639,16 @@ log_print_rev (app_state &      app,
                      app.opts.external_diff_args,
                      true, true,
                      !app.opts.no_show_encloser,
-                     diff_colorizer(app.opts.colorize));
+                     color);
         }
     }
 }
 
 void
-log_common (app_state & app,
-            args_vector args,
-            bool automate,
-            std::ostream & output)
+log_common(app_state & app,
+           args_vector args,
+           bool automate,
+           std::ostream & output)
 {
   database db(app);
   project_t project(db);
@@ -865,8 +865,11 @@ log_common (app_state & app,
 
   set<revision_id> seen;
   revision_t rev;
+
+  colorizer color(app.opts.colorize && !automate);
   // this is instantiated even when not used, but it's lightweight
-  asciik graph(output);
+  asciik graph(output, color);
+
   while(!frontier.empty() && last != 0 && next != 0)
     {
       revision_id const & rid = frontier.top().second;
@@ -962,7 +965,7 @@ log_common (app_state & app,
           else
             {
               ostringstream out;
-              log_print_rev (app, db, project, rid, rev, date_fmt, mask_diff, out);
+              log_print_rev(app, db, project, rid, rev, date_fmt, mask_diff, color, out);
 
               string out_system;
               utf8_to_system_best_effort(utf8(out.str(), origin::internal), out_system);
@@ -1010,9 +1013,9 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     options::opts::brief | options::opts::diffs |
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges | options::opts::no_files |
-    options::opts::no_graph | options::opts::colorize )
+    options::opts::no_graph )
 {
-  log_common (app, args, false, cout);
+  log_common(app, args, false, cout);
 }
 
 CMD_AUTOMATE(log, N_("[PATH] ..."),
@@ -1023,7 +1026,7 @@ CMD_AUTOMATE(log, N_("[PATH] ..."),
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges)
 {
-  log_common (app, args, true, output);
+  log_common(app, args, true, output);
 }
 
 // Local Variables:

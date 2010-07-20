@@ -7,24 +7,27 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#ifndef __DIFF_COLORIZER_HH__
-#define __DIFF_COLORIZER_HH__
+#ifndef __COLORIZER_HH__
+#define __COLORIZER_HH__
 
 #include "vocab.hh"
 #include <map>
 
-struct diff_colorizer {
+struct colorizer {
 
   typedef enum { normal = 0,
-                 bold,
-                 encloser,
-                 add,
-                 del,
-                 change,
-                 comment,
-                 reset } purpose;
+                 reset,
+                 diff_encloser,
+                 diff_add,
+                 diff_delete,
+                 diff_change,
+                 diff_comment,
+                 diff_separator,
+                 log_revision,
+                 rev_header
+                 } purpose;
 
-  diff_colorizer(bool enable);
+  colorizer(bool enable);
 
   std::string
   colorize(std::string const & in, purpose p = normal) const;
@@ -33,7 +36,7 @@ private:
   std::map<purpose, std::string> colormap;
 };
 
-#endif // __DIFF_COLORIZER_HH__
+#endif // __COLORIZER_HH__
 
 // Local Variables:
 // mode: C++

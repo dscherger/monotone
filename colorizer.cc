@@ -8,33 +8,35 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "diff_colorizer.hh"
+#include "colorizer.hh"
 #include "platform.hh"
 
 using std::string;
 using std::map;
 using std::make_pair;
 
-diff_colorizer::diff_colorizer(bool enable)
+colorizer::colorizer(bool enable)
 {
   if (!have_smart_terminal())
     enable = false;
 
   if (enable)
     {
-      colormap.insert(std::make_pair(normal,   ""));
-      colormap.insert(std::make_pair(bold,     "\033[1m"));
-      colormap.insert(std::make_pair(encloser, "\033[1;34m"));
-      colormap.insert(std::make_pair(add,      "\033[32m"));
-      colormap.insert(std::make_pair(del,      "\033[31m"));
-      colormap.insert(std::make_pair(change,   "\033[33m"));
-      colormap.insert(std::make_pair(comment,  "\033[36m"));
-      colormap.insert(std::make_pair(reset,    "\033[m"));
+      colormap.insert(std::make_pair(normal,         ""));
+      colormap.insert(std::make_pair(reset,          "\033[m"));
+      colormap.insert(std::make_pair(diff_encloser,  "\033[1;34m"));
+      colormap.insert(std::make_pair(diff_add,       "\033[32m"));
+      colormap.insert(std::make_pair(diff_delete,    "\033[31m"));
+      colormap.insert(std::make_pair(diff_change,    "\033[33m"));
+      colormap.insert(std::make_pair(diff_comment,   "\033[36m"));
+      colormap.insert(std::make_pair(diff_separator, "\033[1m"));
+      colormap.insert(std::make_pair(log_revision,   "\033[34m"));
+      colormap.insert(std::make_pair(rev_header,     "\033[1m"));
     }
 }
 
 string
-diff_colorizer::colorize(string const & in, purpose p) const
+colorizer::colorize(string const & in, purpose p) const
 {
   if (colormap.find(p) == colormap.end())
     return in;

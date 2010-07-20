@@ -234,17 +234,20 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   bool is_date_fmt_valid = date_fmt_valid(date_fmt);
   string null_date_fmt("");
+  colorizer color(false);
 
   if (!is_date_fmt_valid)
     {
       W(F("date format '%s' cannot be used for commit; using default instead") % date_fmt);
-      revision_header(rid, rev, author, date, branch, changelog, null_date_fmt, header);
+      revision_header(rid, rev, author, date, branch, changelog,
+                      null_date_fmt, color, header);
     }
   else
     {
-      revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
+      revision_header(rid, rev, author, date, branch, changelog,
+                      date_fmt, color, header);
     }
-  revision_summary(rev, summary);
+  revision_summary(rev, color, summary);
 
   utf8 full_message(instructions() + cancel() + header() + notes() + summary(),
                     origin::internal);
@@ -985,10 +988,11 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   utf8 header;
   utf8 summary;
+  colorizer color(app.opts.colorize);
 
   revision_header(rid, rev, author, date_t::now(), app.opts.branch, changelog,
-                  date_fmt, header);
-  revision_summary(rev, summary);
+                  date_fmt, color, header);
+  revision_summary(rev, color, summary);
 
   external header_external;
   external summary_external;

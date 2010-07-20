@@ -14,7 +14,7 @@
 #include "annotate.hh"
 #include "revision.hh"
 #include "cmd.hh"
-#include "diff_colorizer.hh"
+#include "colorizer.hh"
 #include "diff_output.hh"
 #include "merge_content.hh"
 #include "file_io.hh"
@@ -96,7 +96,7 @@ CMD(fmerge, "fmerge", "", CMD_REF(debug), N_("<parent> <left> <right>"),
 CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
     N_("Differences 2 files and outputs the result"),
     "",
-    options::opts::diff_options | options::opts::colorize)
+    options::opts::diff_options)
 {
   if (args.size() != 4)
     throw usage(execid);
@@ -131,7 +131,7 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
             src_id, dst_id,
             src.inner(), dst.inner(),
             cout, app.opts.diff_format, 
-            pattern, diff_colorizer(app.opts.colorize));
+            pattern, colorizer(app.opts.colorize));
 }
 
 CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
