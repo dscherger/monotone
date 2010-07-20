@@ -1167,6 +1167,8 @@ CMD(store, "store", "", CMD_REF(conflicts),
   project_t   project(db);
   revision_id left_id, right_id;
 
+  workspace::require_workspace(F("conflicts file must be under _MTN"));
+
   get_conflicts_rids(args, db, project, app, left_id, right_id);
 
   std::ostringstream output;

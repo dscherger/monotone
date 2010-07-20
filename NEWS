@@ -57,6 +57,19 @@ Xxx Xxx 99 99:99:99 UTC 2010
           commands such as `clone`, `automate remote` and
           `automate remote_stdio`.
 
+        - The following characters have been deprecated in branch names
+
+                ?,*%+{}[]!^
+
+          as they denote either meta characters in monotone's URI syntax
+          or are used in globs to resolve branch patterns.
+          Furthermore, branch names should no longer start with a dash
+          (-), since this character is used to denote an exclude pattern
+          in the aforementioned URI syntax.
+
+          monotone warns on the creation of branches which violate these
+          restrictions and gives further directions.
+
         - The `import` command now keeps the created bookkeeping root if
           --dry-run is not specified.  This makes it possible to re-use
           the import directory as workspace and is also more closely
@@ -73,9 +86,13 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - The 'disapprove' command now accepts a revision range in
           addition to a single revision.
 
-        - The commands 'diff', 'fdiff' and 'log' now accept the new
-          '--colorize' option and render colored diffs in terminals which
-          support that.
+        - New 'k:' selector type to query revisions where at least one
+          certificate was signed with the given key.
+
+        - Monotone has a new global '--colorize' option which colors the
+          output of commands like 'diff', 'fdiff' or 'log' for better
+          readability in terminals that support output coloring and
+          formatting.
 
         - New automation command 'log' which behaves identical to the
           normal 'log' command, except that it only outputs the
@@ -85,6 +102,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         - the 'mv' command now warns when a source is being renamed onto
           itself or one of its children (fixes monotone bug #29484).
+
+        - the 'mv' command now handles this usage properly, where
+          'foo' is a directory:
+          mv foo bar
+          mtn mv --bookkeep-only foo bar
 
         - monotone no longer asks to pick a branch from a set of branches
           of a revision in which all but one branch have been suspended
@@ -105,11 +127,23 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - `automate remote' and `automate remote_stdio' can now be used
           without transport authentication (e.g. on file:// or ssh://
           transports) as well as anonymously over netsync
-          (fixes monotone bug #30237)  
+          (fixes monotone bug #30237)
 
         - monotone does no longer warn about missing implicit includes
           when dealing with restricted file sets
           (fixes monotone bug #30291)
+
+        - The 'passphrase' and 'dropkey' commands now handle private keys
+          in old-style key files (without the hash part in the file name)
+          properly.
+          monotone also makes it very sure now that the key file of a
+          private key which is about to be deleted really and only
+          contains the key which should be deleted and nothing else
+          (fixes monotone bug #30376)
+
+        - monotone no longer throws an unrecoverable error if a public or
+          private key is addressed with some non-existing key id
+          (fixes monotone bug #30462)
 
         - A regression in 0.48 made a path-restricted `mtn log' show
           revisions, in which not the picked path(s), but one of its parents
@@ -118,6 +152,9 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - `mtn trusted` will no longer accept single bogus revision ids,
           but instead validates if the given revision really exists in the
           current database.
+
+        - `mtn conflicts store` now gives a nice error message when
+          run outside a workspace (fixes bug #30473)
 
         Other
 

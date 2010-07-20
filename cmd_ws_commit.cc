@@ -1552,6 +1552,20 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
       app.opts.branch = branchname;
     }
 
+  // now that we have an (unedited) branch name, let the hook decide if the
+  // changes should get committed at all
+  revision_data rev_data;
+  write_revision(restricted_rev, rev_data);
+
+  bool changes_validated;
+  string reason;
+
+  app.lua.hook_validate_changes(rev_data, app.opts.branch,
+                                changes_validated, reason);
+
+  E(changes_validated, origin::user,
+    F("changes rejected by hook: %s") % reason);
+
   if (global_sanity.debug_p())
     {
       L(FL("new manifest '%s'\n"
@@ -1624,12 +1638,9 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   // If the hook doesn't exist, allow the message to be used.
   bool message_validated;
-  string reason, new_manifest_text;
+  reason.clear();
 
-  revision_data new_rev;
-  write_revision(restricted_rev, new_rev);
-
-  app.lua.hook_validate_commit_message(log_message, new_rev, app.opts.branch,
+  app.lua.hook_validate_commit_message(log_message, rev_data, app.opts.branch,
                                        message_validated, reason);
   E(message_validated, origin::user,
     F("log message rejected by hook: %s") % reason);
