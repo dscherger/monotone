@@ -52,6 +52,7 @@ template <> void dump(s32 const & obj, std::string & out);
 template <> void dump(u32 const & obj, std::string & out);
 template <> void dump(s64 const & obj, std::string & out);
 template <> void dump(u64 const & obj, std::string & out);
+template <> void dump(size_t const & obj, std::string & out);
 
 // NORETURN(void function()); declares a function that will never return
 // in the normal fashion. a function that invariably throws an exception

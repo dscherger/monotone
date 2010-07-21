@@ -481,6 +481,11 @@ dump(u64 const & val, string & out)
 {
   out = lexical_cast<string>(val);
 }
+template <> void
+dump(size_t const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
 
 void
 sanity::print_var(std::string const & value, char const * var,
