@@ -294,7 +294,7 @@ GROUPED_SIMPLE_OPTION(diff_options, external_diff_args, "diff-args", std::string
         gettext_noop("argument to pass external diff hook"))
 GROUPED_SIMPLE_OPTION(au_diff_options, reverse, "reverse", bool,
         gettext_noop("reverse order of diff"))
-GROUPED_SIMPLE_OPTION(diff_options, no_show_encloser, "no-show-encloser", bool,
+GROUPED_SIMPLE_OPTION(diff_options, no_show_encloser, "no-show-encloser/show-encloser", bool,
      gettext_noop("do not show the function containing each block of changes"))
 OPTSET_REL(au_diff_options, with_header)
 SIMPLE_OPTION(with_header, "with-header/without-header", bool,
@@ -542,7 +542,7 @@ OPTSET_REL(automate_inventory_opts, no_unchanged)
 SIMPLE_OPTION(no_unchanged, "no-unchanged/unchanged", bool,
               gettext_noop("don't output unchanged files"))
 OPTSET_REL(automate_inventory_opts, no_corresponding_renames)
-SIMPLE_OPTION(no_corresponding_renames, "no-corresponding-renames", bool,
+SIMPLE_OPTION(no_corresponding_renames, "no-corresponding-renames/corresponding-renames", bool,
               gettext_noop("don't output corresponding renames if restricted on such nodes"))
 
 
