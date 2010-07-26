@@ -462,30 +462,37 @@ dump(bool const & obj, string & out)
   out = (obj ? "true" : "false");
 }
 template <> void
-dump(s32 const & val, string & out)
+dump(int const & val, string & out)
 {
   out = lexical_cast<string>(val);
 }
 template <> void
-dump(u32 const & val, string & out)
+dump(unsigned int const & val, string & out)
 {
   out = lexical_cast<string>(val);
 }
 template <> void
-dump(s64 const & val, string & out)
+dump(long const & val, string & out)
 {
   out = lexical_cast<string>(val);
 }
 template <> void
-dump(u64 const & val, string & out)
+dump(unsigned long const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+#ifdef USING_LONG_LONG
+template <> void
+dump(long long const & val, string & out)
 {
   out = lexical_cast<string>(val);
 }
 template <> void
-dump(size_t const & val, string & out)
+dump(unsigned long long const & val, string & out)
 {
   out = lexical_cast<string>(val);
 }
+#endif
 
 void
 sanity::print_var(std::string const & value, char const * var,
