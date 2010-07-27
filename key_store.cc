@@ -12,7 +12,6 @@
 
 #include <botan/botan.h>
 #include <botan/rsa.h>
-#include <botan/keypair.h>
 #include <botan/pem.h>
 #include <botan/look_pk.h>
 
@@ -66,13 +65,10 @@ struct key_store_state
 {
   system_path const key_dir;
   string const ssh_sign_mode;
+  bool non_interactive;
   bool have_read;
   lua_hooks & lua;
   key_map keys;
-
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  boost::shared_ptr<lazy_rng> rng;
-#endif
 
   // These are used to cache keys and signers (if the hook allows).
   map<key_id, shared_ptr<RSA_PrivateKey> > privkey_cache;
@@ -83,12 +79,9 @@ struct key_store_state
 
   key_store_state(app_state & app)
     : key_dir(app.opts.key_dir), ssh_sign_mode(app.opts.ssh_sign),
+      non_interactive(app.opts.non_interactive),
       have_read(false), lua(app.lua)
   {
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-    rng = app.rng;
-#endif
-
     E(app.opts.key_dir_given
       || app.opts.conf_dir_given
       || !app.opts.no_default_confdir,
@@ -195,14 +188,6 @@ key_store::have_signing_key() const
   return !signing_key.inner()().empty();
 }
 
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-Botan::RandomNumberGenerator &
-key_store::get_rng()
-{
-  return s->rng->get();
-}
-#endif
-
 system_path const &
 key_store::get_key_dir() const
 {
@@ -237,7 +222,8 @@ key_store_state::maybe_read_key_dir()
       data dat;
       read_data(*i, dat);
       istringstream is(dat());
-      read_packets(is, kr);
+      if (read_packets(is, kr) == 0)
+        W(F("ignored invalid key file ('%s') in key store") % (*i) );
     }
 }
 
@@ -423,6 +409,43 @@ key_store_state::put_key_pair_memory(full_key_info const & info)
   return true;
 }
 
+struct key_delete_validator : public packet_consumer
+{
+  key_id expected_ident;
+  system_path file;
+  key_delete_validator(key_id const & id, system_path const & f)
+    : expected_ident(id), file(f) {}
+  virtual ~key_delete_validator() {}
+  virtual void consume_file_data(file_id const & ident,
+                                 file_data const & dat)
+  { E(false, origin::system, F("Invalid data in key file.")); }
+  virtual void consume_file_delta(file_id const & id_old,
+                                  file_id const & id_new,
+                                  file_delta const & del)
+  { E(false, origin::system, F("Invalid data in key file.")); }
+  virtual void consume_revision_data(revision_id const & ident,
+                                     revision_data const & dat)
+  { E(false, origin::system, F("Invalid data in key file.")); }
+  virtual void consume_revision_cert(cert const & t)
+  { E(false, origin::system, F("Invalid data in key file.")); }
+  virtual void consume_public_key(key_name const & ident,
+                                  rsa_pub_key const & k)
+  { E(false, origin::system, F("Invalid data in key file.")); }
+  virtual void consume_key_pair(key_name const & name,
+                                keypair const & kp)
+  {
+     L(FL("reading key pair '%s' from key store for validation") % name);
+     key_id ident;
+     key_hash_code(name, kp.pub, ident);
+     E(ident == expected_ident, origin::user,
+       F("expected key with id '%s' in key file '%s', got key with id '%s'")
+         % expected_ident % file % ident);
+  }
+  virtual void consume_old_private_key(key_name const & ident,
+                                       old_arc4_rsa_priv_key const & k)
+  { L(FL("skipping id check before deleting old private key in '%s'") % file); }
+};
+
 void
 key_store::delete_key(key_id const & ident)
 {
@@ -432,6 +455,22 @@ key_store::delete_key(key_id const & ident)
     {
       system_path file;
       s->get_key_file(ident, i->second.first, file);
+      if (!file_exists(file))
+          s->get_old_key_file(i->second.first, file);
+
+      // sanity: if we read the key originally from a file which did not
+      // follow the NAME.IDENT scheme and have another key pair with NAME
+      // in the key dir, we could accidentially drop the wrong private key
+      // here, so validate if the file really contains the key with the
+      // ID we want to delete, before going mad
+        {
+          key_delete_validator val(ident, file);
+          data dat;
+          read_data(file, dat);
+          istringstream is(dat());
+          I(read_packets(is, val));
+        }
+
       delete_file(file);
 
       s->keys.erase(i);
@@ -533,7 +572,7 @@ key_store_state::decrypt_private_key(key_id const & id,
     {
       Botan::DataSource_Memory ds(kp.priv());
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-      pkcs8_key.reset(Botan::PKCS8::load_key(ds, rng->get(), ""));
+      pkcs8_key.reset(Botan::PKCS8::load_key(ds, lazy_rng::get(), ""));
 #else
       pkcs8_key.reset(Botan::PKCS8::load_key(ds, ""));
 #endif
@@ -544,22 +583,28 @@ key_store_state::decrypt_private_key(key_id const & id,
 
       utf8 phrase;
       string lua_phrase;
-          // See whether a lua hook will tell us the passphrase.
       key_identity_info identity;
       identity.id = id;
       identity.given_name = name;
-      if (!force_from_user && lua.hook_get_passphrase(identity, lua_phrase))
-        phrase = utf8(lua_phrase, origin::user);
-      else
-        get_passphrase(phrase, name, id, false, false);
 
-      int cycles = 1;
+      // See whether a lua hook will tell us the passphrase.
+      if ((!force_from_user || non_interactive) &&
+          lua.hook_get_passphrase(identity, lua_phrase))
+        {
+          phrase = utf8(lua_phrase, origin::user);
+        }
+      else if (!non_interactive)
+        {
+          get_passphrase(phrase, name, id, false, false);
+        }
+
+      int cycles = 0;
       for (;;)
         try
           {
             Botan::DataSource_Memory ds(kp.priv());
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-            pkcs8_key.reset(Botan::PKCS8::load_key(ds, rng->get(), phrase()));
+            pkcs8_key.reset(Botan::PKCS8::load_key(ds, lazy_rng::get(), phrase()));
 #else
             pkcs8_key.reset(Botan::PKCS8::load_key(ds, phrase()));
 #endif
@@ -567,14 +612,14 @@ key_store_state::decrypt_private_key(key_id const & id,
           }
         catch (Botan::Exception & e)
           {
+            cycles++;
             L(FL("decrypt_private_key: failure %d to load encrypted key: %s")
               % cycles % e.what());
-            E(cycles <= 3, origin::no_fault,
-              F("failed to decrypt old private RSA key, "
-                "probably incorrect passphrase"));
+            E(cycles < 3 && !non_interactive, origin::no_fault,
+              F("failed to decrypt old private RSA key, probably incorrect "
+                "passphrase or missing 'get_passphrase' lua hook"));
 
             get_passphrase(phrase, name, id, false, false);
-            cycles++;
             continue;
           }
     }
@@ -643,7 +688,7 @@ key_store::create_key_pair(database & db,
       L(FL("generating key-pair '%s'") % ident);
     }
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  RSA_PrivateKey priv(s->rng->get(),
+  RSA_PrivateKey priv(lazy_rng::get(),
                       static_cast<Botan::u32bit>(constants::keylen));
 #else
   RSA_PrivateKey priv(static_cast<Botan::u32bit>(constants::keylen));
@@ -657,7 +702,7 @@ key_store::create_key_pair(database & db,
   if ((*maybe_passphrase)().length())
     Botan::PKCS8::encrypt_key(priv, *unfiltered_pipe,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-                              s->rng->get(),
+                              lazy_rng::get(),
 #endif
                               (*maybe_passphrase)(),
                               "PBE-PKCS5v20(SHA-1,TripleDES/CBC)",
@@ -737,13 +782,17 @@ key_store::change_key_passphrase(key_id const & id)
   get_passphrase(new_phrase, name, id, true, false);
 
   unfiltered_pipe->start_msg();
-  Botan::PKCS8::encrypt_key(*priv, *unfiltered_pipe,
+  if (new_phrase().length())
+    Botan::PKCS8::encrypt_key(*priv, *unfiltered_pipe,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-                            s->rng->get(),
+                              lazy_rng::get(),
 #endif
-                            new_phrase(),
-                            "PBE-PKCS5v20(SHA-1,TripleDES/CBC)",
-                            Botan::RAW_BER);
+                              new_phrase(),
+                              "PBE-PKCS5v20(SHA-1,TripleDES/CBC)",
+                              Botan::RAW_BER);
+  else
+    Botan::PKCS8::encode(*priv, *unfiltered_pipe);
+
   unfiltered_pipe->end_msg();
   kp.priv = rsa_priv_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE),
                          origin::internal);
@@ -870,7 +919,7 @@ key_store::make_signature(database & db,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
       sig = signer->sign_message(
         reinterpret_cast<Botan::byte const *>(tosign.data()),
-        tosign.size(), s->rng->get());
+        tosign.size(), lazy_rng::get());
 #else
       sig = signer->sign_message(
         reinterpret_cast<Botan::byte const *>(tosign.data()),
@@ -942,7 +991,7 @@ key_store::export_key_for_agent(key_id const & id,
     Botan::PKCS8::encrypt_key(*priv,
                               p,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-                              s->rng->get(),
+                              lazy_rng::get(),
 #endif
                               new_phrase(),
                               "PBE-PKCS5v20(SHA-1,TripleDES/CBC)");
@@ -995,7 +1044,7 @@ key_store_state::migrate_old_key_pair
         Botan::DataSource_Memory ds(Botan::PEM_Code::encode(arc4_decrypt,
                                                             "PRIVATE KEY"));
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-        pkcs8_key.reset(Botan::PKCS8::load_key(ds, rng->get()));
+        pkcs8_key.reset(Botan::PKCS8::load_key(ds, lazy_rng::get()));
 #else
         pkcs8_key.reset(Botan::PKCS8::load_key(ds));
 #endif
@@ -1022,7 +1071,7 @@ key_store_state::migrate_old_key_pair
   unfiltered_pipe->start_msg();
   Botan::PKCS8::encrypt_key(*priv_key, *unfiltered_pipe,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-                            rng->get(),
+                            lazy_rng::get(),
 #endif
                             phrase(),
                             "PBE-PKCS5v20(SHA-1,TripleDES/CBC)",

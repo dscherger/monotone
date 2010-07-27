@@ -5,7 +5,7 @@ two_col_table = "files"
 col1 = "id"
 
 function dbex(...)
-  check(mtn("db", "execute", string.format(unpack(arg))), 0, true, false)
+  check(mtn("db", "execute", string.format(...)), 0, true, false)
 end
 
 dbex("INSERT INTO %s VALUES ('key1', 'value1')", two_col_table)

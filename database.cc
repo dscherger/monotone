@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -26,7 +27,6 @@
 
 #include <botan/botan.h>
 #include <botan/rsa.h>
-#include <botan/keypair.h>
 #include <botan/pem.h>
 #include <botan/look_pk.h>
 #include "lazy_rng.hh"
@@ -49,6 +49,7 @@
 #include "safe_map.hh"
 #include "sanity.hh"
 #include "migration.hh"
+#include "simplestring_xform.hh"
 #include "transforms.hh"
 #include "ui.hh" // tickers
 #include "vocab.hh"
@@ -209,7 +210,8 @@ class database_impl
 
   // for scoped_ptr's sake
 public:
-  explicit database_impl(system_path const & f, bool mem);
+  explicit database_impl(system_path const & f, db_type t,
+                         system_path const & roster_cache_performance_log);
   ~database_impl();
 
 private:
@@ -217,8 +219,8 @@ private:
   //
   // --== Opening the database and schema checking ==--
   //
-  system_path const filename;
-  bool use_memory_db;
+  system_path filename;
+  db_type type;
   struct sqlite3 * __sql;
 
   void install_functions();
@@ -458,15 +460,18 @@ sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
 }
 #endif
 
-database_impl::database_impl(system_path const & f, bool mem) :
+database_impl::database_impl(system_path const & f, db_type t,
+                             system_path const & roster_cache_performance_log) :
   filename(f),
-  use_memory_db(mem),
+  type(t),
   __sql(NULL),
   transaction_level(0),
   roster_cache(constants::db_roster_cache_sz,
-               roster_writeback_manager(*this)),
+               constants::db_roster_cache_min_count,
+               roster_writeback_manager(*this),
+               roster_cache_performance_log.as_external()),
   delayed_writes_size(0),
-  vcache(constants::db_version_cache_sz)
+  vcache(constants::db_version_cache_sz, 1)
 {}
 
 database_impl::~database_impl()
@@ -484,30 +489,50 @@ database_impl::~database_impl()
     close();
 }
 
-struct database_cache
-{
-  map<system_path, boost::shared_ptr<database_impl> > dbs;
-};
+database_cache database::dbcache;
 
 database::database(app_state & app)
-  : lua(app.lua)
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  , rng(app.rng)
-#endif
+  : opts(app.opts), lua(app.lua)
 {
+  init();
+}
 
-  if (!app.dbcache)
-    app.dbcache.reset(new database_cache);
+database::database(options const & o, lua_hooks & l)
+  : opts(o), lua(l)
+{
+  init();
+}
 
-  boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
-  if (!i)
-    i.reset(new database_impl(app.opts.dbname, app.opts.dbname_is_memory));
+void
+database::init()
+{
+  database_path_helper helper(lua);
+  system_path dbpath;
+  helper.get_database_path(opts, dbpath);
 
-  imp = i;
+  // FIXME: for all :memory: databases an empty path is returned above, thus
+  // all requests for a :memory: database point to the same database
+  // implementation. This means we cannot use two different memory databases
+  // within the same monotone process
+  if (dbcache.find(dbpath) == dbcache.end())
+    {
+      L(FL("creating new database_impl instance for %s") % dbpath);
+      dbcache.insert(make_pair(dbpath, boost::shared_ptr<database_impl>(
+        new database_impl(dbpath, opts.dbname_type, opts.roster_cache_performance_log)
+      )));
+    }
+
+  imp = dbcache[dbpath];
 }
 
 database::~database()
 {}
+
+void
+database::reset_cache()
+{
+  dbcache.clear();
+}
 
 system_path
 database::get_filename()
@@ -518,7 +543,7 @@ database::get_filename()
 bool
 database::is_dbfile(any_path const & file)
 {
-  if (imp->use_memory_db)
+  if (imp->type == memory_db)
     return false;
   system_path fn(file); // canonicalize
   bool same = (imp->filename == fn);
@@ -530,7 +555,18 @@ database::is_dbfile(any_path const & file)
 bool
 database::database_specified()
 {
-  return imp->use_memory_db || !imp->filename.empty();
+  return imp->type == memory_db || !imp->filename.empty();
+}
+
+void
+database::create_if_not_exists()
+{
+  imp->check_filename();
+  if (!file_exists(imp->filename))
+    {
+      P(F("initializing new database '%s'") % imp->filename);
+      initialize();
+    }
 }
 
 void
@@ -609,7 +645,7 @@ database_impl::sql(enum open_mode mode)
 {
   if (! __sql)
     {
-      if (use_memory_db)
+      if (type == memory_db)
         {
           open();
 
@@ -1000,7 +1036,7 @@ database::info(ostream & out, bool analyze)
     bytes.push_back(imp->space("revision_ancestry",
                           "length(parent) + length(child)", total));
     bytes.push_back(imp->space("revision_certs",
-                          "length(hash) + length(id) + length(name)"
+                          "length(hash) + length(revision_id) + length(name)"
                           "+ length(value) + length(keypair_id)"
                           "+ length(signature)", total));
     bytes.push_back(imp->space("heights", "length(revision) + length(height)",
@@ -1107,7 +1143,7 @@ database::info(ostream & out, bool analyze)
   L(FL("fetching ancestry map"));
   typedef multimap<revision_id, revision_id>::const_iterator gi;
   rev_ancestry_map graph;
-  get_revision_ancestry(graph);
+  get_forward_ancestry(graph);
 
   L(FL("checking timestamps differences of related revisions"));
   int correct = 0,
@@ -1164,6 +1200,10 @@ database::info(ostream & out, bool analyze)
       else
         missing++;
     }
+
+  // no information to provide in this case
+  if (diffs.size() == 0)
+    return;
 
   form =
     F("timestamp correctness between revisions:\n"
@@ -1804,7 +1844,8 @@ database_impl::get_roster_base(revision_id const & ident,
   id checksum(res[0][0], origin::database);
   id calculated;
   calculate_ident(data(res[0][1], origin::database), calculated);
-  I(calculated == checksum);
+  E(calculated == checksum, origin::database,
+    F("roster does not match hash"));
 
   gzip<data> dat_packed(res[0][1], origin::database);
   data dat;
@@ -1824,7 +1865,8 @@ database_impl::get_roster_delta(id const & ident,
   id checksum(res[0][0], origin::database);
   id calculated;
   calculate_ident(data(res[0][1], origin::database), calculated);
-  I(calculated == checksum);
+  E(calculated == checksum, origin::database,
+    F("roster_delta does not match hash"));
 
   gzip<delta> del_packed(res[0][1], origin::database);
   delta tmp;
@@ -1994,7 +2036,9 @@ database_impl::get_version(id const & ident,
 
   id final;
   calculate_ident(dat, final);
-  I(final == ident);
+  E(final == ident, origin::database,
+    F("delta-reconstructed '%s' item does not match hash")
+    % data_table);
 
   if (!vcache.exists(ident))
     vcache.insert_clean(ident, dat);
@@ -2030,10 +2074,10 @@ struct database_impl::markings_extractor : public database_impl::extractor
 {
 private:
   node_id const & nid;
-  marking_t & markings;
+  const_marking_t & markings;
 
 public:
-  markings_extractor(node_id const & _nid, marking_t & _markings) :
+  markings_extractor(node_id const & _nid, const_marking_t & _markings) :
     nid(_nid), markings(_markings) {} ;
 
   bool look_at_delta(roster_delta const & del)
@@ -2043,10 +2087,7 @@ public:
 
   void look_at_roster(roster_t const & roster, marking_map const & mm)
   {
-    marking_map::const_iterator mmi =
-      mm.find(nid);
-    I(mmi != mm.end());
-    markings = mmi->second;
+    markings = mm.get_marking(nid);
   }
 };
 
@@ -2139,7 +2180,7 @@ database_impl::extract_from_deltas(revision_id const & ident, extractor & x)
 void
 database::get_markings(revision_id const & id,
                        node_id const & nid,
-                       marking_t & markings)
+                       const_marking_t & markings)
 {
   database_impl::markings_extractor x(nid, markings);
   imp->extract_from_deltas(id, x);
@@ -2452,7 +2493,7 @@ database::get_arbitrary_file_delta(file_id const & src_id,
 
 
 void
-database::get_revision_ancestry(rev_ancestry_map & graph)
+database::get_forward_ancestry(rev_ancestry_map & graph)
 {
   // share some storage
   id::symtab id_syms;
@@ -2461,6 +2502,21 @@ database::get_revision_ancestry(rev_ancestry_map & graph)
   graph.clear();
   imp->fetch(res, 2, any_rows,
              query("SELECT parent,child FROM revision_ancestry"));
+  for (size_t i = 0; i < res.size(); ++i)
+    graph.insert(make_pair(revision_id(res[i][0], origin::database),
+                           revision_id(res[i][1], origin::database)));
+}
+
+void
+database::get_reverse_ancestry(rev_ancestry_map & graph)
+{
+  // share some storage
+  id::symtab id_syms;
+
+  results res;
+  graph.clear();
+  imp->fetch(res, 2, any_rows,
+             query("SELECT child,parent FROM revision_ancestry"));
   for (size_t i = 0; i < res.size(); ++i)
     graph.insert(make_pair(revision_id(res[i][0], origin::database),
                            revision_id(res[i][1], origin::database)));
@@ -2574,10 +2630,57 @@ database::get_common_ancestors(std::set<revision_id> const & revs,
   for (set<revision_id>::const_iterator i = all_common_ancestors.begin();
        i != all_common_ancestors.end(); ++i)
     {
-      // FIXME: where do these null'ed IDs come from?
+      // null id's here come from the empty parents of root revisions.
+      // these should not be considered as common ancestors and are skipped.
       if (null_id(*i)) continue;
       common_ancestors.insert(*i);
     }
+}
+
+bool
+database::is_a_ancestor_of_b(revision_id const & ancestor,
+                             revision_id const & child)
+{
+  if (ancestor == child)
+    return false;
+
+  rev_height anc_height;
+  rev_height child_height;
+  get_rev_height(ancestor, anc_height);
+  get_rev_height(child, child_height);
+
+  if (anc_height > child_height)
+    return false;
+
+
+  vector<revision_id> todo;
+  todo.push_back(ancestor);
+  set<revision_id> seen;
+  while (!todo.empty())
+    {
+      revision_id anc = todo.back();
+      todo.pop_back();
+      set<revision_id> anc_children;
+      get_revision_children(anc, anc_children);
+      for (set<revision_id>::const_iterator i = anc_children.begin();
+           i != anc_children.end(); ++i)
+        {
+          if (*i == child)
+            return true;
+          else if (seen.find(*i) != seen.end())
+            continue;
+          else
+            {
+              get_rev_height(*i, anc_height);
+              if (child_height > anc_height)
+                {
+                  seen.insert(*i);
+                  todo.push_back(*i);
+                }
+            }
+        }
+    }
+  return false;
 }
 
 void
@@ -2607,7 +2710,8 @@ database::get_revision(revision_id const & id,
   {
     revision_id tmp;
     calculate_ident(revision_data(rdat), tmp);
-    I(id == tmp);
+    E(id == tmp, origin::database,
+      F("revision does not match hash"));
   }
 
   dat = revision_data(rdat);
@@ -2880,13 +2984,13 @@ database::put_roster_for_revision(revision_id const & new_id,
   manifest_id roster_manifest_id;
   MM(roster_manifest_id);
   make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable);
-  calculate_ident(*ros_writeable, roster_manifest_id);
+  calculate_ident(*ros_writeable, roster_manifest_id, false);
   E(rev.new_manifest == roster_manifest_id, rev.made_from,
     F("revision contains incorrect manifest_id"));
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
   marking_map_cp mm = mm_writeable;
-  put_roster(new_id, ros, mm);
+  put_roster(new_id, rev, ros, mm);
 }
 
 bool
@@ -2905,6 +3009,7 @@ database::delete_existing_revs_and_certs()
   imp->execute(query("DELETE FROM revisions"));
   imp->execute(query("DELETE FROM revision_ancestry"));
   imp->execute(query("DELETE FROM revision_certs"));
+  imp->execute(query("DELETE FROM branch_leaves"));
 }
 
 void
@@ -2928,6 +3033,12 @@ database::delete_existing_heights()
   imp->execute(query("DELETE FROM heights"));
 }
 
+void
+database::delete_existing_branch_leaves()
+{
+  imp->execute(query("DELETE FROM branch_leaves"));
+}
+
 /// Deletes one revision from the local database.
 /// @see kill_rev_locally
 void
@@ -2947,6 +3058,16 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   // Kill the certs, ancestry, and revision.
   imp->execute(query("DELETE from revision_certs WHERE revision_id = ?")
                % blob(rid.inner()()));
+  {
+    results res;
+    imp->fetch(res, one_col, any_rows,
+               query("SELECT branch FROM branch_leaves where revision_id = ?")
+               % blob(rid.inner()()));
+    for (results::const_iterator i = res.begin(); i != res.end(); ++i)
+      {
+        recalc_branch_leaves(cert_value((*i)[0], origin::database));
+      }
+  }
   imp->cert_stamper.note_change();
 
   imp->execute(query("DELETE from revision_ancestry WHERE child = ?")
@@ -2961,25 +3082,40 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   guard.commit();
 }
 
-/// Deletes all certs referring to a particular branch.
 void
-database::delete_branch_named(cert_value const & branch)
+database::compute_branch_leaves(cert_value const & branch_name, set<revision_id> & revs)
 {
-  L(FL("Deleting all references to branch %s") % branch);
-  imp->execute(query("DELETE FROM revision_certs WHERE name='branch' AND value =?")
-               % blob(branch()));
-  imp->cert_stamper.note_change();
-  imp->execute(query("DELETE FROM branch_epochs WHERE branch=?")
-               % blob(branch()));
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(branch_name()));
+  get_revisions_with_cert(cert_name("branch"), branch_name, revs);
+  erase_ancestors(*this, revs);
 }
 
-/// Deletes all certs referring to a particular tag.
 void
-database::delete_tag_named(cert_value const & tag)
+database::recalc_branch_leaves(cert_value const & branch_name)
 {
-  L(FL("Deleting all references to tag %s") % tag);
-  imp->execute(query("DELETE FROM revision_certs WHERE name='tag' AND value =?")
-               % blob(tag()));
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(branch_name()));
+  set<revision_id> revs;
+  compute_branch_leaves(branch_name, revs);
+  for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
+    {
+      imp->execute(query("INSERT INTO branch_leaves (branch, revision_id) "
+                         "VALUES (?, ?)") % blob(branch_name()) % blob((*i).inner()()));
+    }
+}
+
+void database::delete_certs_locally(revision_id const & rev,
+                                    cert_name const & name)
+{
+  imp->execute(query("DELETE FROM revision_certs WHERE revision_id = ? AND name = ?")
+               % blob(rev.inner()()) % text(name()));
+  imp->cert_stamper.note_change();
+}
+void database::delete_certs_locally(revision_id const & rev,
+                                    cert_name const & name,
+                                    cert_value const & value)
+{
+  imp->execute(query("DELETE FROM revision_certs WHERE revision_id = ? AND name = ? AND value = ?")
+               % blob(rev.inner()()) % text(name()) % blob(value()));
   imp->cert_stamper.note_change();
 }
 
@@ -3075,7 +3211,6 @@ database::put_key(key_name const & pub_id,
   MM(pub);
   key_id thash;
   key_hash_code(pub_id, pub, thash);
-  I(!public_key_exists(thash));
 
   if (public_key_exists(thash))
     {
@@ -3129,7 +3264,7 @@ database::encrypt_rsa(key_id const & pub_id,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
-          plaintext.size(), rng->get());
+          plaintext.size(), lazy_rng::get());
 #else
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
@@ -3477,9 +3612,110 @@ database::put_revision_cert(cert const & cert)
       return false;
     }
 
+  if (cert.name() == "branch")
+    {
+      string branch_name = cert.value();
+      if (branch_name.find_first_of("?,*%%+{}[]!^") != string::npos ||
+          branch_name.find_first_of('-') == 0)
+        {
+          W(F("The branch name\n"
+              "  '%s'\n"
+              "contains meta characters (one or more of '?,*%%+{}[]!^') or\n"
+              "starts with a dash, which might cause malfunctions when used\n"
+              "in a netsync branch pattern.\n\n"
+              "If you want to undo this operation, please use the\n"
+              "'%s local kill_certs' command to delete the particular branch\n"
+              "cert and re-add a valid one.")
+            % cert.value() % prog_name);
+        }
+    }
+
   imp->put_cert(cert, "revision_certs");
+
+  if (cert.name() == "branch")
+    {
+      record_as_branch_leaf(cert.value, cert.ident);
+    }
+
   imp->cert_stamper.note_change();
   return true;
+}
+
+void
+database::record_as_branch_leaf(cert_value const & branch, revision_id const & rev)
+{
+  set<revision_id> parents;
+  get_revision_parents(rev, parents);
+  set<revision_id> current_leaves;
+  get_branch_leaves(branch, current_leaves);
+
+  set<revision_id>::const_iterator self = current_leaves.find(rev);
+  if (self != current_leaves.end())
+    return; // already recorded (must be adding a second branch cert)
+
+  bool all_parents_were_leaves = true;
+  bool some_ancestor_was_leaf = false;
+  for (set<revision_id>::const_iterator p = parents.begin();
+       p != parents.end(); ++p)
+    {
+      set<revision_id>::iterator l = current_leaves.find(*p);
+      if (l == current_leaves.end())
+        all_parents_were_leaves = false;
+      else
+        {
+          some_ancestor_was_leaf = true;
+          imp->execute(query("DELETE FROM branch_leaves "
+                             "WHERE branch = ? AND revision_id = ?")
+                       % blob(branch()) % blob(l->inner()()));
+          current_leaves.erase(l);
+        }
+    }
+
+  // This check is needed for this case:
+  //
+  //  r1 (branch1)
+  //  |
+  //  r2 (branch2)
+  //  |
+  //  r3 (branch1)
+
+  if (!all_parents_were_leaves)
+    {
+      for (set<revision_id>::const_iterator r = current_leaves.begin();
+           r != current_leaves.end(); ++r)
+        {
+          if (is_a_ancestor_of_b(*r, rev))
+            {
+              some_ancestor_was_leaf = true;
+              imp->execute(query("DELETE FROM branch_leaves "
+                                 "WHERE branch = ? AND revision_id = ?")
+                           % blob(branch()) % blob(r->inner()()));
+            }
+        }
+    }
+
+  // are we really a leaf (ie, not an ancestor of an existing leaf)?
+  //
+  // see tests/branch_leaves_sync_bug for a scenario that requires this.
+  if (!some_ancestor_was_leaf)
+    {
+      bool really_a_leaf = true;
+      for (set<revision_id>::const_iterator r = current_leaves.begin();
+           r != current_leaves.end(); ++r)
+        {
+          if (is_a_ancestor_of_b(rev, *r))
+            {
+              really_a_leaf = false;
+              break;
+            }
+        }
+      if (!really_a_leaf)
+        return;
+    }
+
+  imp->execute(query("INSERT INTO branch_leaves(branch, revision_id) "
+                     "VALUES (?, ?)")
+               % blob(branch()) % blob(rev.inner()()));
 }
 
 outdated_indicator
@@ -3554,6 +3790,19 @@ database::get_revisions_with_cert(cert_name const & name,
 }
 
 outdated_indicator
+database::get_branch_leaves(cert_value const & value,
+                            set<revision_id> & revisions)
+{
+  revisions.clear();
+  results res;
+  query q("SELECT revision_id FROM branch_leaves WHERE branch = ?");
+  imp->fetch(res, one_col, any_rows, q % blob(value()));
+  for (results::const_iterator i = res.begin(); i != res.end(); ++i)
+    revisions.insert(revision_id((*i)[0], origin::database));
+  return imp->cert_stamper.get_indicator();
+}
+
+outdated_indicator
 database::get_revision_certs(cert_name const & name,
                              cert_value const & val,
                              vector<pair<id, cert> > & certs)
@@ -3619,101 +3868,91 @@ database::revision_cert_exists(revision_id const & hash)
 // FIXME: the bogus-cert family of functions is ridiculous
 // and needs to be replaced, or at least factored.
 namespace {
-  struct
-  bogus_cert_p
+  struct trust_value
   {
-    database & db;
-    bogus_cert_p(database & db) : db(db) {};
-
-    bool operator()(cert const & c) const
-    {
-      cert_status status = db.check_cert(c);
-      if (status == cert_ok)
-        {
-          L(FL("cert ok"));
-          return false;
-        }
-      else if (status == cert_bad)
-        {
-          string txt;
-          c.signable_text(txt);
-          W(F("ignoring bad signature by '%s' on '%s'") % c.key % txt);
-          return true;
-        }
-      else
-        {
-          I(status == cert_unknown);
-          string txt;
-          c.signable_text(txt);
-          W(F("ignoring unknown signature by '%s' on '%s'") % c.key % txt);
-          return true;
-        }
-    }
+    set<key_id> good_sigs;
+    set<key_id> bad_sigs;
+    set<key_id> unknown_sigs;
   };
 
+  // returns *one* of each trusted cert key/value
+  // if two keys signed the same thing, we get two certs as input and
+  // just pick one (assuming neither is invalid) to use in the output
   void
   erase_bogus_certs_internal(vector<cert> & certs,
                              database & db,
                              database::cert_trust_checker const & checker)
   {
-    typedef vector<cert>::iterator it;
-    it e = remove_if(certs.begin(), certs.end(), bogus_cert_p(db));
-    certs.erase(e, certs.end());
-
-    vector<cert> tmp_certs;
-
     // sorry, this is a crazy data structure
     typedef tuple<id, cert_name, cert_value> trust_key;
-    typedef map< trust_key,
-      pair< shared_ptr< set<key_id> >, it > > trust_map;
+    typedef map< trust_key, trust_value > trust_map;
     trust_map trust;
 
-    for (it i = certs.begin(); i != certs.end(); ++i)
+    for (vector<cert>::iterator i = certs.begin(); i != certs.end(); ++i)
       {
         trust_key key = trust_key(i->ident.inner(),
                                   i->name,
                                   i->value);
-        trust_map::iterator j = trust.find(key);
-        shared_ptr< set<key_id> > s;
-        if (j == trust.end())
+        trust_value & value = trust[key];
+        switch (db.check_cert(*i))
           {
-            s.reset(new set<key_id>());
-            trust.insert(make_pair(key, make_pair(s, i)));
+          case cert_ok:
+            value.good_sigs.insert(i->key);
+            break;
+          case cert_bad:
+            value.bad_sigs.insert(i->key);
+            break;
+          case cert_unknown:
+            value.unknown_sigs.insert(i->key);
+            break;
           }
-        else
-          s = j->second.first;
-        s->insert(i->key);
       }
+
+    certs.clear();
 
     for (trust_map::const_iterator i = trust.begin();
          i != trust.end(); ++i)
       {
-        if (checker(*(i->second.first),
+        cert out(typecast_vocab<revision_id>(get<0>(i->first)),
+                 get<1>(i->first), get<2>(i->first), key_id());
+        if (!i->second.good_sigs.empty() &&
+            checker(i->second.good_sigs,
                     get<0>(i->first),
                     get<1>(i->first),
                     get<2>(i->first)))
           {
-            if (global_sanity.debug_p())
-              L(FL("trust function liked %d signers of %s cert on revision %s")
-                % i->second.first->size()
-                % get<1>(i->first)
-                % get<0>(i->first));
-            tmp_certs.push_back(*(i->second.second));
+            L(FL("trust function liked %d signers of %s cert on revision %s")
+              % i->second.good_sigs.size()
+              % get<1>(i->first)
+              % get<0>(i->first));
+            out.key = *i->second.good_sigs.begin();
+            certs.push_back(out);
           }
         else
           {
+            string txt;
+            out.signable_text(txt);
+            for (set<key_id>::const_iterator b = i->second.bad_sigs.begin();
+                 b != i->second.bad_sigs.end(); ++b)
+              {
+                W(F("ignoring bad signature by '%s' on '%s'") % *b % txt);
+              }
+            for (set<key_id>::const_iterator u = i->second.unknown_sigs.begin();
+                 u != i->second.unknown_sigs.end(); ++u)
+              {
+                W(F("ignoring unknown signature by '%s' on '%s'") % *u % txt);
+              }
             W(F("trust function disliked %d signers of %s cert on revision %s")
-              % i->second.first->size()
+              % i->second.good_sigs.size()
               % get<1>(i->first)
               % get<0>(i->first));
           }
       }
-    certs = tmp_certs;
   }
   // the lua hook wants key_identity_info, but all that's been
   // pulled from the certs is key_id. So this is needed to translate.
   // use pointers for project and lua so bind() doesn't make copies
-  bool check_revision_cert_trust(project_t * const project,
+  bool check_revision_cert_trust(project_t const * const project,
                                  lua_hooks * const lua,
                                  set<key_id> const & signers,
                                  id const & hash,
@@ -3726,7 +3965,7 @@ namespace {
       {
         key_identity_info identity;
         identity.id = *i;
-        project->complete_key_identity(*lua, identity);
+        project->complete_key_identity_from_id(*lua, identity);
         signer_identities.insert(identity);
       }
 
@@ -3757,7 +3996,7 @@ namespace {
 } // anonymous namespace
 
 void
-database::erase_bogus_certs(project_t & project, vector<cert> & certs)
+database::erase_bogus_certs(project_t const & project, vector<cert> & certs)
 {
   erase_bogus_certs_internal(certs, *this,
                              boost::bind(&check_revision_cert_trust,
@@ -3970,6 +4209,21 @@ database::select_date(string const & date, string const & comparison,
     completions.insert(revision_id(res[i][0], origin::database));
 }
 
+void
+database::select_key(key_id const & id, set<revision_id> & completions)
+{
+  results res;
+  completions.clear();
+
+  imp->fetch(res, 1, any_rows,
+             query("SELECT DISTINCT revision_id FROM revision_certs"
+                   " WHERE keypair_id = ?")
+             % blob(id.inner()()));
+
+  for (size_t i = 0; i < res.size(); ++i)
+    completions.insert(revision_id(res[i][0], origin::database));
+}
+
 // epochs
 
 void
@@ -4100,15 +4354,106 @@ database::clear_var(var_key const & key)
                % blob(key.second()));
 }
 
+#define KNOWN_WORKSPACES_KEY                        \
+  var_key(make_pair(                                \
+    var_domain("database", origin::internal),       \
+    var_name("known-workspaces", origin::internal)  \
+  ))
+
+void
+database::register_workspace(system_path const & workspace)
+{
+  var_value val;
+  if (var_exists(KNOWN_WORKSPACES_KEY))
+    get_var(KNOWN_WORKSPACES_KEY, val);
+
+  vector<string> workspaces;
+  split_into_lines(val(), workspaces);
+
+  vector<string>::iterator pos =
+    find(workspaces.begin(),
+         workspaces.end(),
+         workspace.as_internal());
+  if (pos == workspaces.end())
+    workspaces.push_back(workspace.as_internal());
+
+  string ws;
+  join_lines(workspaces, ws);
+
+  set_var(KNOWN_WORKSPACES_KEY, var_value(ws, origin::internal));
+}
+
+void
+database::unregister_workspace(system_path const & workspace)
+{
+  if (var_exists(KNOWN_WORKSPACES_KEY))
+    {
+      var_value val;
+      get_var(KNOWN_WORKSPACES_KEY, val);
+
+      vector<string> workspaces;
+      split_into_lines(val(), workspaces);
+
+      vector<string>::iterator pos =
+        find(workspaces.begin(),
+             workspaces.end(),
+             workspace.as_internal());
+      if (pos != workspaces.end())
+        workspaces.erase(pos);
+
+      string ws;
+      join_lines(workspaces, ws);
+
+      set_var(KNOWN_WORKSPACES_KEY, var_value(ws, origin::internal));
+    }
+}
+
+void
+database::get_registered_workspaces(vector<system_path> & workspaces)
+{
+  if (var_exists(KNOWN_WORKSPACES_KEY))
+    {
+      var_value val;
+      get_var(KNOWN_WORKSPACES_KEY, val);
+
+      vector<string> paths;
+      split_into_lines(val(), paths);
+
+      for (vector<string>::const_iterator i = paths.begin();
+           i != paths.end(); ++i)
+        {
+          system_path workspace_path(*i, origin::database);
+          workspaces.push_back(workspace_path);
+        }
+    }
+}
+
+void
+database::set_registered_workspaces(vector<system_path> const & workspaces)
+{
+  vector<string> paths;
+  for (vector<system_path>::const_iterator i = workspaces.begin();
+       i != workspaces.end(); ++i)
+    {
+      paths.push_back((*i).as_internal());
+    }
+
+  string ws;
+  join_lines(paths, ws);
+  set_var(KNOWN_WORKSPACES_KEY, var_value(ws, origin::internal));
+}
+
+#undef KNOWN_WORKSPACES_KEY
+
 // branches
 
 outdated_indicator
 database::get_branches(vector<string> & names)
 {
     results res;
-    query q("SELECT DISTINCT value FROM revision_certs WHERE name = ?");
+    query q("SELECT DISTINCT branch FROM branch_leaves");
     string cert_name = "branch";
-    imp->fetch(res, one_col, any_rows, q % text(cert_name));
+    imp->fetch(res, one_col, any_rows, q);
     for (size_t i = 0; i < res.size(); ++i)
       {
         names.push_back(res[i][0]);
@@ -4168,6 +4513,7 @@ database::get_roster(revision_id const & rev_id, cached_roster & cr)
 
 void
 database::put_roster(revision_id const & rev_id,
+                     revision_t const & rev,
                      roster_t_cp const & roster,
                      marking_map_cp const & marking)
 {
@@ -4182,22 +4528,24 @@ database::put_roster(revision_id const & rev_id,
 
   imp->roster_cache.insert_dirty(rev_id, make_pair(roster, marking));
 
-  set<revision_id> parents;
-  get_revision_parents(rev_id, parents);
-
   // Now do what deltify would do if we bothered
-  for (set<revision_id>::const_iterator i = parents.begin();
-       i != parents.end(); ++i)
+  size_t num_edges = rev.edges.size();
+  for (edge_map::const_iterator i = rev.edges.begin();
+       i != rev.edges.end(); ++i)
     {
-      if (null_id(*i))
+      revision_id old_rev = edge_old_revision(*i);
+      if (null_id(old_rev))
         continue;
-      revision_id old_rev = *i;
       if (imp->roster_base_stored(old_rev))
         {
           cached_roster cr;
           get_roster_version(old_rev, cr);
           roster_delta reverse_delta;
-          delta_rosters(*roster, *marking, *(cr.first), *(cr.second), reverse_delta);
+          cset const & changes = edge_changes(i);
+          delta_rosters(*roster, *marking,
+                        *(cr.first), *(cr.second),
+                        reverse_delta,
+                        num_edges > 1 ? 0 : &changes);
           if (imp->roster_cache.exists(old_rev))
             imp->roster_cache.mark_clean(old_rev);
           imp->drop(old_rev.inner(), "rosters");
@@ -4287,11 +4635,11 @@ database_impl::check_db_exists()
     case path::directory:
       if (directory_is_workspace(filename))
         {
-          system_path workspace_database;
-          workspace::get_database_option(filename, workspace_database);
-          E(workspace_database.empty(), origin::user,
+          options opts;
+          workspace::get_options(filename, opts);
+          E(opts.dbname.as_internal().empty(), origin::user,
             F("%s is a workspace, not a database\n"
-              "(did you mean %s?)") % filename % workspace_database);
+              "(did you mean %s?)") % filename % opts.dbname);
         }
       E(false, origin::user,
         F("%s is a directory, not a database") % filename);
@@ -4319,12 +4667,18 @@ database_impl::open()
 {
   I(!__sql);
 
-  char const * to_open;
-  if (use_memory_db)
-    to_open = ":memory:";
+  string to_open;
+  if (type == memory_db)
+    to_open = memory_db_identifier;
   else
-    to_open = filename.as_external().c_str();
-  if (sqlite3_open(to_open, &__sql) == SQLITE_NOMEM)
+    {
+      system_path base_dir = filename.dirname();
+      if (!directory_exists(base_dir))
+        mkdir_p(base_dir);
+      to_open = filename.as_external();
+    }
+
+  if (sqlite3_open(to_open.c_str(), &__sql) == SQLITE_NOMEM)
     throw std::bad_alloc();
 
   I(__sql);
@@ -4390,7 +4744,126 @@ conditional_transaction_guard::commit()
   committed = true;
 }
 
+void
+database_path_helper::get_database_path(options const & opts, system_path & path)
+{
+  if (!opts.dbname_given ||
+      (opts.dbname.as_internal().empty() &&
+       opts.dbname_alias.empty()))
+    {
+      L(FL("no database option given or options empty"));
+      return;
+    }
 
+  if (opts.dbname_type == unmanaged_db)
+    {
+      path = opts.dbname;
+      return;
+    }
+
+  if (opts.dbname_type == memory_db)
+    {
+      return;
+    }
+
+  I(opts.dbname_type == managed_db);
+
+  path_component basename;
+  validate_and_clean_alias(opts.dbname_alias, basename);
+
+  vector<system_path> candidates;
+  vector<system_path> search_paths;
+
+  E(lua.hook_get_default_database_locations(search_paths) && search_paths.size() > 0,
+    origin::user, F("could not query default database locations"));
+
+  for (vector<system_path>::const_iterator i = search_paths.begin();
+     i != search_paths.end(); ++i)
+    {
+      if (file_exists((*i) / basename))
+        {
+          candidates.push_back((*i) / basename);
+          continue;
+        }
+    }
+
+  MM(candidates);
+
+  // if we did not found the database anywhere, use the first
+  // available default path to possible save it there
+  if (candidates.size() == 0)
+    {
+      path = (*search_paths.begin()) / basename;
+      L(FL("no path expansions found for '%s', using '%s'")
+          % opts.dbname_alias % path);
+      return;
+    }
+
+  if (candidates.size() == 1)
+    {
+      path = (*candidates.begin());
+      L(FL("one path expansion found for '%s': '%s'")
+          % opts.dbname_alias % path);
+      return;
+    }
+
+  if (candidates.size() > 1)
+    {
+      string err =
+        (F("the database alias '%s' has multiple ambiguous expansions:")
+         % opts.dbname_alias).str();
+
+      for (vector<system_path>::const_iterator i = candidates.begin();
+           i != candidates.end(); ++i)
+        err += ("\n  " + (*i).as_internal());
+
+      E(false, origin::user, i18n_format(err));
+    }
+}
+
+void
+database_path_helper::maybe_set_default_alias(options & opts)
+{
+  if (opts.dbname_given && (
+       !opts.dbname.as_internal().empty() ||
+       !opts.dbname_alias.empty()))
+    {
+      return;
+    }
+
+  string alias;
+  E(lua.hook_get_default_database_alias(alias) && !alias.empty(),
+    origin::user, F("could not query default database alias"));
+
+  opts.dbname_given = true;
+  opts.dbname_alias = alias;
+  opts.dbname_type = managed_db;
+}
+
+void
+database_path_helper::validate_and_clean_alias(string const & alias, path_component & pc)
+{
+  E(alias.find(':') == 0, origin::system,
+    F("invalid database alias '%s': does not start with a colon") % alias);
+
+  string pure_alias = alias.substr(1);
+  E(pure_alias.size() > 0, origin::system,
+    F("invalid database alias '%s': must not be empty") % alias);
+
+  size_t pos = pure_alias.rfind('.');
+  if (pos == string::npos || pure_alias.substr(pos + 1) != "mtn")
+    pure_alias += ".mtn";
+
+  try
+    {
+      pc = path_component(pure_alias, origin::system);
+    }
+  catch (...)
+    {
+      E(false, origin::system,
+        F("invalid database alias '%s': does contain invalid characters") % alias);
+    }
+}
 
 // Local Variables:
 // mode: C++

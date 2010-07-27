@@ -1,10 +1,19 @@
 How to release a new version of monotone
 ----------------------------------------
 
-0) Make sure that the buildbot looks reasonably green.  Let's not
+0) Send a pre-release announcement out to monotone-i18n@nongnu.org
+   to inform active translators that a new version of monotone
+   is about to be released and that their translations probably
+   need to be updated. It might be useful to include the current
+   statistics in this email:
+
+   $ for file in $(ls po/*.po); do \
+     echo -n "$file: " && msgfmt -cv $file; done
+
+1) Make sure that the buildbot looks reasonably green.  Let's not
    release stuff that's known to be broken on any major platforms, eh?
 
-1) Write user-readable release notes at the top of the NEWS file,
+2) Write user-readable release notes at the top of the NEWS file,
    roughly following the format of existing entries.  Make sure to
    mention any incompatibilities at the top, and generally it's a good
    idea to put cool new stuff above nice-but-not-as-exciting stuff.
@@ -15,10 +24,10 @@ How to release a new version of monotone
 
    Commit your release notes, so other people can see them.
 
-1.5) Get people to read over your release notes, it's really easy to
+3) Get people to read over your release notes, it's really easy to
    make mistakes or have stupid grammatical errors here.
 
-2) Check the NEWS if any changes in the automation interface have happened.
+4) Check the NEWS if any changes in the automation interface have happened.
 
    Document changes in the wiki under http://monotone.ca/wiki/AutomateVersions/
    by adding new commands with an 'A' marker or set a 'B' (for _B_ackwards
@@ -37,7 +46,7 @@ How to release a new version of monotone
 
    Commit your changes.
 
-3) Update the UPGRADE file.  At the very least, bump the version
+5) Update the UPGRADE file.  At the very least, bump the version
    number in the first line.  This file should always contain a
    complete description of how to upgrade from any version of monotone
    to the latest release -- you may need to tweak or remove earlier
@@ -45,28 +54,22 @@ How to release a new version of monotone
 
    Commit your changes.
 
-4) Double-check that INSTALL, AUTHORS, and README don't need any
+6) Double-check that INSTALL, AUTHORS, and README don't need any
    updates.  If they do, make them.
 
-5) Update version numbers.  The following files need to be touched:
+7) Update version numbers.  The following files need to be touched:
      configure.ac: change the call to AC_INIT
-     win32/monotone.iss: look out for "#define APPVERS"
      visualc/config.h: the version number is mentioned several times,
        don't miss any.
-     debian/changelog: rather than modifying this file directly, run
-       the command "debchange -v <NEW VERSION>-0.1".  (If you screw up
-       and need to roll a new unofficial package, use "debchange -i"
-       to increment this number.)
-
    Commit your changes.
 
-6) Okay, everything should be ready to go... double-check that:
+8) Okay, everything should be ready to go... double-check that:
      -- you've done the above steps correctly
      -- you've entered the correct date at the top of the NEWS file
         (esp. important when you wrote the notes a few days ago so
         people could look them over!)
 
-7) Build and test the source package, in a clean checkout (if you use
+9) Build and test the source package, in a clean checkout (if you use
    your main workspace, you increase the changes of accidentally
    picking up weird stuff):
 
@@ -79,62 +82,50 @@ How to release a new version of monotone
    bombs out, fix it, otherwise, SOMEDIR/monotone-<NEW VERSION>.tar.gz
    is the source package.
 
-8) Build docs for the website:
+10) Build docs for the website:
 
-   $ tar xvzf SOMEDIR/monotone-<NEW VERSION>.tar.gz
-   $ cd monotone-<NEW VERSION>
-   $ ./configure
-   $ LANG=C make monotone.pdf html
+    $ tar xvzf SOMEDIR/monotone-<NEW VERSION>.tar.gz
+    $ cd monotone-<NEW VERSION>
+    $ ./configure
+    $ LANG=C make monotone.pdf html
 
-9) Upload everything to the website (uses monotone):
+11) Upload everything to the website (uses monotone):
 
-   # This requires that you have registered a SSH version 2 public key
-   # with the administrators of monotone.ca, currently richard@levitte.org.
-   #
-   $ mkdir <NEW VERSION>
-   $ mv SOMEDIR/monotone-<NEW VERSION>.tar.gz <NEW VERSION>/
-   $ scp -r <NEW VERSION> mtn-uploads@monotone.ca:downloads/
+    # This requires that you have registered a SSH version 2 public key
+    # with the administrators of monotone.ca, currently richard@levitte.org.
+    #
+    $ mkdir <NEW VERSION>
+    $ mv SOMEDIR/monotone-<NEW VERSION>.tar.gz <NEW VERSION>/
+    $ scp -r <NEW VERSION> mtn-uploads@monotone.ca:downloads/
 
-   # The rest is done via monotone.
-   #
-   $ mtn -d DATABASE co -b net.venge.monotone.web WEBDIR
-   $ cp monotone-<NEW VERSION>/{NEWS,INSTALL,UPGRADE,README,monotone.pdf,monotone.html} \
-         WEBDIR/
-   $ rm -rf WEBDIR/docs
-   $ cp -r monotone-<NEW VERSION>/html WEBDIR/docs
-   $ rm WEBDIR/figures/*
-   $ cp monotone-<NEW VERSION>/figures/*.png WEBDIR/figures/
-   $ cd WEBDIR
-   $ mtn drop --missing
-   $ mtn add --unknown
-   $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
-   $ mtn sync
+    # The rest is done via monotone.
+    #
+    $ mtn -d DATABASE co -b net.venge.monotone.web WEBDIR
+    $ cp monotone-<NEW VERSION>/{NEWS,INSTALL,UPGRADE,monotone.pdf,monotone.html} \
+          WEBDIR/
+    $ rm -rf WEBDIR/docs
+    $ cp -r monotone-<NEW VERSION>/html WEBDIR/docs
 
-10) Update index.html on the website to state the latest version at the
-    top, and modify the list of download links to point to the new
-    version.
+    Open WEBDIR/monotone.html, change the CSS include from "texinfo.css" to
+    "docs/texinfo.css" and hit save.
 
+    $ rm WEBDIR/figures/*
+    $ cp monotone-<NEW VERSION>/figures/*.png WEBDIR/figures/
     $ cd WEBDIR
-    $ vi index.html
+    $ mtn drop --missing
+    $ mtn add --unknown
     $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
     $ mtn sync
 
-11) Update releases.xml on the website so the RSS feed contains information
-    for the newly released version. Don't forget to update the feed's
-    global pubDate date as well as the invididual item's pubDate
-    and ensure you use the correct datetime format. Add an <enclosure>
-    which links to the monotone source tarball and add the proper length
-    as attribute.
-    Finally you should just copy'n'paste the NEWS entry for the NEW VERSION
-    directly into the description inside a CDATA field and do a couple of
-    searches and replaces to add HTML formatting for a nicer display.
+12) Update index.php on the website to state the latest version in the left
+    column:
 
     $ cd WEBDIR
-    $ vi releases.xml
-    $ mtn ci -m "Updates RSS feed for monotone <NEW VERSION>"
+    $ vi index.php
+    $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
     $ mtn sync
 
-12) Once you're pretty sure things have gone well, tag the source:
+13) Once you're pretty sure things have gone well, tag the source:
 
     $ mtn tag <REVISION> monotone-<NEW VERSION>
 
@@ -142,10 +133,10 @@ How to release a new version of monotone
 
     $ mtn sync
 
-13) Change the topic in the IRC channel to state the new version
+14) Change the topic in the IRC channel to state the new version
     number.
 
-14) Send out a release announcement.  Format is something like:
+15) Send out a release announcement.  Format is something like:
 
     To: monotone-announce@nongnu.org
     CC: monotone-devel@nongnu.org
@@ -157,9 +148,9 @@ How to release a new version of monotone
 
     <sign off>
 
-15) Submit a release announcement to freshmeat.net.
+16) Submit a release announcement to freshmeat.net.
 
-16) Note any mistakes you made and update this file accordingly for
+17) Note any mistakes you made and update this file accordingly for
     next time.
 
-17) Party!
+18) Party!

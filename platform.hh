@@ -15,6 +15,7 @@
 
 
 #include <stdio.h>
+#include <time.h>
 
 void read_password(std::string const & prompt, char * buf, size_t bufsz);
 void get_system_flavour(std::string & ident);
@@ -108,7 +109,7 @@ void ignore_sigpipe(); // in unix/process.cc
 // filesystem stuff
 // FIXME: BUG: this returns a string in the filesystem charset/encoding
 std::string get_current_working_dir();
-// calls N() if fails
+// calls E() if fails
 void change_current_working_dir(std::string const & to);
 std::string tilde_expand(std::string const & path);
 std::string get_default_confdir();
@@ -163,6 +164,12 @@ double cpu_now();
 
 // determine directory to load locale data from
 std::string get_locale_dir();
+
+// Fill tp from s, using format fmt.
+// throws on failure.
+//
+// This is strptime on Unix, something else on MinGW.
+void parse_date(const std::string s, const std::string fmt, struct tm *tp);
 
 #endif // __PLATFORM_HH__
 

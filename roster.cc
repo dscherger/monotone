@@ -62,12 +62,6 @@ namespace
 }
 
 template <> void
-dump(node_id const & val, string & out)
-{
-  out = lexical_cast<string>(val);
-}
-
-template <> void
 dump(attr_map_t const & val, string & out)
 {
   ostringstream oss;
@@ -98,14 +92,14 @@ dump(marking_t const & marking, string & out)
 {
   ostringstream oss;
   string tmp;
-  oss << "birth_revision: " << marking.birth_revision << '\n';
-  dump(marking.parent_name, tmp);
+  oss << "birth_revision: " << marking->birth_revision << '\n';
+  dump(marking->parent_name, tmp);
   oss << "parent_name: " << tmp << '\n';
-  dump(marking.file_content, tmp);
+  dump(marking->file_content, tmp);
   oss << "file_content: " << tmp << '\n';
-  oss << "attrs (number: " << marking.attrs.size() << "):\n";
+  oss << "attrs (number: " << marking->attrs.size() << "):\n";
   for (map<attr_key, set<revision_id> >::const_iterator
-         i = marking.attrs.begin(); i != marking.attrs.end(); ++i)
+         i = marking->attrs.begin(); i != marking->attrs.end(); ++i)
     {
       dump(i->second, tmp);
       oss << "  " << i->first << ": " << tmp << '\n';
@@ -156,10 +150,127 @@ dump(marking_map const & markings, string & out)
 // existing subdirectory into the root directory.  This is an UI constraint,
 // not a constraint at this level.
 
+u32 last_created_roster = 0;
+
+
+marking::marking()
+  : cow_version(0)
+{ }
+
+marking::marking(marking const & other)
+  : cow_version(0),
+    birth_revision(other.birth_revision),
+    parent_name(other.parent_name),
+    file_content(other.file_content),
+    attrs(other.attrs)
+{
+}
+
+marking const & marking::operator=(marking const & other)
+{
+  cow_version = 0;
+  birth_revision = other.birth_revision;
+  parent_name = other.parent_name;
+  file_content = other.file_content;
+  attrs = other.attrs;
+  return *this;
+}
+
+marking_map::marking_map()
+  : cow_version(++last_created_roster)
+{ }
+
+marking_map::marking_map(marking_map const & other)
+  : cow_version(++last_created_roster),
+    _store(other._store)
+{
+  other.cow_version = ++last_created_roster;
+}
+
+marking_map const & marking_map::operator=(marking_map const & other)
+{
+  cow_version = ++last_created_roster;
+  other.cow_version = ++last_created_roster;
+  _store = other._store;
+  return *this;
+}
+
+void marking_map::clear()
+{
+  cow_version = ++last_created_roster;
+  _store.clear();
+}
+
+const_marking_t marking_map::get_marking(node_id nid) const
+{
+  marking_t const & m = _store.get_if_present(nid);
+  I(m);
+  return m;
+}
+
+marking_t const & marking_map::get_marking_for_update(node_id nid)
+{
+  marking_t const & m = _store.get_unshared_if_present(nid);
+  I(m);
+  if (cow_version == m->cow_version)
+    return m;
+  if (m.unique())
+    {
+      m->cow_version = cow_version;
+      return m;
+    }
+  return _store.set(nid, marking_t(new marking(*m)));
+}
+
+bool marking_map::contains(node_id nid) const
+{
+  return _store.get_if_present(nid);
+}
+
+void marking_map::remove_marking(node_id nid)
+{
+  unsigned pre_sz = _store.size();
+  _store.unset(nid);
+  I(_store.size() == pre_sz - 1);
+}
+
+void marking_map::put_marking(node_id nid, marking_t const & m)
+{
+  I(_store.set_if_missing(nid, m));
+}
+
+void marking_map::put_marking(node_id nid, const_marking_t const & m)
+{
+  I(_store.set_if_missing(nid, boost::const_pointer_cast<marking>(m)));
+}
+
+void marking_map::put_or_replace_marking(node_id nid, const_marking_t const & m)
+{
+  _store.set(nid, boost::const_pointer_cast<marking>(m));
+}
+
+size_t marking_map::size() const
+{
+  return _store.size();
+}
+
+marking_map::const_iterator marking_map::begin() const
+{
+  return _store.begin();
+}
+
+marking_map::const_iterator marking_map::end() const
+{
+  return _store.end();
+}
+
+
 node::node(node_id i)
   : self(i),
     parent(the_null_node),
-    name()
+    name(),
+    type(node_type_none),
+    cow_version(0)
 {
 }
 
@@ -167,7 +278,9 @@ node::node(node_id i)
 node::node()
   : self(the_null_node),
     parent(the_null_node),
-    name()
+    name(),
+    type(node_type_none),
+    cow_version(0)
 {
 }
 
@@ -175,12 +288,14 @@ node::node()
 dir_node::dir_node(node_id i)
   : node(i)
 {
+  type = node_type_dir;
 }
 
 
 dir_node::dir_node()
   : node()
 {
+  type = node_type_dir;
 }
 
 
@@ -202,6 +317,7 @@ dir_node::attach_child(path_component const & pc, node_t child)
 {
   I(null_node(child->parent));
   I(child->name.empty());
+  I(cow_version == child->cow_version);
   safe_insert(children, make_pair(pc, child));
   child->parent = this->self;
   child->name = pc;
@@ -212,6 +328,7 @@ node_t
 dir_node::detach_child(path_component const & pc)
 {
   node_t n = get_child(pc);
+  I(cow_version == n->cow_version);
   n->parent = the_null_node;
   n->name = path_component();
   safe_erase(children, pc);
@@ -235,12 +352,14 @@ file_node::file_node(node_id i, file_id const & f)
   : node(i),
     content(f)
 {
+  type = node_type_file;
 }
 
 
 file_node::file_node()
   : node()
 {
+  type = node_type_file;
 }
 
 
@@ -288,39 +407,27 @@ dump(node_t const & n, string & out)
   out = oss.str();
 }
 
-// helper
-void
-roster_t::do_deep_copy_from(roster_t const & other)
+
+roster_t::roster_t()
+  : cow_version(++last_created_roster)
 {
-  MM(*this);
-  MM(other);
-  I(!root_dir);
-  I(nodes.empty());
-  for (node_map::const_iterator i = other.nodes.begin(); i != other.nodes.end();
-       ++i)
-    hinted_safe_insert(nodes, nodes.end(), make_pair(i->first, i->second->clone()));
-  for (node_map::iterator i = nodes.begin(); i != nodes.end(); ++i)
-    if (is_dir_t(i->second))
-      {
-        dir_map & children = downcast_to_dir_t(i->second)->children;
-        for (dir_map::iterator j = children.begin(); j != children.end(); ++j)
-          j->second = safe_get(nodes, j->second->self);
-      }
-  if (other.root_dir)
-    root_dir = downcast_to_dir_t(safe_get(nodes, other.root_dir->self));
 }
 
 roster_t::roster_t(roster_t const & other)
+  : cow_version(++last_created_roster)
 {
-  do_deep_copy_from(other);
+  root_dir = other.root_dir;
+  nodes = other.nodes;
+  other.cow_version = ++last_created_roster;
 }
 
 roster_t &
 roster_t::operator=(roster_t const & other)
 {
-  root_dir.reset();
-  nodes.clear();
-  do_deep_copy_from(other);
+  root_dir = other.root_dir;
+  nodes = other.nodes;
+  cow_version = ++last_created_roster;
+  other.cow_version = ++last_created_roster;
   return *this;
 }
 
@@ -328,15 +435,14 @@ roster_t::operator=(roster_t const & other)
 struct
 dfs_iter
 {
-
-  dir_t root;
+  const_dir_t root;
   string curr_path;
   bool return_root;
   bool track_path;
-  stack< pair<dir_t, dir_map::const_iterator> > stk;
+  stack< pair<const_dir_t, dir_map::const_iterator> > stk;
 
 
-  dfs_iter(dir_t r, bool t = false)
+  dfs_iter(const_dir_t r, bool t = false)
     : root(r), return_root(root), track_path(t)
   {
     if (root && !root->children.empty())
@@ -357,7 +463,7 @@ dfs_iter
   }
 
 
-  node_t operator*() const
+  const_node_t operator*() const
   {
     I(!finished());
     if (return_root)
@@ -374,25 +480,26 @@ private:
   {
     int prevsize = 0;
     int nextsize = 0;
+    pair<const_dir_t, dir_map::const_iterator> & stack_top(stk.top());
     if (track_path)
       {
-        prevsize = stk.top().second->first().size();
+        prevsize = stack_top.second->first().size();
       }
 
-    ++stk.top().second;
+    ++stack_top.second;
 
     if (track_path)
       {
-        if (stk.top().second != stk.top().first->children.end())
-          nextsize = stk.top().second->first().size();
+        if (stack_top.second != stack_top.first->children.end())
+          nextsize = stack_top.second->first().size();
 
         int tmpsize = curr_path.size()-prevsize;
         I(tmpsize >= 0);
         curr_path.resize(tmpsize);
         if (nextsize != 0)
           curr_path.insert(curr_path.end(),
-                           stk.top().second->first().begin(),
-                           stk.top().second->first().end());
+                           stack_top.second->first().begin(),
+                           stack_top.second->first().end());
       }
   }
 public:
@@ -455,14 +562,14 @@ roster_t::has_root() const
 
 
 inline bool
-same_type(node_t a, node_t b)
+same_type(const_node_t a, const_node_t b)
 {
   return is_file_t(a) == is_file_t(b);
 }
 
 
 inline bool
-shallow_equal(node_t a, node_t b,
+shallow_equal(const_node_t a, const_node_t b,
               bool shallow_compare_dir_children,
               bool compare_file_contents)
 {
@@ -485,16 +592,16 @@ shallow_equal(node_t a, node_t b,
     {
       if (compare_file_contents)
         {
-          file_t fa = downcast_to_file_t(a);
-          file_t fb = downcast_to_file_t(b);
+          const_file_t fa = downcast_to_file_t(a);
+          const_file_t fb = downcast_to_file_t(b);
           if (!(fa->content == fb->content))
             return false;
         }
     }
   else
     {
-      dir_t da = downcast_to_dir_t(a);
-      dir_t db = downcast_to_dir_t(b);
+      const_dir_t da = downcast_to_dir_t(a);
+      const_dir_t db = downcast_to_dir_t(b);
 
       if (shallow_compare_dir_children)
         {
@@ -589,12 +696,10 @@ equal_shapes(roster_t const & a, roster_t const & b)
   return true;
 }
 
-node_t
-roster_t::get_node(file_path const & p) const
+node_t roster_t::get_node_internal(file_path const & p) const
 {
   MM(*this);
   MM(p);
-
   I(has_root());
   if (p.empty())
     return root_dir;
@@ -618,10 +723,24 @@ roster_t::get_node(file_path const & p) const
     }
 }
 
+const_node_t
+roster_t::get_node(file_path const & p) const
+{
+  return get_node_internal(p);
+}
+
+node_t
+roster_t::get_node_for_update(file_path const & p)
+{
+  node_t n = get_node_internal(p);
+  unshare(n);
+  return n;
+}
+
 bool
 roster_t::has_node(node_id n) const
 {
-  return nodes.find(n) != nodes.end();
+  return nodes.get_if_present(n);
 }
 
 bool
@@ -640,7 +759,7 @@ roster_t::is_attached(node_id n) const
   if (!has_node(n))
     return false;
 
-  node_t node = get_node(n);
+  const_node_t node = get_node(n);
 
   return !null_node(node->parent);
 }
@@ -678,10 +797,21 @@ roster_t::has_node(file_path const & p) const
     }
 }
 
-node_t
+const_node_t
 roster_t::get_node(node_id nid) const
 {
-  return safe_get(nodes, nid);
+  node_t const &n(nodes.get_if_present(nid));
+  I(n);
+  return n;
+}
+
+node_t
+roster_t::get_node_for_update(node_id nid)
+{
+  node_t n(nodes.get_if_present(nid));
+  I(n);
+  unshare(n);
+  return n;
 }
 
 
@@ -690,12 +820,12 @@ roster_t::get_name(node_id nid, file_path & p) const
 {
   I(!null_node(nid));
 
-  stack<node_t> sp;
+  stack<const_node_t> sp;
   size_t size = 0;
 
   while (nid != root_dir->self)
     {
-      node_t n = get_node(nid);
+      const_node_t n = get_node(nid);
       sp.push(n);
       size += n->name().length() + 1;
       nid = n->parent;
@@ -724,17 +854,55 @@ roster_t::get_name(node_id nid, file_path & p) const
   p = file_path(tmp, 0, string::npos);  // short circuit constructor
 }
 
+void
+roster_t::unshare(node_t & n, bool is_in_node_map)
+{
+  if (cow_version == n->cow_version)
+    return;
+  // we can't get at the (possibly shared) pointer in the node_map,
+  // so if we were given the only pointer then we know the node
+  // isn't in any other rosters
+  if (n.unique())
+    {
+      n->cow_version = cow_version;
+      return;
+    }
+  // here we could theoretically walk up the tree to see if
+  // the node or any of its parents have too many references,
+  // but I'm guessing that the avoided copies won't be worth
+  // the extra search time
+
+  node_t old = n;
+  n = n->clone();
+  n->cow_version = cow_version;
+  if (is_in_node_map)
+    nodes.set(n->self, n);
+  if (!null_node(n->parent))
+    {
+      node_t p = nodes.get_if_present(n->parent);
+      I(p);
+      unshare(p);
+      downcast_to_dir_t(p)->children[n->name] = n;
+    }
+  if (root_dir && root_dir->self == n->self)
+    {
+      root_dir = downcast_to_dir_t(n);
+    }
+}
 
 void
 roster_t::replace_node_id(node_id from, node_id to)
 {
   I(!null_node(from));
   I(!null_node(to));
-  node_t n = get_node(from);
-  safe_erase(nodes, from);
-  safe_insert(nodes, make_pair(to, n));
-  n->self = to;
+  node_t n = nodes.get_if_present(from);
+  I(n);
+  nodes.unset(from);
 
+  unshare(n, false);
+
+  I(nodes.set_if_missing(to, n));
+  n->self = to;
   if (is_dir_t(n))
     {
       dir_t d = downcast_to_dir_t(n);
@@ -770,7 +938,10 @@ roster_t::detach_node(file_path const & p)
       return root_id;
     }
 
-  dir_t parent = downcast_to_dir_t(get_node(dirname));
+  node_t pp = get_node_for_update(dirname);
+  dir_t parent = downcast_to_dir_t(pp);
+  node_t c = parent->get_child(basename);
+  unshare(c);
   node_id nid = parent->detach_child(basename)->self;
   safe_insert(old_locations,
               make_pair(nid, make_pair(parent->self, basename)));
@@ -781,7 +952,7 @@ roster_t::detach_node(file_path const & p)
 void
 roster_t::detach_node(node_id nid)
 {
-  node_t n = get_node(nid);
+  node_t n = get_node_for_update(nid);
   if (null_node(n->parent))
     {
       // detaching the root dir
@@ -794,7 +965,8 @@ roster_t::detach_node(node_id nid)
   else
     {
       path_component name = n->name;
-      dir_t parent = downcast_to_dir_t(get_node(n->parent));
+      node_t p = get_node_for_update(n->parent);
+      dir_t parent = downcast_to_dir_t(p);
       I(parent->detach_child(name) == n);
       safe_insert(old_locations,
                   make_pair(nid, make_pair(n->parent, name)));
@@ -805,14 +977,14 @@ void
 roster_t::drop_detached_node(node_id nid)
 {
   // ensure the node is already detached
-  node_t n = get_node(nid);
+  const_node_t n = get_node(nid);
   I(null_node(n->parent));
   I(n->name.empty());
   // if it's a dir, make sure it's empty
   if (is_dir_t(n))
     I(downcast_to_dir_t(n)->children.empty());
   // all right, kill it
-  safe_erase(nodes, nid);
+  nodes.unset(nid);
 
   // Resolving a duplicate name conflict via drop one side requires dropping
   // nodes that were never attached. So we erase the key without checking
@@ -836,7 +1008,8 @@ roster_t::create_dir_node(node_id nid)
 {
   dir_t d = dir_t(new dir_node());
   d->self = nid;
-  safe_insert(nodes, make_pair(nid, d));
+  d->cow_version = cow_version;
+  nodes.set(nid, d);
 }
 
 
@@ -857,7 +1030,8 @@ roster_t::create_file_node(file_id const & content, node_id nid)
   file_t f = file_t(new file_node());
   f->self = nid;
   f->content = content;
-  safe_insert(nodes, make_pair(nid, f));
+  f->cow_version = cow_version;
+  nodes.set(nid, f);
 }
 
 void
@@ -879,7 +1053,7 @@ roster_t::attach_node(node_id nid, file_path const & p)
 void
 roster_t::attach_node(node_id nid, node_id parent, path_component name)
 {
-  node_t n = get_node(nid);
+  node_t n = get_node_for_update(nid);
 
   I(!null_node(n->self));
   // ensure the node is already detached (as best one can)
@@ -903,7 +1077,8 @@ roster_t::attach_node(node_id nid, node_id parent, path_component name)
     }
   else
     {
-      dir_t parent_n = downcast_to_dir_t(get_node(parent));
+      node_t p = get_node_for_update(parent);
+      dir_t parent_n = downcast_to_dir_t(p);
       parent_n->attach_child(name, n);
       I(i == old_locations.end() || i->second != make_pair(n->parent, n->name));
     }
@@ -917,7 +1092,8 @@ roster_t::apply_delta(file_path const & pth,
                       file_id const & old_id,
                       file_id const & new_id)
 {
-  file_t f = downcast_to_file_t(get_node(pth));
+  node_t n = get_node_for_update(pth);
+  file_t f = downcast_to_file_t(n);
   I(f->content == old_id);
   I(!null_node(f->self));
   I(!(f->content == new_id));
@@ -927,7 +1103,8 @@ roster_t::apply_delta(file_path const & pth,
 void
 roster_t::set_content(node_id nid, file_id const & new_id)
 {
-  file_t f = downcast_to_file_t(get_node(nid));
+  node_t n = get_node_for_update(nid);
+  file_t f = downcast_to_file_t(n);
   I(!(f->content == new_id));
   f->content = new_id;
 }
@@ -944,7 +1121,7 @@ void
 roster_t::erase_attr(node_id nid,
                      attr_key const & name)
 {
-  node_t n = get_node(nid);
+  node_t n = get_node_for_update(nid);
   safe_erase(n->attrs, name);
 }
 
@@ -962,7 +1139,7 @@ roster_t::set_attr(file_path const & pth,
                    attr_key const & name,
                    pair<bool, attr_value> const & val)
 {
-  node_t n = get_node(pth);
+  node_t n = get_node_for_update(pth);
   I(val.first || val.second().empty());
   I(!null_node(n->self));
   attr_map_t::iterator i = n->attrs.find(name);
@@ -979,7 +1156,7 @@ roster_t::set_attr_unknown_to_dead_ok(node_id nid,
                                       attr_key const & name,
                                       pair<bool, attr_value> const & val)
 {
-  node_t n = get_node(nid);
+  node_t n = get_node_for_update(nid);
   I(val.first || val.second().empty());
   attr_map_t::iterator i = n->attrs.find(name);
   if (i != n->attrs.end())
@@ -994,7 +1171,7 @@ roster_t::get_attr(file_path const & pth,
 {
   I(has_node(pth));
 
-  node_t n = get_node(pth);
+  const_node_t n = get_node(pth);
   attr_map_t::const_iterator i = n->attrs.find(name);
   if (i != n->attrs.end() && i->second.first)
     {
@@ -1027,48 +1204,46 @@ dump(roster_t const & val, string & out)
 void
 roster_t::check_sane(bool temp_nodes_ok) const
 {
-  I(has_root());
-  node_map::const_iterator ri;
-
+  node_id parent_id(the_null_node);
+  const_dir_t parent_dir;
   I(old_locations.empty());
-
-  for (ri = nodes.begin();
-       ri != nodes.end();
-       ++ri)
+  I(has_root());
+  size_t maxdepth = nodes.size();
+  bool is_first = true;
+  for (dfs_iter i(root_dir); !i.finished(); ++i)
     {
-      node_id nid = ri->first;
-      I(!null_node(nid));
-      if (!temp_nodes_ok)
-        I(!temp_node(nid));
-      node_t n = ri->second;
-      I(n->self == nid);
-      if (is_dir_t(n))
+      const_node_t const &n(*i);
+      if (is_first)
         {
-          if (n->name.empty() || null_node(n->parent))
-            I(n->name.empty() && null_node(n->parent));
-          else
-            I(!n->name.empty() && !null_node(n->parent));
+          I(n->name.empty() && null_node(n->parent));
+          is_first = false;
         }
       else
         {
           I(!n->name.empty() && !null_node(n->parent));
+
+          if (n->parent != parent_id)
+            {
+              parent_id = n->parent;
+              parent_dir = downcast_to_dir_t(get_node(parent_id));
+            }
+          I(parent_dir->get_child(n->name) == n);
+        }
+      for (attr_map_t::const_iterator a = n->attrs.begin(); a != n->attrs.end(); ++a)
+        {
+          I(a->second.first || a->second.second().empty());
+        }
+      if (is_file_t(n))
+        {
           I(!null_id(downcast_to_file_t(n)->content));
         }
-      for (attr_map_t::const_iterator i = n->attrs.begin(); i != n->attrs.end(); ++i)
-        I(i->second.first || i->second.second().empty());
-      if (n != root_dir)
+      node_id nid(n->self);
+      I(!null_node(nid));
+      if (!temp_nodes_ok)
         {
-          I(!null_node(n->parent));
-          I(downcast_to_dir_t(get_node(n->parent))->get_child(n->name) == n);
+          I(!temp_node(nid));
         }
-
-    }
-
-  I(has_root());
-  size_t maxdepth = nodes.size();
-  for (dfs_iter i(root_dir); !i.finished(); ++i)
-    {
-      I(*i == get_node((*i)->self));
+      I(n == get_node(nid));
       I(maxdepth-- > 0);
     }
   I(maxdepth == 0);
@@ -1077,7 +1252,6 @@ roster_t::check_sane(bool temp_nodes_ok) const
 void
 roster_t::check_sane_against(marking_map const & markings, bool temp_nodes_ok) const
 {
-
   check_sane(temp_nodes_ok);
 
   node_map::const_iterator ri;
@@ -1087,24 +1261,24 @@ roster_t::check_sane_against(marking_map const & markings, bool temp_nodes_ok) c
        ri != nodes.end() && mi != markings.end();
        ++ri, ++mi)
     {
-      I(!null_id(mi->second.birth_revision));
-      I(!mi->second.parent_name.empty());
+      I(!null_id(mi->second->birth_revision));
+      I(!mi->second->parent_name.empty());
 
       if (is_file_t(ri->second))
-        I(!mi->second.file_content.empty());
+        I(!mi->second->file_content.empty());
       else
-        I(mi->second.file_content.empty());
+        I(mi->second->file_content.empty());
 
       attr_map_t::const_iterator rai;
       map<attr_key, set<revision_id> >::const_iterator mai;
-      for (rai = ri->second->attrs.begin(), mai = mi->second.attrs.begin();
-           rai != ri->second->attrs.end() && mai != mi->second.attrs.end();
+      for (rai = ri->second->attrs.begin(), mai = mi->second->attrs.begin();
+           rai != ri->second->attrs.end() && mai != mi->second->attrs.end();
            ++rai, ++mai)
         {
           I(rai->first == mai->first);
           I(!mai->second.empty());
         }
-      I(rai == ri->second->attrs.end() && mai == mi->second.attrs.end());
+      I(rai == ri->second->attrs.end() && mai == mi->second->attrs.end());
       // TODO: attrs
     }
 
@@ -1321,14 +1495,22 @@ namespace
                 break;
               }
           }
+        node_t left_n = left_i->second;
         for (set<attr_key>::const_iterator j = left_missing.begin();
              j != left_missing.end(); ++j)
-          safe_insert(left_i->second->attrs,
-                      make_pair(*j, make_pair(false, attr_value())));
+          {
+            left.unshare(left_n);
+            safe_insert(left_n->attrs,
+                        make_pair(*j, make_pair(false, attr_value())));
+          }
+        node_t right_n = right_i->second;
         for (set<attr_key>::const_iterator j = right_missing.begin();
              j != right_missing.end(); ++j)
-          safe_insert(right_i->second->attrs,
-                      make_pair(*j, make_pair(false, attr_value())));
+          {
+            right.unshare(right_n);
+            safe_insert(right_n->attrs,
+                        make_pair(*j, make_pair(false, attr_value())));
+          }
         ++left_i;
         ++right_i;
       }
@@ -1478,112 +1660,150 @@ namespace
   }
 
   void
-  mark_new_node(revision_id const & new_rid, node_t n, marking_t & new_marking)
+  mark_new_node(revision_id const & new_rid, const_node_t n, marking_map & mm)
   {
-    new_marking.birth_revision = new_rid;
-    I(new_marking.parent_name.empty());
-    new_marking.parent_name.insert(new_rid);
-    I(new_marking.file_content.empty());
+    marking_t new_marking(new marking());
+    new_marking->birth_revision = new_rid;
+    I(new_marking->parent_name.empty());
+    new_marking->parent_name.insert(new_rid);
+    I(new_marking->file_content.empty());
     if (is_file_t(n))
-      new_marking.file_content.insert(new_rid);
-    I(new_marking.attrs.empty());
+      new_marking->file_content.insert(new_rid);
+    I(new_marking->attrs.empty());
     set<revision_id> singleton;
     singleton.insert(new_rid);
     for (attr_map_t::const_iterator i = n->attrs.begin();
          i != n->attrs.end(); ++i)
-      new_marking.attrs.insert(make_pair(i->first, singleton));
+      new_marking->attrs.insert(make_pair(i->first, singleton));
+    mm.put_marking(n->self, new_marking);
   }
 
   void
-  mark_unmerged_node(marking_t const & parent_marking, node_t parent_n,
-                     revision_id const & new_rid, node_t n,
-                     marking_t & new_marking)
+  mark_unmerged_node(const_marking_t const & parent_marking,
+                     const_node_t parent_n,
+                     revision_id const & new_rid, const_node_t n,
+                     marking_map & mm)
   {
-    // SPEEDUP?: the common case here is that the parent and child nodes are
-    // exactly identical, in which case the markings are also exactly
-    // identical.  There might be a win in first doing an overall
-    // comparison/copy, in case it can be better optimized as a block
-    // comparison and a block copy...
+    // Our new marking map is initialized as a copy of the parent map.
+    // So, if nothing's changed, there's nothing to do. Unless this
+    // is a merge, and the parent marking that was copied happens to
+    // be the other parent than the one this node came from.
+    if (n == parent_n || shallow_equal(n, parent_n, true))
+      {
+        if (mm.contains(n->self))
+          {
+            return;
+          }
+        else
+          {
+            mm.put_marking(n->self, parent_marking);
+            return;
+          }
+      }
 
     I(same_type(parent_n, n) && parent_n->self == n->self);
 
-    new_marking.birth_revision = parent_marking.birth_revision;
+    marking_t new_marking(new marking());
 
-    mark_unmerged_scalar(parent_marking.parent_name,
+    new_marking->birth_revision = parent_marking->birth_revision;
+
+    mark_unmerged_scalar(parent_marking->parent_name,
                          make_pair(parent_n->parent, parent_n->name),
                          new_rid,
                          make_pair(n->parent, n->name),
-                         new_marking.parent_name);
+                         new_marking->parent_name);
 
     if (is_file_t(n))
-      mark_unmerged_scalar(parent_marking.file_content,
+      mark_unmerged_scalar(parent_marking->file_content,
                            downcast_to_file_t(parent_n)->content,
                            new_rid,
                            downcast_to_file_t(n)->content,
-                           new_marking.file_content);
+                           new_marking->file_content);
 
     for (attr_map_t::const_iterator i = n->attrs.begin();
            i != n->attrs.end(); ++i)
       {
-        set<revision_id> & new_marks = new_marking.attrs[i->first];
+        set<revision_id> & new_marks = new_marking->attrs[i->first];
         I(new_marks.empty());
         attr_map_t::const_iterator j = parent_n->attrs.find(i->first);
         if (j == parent_n->attrs.end())
           new_marks.insert(new_rid);
         else
-          mark_unmerged_scalar(safe_get(parent_marking.attrs, i->first),
+          mark_unmerged_scalar(safe_get(parent_marking->attrs, i->first),
                                j->second,
                                new_rid, i->second, new_marks);
       }
+
+    mm.put_or_replace_marking(n->self, new_marking);
   }
 
   void
-  mark_merged_node(marking_t const & left_marking,
+  mark_merged_node(const_marking_t const & left_marking,
                    set<revision_id> const & left_uncommon_ancestors,
-                   node_t ln,
-                   marking_t const & right_marking,
+                   const_node_t ln,
+                   const_marking_t const & right_marking,
                    set<revision_id> const & right_uncommon_ancestors,
-                   node_t rn,
+                   const_node_t rn,
                    revision_id const & new_rid,
-                   node_t n,
-                   marking_t & new_marking)
+                   const_node_t n,
+                   marking_map & mm)
   {
+    bool same_nodes = ((ln == rn || shallow_equal(ln, rn, true)) &&
+                       (ln == n || shallow_equal(ln, n, true)));
+    if (same_nodes)
+      {
+        bool same_markings = left_marking == right_marking
+          || *left_marking == *right_marking;
+        if (same_markings)
+          {
+            // The child marking will be the same as both parent markings,
+            // so just leave it as whichever it was copied from.
+            return;
+          }
+      }
+
     I(same_type(ln, n) && same_type(rn, n));
-    I(left_marking.birth_revision == right_marking.birth_revision);
-    new_marking.birth_revision = left_marking.birth_revision;
+    I(left_marking->birth_revision == right_marking->birth_revision);
+    marking_t new_marking = mm.get_marking_for_update(n->self);
+    new_marking->birth_revision = left_marking->birth_revision;
+    MM(n->self);
 
     // name
-    mark_merged_scalar(left_marking.parent_name, left_uncommon_ancestors,
+    new_marking->parent_name.clear();
+    mark_merged_scalar(left_marking->parent_name, left_uncommon_ancestors,
                        make_pair(ln->parent, ln->name),
-                       right_marking.parent_name, right_uncommon_ancestors,
+                       right_marking->parent_name, right_uncommon_ancestors,
                        make_pair(rn->parent, rn->name),
                        new_rid,
                        make_pair(n->parent, n->name),
-                       new_marking.parent_name);
+                       new_marking->parent_name);
     // content
     if (is_file_t(n))
       {
-        file_t f = downcast_to_file_t(n);
-        file_t lf = downcast_to_file_t(ln);
-        file_t rf = downcast_to_file_t(rn);
-        mark_merged_scalar(left_marking.file_content, left_uncommon_ancestors,
+        const_file_t f = downcast_to_file_t(n);
+        const_file_t lf = downcast_to_file_t(ln);
+        const_file_t rf = downcast_to_file_t(rn);
+        new_marking->file_content.clear();
+        mark_merged_scalar(left_marking->file_content, left_uncommon_ancestors,
                            lf->content,
-                           right_marking.file_content, right_uncommon_ancestors,
+                           right_marking->file_content, right_uncommon_ancestors,
                            rf->content,
-                           new_rid, f->content, new_marking.file_content);
+                           new_rid, f->content, new_marking->file_content);
       }
     // attrs
+    new_marking->attrs.clear();
     for (attr_map_t::const_iterator i = n->attrs.begin();
          i != n->attrs.end(); ++i)
       {
         attr_key const & key = i->first;
+        MM(key);
         attr_map_t::const_iterator li = ln->attrs.find(key);
         attr_map_t::const_iterator ri = rn->attrs.find(key);
-        I(new_marking.attrs.find(key) == new_marking.attrs.end());
+        I(new_marking->attrs.find(key) == new_marking->attrs.end());
         // [], when used to refer to a non-existent element, default
         // constructs that element and returns a reference to it.  We make use
         // of this here.
-        set<revision_id> & new_marks = new_marking.attrs[key];
+        set<revision_id> & new_marks = new_marking->attrs[key];
 
         if (li == ln->attrs.end() && ri == rn->attrs.end())
           // this is a brand new attribute, never before seen
@@ -1591,22 +1811,22 @@ namespace
 
         else if (li != ln->attrs.end() && ri == rn->attrs.end())
           // only the left side has seen this attr before
-          mark_unmerged_scalar(safe_get(left_marking.attrs, key),
+          mark_unmerged_scalar(safe_get(left_marking->attrs, key),
                                li->second,
                                new_rid, i->second, new_marks);
 
         else if (li == ln->attrs.end() && ri != rn->attrs.end())
           // only the right side has seen this attr before
-          mark_unmerged_scalar(safe_get(right_marking.attrs, key),
+          mark_unmerged_scalar(safe_get(right_marking->attrs, key),
                                ri->second,
                                new_rid, i->second, new_marks);
 
         else
           // both sides have seen this attr before
-          mark_merged_scalar(safe_get(left_marking.attrs, key),
+          mark_merged_scalar(safe_get(left_marking->attrs, key),
                              left_uncommon_ancestors,
                              li->second,
-                             safe_get(right_marking.attrs, key),
+                             safe_get(right_marking->attrs, key),
                              right_uncommon_ancestors,
                              ri->second,
                              new_rid, i->second, new_marks);
@@ -1623,6 +1843,39 @@ namespace
     for (attr_map_t::const_iterator i = rn->attrs.begin();
          i != rn->attrs.end(); ++i)
       I(n->attrs.find(i->first) != n->attrs.end());
+  }
+
+  void drop_extra_markings(roster_t const & ros, marking_map & mm)
+  {
+    if (mm.size() > ros.all_nodes().size())
+      {
+        std::set<node_id> to_drop;
+        
+        marking_map::const_iterator mi = mm.begin(), me = mm.end();
+        node_map::const_iterator ri = ros.all_nodes().begin(), re = ros.all_nodes().end();
+
+        for (; mi != me; ++mi)
+          {
+            if (ri == re)
+              {
+                to_drop.insert(mi->first);
+              }
+            else
+              {
+                if (ri->first < mi->first)
+                  ++ri;
+                I(ri == re || ri->first >= mi->first);
+                if (ri == re || ri->first > mi->first)
+                  to_drop.insert(mi->first);
+              }
+          }
+        for (std::set<node_id>::const_iterator i = to_drop.begin();
+             i != to_drop.end(); ++i)
+          {
+            mm.remove_marking(*i);
+          }
+      }
+    I(mm.size() == ros.all_nodes().size());
   }
 
 } // anonymous namespace
@@ -1642,54 +1895,57 @@ mark_merge_roster(roster_t const & left_roster,
                   roster_t const & merge,
                   marking_map & new_markings)
 {
+  {
+    int left_err = left_markings.size() - merge.all_nodes().size();
+    int right_err = right_markings.size() - merge.all_nodes().size();
+    if (left_err * left_err > right_err * right_err)
+      new_markings = right_markings;
+    else
+      new_markings = left_markings;
+  }
+
   for (node_map::const_iterator i = merge.all_nodes().begin();
        i != merge.all_nodes().end(); ++i)
     {
       node_t const & n = i->second;
-      node_map::const_iterator lni = left_roster.all_nodes().find(i->first);
-      node_map::const_iterator rni = right_roster.all_nodes().find(i->first);
+      node_t const &left_node = left_roster.all_nodes().get_if_present(i->first);
+      node_t const &right_node = right_roster.all_nodes().get_if_present(i->first);
 
-      bool exists_in_left = (lni != left_roster.all_nodes().end());
-      bool exists_in_right = (rni != right_roster.all_nodes().end());
-
-      marking_t new_marking;
+      bool exists_in_left = (left_node);
+      bool exists_in_right = (right_node);
 
       if (!exists_in_left && !exists_in_right)
-        mark_new_node(new_rid, n, new_marking);
+        mark_new_node(new_rid, n, new_markings);
 
       else if (!exists_in_left && exists_in_right)
         {
-          node_t const & right_node = rni->second;
-          marking_t const & right_marking = safe_get(right_markings, n->self);
+          const_marking_t const & right_marking = right_markings.get_marking(n->self);
           // must be unborn on the left (as opposed to dead)
-          I(right_uncommon_ancestors.find(right_marking.birth_revision)
+          I(right_uncommon_ancestors.find(right_marking->birth_revision)
             != right_uncommon_ancestors.end());
           mark_unmerged_node(right_marking, right_node,
-                             new_rid, n, new_marking);
+                             new_rid, n, new_markings);
         }
       else if (exists_in_left && !exists_in_right)
         {
-          node_t const & left_node = lni->second;
-          marking_t const & left_marking = safe_get(left_markings, n->self);
+          const_marking_t const & left_marking = left_markings.get_marking(n->self);
           // must be unborn on the right (as opposed to dead)
-          I(left_uncommon_ancestors.find(left_marking.birth_revision)
+          I(left_uncommon_ancestors.find(left_marking->birth_revision)
             != left_uncommon_ancestors.end());
           mark_unmerged_node(left_marking, left_node,
-                             new_rid, n, new_marking);
+                             new_rid, n, new_markings);
         }
       else
         {
-          node_t const & left_node = lni->second;
-          node_t const & right_node = rni->second;
-          mark_merged_node(safe_get(left_markings, n->self),
+          mark_merged_node(left_markings.get_marking(n->self),
                            left_uncommon_ancestors, left_node,
-                           safe_get(right_markings, n->self),
+                           right_markings.get_marking(n->self),
                            right_uncommon_ancestors, right_node,
-                           new_rid, n, new_marking);
+                           new_rid, n, new_markings);
         }
-
-      safe_insert(new_markings, make_pair(i->first, new_marking));
     }
+
+  drop_extra_markings(merge, new_markings);
 }
 
 namespace {
@@ -1708,17 +1964,16 @@ namespace {
     virtual node_id detach_node(file_path const & src)
     {
       node_id nid = this->editable_roster_base::detach_node(src);
-      marking_map::iterator marking = markings.find(nid);
-      I(marking != markings.end());
-      marking->second.parent_name.clear();
-      marking->second.parent_name.insert(rid);
+      marking_t marking = markings.get_marking_for_update(nid);
+      marking->parent_name.clear();
+      marking->parent_name.insert(rid);
       return nid;
     }
 
     virtual void drop_detached_node(node_id nid)
     {
       this->editable_roster_base::drop_detached_node(nid);
-      safe_erase(markings, nid);
+      markings.remove_marking(nid);
     }
 
     virtual node_id create_dir_node()
@@ -1736,10 +1991,9 @@ namespace {
     {
       this->editable_roster_base::apply_delta(pth, old_id, new_id);
       node_id nid = r.get_node(pth)->self;
-      marking_map::iterator marking = markings.find(nid);
-      I(marking != markings.end());
-      marking->second.file_content.clear();
-      marking->second.file_content.insert(rid);
+      marking_t marking = markings.get_marking_for_update(nid);
+      marking->file_content.clear();
+      marking->file_content.insert(rid);
     }
 
     virtual void clear_attr(file_path const & path, attr_key const & key)
@@ -1757,25 +2011,23 @@ namespace {
 
     node_id handle_new(node_id nid)
     {
-      node_t n = r.get_node(nid);
-      marking_t new_marking;
-      mark_new_node(rid, n, new_marking);
-      safe_insert(markings, make_pair(nid, new_marking));
+      const_node_t n = r.get_node(nid);
+      mark_new_node(rid, n, markings);
       return nid;
     }
 
     void handle_attr(file_path const & pth, attr_key const & name)
     {
       node_id nid = r.get_node(pth)->self;
-      marking_map::iterator marking = markings.find(nid);
-      map<attr_key, set<revision_id> >::iterator am = marking->second.attrs.find(name);
-      if (am == marking->second.attrs.end())
+      marking_t marking = markings.get_marking_for_update(nid);
+      map<attr_key, set<revision_id> >::iterator am = marking->attrs.find(name);
+      if (am == marking->attrs.end())
         {
-          marking->second.attrs.insert(make_pair(name, set<revision_id>()));
-          am = marking->second.attrs.find(name);
+          marking->attrs.insert(make_pair(name, set<revision_id>()));
+          am = marking->attrs.find(name);
         }
 
-      I(am != marking->second.attrs.end());
+      I(am != marking->attrs.end());
       am->second.clear();
       am->second.insert(rid);
     }
@@ -1921,20 +2173,20 @@ mark_roster_with_one_parent(roster_t const & parent,
   MM(child_markings);
 
   I(!null_id(child_rid));
-  child_markings.clear();
+  child_markings = parent_markings;
 
   for (node_map::const_iterator i = child.all_nodes().begin();
        i != child.all_nodes().end(); ++i)
     {
       marking_t new_marking;
       if (parent.has_node(i->first))
-        mark_unmerged_node(safe_get(parent_markings, i->first),
+        mark_unmerged_node(parent_markings.get_marking(i->first),
                            parent.get_node(i->first),
-                           child_rid, i->second, new_marking);
+                           child_rid, i->second, child_markings);
       else
-        mark_new_node(child_rid, i->second, new_marking);
-      safe_insert(child_markings, make_pair(i->first, new_marking));
+        mark_new_node(child_rid, i->second, child_markings);
     }
+  drop_extra_markings(child, child_markings);
 
   child.check_sane_against(child_markings, true);
 }
@@ -2093,7 +2345,7 @@ equal_up_to_renumbering(roster_t const & a, marking_map const & a_markings,
       a.get_name(i->first, p);
       if (!b.has_node(p))
         return false;
-      node_t b_n = b.get_node(p);
+      const_node_t b_n = b.get_node(p);
       // we already know names are the same
       if (!same_type(i->second, b_n))
         return false;
@@ -2106,8 +2358,12 @@ equal_up_to_renumbering(roster_t const & a, marking_map const & a_markings,
             return false;
         }
       // nodes match, check the markings too
-      if (!(safe_get(a_markings, i->first) == safe_get(b_markings, b_n->self)))
-        return false;
+      const_marking_t am = a_markings.get_marking(i->first);
+      const_marking_t bm = b_markings.get_marking(b_n->self);
+      if (!(am == bm) && !(*am == *bm))
+        {
+          return false;
+        }
     }
   return true;
 }
@@ -2220,7 +2476,7 @@ make_restricted_roster(roster_t const & from, roster_t const & to,
           else
             restricted.create_dir_node(n->second->self);
 
-          node_t added = restricted.get_node(n->second->self);
+          node_t added = restricted.get_node_for_update(n->second->self);
           added->attrs = n->second->attrs;
 
           restricted.attach_node(n->second->self, n->second->parent, n->second->name);
@@ -2348,7 +2604,7 @@ roster_t::get_file_details(node_id nid,
                            file_path & pth) const
 {
   I(has_node(nid));
-  file_t f = downcast_to_file_t(get_node(nid));
+  const_file_t f = downcast_to_file_t(get_node(nid));
   fid = f->content;
   get_name(nid, pth);
 }
@@ -2375,12 +2631,12 @@ get_content_paths(roster_t const & roster, map<file_id, file_path> & paths)
   node_map const & nodes = roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
     {
-      node_t node = roster.get_node(i->first);
+      const_node_t node = roster.get_node(i->first);
       if (is_file_t(node))
         {
           file_path p;
           roster.get_name(i->first, p);
-          file_t file = downcast_to_file_t(node);
+          const_file_t file = downcast_to_file_t(node);
           paths.insert(make_pair(file->content, p));
         }
     }
@@ -2391,33 +2647,76 @@ get_content_paths(roster_t const & roster, map<file_id, file_path> & paths)
 ////////////////////////////////////////////////////////////////////
 
 void
-push_marking(basic_io::stanza & st,
+append_with_escaped_quotes(string & collection, string const & item)
+{
+  size_t mark = 0;
+  size_t cursor = item.find('"', mark);
+  while (cursor != string::npos)
+    {
+      collection.append(item, mark, cursor - mark);
+      collection.append(1, '\\');
+      mark = cursor;
+      if (mark == item.size())
+        {
+          cursor = string::npos;
+        }
+      else
+        {
+          cursor = item.find('"', mark + 1);
+        }
+    }
+  collection.append(item, mark, item.size() - mark + 1);
+}
+
+void
+push_marking(string & contents,
              bool is_file,
-             marking_t const & mark)
+             const_marking_t const & mark,
+             int symbol_length)
 {
 
-  I(!null_id(mark.birth_revision));
-  st.push_binary_pair(syms::birth, mark.birth_revision.inner());
+  I(!null_id(mark->birth_revision));
 
-  for (set<revision_id>::const_iterator i = mark.parent_name.begin();
-       i != mark.parent_name.end(); ++i)
-    st.push_binary_pair(syms::path_mark, i->inner());
+  contents.append(symbol_length - 5, ' ');
+  contents.append("birth [");
+  contents.append(encode_hexenc(mark->birth_revision.inner()(), origin::internal));
+  contents.append("]\n");
+
+  for (set<revision_id>::const_iterator i = mark->parent_name.begin();
+       i != mark->parent_name.end(); ++i)
+    {
+      contents.append(symbol_length - 9, ' ');
+      contents.append("path_mark [");
+      contents.append(encode_hexenc(i->inner()(), origin::internal));
+      contents.append("]\n");
+    }
 
   if (is_file)
     {
-      for (set<revision_id>::const_iterator i = mark.file_content.begin();
-           i != mark.file_content.end(); ++i)
-        st.push_binary_pair(basic_io::syms::content_mark, i->inner());
+      for (set<revision_id>::const_iterator i = mark->file_content.begin();
+           i != mark->file_content.end(); ++i)
+        {
+          contents.append("content_mark [");// always the longest symbol
+          contents.append(encode_hexenc(i->inner()(), origin::internal));
+          contents.append("]\n");
+        }
     }
   else
-    I(mark.file_content.empty());
+    I(mark->file_content.empty());
 
-  for (map<attr_key, set<revision_id> >::const_iterator i = mark.attrs.begin();
-       i != mark.attrs.end(); ++i)
+  for (map<attr_key, set<revision_id> >::const_iterator i = mark->attrs.begin();
+       i != mark->attrs.end(); ++i)
     {
       for (set<revision_id>::const_iterator j = i->second.begin();
            j != i->second.end(); ++j)
-        st.push_binary_triple(syms::attr_mark, i->first(), j->inner());
+        {
+          contents.append(symbol_length - 9, ' ');
+          contents.append("attr_mark \"");
+          append_with_escaped_quotes(contents, i->first());
+          contents.append("\" [");
+          contents.append(encode_hexenc(j->inner()(), origin::internal));
+          contents.append("]\n");
+        }
     }
 }
 
@@ -2433,21 +2732,21 @@ parse_marking(basic_io::parser & pa,
         {
           pa.sym();
           pa.hex(rev);
-          marking.birth_revision =
+          marking->birth_revision =
             decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from);
         }
       else if (pa.symp(syms::path_mark))
         {
           pa.sym();
           pa.hex(rev);
-          safe_insert(marking.parent_name,
+          safe_insert(marking->parent_name,
                       decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from));
         }
       else if (pa.symp(basic_io::syms::content_mark))
         {
           pa.sym();
           pa.hex(rev);
-          safe_insert(marking.file_content,
+          safe_insert(marking->file_content,
                       decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from));
         }
       else if (pa.symp(syms::attr_mark))
@@ -2457,7 +2756,7 @@ parse_marking(basic_io::parser & pa,
           pa.str(k);
           pa.hex(rev);
           attr_key key = attr_key(k, pa.tok.in.made_from);
-          safe_insert(marking.attrs[key],
+          safe_insert(marking->attrs[key],
                       decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from));
         }
       else break;
@@ -2470,38 +2769,126 @@ parse_marking(basic_io::parser & pa,
 // processed more efficiently.
 
 void
-roster_t::print_to(basic_io::printer & pr,
+roster_t::print_to(data & dat,
                    marking_map const & mm,
                    bool print_local_parts) const
 {
+  string contents;
   I(has_root());
-  {
-    basic_io::stanza st;
-    st.push_str_pair(basic_io::syms::format_version, "1");
-    pr.print_stanza(st);
-  }
+
+  // approximate byte counts
+  // a file is name + content (+ birth + path-mark + content-mark + ident)
+  //   2 sym + name + hash (+ 4 sym + 3 hash + 1 num)
+  //   24 + name + 43 (+48 + 129 + 10) = 67 + name (+ 187) = ~100 (+ 187)
+  // a dir is name (+ birth + path-mark + ident)
+  //   1 sym + name (+ 3 sym + 2 hash + 1 num)
+  //   12 + name (+ 36 + 86 + 10) = 12 + name (+ 132) = ~52 (+ 132)
+  // an attr is name/value (+ name/mark)
+  //   1 sym + 2 name (+ 1 sym + 1 name + 1 hash)
+  //   12 + 2 name (+ 12 + 43 + name) = ~40 (+ ~70)
+  // in the monotone tree, there are about 2% as many attrs as nodes
+
+  if (print_local_parts)
+    {
+      contents.reserve(nodes.size() * (290 + 0.02 * 110) * 1.1);
+    }
+  else
+    {
+      contents.reserve(nodes.size() * (100 + 0.02 * 40) * 1.1);
+    }
+
+  // symbols are:
+  //   birth        (all local)
+  //   dormant_attr (any local)
+  //   ident        (all local)
+  //   path_mark    (all local)
+  //   attr_mark    (any local)
+  //   dir          (all dir)
+  //   file         (all file)
+  //   content      (all file)
+  //   attr         (any)
+  //   content_mark (all local file)
+
+  // local  file : symbol length 12
+  // local  dir  : symbol length 9 or 12 (if dormant_attr)
+  // public file : symbol length 7
+  // public dir  : symbol length 3 or 4 (if attr)
+
+  contents += "format_version \"1\"\n";
+
   for (dfs_iter i(root_dir, true); !i.finished(); ++i)
     {
-      node_t curr = *i;
-      basic_io::stanza st;
+      contents += "\n";
 
-      {
-        if (is_dir_t(curr))
-          {
-            st.push_str_pair(basic_io::syms::dir, i.path());
-          }
-        else
-          {
-            file_t ftmp = downcast_to_file_t(curr);
-            st.push_str_pair(basic_io::syms::file, i.path());
-            st.push_binary_pair(basic_io::syms::content, ftmp->content.inner());
-          }
-      }
+      const_node_t curr = *i;
+
+      int symbol_length = 0;
+
+      if (is_dir_t(curr))
+        {
+          if (print_local_parts)
+            {
+              symbol_length = 9;
+              // unless we have a dormant attr
+              for (attr_map_t::const_iterator j = curr->attrs.begin();
+                   j != curr->attrs.end(); ++j)
+                {
+                  if (!j->second.first)
+                    {
+                      symbol_length = 12;
+                      break;
+                    }
+                }
+            }
+          else
+            {
+              symbol_length = 3;
+              // unless we have a live attr
+              for (attr_map_t::const_iterator j = curr->attrs.begin();
+                   j != curr->attrs.end(); ++j)
+                {
+                  if (j->second.first)
+                    {
+                      symbol_length = 4;
+                      break;
+                    }
+                }
+            }
+          contents.append(symbol_length - 3, ' ');
+          contents.append("dir \"");
+          append_with_escaped_quotes(contents, i.path());
+          contents.append("\"\n");
+        }
+      else
+        {
+          if (print_local_parts)
+            {
+              symbol_length = 12;
+            }
+          else
+            {
+              symbol_length = 7;
+            }
+          const_file_t ftmp = downcast_to_file_t(curr);
+
+          contents.append(symbol_length - 4, ' ');
+          contents.append("file \"");
+          append_with_escaped_quotes(contents, i.path());
+          contents.append("\"\n");
+
+          contents.append(symbol_length - 7, ' ');
+          contents.append("content [");
+          contents.append(encode_hexenc(ftmp->content.inner()(), origin::internal));
+          contents.append("]\n");
+        }
 
       if (print_local_parts)
         {
           I(curr->self != the_null_node);
-          st.push_str_pair(syms::ident, lexical_cast<string>(curr->self));
+          contents.append(symbol_length - 5, ' ');
+          contents.append("ident \"");
+          contents.append(lexical_cast<string>(curr->self));
+          contents.append("\"\n");
         }
 
       // Push the non-dormant part of the attr map
@@ -2511,7 +2898,13 @@ roster_t::print_to(basic_io::printer & pr,
           if (j->second.first)
             {
               // L(FL("printing attr %s : %s = %s") % fp % j->first % j->second);
-              st.push_str_triple(basic_io::syms::attr, j->first(), j->second.second());
+
+              contents.append(symbol_length - 4, ' ');
+              contents.append("attr \"");
+              append_with_escaped_quotes(contents, j->first());
+              contents.append("\" \"");
+              append_with_escaped_quotes(contents, j->second.second());
+              contents.append("\"\n");
             }
         }
 
@@ -2524,17 +2917,18 @@ roster_t::print_to(basic_io::printer & pr,
               if (!j->second.first)
                 {
                   I(j->second.second().empty());
-                  st.push_str_pair(syms::dormant_attr, j->first());
+
+                  contents.append("dormant_attr \""); // always the longest sym
+                  append_with_escaped_quotes(contents, j->first());
+                  contents.append("\"\n");
                 }
             }
 
-          marking_map::const_iterator m = mm.find(curr->self);
-          I(m != mm.end());
-          push_marking(st, is_file_t(curr), m->second);
+          const_marking_t m = mm.get_marking(curr->self);
+          push_marking(contents, is_file_t(curr), m, symbol_length);
         }
-
-      pr.print_stanza(st);
     }
+  dat = data(contents, origin::internal);
 }
 
 inline size_t
@@ -2609,7 +3003,9 @@ roster_t::parse_from(basic_io::parser & pa,
 
       I(static_cast<bool>(n));
 
-      safe_insert(nodes, make_pair(n->self, n));
+      n->cow_version = cow_version;
+      I(nodes.set_if_missing(n->self, n));
+
       if (is_dir_t(n) && pth.empty())
         {
           I(! has_root());
@@ -2644,8 +3040,9 @@ roster_t::parse_from(basic_io::parser & pa,
         }
 
       {
-        marking_t & m(safe_insert(mm, make_pair(n->self, marking_t()))->second);
+        marking_t m(new marking());
         parse_marking(pa, m);
+        mm.put_marking(n->self, m);
       }
     }
 }
@@ -2669,15 +3066,17 @@ static void
 write_roster_and_marking(roster_t const & ros,
                          marking_map const & mm,
                          data & dat,
-                         bool print_local_parts)
+                         bool print_local_parts,
+                         bool do_sanity_check)
 {
-  if (print_local_parts)
-    ros.check_sane_against(mm);
-  else
-    ros.check_sane(true);
-  basic_io::printer pr;
-  ros.print_to(pr, mm, print_local_parts);
-  dat = data(pr.buf, origin::internal);
+  if (do_sanity_check)
+    {
+      if (print_local_parts)
+        ros.check_sane_against(mm);
+      else
+        ros.check_sane(true);
+    }
+  ros.print_to(dat, mm, print_local_parts);
 }
 
 
@@ -2687,28 +3086,30 @@ write_roster_and_marking(roster_t const & ros,
                          roster_data & dat)
 {
   data tmp;
-  write_roster_and_marking(ros, mm, tmp, true);
+  write_roster_and_marking(ros, mm, tmp, true, true);
   dat = roster_data(tmp);
 }
 
 
 void
 write_manifest_of_roster(roster_t const & ros,
-                         manifest_data & dat)
+                         manifest_data & dat,
+                         bool do_sanity_check)
 {
   data tmp;
   marking_map mm;
-  write_roster_and_marking(ros, mm, tmp, false);
+  write_roster_and_marking(ros, mm, tmp, false, do_sanity_check);
   dat = manifest_data(tmp);
 }
 
 void calculate_ident(roster_t const & ros,
-                     manifest_id & ident)
+                     manifest_id & ident,
+                     bool do_sanity_check)
 {
   manifest_data tmp;
   if (!ros.all_nodes().empty())
     {
-      write_manifest_of_roster(ros, tmp);
+      write_manifest_of_roster(ros, tmp, do_sanity_check);
     }
   calculate_ident(tmp, ident);
 }

@@ -2,6 +2,8 @@
 -- which should look for an "editor" executable on the PATH and run it
 -- if neither $EDITOR nor $VISUAL is set in the environment.  We have
 -- to override the default test hooks, which disable edit_comment.
+--
+-- Also test bad --date-format; doesn't fail, just uses the default
 
 mtn_setup()
 addfile("a", "hello there")
@@ -9,4 +11,5 @@ addfile("a", "hello there")
 check(get("test_hooks.lua")) -- this restores the default edit_comment
                              -- and provides a fake "editor" executable
 
-check(mtn("--branch", "testbranch", "commit"), 0, false, false)
+check(mtn("--branch", "testbranch", "commit", "--date-format", "foo"), 0, false, true)
+check(qgrep("date format 'foo' cannot be used for commit; using default instead", "stderr"))

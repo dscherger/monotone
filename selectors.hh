@@ -31,18 +31,14 @@ void complete(options const & opts, lua_hooks & lua,
               project_t & project, std::string const & str,
               revision_id & completion);
 
-// For extra control, use these functions.  expand_selector is just like the
+// For extra control, use expand_selector, which is just like the
 // first overload of complete() except that it produces no progress messages
-// or usage errors.  diagnose_ambiguous_expansion generates the canonical
-// usage error if the set it is handed has more than one element.
+// or usage errors.  The only place where this is currently still
+// in use is automate select.
 
 void expand_selector(options const & opts, lua_hooks & lua,
                      project_t & project, std::string const & str,
                      std::set<revision_id> & completions);
-
-void diagnose_ambiguous_expansion(project_t & project, std::string const & str,
-                                  std::set<revision_id> const & completions);
-
 
 #endif // __SELECTORS_HH__
 

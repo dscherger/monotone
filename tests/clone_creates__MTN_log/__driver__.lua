@@ -12,9 +12,10 @@ check(mtn("add", "input.txt"), 0, false, false)
 
 check(mtn("--branch=testbranch", "--rcfile=commit_log.lua", "commit"), 0, false, false)
 
-testURI="file:" .. test.root .. "/test.db"
+copy("test.db", "test-clone.db")
+testURI="file://" .. test.root .. "/test-clone.db?testbranch"
 
-check(nodb_mtn("clone", testURI, "testbranch", "testbranch"), 0, false, true)
+check(nodb_mtn("clone", testURI, "testbranch"), 0, false, true)
 
 check(exists("testbranch/_MTN/log"))
 check(fsize("_MTN/log") == 0)

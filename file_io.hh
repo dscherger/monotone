@@ -14,6 +14,7 @@
 #include "paths.hh"
 #include "platform-wrapped.hh"
 #include "vector.hh"
+#include "ui.hh"
 
 // this layer deals with talking to the filesystem, loading and saving
 // files, walking trees, etc.
@@ -27,7 +28,7 @@ void assert_path_is_nonexistent(any_path const & path);
 void assert_path_is_file(any_path const & path);
 void assert_path_is_directory(any_path const & path);
 
-// use N()
+// use E()
 void require_path_is_nonexistent(any_path const & path,
                                  i18n_format const & message);
 void require_path_is_file(any_path const & path,
@@ -113,6 +114,38 @@ public:
 void walk_tree(file_path const & path,
                tree_walker & walker);
 
+
+class directory_cleanup_helper
+{
+public:
+  directory_cleanup_helper(system_path const & new_dir)
+    : committed(false), dir(new_dir) {}
+  ~directory_cleanup_helper()
+  {
+    if (!committed && directory_exists(dir))
+       {
+        // This is probably happening in the middle of another exception.
+        // Do not let anything that delete_dir_recursive throws escape, or
+        // the runtime will call std::terminate...
+        try
+          {
+            delete_dir_recursive(dir);
+          }
+        catch (std::exception const & ex)
+          {
+            ui.fatal_exception(ex);
+          }
+        catch (...)
+          {
+            ui.fatal_exception();
+          }
+      }
+  }
+  void commit(void) { committed = true; }
+private:
+  bool committed;
+  system_path dir;
+};
 
 bool ident_existing_file(file_path const & p, file_id & ident);
 bool ident_existing_file(file_path const & p, file_id & ident, path::status status);

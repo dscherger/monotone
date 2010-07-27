@@ -105,7 +105,7 @@ do
                                 certs_in, certs_out,
                                 revs_in, revs_out,
                                 keys_in, keys_out,
-                                unpack(arg))
+                                ...)
       end
 
 

@@ -13,11 +13,11 @@
 #include <boost/shared_ptr.hpp>
 #include <botan/botan.h>
 #include <botan/rsa.h>
+#include <botan/numthry.h>
 
 #include "ssh_agent.hh"
 #include "sanity.hh"
 #include "netio.hh"
-#include "botan/numthry.h"
 #include "numeric_vocab.hh"
 #include "platform.hh"
 #include "key_store.hh"

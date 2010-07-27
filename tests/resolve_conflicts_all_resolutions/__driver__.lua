@@ -120,7 +120,8 @@ canonicalize("stderr")
 check(samefilestd("show_first-interactive", "stderr"))
 
 mkdir("_MTN/resolutions")
-check(mtn("--rcfile=merge3_hook.lua", "conflicts", "--conflicts-file=_MTN/conflicts-1", "resolve_first", "interactive", "_MTN/resolutions/interactive_file"), 0, true, nil)
+check(mtn("--rcfile=merge3_hook.lua", "conflicts", "--conflicts-file=_MTN/conflicts-1", "resolve_first", "interactive", "_MTN/resolutions/interactive_file"), 0, true, true)
+check(samelines("stderr", { "mtn: lua: running merge3 hook" }))
 
 check(mtn("conflicts", "--conflicts-file=_MTN/conflicts-1", "show_first"), 0, nil, true)
 canonicalize("stderr")

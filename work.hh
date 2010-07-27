@@ -35,7 +35,7 @@ class app_state;
 // as well as many instance methods.  class methods can be used when you're
 // not sure yet whether or not there is a workspace.  instance methods can
 // only be used if there definitely is a workspace; the workspace object
-// constructor will throw an N() if there isn't one.  (this can also be
+// constructor will throw an E() if there isn't one.  (this can also be
 // triggered by the class method require_workspace, for the sake of a few
 // places that need to do that but not create the workspace object yet.)
 //
@@ -81,12 +81,21 @@ class app_state;
 
 bool directory_is_workspace(system_path const & dir);
 
+namespace bisect
+{
+  enum type { start, good, bad, skipped, update };
+  typedef std::pair<type, revision_id> entry;
+};
+
 struct workspace
 {
   // This is a public flag because it's set from monotone.cc using a
   // function (find_and_go_to_workspace) which cannot presently be moved
   // from paths.cc.
   static bool found;
+  // This is set to true when a workspace object was created and used
+  // for a particular command
+  static bool used;
 
 private:
   // This is used by get_options and set_options. The branch option is set
@@ -117,11 +126,9 @@ public:
   // Constructor.  In normal usage, calling this transitions from the state
   // where there may or may not be a workspace to the state where there
   // definitely is.
-  explicit workspace(app_state & app, bool writeback_options = true);
-  explicit workspace(app_state & app, i18n_format const & explanation,
-                     bool writeback_options = true);
-  explicit workspace(options const & opts, lua_hooks & lua,
-                     i18n_format const & explanation, bool writeback_options = true);
+  explicit workspace(app_state & app);
+  explicit workspace(app_state & app, i18n_format const & explanation);
+  explicit workspace(lua_hooks & lua, i18n_format const & explanation);
 
   // Methods for manipulating the workspace's content.
   void find_missing(roster_t const & new_roster_shape,
@@ -219,15 +226,37 @@ public:
   void blank_user_log();
   bool has_contents_user_log();
 
+  // The full commit text from the edit_comment lua hook is saved before
+  // attempting to extract the various Author: Date: Branch: and Changelog:
+  // values from it in case these values don't appear where they are
+  // expected. Once all the values have been extracted the backup file is
+  // removed.
+
+  void load_commit_text(utf8 & dat);
+  void save_commit_text(utf8 const & dat);
+  void clear_commit_text();
+
   // the "options map" is another administrative file, stored in
   // _MTN/options. it keeps a list of name/value pairs which are considered
   // "persistent options", associated with a particular workspace and
   // implied unless overridden on the command line.
   static void get_options(options & opts);
-  static void get_database_option(system_path const & workspace_root,
-                                  system_path & database_option);
-  static void set_options(options const & opts, bool branch_is_sticky);
+  // like above, just that it reads the options from the given workspace,
+  // not the one we found earlier
+  static void get_options(system_path const & workspace_root,
+                          options & opts);
+  static void set_options(options const & opts,
+                          lua_hooks & lua,
+                          bool branch_is_sticky = false);
+  static void maybe_set_options(options const & opts, lua_hooks & lua);
   static void print_option(utf8 const & opt, std::ostream & output);
+
+  // the "bisect" infromation file is a file that records current status
+  // information for the bisect search.
+
+  void get_bisect_info(std::vector<bisect::entry> & bisect);
+  void put_bisect_info(std::vector<bisect::entry> const & bisect);
+  void remove_bisect_info();
 
   // the "workspace format version" is a nonnegative integer value, stored
   // in _MTN/format as an unadorned decimal number.  at any given time

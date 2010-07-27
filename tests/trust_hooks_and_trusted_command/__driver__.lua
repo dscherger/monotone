@@ -1,16 +1,23 @@
 
 mtn_setup()
+check(get("hooks.lua"))
 
 function trusted(rev, name, value, ...) -- ... is signers
-  check(mtn("trusted", rev, name, value, unpack(arg)), 0, true, false)
+  check(mtn("trusted", "--rcfile", "hooks.lua", rev, name, value, ...), 0, true, false)
   local t = qgrep(" trusted", "stdout")
   local u = qgrep(" untrusted", "stdout") or qgrep(" UNtrusted", "stdout")
   check(t ~= u)
   return t
 end
 
-good = string.rep("1", 40)
-bad = string.rep("0", 40)
+-- create two arbitrary revisions
+addfile("goodfile", "good")
+commit()
+good = base_revision()
+
+addfile("badfile", "bad")
+commit()
+bad = base_revision()
 
 check(mtn("automate", "genkey", "foo@bar.com", "foo@bar.com"), 0, false, false)
 check(mtn("automate", "genkey", "alice@trusted.com", "alice@trusted.com"), 0, false, false)

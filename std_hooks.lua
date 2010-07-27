@@ -30,7 +30,7 @@ end
 function execute(path, ...)
    local pid
    local ret = -1
-   pid = spawn(path, unpack(arg))
+   pid = spawn(path, ...)
    if (pid ~= -1) then ret, pid = wait(pid) end
    return ret
 end
@@ -39,7 +39,7 @@ function execute_redirected(stdin, stdout, stderr, path, ...)
    local pid
    local ret = -1
    io.flush();
-   pid = spawn_redirected(stdin, stdout, stderr, path, unpack(arg))
+   pid = spawn_redirected(stdin, stdout, stderr, path, ...)
    if (pid ~= -1) then ret, pid = wait(pid) end
    return ret
 end
@@ -49,7 +49,7 @@ end
 -- This is needed to work around some brokenness with some merge tools
 -- (e.g. on OS X)
 function execute_confirm(path, ...)
-   ret = execute(path, unpack(arg))
+   ret = execute(path, ...)
 
    if (ret ~= 0)
    then
@@ -277,7 +277,7 @@ function get_encloser_pattern(name)
    return "^[[:alnum:]$_]"
 end
 
-function edit_comment(basetext, user_log_message)
+function edit_comment(user_log_message)
    local exe = nil
 
    -- top priority is VISUAL, then EDITOR, then a series of hardcoded
@@ -290,21 +290,19 @@ function edit_comment(basetext, user_log_message)
    elseif (program_exists_in_path("editor")) then exe = "editor"
    elseif (program_exists_in_path("vi")) then exe = "vi"
    elseif (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and
-	   program_exists_in_path("notepad.exe")) then exe = "notepad"
+       program_exists_in_path("notepad.exe")) then exe = "notepad"
    else
       io.write(gettext("Could not find editor to enter commit message\n"
-		       .. "Try setting the environment variable EDITOR\n"))
+               .. "Try setting the environment variable EDITOR\n"))
       return nil
    end
 
    local tmp, tname = temp_file()
    if (tmp == nil) then return nil end
-   basetext = "MTN: " .. string.gsub(basetext, "\n", "\nMTN: ") .. "\n"
    tmp:write(user_log_message)
    if user_log_message == "" or string.sub(user_log_message, -1) ~= "\n" then
       tmp:write("\n")
    end
-   tmp:write(basetext)
    io.close(tmp)
 
    -- By historical convention, VISUAL and EDITOR can contain arguments
@@ -316,22 +314,22 @@ function edit_comment(basetext, user_log_message)
    if (not string.find(exe, "[^%w_.+-]")) then
       -- safe to call spawn directly
       if (execute(exe, tname) ~= 0) then
-	 io.write(string.format(gettext("Error running editor '%s' "..
-					"to enter log message\n"),
+         io.write(string.format(gettext("Error running editor '%s' "..
+                                        "to enter log message\n"),
                                 exe))
-	 os.remove(tname)
-	 return nil
+         os.remove(tname)
+         return nil
       end
    else
       -- must use shell
       local shell = os.getenv("SHELL")
       if (shell == nil) then shell = "sh" end
       if (not program_exists_in_path(shell)) then
-	 io.write(string.format(gettext("Editor command '%s' needs a shell, "..
-					"but '%s' is not to be found"),
-			        exe, shell))
-	 os.remove(tname)
-	 return nil
+         io.write(string.format(gettext("Editor command '%s' needs a shell, "..
+                                        "but '%s' is not to be found"),
+                                exe, shell))
+         os.remove(tname)
+         return nil
       end
 
       -- Single-quoted strings in both Bourne shell and csh can contain
@@ -339,24 +337,17 @@ function edit_comment(basetext, user_log_message)
       local safe_tname = " '" .. string.gsub(tname, "'", "'\\''") .. "'"
 
       if (execute(shell, "-c", editor .. safe_tname) ~= 0) then
-	 io.write(string.format(gettext("Error running editor '%s' "..
-					"to enter log message\n"),
+         io.write(string.format(gettext("Error running editor '%s' "..
+                                        "to enter log message\n"),
                                 exe))
-	 os.remove(tname)
-	 return nil
+         os.remove(tname)
+         return nil
       end
    end
 
    tmp = io.open(tname, "r")
    if (tmp == nil) then os.remove(tname); return nil end
-   local res = ""
-   local line = tmp:read()
-   while(line ~= nil) do
-      if (not string.find(line, "^MTN:")) then
-         res = res .. line .. "\n"
-      end
-      line = tmp:read()
-   end
+   local res = tmp:read("*a")
    io.close(tmp)
    os.remove(tname)
    return res
@@ -377,14 +368,14 @@ function use_inodeprints()
    return false
 end
 
-function get_date_format_spec()
+function get_date_format_spec(wanted)
    -- Return the strftime(3) specification to be used to print dates
    -- in human-readable format after conversion to the local timezone.
    -- The default uses the preferred date and time representation for
    -- the current locale, e.g. the output looks like this: "09/08/2009
-   -- 06:49:26 PM" for en_US, or "08.09.2009 18:49:26" for de_DE.
-   return "%x %X"
-
+   -- 06:49:26 PM" for en_US and "date_time_long", or "08.09.2009"
+   -- for de_DE and "date_short"
+   --
    -- A sampling of other possible formats you might want:
    --   default for your locale: "%c" (may include a confusing timezone label)
    --   12 hour format: "%d %b %Y, %I:%M:%S %p"
@@ -393,6 +384,14 @@ function get_date_format_spec()
    --   ISO 8601:       "%Y-%m-%d %H:%M:%S" or "%Y-%m-%dT%H:%M:%S"
    --
    --   ISO 8601, no timezone conversion: ""
+   --.
+   if (wanted == "date_long" or wanted == "date_short") then
+       return "%x"
+   end
+   if (wanted == "time_long" or wanted == "time_short") then
+       return "%X"
+   end
+   return "%x %X"
 end
 
 -- trust evaluation hooks
@@ -400,7 +399,7 @@ end
 function intersection(a,b)
    local s={}
    local t={}
-   for k,v in pairs(a) do s[v] = 1 end
+   for k,v in pairs(a) do s[v.name] = 1 end
    for k,v in pairs(b) do if s[v] ~= nil then table.insert(t,v) end end
    return t
 end
@@ -463,10 +462,10 @@ mergers.fail = {
 
 mergers.meld = {
    cmd = function (tbl)
-      io.write (string.format("\nWARNING: 'meld' was chosen to perform "..
-			      "an external 3-way merge.\n"..
-			      "You must merge all changes to the "..
-			      "*CENTER* file."))
+      io.write(string.format(
+        "\nWARNING: 'meld' was chosen to perform an external 3-way merge.\n"..
+        "You must merge all changes to the *CENTER* file.\n\n"
+      ))
       local path = "meld"
       local ret = execute(path, tbl.lfile, tbl.afile, tbl.rfile)
       if (ret ~= 0) then
@@ -476,6 +475,24 @@ mergers.meld = {
       return tbl.afile
    end ,
    available = function () return program_exists_in_path("meld") end,
+   wanted = function () return true end
+}
+
+mergers.diffuse = {
+   cmd = function (tbl)
+      io.write(string.format(
+        "\nWARNING: 'diffuse' was chosen to perform an external 3-way merge.\n"..
+        "You must merge all changes to the *CENTER* file.\n\n"
+      ))
+      local path = "diffuse"
+      local ret = execute(path, tbl.lfile, tbl.afile, tbl.rfile)
+      if (ret ~= 0) then
+         io.write(string.format(gettext("Error running merger '%s'\n"), path))
+         return false
+      end
+      return tbl.afile
+   end ,
+   available = function () return program_exists_in_path("diffuse") end,
    wanted = function () return true end
 }
 
@@ -513,9 +530,9 @@ mergers.vim = {
       end
 
       io.write (string.format("\nWARNING: 'vim' was chosen to perform "..
-			      "an external 3-way merge.\n"..
-			      "You must merge all changes to the "..
-			      "*LEFT* file.\n"))
+                  "an external 3-way merge.\n"..
+                  "You must merge all changes to the "..
+                  "*LEFT* file.\n"))
 
       local vim
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then
@@ -850,7 +867,8 @@ function program_exists_in_path(program)
 end
 
 function get_preferred_merge3_command (tbl)
-   local default_order = {"kdiff3", "xxdiff", "opendiff", "tortoise", "emacs", "vim", "meld", "diffutils"}
+   local default_order = {"diffuse", "kdiff3", "xxdiff", "opendiff",
+                          "tortoise", "emacs", "vim", "meld", "diffutils"}
    local function existmerger(name)
       local m = mergers[name]
       if type(m) == "table" and m.available(tbl) then
@@ -991,21 +1009,21 @@ function expand_date(str)
    if str == "now"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%FT%T", t)
+      return os.date("%Y-%m-%dT%H:%M:%S", t)
    end
 
    -- today don't uses the time         # for xgettext's sake, an extra quote
    if str == "today"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%F", t)
+      return os.date("%Y-%m-%d", t)
    end
 
    -- "yesterday", the source of all hangovers
    if str == "yesterday"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%F", t - 86400)
+      return os.date("%Y-%m-%d", t - 86400)
    end
 
    -- "CVS style" relative dates such as "3 weeks ago"
@@ -1023,9 +1041,9 @@ function expand_date(str)
       local t = os.time(os.date('!*t'))
       if trans[type] <= 3600
       then
-        return os.date("%FT%T", t - (n * trans[type]))
+        return os.date("%Y-%m-%dT%H:%M:%S", t - (n * trans[type]))
       else
-        return os.date("%F", t - (n * trans[type]))
+        return os.date("%Y-%m-%d", t - (n * trans[type]))
       end
    end
 
@@ -1229,8 +1247,18 @@ function get_remote_unix_socket_command(host)
 end
 
 function get_default_command_options(command)
-   local default_args = {}
-   return default_args
+    local default_args = {}
+    return default_args
+end
+
+function get_default_database_alias()
+    return ":default.mtn"
+end
+
+function get_default_database_locations()
+    local paths = {}
+    table.insert(paths, get_confdir() .. "/databases")
+    return paths
 end
 
 hook_wrapper_dump                = {}
@@ -1398,4 +1426,39 @@ do
    function push_netsync_notifier(notifier)
       return push_hook_functions(notifier)
    end
+end
+
+-- to ensure only mapped authors are allowed through
+-- return "" from unmapped_git_author
+-- and validate_git_author will fail
+
+function unmapped_git_author(author)
+   -- replace "foo@bar" with "foo <foo@bar>"
+   name = author:match("^([^<>]+)@[^<>]+$")
+   if name then
+      return name .. " <" .. author .. ">"
+   end
+
+   -- replace "<foo@bar>" with "foo <foo@bar>"
+   name = author:match("^<([^<>]+)@[^<>]+>$")
+   if name then
+      return name .. " " .. author
+   end
+
+   -- replace "foo" with "foo <foo>"
+   name = author:match("^[^<>@]+$")
+   if name then
+      return name .. " <" .. name .. ">"
+   end
+
+   return author -- unchanged
+end
+
+function validate_git_author(author)
+   -- ensure author matches the "Name <email>" format git expects
+   if author:match("^[^<]+ <[^>]*>$") then
+      return true
+   end
+
+   return false
 end

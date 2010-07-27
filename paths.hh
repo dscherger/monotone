@@ -50,7 +50,7 @@
 //          to the project root.
 //        file_path_external: use this for strings that come from the user.
 //          these strings are normalized before being checked, and if there
-//          is a problem trigger N() invariants rather than I() invariants.
+//          is a problem trigger E() invariants rather than I() invariants.
 //          if in a workspace, such strings are interpreted as being
 //          _relative to the user's original directory_. if not in a
 //          workspace, strings are treated as relative to the tree root. The
@@ -215,6 +215,9 @@ public:
   // does dirname() and basename() at the same time, for efficiency
   void dirname_basename(file_path &, path_component &) const;
 
+  // returns true if this path is beneath other
+  bool is_beneath_of(const file_path & other) const;
+
   // returns the number of /-separated components of the path.
   // The empty path has depth zero.
   unsigned int depth() const;
@@ -378,8 +381,9 @@ public:
   explicit system_path(utf8 const & path);
 
   bool operator==(const system_path & other) const
-  { return data== other.data; }
-
+  { return data == other.data; }
+  bool operator!=(const system_path & other) const
+  { return data != other.data; }
   bool operator <(const system_path & other) const
   { return data < other.data; }
 
@@ -466,6 +470,10 @@ find_and_go_to_workspace(std::string const & search_root);
 // root paths that are needed to interpret paths
 void
 go_to_workspace(system_path const & new_workspace);
+
+// returns the currently active workspace path
+void
+get_current_workspace(system_path & workspace);
 
 void mark_std_paths_used(void);
 

@@ -32,6 +32,22 @@ struct uri_t
     query.clear();
     fragment.clear();
   }
+
+  std::string resource() const
+  {
+    std::string res;
+    if (!scheme.empty())
+      res += scheme + "://";
+    if (!user.empty())
+      res += user + "@";
+    if (!host.empty())
+      res += host;
+    if (!port.empty())
+      res += ":" + port;
+    if (!path.empty())
+      res += path;
+    return res;
+  }
 };
 
 void

@@ -68,6 +68,9 @@ class session : public session_base
   std::string peer;
   boost::shared_ptr<wrapped_session> wrapped;
 
+  int unnoted_bytes_in;
+  int unnoted_bytes_out;
+
   void queue_bye_cmd(u8 phase);
   bool process_bye_cmd(u8 phase, transaction_guard & guard);
 
@@ -103,6 +106,9 @@ public:
   // ensure that our peer receives the error message.
   // Affects read_some, write_some, and process .
   void error(int errcode, std::string const & message);
+
+  void note_bytes_in(int count);
+  void note_bytes_out(int count);
 };
 
 #endif

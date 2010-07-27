@@ -190,10 +190,10 @@ struct base_scalar
   {
     r.create_dir_node(nid);
     r.attach_node(nid, file_path_internal(name));
-    marking_t marking;
-    marking.birth_revision = root_rid;
-    marking.parent_name.insert(root_rid);
-    safe_insert(markings, make_pair(nid, marking));
+    marking_t m(new marking());
+    m->birth_revision = root_rid;
+    m->parent_name.insert(root_rid);
+    markings.put_marking(nid, m);
   }
 
   void
@@ -201,11 +201,11 @@ struct base_scalar
   {
     r.create_file_node(arbitrary_file, nid);
     r.attach_node(nid, file_path_internal(name));
-    marking_t marking;
-    marking.birth_revision = root_rid;
-    marking.parent_name.insert(root_rid);
-    marking.file_content.insert(root_rid);
-    safe_insert(markings, make_pair(nid, marking));
+    marking_t m(new marking());
+    m->birth_revision = root_rid;
+    m->parent_name.insert(root_rid);
+    m->file_content.insert(root_rid);
+    markings.put_marking(nid, m);
   }
 
   void
@@ -309,7 +309,7 @@ struct basename_scalar : public name_shared_stuff, public T
     this->T::make_thing(r, markings);
     r.detach_node(this->T::thing_name);
     r.attach_node(thing_nid, path_for(val));
-    markings.find(thing_nid)->second.parent_name = marks;
+    markings.get_marking_for_update(thing_nid)->parent_name = marks;
   }
 
   virtual ~basename_scalar() {}
@@ -342,7 +342,7 @@ struct parent_scalar : public virtual name_shared_stuff, public T
     make_dir("b", b_dir_nid, r, markings);
     r.detach_node(this->T::thing_name);
     r.attach_node(thing_nid, path_for(val));
-    markings.find(thing_nid)->second.parent_name = marks;
+    markings.get_marking_for_update(thing_nid)->parent_name = marks;
   }
 
   virtual ~parent_scalar() {}
@@ -363,7 +363,7 @@ struct attr_scalar : public virtual base_scalar, public T
   {
     this->T::make_thing(r, markings);
     r.set_attr(this->T::thing_name, attr_key("test_key"), attr_value_for(val));
-    markings.find(thing_nid)->second.attrs[attr_key("test_key")] = marks;
+    markings.get_marking_for_update(thing_nid)->attrs[attr_key("test_key")] = marks;
   }
 
   void
@@ -374,7 +374,7 @@ struct attr_scalar : public virtual base_scalar, public T
     switch (expected_val)
       {
       case scalar_a: case scalar_b:
-        I(result.roster.get_node(thing_nid)->attrs[attr_key("test_key")]
+        I(result.roster.get_node_for_update(thing_nid)->attrs[attr_key("test_key")]
           == make_pair(true, attr_value_for(expected_val)));
         break;
       case scalar_conflict:
@@ -413,8 +413,8 @@ struct file_content_scalar : public virtual file_scalar
                roster_t & r, marking_map & markings)
   {
     make_thing(r, markings);
-    downcast_to_file_t(r.get_node(thing_name))->content = content_for(val);
-    markings.find(thing_nid)->second.file_content = marks;
+    downcast_to_file_t(r.get_node_for_update(thing_name))->content = content_for(val);
+    markings.get_marking_for_update(thing_nid)->file_content = marks;
   }
 
   void
@@ -433,7 +433,7 @@ struct file_content_scalar : public virtual file_scalar
         I(c.nid == thing_nid);
         I(c.left == content_for(left_val));
         I(c.right == content_for(right_val));
-        file_id & content = downcast_to_file_t(result.roster.get_node(thing_nid))->content;
+        file_id & content = downcast_to_file_t(result.roster.get_node_for_update(thing_nid))->content;
         I(null_id(content));
         // resolve the conflict, thus making sure that resolution works and
         // that this was the only conflict signaled
@@ -606,10 +606,10 @@ make_dir(roster_t & r, marking_map & markings,
 {
   r.create_dir_node(nid);
   r.attach_node(nid, file_path_internal(name));
-  marking_t marking;
-  marking.birth_revision = birth_rid;
-  marking.parent_name.insert(parent_name_rid);
-  safe_insert(markings, make_pair(nid, marking));
+  marking_t m(new marking());
+  m->birth_revision = birth_rid;
+  m->parent_name.insert(parent_name_rid);
+  markings.put_marking(nid, m);
 }
 
 static void
@@ -621,11 +621,11 @@ make_file(roster_t & r, marking_map & markings,
 {
   r.create_file_node(content, nid);
   r.attach_node(nid, file_path_internal(name));
-  marking_t marking;
-  marking.birth_revision = birth_rid;
-  marking.parent_name.insert(parent_name_rid);
-  marking.file_content.insert(file_content_rid);
-  safe_insert(markings, make_pair(nid, marking));
+  marking_t m(new marking());
+  m->birth_revision = birth_rid;
+  m->parent_name.insert(parent_name_rid);
+  m->file_content.insert(file_content_rid);
+  markings.put_marking(nid, m);
 }
 
 static void
@@ -718,31 +718,31 @@ UNIT_TEST(attr_lifecycle)
 
   // put one live and one dead attr on each thing on each side, with uncommon
   // marks on them
-  safe_insert(left_roster.get_node(dir_nid)->attrs,
+  safe_insert(left_roster.get_node_for_update(dir_nid)->attrs,
               make_pair(attr_key("left_live"), make_pair(true, attr_value("left_live"))));
-  safe_insert(left_markings[dir_nid].attrs, make_pair(attr_key("left_live"), left_revs));
-  safe_insert(left_roster.get_node(dir_nid)->attrs,
+  safe_insert(left_markings.get_marking_for_update(dir_nid)->attrs, make_pair(attr_key("left_live"), left_revs));
+  safe_insert(left_roster.get_node_for_update(dir_nid)->attrs,
               make_pair(attr_key("left_dead"), make_pair(false, attr_value(""))));
-  safe_insert(left_markings[dir_nid].attrs, make_pair(attr_key("left_dead"), left_revs));
-  safe_insert(left_roster.get_node(file_nid)->attrs,
+  safe_insert(left_markings.get_marking_for_update(dir_nid)->attrs, make_pair(attr_key("left_dead"), left_revs));
+  safe_insert(left_roster.get_node_for_update(file_nid)->attrs,
               make_pair(attr_key("left_live"), make_pair(true, attr_value("left_live"))));
-  safe_insert(left_markings[file_nid].attrs, make_pair(attr_key("left_live"), left_revs));
-  safe_insert(left_roster.get_node(file_nid)->attrs,
+  safe_insert(left_markings.get_marking_for_update(file_nid)->attrs, make_pair(attr_key("left_live"), left_revs));
+  safe_insert(left_roster.get_node_for_update(file_nid)->attrs,
               make_pair(attr_key("left_dead"), make_pair(false, attr_value(""))));
-  safe_insert(left_markings[file_nid].attrs, make_pair(attr_key("left_dead"), left_revs));
+  safe_insert(left_markings.get_marking_for_update(file_nid)->attrs, make_pair(attr_key("left_dead"), left_revs));
 
-  safe_insert(right_roster.get_node(dir_nid)->attrs,
+  safe_insert(right_roster.get_node_for_update(dir_nid)->attrs,
               make_pair(attr_key("right_live"), make_pair(true, attr_value("right_live"))));
-  safe_insert(right_markings[dir_nid].attrs, make_pair(attr_key("right_live"), right_revs));
-  safe_insert(right_roster.get_node(dir_nid)->attrs,
+  safe_insert(right_markings.get_marking_for_update(dir_nid)->attrs, make_pair(attr_key("right_live"), right_revs));
+  safe_insert(right_roster.get_node_for_update(dir_nid)->attrs,
               make_pair(attr_key("right_dead"), make_pair(false, attr_value(""))));
-  safe_insert(right_markings[dir_nid].attrs, make_pair(attr_key("right_dead"), right_revs));
-  safe_insert(right_roster.get_node(file_nid)->attrs,
+  safe_insert(right_markings.get_marking_for_update(dir_nid)->attrs, make_pair(attr_key("right_dead"), right_revs));
+  safe_insert(right_roster.get_node_for_update(file_nid)->attrs,
               make_pair(attr_key("right_live"), make_pair(true, attr_value("right_live"))));
-  safe_insert(right_markings[file_nid].attrs, make_pair(attr_key("right_live"), right_revs));
-  safe_insert(right_roster.get_node(file_nid)->attrs,
+  safe_insert(right_markings.get_marking_for_update(file_nid)->attrs, make_pair(attr_key("right_live"), right_revs));
+  safe_insert(right_roster.get_node_for_update(file_nid)->attrs,
               make_pair(attr_key("right_dead"), make_pair(false, attr_value(""))));
-  safe_insert(right_markings[file_nid].attrs, make_pair(attr_key("right_dead"), right_revs));
+  safe_insert(right_markings.get_marking_for_update(file_nid)->attrs, make_pair(attr_key("right_dead"), right_revs));
 
   roster_merge_result result;
   MM(result);
@@ -933,7 +933,7 @@ struct simple_invalid_name_conflict : public structural_conflict_helper
       bad_dir_nid = nis.next();
 
       left_roster.drop_detached_node(left_roster.detach_node(file_path()));
-      safe_erase(left_markings, root_nid);
+      left_markings.remove_marking(root_nid);
       make_dir(left_roster, left_markings, old_rid, left_rid, "", new_root_nid);
 
       make_dir(right_roster, right_markings, old_rid, old_rid, "root_to_be", new_root_nid);
@@ -967,7 +967,7 @@ struct simple_missing_root_dir : public structural_conflict_helper
       other_root_nid = nis.next();
 
       left_roster.drop_detached_node(left_roster.detach_node(file_path()));
-      safe_erase(left_markings, root_nid);
+      left_markings.remove_marking(root_nid);
       make_dir(left_roster, left_markings, old_rid, old_rid, "", other_root_nid);
     }
 
@@ -1111,7 +1111,7 @@ struct multiple_name_plus_invalid_name : public multiple_name_plus_helper
     new_root_nid = nis.next();
     make_dir(left_roster, left_markings, old_rid, old_rid, "new_root", new_root_nid);
     right_roster.drop_detached_node(right_roster.detach_node(file_path()));
-    safe_erase(right_markings, root_nid);
+    right_markings.remove_marking(root_nid);
     make_dir(right_roster, right_markings, old_rid, right_rid, "", new_root_nid);
     make_multiple_name_conflict("new_root/_MTN", "foo");
   }
@@ -1134,12 +1134,12 @@ struct multiple_name_plus_missing_root : public structural_conflict_helper
     right_root_nid = nis.next();
 
     left_roster.drop_detached_node(left_roster.detach_node(file_path()));
-    safe_erase(left_markings, root_nid);
+    left_markings.remove_marking(root_nid);
     make_dir(left_roster, left_markings, old_rid, left_rid, "", left_root_nid);
     make_dir(left_roster, left_markings, old_rid, left_rid, "right_root", right_root_nid);
 
     right_roster.drop_detached_node(right_roster.detach_node(file_path()));
-    safe_erase(right_markings, root_nid);
+    right_markings.remove_marking(root_nid);
     make_dir(right_roster, right_markings, old_rid, right_rid, "", right_root_nid);
     make_dir(right_roster, right_markings, old_rid, right_rid, "left_root", left_root_nid);
   }
@@ -1188,11 +1188,11 @@ struct duplicate_name_plus_missing_root : public structural_conflict_helper
     right_root_nid = nis.next();
 
     left_roster.drop_detached_node(left_roster.detach_node(file_path()));
-    safe_erase(left_markings, root_nid);
+    left_markings.remove_marking(root_nid);
     make_dir(left_roster, left_markings, left_rid, left_rid, "", left_root_nid);
 
     right_roster.drop_detached_node(right_roster.detach_node(file_path()));
-    safe_erase(right_markings, root_nid);
+    right_markings.remove_marking(root_nid);
     make_dir(right_roster, right_markings, right_rid, right_rid, "", right_root_nid);
   }
   virtual void check()

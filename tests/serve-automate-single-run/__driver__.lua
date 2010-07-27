@@ -7,7 +7,10 @@ addfile("foo", "bar")
 commit()
 R1 = base_revision()
 
-server = netsync.start()
+writefile("deny-automate.lua",
+          "function get_remote_automate_permitted(x, y, z) return false end")
+
+server = netsync.start({"--rcfile=deny-automate.lua"})
 
 check(mtn2("automate", "remote", "--remote-stdio-host", server.address,
     "interface_version"), 1, true, true)
@@ -52,3 +55,9 @@ check(mtn2("automate", "remote", "--remote-stdio-host", server.address,
 check(qgrep("bar", "stdout"))
 
 server:stop()
+
+copy("allow-automate.lua", "custom_test_hooks.lua")
+check(mtn2("automate", "remote", "--remote-stdio-host",
+	   "file://"..test.root.."/test.db",
+	   "get_file_of", "--", "-r".. R1, "foo"), 0, true, false)
+check(qgrep("bar", "stdout"))

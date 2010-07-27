@@ -12,12 +12,13 @@
 
 #include "vocab.hh"
 #include "rev_types.hh"
+#include "app_state.hh"
 
 class project_t;
 
 void
-do_annotate(project_t & project, file_t file_node, revision_id rid,
-            bool just_revs);
+do_annotate(app_state & app, project_t & project, const_file_t file_node,
+            revision_id rid, bool just_revs);
 
 #endif // defined __ANNOTATE_HH__
 

@@ -32,8 +32,9 @@ null_node(node_id n)
   return n == the_null_node;
 }
 
-template <> void dump(node_id const & val, std::string & out);
 template <> void dump(attr_map_t const & val, std::string & out);
+
+enum roster_node_type { node_type_none, node_type_file, node_type_dir };
 
 struct node
 {
@@ -43,6 +44,8 @@ struct node
   node_id parent; // the_null_node iff this is a root dir
   path_component name; // the_null_component iff this is a root dir
   attr_map_t attrs;
+  roster_node_type type;
+  u32 cow_version; // see roster_t::cow_version below
 
   // need a virtual function to make dynamic_cast work
   virtual node_t clone() = 0;
@@ -80,17 +83,15 @@ struct file_node
 };
 
 inline bool
-is_dir_t(node_t n)
+is_dir_t(const_node_t n)
 {
-  dir_t d = boost::dynamic_pointer_cast<dir_node, node>(n);
-  return static_cast<bool>(d);
+  return n->type == node_type_dir;
 }
 
 inline bool
-is_file_t(node_t n)
+is_file_t(const_node_t n)
 {
-  file_t f = boost::dynamic_pointer_cast<file_node, node>(n);
-  return static_cast<bool>(f);
+  return n->type == node_type_file;
 }
 
 inline bool
@@ -106,42 +107,90 @@ is_root_dir_t(node_t n)
 }
 
 inline dir_t
-downcast_to_dir_t(node_t const n)
+downcast_to_dir_t(node_t const & n)
 {
   dir_t d = boost::dynamic_pointer_cast<dir_node, node>(n);
   I(static_cast<bool>(d));
   return d;
 }
 
-
 inline file_t
-downcast_to_file_t(node_t const n)
+downcast_to_file_t(node_t const & n)
 {
   file_t f = boost::dynamic_pointer_cast<file_node, node>(n);
   I(static_cast<bool>(f));
   return f;
 }
 
+inline const_dir_t
+downcast_to_dir_t(const_node_t const & n)
+{
+  const_dir_t d = boost::dynamic_pointer_cast<dir_node const, node const>(n);
+  I(static_cast<bool>(d));
+  return d;
+}
+
+inline const_file_t
+downcast_to_file_t(const_node_t const & n)
+{
+  const_file_t f = boost::dynamic_pointer_cast<file_node const, node const>(n);
+  I(static_cast<bool>(f));
+  return f;
+}
+
 bool
-shallow_equal(node_t a, node_t b, bool shallow_compare_dir_children,
+shallow_equal(const_node_t a, const_node_t b,
+              bool shallow_compare_dir_children,
               bool compare_file_contents = true);
 
 template <> void dump(node_t const & n, std::string & out);
 
-struct marking_t
+struct marking
 {
+  u32 cow_version;
   revision_id birth_revision;
   std::set<revision_id> parent_name;
   std::set<revision_id> file_content;
   std::map<attr_key, std::set<revision_id> > attrs;
-  marking_t() {};
-  bool operator==(marking_t const & other) const
+  marking();
+  marking(marking const & other);
+  marking const & operator=(marking const & other);
+  bool operator==(marking const & other) const
   {
     return birth_revision == other.birth_revision
       && parent_name == other.parent_name
       && file_content == other.file_content
       && attrs == other.attrs;
   }
+};
+
+class marking_map
+{
+  mutable u32 cow_version;
+  typedef cow_trie<node_id, marking_t, 8> map_type;
+  map_type _store;
+public:
+  typedef map_type::key_type key_type;
+  typedef map_type::value_type value_type;
+
+  marking_map();
+  marking_map(marking_map const & other);
+  marking_map const & operator=(marking_map const & other);
+  const_marking_t get_marking(node_id nid) const;
+  marking_t const & get_marking_for_update(node_id nid);
+  void put_marking(node_id nid, marking_t const & m);
+  void put_marking(node_id nid, const_marking_t const & m);
+
+  // for roster_delta
+  void put_or_replace_marking(node_id nid, const_marking_t const & m);
+
+  typedef map_type::const_iterator const_iterator;
+  const_iterator begin() const;
+  const_iterator end() const;
+  size_t size() const;
+  bool contains(node_id nid) const;
+  void clear();
+  void remove_marking(node_id nid);
 };
 
 template <> void dump(std::set<revision_id> const & revids, std::string & out);
@@ -151,7 +200,7 @@ template <> void dump(marking_map const & marking_map, std::string & out);
 class roster_t
 {
 public:
-  roster_t() {}
+  roster_t();
   roster_t(roster_t const & other);
   roster_t & operator=(roster_t const & other);
   bool has_root() const;
@@ -159,9 +208,15 @@ public:
   bool has_node(node_id nid) const;
   bool is_root(node_id nid) const;
   bool is_attached(node_id nid) const;
-  node_t get_node(file_path const & sp) const;
-  node_t get_node(node_id nid) const;
+private:
+  node_t get_node_internal(file_path const & p) const;
+public:
+  const_node_t get_node(file_path const & sp) const;
+  const_node_t get_node(node_id nid) const;
+  node_t get_node_for_update(file_path const & sp);
+  node_t get_node_for_update(node_id nid);
   void get_name(node_id nid, file_path & sp) const;
+  void unshare(node_t & n, bool is_in_node_map = true);
   void replace_node_id(node_id from, node_id to);
 
   // editable_tree operations
@@ -224,7 +279,7 @@ public:
   // marking map
   void check_sane_against(marking_map const & marks, bool temp_nodes_ok=false) const;
 
-  void print_to(basic_io::printer & pr,
+  void print_to(data & dat,
                 marking_map const & mm,
                 bool print_local_parts) const;
 
@@ -237,9 +292,17 @@ public:
   }
 
 private:
-  void do_deep_copy_from(roster_t const & other);
+  //void do_deep_copy_from(roster_t const & other);
   dir_t root_dir;
   node_map nodes;
+  // This is set to a unique value when a roster is created or
+  // copied to/from another roster. If a node has the same version
+  // as the roster it's in, then it is not shared. Nodes with version
+  // zero are also not shared, since that means they haven't been added
+  // to a roster yet.
+  // A simple refcount isn't good enough, because everything that points
+  // to a node in question could also be shared.
+  mutable u32 cow_version;
   // This requires some explanation.  There is a particular kind of
   // nonsensical behavior which we wish to discourage -- when a node is
   // detached from some location, and then re-attached at that same location
@@ -423,14 +486,21 @@ write_roster_and_marking(roster_t const & ros,
 
 void
 write_manifest_of_roster(roster_t const & ros,
-                         manifest_data & dat);
+                         manifest_data & dat,
+                         bool do_sanity_check = true);
 
 
 void calculate_ident(roster_t const & ros,
-                     manifest_id & ident);
+                     manifest_id & ident,
+                     bool do_sanity_check = true);
 
 // for roster_delta
-void push_marking(basic_io::stanza & st, bool is_file, marking_t const & mark);
+
+void append_with_escaped_quotes(std::string & collection,
+                                std::string const & item);
+void push_marking(std::string & contents,
+                  bool is_file, const_marking_t const & mark,
+                  int symbol_length);
 void parse_marking(basic_io::parser & pa, marking_t & marking);
 
 // Parent maps are used in a number of places to keep track of all the

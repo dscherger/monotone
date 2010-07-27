@@ -2,7 +2,7 @@ skip_if(not existsonpath("git"))
 
 mtn_setup()
 
-writefile("author.map", "tester@test.net = <tester@test.net>\n")
+writefile("author.map", "tester@test.net = tester <tester@test.net>\n")
 
 writefile("file1", "file1")
 writefile("file2", "file2")

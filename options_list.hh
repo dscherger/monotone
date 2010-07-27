@@ -1,5 +1,5 @@
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
-//               2008-2009 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008-2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -91,6 +91,24 @@ OPT(automate_stdio_size, "automate-stdio-size", size_t, 32768,
 }
 #endif
 
+OPTSET(maybe_auto_update)
+OPTVAR(maybe_auto_update, bool, do_auto_update, false)
+OPTION(maybe_auto_update, yes_update, false, "update",
+       gettext_noop("automatically update the workspace, if it is clean and the base "
+                    "revision is a head of an affected branch"))
+#ifdef option_bodies
+{
+  do_auto_update = true;
+}
+#endif
+OPTION(maybe_auto_update, no_update, false, "no-update",
+       gettext_noop("do not touch the workspace (default)"))
+#ifdef option_bodies
+{
+  do_auto_update = false;
+}
+#endif
+
 OPTSET(bind_opts)
 OPTVAR(bind_opts, std::list<utf8>, bind_uris, )
 OPTVAR(bind_opts, bool, bind_stdio, false)
@@ -140,18 +158,17 @@ OPT(min_netsync_version, "min-netsync-version",
 }
 #endif
 
-OPT(remote_stdio_host, "remote-stdio-host",
-    utf8, ,
+OPT(remote_stdio_host, "remote-stdio-host", arg_type, ,
     gettext_noop("sets the host (and optionally the port) for a "
                  "remote netsync action"))
 #ifdef option_bodies
 {
-  remote_stdio_host = utf8(arg, origin::user);
+  remote_stdio_host = arg_type(arg, origin::user);
 }
 #endif
 
 OPT(branch, "branch,b", branch_name, ,
-        gettext_noop("select branch cert for operation"))
+    gettext_noop("select branch cert for operation"))
 #ifdef option_bodies
 {
   branch = branch_name(arg, origin::user);
@@ -211,7 +228,7 @@ OPT(date, "date", date_t, ,
 }
 #endif
 
-OPT(date_fmt, "date-format", std::string, ,
+GOPT(date_fmt, "date-format", std::string, ,
     gettext_noop("strftime(3) format specification for printing dates"))
 #ifdef option_bodies
 {
@@ -219,7 +236,7 @@ OPT(date_fmt, "date-format", std::string, ,
 }
 #endif
 
-OPT(format_dates, "no-format-dates", bool, true,
+GOPT(format_dates, "no-format-dates", bool, true,
     gettext_noop("print date certs exactly as stored in the database"))
 #ifdef option_bodies
 {
@@ -227,12 +244,34 @@ OPT(format_dates, "no-format-dates", bool, true,
 }
 #endif
 
-OPTVAR(globals, bool, dbname_is_memory, false);
+
+OPTVAR(globals, db_type, dbname_type, );
+OPTVAR(globals, std::string, dbname_alias, );
 GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #ifdef option_bodies
 {
-  dbname = system_path(arg, origin::user);
-  dbname_is_memory = (arg == ":memory:");
+  if (arg == memory_db_identifier)
+    {
+      dbname_type = memory_db;
+    }
+  else if (arg.size() > 0 && arg.substr(0, 1) == ":")
+    {
+      dbname_alias = arg;
+      dbname_type = managed_db;
+    }
+  else
+    {
+      dbname = system_path(arg, origin::user);
+      dbname_type = unmanaged_db;
+    }
+}
+#endif
+
+GOPT(roster_cache_performance_log, "roster-cache-performance-log",
+     system_path, , gettext_noop("log roster cache statistic to the given file"))
+#ifdef option_bodies
+{
+  roster_cache_performance_log = system_path(arg, origin::user);
 }
 #endif
 
@@ -382,7 +421,7 @@ OPT(bookkeep_only, "bookkeep-only", bool, false,
 #endif
 
 OPT(move_conflicting_paths, "move-conflicting-paths", bool, false,
-        gettext_noop("move conflicting, unversioned paths into _MTN/conflicts "
+        gettext_noop("move conflicting, unversioned paths into _MTN/resolutions "
                      "before proceeding with any workspace change"))
 #ifdef option_bodies
 {
@@ -461,6 +500,13 @@ GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
 }
 #endif
 
+GOPT(non_interactive, "non-interactive", bool, false,
+     gettext_noop("do not prompt the user for input"))
+#ifdef option_bodies
+{
+  non_interactive = true;
+}
+#endif
 
 OPTVAR(key, external_key_name, signing_key, )
 OPTION(globals, key, true, "key,k",
@@ -634,6 +680,15 @@ gettext_noop("suppress warning, verbose, informational and progress messages"))
   reallyquiet = true;
   global_sanity.set_reallyquiet();
   ui.set_tick_write_nothing();
+}
+#endif
+
+GOPT(timestamps, "timestamps", bool, false,
+gettext_noop("show timestamps in front of errors, warnings and progress messages"))
+#ifdef option_bodies
+{
+  timestamps = true;
+  ui.enable_timestamps();
 }
 #endif
 

@@ -33,10 +33,10 @@ building and installation process for monotone
 
            install the following packages:
              autoconf automake gettext g++ libboost-dev libz-dev
-             libbotan1.8-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
-             libidn11-dev texinfo
+             libbotan-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
+             libidn11-dev libgmp3-dev libbz2-dev texinfo
 
-           (On etch, you may need to use libbotan1.8 from lenny.)
+           (On etch, you may need to use libbotan1.7 from lenny.)
 
         on FreeBSD:
 
@@ -89,7 +89,7 @@ building and installation process for monotone
 
            Package  | Version | location
            --------------------------
-           MingGW   | 5.1.4   | Automated MinGW Installer | MinGW-5.1.4.exe
+           MinGW    | 5.1.4   | Automated MinGW Installer | MinGW-5.1.4.exe
            MSYS     | 1.0.11  | MSYS Base System | Current Release: msys-1.0.10 | MSYS-1.0.10.exe
            msysDTK  | 1.0.1   | MSYS Supplementary Tools | Current Release: msysDTK-1.0.1 | msysDTK-1.0.1.exe
            libiconv | 1.13    | MinGW libiconv | Release 1.13 |
@@ -113,6 +113,7 @@ building and installation process for monotone
            botan    | 1.8.4   | http://botan.randombit.net/news/ | Botan-1.8.4.tbz
            sqlite3  | 3.6.16  | http://www.sqlite.org/download.html | sqlite-amalgamation-3.6.16.tar.gz, with makefile
            libidn   | 1.9     | ftp://ftp.gnu.org/gnu/libidn | libidn-1.9.tar.gz
+           Depends.exe|       | http://www.dependencywalker.com/ ; also comes with Visual Studio
 
            msysDTK installs autoconf, automake, Perl, CVS, crypt, and
            other tools needed by the autoconf tools.
@@ -204,11 +205,20 @@ building and installation process for monotone
                $ ./configure --prefix=/mingw
                $ make install
 
-           15. build monotone
+           15. Depends.exe
+               If you have Visual Studio install, you should be able to skip this.
+               If you don't, then download the appropriate depends*.zip and
+               unpack it someplace in your %PATH%.
+               This is only used by the testsuite, in particular the empty_environment test.
+               If you just want to build monotone for your own use, you can skip this and
+               just ignore that that test fails.
+
+           16. build monotone
                $ cd /c/.../monotone
-               $ export PATH=/bin:$PATH
+               $ export PATH=/bin:/mingw/bin
                $ autoreconf -i
-               $ ./configure sqlite_LIBS=-lsqlite3
+               $ touch config.h.in
+               $ ./configure sqlite3_LIBS=-lsqlite3
                $ make
 
         on Windows (using Cygwin):
@@ -233,7 +243,7 @@ building and installation process for monotone
                boost-devel-1.33.1
                libsqlite3-devel-3.6.2
                libidn-devel-1.9
-               gettext-0.17
+               gettext-devel-0.17
                zlib-1.2.3
                perl-5.10.0
                botan-1.8.2
@@ -244,7 +254,7 @@ building and installation process for monotone
            dependencies is usually available soon after release.
 
            The following is needed to succesfully configure:
-             CXXFLAGS+="-I/usr/include/boost-1_33_1/"
+             export CXXFLAGS="-I/usr/include/boost-1_33_1/"; configure
 
            Easiest way to create a Cygwin package is using cygport
            (which must be installed separately as a Cygwin package)
@@ -376,11 +386,7 @@ building and installation process for monotone
     be free to share it with others or make changes and submit them to
     us:
 
-        mtn --db=mt.mtn db init
-
-        mtn --db=mt.mtn pull monotone.ca net.venge.monotone
-
-        mtn --db=mt.mtn --branch=net.venge.monotone checkout monotone-sources
+        mtn clone monotone.ca net.venge.monotone
 
 5. upgrading
 

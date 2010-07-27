@@ -1,4 +1,4 @@
 function labellagigogin()
-  io.write("CICCA CICCA")
+  io.stdout:write("CICCA CICCA")
 end
 labellagigogin()

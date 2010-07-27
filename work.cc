@@ -1,4 +1,4 @@
-// Copyright (C) 2009 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2009, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -25,7 +25,6 @@
 #include "restrictions.hh"
 #include "sanity.hh"
 #include "safe_map.hh"
-#include "simplestring_xform.hh"
 #include "revision.hh"
 #include "inodeprint.hh"
 #include "merge_content.hh"
@@ -53,8 +52,10 @@ static char const inodeprints_file_name[] = "inodeprints";
 static char const local_dump_file_name[] = "debug";
 static char const options_file_name[] = "options";
 static char const user_log_file_name[] = "log";
+static char const commit_file_name[] = "commit";
 static char const revision_file_name[] = "revision";
 static char const update_file_name[] = "update";
+static char const bisect_file_name[] = "bisect";
 
 static void
 get_revision_path(bookkeeping_path & m_path)
@@ -92,10 +93,24 @@ get_user_log_path(bookkeeping_path & ul_path)
 }
 
 static void
+get_commit_path(bookkeeping_path & commit_path)
+{
+  commit_path = bookkeeping_root / commit_file_name;
+  L(FL("commit path is %s") % commit_path);
+}
+
+static void
 get_update_path(bookkeeping_path & update_path)
 {
   update_path = bookkeeping_root / update_file_name;
   L(FL("update path is %s") % update_path);
+}
+
+static void
+get_bisect_path(bookkeeping_path & bisect_path)
+{
+  bisect_path = bookkeeping_root / bisect_file_name;
+  L(FL("bisect path is %s") % bisect_path);
 }
 
 //
@@ -109,6 +124,7 @@ directory_is_workspace(system_path const & dir)
 }
 
 bool workspace::found;
+bool workspace::used;
 bool workspace::branch_is_sticky;
 
 void
@@ -116,6 +132,7 @@ workspace::require_workspace()
 {
   E(workspace::found, origin::user,
     F("workspace required but not found"));
+  workspace::used = true;
 }
 
 void
@@ -123,6 +140,7 @@ workspace::require_workspace(i18n_format const & explanation)
 {
   E(workspace::found, origin::user,
     F("workspace required but not found\n%s") % explanation.str());
+  workspace::used = true;
 }
 
 void
@@ -148,7 +166,7 @@ workspace::create_workspace(options const & opts,
   mkdir_p(bookkeeping_root);
 
   workspace::found = true;
-  workspace::set_options(opts, true);
+  workspace::set_options(opts, lua, true);
   workspace::write_format();
 
   data empty;
@@ -172,30 +190,22 @@ workspace::create_workspace(options const & opts,
 }
 
 // Normal-use constructor.
-workspace::workspace(app_state & app, bool writeback_options)
+workspace::workspace(app_state & app)
   : lua(app.lua)
 {
   require_workspace();
-  if (writeback_options)
-    set_options(app.opts, false);
 }
 
-workspace::workspace(app_state & app, i18n_format const & explanation,
-                     bool writeback_options)
+workspace::workspace(app_state & app, i18n_format const & explanation)
   : lua(app.lua)
 {
   require_workspace(explanation);
-  if (writeback_options)
-    set_options(app.opts, false);
 }
 
-workspace::workspace(options const & opts, lua_hooks & lua,
-                     i18n_format const & explanation, bool writeback_options)
+workspace::workspace(lua_hooks & lua, i18n_format const & explanation)
   : lua(lua)
 {
   require_workspace(explanation);
-  if (writeback_options)
-    set_options(opts, false);
 }
 
 // routines for manipulating the bookkeeping directory
@@ -411,14 +421,46 @@ workspace::has_contents_user_log()
   return user_log_message().length() > 0;
 }
 
+// commit buffer backup file
+
+void
+workspace::load_commit_text(utf8 & dat)
+{
+  bookkeeping_path commit_path;
+  get_commit_path(commit_path);
+
+  if (file_exists(commit_path))
+    {
+      data tmp;
+      read_data(commit_path, tmp);
+      system_to_utf8(typecast_vocab<external>(tmp), dat);
+    }
+}
+
+void
+workspace::save_commit_text(utf8 const & dat)
+{
+  bookkeeping_path commit_path;
+  get_commit_path(commit_path);
+
+  external tmp;
+  utf8_to_system_best_effort(dat, tmp);
+  write_data(commit_path, typecast_vocab<data>(tmp));
+}
+
+void
+workspace::clear_commit_text()
+{
+  bookkeeping_path commit_path;
+  get_commit_path(commit_path);
+  delete_file(commit_path);
+}
+
 // _MTN/options handling.
 
 static void
 read_options_file(any_path const & optspath,
-                  system_path & workspace_database,
-                  branch_name & workspace_branch,
-                  external_key_name & workspace_key,
-                  system_path & workspace_keydir)
+                  options & opts)
 {
   data dat;
   try
@@ -442,13 +484,39 @@ read_options_file(any_path const & optspath,
       parser.str(val);
 
       if (opt == "database")
-        workspace_database = system_path(val, origin::workspace);
+        {
+          E(val != memory_db_identifier, origin::user,
+            F("a memory database '%s' cannot be used in a workspace")
+                % memory_db_identifier);
+
+          if (val.find(':') == 0)
+            {
+              opts.dbname_alias = val;
+              opts.dbname_given = true;
+              opts.dbname_type = managed_db;
+            }
+          else
+            {
+              opts.dbname = system_path(val, origin::workspace);
+              opts.dbname_given = true;
+              opts.dbname_type = unmanaged_db;
+            }
+        }
       else if (opt == "branch")
-        workspace_branch = branch_name(val, origin::workspace);
+        {
+          opts.branch = branch_name(val, origin::workspace);
+          opts.branch_given = true;
+        }
       else if (opt == "key")
-        workspace_key = external_key_name(val, origin::workspace);
+        {
+          opts.signing_key = external_key_name(val, origin::workspace);
+          opts.key_given = true;
+        }
       else if (opt == "keydir")
-        workspace_keydir = system_path(val, origin::workspace);
+        {
+          opts.key_dir = system_path(val, origin::workspace);
+          opts.key_dir_given = true;
+        }
       else
         W(F("unrecognized key '%s' in options file %s - ignored")
           % opt % optspath);
@@ -459,22 +527,27 @@ read_options_file(any_path const & optspath,
 
 static void
 write_options_file(bookkeeping_path const & optspath,
-                   system_path const & workspace_database,
-                   branch_name const & workspace_branch,
-                   external_key_name const & workspace_key,
-                   system_path const & workspace_keydir)
+                   options const & opts)
 {
   basic_io::stanza st;
-  if (!workspace_database.as_internal().empty())
-    st.push_str_pair(symbol("database"), workspace_database.as_internal());
-  if (!workspace_branch().empty())
-    st.push_str_pair(symbol("branch"), workspace_branch());
-  if (!workspace_key().empty())
-    {
-      st.push_str_pair(symbol("key"), workspace_key());
-    }
-  if (!workspace_keydir.as_internal().empty())
-    st.push_str_pair(symbol("keydir"), workspace_keydir.as_internal());
+
+  E(opts.dbname_type != memory_db, origin::user,
+    F("a memory database '%s' cannot be used in a workspace")
+      % memory_db_identifier);
+
+  // if we have both, alias and full path, prefer the alias
+  if (opts.dbname_type == managed_db && !opts.dbname_alias.empty())
+    st.push_str_pair(symbol("database"), opts.dbname_alias);
+  else
+  if (opts.dbname_type == unmanaged_db && !opts.dbname.as_internal().empty())
+    st.push_str_pair(symbol("database"), opts.dbname.as_internal());
+
+  if (!opts.branch().empty())
+    st.push_str_pair(symbol("branch"), opts.branch());
+  if (!opts.signing_key().empty())
+    st.push_str_pair(symbol("key"), opts.signing_key());
+  if (!opts.key_dir.as_internal().empty())
+    st.push_str_pair(symbol("keydir"), opts.key_dir.as_internal());
 
   basic_io::printer pr;
   pr.print_stanza(st);
@@ -494,59 +567,61 @@ workspace::get_options(options & opts)
   if (!workspace::found)
     return;
 
-  system_path workspace_database;
-  branch_name workspace_branch;
-  external_key_name workspace_key;
-  system_path workspace_keydir;
-
+  options cur_opts;
   bookkeeping_path o_path;
   get_options_path(o_path);
-  read_options_file(o_path,
-                    workspace_database, workspace_branch,
-                    workspace_key, workspace_keydir);
+  read_options_file(o_path, cur_opts);
 
   // Workspace options are not to override the command line.
   if (!opts.dbname_given)
     {
-      opts.dbname = workspace_database;
+      opts.dbname = cur_opts.dbname;
+      opts.dbname_alias = cur_opts.dbname_alias;
+      opts.dbname_type = cur_opts.dbname_type;
+      opts.dbname_given = cur_opts.dbname_type;
     }
 
-  if (!opts.key_dir_given && !opts.conf_dir_given && !workspace_keydir.empty())
+  if (!opts.key_dir_given && !opts.conf_dir_given && cur_opts.key_dir_given)
     { // if empty/missing, we want to keep the default
-      opts.key_dir = workspace_keydir;
+      opts.key_dir = cur_opts.key_dir;
       opts.key_dir_given = true;
     }
 
-  if (opts.branch().empty() && !workspace_branch().empty())
+  if (opts.branch().empty() && cur_opts.branch_given)
     {
-      opts.branch = workspace_branch;
+      opts.branch = cur_opts.branch;
       branch_is_sticky = true;
     }
 
   L(FL("branch name is '%s'") % opts.branch);
 
   if (!opts.key_given)
-    opts.signing_key = workspace_key;
+    opts.signing_key = cur_opts.signing_key;
 }
 
 void
-workspace::get_database_option(system_path const & workspace,
-                               system_path & workspace_database)
+workspace::get_options(system_path const & workspace_root,
+                       options & opts)
 {
-  branch_name workspace_branch;
-  external_key_name workspace_key;
-  system_path workspace_keydir;
-
-  system_path o_path = (workspace
+  system_path o_path = (workspace_root
                         / bookkeeping_root_component
                         / options_file_name);
-  read_options_file(o_path,
-                    workspace_database, workspace_branch,
-                    workspace_key, workspace_keydir);
+  read_options_file(o_path, opts);
 }
 
 void
-workspace::set_options(options const & opts, bool branch_is_sticky)
+workspace::maybe_set_options(options const & opts, lua_hooks & lua)
+{
+  if (workspace::found && workspace::used)
+      set_options(opts, lua, false);
+}
+
+// This function should usually be called at the (successful)
+// execution of a function, because we don't do many checks here, f.e.
+// if this is a valid sqlite file and if it contains the correct identifier,
+// so be warned that you do not call this too early
+void
+workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sticky)
 {
   E(workspace::found, origin::user, F("workspace required but not found"));
 
@@ -555,35 +630,71 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
 
   // If any of the incoming options was empty, we want to leave that option
   // as is in _MTN/options, not write out an empty option.
-  system_path workspace_database;
-  branch_name workspace_branch;
-  external_key_name workspace_key;
-  system_path workspace_keydir;
-
+  options cur_opts;
   if (file_exists(o_path))
-    read_options_file(o_path,
-                      workspace_database, workspace_branch,
-                      workspace_key, workspace_keydir);
+    read_options_file(o_path, cur_opts);
 
-  // FIXME: we should do more checks here, f.e. if this is a valid sqlite
-  // file and if it contains the correct identifier, but these checks would
-  // duplicate those in database.cc. At the time it is checked there, however,
-  // the options file for the workspace is already written out...
-  if (!opts.dbname.as_internal().empty() &&
-      get_path_status(opts.dbname.as_internal()) == path::file)
-    workspace_database = opts.dbname;
+  bool options_changed = false;
+
+  database_path_helper helper(lua);
+  system_path old_db_path, new_db_path;
+
+  helper.get_database_path(cur_opts, old_db_path);
+  helper.get_database_path(opts, new_db_path);
+
+  if (old_db_path != new_db_path && file_exists(new_db_path))
+    {
+      // remove the currently registered workspace from the old
+      // database and add it to the new one
+      system_path current_workspace;
+      get_current_workspace(current_workspace);
+
+      if (cur_opts.dbname_type == managed_db)
+        {
+          database old_db(cur_opts, lua);
+          old_db.unregister_workspace(current_workspace);
+        }
+
+      if (opts.dbname_type == managed_db)
+        {
+          database new_db(opts, lua);
+          new_db.register_workspace(current_workspace);
+        }
+
+      cur_opts.dbname_type = opts.dbname_type;
+      cur_opts.dbname_alias = opts.dbname_alias;
+      cur_opts.dbname = opts.dbname;
+      options_changed = true;
+    }
+
   if (!opts.key_dir.as_internal().empty() &&
-      get_path_status(opts.key_dir.as_internal()) == path::directory)
-    workspace_keydir = opts.key_dir;
-  if ((branch_is_sticky || workspace::branch_is_sticky)
-      && !opts.branch().empty())
-    workspace_branch = opts.branch;
-  if (opts.key_given)
-    workspace_key = opts.signing_key;
+      directory_exists(opts.key_dir) &&
+      cur_opts.key_dir != opts.key_dir)
+    {
+      cur_opts.key_dir = opts.key_dir;
+      options_changed = true;
+    }
 
-  write_options_file(o_path,
-                     workspace_database, workspace_branch,
-                     workspace_key, workspace_keydir);
+  if ((branch_is_sticky || workspace::branch_is_sticky) &&
+      !opts.branch().empty() &&
+      cur_opts.branch != opts.branch)
+    {
+      cur_opts.branch = opts.branch;
+      options_changed = true;
+    }
+
+  if (opts.key_given && cur_opts.signing_key != opts.signing_key)
+    {
+      cur_opts.signing_key = opts.signing_key;
+      options_changed = true;
+    }
+
+  // only rewrite the options file if there are actual changes
+  if (options_changed)
+    {
+      L(FL("workspace options changed - writing back to _MTN/options"));
+      write_options_file(o_path, cur_opts);
+    }
 }
 
 void
@@ -594,24 +705,135 @@ workspace::print_option(utf8 const & opt, std::ostream & output)
   bookkeeping_path o_path;
   get_options_path(o_path);
 
-  system_path workspace_database;
-  branch_name workspace_branch;
-  external_key_name workspace_key;
-  system_path workspace_keydir;
-  read_options_file(o_path,
-                    workspace_database, workspace_branch,
-                    workspace_key, workspace_keydir);
+  options opts;
+  read_options_file(o_path, opts);
 
   if (opt() == "database")
-    output << workspace_database << '\n';
+    output << opts.dbname << '\n';
   else if (opt() == "branch")
-    output << workspace_branch << '\n';
+    output << opts.branch << '\n';
   else if (opt() == "key")
-    output << workspace_key << '\n';
+    output << opts.signing_key << '\n';
   else if (opt() == "keydir")
-    output << workspace_keydir << '\n';
+    output << opts.key_dir << '\n';
   else
     E(false, origin::user, F("'%s' is not a recognized workspace option") % opt);
+}
+
+// _MTN/bisect handling.
+
+namespace syms
+{
+    symbol const start("start");
+    symbol const good("good");
+    symbol const bad("bad");
+    symbol const skipped("skipped");
+};
+
+void
+workspace::get_bisect_info(vector<bisect::entry> & bisect)
+{
+  bookkeeping_path bisect_path;
+  get_bisect_path(bisect_path);
+
+  if (!file_exists(bisect_path))
+    return;
+
+  data dat;
+  read_data(bisect_path, dat);
+
+  string name("bisect");
+  basic_io::input_source src(dat(), name, origin::workspace);
+  basic_io::tokenizer tok(src);
+  basic_io::parser parser(tok);
+
+  while (parser.symp())
+    {
+      string rev;
+      bisect::type type;
+      if (parser.symp(syms::start))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::start;
+        }
+      else if (parser.symp(syms::good))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::good;
+        }
+      else if (parser.symp(syms::bad))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::bad;
+        }
+      else if (parser.symp(syms::skipped))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::skipped;
+        }
+      else
+        I(false);
+
+      revision_id rid =
+        decode_hexenc_as<revision_id>(rev, parser.tok.in.made_from);
+      bisect.push_back(make_pair(type, rid));
+    }
+}
+
+void
+workspace::put_bisect_info(vector<bisect::entry> const & bisect)
+{
+  bookkeeping_path bisect_path;
+  get_bisect_path(bisect_path);
+
+  basic_io::stanza st;
+  for (vector<bisect::entry>::const_iterator i = bisect.begin();
+       i != bisect.end(); ++i)
+    {
+      switch (i->first)
+        {
+        case bisect::start:
+          st.push_binary_pair(syms::start, i->second.inner());
+          break;
+
+        case bisect::good:
+          st.push_binary_pair(syms::good, i->second.inner());
+          break;
+
+        case bisect::bad:
+          st.push_binary_pair(syms::bad, i->second.inner());
+          break;
+
+        case bisect::skipped:
+          st.push_binary_pair(syms::skipped, i->second.inner());
+          break;
+
+        case bisect::update:
+          // this value is not persisted, it is only used by the bisect
+          // update command to rerun a selection and update based on current
+          // bisect information
+          I(false);
+          break;
+        }
+    }
+
+  basic_io::printer pr;
+  pr.print_stanza(st);
+  data dat(pr.buf, origin::internal);
+
+  write_data(bisect_path, dat);
+}
+
+void
+workspace::remove_bisect_info()
+{
+  bookkeeping_path bisect_path;
+  get_bisect_path(bisect_path);
+  delete_file(bisect_path);
 }
 
 // local dump file
@@ -693,9 +915,9 @@ workspace::maybe_update_inodeprints(database & db)
           roster_t const & parent_ros = parent_roster(parent);
           if (parent_ros.has_node(nid))
             {
-              node_t old_node = parent_ros.get_node(nid);
+              const_node_t old_node = parent_ros.get_node(nid);
               I(is_file_t(old_node));
-              file_t old_file = downcast_to_file_t(old_node);
+              const_file_t old_file = downcast_to_file_t(old_node);
 
               if (new_file->content != old_file->content)
                 {
@@ -1240,10 +1462,10 @@ simulated_working_tree::detach_node(file_path const & src)
 void
 simulated_working_tree::drop_detached_node(node_id nid)
 {
-  node_t node = workspace.get_node(nid);
+  const_node_t node = workspace.get_node(nid);
   if (is_dir_t(node))
     {
-      dir_t dir = downcast_to_dir_t(node);
+      const_dir_t dir = downcast_to_dir_t(node);
       if (!dir->children.empty())
         {
           map<node_id, file_path>::const_iterator i = nid_map.find(nid);
@@ -1480,8 +1702,14 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
               missing_items++;
             }
 
+          file_id fid;
+          ident_existing_file(fp, fid, status);
           file_t file = downcast_to_file_t(node);
-          ident_existing_file(fp, file->content, status);
+          if (file->content != fid)
+            {
+              ros.unshare(node);
+              downcast_to_file_t(node)->content = fid;
+            }
         }
 
     }
@@ -1651,10 +1879,10 @@ workspace::perform_deletions(database & db,
         P(F("skipping %s, not currently tracked") % name);
       else
         {
-          node_t n = new_roster.get_node(name);
+          const_node_t n = new_roster.get_node(name);
           if (is_dir_t(n))
             {
-              dir_t d = downcast_to_dir_t(n);
+              const_dir_t d = downcast_to_dir_t(n);
               if (!d->children.empty())
                 {
                   E(recursive, origin::user,
@@ -1678,7 +1906,7 @@ workspace::perform_deletions(database & db,
                 }
               else
                 {
-                  file_t file = downcast_to_file_t(n);
+                  const_file_t file = downcast_to_file_t(n);
                   file_id fid;
                   I(ident_existing_file(name, fid));
                   if (file->content == fid)
@@ -1724,7 +1952,7 @@ workspace::perform_rename(database & db,
   // source does not exist as a file.
   if (srcs.size() == 1 && !new_roster.has_node(dst))
     {
-      // "rename SRC DST" case
+      // "rename SRC DST", DST is a file
       file_path const & src = *srcs.begin();
       file_path dpath = dst;
 
@@ -1734,28 +1962,43 @@ workspace::perform_rename(database & db,
       E(new_roster.has_node(src), origin::user,
         F("source file %s is not versioned") % src);
 
-      //this allows the 'magic add' of a non-versioned directory to happen in
-      //all cases.  previously, mtn mv fileA dir/ woudl fail if dir/ wasn't
-      //versioned whereas mtn mv fileA dir/fileA would add dir/ if necessary
-      //and then reparent fileA.
-      if (get_path_status(dst) == path::directory)
-        dpath = dst / src.basename();
+      if (src == dst || dst.is_beneath_of(src))
+        {
+          if (get_path_status(dst) == path::directory)
+            W(F("cannot move `%s' to a subdirectory of itself, `%s/%s'") % src % dst % src);
+          else
+            W(F("`%s' and `%s' are the same file") % src % dst);
+        }
       else
         {
+          //this allows the 'magic add' of a non-versioned directory to happen in
+          //all cases.  previously, mtn mv fileA dir/ woudl fail if dir/ wasn't
+          //versioned whereas mtn mv fileA dir/fileA would add dir/ if necessary
+          //and then reparent fileA.
+          //
+          //Note that we checked above that dst is not a directory
+
           //this handles the case where:
           // touch foo
           // mtn mv foo bar/foo where bar doesn't exist
           file_path parent = dst.dirname();
           E(get_path_status(parent) == path::directory, origin::user,
             F("destination path's parent directory %s/ doesn't exist") % parent);
-        }
 
-      renames.insert(make_pair(src, dpath));
-      add_parent_dirs(db, nis, *this, dpath, new_roster);
+          renames.insert(make_pair(src, dpath));
+          add_parent_dirs(db, nis, *this, dpath, new_roster);
+        }
     }
   else
     {
-      // "rename SRC1 [SRC2 ...] DSTDIR" case
+      // Either srcs has more than one element, or dst is an existing
+      // directory (or both). So we have one of:
+      //
+      // 1) rename SRC1 [SRC2 ...] DSTDIR
+      //
+      // 2) mv foo bar
+      //    mtn mv --bookkeep-only foo bar
+
       E(get_path_status(dst) == path::directory, origin::user,
         F("destination %s/ is not a directory") % dst);
 
@@ -1769,12 +2012,34 @@ workspace::perform_rename(database & db,
             F("source file %s is not versioned") % *i);
 
           file_path d = dst / i->basename();
-          E(!new_roster.has_node(d), origin::user,
-            F("destination %s already exists in the workspace manifest") % d);
+          if (bookkeep_only &&
+              srcs.size() == 1 &&
+              get_path_status(*srcs.begin()) == path::directory &&
+              get_path_status(dst) == path::directory)
+            {
+              // case 2)
+              d = dst;
+            }
+          else
+            {
+              // case 1)
+              d = dst / i->basename();
 
-          renames.insert(make_pair(*i, d));
+              E(!new_roster.has_node(d), origin::user,
+                F("destination %s already exists in the workspace manifest") % d);
+            }
 
-          add_parent_dirs(db, nis, *this, d, new_roster);
+          if (*i == dst || dst.is_beneath_of(*i))
+            {
+              W(F("cannot move `%s' to a subdirectory of itself, `%s/%s'")
+                % *i % dst % *i);
+            }
+          else
+            {
+              renames.insert(make_pair(*i, d));
+
+              add_parent_dirs(db, nis, *this, d, new_roster);
+            }
         }
     }
 
@@ -1903,6 +2168,7 @@ workspace::perform_content_update(roster_t const & old_roster,
   temp_node_id_source nis;
   set<file_path> known;
   bookkeeping_path detached = path_for_detached_nids();
+  bool moved_conflicting = false;
 
   E(!directory_exists(detached), origin::user,
     F("workspace is locked\n"
@@ -1927,6 +2193,7 @@ workspace::perform_content_update(roster_t const & old_roster,
         F("re-run this command with --move-conflicting-paths to move "
           "conflicting paths out of the way."));
       move_conflicting_paths_into_bookkeeping(swt.get_conflicting_paths());
+      moved_conflicting = true;
     }
 
   mkdir_p(detached);
@@ -1942,7 +2209,7 @@ workspace::perform_content_update(roster_t const & old_roster,
          i = update.deltas_applied.begin(); i != update.deltas_applied.end();
        ++i)
     {
-      node_t node = new_roster.get_node(i->first);
+      const_node_t node = new_roster.get_node(i->first);
       for (attr_map_t::const_iterator a = node->attrs.begin();
            a != node->attrs.end(); ++a)
         {
@@ -1953,6 +2220,9 @@ workspace::perform_content_update(roster_t const & old_roster,
     }
 
   delete_dir_shallow(detached);
+
+  if (moved_conflicting)
+    P(F("moved some conflicting files into %s/%s") % bookkeeping_root % "resolutions");
 }
 
 // Local Variables:

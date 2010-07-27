@@ -12,8 +12,9 @@
 
 #include "app_state.hh"
 #include "automate_reader.hh"
-#include "work.hh"
+#include "ui.hh"
 #include "vocab_cast.hh"
+#include "work.hh"
 
 using std::make_pair;
 using std::ostringstream;
@@ -23,6 +24,7 @@ using std::string;
 using std::vector;
 
 using boost::shared_ptr;
+using boost::lexical_cast;
 
 CMD_FWD_DECL(automate);
 
@@ -72,7 +74,9 @@ void automate_session::request_service()
 
 void automate_session::accept_service()
 {
-  send_command();
+  netcmd cmd_out(get_version());
+  cmd_out.write_automate_headers_request_cmd();
+  write_netcmd(cmd_out);
 }
 
 string automate_session::usher_reply_data() const
@@ -91,6 +95,20 @@ void automate_session::prepare_to_confirm(key_identity_info const & remote_key,
   remote_identity = remote_key;
 }
 
+static void out_of_band_to_netcmd(char stream, std::string const & text, void * opaque)
+{
+  automate_session * sess = reinterpret_cast<automate_session*>(opaque);
+  sess->write_automate_packet_cmd(stream, text);
+}
+
+void automate_session::write_automate_packet_cmd(char stream,
+                                                 std::string const & text)
+{
+  netcmd net_cmd(get_version());
+  net_cmd.write_automate_packet_cmd(command_number, stream, text);
+  write_netcmd(net_cmd);
+}
+
 bool automate_session::do_work(transaction_guard & guard,
                                netcmd const * const cmd_in)
 {
@@ -99,17 +117,51 @@ bool automate_session::do_work(transaction_guard & guard,
 
   switch(cmd_in->get_cmd_code())
     {
+    case automate_headers_request_cmd:
+      {
+        netcmd net_cmd(get_version());
+        vector<pair<string, string> > headers;
+        commands::get_stdio_headers(headers);
+        net_cmd.write_automate_headers_reply_cmd(headers);
+        write_netcmd(net_cmd);
+        return true;
+      }
+    case automate_headers_reply_cmd:
+      {
+        vector<pair<string, string> > headers;
+        cmd_in->read_automate_headers_reply_cmd(headers);
+
+        I(output_stream);
+        output_stream->write_headers(headers);
+
+        send_command();
+        return true;
+      }
     case automate_command_cmd:
       {
+        // disable user prompts, f.e. for password decryption
+        app.opts.non_interactive = true;
+        options original_opts = app.opts;
+
         vector<string> in_args;
         vector<pair<string, string> > in_opts;
         cmd_in->read_automate_command_cmd(in_args, in_opts);
         ++command_number;
 
-        ostringstream oss;
-        bool have_err = false;
-        string err;
+        global_sanity.set_out_of_band_handler(&out_of_band_to_netcmd, this);
 
+        automate const * acmd = 0;
+        command_id id;
+        args_vector args;
+
+        ostringstream oss;
+        int  errcode = 0;
+
+        // FIXME: what follows is largely duplicated
+        // in cmd_automate.cc::CMD(stdio)
+        //
+        // stdio decoding errors should be noted with errno 1,
+        // errno 2 is reserved for errors from the commands itself
         try
           {
             E(app.lua.hook_get_remote_automate_permitted(remote_identity,
@@ -118,7 +170,6 @@ bool automate_session::do_work(transaction_guard & guard,
               origin::user,
               F("Sorry, you aren't allowed to do that."));
 
-            args_vector args;
             for (vector<string>::iterator i = in_args.begin();
                  i != in_args.end(); ++i)
               {
@@ -129,7 +180,6 @@ bool automate_session::do_work(transaction_guard & guard,
             opts = options::opts::all_options() - options::opts::globals();
             opts.instantiate(&app.opts).reset();
 
-            command_id id;
             for (args_vector::const_iterator iter = args.begin();
                  iter != args.end(); iter++)
               id.push_back(typecast_vocab<utf8>(*iter));
@@ -165,8 +215,8 @@ bool automate_session::do_work(transaction_guard & guard,
 
             command const * cmd = CMD_REF(automate)->find_command(id);
             I(cmd != NULL);
-            automate const * acmd = dynamic_cast< automate const * >(cmd);
-            I(acmd);
+            acmd = dynamic_cast< automate const * >(cmd);
+            I(acmd != NULL);
 
             E(acmd->can_run_from_stdio(), origin::network,
               F("sorry, that can't be run remotely or over stdio"));
@@ -183,29 +233,52 @@ bool automate_session::do_work(transaction_guard & guard,
               }
 
             opts.instantiate(&app.opts).from_key_value_pairs(in_opts);
-            acmd->exec_from_automate(app, id, args, oss);
+
+            ui.set_tick_write_stdio();
+          }
+        // FIXME: we need to re-package and rethrow this special exception
+        // since it is not based on informative_failure
+        catch (option::option_error & e)
+          {
+            errcode = 1;
+            write_automate_packet_cmd('e', e.what());
           }
         catch (recoverable_failure & f)
           {
-            have_err = true;
-            err = f.what();
-            err += "\n";
+             errcode = 1;
+             write_automate_packet_cmd('e', f.what());
           }
 
-        if (!oss.str().empty() || !have_err)
+        if (errcode == 0)
           {
-            netcmd out_cmd(get_version());
-            out_cmd.write_automate_packet_cmd(command_number, 0,
-                                              !have_err, oss.str());
-            write_netcmd(out_cmd);
+            try
+              {
+                // as soon as a command requires a workspace, this is set to true
+                workspace::used = false;
+
+                acmd->exec_from_automate(app, id, args, oss);
+
+                // usually, if a command succeeds, any of its workspace-relevant
+                // options are saved back to _MTN/options, this shouldn't be
+                // any different here
+                workspace::maybe_set_options(app.opts, app.lua);
+
+                // restore app.opts
+                app.opts = original_opts;
+              }
+            catch (recoverable_failure & f)
+              {
+                errcode = 2;
+                write_automate_packet_cmd('e', f.what());
+              }
           }
-        if (have_err)
-          {
-            netcmd err_cmd(get_version());
-            err_cmd.write_automate_packet_cmd(command_number, 2,
-                                              true, err);
-            write_netcmd(err_cmd);
-          }
+
+        if (!oss.str().empty())
+          write_automate_packet_cmd('m', oss.str());
+
+        write_automate_packet_cmd('l', lexical_cast<string>(errcode));
+
+        global_sanity.set_out_of_band_handler();
 
         return true;
 
@@ -213,20 +286,22 @@ bool automate_session::do_work(transaction_guard & guard,
     case automate_packet_cmd:
       {
         int command_num;
-        int err_code;
-        bool last;
+        char stream;
         string packet_data;
-        cmd_in->read_automate_packet_cmd(command_num, err_code,
-                                         last, packet_data);
+        cmd_in->read_automate_packet_cmd(command_num, stream, packet_data);
 
         I(output_stream);
-        output_stream->set_err(err_code);
-        (*output_stream) << packet_data;
-        if (last)
-          output_stream->end_cmd();
 
-        if (last)
-          send_command();
+        if (stream == 'm')
+            (*output_stream) << packet_data;
+        else if (stream != 'l')
+            output_stream->write_out_of_band(stream, packet_data);
+
+        if (stream == 'l')
+          {
+            output_stream->end_cmd(lexical_cast<int>(packet_data));
+            send_command();
+          }
 
         return true;
       }

@@ -22,7 +22,7 @@ function make_old(ver)
                     "--key=tester@test.net",
                     "--db=test"..ver..".mtn",
                     "--keydir=keys",
-                    unpack(arg)}
+                    ...}
               end
 
    check(getstd("test_keys"))
@@ -47,14 +47,13 @@ current = {fn = mtn, net_fn = mtn,
 
 function make_fake(min_ver, max_ver)
    local fn = function (...)
-                 return mtn("--db=test"..max_ver..".mtn",
-                            unpack(arg))
+                 return mtn("--db=test"..max_ver..".mtn", ...)
               end
    local net_fn = function (...)
                      return mtn("--min-netsync-version="..min_ver,
                                 "--max-netsync-version="..max_ver,
                                 "--db=test"..max_ver..".mtn",
-                                unpack(arg))
+                                ...)
                   end
    return {fn = fn, net_fn = net_fn,
       reset = function ()

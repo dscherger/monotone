@@ -69,7 +69,7 @@ listener::do_io(Netxx::Probe::ready_type event)
 
       shared_ptr<Netxx::Stream> str =
         shared_ptr<Netxx::Stream>(new Netxx::Stream(client.get_socketfd(),
-                                                    timeout));
+                                                    Netxx::Timeout(0, 1)));
 
       shared_ptr<session> sess(new session(app, project, keys,
                                            server_voice,

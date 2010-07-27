@@ -13,4 +13,5 @@ check(mtn("--branch=testbranch", "cvs_import", "cvs-repository/test"),
 
 check(mtn("automate", "get_file", expected_file_hash), 0, false)
 check(mtn("log", "-r", expected_rev_hash, "--no-graph"), 0, true, false)
+canonicalize ("stdout")
 check(samefile("stdout", "expected_log_output"))

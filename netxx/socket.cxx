@@ -172,9 +172,9 @@ Netxx::Socket::~Socket (void)
 Netxx::signed_size_type Netxx::Socket::write (const void *buffer, size_type length, const Timeout &timeout)
 {
     const char *buffer_ptr = static_cast<const char*>(buffer);
-    signed_size_type rc, bytes_written=0;
+    signed_size_type rc;
 
-    while (length) {
+    for (;;) {
 	if (timeout && !writable(timeout)) return -1;
 
 	if ( (rc = send(socketfd_, buffer_ptr, length, 0)) < 0) {
@@ -213,12 +213,10 @@ Netxx::signed_size_type Netxx::Socket::write (const void *buffer, size_type leng
 	    }
 	}
 
-	buffer_ptr    += rc;
-	bytes_written += rc;
-	length        -= rc;
+	break;
     }
 
-    return bytes_written;
+    return rc;
 }
 //####################################################################
 Netxx::signed_size_type Netxx::Socket::read (void *buffer, size_type length, const Timeout &timeout)

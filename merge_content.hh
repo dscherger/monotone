@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -254,6 +254,7 @@ struct content_merger
 
 void
 resolve_merge_conflicts(lua_hooks & lua,
+                        options const & opts,
                         roster_t const & left_roster,
                         roster_t const & right_roster,
                         roster_merge_result & result,

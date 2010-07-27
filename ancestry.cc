@@ -84,14 +84,7 @@ find_common_ancestor_for_merge(database & db,
 
 
   multimap<revision_id, revision_id> inverse_graph;
-  {
-    multimap<revision_id, revision_id> graph;
-    db.get_revision_ancestry(graph);
-    typedef multimap<revision_id, revision_id>::const_iterator gi;
-    for (gi i = graph.begin(); i != graph.end(); ++i)
-      inverse_graph.insert(make_pair(i->second, i->first));
-  }
-
+  db.get_reverse_ancestry(inverse_graph);
 
   while (leaves.size() != 1)
     {
@@ -313,11 +306,7 @@ erase_ancestors_and_failures(database & db,
     inverse_graph_cache_ptr = &inverse_graph;
   if (inverse_graph_cache_ptr->empty())
   {
-    multimap<revision_id, revision_id> graph;
-    db.get_revision_ancestry(graph);
-    for (multimap<revision_id, revision_id>::const_iterator i = graph.begin();
-         i != graph.end(); ++i)
-      inverse_graph_cache_ptr->insert(make_pair(i->second, i->first));
+    db.get_reverse_ancestry(*inverse_graph_cache_ptr);
   }
 
   // Keep a set of all ancestors that we've traversed -- to avoid
@@ -397,12 +386,9 @@ ancestry_difference(database & db, revision_id const & a,
 {
   new_stuff.clear();
   typedef multimap<revision_id, revision_id>::const_iterator gi;
-  multimap<revision_id, revision_id> graph;
   multimap<revision_id, revision_id> inverse_graph;
 
-  db.get_revision_ancestry(graph);
-  for (gi i = graph.begin(); i != graph.end(); ++i)
-    inverse_graph.insert(make_pair(i->second, i->first));
+  db.get_reverse_ancestry(inverse_graph);
 
   interner<ctx> intern;
   map< ctx, shared_bitmap > ancestors;
@@ -563,8 +549,68 @@ make_roster_for_revision(database & db,
   make_roster_for_revision(db, nis, rev, new_rid, new_roster, new_markings);
 }
 
+// ancestry graph loader
 
+void
+graph_loader::load_parents(revision_id const rid,
+                          set<revision_id> & parents)
+{
+  db.get_revision_parents(rid, parents);
+}
 
+void
+graph_loader::load_children(revision_id const rid,
+                           set<revision_id> & children)
+{
+  db.get_revision_children(rid, children);
+}
+
+void
+graph_loader::load_ancestors(set<revision_id> & revs)
+{
+  load_revs(ancestors, revs);
+}
+
+void
+graph_loader::load_descendants(set<revision_id> & revs)
+{
+  load_revs(descendants, revs);
+}
+
+void
+graph_loader::load_revs(load_direction const direction,
+                       set<revision_id> & revs)
+{
+  std::deque<revision_id> next(revs.begin(), revs.end());
+
+  while (!next.empty())
+    {
+      revision_id const & rid(next.front());
+      MM(rid);
+
+      set<revision_id> relatives;
+      MM(relatives);
+
+      if (direction == ancestors)
+        load_parents(rid, relatives);
+      else if (direction == descendants)
+        load_children(rid, relatives);
+      else
+        I(false);
+
+      for (set<revision_id>::const_iterator i = relatives.begin();
+           i != relatives.end(); ++i)
+        {
+          if (null_id(*i))
+            continue;
+          pair<set<revision_id>::iterator, bool> res = revs.insert(*i);
+          if (res.second)
+            next.push_back(*i);
+        }
+
+      next.pop_front();
+    }
+}
 
 // Local Variables:
 // mode: C++

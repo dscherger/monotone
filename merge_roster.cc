@@ -310,7 +310,8 @@ namespace
                    roster_t const & parent_roster,
                    roster_t & new_roster)
   {
-    revision_id const & birth = safe_get(markings, n->self).birth_revision;
+    const_marking_t const & m = markings.get_marking(n->self);
+    revision_id const & birth = m->birth_revision;
     if (uncommon_ancestors.find(birth) != uncommon_ancestors.end())
       create_node_for(n, new_roster);
     else
@@ -319,7 +320,7 @@ namespace
         // has been deleted from the other side of the merge.
         // In this case, output a warning if there are changes to the file on the
         // side of the merge where it still exists.
-        set<revision_id> const & content_marks = safe_get(markings, n->self).file_content;
+        set<revision_id> const & content_marks = m->file_content;
         bool found_one_ignored_content = false;
         for (set<revision_id>::const_iterator it = content_marks.begin(); it != content_marks.end(); it++)
           {
@@ -411,7 +412,7 @@ namespace
             return;
           }
 
-        dir_t p = downcast_to_dir_t(result.roster.get_node(parent));
+        dir_t p = downcast_to_dir_t(result.roster.get_node_for_update(parent));
 
         // duplicate name conflict:
         // see the comment in roster_merge.hh for the analysis showing that at
@@ -587,10 +588,10 @@ roster_merge(roster_t const & left_parent,
                 left_name = make_pair(left_n->parent, left_n->name);
                 right_name = make_pair(right_n->parent, right_n->name);
                 if (merge_scalar(left_name,
-                                 left_marking.parent_name,
+                                 left_marking->parent_name,
                                  left_uncommon_ancestors,
                                  right_name,
-                                 right_marking.parent_name,
+                                 right_marking->parent_name,
                                  right_uncommon_ancestors,
                                  new_name, conflict))
                   {
@@ -623,10 +624,10 @@ roster_merge(roster_t const & left_parent,
                 {
                   file_content_conflict conflict(new_n->self);
                   if (merge_scalar(downcast_to_file_t(left_n)->content,
-                                   left_marking.file_content,
+                                   left_marking->file_content,
                                    left_uncommon_ancestors,
                                    downcast_to_file_t(right_n)->content,
-                                   right_marking.file_content,
+                                   right_marking->file_content,
                                    right_uncommon_ancestors,
                                    downcast_to_file_t(new_n)->content,
                                    conflict))
@@ -663,11 +664,11 @@ roster_merge(roster_t const & left_parent,
                       conflict.key = attr_i.left_key();
                       I(conflict.key == attr_i.right_key());
                       if (merge_scalar(attr_i.left_data(),
-                                       safe_get(left_marking.attrs,
+                                       safe_get(left_marking->attrs,
                                                 attr_i.left_key()),
                                        left_uncommon_ancestors,
                                        attr_i.right_data(),
-                                       safe_get(right_marking.attrs,
+                                       safe_get(right_marking->attrs,
                                                 attr_i.right_key()),
                                        right_uncommon_ancestors,
                                        new_value,

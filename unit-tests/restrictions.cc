@@ -230,11 +230,13 @@ UNIT_TEST(simple_include)
 
   UNIT_TEST_CHECK(!nmask.empty());
 
-  UNIT_TEST_CHECK(!nmask.includes(roster, nid_root));
+  // the root is included implicitly as the parent of x/x and y/y
+  UNIT_TEST_CHECK( nmask.includes(roster, nid_root));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_f));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_g));
 
-  UNIT_TEST_CHECK(!nmask.includes(roster, nid_x));
+  // x is included implicitly as the parent of x/x
+  UNIT_TEST_CHECK( nmask.includes(roster, nid_x));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_xf));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_xg));
   UNIT_TEST_CHECK( nmask.includes(roster, nid_xx));
@@ -244,7 +246,8 @@ UNIT_TEST(simple_include)
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_xyf));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_xyg));
 
-  UNIT_TEST_CHECK(!nmask.includes(roster, nid_y));
+  // y is included implicitly as the parent of y/y
+  UNIT_TEST_CHECK( nmask.includes(roster, nid_y));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_yf));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_yg));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_yx));
@@ -260,11 +263,13 @@ UNIT_TEST(simple_include)
 
   UNIT_TEST_CHECK(!pmask.empty());
 
-  UNIT_TEST_CHECK(!pmask.includes(fp_root));
+  // the root is included implicitly as the parent of x/x and y/y
+  UNIT_TEST_CHECK( pmask.includes(fp_root));
   UNIT_TEST_CHECK(!pmask.includes(fp_f));
   UNIT_TEST_CHECK(!pmask.includes(fp_g));
 
-  UNIT_TEST_CHECK(!pmask.includes(fp_x));
+  // x is included implicitly as the parent of x/x
+  UNIT_TEST_CHECK( pmask.includes(fp_x));
   UNIT_TEST_CHECK(!pmask.includes(fp_xf));
   UNIT_TEST_CHECK(!pmask.includes(fp_xg));
   UNIT_TEST_CHECK( pmask.includes(fp_xx));
@@ -274,7 +279,8 @@ UNIT_TEST(simple_include)
   UNIT_TEST_CHECK(!pmask.includes(fp_xyf));
   UNIT_TEST_CHECK(!pmask.includes(fp_xyg));
 
-  UNIT_TEST_CHECK(!pmask.includes(fp_y));
+  // y is included implicitly as the parent of y/y
+  UNIT_TEST_CHECK( pmask.includes(fp_y));
   UNIT_TEST_CHECK(!pmask.includes(fp_yf));
   UNIT_TEST_CHECK(!pmask.includes(fp_yg));
   UNIT_TEST_CHECK(!pmask.includes(fp_yx));
@@ -372,7 +378,8 @@ UNIT_TEST(include_exclude)
 
   UNIT_TEST_CHECK(!nmask.empty());
 
-  UNIT_TEST_CHECK(!nmask.includes(roster, nid_root));
+  // the root is included implicitly as the parent of x and y
+  UNIT_TEST_CHECK( nmask.includes(roster, nid_root));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_f));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_g));
 
@@ -402,7 +409,8 @@ UNIT_TEST(include_exclude)
 
   UNIT_TEST_CHECK(!pmask.empty());
 
-  UNIT_TEST_CHECK(!pmask.includes(fp_root));
+  // the root is included implicitly as the parent of x and y
+  UNIT_TEST_CHECK( pmask.includes(fp_root));
   UNIT_TEST_CHECK(!pmask.includes(fp_f));
   UNIT_TEST_CHECK(!pmask.includes(fp_g));
 
@@ -447,11 +455,16 @@ UNIT_TEST(exclude_include)
 
   UNIT_TEST_CHECK(!nmask.empty());
 
-  UNIT_TEST_CHECK(!nmask.includes(roster, nid_root));
+  // the root is included implicitly as the parent of x/x and y/y
+  UNIT_TEST_CHECK( nmask.includes(roster, nid_root));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_f));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_g));
 
-  UNIT_TEST_CHECK(!nmask.includes(roster, nid_x));
+  // x is included implicitly as the parent of x/x
+  // even though x is also explcitly excluded
+  // the implicit include applies only to x but not
+  // its children
+  UNIT_TEST_CHECK( nmask.includes(roster, nid_x));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_xf));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_xg));
   UNIT_TEST_CHECK( nmask.includes(roster, nid_xx));
@@ -461,7 +474,11 @@ UNIT_TEST(exclude_include)
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_xyf));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_xyg));
 
-  UNIT_TEST_CHECK(!nmask.includes(roster, nid_y));
+  // y is included implicitly as the parent of y/y
+  // even though y is also explcitly excluded
+  // the implicit include applies only to y but not
+  // its children
+  UNIT_TEST_CHECK( nmask.includes(roster, nid_y));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_yf));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_yg));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_yx));
@@ -477,11 +494,16 @@ UNIT_TEST(exclude_include)
 
   UNIT_TEST_CHECK(!pmask.empty());
 
-  UNIT_TEST_CHECK(!pmask.includes(fp_root));
+  // the root is included implicitly as the parent of x/x and y/y
+  UNIT_TEST_CHECK( pmask.includes(fp_root));
   UNIT_TEST_CHECK(!pmask.includes(fp_f));
   UNIT_TEST_CHECK(!pmask.includes(fp_g));
 
-  UNIT_TEST_CHECK(!pmask.includes(fp_x));
+  // x is included implicitly as the parent of x/x
+  // even though x is also explcitly excluded
+  // the implicit include applies only to x but not
+  // its children
+  UNIT_TEST_CHECK( pmask.includes(fp_x));
   UNIT_TEST_CHECK(!pmask.includes(fp_xf));
   UNIT_TEST_CHECK(!pmask.includes(fp_xg));
   UNIT_TEST_CHECK( pmask.includes(fp_xx));
@@ -491,7 +513,11 @@ UNIT_TEST(exclude_include)
   UNIT_TEST_CHECK(!pmask.includes(fp_xyf));
   UNIT_TEST_CHECK(!pmask.includes(fp_xyg));
 
-  UNIT_TEST_CHECK(!pmask.includes(fp_y));
+  // y is included implicitly as the parent of y/y
+  // even though y is also explcitly excluded
+  // the implicit include applies only to y but not
+  // its children
+  UNIT_TEST_CHECK( pmask.includes(fp_y));
   UNIT_TEST_CHECK(!pmask.includes(fp_yf));
   UNIT_TEST_CHECK(!pmask.includes(fp_yg));
   UNIT_TEST_CHECK(!pmask.includes(fp_yx));
@@ -561,7 +587,8 @@ UNIT_TEST(include_depth_0)
 
   UNIT_TEST_CHECK(!nmask.empty());
 
-  UNIT_TEST_CHECK(!nmask.includes(roster, nid_root));
+  // root is included implicitly as the parent of x and y
+  UNIT_TEST_CHECK( nmask.includes(roster, nid_root));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_f));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_g));
 
@@ -591,7 +618,8 @@ UNIT_TEST(include_depth_0)
 
   UNIT_TEST_CHECK(!pmask.empty());
 
-  UNIT_TEST_CHECK(!pmask.includes(fp_root));
+  // root is included implicitly as the parent of x and y
+  UNIT_TEST_CHECK( pmask.includes(fp_root));
   UNIT_TEST_CHECK(!pmask.includes(fp_f));
   UNIT_TEST_CHECK(!pmask.includes(fp_g));
 
@@ -633,7 +661,8 @@ UNIT_TEST(include_depth_1)
 
   UNIT_TEST_CHECK(!nmask.empty());
 
-  UNIT_TEST_CHECK(!nmask.includes(roster, nid_root));
+  // root is included implicitly as the parent of x and y
+  UNIT_TEST_CHECK( nmask.includes(roster, nid_root));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_f));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_g));
 
@@ -663,7 +692,8 @@ UNIT_TEST(include_depth_1)
 
   UNIT_TEST_CHECK(!pmask.empty());
 
-  UNIT_TEST_CHECK(!pmask.includes(fp_root));
+  // root is included implicitly as the parent of x and y
+  UNIT_TEST_CHECK( pmask.includes(fp_root));
   UNIT_TEST_CHECK(!pmask.includes(fp_f));
   UNIT_TEST_CHECK(!pmask.includes(fp_g));
 
@@ -775,7 +805,8 @@ UNIT_TEST(include_depth_2)
 
   UNIT_TEST_CHECK(!nmask.empty());
 
-  UNIT_TEST_CHECK(!nmask.includes(roster, nid_root));
+  // root is included implicitly as the parent of x and y
+  UNIT_TEST_CHECK( nmask.includes(roster, nid_root));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_f));
   UNIT_TEST_CHECK(!nmask.includes(roster, nid_g));
 
@@ -805,7 +836,8 @@ UNIT_TEST(include_depth_2)
 
   UNIT_TEST_CHECK(!pmask.empty());
 
-  UNIT_TEST_CHECK(!pmask.includes(fp_root));
+  // root is included implicitly as the parent of x and y
+  UNIT_TEST_CHECK( pmask.includes(fp_root));
   UNIT_TEST_CHECK(!pmask.includes(fp_f));
   UNIT_TEST_CHECK(!pmask.includes(fp_g));
 

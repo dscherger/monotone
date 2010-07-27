@@ -14,6 +14,7 @@
 #include "key_store.hh"
 #include "database.hh"
 #include "keys.hh"
+#include "lazy_rng.hh"
 #include "lua_hooks.hh"
 #include "network/automate_session.hh"
 #include "network/netsync_session.hh"
@@ -57,7 +58,9 @@ session::session(app_state & app, project_t & project,
   app(app),
   project(project),
   keys(keys),
-  peer(peer)
+  peer(peer),
+  unnoted_bytes_in(0),
+  unnoted_bytes_out(0)
 {
 }
 
@@ -79,8 +82,8 @@ session::mk_nonce()
   char buf[constants::merkle_hash_length_in_bytes];
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
-                           constants::merkle_hash_length_in_bytes);
+  lazy_rng::get().randomize(reinterpret_cast<Botan::byte *>(buf),
+                            constants::merkle_hash_length_in_bytes);
 #else
   Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
                                constants::merkle_hash_length_in_bytes);
@@ -413,7 +416,7 @@ session::request_netsync(protocol_role role,
   key_identity_info remote_key;
   remote_key.id = remote_peer_key_id;
   if (!remote_key.id.inner()().empty())
-    project.complete_key_identity(keys, app.lua, remote_key);
+    project.complete_key_identity_from_id(keys, app.lua, remote_key);
 
   wrapped->on_begin(session_id, remote_key);
 }
@@ -444,7 +447,7 @@ session::request_automate()
   key_identity_info remote_key;
   remote_key.id = remote_peer_key_id;
   if (!remote_key.id.inner()().empty())
-    project.complete_key_identity(keys, app.lua, remote_key);
+    project.complete_key_identity_from_id(keys, app.lua, remote_key);
 
   wrapped->on_begin(session_id, remote_key);
 }
@@ -662,7 +665,7 @@ bool session::handle_service_request()
     {
       client_identity.id = client_id;
       if (!client_identity.id.inner()().empty())
-        project.complete_key_identity(keys, app.lua, client_identity);
+        project.complete_key_identity_from_id(keys, app.lua, client_identity);
     }
 
   wrapped->on_begin(session_id, client_identity);
@@ -722,6 +725,30 @@ session::error(int errcode, string const & errmsg)
 {
   error_code = errcode;
   throw netsync_error(errmsg);
+}
+
+void
+session::note_bytes_in(int count)
+{
+  if (wrapped)
+    {
+      wrapped->note_bytes_in(count + unnoted_bytes_in);
+      unnoted_bytes_in = 0;
+    }
+  else
+    unnoted_bytes_in += count;
+}
+
+void
+session::note_bytes_out(int count)
+{
+  if (wrapped)
+    {
+      wrapped->note_bytes_out(count + unnoted_bytes_out);
+      unnoted_bytes_out = 0;
+    }
+  else
+    unnoted_bytes_out += count;
 }
 
 // Local Variables:

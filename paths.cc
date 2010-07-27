@@ -621,6 +621,24 @@ file_path::dirname_basename(file_path & dir, path_component & base) const
     }
 }
 
+// returns true if this path is beneath other
+bool
+file_path::is_beneath_of(const file_path & other) const
+{
+  if (other.empty())
+    return true;
+
+  file_path basedir = dirname();
+  while (!basedir.empty())
+    {
+      L(FL("base: %s, other: %s") % basedir % other);
+      if (basedir == other)
+        return true;
+      basedir = basedir.dirname();
+    }
+  return false;
+}
+
 // count the number of /-separated components of the path.
 unsigned int
 file_path::depth() const
@@ -1045,6 +1063,12 @@ go_to_workspace(system_path const & new_workspace)
   working_root.set(new_workspace, true);
   initial_rel_path.set(string(), true);
   change_current_working_dir(new_workspace);
+}
+
+void
+get_current_workspace(system_path & workspace)
+{
+  workspace = working_root.get_but_unused();
 }
 
 void

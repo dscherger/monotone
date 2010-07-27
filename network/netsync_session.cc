@@ -161,7 +161,7 @@ void netsync_session::on_end(size_t ident)
         {
           key_identity_info identity;
           identity.id = *i;
-          project.complete_key_identity(keys, lua, identity);
+          project.complete_key_identity_from_id(keys, lua, identity);
           lua.hook_note_netsync_pubkey_received(identity, ident);
         }
 
@@ -176,7 +176,7 @@ void netsync_session::on_end(size_t ident)
             {
               key_identity_info identity;
               identity.id = j->key;
-              project.complete_key_identity(keys, lua, identity);
+              project.complete_key_identity_from_id(keys, lua, identity);
               certs.insert(make_pair(identity, make_pair(j->name, j->value)));
             }
 
@@ -192,7 +192,7 @@ void netsync_session::on_end(size_t ident)
         {
           key_identity_info identity;
           identity.id = i->key;
-          project.complete_key_identity(keys, lua, identity);
+          project.complete_key_identity_from_id(keys, lua, identity);
           lua.hook_note_netsync_cert_received(revision_id(i->ident), identity,
                                               i->name, i->value, ident);
         }
@@ -225,7 +225,7 @@ void netsync_session::on_end(size_t ident)
         {
           key_identity_info identity;
           identity.id = *i;
-          project.complete_key_identity(keys, lua, identity);
+          project.complete_key_identity_from_id(keys, lua, identity);
           lua.hook_note_netsync_pubkey_sent(identity, ident);
         }
 
@@ -240,7 +240,7 @@ void netsync_session::on_end(size_t ident)
             {
               key_identity_info identity;
               identity.id = j->key;
-              project.complete_key_identity(keys, lua, identity);
+              project.complete_key_identity_from_id(keys, lua, identity);
               certs.insert(make_pair(identity, make_pair(j->name, j->value)));
             }
 
@@ -256,7 +256,7 @@ void netsync_session::on_end(size_t ident)
         {
           key_identity_info identity;
           identity.id = i->key;
-          project.complete_key_identity(keys, lua, identity);
+          project.complete_key_identity_from_id(keys, lua, identity);
           lua.hook_note_netsync_cert_sent(revision_id(i->ident), identity,
                                           i->name, i->value, ident);
         }
@@ -383,6 +383,12 @@ netsync_session::setup_client_tickers()
       revision_in_ticker.reset(new ticker(N_("revs in"), "r", 1));
       // xgettext: please use short message and try to avoid multibytes chars
       revision_out_ticker.reset(new ticker(N_("revs out"), "R", 1));
+
+      // the following two tickers may be skipped if we have size restrictions
+      // xgettext: please use short message and try to avoid multibytes chars
+      cert_in_ticker.reset(new ticker(N_("certs in"), "c", 3, false, true));
+      // xgettext: please use short message and try to avoid multibytes chars
+      cert_out_ticker.reset(new ticker(N_("certs out"), "C", 3, false, true));
     }
 }
 
@@ -626,7 +632,7 @@ netsync_session::request_service()
 
   if (!initiated_by_server)
     setup_client_tickers();
-  
+
   request_netsync(role, our_include_pattern, our_exclude_pattern);
 }
 

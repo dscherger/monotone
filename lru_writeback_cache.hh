@@ -14,6 +14,7 @@
 #include <map>
 #include <list>
 
+#include "cache_logger.hh"
 #include "sanity.hh"
 #include "safe_map.hh"
 
@@ -81,19 +82,32 @@ private:
   /// Current abstract size of the cache
   unsigned long _curr_size;
 
+  /// Minimum number of items in the cache (overrides the abstract size limit)
+  unsigned long _min_items;
+
+  cache_logger logger;
+
 public:
   /** @brief Creates a cache that holds at most Size worth of elements.
    *  @param Size maximum size of cache
    */
-  LRUWritebackCache(const unsigned long Size, Manager manager)
-      : _manager(manager), _max_size(Size), _curr_size(0)
+  LRUWritebackCache(const unsigned long Size,
+                    const unsigned long items,
+                    Manager manager,
+                    std::string const & logname)
+    : _manager(manager), _max_size(Size), _curr_size(0),
+      _min_items(items),
+      logger(logname, _max_size)
   {
   }
 
   // Also allow a default-instantiated manager, for using this as a pure LRU
   // cache with no writeback.
-  LRUWritebackCache(const unsigned long Size)
-      : _max_size(Size), _curr_size(0)
+  LRUWritebackCache(const unsigned long Size,
+                    const unsigned long items)
+    : _max_size(Size), _curr_size(0),
+      _min_items(items),
+      logger("", 0)
   {
   }
 
@@ -164,7 +178,9 @@ public:
    */
   inline bool exists(Key const & key) const
   {
-    return _index.find(key) != _index.end();
+    bool e = _index.find(key) != _index.end();
+    logger.log_exists(e, _position(key), _index.size(), _curr_size);
+    return e;
   }
 
   /** @brief Touches a key in the Cache and makes it the most recently used.
@@ -172,8 +188,10 @@ public:
    */
   inline void touch(Key const & key)
   {
-    // Find the key in the index.
-    Map_Iter miter = this->_touch(key);
+    Map_Iter miter = _index.find(key);
+    logger.log_touch(miter != _index.end(), _position(key),
+                     _index.size(), _curr_size);
+    this->_touch(miter);
   }
 
   /** @brief Fetches a copy of cache data.
@@ -185,6 +203,8 @@ public:
   inline bool fetch(Key const & key, Data & data, bool touch = true)
   {
     Map_Iter miter = _index.find(key);
+    logger.log_fetch(miter != _index.end(), _position(key),
+                     _index.size(), _curr_size);
     if (miter == _index.end())
       return false;
     if (touch)
@@ -212,7 +232,9 @@ public:
     safe_insert(_index, std::make_pair(key, liter));
     _curr_size += Sizefn()(data);
     // Check to see if we need to remove an element due to exceeding max_size
-    while (_curr_size > _max_size)
+    int num_removed = 0;
+    unsigned long curr_size = _list.size();
+    while (_curr_size > _max_size && curr_size > _min_items)
       {
         // Remove the last element.
         liter = _list.end();
@@ -225,8 +247,12 @@ public:
         if (liter == _list.begin())
           break;
         this->_remove(liter->first);
+        ++num_removed;
+        --curr_size;
+        I(curr_size > 0);
       }
     I(exists(key));
+    logger.log_insert(num_removed, _index.size(), _curr_size);
   }
 
   inline void insert_dirty(Key const & key, const Data & data)
@@ -241,9 +267,8 @@ private:
    *  @param key to be touched
    *  @return a Map_Iter pointing to the key that was touched.
    */
-  inline Map_Iter _touch(const Key & key)
+  inline Map_Iter _touch(Map_Iter & miter)
   {
-    Map_Iter miter = _index.find(key);
     if (miter == _index.end())
       return miter;
     // Move the found node to the head of the list.
@@ -272,6 +297,25 @@ private:
   {
     List_Iter const & i = safe_get(_index, key);
     _manager.writeout(i->first, i->second);
+  }
+
+  // Determine where in the cache a given item is,
+  // for use with effectiveness logging.
+  inline int _position(Key const & key) const
+  {
+    if (!logger.logging())
+      {
+        return -2;
+      }
+    int pos = 0;
+    for (typename List::const_iterator liter = _list.begin();
+         liter != _list.end(); ++liter)
+      {
+        if (liter->first == key)
+          return pos;
+        ++pos;
+      }
+    return -1;
   }
 };
 

@@ -1,4 +1,5 @@
 // Copyright (C) 2002, 2008 Graydon Hoare <graydon@pobox.com>
+//               2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -11,6 +12,7 @@
 #include <iostream>
 #include <sstream>
 #include <map>
+#include <unistd.h>
 
 #include "cmd.hh"
 #include "app_state.hh"
@@ -39,11 +41,12 @@ CMD_GROUP(automate, "automate", "au", CMD_REF(automation),
 namespace commands {
   automate::automate(string const & name,
                      bool stdio_ok,
+                     bool hidden,
                      string const & params,
                      string const & abstract,
                      string const & desc,
                      options::options_type const & opts) :
-    command(name, "", CMD_REF(automate), false, false, params, abstract,
+    command(name, "", CMD_REF(automate), false, hidden, params, abstract,
             // We set use_workspace_options true, because all automate
             // commands need a database, and they expect to get the database
             // name from the workspace options, even if they don't need a
@@ -80,8 +83,12 @@ namespace commands {
 
 // This number is only raised once, during the process of releasing a new
 // version of monotone, by the release manager. For more details, see
-// point (2) in notes/release-checklist.txt
-static string const interface_version = "11.0";
+// point (4) in notes/release-checklist.txt
+static string const interface_version = "12.1";
+
+// This number determines the format version of the stdio packet format.
+// The original format which came without a version notification was "1".
+static string const stdio_format_version = "2";
 
 // Name: interface_version
 // Arguments: none
@@ -104,6 +111,60 @@ CMD_AUTOMATE(interface_version, "",
   output << interface_version << '\n';
 }
 
+// these headers are outputted before any other output for stdio and remote_stdio
+void commands::get_stdio_headers(std::vector<std::pair<std::string,std::string> > & headers)
+{
+    headers.push_back(make_pair("format-version", stdio_format_version));
+}
+
+// Name: bandtest
+// Arguments: { info | warning | error | fatal | ticker }
+// Added in: FIXME
+// Purpose: Emulates certain kinds of diagnostic / UI messages for debugging
+//          and testing purposes
+// Output format: None
+// Error conditions: None.
+CMD_AUTOMATE_HIDDEN(bandtest, "{ info | warning | error | ticker }",
+             N_("Emulates certain kinds of diagnostic / UI messages "
+                "for debugging and testing purposes, such as stdio"),
+             "",
+             options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  std::string type = args.at(0)();
+  if (type.compare("info") == 0)
+    P(F("this is an informational message"));
+  else if (type.compare("warning") == 0)
+    W(F("this is a warning"));
+  else if (type.compare("error") == 0)
+    E(false, origin::user, F("this is an error message"));
+  else if (type.compare("ticker") == 0)
+    {
+      ticker first("fake ticker (not fixed)", "f1", 3);
+      ticker second("fake ticker (fixed)", "f2", 5);
+
+      int max = 20;
+      second.set_total(max);
+
+      for (int i=0; i<max; i++)
+        {
+          first+=3;
+          ++second;
+          usleep(100000); // 100ms
+        }
+    }
+  else
+    I(false);
+}
+
+
+static void out_of_band_to_automate_streambuf(char channel, std::string const& text, void *opaque)
+{
+  reinterpret_cast<automate_ostream*>(opaque)->write_out_of_band(channel, text);
+}
+
 // Name: stdio
 // Arguments: none
 // Added in: 1.0
@@ -119,14 +180,16 @@ CMD_AUTOMATE(interface_version, "",
 //     l6:leavese
 //     l7:parents40:0e3171212f34839c2e3263e7282cdeea22fc5378e
 //
-// Output format: <command number>:<err code>:<last?>:<size>:<output>
+// Output format: <command number>:<err code>:<stream>:<size>:<output>
 //   <command number> is a decimal number specifying which command
 //   this output is from. It is 0 for the first command, and increases
 //   by one each time.
 //   <err code> is 0 for success, 1 for a syntax error, and 2 for any
 //   other error.
-//   <last?> is 'l' if this is the last piece of output for this command,
-//   and 'm' if there is more output to come.
+//   <stream> is 'l' if this is the last piece of output for this command,
+//   and 'm' if there is more output to come. Otherwise, 'e', 'p' and 'w'
+//   notify the caller about errors, informational messages and warnings.
+//   A special type 't' outputs progress information for long-term actions.
 //   <size> is the number of bytes in the output.
 //   <output> is the output of the command.
 //   Example:
@@ -140,12 +203,6 @@ CMD_AUTOMATE(interface_version, "",
 // Error conditions: Errors encountered by the commands run only set
 //   the error code in the output for that command. Malformed input
 //   results in exit with a non-zero return value and an error message.
-
-// automate_streambuf and automate_ostream are so we can dump output at a
-// set length, rather than waiting until we have all of the output.
-
-
-
 CMD_AUTOMATE_NO_STDIO(stdio, "",
                       N_("Automates several commands in one run"),
                       "",
@@ -160,20 +217,32 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
   // immediately if a version discrepancy exists
   db.ensure_open();
 
+  // disable user prompts, f.e. for password decryption
+  app.opts.non_interactive = true;
   options original_opts = app.opts;
 
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);
+
+  std::vector<std::pair<std::string, std::string> > headers;
+  commands::get_stdio_headers(headers);
+  os.write_headers(headers);
+
   vector<pair<string, string> > params;
   vector<string> cmdline;
+  global_sanity.set_out_of_band_handler(&out_of_band_to_automate_streambuf, &os);
+
   while (true)
     {
-      command const * cmd = 0;
+      automate const * acmd = 0;
       command_id id;
       args_vector args;
 
+      // FIXME: what follows is largely duplicated
+      // in network/automate_session.cc::do_work()
+      //
       // stdio decoding errors should be noted with errno 1,
-      // errno 2 is reserved for errors coming from the commands itself
+      // errno 2 is reserved for errors from the commands itself
       try
         {
           if (!ar.get_command(params, cmdline))
@@ -206,8 +275,14 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           for (command_id::size_type i = 0; i < id.size(); i++)
             args.erase(args.begin());
 
-          cmd = CMD_REF(automate)->find_command(id);
+          command const * cmd = CMD_REF(automate)->find_command(id);
           I(cmd != NULL);
+
+          acmd = dynamic_cast< automate const * >(cmd);
+          I(acmd != NULL);
+
+          E(acmd->can_run_from_stdio(), origin::network,
+            F("sorry, that can't be run remotely or over stdio"));
 
           if (cmd->use_workspace_options())
             {
@@ -221,45 +296,83 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           options::options_type opts;
           opts = options::opts::globals() | cmd->opts();
           opts.instantiate(&app.opts).from_key_value_pairs(params);
+
+          // set a fixed ticker type regardless what the user wants to
+          // see, because anything else would screw the stdio-encoded output
+          ui.set_tick_write_stdio();
         }
       // FIXME: we need to re-package and rethrow this special exception
       // since it is not based on informative_failure
       catch (option::option_error & e)
         {
-          os.set_err(1);
-          os<<e.what();
-          os.end_cmd();
+          os.write_out_of_band('e', e.what());
+          os.end_cmd(1);
           ar.reset();
           continue;
         }
       catch (recoverable_failure & f)
         {
-          os.set_err(1);
-          os<<f.what();
-          os.end_cmd();
+          os.write_out_of_band('e', f.what());
+          os.end_cmd(1);
           ar.reset();
           continue;
         }
 
       try
         {
-          automate const * acmd = dynamic_cast< automate const * >(cmd);
-          I(acmd);
-
-          E(acmd->can_run_from_stdio(), origin::network,
-            F("sorry, that can't be run remotely or over stdio"));
+          // as soon as a command requires a workspace, this is set to true
+          workspace::used = false;
 
           acmd->exec_from_automate(app, id, args, os);
-          // set app.opts to the originally given options
-          // so the next command has an identical setup
+          os.end_cmd(0);
+
+          // usually, if a command succeeds, any of its workspace-relevant
+          // options are saved back to _MTN/options, this shouldn't be
+          // any different here
+          workspace::maybe_set_options(app.opts, app.lua);
+
+          // restore app.opts
           app.opts = original_opts;
         }
-      catch(recoverable_failure & f)
+      catch (recoverable_failure & f)
         {
-          os.set_err(2);
-          os<<f.what();
+          os.write_out_of_band('e', f.what());
+          os.end_cmd(2);
         }
-      os.end_cmd();
+    }
+    global_sanity.set_out_of_band_handler();
+}
+
+LUAEXT(change_workspace, )
+{
+  const system_path ws(luaL_checkstring(LS, -1), origin::user);
+  app_state* app_p = get_app_state(LS);
+
+  try
+    {
+      go_to_workspace(ws);
+    }
+  catch (recoverable_failure & f)
+    {
+      string msg(f.what());
+      lua_pushboolean(LS, false);
+      lua_pushlstring(LS, msg.data(), msg.size());
+      return 2;
+    }
+
+  // go_to_workspace doesn't check that it is a workspace, nor set workspace::found!
+  if (directory_is_workspace(ws))
+    {
+      workspace::found = true;
+      lua_pushboolean(LS, true);
+      return 1;
+    }
+  else
+    {
+      i18n_format msg(F("directory %s is not a workspace") % ws);
+      lua_pushboolean(LS, false);
+      lua_pushlstring(LS, msg.str().data(), msg.str().size());
+      return 2;
     }
 }
 
@@ -295,6 +408,9 @@ LUAEXT(mtn_automate, )
           L(FL("arg: %s")%next_arg());
           args.push_back(next_arg);
         }
+
+      // disable user prompts, f.e. for password decryption
+      app_p->opts.non_interactive = true;
 
       options::options_type opts;
       opts = options::opts::all_options() - options::opts::globals();
@@ -352,7 +468,16 @@ LUAEXT(mtn_automate, )
       commands::automate const * acmd
         = dynamic_cast< commands::automate const * >(cmd);
       I(acmd);
+
+      // as soon as a command requires a workspace, this is set to true
+      workspace::used = false;
+
       acmd->exec(*app_p, id, app_p->opts.args, os);
+
+      // usually, if a command succeeds, any of its workspace-relevant
+      // options are saved back to _MTN/options, this shouldn't be
+      // any different here
+      workspace::maybe_set_options(app_p->opts, app_p->lua);
 
       // allow further calls
       app_p->mtn_automate_allowed = true;
@@ -379,7 +504,7 @@ LUAEXT(mtn_automate, )
   os.flush();
 
   lua_pushboolean(LS, result);
-  lua_pushstring(LS, output.str().c_str());
+  lua_pushlstring(LS, output.str().data(), output.str().size());
   return 2;
 }
 

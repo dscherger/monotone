@@ -15,11 +15,17 @@ check(mtn("ci", "--exclude", ".", "-m", 'x'), 1, false, false)
 -- the root dir has not been created and excluding the whole tree
 -- excludes this creation. this causes the commit to fail because
 -- file1 has no parent.
---
--- check(MTN ci --exclude . file1 -m 'x', 0, false, false)
--- check(MTN status --brief | grep "foo/bar", 0, false, false)
--- check(MTN status --brief | grep "file1", 1, false, false)
--- check(echo a >>file1)
+
+-- implicitly including all parents of explicitly included nodes
+-- fixes this problem but will include changes to the parent nodes
+
+-- explicit exclude and implicit include of "."
+
+check(mtn("ci", "--exclude", ".", "file1", "-m", "x"), 0, false, false)
+check(mtn("status"), 0, true, false)
+check(qgrep("foo/bar", "stdout"))
+check(not qgrep("file1", "stdout"))
+append("file1", "a")
 
 check(mtn("ci", "--exclude", "foo", "-m", 'x'), 0, false, false)
 check(mtn("status"), 0, true)
@@ -32,6 +38,8 @@ check(mtn("status"), 0, true)
 check(not qgrep("foo/bar", "stdout"))
 check(qgrep("file1", "stdout"))
 append("foo/bar", "b")
+
+-- explicit exclude and implicit include of foo
 
 check(mtn("ci", ".", "--exclude", "foo", "foo/bar", "-m", 'x'), 0, false, false)
 check(mtn("status"), 0, true)

@@ -63,7 +63,7 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(vcs), N_("CVSROOT"),
   // make sure we can sign certs using the selected key; also requests
   // the password (if necessary) up front rather than after some arbitrary
   // amount of work
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   import_cvs_repo(project, keys, cvsroot, app.opts.branch);
 }
@@ -73,7 +73,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), (""),
     N_("Produces a git fast-export data stream on stdout"),
     (""),
     options::opts::authors_file | options::opts::branches_file |
-    options::opts::log_revids | options::opts::log_certs | 
+    options::opts::log_revids | options::opts::log_certs |
     options::opts::use_one_changelog |
     options::opts::import_marks | options::opts::export_marks |
     options::opts::refs)
@@ -90,6 +90,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), (""),
     {
       P(F("reading author mappings from '%s'") % app.opts.authors_file);
       read_mappings(app.opts.authors_file, author_map);
+      validate_author_mappings(app.lua, author_map);
     }
 
   if (!app.opts.branches_file.empty())
@@ -122,7 +123,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), (""),
   load_changes(db, revisions, change_map);
 
   // needs author and branch maps
-  export_changes(db,
+  export_changes(db, app.lua,
                  revisions, marked_revs,
                  author_map, branch_map, change_map,
                  app.opts.log_revids, app.opts.log_certs,

@@ -23,7 +23,7 @@ check(mtn("tag", r2, tag2), 0, false, false)
 
 -- helper function
 function get_tag(tag, ...)
-   check(mtn("automate", "tags", unpack(arg)), 0, true, false)
+   check(mtn("automate", "tags", ...), 0, true, false)
    local parsed = parse_basic_io(readfile("stdout"))
    local ltag
    for _,l in pairs(parsed) do

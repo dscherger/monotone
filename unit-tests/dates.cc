@@ -188,6 +188,144 @@ UNIT_TEST(from_string)
 #undef NO
 }
 
+#ifndef WIN32
+// parse_date (used by from_formatted_localtime) not implemented on Win32
+UNIT_TEST(roundtrip_localtimes)
+{
+#define OK(x) do {                                                       \
+    string iso8601 = x.as_iso_8601_extended();                           \
+    string formatted = x.as_formatted_localtime("%c");                   \
+    L(FL("iso 8601 date '%s' local date '%s'\n") % iso8601 % formatted); \
+    date_t parsed = date_t::from_formatted_localtime(formatted, "%c");   \
+    UNIT_TEST_CHECK(parsed == x);                                        \
+  } while (0)
+
+  // this is the valid range of dates supported by 32 bit time_t
+  date_t start("1901-12-13T20:45:52");
+  date_t end("2038-01-19T03:14:07");
+
+  OK(start);
+  OK(end);
+
+  // stagger the millisecond values to hit different times of day
+  for (date_t date = start; date <= end; date += MILLISEC(DAY+HOUR+MIN+SEC))
+    OK(date);
+
+  start -= 1000;
+  end += 1000;
+
+  // these tests run with LANG=C and TZ=UTC so the %c format seems to work
+  // however strptime does not like the timezone name when %c is used in
+  // other locales. with LANG=en_CA.UTF-8 this test fails.
+
+  if (sizeof(time_t) <= 4)
+    {
+      UNIT_TEST_CHECK_THROW(start.as_formatted_localtime("%c"),
+                            recoverable_failure);
+      UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("Fri Dec 13 20:45:51 1901", "%c"),
+                            recoverable_failure);
+
+      UNIT_TEST_CHECK_THROW(end.as_formatted_localtime("%c"),
+                            recoverable_failure);
+      UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("Tue Jan 19 03:14:08 2038", "%c"),
+                            recoverable_failure);
+    }
+  else
+    {
+      OK(start);
+      OK(end);
+    }
+
+  // this date represents 1 second before the unix epoch which has a time_t
+  // value of -1. conveniently, mktime returns -1 to indicate that it was
+  // unable to convert a struct tm into a valid time_t value even though
+  // dates before/after this are valid. our date parsing code ignores this
+  // "error" from mktime, does a conversion back to localtime and compares
+  // this with the localtime value it called mktime with in the first place.
+  // allowing conversion of this date to succeed while still detecting dates
+  // that are out of range.
+
+  OK(date_t("1969-12-31T23:59:59"));
+
+#undef OK
+}
+#endif
+
+#ifndef WIN32
+// parse_date (used by from_formatted_localtime) not implemented on Win32
+UNIT_TEST(localtime_formats)
+{
+#define OK(d, f) do {                                                    \
+    string formatted = d.as_formatted_localtime(f);                      \
+    date_t parsed = date_t::from_formatted_localtime(formatted, f);      \
+    UNIT_TEST_CHECK(parsed == d);                                        \
+    L(FL("date %s formatted %s parsed %s\n") % d % formatted % parsed);  \
+  } while (0)
+
+  // can we fiddle with LANG or TZ here?
+
+  // note that %c doesn't work for en_CA.UTF-8 because it includes a timezone label
+  // that strptime doesn't parse. this leaves some of the input string unprocessed
+  // which date_t::from_formatted_localtime doesn't allow.
+
+  // this is the valid range of dates supported by 32 bit time_t
+  date_t start("1901-12-13T20:45:52");
+  date_t end("2038-01-19T03:14:07");
+
+  // The 'y' (year in century) specification is taken to specify a year in
+  // the 20th century by libc4 and libc5.  It is taken to be a year in the
+  // range 1950-2049 by glibc 2.0.  It is taken to be a year in 1969-2068
+  // since glibc 2.1.
+
+  // When a century is not otherwise specified, values in the range 69-99
+  // refer to years in the twentieth century (1969-1999); values in the
+  // range 00-68 refer to years in the twenty-first century (2000-2068).
+
+  // With glibc 2.1 or newer the 2 digit years in the %x format will fail
+  // for years before 1969 because strptime will assume they are in the 21st
+  // century.
+  date_t yy_ok("1969-01-01T00:00:00");
+
+  // test roughly 2 days per month in this entire range
+  for (date_t date = start; date <= end; date += MILLISEC(15*(DAY+HOUR+MIN+SEC)))
+    {
+      L(FL("iso 8601 date '%s' end '%s'\n") % date % end);
+
+      // these all seem to work with the test setup of LANG=C and TZ=UTC
+
+      OK(date, "%Y-%m-%d %X"); // YYYY-MM-DD hh:mm:ss
+      OK(date, "%X %Y-%m-%d"); // hh:mm:ss YYYY-MM-DD
+      OK(date, "%d %b %Y, %I:%M:%S %p");
+      OK(date, "%a %b %d %H:%M:%S %Y");
+      OK(date, "%a %d %b %Y %I:%M:%S %p");
+      OK(date, "%a, %d %b %Y %H:%M:%S");
+      OK(date, "%Y-%m-%d %H:%M:%S");
+      OK(date, "%Y-%m-%dT%H:%M:%S");
+
+      if (date >= yy_ok)
+        {
+          OK(date, "%x %X"); // YY-MM-DD hh:mm:ss
+          OK(date, "%X %x"); // hh:mm:ss YY-MM-DD
+        }
+
+      // both, %F and %z, are GNU extensions which we cannot test here
+      // universally, because e.g. openBSD doesn't know them
+      //OK(date, "%F %X"); // YYYY-MM-DD hh:mm:ss
+      //OK(date, "%a %d %b %Y %I:%M:%S %p %z");
+
+      // possibly anything with a timezone label (%Z) will fail
+      //OK(date, "%a %d %b %Y %I:%M:%S %p %Z"); // the timezone label breaks this
+    }
+
+  // check that trailing characters not matched by the date format are caught
+  UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("1988-01-01 12:12:12 gobbledygook",
+                                                         "%Y-%m-%d %X"),
+                        recoverable_failure);
+
+#undef OK
+}
+#endif
+
 UNIT_TEST(from_unix_epoch)
 {
 #define OK_(x,y) do {                              \

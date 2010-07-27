@@ -87,7 +87,7 @@ do
 				certs_in, certs_out,
 				revs_in, revs_out,
 				keys_in, keys_out,
-				unpack(arg))
+				...)
       end
       if certs_in > 0 or revs_in > 0 or keys_in > 0 then
 	 spawn_redirected("/dev/null", MM_mirror_log, MM_mirror_errlog,

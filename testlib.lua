@@ -64,7 +64,7 @@ function prepare_to_enumerate_tests(P)
 end
 
 function L(...)
-  test.log:write(unpack(arg))
+  test.log:write(...)
   test.log:flush()
 end
 
@@ -360,16 +360,16 @@ do
   oldspawn = spawn
   function spawn(...)
    if redir == nil then
-     return oldspawn(unpack(arg))
+     return oldspawn(...)
    else
-     return spawn_redirected(redir.fin, redir.fout, redir.ferr, unpack(arg))
+     return spawn_redirected(redir.fin, redir.fout, redir.ferr, ...)
    end
   end
 end
 function execute(path, ...)
    local pid
    local ret = -1
-   pid = spawn(path, unpack(arg))
+   pid = spawn(path, ...)
    redir = nil
    if (pid ~= -1) then ret, pid = wait(pid) end
    return ret
@@ -414,7 +414,7 @@ function runcmd(cmd, prefix, bgnd)
   else
     prepare_redirect(prefix.."stdin", prefix.."stdout", prefix.."stderr")
   end
-  
+
   local result
   if cmd.logline ~= nil then
     L(locheader(), cmd.logline, "\n")
@@ -436,7 +436,7 @@ function runcmd(cmd, prefix, bgnd)
 	"(first entry is a " .. type(cmd[1]) ..")")
  end
  execute = oldexec
-  
+
   if local_redir then
     files.stdin:close()
     files.stdout:close()
@@ -446,8 +446,8 @@ function runcmd(cmd, prefix, bgnd)
 end
 
 function samefile(left, right)
-  if left == "-" or right == "-" then 
-    err("tests may not rely on standard input") 
+  if left == "-" or right == "-" then
+    err("tests may not rely on standard input")
   end
   if fsize(left) ~= fsize(right) then
     return false
@@ -473,8 +473,8 @@ function samelines(f, t)
   for i=1,table.getn(t) do
     if fl[i] ~= t[i] then
       if fl[i] then
-        L(locheader(), string.format("file[i] = '%s'; table[i] = '%s'\n",
-                                     fl[i], t[i]))
+        L(locheader(), string.format("file[%d] = '%s'; table[%d] = '%s'\n",
+                                     i, fl[i], i, t[i]))
       else
         L(locheader(), string.format("file[i] = ''; table[i] = '%s'\n",
                                      t[i]))
@@ -504,7 +504,7 @@ function greplines(f, t)
 end
 
 function grep(...)
-  local flags, what, where = unpack(arg)
+  local flags, what, where = ...
   local dogrep = function ()
                    if where == nil and string.sub(flags, 1, 1) ~= "-" then
                      where = what
@@ -528,11 +528,11 @@ function grep(...)
                    if where ~= nil then infile:close() end
                    return out
                  end
-  return {dogrep, logline = "grep "..cmd_as_str(arg)}
+  return {dogrep, logline = "grep "..cmd_as_str({...})}
 end
 
 function cat(...)
-  local arguments = arg
+  local arguments = {...}
   local function docat()
     local bsize = 8*1024
     for _,x in ipairs(arguments) do
@@ -553,11 +553,11 @@ function cat(...)
     end
     return 0
   end
-  return {docat, logline = "cat "..cmd_as_str(arg)}
+  return {docat, logline = "cat "..cmd_as_str({...})}
 end
 
 function tail(...)
-  local file, num = unpack(arg)
+  local file, num = ...
   local function dotail()
     if num == nil then num = 10 end
     local mylines = {}
@@ -572,7 +572,7 @@ function tail(...)
     end
     return 0
   end
-  return {dotail, logline = "tail "..cmd_as_str(arg)}
+  return {dotail, logline = "tail "..cmd_as_str({...})}
 end
 
 function sort(file)
@@ -705,7 +705,7 @@ function bg(torun, ret, stdout, stderr, stdin)
   mt.__index = mt
   mt.finish = function(obj, timeout)
                 if obj.retval ~= nil then return end
-                
+
                 if timeout == nil then timeout = 0 end
                 if type(timeout) ~= "number" then
                   err("Bad timeout of type "..type(timeout))
@@ -723,7 +723,7 @@ function bg(torun, ret, stdout, stderr, stdin)
                     obj.retval, res = timed_wait(obj.pid, 2)
                   end
                 end
-                
+
                 test.bglist[obj.id] = nil
                 L(locheader(), "checking background command from ", out.locstr,
 		  cmd_as_str(out.cmd), "\n")
@@ -803,7 +803,7 @@ end
 
 function check(first, ...)
   if type(first) == "table" then
-    return runcheck(first, unpack(arg))
+    return runcheck(first, ...)
   elseif type(first) == "boolean" then
     if not first then err("Check failed: false", 2) end
   elseif type(first) == "number" then
@@ -823,7 +823,7 @@ function skip_if(chk)
 end
 
 function xfail_if(chk, ...)
-  local ok,res = pcall(check, unpack(arg))
+  local ok,res = pcall(check, ...)
   if ok == false then
     if chk then err(false, 2) else err(err, 2) end
   else
@@ -835,7 +835,7 @@ function xfail_if(chk, ...)
 end
 
 function xfail(...)
-   xfail_if(true, unpack(arg))
+   xfail_if(true, ...)
 end
 
 function log_error(e)
@@ -855,8 +855,8 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
   local run_all = true
 
   local function P(...)
-     progress(unpack(arg))
-     logfile:write(unpack(arg))
+     progress(...)
+     logfile:write(...)
   end
 
   -- NLS nuisances.
@@ -962,7 +962,7 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
   local s = prepare_to_run_tests(P)
   if s ~= 0 then
     P("Test suite preparation failed.\n")
-    return s 
+    return s
   end
   P("Running tests...\n")
 
@@ -1158,9 +1158,10 @@ function run_one_test(tname)
       if type(e.e) ~= "boolean" then
 	 log_error(e)
       end
+      test.log:write("\n")
    end
    test.log:close()
-    
+
    -- record the short status where report_one_test can find it
    local s = io.open(test.root .. "/STATUS", "w")
    if r then

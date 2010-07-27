@@ -62,7 +62,7 @@ project_t::project_t(database & db)
 
 void
 project_t::get_branch_list(set<branch_name> & names,
-                           bool check_heads)
+                           bool check_heads) const
 {
   if (indicator.outdated())
     {
@@ -92,7 +92,7 @@ project_t::get_branch_list(set<branch_name> & names,
 void
 project_t::get_branch_list(globish const & glob,
                            set<branch_name> & names,
-                           bool check_heads)
+                           bool check_heads) const
 {
   vector<string> got;
   db.get_branches(glob, got);
@@ -118,9 +118,9 @@ namespace
 {
   struct not_in_branch : public is_failure
   {
-    project_t & project;
+    project_t const & project;
     branch_name const & branch;
-    not_in_branch(project_t & project,
+    not_in_branch(project_t const & project,
                   branch_name const & branch)
       : project(project), branch(branch)
     {}
@@ -138,9 +138,9 @@ namespace
 
   struct suspended_in_branch : public is_failure
   {
-    project_t & project;
+    project_t const & project;
     branch_name const & branch;
-    suspended_in_branch(project_t & project,
+    suspended_in_branch(project_t const & project,
                         branch_name const & branch)
       : project(project), branch(branch)
     {}
@@ -161,44 +161,69 @@ void
 project_t::get_branch_heads(branch_name const & name,
                             set<revision_id> & heads,
                             bool ignore_suspend_certs,
-                            multimap<revision_id, revision_id> * inverse_graph_cache_ptr)
+                            multimap<revision_id, revision_id> * inverse_graph_cache_ptr) const
 {
   pair<branch_name, suspended_indicator>
     cache_index(name, ignore_suspend_certs);
   pair<outdated_indicator, set<revision_id> > &
     branch = branch_heads[cache_index];
-  if (branch.first.outdated())
+  outdated_indicator & indicator = branch.first;
+  set<revision_id> & my_heads = branch.second;
+  if (indicator.outdated())
     {
       L(FL("getting heads of branch %s") % name);
 
-      branch.first = db.get_revisions_with_cert(cert_name(branch_cert_name),
-                                                typecast_vocab<cert_value>(name),
-                                                branch.second);
+      set<revision_id> leaves;
+      indicator = db.get_branch_leaves(typecast_vocab<cert_value>(name),
+                                       leaves);
 
       not_in_branch p(*this, name);
-      erase_ancestors_and_failures(db, branch.second, p,
-                                   inverse_graph_cache_ptr);
+
+      bool have_failure = false;
+      for (set<revision_id>::iterator l = leaves.begin();
+           l != leaves.end(); ++l)
+        {
+          if (p(*l))
+            {
+              have_failure = true;
+              break;
+            }
+        }
+
+      if (!have_failure)
+        {
+          my_heads = leaves;
+        }
+      else
+        { // bah, do it the slow way
+          indicator = db.get_revisions_with_cert(cert_name(branch_cert_name),
+                                                 typecast_vocab<cert_value>(name),
+                                                 my_heads);
+          erase_ancestors_and_failures(db, my_heads, p,
+                                       inverse_graph_cache_ptr);
+
+        }
 
       if (!ignore_suspend_certs)
         {
           suspended_in_branch s(*this, name);
-          set<revision_id>::iterator it = branch.second.begin();
-          while (it != branch.second.end())
+          set<revision_id>::iterator it = my_heads.begin();
+          while (it != my_heads.end())
             if (s(*it))
-              branch.second.erase(it++);
+              my_heads.erase(it++);
             else
               it++;
         }
 
       L(FL("found heads of branch %s (%s heads)")
-        % name % branch.second.size());
+        % name % my_heads.size());
     }
-  heads = branch.second;
+  heads = my_heads;
 }
 
 bool
 project_t::revision_is_in_branch(revision_id const & id,
-                                 branch_name const & branch)
+                                 branch_name const & branch) const
 {
   vector<cert> certs;
   db.get_revision_certs(id, branch_cert_name,
@@ -227,7 +252,7 @@ project_t::put_revision_in_branch(key_store & keys,
 
 bool
 project_t::revision_is_suspended_in_branch(revision_id const & id,
-                                 branch_name const & branch)
+                                           branch_name const & branch) const
 {
   vector<cert> certs;
   db.get_revision_certs(id, suspend_cert_name,
@@ -257,14 +282,14 @@ project_t::suspend_revision_in_branch(key_store & keys,
 
 outdated_indicator
 project_t::get_revision_cert_hashes(revision_id const & rid,
-                                    vector<id> & hashes)
+                                    vector<id> & hashes) const
 {
   return db.get_revision_certs(rid, hashes);
 }
 
 outdated_indicator
 project_t::get_revision_certs(revision_id const & id,
-                              vector<cert> & certs)
+                              vector<cert> & certs) const
 {
   return db.get_revision_certs(id, certs);
 }
@@ -272,7 +297,7 @@ project_t::get_revision_certs(revision_id const & id,
 outdated_indicator
 project_t::get_revision_certs_by_name(revision_id const & id,
                                       cert_name const & name,
-                                      vector<cert> & certs)
+                                      vector<cert> & certs) const
 {
   outdated_indicator i = db.get_revision_certs(id, name, certs);
   db.erase_bogus_certs(*this, certs);
@@ -281,7 +306,7 @@ project_t::get_revision_certs_by_name(revision_id const & id,
 
 outdated_indicator
 project_t::get_revision_branches(revision_id const & id,
-                                 set<branch_name> & branches)
+                                 set<branch_name> & branches) const
 {
   vector<cert> certs;
   outdated_indicator i = get_revision_certs_by_name(id, branch_cert_name, certs);
@@ -295,7 +320,7 @@ project_t::get_revision_branches(revision_id const & id,
 
 outdated_indicator
 project_t::get_branch_certs(branch_name const & branch,
-                            vector<pair<id, cert> > & certs)
+                            vector<pair<id, cert> > & certs) const
 {
   return db.get_revision_certs(branch_cert_name,
                                typecast_vocab<cert_value>(branch), certs);
@@ -326,7 +351,7 @@ operator < (tag_t const & a, tag_t const & b)
 }
 
 outdated_indicator
-project_t::get_tags(set<tag_t> & tags)
+project_t::get_tags(set<tag_t> & tags) const
 {
   vector<cert> certs;
   outdated_indicator i = db.get_revision_certs(tag_cert_name, certs);
@@ -393,7 +418,7 @@ project_t::put_standard_certs_from_options(options const & opts,
     {
       key_identity_info key;
       get_user_key(opts, lua, db, keys, *this, key.id);
-      complete_key_identity(lua, key);
+      complete_key_identity_from_id(lua, key);
 
       if (!lua.hook_get_author(branch, key, author))
         {
@@ -460,7 +485,7 @@ void
 project_t::lookup_key_by_name(key_store * const keys,
                               lua_hooks & lua,
                               key_name const & name,
-                              key_id & id)
+                              key_id & id) const
 {
   set<key_id> ks_match_by_local_name;
   set<key_id> db_match_by_local_name;
@@ -541,9 +566,9 @@ project_t::lookup_key_by_name(key_store * const keys,
 }
 
 void
-project_t::get_canonical_name_of_key(key_store * const keys,
-                                     key_id const & id,
-                                     key_name & name)
+project_t::get_given_name_of_key(key_store * const keys,
+                                 key_id const & id,
+                                 key_name & name) const
 {
   if (keys && keys->key_pair_exists(id))
     {
@@ -557,58 +582,44 @@ project_t::get_canonical_name_of_key(key_store * const keys,
     }
   else
     {
-      E(false, origin::internal,
+      E(false, id.inner().made_from,
         F("key %s does not exist") % id);
     }
 }
 
 void
-project_t::complete_key_identity(key_store * const keys,
-                                 lua_hooks & lua,
-                                 key_identity_info & info)
+project_t::complete_key_identity_from_id(key_store * const keys,
+                                         lua_hooks & lua,
+                                         key_identity_info & info) const
 {
   MM(info.id);
   MM(info.official_name);
   MM(info.given_name);
-  if (!info.id.inner()().empty())
-    {
-      get_canonical_name_of_key(keys, info.id, info.given_name);
-      lua.hook_get_local_key_name(info);
-    }
-  else if (!info.official_name().empty())
-    {
-      lookup_key_by_name(keys, lua, info.official_name, info.id);
-      get_canonical_name_of_key(keys, info.id, info.given_name);
-    }
-  //else if (!info.given_name().empty())
-  //  {
-  //    lookup_key_by_name(keys, info.given_name, info.id);
-  //    get_name_of_key(keys, info.id, info.official_name);
-  //  }
-  else
-    I(false);
+  I(!info.id.inner()().empty());
+  get_given_name_of_key(keys, info.id, info.given_name);
+  lua.hook_get_local_key_name(info);
 }
 
 void
-project_t::complete_key_identity(key_store & keys,
-                                 lua_hooks & lua,
-                                 key_identity_info & info)
+project_t::complete_key_identity_from_id(key_store & keys,
+                                         lua_hooks & lua,
+                                         key_identity_info & info) const
 {
-  complete_key_identity(&keys, lua, info);
+  complete_key_identity_from_id(&keys, lua, info);
 }
 
 void
-project_t::complete_key_identity(lua_hooks & lua,
-                                 key_identity_info & info)
+project_t::complete_key_identity_from_id(lua_hooks & lua,
+                                         key_identity_info & info) const
 {
-  complete_key_identity(0, lua, info);
+  complete_key_identity_from_id(0, lua, info);
 }
 
 void
 project_t::get_key_identity(key_store * const keys,
                             lua_hooks & lua,
                             external_key_name const & input,
-                            key_identity_info & output)
+                            key_identity_info & output) const
 {
   try
     {
@@ -618,19 +629,23 @@ project_t::get_key_identity(key_store * const keys,
       // above throw recoverable_failure instead of unrecoverable_failure
       ident.made_from = input.made_from;
       output.id = key_id(ident);
+      complete_key_identity_from_id(keys, lua, output);
+      return;
     }
   catch (recoverable_failure &)
     {
       output.official_name = typecast_vocab<key_name>(input);
+      lookup_key_by_name(keys, lua, output.official_name, output.id);
+      get_given_name_of_key(keys, output.id, output.given_name);
+      return;
     }
-  complete_key_identity(keys, lua, output);
 }
 
 void
 project_t::get_key_identity(key_store & keys,
                             lua_hooks & lua,
                             external_key_name const & input,
-                            key_identity_info & output)
+                            key_identity_info & output) const
 {
   get_key_identity(&keys, lua, input, output);
 }
@@ -638,33 +653,17 @@ project_t::get_key_identity(key_store & keys,
 void
 project_t::get_key_identity(lua_hooks & lua,
                             external_key_name const & input,
-                            key_identity_info & output)
+                            key_identity_info & output) const
 {
   get_key_identity(0, lua, input, output);
-}
-
-void
-project_t::get_key_identity(key_store & keys,
-                            lua_hooks & lua,
-                            arg_type const & input,
-                            key_identity_info & output)
-{
-  get_key_identity(&keys, lua, typecast_vocab<external_key_name>(input), output);
-}
-
-void
-project_t::get_key_identity(lua_hooks & lua,
-                            arg_type const & input,
-                            key_identity_info & output)
-{
-  get_key_identity(0, lua, typecast_vocab<external_key_name>(input), output);
 }
 
 
 // These should maybe be converted to member functions.
 
 string
-describe_revision(project_t & project, revision_id const & id)
+describe_revision(options const & opts, lua_hooks & lua,
+                  project_t & project, revision_id const & id)
 {
   cert_name author_name(author_cert_name);
   cert_name date_name(date_cert_name);
@@ -672,6 +671,15 @@ describe_revision(project_t & project, revision_id const & id)
   string description;
 
   description += encode_hexenc(id.inner()(), id.inner().made_from);
+
+  string date_fmt;
+  if (opts.format_dates)
+    {
+      if (!opts.date_fmt.empty())
+        date_fmt = opts.date_fmt;
+      else
+        lua.hook_get_date_format_spec(date_time_short, date_fmt);
+    }
 
   // append authors and date of this revision
   vector<cert> certs;
@@ -689,7 +697,7 @@ describe_revision(project_t & project, revision_id const & id)
       else if (i->name == date_cert_name)
         {
           dates += " ";
-          dates += i->value();
+          dates += date_t(i->value()).as_formatted_localtime(date_fmt);
         }
     }
 

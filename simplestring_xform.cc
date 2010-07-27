@@ -27,7 +27,7 @@ using std::transform;
 struct
 lowerize
 {
-  char operator()(char const & c) const
+  char operator()(unsigned char const & c) const
   {
     return ::tolower(static_cast<int>(c));
   }
@@ -44,7 +44,7 @@ lowercase(string const & in)
 struct
 upperize
 {
-  char operator()(char const & c) const
+  char operator()(unsigned char const & c) const
   {
     return ::toupper(static_cast<int>(c));
   }
@@ -146,16 +146,18 @@ join_lines(vector<string> const & in,
            string & out,
            string const & linesep)
 {
-  ostringstream oss;
-  copy(in.begin(), in.end(), ostream_iterator<string>(oss, linesep.c_str()));
-  out = oss.str();
+  join_lines(in.begin(), in.end(), out, linesep);
 }
 
 void
-join_lines(vector<string> const & in,
-           string & out)
+join_lines(vector<string>::const_iterator begin,
+           vector<string>::const_iterator end,
+           string & out,
+           string const & linesep)
 {
-  join_lines(in, out, "\n");
+  ostringstream oss;
+  copy(begin, end, ostream_iterator<string>(oss, linesep.c_str()));
+  out = oss.str();
 }
 
 void
@@ -216,6 +218,14 @@ trim_left(string const & s, string const & chars)
   string::size_type pos = tmp.find_first_not_of(chars);
   if (pos < string::npos)
     tmp = tmp.substr(pos);
+
+  // if the first character in the string is still one of the specified
+  // characters then the entire string is made up of these characters
+
+  pos = tmp.find_first_of(chars);
+  if (pos == 0)
+    tmp = "";
+
   return tmp;
 }
 
@@ -226,6 +236,14 @@ trim_right(string const & s, string const & chars)
   string::size_type pos = tmp.find_last_not_of(chars);
   if (pos < string::npos)
     tmp.erase(++pos);
+
+  // if the last character in the string is still one of the specified
+  // characters then the entire string is made up of these characters
+
+  pos = tmp.find_last_of(chars);
+  if (pos == tmp.size()-1)
+    tmp = "";
+
   return tmp;
 }
 
@@ -239,6 +257,14 @@ trim(string const & s, string const & chars)
   pos = tmp.find_first_not_of(chars);
   if (pos < string::npos)
     tmp = tmp.substr(pos);
+
+  // if the first character in the string is still one of the specified
+  // characters then the entire string is made up of these characters
+
+  pos = tmp.find_first_of(chars);
+  if (pos == 0)
+    tmp = "";
+
   return tmp;
 }
 

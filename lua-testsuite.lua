@@ -18,7 +18,7 @@ function safe_mtn(...)
     end
   end
   return {monotone_path, "--norc", "--root=" .. test.root,
-          "--confdir="..test.root, unpack(arg)}
+          "--confdir="..test.root, ...}
 end
 
 function mtn_ws_opts(...)
@@ -31,7 +31,7 @@ function mtn_ws_opts(...)
       err("'mtn' environment variable not set")
     end
   end
-  return {monotone_path, "--ssh-sign=no", "--no-default-confdir", "--norc", "--rcfile", test.root .. "/test_hooks.lua", unpack(arg)}
+  return {monotone_path, "--ssh-sign=no", "--no-default-confdir", "--norc", "--rcfile", test.root .. "/test_hooks.lua", ...}
 end
 
 function mtn_outside_ws(...)
@@ -44,13 +44,14 @@ function mtn_outside_ws(...)
     end
   end
   return {monotone_path,
+         "--no-workspace",
          "--ssh-sign=no",
          "--norc", "--rcfile", test.root .. "/test_hooks.lua",
          "--confdir="..test.root,
          "--db=" .. test.root .. "/test.db",
          "--keydir", test.root .. "/keys",
          "--key=tester@test.net",
-          unpack(arg)}
+         ...}
 end
 
 -- function preexecute(x)
@@ -59,9 +60,9 @@ end
 
 function raw_mtn(...)
   if preexecute ~= nil then
-    return preexecute(safe_mtn(unpack(arg)))
+    return preexecute(safe_mtn(...))
   else
-    return safe_mtn(unpack(arg))
+    return safe_mtn(...)
   end
 end
 
@@ -69,26 +70,26 @@ function mtn(...)
   return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
          "--db=" .. test.root .. "/test.db",
          "--keydir", test.root .. "/keys",
-         "--key=tester@test.net", unpack(arg))
+         "--key=tester@test.net", ...)
 end
 
 function nodb_mtn(...)
   return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
          "--keydir", test.root .. "/keys",
-         "--key=tester@test.net", unpack(arg))
+         "--key=tester@test.net", ...)
 end
 
 function nokey_mtn(...)
   return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
          "--db=" .. test.root .. "/test.db",
-         "--keydir", test.root .. "/keys", unpack(arg))
+         "--keydir", test.root .. "/keys", ...)
 end
 
 function minhooks_mtn(...)
   return raw_mtn("--db=" .. test.root .. "/test.db",
                  "--keydir", test.root .. "/keys",
                  "--rcfile", test.root .. "/min_hooks.lua",
-                 "--key=tester@test.net", unpack(arg))
+                 "--key=tester@test.net", ...)
 end
 
 function commit(branch, message, mt)

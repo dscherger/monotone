@@ -339,20 +339,16 @@ UNIT_TEST(functions)
         netcmd in_cmd(constants::netcmd_current_protocol_version);
 
         int in_cmd_num(3), out_cmd_num;
-        int in_err_code(9), out_err_code;
-        bool in_last(true), out_last;
+        char in_stream('k'), out_stream;
         string in_data("this is some packet data"), out_data;
 
-        out_cmd.write_automate_packet_cmd(in_cmd_num, in_err_code,
-                                          in_last, in_data);
+        out_cmd.write_automate_packet_cmd(in_cmd_num, in_stream, in_data);
         string buf;
         do_netcmd_roundtrip(out_cmd, in_cmd, buf);
-        in_cmd.read_automate_packet_cmd(out_cmd_num, out_err_code,
-                                        out_last, out_data);
+        in_cmd.read_automate_packet_cmd(out_cmd_num, out_stream, out_data);
 
         UNIT_TEST_CHECK(in_cmd_num == out_cmd_num);
-        UNIT_TEST_CHECK(in_err_code == out_err_code);
-        UNIT_TEST_CHECK(in_last == out_last);
+        UNIT_TEST_CHECK(in_stream == out_stream);
         UNIT_TEST_CHECK(in_data == out_data);
         L(FL("automate_packet_cmd test done, buffer was %d bytes") % buf.size());
       }
