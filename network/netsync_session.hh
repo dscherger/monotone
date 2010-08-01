@@ -24,7 +24,7 @@
 
 #include "network/wrapped_session.hh"
 
-class cert;
+struct cert;
 
 // A set of session innards that knows how to talk 'netsync'.
 class

@@ -310,9 +310,9 @@ int process_kill(pid_t pid, int signal)
   return kill(pid, signal);
 }
 
-int process_sleep(unsigned int seconds)
+int process_sleep(float seconds)
 {
-  return sleep(seconds);
+  return usleep((unsigned int)(seconds*1e6));
 }
 
 pid_t get_process_id()
