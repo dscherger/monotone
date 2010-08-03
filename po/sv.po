@@ -149,7 +149,7 @@ msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-06-13 23:48+0200\n"
-"PO-Revision-Date: 2010-08-04 00:32+0200\n"
+"PO-Revision-Date: 2010-08-04 00:58+0200\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "MIME-Version: 1.0\n"
@@ -878,6 +878,9 @@ msgid ""
 "No database given; assuming '%s' database. This means that we can't\n"
 "verify the server key, because we have no record of what it should be."
 msgstr ""
+"Ingen databas angiven; databasen '%s' antagen.  Detta innebär att vi\n"
+"inte kan kolla servernyckeln, eftersom vi inte har någon uppgift om\n"
+"vad den borde vara."
 
 #: cmd_netsync.cc:410
 msgid "COMMAND [ARGS]"
@@ -1160,7 +1163,7 @@ msgstr "Visar alla databasvariabler eller bara de som tillhör en domän"
 
 #: cmd_list.cc:618
 msgid "Lists managed databases and their known workspaces"
-msgstr ""
+msgstr "Visa vilka databaser som hanteras och deras kända arbetskopior"
 
 #: cmd_list.cc:625 database.cc:4753
 #, c-format
@@ -1593,7 +1596,7 @@ msgstr ""
 #: cmd_merging.cc:371
 #, c-format
 msgid "at most one revision selector may be specified"
-msgstr ""
+msgstr "maximalt en revisionsselektor för specificeras"
 
 #: cmd_merging.cc:436 cmd_merging.cc:764
 #, c-format
@@ -2145,7 +2148,7 @@ msgstr "det finns inga variabler med namnet %s i domänen %s"
 
 #: cmd_db.cc:404 cmd_db.cc:426
 msgid "[WORKSPACE_PATH]"
-msgstr ""
+msgstr "[VÄG_TILL_ARBETSKOPIA]"
 
 #: cmd_db.cc:405
 msgid "Registers a new workspace for the current database"
@@ -2153,7 +2156,7 @@ msgstr "Sätter upp en ny arbetsarea för denna databas"
 
 #: cmd_db.cc:406
 msgid "This command adds WORKSPACE_PATH to the list of `known-workspaces'."
-msgstr ""
+msgstr "Detta kommando lägger till VÄG_TILL_ARBETSKOPIA till listan över kända databaser (`known-workspaces')."
 
 #: cmd_db.cc:413 cmd_db.cc:435
 #, c-format
@@ -2167,12 +2170,12 @@ msgstr "Visar arbetskopians rot gentemot nuvarande katalog"
 
 #: cmd_db.cc:428
 msgid "This command removes WORKSPACE_PATH to the list of `known-workspaces'."
-msgstr ""
+msgstr "Detta kommando tar bort VÄG_TILL_ARBETSKOPIA från listan över kända databaser (`known-workspaces')."
 
 #: cmd_db.cc:448
 msgid ""
 "Removes all invalid, registered workspace paths for the current database"
-msgstr ""
+msgstr "Tar bort alla ogiltiga registrerade vägar till arbetskopior för denna databas"
 
 #: cmd_db.cc:493
 msgid "(revision|file|key) PARTIAL-ID"
@@ -2409,6 +2412,9 @@ msgid ""
 "The values of Author, Date and Branch may be modified as required.\n"
 "\n"
 msgstr ""
+"Mata in en beskrivning av denna ändring efter raden `Changelog' nedan.\n"
+"Värdena på Author, Date och Branch får ändras vid behov.\n"
+"\n"
 
 #: cmd_ws_commit.cc:187
 msgid "*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"
@@ -2416,7 +2422,7 @@ msgstr "*** TA BORT DENNA RAD FÖR ATT AVBRYTA DIN ARKIVERING ***\n"
 
 #: cmd_ws_commit.cc:209 cmd_ws_commit.cc:930
 msgid "*** THIS REVISION WILL CREATE A NEW BRANCH ***"
-msgstr ""
+msgstr "*** DENNA REVISION KOMMER ATT SKAPA EN NY GREN ***"
 
 #: cmd_ws_commit.cc:212 cmd_ws_commit.cc:933
 msgid "Old Branch: "
@@ -2428,7 +2434,7 @@ msgstr "Ny gren: "
 
 #: cmd_ws_commit.cc:224 cmd_ws_commit.cc:945
 msgid "*** THIS REVISION WILL CREATE DIVERGENCE ***"
-msgstr ""
+msgstr "*** DENNA REVISION KOMMER ATT SKAPA EN DIVERGENS ***"
 
 #: cmd_ws_commit.cc:240
 #, c-format
@@ -2448,7 +2454,7 @@ msgstr ""
 #: cmd_ws_commit.cc:285
 #, c-format
 msgid "Commit cancelled."
-msgstr ""
+msgstr "Arkivering avbruten."
 
 #: cmd_ws_commit.cc:288
 msgid "Author: "
@@ -7160,9 +7166,8 @@ msgid ""
 msgstr ""
 
 #: options_list.hh:105
-#, fuzzy
 msgid "do not touch the workspace (default)"
-msgstr "Lägger till filer i arbetskopian"
+msgstr "rör inte arbetskopian (standard)"
 
 #: options_list.hh:118
 msgid "address:port to listen on (default :4691)"
@@ -7308,13 +7313,10 @@ msgstr ""
 "uppdatera enbart monotones interna administration, inte arbetskopian i övrigt"
 
 #: options_list.hh:425
-#, fuzzy
 msgid ""
 "move conflicting, unversioned paths into _MTN/resolutions before proceeding "
 "with any workspace change"
-msgstr ""
-"flytta krockande sökvägar som inte versionshanteras till _MTN/conflicts "
-"innan man genomför några ändring i arbetskopian"
+msgstr "flytta krockande sökvägar som inte versionshanteras till _MTN/resolutions innan man genomför några ändring i arbetskopian"
 
 #: options_list.hh:434
 msgid ""
@@ -7767,14 +7769,14 @@ msgid "ssh_agent: received %u extra bytes from agent"
 msgstr ""
 
 #: unix/parse_date.cc:21
-#, fuzzy, c-format
+#, c-format
 msgid "unable to parse date '%s' with format '%s'"
-msgstr "kunde inte tyda datumangivelsen '%s': %s"
+msgstr "kunde inte tyda datumangivelsen '%s' med formatet '%s'"
 
 #: unix/parse_date.cc:24
-#, fuzzy, c-format
+#, c-format
 msgid "invalid date '%s' not matched by format '%s'"
-msgstr "ogiltigt mönster '%s': oavslutad '['"
+msgstr "ogiltigt datum '%s' matchade inte med formatet '%s'"
 
 #: win32/get_system_flavour.cc:161
 #, c-format
@@ -7852,9 +7854,9 @@ msgid "Asked to read more than %u from pageant."
 msgstr "Ombedd att läsa mer än %u från pageant."
 
 #: win32/parse_date.cc:19
-#, fuzzy, c-format
+#, c-format
 msgid "date parsing not available on win32"
-msgstr "finns ingen revision att uppdatera med"
+msgstr "uttydning av datum finns inte i win32"
 
 #: monotone.cc:126
 #, c-format
