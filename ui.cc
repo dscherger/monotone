@@ -1030,7 +1030,7 @@ format_usage_strings(vector<string> const & names,
   size_t const pre_indent = 2; // empty space on the left
   size_t const space = 2; // space after the longest option, before the description
   size_t const termwidth = guess_terminal_width();
-  size_t const desired_namewidth = (termwidth - pre_indent - space) / 2;
+  size_t const desired_namewidth = (termwidth - pre_indent - space) / 3;
   size_t namelen = 0;
 
   vector<option_text> texts;
