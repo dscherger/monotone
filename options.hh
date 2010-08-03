@@ -17,6 +17,7 @@
  * as options::<name>.
  */
 
+#include <algorithm>
 #include <list>
 #include <climits>
 
@@ -49,22 +50,30 @@ public:
 
 class enum_string
 {
-  std::string allowed;
+  std::vector<std::string> allowed;
+  std::string allowed_str;
   std::string value;
 public:
   enum_string() { }
-  enum_string(std::string const & a) : allowed(a)
+  enum_string(std::string a) : allowed_str(a)
   {
-    size_t x = allowed.find(",");
-    value = allowed.substr(0, x);
+    size_t x = a.find(",");
+    while (x != std::string::npos)
+      {
+        allowed.push_back(a.substr(0, x));
+        a.erase(0, x + 1);
+        x = a.find(",");
+      }
+    allowed.push_back(a);
+    I(allowed.size() >= 2);
+    value = idx(allowed, 0);
   }
   void set(std::string const & v)
   {
-    if (v.find(",") != std::string::npos
-        || allowed.find(v) == std::string::npos)
+    if (std::find(allowed.begin(), allowed.end(), v) == allowed.end())
       {
         throw option::bad_arg_internal((F("must be one of the following: %s")
-                                        % allowed).str());
+                                        % allowed_str).str());
       }
     else
       value = v;
