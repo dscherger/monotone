@@ -149,7 +149,7 @@ msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-06-13 23:48+0200\n"
-"PO-Revision-Date: 2010-01-11 18:26+0100\n"
+"PO-Revision-Date: 2010-08-04 00:32+0200\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "MIME-Version: 1.0\n"
@@ -850,14 +850,14 @@ msgid "setting default branch exclude pattern to '%s'"
 msgstr "sätter standardmönstret för grenar att INTE ta med till '%s'"
 
 #: cmd_netsync.cc:217
-#, fuzzy, c-format
+#, c-format
 msgid "setting default include pattern for server '%s' to '%s'"
-msgstr "sätter standardmönstret för grenar att ta med till '%s'"
+msgstr "sätter standardmönstret för grenar att ta med till '%2$s' för server '%1$s'"
 
 #: cmd_netsync.cc:225
-#, fuzzy, c-format
+#, c-format
 msgid "setting default exclude pattern for server '%s' to '%s'"
-msgstr "sätter standardmönstret för grenar att INTE ta med till '%s'"
+msgstr "sätter standardmönstret för grenar att INTE ta med till '%2$s' för server '%1$s'"
 
 #: cmd_netsync.cc:265
 #, c-format
@@ -982,9 +982,9 @@ msgid "clone destination directory '%s' already exists"
 msgstr "klonarbetskatalogen '%s' finns redan"
 
 #: cmd_netsync.cc:700 cmd_ws_commit.cc:1739
-#, fuzzy, c-format
+#, c-format
 msgid "bookkeeping directory already exists in '%s'"
-msgstr "det finns redan en administrativ katalog (%s) i '%s'"
+msgstr "det finns redan en administrativ katalog i '%s'"
 
 #: cmd_netsync.cc:753 cmd_merging.cc:519 cmd_merging.cc:637 cmd_merging.cc:642
 #: cmd_merging.cc:1429 cmd_ws_commit.cc:982
@@ -1168,24 +1168,23 @@ msgid "could not query default database locations"
 msgstr ""
 
 #: cmd_list.cc:671
-#, fuzzy, c-format
+#, c-format
 msgid ":%s (in %s):"
-msgstr "%s:%s : %s"
+msgstr ":%s (i %s):"
 
 #: cmd_list.cc:706
-#, fuzzy
 msgid "<no branch set>"
-msgstr "Gammal gren: %s"
+msgstr "<ingen gren angiven>"
 
 #: cmd_list.cc:708
-#, fuzzy, c-format
+#, c-format
 msgid "\t%s (in %s)"
-msgstr "%s (grundrevision: %s)"
+msgstr "\t%s (i %s)"
 
 #: cmd_list.cc:712
-#, fuzzy, c-format
+#, c-format
 msgid "\tno known valid workspaces"
-msgstr "leta inte efter någon arbetsarea"
+msgstr "\tfinner ingen giltig arbetsarea"
 
 #: cmd_list.cc:718
 msgid "Lists workspace files that belong to the current branch"
@@ -2149,18 +2148,17 @@ msgid "[WORKSPACE_PATH]"
 msgstr ""
 
 #: cmd_db.cc:405
-#, fuzzy
 msgid "Registers a new workspace for the current database"
-msgstr "Visar arbetskopians rot gentemot nuvarande katalog"
+msgstr "Sätter upp en ny arbetsarea för denna databas"
 
 #: cmd_db.cc:406
 msgid "This command adds WORKSPACE_PATH to the list of `known-workspaces'."
 msgstr ""
 
 #: cmd_db.cc:413 cmd_db.cc:435
-#, fuzzy, c-format
+#, c-format
 msgid "No workspace given"
-msgstr "arbetskopia"
+msgstr "Ingen arbetskopia angiven"
 
 #: cmd_db.cc:427
 #, fuzzy
@@ -2387,10 +2385,10 @@ msgid "try passing a --from revision to start at"
 msgstr "prova att ange en revision att börja med med hjälpa av --from"
 
 #: cmd_diff_log.cc:603
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "workspace parent revision '%s' not found - did you specify a wrong database?"
-msgstr "föräldrarevisionen %s finns inte, angav du fel database?"
+msgstr "föräldrarevisionen '%'s finns inte - angav du fel databas?"
 
 #: cmd_diff_log.cc:925
 #, c-format
@@ -2413,23 +2411,20 @@ msgid ""
 msgstr ""
 
 #: cmd_ws_commit.cc:187
-#, fuzzy
 msgid "*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"
-msgstr "*****TA BORT DENNA RAD FÖR ATT BEKRÄFTA DIN ARKIVERING*****"
+msgstr "*** TA BORT DENNA RAD FÖR ATT AVBRYTA DIN ARKIVERING ***\n"
 
 #: cmd_ws_commit.cc:209 cmd_ws_commit.cc:930
 msgid "*** THIS REVISION WILL CREATE A NEW BRANCH ***"
 msgstr ""
 
 #: cmd_ws_commit.cc:212 cmd_ws_commit.cc:933
-#, fuzzy
 msgid "Old Branch: "
-msgstr "Gammal gren: %s"
+msgstr "Gammal gren: "
 
 #: cmd_ws_commit.cc:213 cmd_ws_commit.cc:934
-#, fuzzy
 msgid "New Branch: "
-msgstr "Ny gren: %s"
+msgstr "Ny gren: "
 
 #: cmd_ws_commit.cc:224 cmd_ws_commit.cc:945
 msgid "*** THIS REVISION WILL CREATE DIVERGENCE ***"
@@ -2468,9 +2463,8 @@ msgid "Branch: "
 msgstr "Gren: "
 
 #: cmd_ws_commit.cc:291 rev_output.cc:106
-#, fuzzy
 msgid "Changelog: "
-msgstr "ChangeLog: "
+msgstr "Changelog: "
 
 #: cmd_ws_commit.cc:304
 #, c-format
@@ -3185,9 +3179,9 @@ msgid "sorry, that can't be run remotely or over stdio"
 msgstr "ledsen, detta kan inte köras som fjärrkommando eller via stdio"
 
 #: cmd_automate.cc:372
-#, fuzzy, c-format
+#, c-format
 msgid "directory %s is not a workspace"
-msgstr "filen '%s' existerar inte i arbetskopian"
+msgstr "katalogen %s existerar inte i arbetskopian"
 
 #: cmd_automate.cc:392
 #, c-format
@@ -3513,9 +3507,8 @@ msgid "Delete any bookkeeping files related to conflict resolution"
 msgstr "Ta bort alla administrativa filer som hör ihop med konfliktlösning"
 
 #: lua_hooks.cc:104
-#, fuzzy
 msgid "lua: "
-msgstr "Tagg: "
+msgstr "lua: "
 
 #: lua_hooks.cc:245
 #, c-format
@@ -3602,10 +3595,9 @@ msgid "Failed to read options file %s: %s"
 msgstr "Misslyckades med att läsa inställningsfilen %s: %s"
 
 #: work.cc:489 work.cc:535
-#, fuzzy, c-format
+#, c-format
 msgid "a memory database '%s' cannot be used in a workspace"
-msgstr ""
-"kommandot '%s %s' kan inte begränsas i en arbetskopia med två föräldrar"
+msgstr "en databas i minnet '%s' kan inte användas i en arbetskopia"
 
 #: work.cc:521
 #, c-format
@@ -3894,9 +3886,9 @@ msgstr ""
 "och kataloger som det blir konflikt med ur vägen."
 
 #: work.cc:2188
-#, fuzzy, c-format
+#, c-format
 msgid "moved some conflicting files into %s/%s"
-msgstr "flyttade vägen %s till %s på grund av konflikt"
+msgstr "flyttade några filer i konflikt till %s/%s"
 
 #: migrate_work.cc:79
 #, c-format
@@ -4036,9 +4028,9 @@ msgid ""
 msgstr "flera grencert funna för revision %s, var god ange en gren"
 
 #: database.cc:567
-#, fuzzy, c-format
+#, c-format
 msgid "initializing new database '%s'"
-msgstr "Initierar databasen"
+msgstr "initierar ny databas '%s'"
 
 #: database.cc:576
 #, c-format
@@ -4382,14 +4374,14 @@ msgstr ""
 "avbryter skapandet av databasen"
 
 #: database.cc:4788
-#, fuzzy, c-format
+#, c-format
 msgid "the database alias '%s' has multiple ambiguous expansions:"
-msgstr "den partiella identiteten '%s' har mer än en uttydning:"
+msgstr "databasaliaset '%s' har flera motsägelsefulla uttydningar:"
 
 #: database.cc:4811
-#, fuzzy, c-format
+#, c-format
 msgid "could not query default database alias"
-msgstr "kunde inte öppna databasen '%s': %s"
+msgstr "kunde inte fråga efter databasens standardalias"
 
 #: database.cc:4822
 #, c-format
@@ -4402,9 +4394,9 @@ msgid "invalid database alias '%s': must not be empty"
 msgstr ""
 
 #: database.cc:4839
-#, fuzzy, c-format
+#, c-format
 msgid "invalid database alias '%s': does contain invalid characters"
-msgstr "ogiltigt mönster '%s': tom teckenklass"
+msgstr "ogiltigt databasalias '%s': innehåller ogiltiga tecken"
 
 #: key_store.cc:89
 #, c-format
@@ -4428,9 +4420,9 @@ msgid "converting old-format private key '%s'"
 msgstr "konverterar den gamla privata nyckeln '%s'"
 
 #: key_store.cc:226
-#, fuzzy, c-format
+#, c-format
 msgid "ignored invalid key file ('%s') in key store"
-msgstr "nyckelparet '%s' finns inte i katalogen '%s'"
+msgstr "ignorerar ogiltig nyckelfil ('%s') i nyckelarkivet"
 
 #: key_store.cc:454
 #, c-format
@@ -4463,13 +4455,11 @@ msgid "no key pair '%s' found in key store '%s'"
 msgstr "nyckelparet '%s' finns inte i katalogen '%s'"
 
 #: key_store.cc:566
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "failed to decrypt old private RSA key, probably incorrect passphrase or "
 "missing 'get_passphrase' lua hook"
-msgstr ""
-"misslyckades med att avkoda den gamla privata RSA-nyckeln, antagligen "
-"beroende på inkorrekt lösen"
+msgstr "misslyckades med att avkoda den gamla privata RSA-nyckeln, antagligen beroende på inkorrekt lösen eller på att lua-hooken 'get_passphrase' saknas"
 
 #: key_store.cc:579
 #, c-format
@@ -4934,14 +4924,14 @@ msgid "finished regenerating cached rosters and heights"
 msgstr "färdig med återskapandet av cachade listor och höjder"
 
 #: migrate_ancestry.cc:1019
-#, fuzzy, c-format
+#, c-format
 msgid "regenerating cached branches"
-msgstr "återskapar cachade listor och höjder"
+msgstr "återskapar cachade grenar"
 
 #: migrate_ancestry.cc:1041
-#, fuzzy, c-format
+#, c-format
 msgid "finished regenerating cached branches"
-msgstr "färdig med återskapandet av cachade listor och höjder"
+msgstr "färdig med återskapandet av cachade grenar"
 
 #: refiner.cc:371
 #, c-format
@@ -5940,11 +5930,8 @@ msgid "height relations"
 msgstr "höjdförhållanden"
 
 #: database_check.cc:625
-#, fuzzy
 msgid "branches"
-msgstr ""
-"gren \"%s\"\n"
-"\n"
+msgstr "grenar"
 
 #: database_check.cc:689
 #, c-format
@@ -6079,19 +6066,19 @@ msgid "height of revision %s not greater than that of parent"
 msgstr "höjden på revision %s är inte högre än förälderns"
 
 #: database_check.cc:984
-#, fuzzy, c-format
+#, c-format
 msgid "cached branch '%s' not used"
-msgstr "löven i grenen '%s' är inte ihopslagna"
+msgstr "cachade grenen '%s' används inte"
 
 #: database_check.cc:989
-#, fuzzy, c-format
+#, c-format
 msgid "branch '%s' not cached"
-msgstr "löven i grenen '%s' är inte ihopslagna"
+msgstr "grenen '%s' är inte cachad"
 
 #: database_check.cc:994
-#, fuzzy, c-format
+#, c-format
 msgid "branch '%s' wrong head count"
-msgstr "grenen '%s' är tom"
+msgstr "antalet huvuden i grenen '%s' stämmer inte"
 
 #: database_check.cc:1089
 #, c-format
@@ -6209,13 +6196,11 @@ msgid "%d branches missing from branch cache"
 msgstr ""
 
 #: database_check.cc:1172
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "check complete: %d files; %d rosters; %d revisions; %d keys; %d certs; %d "
 "heights; %d branches"
-msgstr ""
-"kontroll klar: %d filer; %d listor; %d revisioner; %d nycklar; %d cert; %d "
-"höjder"
+msgstr "kontroll klar: %d filer; %d listor; %d revisioner; %d nycklar; %d cert; %d höjder; %d grenar"
 
 #: database_check.cc:1180
 #, c-format
@@ -6334,14 +6319,14 @@ msgid "%s.. by %s %s: "
 msgstr ""
 
 #: restrictions.cc:68 restrictions.cc:150
-#, fuzzy, c-format
+#, c-format
 msgid "including missing parent '%s'"
-msgstr "saknar katalogen '%s'"
+msgstr "tar med saknad föräldrarevision '%s'"
 
 #: restrictions.cc:79 restrictions.cc:159
-#, fuzzy, c-format
+#, c-format
 msgid "including required parent '%s'"
-msgstr "saknar nödvändig revision '%s'"
+msgstr "tar med nödvändig föräldrarevision '%s'"
 
 #: restrictions.cc:102 restrictions.cc:176
 #, c-format
@@ -6366,9 +6351,9 @@ msgstr[0] "%d okänd sökväg"
 msgstr[1] "%d okända sökvägar"
 
 #: maybe_workspace_updater.cc:64
-#, fuzzy, c-format
+#, c-format
 msgid "note: your workspace has not been updated"
-msgstr "obs: dina arbetskopior har inte uppdaterats"
+msgstr "obs: din arbetskopia har inte uppdaterats"
 
 #: merge_roster.cc:333
 #, c-format
@@ -6936,43 +6921,37 @@ msgid "Parent:   "
 msgstr ""
 
 #: rev_output.cc:79
-#, fuzzy
 msgid "Author:   "
-msgstr "Författare: "
+msgstr "Författare:  "
 
 #: rev_output.cc:85 rev_output.cc:89
-#, fuzzy
 msgid "Date:     "
-msgstr "Datum: "
+msgstr "Datum:       "
 
 #: rev_output.cc:95
-#, fuzzy
 msgid "Branch:   "
-msgstr "Gren: "
+msgstr "Gren:        "
 
 #: rev_output.cc:99
-#, fuzzy
 msgid "Tag:      "
-msgstr "Tagg: "
+msgstr "Tagg:        "
 
 #: rev_output.cc:114
 msgid "Comments: "
 msgstr "Kommentarer: "
 
 #: rev_output.cc:141
-#, fuzzy
 msgid "Changes"
-msgstr "inga ändringar"
+msgstr "Ändringar"
 
 #: rev_output.cc:143
-#, fuzzy
 msgid "Changes against parent "
-msgstr "Förändringar gentemot föräldern %s"
+msgstr "Förändringar gentemot förälder "
 
 #: rev_output.cc:151
 #, c-format
 msgid "  dropped  %s"
-msgstr "  slängde        %s"
+msgstr "  slängde            %s"
 
 #: rev_output.cc:156
 #, c-format
@@ -6980,39 +6959,38 @@ msgid ""
 "  renamed  %s\n"
 "       to  %s"
 msgstr ""
-"  bytte namn på  %s\n"
-"           till  %s"
+"  bytte namn på      %s\n"
+"           till      %s"
 
 #: rev_output.cc:161 rev_output.cc:165
 #, c-format
 msgid "  added    %s"
-msgstr "  la till        %s"
+msgstr "  la till            %s"
 
 #: rev_output.cc:169
 #, c-format
 msgid "  patched  %s"
-msgstr "  ändrade        %s"
+msgstr "  ändrade            %s"
 
 #: rev_output.cc:173
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "  attr on  %s\n"
 "      set  %s\n"
 "       to  %s"
 msgstr ""
-"  satte attr för    %s\n"
-"            attr    %s\n"
-"           värde    %s"
+"  satte attr för     %s\n"
+"            attr     %s\n"
+"           värde     %s"
 
 #: rev_output.cc:186
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "  attr on  %s\n"
 "    unset  %s"
 msgstr ""
-"  satte attr för    %s\n"
-"            attr    %s\n"
-"           värde    %s"
+"  tog bort attr för  %s\n"
+"               attr  %s"
 
 #: asciik.cc:374
 msgid "Prints an ASCII representation of the revisions' graph"
