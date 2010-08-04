@@ -10,7 +10,7 @@
 
 /*
  * This is a list of all options that monotone can take, what variables
- * they get put into, and how they get there. There are 4 important macros
+ * they get put into, and how they get there. There are 6 important macros
  * available here (and only here):
  *
  *   OPTSET(name)
@@ -155,7 +155,9 @@ void set_simple_option(enum_string_set & t, std::string const & arg)
 
 
 // because 'default_' is constructor arguments, and may need to be a list
-// This doesn't work if fed through the OPT / GOPT shorthand versions
+// This doesn't work if fed through SIMPLE_INITIALIZED_OPTION (it wouldn't
+// work with the other 2 SIMPLE_OPTION macros either, but it wouldn't make
+// sense in the first place with those).
 #define COMMA ,
 
 OPTSET(globals)
