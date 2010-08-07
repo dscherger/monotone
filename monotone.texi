@@ -9341,6 +9341,79 @@ None.
 
 @end table
 
+@item mtn automate pubkey @var{keyid}
+
+@table @strong
+@item Arguments:
+
+@var{keyid} identifies the key to display, by name or hash.
+
+@item Changes:
+
+@itemize
+@item
+FIXME -- initial
+
+@end itemize
+
+@item Purpose:
+
+Same as @command{pubkey}; print the key in packet format, suitable for
+reading by @command{automate read_packets}.
+
+@item Sample output:
+
+@verbatim
+[pubkey foo@bar.com]
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQs4OEcqULwepphO5Rsb/aSLpiEryGtEkQRNQPNFxvcu1rwVnNKRxep1KCDrwV3se9f4hUQ8zz73NQggS82guSI/YuyXZDZHrw+v3YgAMV/mKGnAjgYnyRNUL1xCywV7fnqTduBBqkDEVSCqphWlii/gFB/PVo4sbJ4Hk7O6ujWwIDAQAB
+[end]
+@end verbatim
+
+@item Output format:
+
+See example.
+
+@item Error conditions:
+
+If the key does not exist, an error message is printed on the error stream.
+
+@end table
+
+@item mtn automate dropkey @var{keyid}
+
+@table @strong
+@item Arguments:
+
+@var{keyid} identifies the key to drop, by name or hash.
+
+@item Changes:
+
+@itemize
+@item
+FIXME -- initial
+
+@end itemize
+
+@item Purpose:
+
+Same as @command{dropkey}; drops the public and/or private key. This
+command should be used with caution as changes are irreversible
+without a backup of the key(s) that were dropped.
+
+@item Sample output:
+
+None.
+
+@item Output format:
+
+None on the main stream; progress message on the progress stream.
+
+@item Error conditions:
+
+If the key does not exist, an error message is printed on the error stream.
+
+@end table
+
 @item mtn automate packet_for_rdata @var{id}
 
 @table @strong
@@ -10295,7 +10368,7 @@ see @command{update} in @ref{Workspace}.
 @table @strong
 @item Arguments:
 
-A data packet, @var{packet-data}, as produced by @command{mtn pubkey @var{keyname}}.
+A data packet, @var{packet-data}, as produced by @command{mtn pubkey @var{keyid}}.
 
 @item Added in:
 

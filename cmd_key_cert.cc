@@ -88,10 +88,13 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
 // Error conditions: If the passphrase is empty or the key already exists,
 // prints an error message to stderr and exits with status 1.
 CMD_AUTOMATE(genkey, N_("KEY_NAME PASSPHRASE"),
-             N_("Generates a key"),
+             N_("Generates an RSA key-pair"),
              "",
              options::opts::force_duplicate_key)
 {
+  // not unified with CMD(genkey), because the call to create_key_pair is
+  // significantly different.
+
   E(args.size() == 2, origin::user,
     F("wrong argument count"));
 
@@ -134,18 +137,14 @@ CMD_AUTOMATE(genkey, N_("KEY_NAME PASSPHRASE"),
 
 }
 
-CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
-    N_("Drops a public and/or private key"),
-    "",
-    options::opts::none)
+static void
+dropkey_common (app_state & app,
+                args_vector args)
 {
   database db(app);
   key_store keys(app);
   bool key_deleted = false;
   bool checked_db = false;
-
-  if (args.size() != 1)
-    throw usage(execid);
 
   key_identity_info identity;
   project_t project(db);
@@ -181,6 +180,28 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
     fmt = F("public or private key '%s' does not exist "
             "in keystore, and no database was specified");
   E(key_deleted, origin::user, fmt % idx(args, 0)());
+}
+
+CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
+    N_("Drops a public and/or private key"),
+    "",
+    options::opts::none)
+{
+  if (args.size() != 1)
+    throw usage(execid);
+
+  dropkey_common (app, args);
+}
+
+CMD_AUTOMATE(dropkey, N_("KEY_NAME_OR_HASH"),
+    N_("Drops a public and/or private key"),
+    "",
+    options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  dropkey_common (app, args);
 }
 
 CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),

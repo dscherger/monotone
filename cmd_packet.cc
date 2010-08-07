@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -24,14 +25,11 @@ using std::cout;
 using std::istringstream;
 using std::vector;
 
-CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
-    N_("Prints a public key packet"),
-    "",
-    options::opts::none)
+static void
+pubkey_common (app_state & app,
+               args_vector args,
+               std::ostream & output)
 {
-  if (args.size() != 1)
-    throw usage(execid);
-
   database db(app);
   key_store keys(app);
   project_t project(db);
@@ -57,8 +55,30 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
   E(exists, origin::user,
     F("public key '%s' does not exist") % idx(args, 0)());
 
-  packet_writer pw(cout);
+  packet_writer pw(output);
   pw.consume_public_key(identity.given_name, key);
+}
+
+CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("KEY_NAME_OR_HASH"),
+    N_("Prints a public key packet"),
+    "",
+    options::opts::none)
+{
+  if (args.size() != 1)
+    throw usage(execid);
+
+  pubkey_common (app, args, cout);
+}
+
+CMD_AUTOMATE(pubkey, N_("KEY_NAME_OR_HASH"),
+    N_("Prints a public key packet"),
+    "",
+    options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  pubkey_common (app, args, output);
 }
 
 CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),

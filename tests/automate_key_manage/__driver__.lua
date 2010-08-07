@@ -9,6 +9,8 @@ mtn_setup()
 
 check(mtn("automate", "genkey", "foo@bar.com", "foopass"), 0, false, false)
 check(mtn("pubkey", "foo@bar.com"), 0, true)
+-- non-automate output uses OS-specific line endings, while automate uses Unix line endings.
+canonicalize("stdout")
 rename("stdout", "key_packet")
 check(mtn("automate", "pubkey", "foo@bar.com"), 0, true)
 check(samefile("stdout", "key_packet"))
