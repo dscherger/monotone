@@ -489,6 +489,16 @@ set<revision_id> get_ancestors(project_t const & project,
   return ret;
 }
 
+static void
+diagnose_wrong_arg_count(string const & func, int expected, int actual)
+{
+  E(expected == actual, origin::user,
+    FP("the '%s' function takes %d argument, not %d",
+       "the '%s' function takes %d arguments, not %d",
+       expected)
+      % func % expected % actual);
+}
+
 class fn_selector : public selector
 {
   string name;
@@ -503,8 +513,7 @@ public:
   {
     if (name == "difference")
       {
-        E(args.size() == 2, origin::user,
-          F("the 'difference' function takes 2 arguments, not %d") % args.size());
+        diagnose_wrong_arg_count("difference", 2, args.size());
         set<revision_id> lhs = args[0]->complete(project);
         set<revision_id> rhs = args[1]->complete(project);
 
@@ -516,8 +525,7 @@ public:
       }
     else if (name == "lca")
       {
-        E(args.size() == 2, origin::user,
-          F("the 'lca' function takes 2 arguments, not %d") % args.size());
+        diagnose_wrong_arg_count("lca", 2, args.size());
         set<revision_id> lhs_heads = args[0]->complete(project);
         set<revision_id> rhs_heads = args[1]->complete(project);
         set<revision_id> lhs = get_ancestors(project, lhs_heads);
@@ -533,22 +541,19 @@ public:
       }
     else if (name == "max")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'max' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("max", 1, args.size());
         set<revision_id> ret = args[0]->complete(project);
         erase_ancestors(project.db, ret);
         return ret;
       }
     else if (name == "ancestors")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'ancestors' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("ancestors", 1, args.size());
         return get_ancestors(project, args[0]->complete(project));
       }
     else if (name == "descendants")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'descendants' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("descendants", 1, args.size());
         set<revision_id> frontier = args[0]->complete(project);
         set<revision_id> ret;
         while (!frontier.empty())
@@ -571,8 +576,7 @@ public:
       }
     else if (name == "parents")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'parents' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("parents", 1, args.size());
         set<revision_id> ret;
         set<revision_id> tmp = args[0]->complete(project);
         for (set<revision_id>::const_iterator i = tmp.begin();
@@ -587,8 +591,7 @@ public:
       }
     else if (name == "children")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'children' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("children", 1, args.size());
         set<revision_id> ret;
         set<revision_id> tmp = args[0]->complete(project);
         for (set<revision_id>::const_iterator i = tmp.begin();
@@ -603,8 +606,7 @@ public:
       }
     else if (name == "pick")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'pick' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("pick", 1, args.size());
         set<revision_id> tmp = args[0]->complete(project);
         set<revision_id> ret;
         if (!tmp.empty())
