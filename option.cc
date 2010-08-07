@@ -284,6 +284,11 @@ getopt(map<string, concrete_option> const & by_name, string const & name)
     throw unknown_option(name);
 }
 
+// helper for get_by_name
+// Make sure that either:
+//   * There are no duplicate options, or
+//   * If we're only parsing options (and not applying them), any duplicates
+//     are consistent WRT whether they take an option
 typedef pair<map<string, concrete_option>::iterator, bool> by_name_res_type;
 static void check_by_name_insertion(by_name_res_type const & res,
                                     concrete_option const & opt,
@@ -307,6 +312,7 @@ static void check_by_name_insertion(by_name_res_type const & res,
     }
 }
 
+// generate an index that lets us look options up by name
 static map<string, concrete_option>
 get_by_name(std::set<concrete_option> const & options,
             concrete_option_set::option_parse_type ty)
