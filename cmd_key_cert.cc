@@ -1,4 +1,4 @@
-// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2002, 2010 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -12,6 +12,7 @@
 #include <sstream>
 #include <iterator>
 
+#include "basic_io.hh"
 #include "charset.hh"
 #include "cmd.hh"
 #include "app_state.hh"
@@ -29,6 +30,17 @@ using std::ostream_iterator;
 using std::ostringstream;
 using std::set;
 using std::string;
+
+namespace
+{
+  namespace syms
+  {
+    symbol const name("name");
+    symbol const hash("hash");
+    symbol const public_location("public_location");
+    symbol const private_location("private_location");
+  }
+};
 
 CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
     N_("Generates an RSA key-pair"),
@@ -55,6 +67,71 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
     }
 
   keys.create_key_pair(db, name);
+}
+
+// Name: genkey
+// Arguments:
+//   1: the key ID
+//   2: the key passphrase
+// Added in: 3.1
+// Changed in: 10.0
+// Purpose: Generates a key with the given ID and passphrase
+//
+// Output format: a basic_io stanza for the new key, as for ls keys
+//
+// Sample output:
+//               name "tbrownaw@gmail.com"
+//               hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+//    public_location "database" "keystore"
+//   private_location "keystore"
+//
+// Error conditions: If the passphrase is empty or the key already exists,
+// prints an error message to stderr and exits with status 1.
+CMD_AUTOMATE(genkey, N_("KEY_NAME PASSPHRASE"),
+             N_("Generates a key"),
+             "",
+             options::opts::force_duplicate_key)
+{
+  E(args.size() == 2, origin::user,
+    F("wrong argument count"));
+
+  database db(app);
+  key_store keys(app);
+
+  key_name name = typecast_vocab<key_name>(idx(args, 0));
+
+  if (!app.opts.force_duplicate_key)
+    {
+      E(!keys.key_pair_exists(name), origin::user,
+        F("you already have a key named '%s'") % name);
+      if (db.database_specified())
+        {
+          E(!db.public_key_exists(name), origin::user,
+            F("there is another key named '%s'") % name);
+        }
+    }
+
+  utf8 passphrase = idx(args, 1);
+
+  key_id hash;
+  keys.create_key_pair(db, name, key_store::create_quiet, &passphrase, &hash);
+
+  basic_io::printer prt;
+  basic_io::stanza stz;
+  vector<string> publocs, privlocs;
+  if (db.database_specified())
+    publocs.push_back("database");
+  publocs.push_back("keystore");
+  privlocs.push_back("keystore");
+
+  stz.push_str_pair(syms::name, name());
+  stz.push_binary_pair(syms::hash, hash.inner());
+  stz.push_str_multi(syms::public_location, publocs);
+  stz.push_str_multi(syms::private_location, privlocs);
+  prt.print_stanza(stz);
+
+  output.write(prt.buf.data(), prt.buf.size());
+
 }
 
 CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
