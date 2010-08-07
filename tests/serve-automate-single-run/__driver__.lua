@@ -56,8 +56,12 @@ check(qgrep("bar", "stdout"))
 
 server:stop()
 
+if ostype ~= "Windows" then
+-- 'file:' not supported on Windows
+
 copy("allow-automate.lua", "custom_test_hooks.lua")
 check(mtn2("automate", "remote", "--remote-stdio-host",
 	   "file://"..test.root.."/test.db",
 	   "get_file_of", "--", "-r".. R1, "foo"), 0, true, false)
 check(qgrep("bar", "stdout"))
+end
