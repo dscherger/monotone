@@ -465,6 +465,19 @@ GROUPED_SIMPLE_OPTION(globals, norc, "no-standard-rcfiles/standard-rcfiles", boo
 GROUPED_SIMPLE_OPTION(globals, nostd, "no-builtin-rcfile/builtin-rcfile", bool,
                      gettext_noop("do not load the built-in lua file with the default hooks"))
 
+DEPRECATE(old_norc, gettext_noop("please use --no-standard-rcfiles instead"), 1.0, 2.0)
+OPTION(globals, old_norc, false, "norc",
+       gettext_noop("old version of --no-standard-rcfiles"))
+#ifdef option_bodies
+{ norc = true; }
+#endif
+DEPRECATE(old_nostd, gettext_noop("please use --no-builtin-rcfile instead"), 1.0, 2.0)
+OPTION(globals, old_nostd, false, "nostd",
+       gettext_noop("old version of --no-builtin-rcfile"))
+#ifdef option_bodies
+{ nostd = true; }
+#endif
+
 GROUPED_SIMPLE_OPTION(globals, extra_rcfiles, "rcfile/clear-rcfiles", args_vector,
                      gettext_noop("load extra lua file"))
 
