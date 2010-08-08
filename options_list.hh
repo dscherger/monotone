@@ -314,9 +314,6 @@ GROUPED_SIMPLE_OPTION(globals, roster_cache_performance_log, "roster-cache-perfo
                      system_path,
                      gettext_noop("log roster cache statistic to the given file"))
 
-GROUPED_SIMPLE_OPTION(globals, debug, "debug", bool,
-                     gettext_noop("print debug log to stderr while running"))
-
 SIMPLE_OPTION(depth, "depth", restricted_long<0>,
               gettext_noop("limit the number of levels of directories to descend"))
 
@@ -351,7 +348,7 @@ OPTION(diff_options, diff_external, false, "external",
 }
 #endif
 OPTION(diff_options, diff_unified, false, "unified",
-        gettext_noop("use unified diff format"))
+       gettext_noop("use unified diff format"))
 #ifdef option_bodies
 {
   diff_format = unified_diff;
@@ -497,33 +494,12 @@ OPTION(verbosity, set_verbosity, true, "verbosity",
   verbosity = boost::lexical_cast<long>(arg);
 }
 #endif
-OPTION(verbosity, inc_verbosity, false, "v",
-       gettext_noop("increase verbosity level by one"))
-#ifdef option_bodies
-{
-  ++verbosity;
-}
-#endif
 
-OPTSET(full)
-DEPRECATE(full, gettext_noop("please use --verbose instead"), 1.0, 2.0)
-OPTION(full, full, false, "full",
+GROUPED_SIMPLE_OPTION(globals, debug, "debug", bool,
+                     gettext_noop("print debug log to stderr while running"))
+
+SIMPLE_OPTION(full, "full/concise", bool,
        gettext_noop("print detailed information"))
-#ifdef option_bodies
-{
-  if (verbosity < 1)
-    verbosity = 1;
-}
-#endif
-
-OPTION(verbosity, verbose, false, "verbose",
-       gettext_noop("verbose completion output (set verbosity to 1)"))
-#ifdef option_bodies
-{
-  if (verbosity < 1)
-    verbosity = 1;
-}
-#endif
 
 OPTION(verbosity, quiet, false, "quiet,q",
      gettext_noop("suppress verbose, informational and progress messages (set verbosity to -1)"))
@@ -534,6 +510,7 @@ OPTION(verbosity, quiet, false, "quiet,q",
 }
 #endif
 
+DEPRECATE(reallyquiet, gettext_noop("please use --verbosity=-2"), 1.0, 2.0)
 OPTION(verbosity, reallyquiet, false, "reallyquiet",
      gettext_noop("suppress warning, verbose, informational and progress messages (set verbosity to -2)"))
 #ifdef option_bodies
@@ -541,6 +518,7 @@ OPTION(verbosity, reallyquiet, false, "reallyquiet",
   verbosity = -2;
 }
 #endif
+
 
 GROUPED_SIMPLE_OPTION(globals, timestamps, "timestamps", bool,
                       gettext_noop("show timestamps in front of errors, warnings and progress messages"))

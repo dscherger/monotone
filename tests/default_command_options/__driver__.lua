@@ -1,5 +1,5 @@
 -- Demonstrate that get_default_command_options works, and that
--- command line options override it. Also show that --verbose
+-- command line options override it. Also show that --full
 -- --no-verbose works.
 
 mtn_setup()
@@ -24,19 +24,19 @@ check(samefile("stdout", "normallog"))
 check(mtn("log", "--rcfile=default_options.lua", "--no-brief"), 0, true, false)
 check(samefile("stdout", "normallog"))
 
-check(mtn("version", "--verbosity=0"), 0, true, false)
+check(mtn("version", "--concise"), 0, true, false)
 rename("stdout", "normalversion")
 
-check(mtn("version", "--verbose"), 0, true, false)
+check(mtn("version", "--full"), 0, true, false)
 rename("stdout", "fullversion")
 
 check(mtn("version", "--rcfile=default_options.lua"), 0, true, false)
 check(samefile("stdout", "fullversion"))
 
-check(mtn("version", "--verbose", "--verbosity=0"), 0, true, false)
+check(mtn("version", "--full", "--concise"), 0, true, false)
 check(samefile("stdout", "normalversion"))
 
-check(mtn("version", "--rcfile=default_options.lua", "--verbosity=0"), 0, true, false)
+check(mtn("version", "--rcfile=default_options.lua", "--concise"), 0, true, false)
 check(samefile("stdout", "normalversion"))
 
 check(mtn("status", "--rcfile=default_options.lua"), 1, false, false)

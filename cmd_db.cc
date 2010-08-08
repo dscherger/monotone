@@ -62,7 +62,7 @@ CMD(db_info, "info", "", CMD_REF(db), "",
     F("no arguments needed"));
 
   database db(app);
-  db.info(cout, global_sanity.get_verbosity() > 0);
+  db.info(cout, app.opts.full);
 }
 
 CMD(db_version, "version", "", CMD_REF(db), "",
@@ -552,8 +552,6 @@ CMD(complete, "complete", "", CMD_REF(informative),
   database db(app);
   project_t project(db);
 
-  bool verbose = global_sanity.get_verbosity() > 0;
-
   E(idx(args, 1)().find_first_not_of("abcdef0123456789") == string::npos,
     origin::user,
     F("non-hex digits in partial id"));
@@ -565,7 +563,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
       for (set<revision_id>::const_iterator i = completions.begin();
            i != completions.end(); ++i)
         {
-          if (!verbose) cout << *i << '\n';
+          if (!app.opts.full) cout << *i << '\n';
           else cout << describe_revision(app.opts, app.lua, project, *i) << '\n';
         }
     }
@@ -586,7 +584,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
            i != completions.end(); ++i)
         {
           cout << i->first;
-          if (verbose) cout << ' ' << i->second();
+          if (app.opts.full) cout << ' ' << i->second();
           cout << '\n';
         }
     }

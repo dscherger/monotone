@@ -12,13 +12,13 @@ check(mtn("version"), 0, true, 0)
 output = readfile("stdout")
 check(string.find(output, "Running on") == nil)
 
--- The 'version' command allows a '--verbose' option.
-check(mtn("version", "--verbose"), 0, true, 0)
+-- The 'version' command allows a '--full' option.
+check(mtn("version", "--full"), 0, true, 0)
 output = readfile("stdout")
 check(string.find(output, "Running on") ~= nil)
 
--- The '--version' option does not allow a '--verbose' option (because the
+-- The '--version' option does not allow a '--full' option (because the
 -- latter is not global).
-check(mtn("--version", "--verbose"), 0, true, 0)
+check(mtn("--version", "--full"), 0, true, 0)
 output = readfile("stdout")
 check(string.find(output, "Running on") == nil)

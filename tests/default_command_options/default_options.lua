@@ -2,7 +2,7 @@
 function get_default_command_options(command)
     local default_opts = {}
     if (command[1] == "version") then
-        table.insert(default_opts, "--verbose")
+        table.insert(default_opts, "--full")
     end
     if (command[1] == "log") then
         table.insert(default_opts, "--brief")

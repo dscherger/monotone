@@ -89,7 +89,6 @@ Xxx Xxx 99 99:99:99 UTC 2010
           change it to --unknown on the command line.
 
         - New global options:
-          -v                            increase verbosity level by one
           --no-ignore-suspend-certs     undo previous --ignore-suspend-certs
           --use-default-key             undo previous --key
           --allow-default-confdir       undo previous --no-default-confdir
@@ -100,7 +99,6 @@ Xxx Xxx 99 99:99:99 UTC 2010
 	  --no-builtin-rcfile           replaces --nostd
 	  --builtin-rcfile              undo previous --no-builtin-rcfile
           --clear-rcfiles               undo previous --rcfile
-          --verbose                     set verosity level to 1
           --verbosity <arg>             set verbosity level
 
         - Global options now hidden:
@@ -166,9 +164,9 @@ Xxx Xxx 99 99:99:99 UTC 2010
 	  (all netsync/remote commands) --min-netsync-version --max-netsync-version
 
         - Deprecated options:
-          --full     use --verbose
-	  --norc     use --no-standard-rcfiles
-	  --nostd    use --no-builtin-rcfile
+	  --norc         use --no-standard-rcfiles
+	  --nostd        use --no-builtin-rcfile
+	  --reallyquiet  use --verbosity=-2
 
         - The 'disapprove' command now accepts a revision range in
           addition to a single revision.
