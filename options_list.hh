@@ -103,6 +103,15 @@
  *     "foo,f/no-foo" are all allowed.
  */
 
+/*
+ * If you want different *default* values for an option based on what command
+ * is being run (for example --with-header/--no-with-header for 'diff' and
+ * 'automate diff'), use CMD_PRESET_OPTIONS(cmdname) { ... } defined in cmd.hh.
+ * It doesn't go in this file, but rather in the file where the command is
+ * defined (ideally immediately before the CMD() declaration for that same
+ * command, just to be consistent).
+ */
+
 #ifdef option_bodies
 template<typename T>
 void set_simple_option(T & t, std::string const & arg)
