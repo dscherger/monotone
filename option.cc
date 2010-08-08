@@ -265,13 +265,12 @@ tokenize_for_command_line(string const & from, args_vector & to)
 }
 
 void concrete_option_set::from_command_line(int argc,
-                                            char const * const * argv,
-                                            concrete_option_set::option_parse_type ty)
+                                            char const * const * argv)
 {
   args_vector arguments;
   for (int i = 1; i < argc; ++i)
     arguments.push_back(arg_type(argv[i], origin::user));
-  from_command_line(arguments, xargs_allowed, ty);
+  from_command_line(arguments);
 }
 
 static concrete_option const &
@@ -292,11 +291,11 @@ getopt(map<string, concrete_option> const & by_name, string const & name)
 typedef pair<map<string, concrete_option>::iterator, bool> by_name_res_type;
 static void check_by_name_insertion(by_name_res_type const & res,
                                     concrete_option const & opt,
-                                    concrete_option_set::option_parse_type ty)
+                                    concrete_option_set::preparse_flag pf)
 {
-  switch (ty)
+  switch (pf)
     {
-    case concrete_option_set::allow_duplicates:
+    case concrete_option_set::preparse:
       if (!res.second)
         {
           string const & name = res.first->first;
@@ -306,7 +305,7 @@ static void check_by_name_insertion(by_name_res_type const & res,
           I(i_have_arg == they_have_arg);
         }
       break;
-    case concrete_option_set::forbid_duplicates:
+    case concrete_option_set::no_preparse:
       I(res.second);
       break;
     }
@@ -315,7 +314,7 @@ static void check_by_name_insertion(by_name_res_type const & res,
 // generate an index that lets us look options up by name
 static map<string, concrete_option>
 get_by_name(std::set<concrete_option> const & options,
-            concrete_option_set::option_parse_type ty)
+            concrete_option_set::preparse_flag pf)
 {
   map<string, concrete_option> by_name;
   for (std::set<concrete_option>::const_iterator i = options.begin();
@@ -323,22 +322,21 @@ get_by_name(std::set<concrete_option> const & options,
     {
       if (!i->longname.empty())
         check_by_name_insertion(by_name.insert(make_pair(i->longname, *i)),
-                                *i, ty);
+                                *i, pf);
       if (!i->shortname.empty())
         check_by_name_insertion(by_name.insert(make_pair(i->shortname, *i)),
-                                *i, ty);
+                                *i, pf);
       if (!i->cancelname.empty())
         check_by_name_insertion(by_name.insert(make_pair(i->cancelname, *i)),
-                                *i, ty);
+                                *i, pf);
     }
   return by_name;
 }
 
 void concrete_option_set::from_command_line(args_vector & args,
-                                            allow_xargs_t allow_xargs,
-                                            concrete_option_set::option_parse_type ty)
+                                            preparse_flag pf)
 {
-  map<string, concrete_option> by_name = get_by_name(options, ty);
+  map<string, concrete_option> by_name = get_by_name(options, pf);
 
   bool seen_dashdash = false;
   for (args_vector::size_type i = 0; i < args.size(); ++i)
@@ -353,7 +351,6 @@ void concrete_option_set::from_command_line(args_vector & args,
           if (!seen_dashdash)
             {
               seen_dashdash = true;
-              allow_xargs = xargs_forbidden;
               continue;
             }
           name = "--";
@@ -418,7 +415,7 @@ void concrete_option_set::from_command_line(args_vector & args,
           is_cancel = false;
         }
 
-      if (allow_xargs == xargs_allowed && (name == "xargs" || name == "@"))
+      if (name == "xargs" || name == "@")
         {
           // expand the --xargs in place
           data dat;
@@ -466,10 +463,9 @@ void concrete_option_set::from_command_line(args_vector & args,
     }
 }
 
-void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > const & keyvals,
-                                               concrete_option_set::option_parse_type ty)
+void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > const & keyvals)
 {
-  map<string, concrete_option> by_name = get_by_name(options, ty);
+  map<string, concrete_option> by_name = get_by_name(options, no_preparse);
 
   for (vector<pair<string, string> >::const_iterator i = keyvals.begin();
        i != keyvals.end(); ++i)

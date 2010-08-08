@@ -186,8 +186,7 @@ cpp_main(int argc, char ** argv)
 
           options::opts::all_options().instantiate(&app.opts)
             .from_command_line(app.reset_info.cmdline_args,
-                               option::concrete_option_set::xargs_allowed,
-                               option::concrete_option_set::allow_duplicates);
+                               option::concrete_option_set::preparse);
 
           if (app.opts.version_given)
             {
