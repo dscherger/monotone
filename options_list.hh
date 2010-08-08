@@ -18,9 +18,31 @@
  *     a particular command or reset together. It is named
  *     'options::opts::name'.
  *
+ *     This is used primarily for convenience in specifying options for the
+ *     CMD macro. Especially if several options always go together, they
+ *     can be grouped into an optset and then only that optset has to be
+ *     specified as an argument to the CMD macro when declaring commands
+ *     that use all of those options.
+ *
+ *     This is also used for resettable options; any option that has a
+ *     reset flag needs to be directly in an optset that *only* contains
+ *     (directly or through OPTSET_REL) the optvar's that should be
+ *     re-initialized when the reset flag is given. Because the
+ *     SIMPLE_OPTION family all declare an optset containing only the
+ *     one option and its one optvar, you don't typically need to care
+ *     about this.
+ *
  *   OPTSET_REL(parent, child)
  *     Declare a relationship between two optsets, so that if the parent
  *     is reset or allowed for a command the child will also be.
+ *
+ *     For example "diff" takes all of the options that "automate diff"
+ *     takes, plus some additional ones. So there is a line below,
+ *     "OPTSET_REL(diff_options, au_diff_options)", and then "diff" takes
+ *     options::opts::diff_options and "automate diff" takes
+ *     options::opts::au_diff_options. Options that only apply to "diff"
+ *     go in the diff_options optset, while options that apply to both
+ *     go in the au_diff_options optset.
  *
  *   OPTVAR(optset, type, name, default)
  *     Defines a variable 'type options::name' which is initialized to
