@@ -230,9 +230,11 @@ HIDE(bind_stdio)
 GROUPED_SIMPLE_OPTION(bind_opts, bind_stdio, "stdio", bool,
                       gettext_noop("serve netsync on stdio"))
 
+HIDE(max_netsync_version)
 SIMPLE_OPTION(max_netsync_version, "max-netsync-version", u8,
               gettext_noop("cause monotone to lie about the maximum netsync "
                            "protocol version that it supports, mostly for debugging"))
+HIDE(min_netsync_version)
 SIMPLE_OPTION(min_netsync_version, "min-netsync-version", u8,
               gettext_noop("cause monotone to lie about the minimum netsync "
                            "protocol version it supports, useful for debugging or "

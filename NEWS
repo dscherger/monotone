@@ -163,6 +163,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - Command options now hidden:
           (several commands) --no-prefix
           serve    --stdio --no-transport-auth
+	  (all netsync/remote commands) --min-netsync-version --max-netsync-version
 
         - Deprecated options:
           --full     use --verbose
