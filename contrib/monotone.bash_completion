@@ -135,8 +135,8 @@ _monotone() {
               --key -k
               --keydir
               --log
-              --norc
-              --nostd
+              --no-standard-rcfiles
+              --no-builtin-rcfiles
               --pid-file
               --quiet
               --rcfile

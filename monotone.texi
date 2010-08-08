@@ -11830,7 +11830,7 @@ to create temporary files outside the current directory.
 
 @strong{Important notice:}@*
 To create a temporary file, you must use the @code{temp_file()}
-function, unless you need to run monotone with the @option{--nostd}
+function, unless you need to run monotone with the @option{--no-builtin-rcfiles}
 option.  @code{temp_file()} builds on @code{mkstemp()} and creates a
 file in the standard TMP/TEMP directories.
 For the definition of @code{temp_file()}, see @ref{Default hooks}.
@@ -11921,7 +11921,7 @@ Calls fork/execvp on POSIX, CreateProcess on Win32.
 
 @strong{Important notice:}@*
 To spawn a process and wait for its completion, use the @code{execute()}
-function, unless you need to run monotone with the @option{--nostd}
+function, unless you need to run monotone with the @option{--no-builtin-rcfiles}
 option.  @code{execute()} builds on @code{spawn()} and @code{wait()}
 in a standardized way.
 
@@ -13351,7 +13351,7 @@ expected by the Perl-Compatible Regular Expression library (PCRE).
 
 This section contains the entire source code of the standard hook file,
 that is built in to the monotone executable, and read before any user
-hooks files (unless @option{--nostd} is passed).  It contains the
+hooks files (unless @option{--no-builtin-rcfiles} is passed).  It contains the
 default values for all hooks.
 
 @verbatiminclude std_hooks.lua

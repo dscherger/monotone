@@ -459,17 +459,17 @@ SIMPLE_OPTION(no_merges, "no-merges/merges", bool,
 # define NORC_TEXT gettext_noop("do not load ~/.monotone/monotonerc or " \
                                 "_MTN/monotonerc lua files")
 #endif
-GROUPED_SIMPLE_OPTION(globals, norc, "norc/yesrc", bool, NORC_TEXT)
+GROUPED_SIMPLE_OPTION(globals, norc, "no-standard-rcfiles/standard-rcfiles", bool, NORC_TEXT)
 #undef NORC_TEXT
 
-GROUPED_SIMPLE_OPTION(globals, nostd, "nostd/stdhooks", bool,
-                     gettext_noop("do not load standard lua hooks"))
+GROUPED_SIMPLE_OPTION(globals, nostd, "no-builtin-rcfile/builtin-rcfile", bool,
+                     gettext_noop("do not load the built-in lua file with the default hooks"))
+
+GROUPED_SIMPLE_OPTION(globals, extra_rcfiles, "rcfile/clear-rcfiles", args_vector,
+                     gettext_noop("load extra lua file"))
 
 SIMPLE_OPTION(pidfile, "pid-file/no-pid-file", system_path,
               gettext_noop("record process id of server"))
-
-GROUPED_SIMPLE_OPTION(globals, extra_rcfiles, "rcfile/clear-rcfiles", args_vector,
-                     gettext_noop("load extra rc file"))
 
 OPTSET(verbosity)
 OPTSET_REL(globals, verbosity)
