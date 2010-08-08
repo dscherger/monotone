@@ -95,8 +95,10 @@ Xxx Xxx 99 99:99:99 UTC 2010
           --allow-default-confdir       undo previous --no-default-confdir
           --allow-workspace             undo previous --no-workspace
           --interactive                 undo previous --non-interactive
-          --yesrc                       undo previous --norc
-          --stdhooks                    undo previous --nostd
+          --no-standard-rcfiles         replaces --norc
+          --standard-rcfiles            undo previous --no-standard-rcfiles
+	  --no-builtin-rcfile           replaces --nostd
+	  --builtin-rcfile              undo previous --no-builtin-rcfile
           --clear-rcfiles               undo previous --rcfile
           --verbose                     set verosity level to 1
           --verbosity <arg>             set verbosity level
@@ -164,6 +166,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         - Deprecated options:
           --full     use --verbose
+	  --norc     use --no-standard-rcfiles
+	  --nostd    use --no-builtin-rcfile
 
         - The 'disapprove' command now accepts a revision range in
           addition to a single revision.
