@@ -9379,7 +9379,7 @@ If the key does not exist, an error message is printed on the error stream.
 
 @end table
 
-@item mtn automate dropkey @var{keyid}
+@item mtn automate drop_public_key @var{keyid}
 
 @table @strong
 @item Arguments:
@@ -9396,9 +9396,13 @@ FIXME -- initial
 
 @item Purpose:
 
-Same as @command{dropkey}; drops the public and/or private key. This
+Same as @command{dropkey}, except that it does not drop private keys. This
 command should be used with caution as changes are irreversible
 without a backup of the key(s) that were dropped.
+
+Private keys are not dropped because that is very dangerous on a
+server. The only way to drop private keys on a server is via the
+direct @command{mtn dropkey}.
 
 @item Sample output:
 
