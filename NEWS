@@ -96,8 +96,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
           --interactive                 undo previous --non-interactive
           --no-standard-rcfiles         replaces --norc
           --standard-rcfiles            undo previous --no-standard-rcfiles
-	  --no-builtin-rcfile           replaces --nostd
-	  --builtin-rcfile              undo previous --no-builtin-rcfile
+          --no-builtin-rcfile           replaces --nostd
+          --builtin-rcfile              undo previous --no-builtin-rcfile
           --clear-rcfiles               undo previous --rcfile
           --verbosity <arg>             set verbosity level
 
@@ -161,12 +161,12 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - Command options now hidden:
           (several commands) --no-prefix
           serve    --stdio --no-transport-auth
-	  (all netsync/remote commands) --min-netsync-version --max-netsync-version
+          (all netsync/remote commands) --min-netsync-version --max-netsync-version
 
         - Deprecated options:
-	  --norc         use --no-standard-rcfiles
-	  --nostd        use --no-builtin-rcfile
-	  --reallyquiet  use --verbosity=-2
+          --norc         use --no-standard-rcfiles
+          --nostd        use --no-builtin-rcfile
+          --reallyquiet  use --verbosity=-2
 
         - The 'disapprove' command now accepts a revision range in
           addition to a single revision.
