@@ -99,6 +99,8 @@ class news_parser
     {
         $entries = array();
         $current = -1;
+        $commonIndent = 8;
+        $currentIndent = 0;
 
         while (!feof($this->fp))
         {
@@ -114,28 +116,32 @@ class news_parser
                 break;
             }
 
-            $line = trim($line);
-            if (empty($line) && $current == -1)
+            $trimmed = trim($line);
+            if (empty($trimmed) && $current == -1)
                 continue;
 
-            if (substr($line, 0, 1) == "-")
+            if (substr($trimmed, 0, 2) == "- ")
             {
                 ++$current;
-                $entries[$current] = "";
-                $line = substr($line, 2);
+                $trimmed = substr($trimmed, 2);
+                $currentIndent = $commonIndent + 2;
+                $entries[$current] = $trimmed;
+                continue;
             }
 
-            if (empty($line))
-                $line = "\n";
+            preg_match("/^(\s+)/", $line, $matches);
+            $newCurrentIndent = strlen($matches[1]);
 
-            $filler = " ";
-            if (empty($entries[$current]) ||
-                substr($entries[$current], -1, 1) == "\n")
+            $padding = " ";
+            if ($newCurrentIndent > $commonIndent &&
+                $newCurrentIndent != $currentIndent)
             {
-                $filler = "";
+                $padding = "\n" . str_repeat("&nbsp;",
+                                             $newCurrentIndent - $commonIndent - 2);
             }
+            $currentIndent = $newCurrentIndent;
 
-            $entries[$current] .= "$filler$line";
+            $entries[$current] .= "$padding$trimmed";
         }
 
         return $entries;
