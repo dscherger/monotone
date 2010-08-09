@@ -8,7 +8,7 @@ function validate_changes(revdata, branchname)
         local fp = assert(io.open(file, "r"))
         local contents = fp:read("*all")
         fp:close()
-        if string.find(contents, "\r\n") then
+        if string.find(contents, "\012\013") then
           return false, "CRLF detected"
         end
       end
