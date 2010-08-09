@@ -66,14 +66,14 @@ function prepare_to_run_tests (P)
    writefile_q("in", nil)
    prepare_redirect("in", "out", "err")
 
-   local status = execute(monotone_path, "version", "--verbose")
+   local status = execute(monotone_path, "version", "--full")
    local out = readfile_q("out")
    local err = readfile_q("err")
 
    if status == 0 and err == "" and out ~= "" then
       logfile:write(out)
    else
-      P(string.format("mtn version --verbose: exit %d\nstdout:\n", status))
+      P(string.format("mtn version --full: exit %d\nstdout:\n", status))
       P(out)
       P("stderr:\n")
       P(err)
