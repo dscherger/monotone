@@ -584,6 +584,13 @@ workspace::get_options(options & opts)
   if (!opts.key_dir_given && !opts.conf_dir_given && cur_opts.key_dir_given)
     { // if empty/missing, we want to keep the default
       opts.key_dir = cur_opts.key_dir;
+      // one would expect that we should set the key_dir_given flag here, but
+      // we do not because of the interaction between --confdir and --keydir.
+      // If --keydir is not given and --confdir is, then --keydir will default
+      // to the "keys" subdirectory of the given confdir. This works by the 
+      // --confdir option body looking at key_dir_given; if reading the keydir 
+      // from _MTN/options set that, then --confdir would stop setting the 
+      // default keydir when in a workspace. 
       //opts.key_dir_given = true;
     }
 
