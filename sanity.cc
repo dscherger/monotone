@@ -35,6 +35,7 @@ using std::string;
 using std::vector;
 
 using boost::format;
+using boost::lexical_cast;
 
 // set by sanity::initialize
 std::string const * prog_name_ptr;
@@ -486,6 +487,26 @@ template<> void
 dump(bool const & obj, string & out)
 {
   out = (obj ? "true" : "false");
+}
+template <> void
+dump(s32 const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+template <> void
+dump(u32 const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+template <> void
+dump(s64 const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+template <> void
+dump(u64 const & val, string & out)
+{
+  out = lexical_cast<string>(val);
 }
 
 void

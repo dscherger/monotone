@@ -174,7 +174,7 @@ namespace
 // Error conditions:
 //   Invalid input formatting.
 CMD_AUTOMATE(read_packets, N_("PACKET-DATA"),
-             N_("Load the given packets into the database."),
+             N_("Load the given packets into the database"),
              "",
              options::opts::none)
 {

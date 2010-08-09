@@ -20,7 +20,7 @@ new_rev1 = base_revision()
 chdir("..")
 
 -- kill_rev_locally the new child
-check(mtn("db", "kill_rev_locally", new_rev1))
+check(mtn("local", "kill_revision", new_rev1))
 
 -- recreate and attempt to commit the same child again from base
 mkdir("test2")

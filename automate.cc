@@ -520,6 +520,11 @@ CMD_AUTOMATE(select, N_("SELECTOR"),
   database db(app);
   project_t project(db, app.lua, app.opts);
   set<revision_id> completions;
+
+  // FIXME: replace this with 
+  //   complete(app.opts, app.lua,  project, idx(args, 0)(), completions);
+  // some time which errors out if no completions could be found for a
+  // specific selector - this breaks BC with earlier automate versions though
   expand_selector(app.opts, app.lua, project, idx(args, 0)(), completions);
 
   for (set<revision_id>::const_iterator i = completions.begin();
@@ -2114,7 +2119,7 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
   E(db.revision_exists(rid), origin::user,
     F("no such revision '%s'") % hrid);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   project.put_cert(keys, rid,
                    typecast_vocab<cert_name>(idx(args, 1)),

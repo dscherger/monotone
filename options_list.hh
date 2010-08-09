@@ -172,18 +172,17 @@ OPT(min_netsync_version, "min-netsync-version",
 }
 #endif
 
-OPT(remote_stdio_host, "remote-stdio-host",
-    utf8, ,
+OPT(remote_stdio_host, "remote-stdio-host", arg_type, ,
     gettext_noop("sets the host (and optionally the port) for a "
                  "remote netsync action"))
 #ifdef option_bodies
 {
-  remote_stdio_host = utf8(arg, origin::user);
+  remote_stdio_host = arg_type(arg, origin::user);
 }
 #endif
 
 OPT(branch, "branch,b", branch_name, ,
-        gettext_noop("select branch cert for operation"))
+    gettext_noop("select branch cert for operation"))
 #ifdef option_bodies
 {
   branch = branch_name(arg, origin::user);

@@ -64,7 +64,7 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
   require_path_is_nonexistent(project_file,
                               F("You already have a project with that name."));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
 
   std::set<external_key_name> signers;
@@ -91,7 +91,7 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   project_t project(db, app.lua, app.opts);
   branch_name name = typecast_vocab<branch_name>(idx(args, 0));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   policy_chain gov;
   project.find_governing_policy(name, gov);
@@ -139,7 +139,7 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   branch_name branch = typecast_vocab<branch_name>(idx(args, 0));
 
   app.opts.branch = branch;
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   policy_chain gov;
   project.find_governing_policy(branch, gov);

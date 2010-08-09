@@ -3103,27 +3103,19 @@ database::recalc_branch_leaves(cert_value const & branch_name)
     }
 }
 
-/// Deletes all certs referring to a particular branch.
-void
-database::delete_branch_named(cert_value const & branch)
+void database::delete_certs_locally(revision_id const & rev,
+                                    cert_name const & name)
 {
-  L(FL("Deleting all references to branch %s") % branch);
-  imp->execute(query("DELETE FROM revision_certs WHERE name='branch' AND value =?")
-               % blob(branch()));
-  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?")
-               % blob(branch()));
+  imp->execute(query("DELETE FROM revision_certs WHERE revision_id = ? AND name = ?")
+               % blob(rev.inner()()) % text(name()));
   imp->cert_stamper.note_change();
-  imp->execute(query("DELETE FROM branch_epochs WHERE branch=?")
-               % blob(branch()));
 }
-
-/// Deletes all certs referring to a particular tag.
-void
-database::delete_tag_named(cert_value const & tag)
+void database::delete_certs_locally(revision_id const & rev,
+                                    cert_name const & name,
+                                    cert_value const & value)
 {
-  L(FL("Deleting all references to tag %s") % tag);
-  imp->execute(query("DELETE FROM revision_certs WHERE name='tag' AND value =?")
-               % blob(tag()));
+  imp->execute(query("DELETE FROM revision_certs WHERE revision_id = ? AND name = ? AND value = ?")
+               % blob(rev.inner()()) % text(name()) % blob(value()));
   imp->cert_stamper.note_change();
 }
 
@@ -3618,6 +3610,24 @@ database::put_revision_cert(cert const & cert)
         % cert.ident);
       W(F("dropping cert"));
       return false;
+    }
+
+  if (cert.name() == "branch")
+    {
+      string branch_name = cert.value();
+      if (branch_name.find_first_of("?,*%%+{}[]!^") != string::npos ||
+          branch_name.find_first_of('-') == 0)
+        {
+          W(F("The branch name\n"
+              "  '%s'\n"
+              "contains meta characters (one or more of '?,*%%+{}[]!^') or\n"
+              "starts with a dash, which might cause malfunctions when used\n"
+              "in a netsync branch pattern.\n\n"
+              "If you want to undo this operation, please use the\n"
+              "'%s local kill_certs' command to delete the particular branch\n"
+              "cert and re-add a valid one.")
+            % cert.value() % prog_name);
+        }
     }
 
   imp->put_cert(cert, "revision_certs");
@@ -4195,6 +4205,21 @@ database::select_date(string const & date, string const & comparison,
 
   imp->fetch(res, 1, any_rows,
              q % text(date_cert_name()) % text(date));
+  for (size_t i = 0; i < res.size(); ++i)
+    completions.insert(revision_id(res[i][0], origin::database));
+}
+
+void
+database::select_key(key_id const & id, set<revision_id> & completions)
+{
+  results res;
+  completions.clear();
+
+  imp->fetch(res, 1, any_rows,
+             query("SELECT DISTINCT revision_id FROM revision_certs"
+                   " WHERE keypair_id = ?")
+             % blob(id.inner()()));
+
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(revision_id(res[i][0], origin::database));
 }

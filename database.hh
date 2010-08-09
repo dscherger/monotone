@@ -416,6 +416,7 @@ public:
                                    std::set<revision_id> & completions);
   void select_date(std::string const & date, std::string const & comparison,
                    std::set<revision_id> & completions);
+  void select_key(key_id const & id, std::set<revision_id> & completions);
 
   //
   // --== The 'db' family of top-level commands ==--
@@ -432,10 +433,12 @@ public:
   void fix_bad_certs(bool drop_not_fixable);
   // for kill_rev_locally:
   void delete_existing_rev_and_certs(revision_id const & rid);
-  // for kill_branch_certs_locally:
-  void delete_branch_named(cert_value const & branch);
-  // for kill_tag_locally:
-  void delete_tag_named(cert_value const & tag);
+  // for kill_certs_locally:
+  void delete_certs_locally(revision_id const & rev,
+                            cert_name const & name);
+  void delete_certs_locally(revision_id const & rev,
+                            cert_name const & name,
+                            cert_value const & value);
 
 public:
   // branches
