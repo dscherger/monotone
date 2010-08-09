@@ -244,6 +244,12 @@ GOPT(format_dates, "no-format-dates", bool, true,
 }
 #endif
 
+GOPT(colorize, "colorize", bool, false, gettext_noop("colorize output"))
+#ifdef option_bodies
+{
+    colorize = true;
+}
+#endif
 
 OPTVAR(globals, db_type, dbname_type, );
 OPTVAR(globals, std::string, dbname_alias, );

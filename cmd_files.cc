@@ -14,6 +14,7 @@
 #include "annotate.hh"
 #include "revision.hh"
 #include "cmd.hh"
+#include "colorizer.hh"
 #include "diff_output.hh"
 #include "merge_content.hh"
 #include "file_io.hh"
@@ -129,7 +130,8 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
   make_diff(src_name, dst_name,
             src_id, dst_id,
             src.inner(), dst.inner(),
-            cout, app.opts.diff_format, pattern);
+            cout, app.opts.diff_format, 
+            pattern, colorizer(app.opts.colorize));
 }
 
 CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
