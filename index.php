@@ -32,7 +32,7 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
                 <li><a href="INSTALL">INSTALL</a></li>
                 <li><a href="wiki/FAQ/">FAQ</a></li>
                 <li><a href="wiki/InterfacesFrontendsAndTools/">GUIs/other tools</a></li>
-                <li><a href="http://mail.nongnu.org/mailman/listinfo/monotone-users"><strong>users mailing list</strong></a></li>
+                <li><a href="http://lists.nongnu.org/mailman/listinfo/monotone-users"><strong>users mailing list</strong></a></li>
                 <li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.org/irclogger/irclogger_logs/monotone">logs</a>)</li>
                 <li><a href="wiki/FrontPage/"><strong>wiki</strong></a></li>
                 <li><a href="http://www.cafepress.com/monotone_rcs">swag <strong>new</strong></a></li>
@@ -51,7 +51,7 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
             <h1 class="improveit">Improve it</h1>
             <ul>
                 <li><a href="https://savannah.nongnu.org/bugs/?group=monotone"><strong>bugs</strong></a></li>
-                <li><a href="http://mail.nongnu.org/mailman/listinfo/monotone-devel">developers mailing list</a></li>
+                <li><a href="http://lists.nongnu.org/mailman/listinfo/monotone-devel">developers mailing list</a></li>
                 <li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.org/irclogger/irclogger_logs/monotone">logs</a>)</li>
                 <li><a href="http://monotone.thomaskeller.biz/docbuild/html">nightly documentation build</a> (<a href="http://monotone.thomaskeller.biz/docbuild/monotone.html">one page</a>)</li>
                 <li><a href="http://monotone.thomaskeller.biz/autobuild/index.php"><strong>nightly builds for openSUSE and Fedora</strong></a></li>

@@ -4,7 +4,7 @@
 # Where should I go to ask more questions?
 
  * on IRC: irc.oftc.net #monotone
- * via email: http://mail.nongnu.org/mailman/listinfo/monotone-devel
+ * via email: <http://lists.nongnu.org/mailman/listinfo/monotone-devel>
 
 # What are these libraries monotone depends on?
 [Boost](http://www.boost.org/)

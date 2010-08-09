@@ -116,7 +116,7 @@ We create local scripts to run the monotone build commands in an Msys shell, bec
 
  1. Set PATH for the user running buildbot to include Cygwin, but *not* MinGW. It may include the MinGW monotone, but that's not required.
 
- 1. Ask on the monotone mail list <http://mail.nongnu.org/mailman/listinfo/monotone-devel> for a bot name and password. In the message, include the path for running the working monotone. If it is in PATH, just say `mtn`. Also be sure to say you are running a MinGW buildbot; it needs the buildbot master that uses local scripts to run commands.
+ 1. Ask on the monotone mail list <http://lists.nongnu.org/mailman/listinfo/monotone-devel> for a bot name and password. In the message, include the path for running the working monotone. If it is in PATH, just say `mtn`. Also be sure to say you are running a MinGW buildbot; it needs the buildbot master that uses local scripts to run commands.
   Richard Levitte handles the buildbot master setup.
 
  1. Create a directory that will contain the buildbot scripts and the monotone source and build directory. It must be writeable by the user running the buildbot. Here we'll call this `/Gnu/monotone-buildbot-mingw`
