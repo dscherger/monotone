@@ -53,6 +53,10 @@ server:stop()
 
 copy("allow-automate.lua", "custom_test_hooks.lua")
 
+if ostype ~= "Windows" then
+-- 'file:' not supported on Windows
+
 check(mtn2("automate", "remote_stdio", "file://" .. test.root .. "/test.db"),
       0, true, false, "l17:interface_versione")
 check(parse_stdio(readfile("stdout"), 0, 0, "m") ~= nil)
+end

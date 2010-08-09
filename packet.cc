@@ -9,6 +9,8 @@
 
 #include "base.hh"
 #include <sstream>
+#include <botan/botan.h>
+#include <botan/rsa.h>
 
 #include "cset.hh"
 #include "constants.hh"
@@ -20,6 +22,7 @@
 #include "cert.hh"
 #include "key_store.hh" // for keypair
 #include "char_classifiers.hh"
+#include "lazy_rng.hh"
 
 using std::istream;
 using std::istringstream;
@@ -150,6 +153,44 @@ namespace
         made_from,
         F("malformed packet: invalid key name"));
     }
+    void validate_public_key_data(string const & name, string const & keydata) const
+    {
+      string decoded = decode_base64_as<string>(keydata, origin::user);
+      Botan::SecureVector<Botan::byte> key_block;
+      key_block.set(reinterpret_cast<Botan::byte const *>(decoded.c_str()), decoded.size());
+      try
+        {
+          Botan::X509::load_key(key_block);
+        }
+      catch (Botan::Decoding_Error const & e)
+        {
+          E(false, origin::user,
+            F("malformed packet: invalid public key data for '%s': %s")
+              % name % e.what());
+        }
+    }
+    void validate_private_key_data(string const & name, string const & keydata) const
+    {
+      string decoded = decode_base64_as<string>(keydata, origin::user);
+      Botan::DataSource_Memory ds(decoded);
+      try
+        {
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+          Botan::PKCS8::load_key(ds, lazy_rng::get(), string());
+#else
+          Botan::PKCS8::load_key(ds, string());
+#endif
+        }
+      catch (Botan::Decoding_Error const & e)
+        {
+          E(false, origin::user,
+            F("malformed packet: invalid private key data for '%s': %s")
+              % name % e.what());
+        }
+      // since we do not want to prompt for a password to decode it finally,
+      // we ignore all other exceptions
+      catch (Botan::Invalid_Argument) {}
+    }
     void validate_certname(string const & cn) const
     {
       E(!cn.empty()
@@ -238,6 +279,7 @@ namespace
       L(FL("read pubkey packet"));
       validate_key(args);
       validate_base64(body);
+      validate_public_key_data(args, body);
 
       cons.consume_public_key(key_name(args, made_from),
                               decode_base64_as<rsa_pub_key>(body, made_from));
@@ -252,7 +294,10 @@ namespace
 
       validate_key(args);
       validate_base64(pub);
+      validate_public_key_data(args, pub);
       validate_base64(priv);
+      validate_private_key_data(args, priv);
+
       cons.consume_key_pair(key_name(args, made_from),
                             keypair(decode_base64_as<rsa_pub_key>(pub, made_from),
                                     decode_base64_as<rsa_priv_key>(priv, made_from)));
@@ -371,11 +416,11 @@ extract_packets(string const & s, packet_consumer & cons)
 
 // this is same as rfind, but search area is haystack[start:] (from start to end of string)
 // haystack is searched, needle is pattern
-static size_t 
+static size_t
 rfind_in_substr(std::string const& haystack, size_t start, std::string const& needle)
 {
   I(start <= haystack.size());
-  const std::string::const_iterator result = 
+  const std::string::const_iterator result =
     std::find_end(haystack.begin() + start, haystack.end(),
                   needle.begin(), needle.end());
 
@@ -395,7 +440,7 @@ read_packets(istream & in, packet_consumer & cons)
   static string const end("[end]");
   while(in)
     {
-      size_t const next_search_pos = (accum.size() >= end.size()) 
+      size_t const next_search_pos = (accum.size() >= end.size())
                                       ? accum.size() - end.size() : 0;
       in.read(buf, bufsz);
       accum.append(buf, in.gcount());

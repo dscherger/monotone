@@ -150,6 +150,10 @@ Xxx Xxx 99 99:99:99 UTC 2010
           but instead validates if the given revision really exists in the
           current database.
 
+        - `mtn read` (and also `mtn automate read_packets`) now tests public
+          and private key data more thoroughly and aborts if it encounters
+          invalid data.
+
         - `mtn conflicts store` now gives a nice error message when
           run outside a workspace (fixes bug #30473)
 
