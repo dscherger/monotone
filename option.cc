@@ -276,11 +276,51 @@ void concrete_option_set::from_command_line(int argc,
 static concrete_option const &
 getopt(map<string, concrete_option> const & by_name, string const & name)
 {
+  // try to match the option name as a whole first, so if the user
+  // specified "--foo" and we have "--foo" and "--foo-bar", don't
+  // display both choices
   map<string, concrete_option>::const_iterator i = by_name.find(name);
   if (i != by_name.end())
     return i->second;
-  else
+
+
+  // try to find the option by partial name
+  vector<string> candidates;
+  for (i = by_name.begin(); i != by_name.end(); ++i)
+    {
+      if (i->first.find(name) == 0)
+        candidates.push_back(i->first);
+    }
+
+  if (candidates.size() == 0)
     throw unknown_option(name);
+
+  if (candidates.size() == 1)
+    {
+       i = by_name.find(candidates[0]);
+       I(i != by_name.end());
+       L(FL("expanding option '%s' to '%s'") % name % candidates[0]);
+       return i->second;
+    }
+
+  string err = (F("option '%s' has multiple ambiguous expansions:")
+                % name).str();
+
+  for (vector<string>::const_iterator j = candidates.begin();
+       j != candidates.end(); ++j)
+    {
+        i = by_name.find(*j);
+        I(i != by_name.end());
+
+        err += "\n--" + *j + " (";
+        if (*j != i->second.longname)
+          err += (F("negation of --%s") % i->second.longname).str();
+        else
+          err +=  + i->second.description;
+        err += ")";
+    }
+
+  E(false, origin::user, i18n_format(err));
 }
 
 // helper for get_by_name
@@ -369,7 +409,7 @@ void concrete_option_set::from_command_line(args_vector & args,
           o = getopt(by_name, name);
           is_cancel = (name == o.cancelname);
           if ((!o.has_arg || is_cancel) && equals != string::npos)
-            throw extra_arg(name);
+            throw extra_arg(is_cancel ? o.cancelname : o.longname);
 
           if (o.has_arg && !is_cancel)
             {
@@ -377,7 +417,7 @@ void concrete_option_set::from_command_line(args_vector & args,
                 {
                   separate_arg = true;
                   if (i+1 == args.size())
-                    throw missing_arg(name);
+                    throw missing_arg(o.longname);
                   arg = idx(args,i+1);
                 }
               else
@@ -392,7 +432,7 @@ void concrete_option_set::from_command_line(args_vector & args,
           is_cancel = (name == o.cancelname);
           I(!is_cancel);
           if (!o.has_arg && idx(args,i)().size() != 2)
-            throw extra_arg(name);
+            throw extra_arg(o.shortname);
 
           if (o.has_arg)
             {
@@ -400,7 +440,7 @@ void concrete_option_set::from_command_line(args_vector & args,
                 {
                   separate_arg = true;
                   if (i+1 == args.size())
-                    throw missing_arg(name);
+                    throw missing_arg(o.shortname);
                   arg = idx(args,i+1);
                 }
               else
@@ -436,7 +476,8 @@ void concrete_option_set::from_command_line(args_vector & args,
           try
             {
               if (o.deprecated)
-                W(F("deprated option '%s' used: %s") % name % gettext(o.deprecated));
+                W(F("deprecated option '%s' used: %s")
+                  % o.longname % gettext(o.deprecated));
               if (!is_cancel)
                 {
                   if (o.setter)
@@ -479,7 +520,8 @@ void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > con
       try
         {
           if (o.deprecated)
-            W(F("deprated option '%s' used: %s") % i->first % gettext(o.deprecated));
+            W(F("deprecated option '%s' used: %s")
+              % o.longname % gettext(o.deprecated));
 
           if (!is_cancel)
             {
