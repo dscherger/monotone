@@ -487,7 +487,7 @@ OPTSET(verbosity)
 OPTSET_REL(globals, verbosity)
 OPTVAR(verbosity, int, verbosity, 0)
 OPTION(verbosity, set_verbosity, true, "verbosity",
-       gettext_noop("set verbosity level: 0 is default; 1 is verbose; "
+       gettext_noop("set verbosity level: 0 is default; 1 is print debug messages; "
                     "-1 is hide tickers and progress messages; -2 is also hide warnings"))
 #ifdef option_bodies
 {
@@ -495,8 +495,13 @@ OPTION(verbosity, set_verbosity, true, "verbosity",
 }
 #endif
 
-GROUPED_SIMPLE_OPTION(globals, debug, "debug", bool,
-                     gettext_noop("print debug log to stderr while running"))
+OPTION(globals, debug, false, "debug",
+       gettext_noop("print debug log to stderr while running (--verbosity=1)"))
+#ifdef option_bodies
+{
+  verbosity = 1;
+}
+#endif
 
 SIMPLE_OPTION(full, "full/concise", bool,
        gettext_noop("print detailed information"))

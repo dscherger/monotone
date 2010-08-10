@@ -231,7 +231,7 @@ cpp_main(int argc, char ** argv)
             {
               ui.redirect_log_to(app.opts.log);
             }
-          if (app.opts.debug_given)
+          if (app.opts.verbosity >= 1)
             {
               global_sanity.set_debug();
             }

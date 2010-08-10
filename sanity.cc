@@ -176,7 +176,7 @@ sanity::set_verbosity(int level)
   int ret = imp->verbosity;
   imp->verbosity = level;
 
-  if (level >= 2)
+  if (level >= 1)
     {
       // it is possible that some pre-setting-of-debug data
       // accumulated in the log buffer (during earlier option processing)
@@ -193,7 +193,7 @@ sanity::set_verbosity(int level)
 void
 sanity::set_debug()
 {
-  set_verbosity(2);
+  set_verbosity(1);
 }
 int
 sanity::get_verbosity() const
@@ -236,7 +236,7 @@ sanity::debug_p()
   if (!imp)
     throw std::logic_error("sanity::debug_p called "
                             "before sanity::initialize");
-  return imp->verbosity >= 2;
+  return imp->verbosity >= 1;
 }
 
 void
