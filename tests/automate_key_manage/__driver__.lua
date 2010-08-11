@@ -7,7 +7,7 @@
 
 mtn_setup()
 
-include ("common/test_utils_inventory.lua")
+include("common/basic_io.lua")
 
 check(mtn("automate", "genkey", "foo@bar.com", "foopass"), 0, false, false)
 check(mtn("pubkey", "foo@bar.com"), 0, true)
