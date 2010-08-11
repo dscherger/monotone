@@ -14,7 +14,7 @@ check(mtn("pubkey", "foo@bar.com"), 0, true)
 -- non-automate output uses OS-specific line endings, while automate uses Unix line endings.
 canonicalize("stdout")
 rename("stdout", "key_packet")
-check(mtn("automate", "pubkey", "foo@bar.com"), 0, true)
+check(mtn("automate", "get_public_key", "foo@bar.com"), 0, true)
 check(samefile("stdout", "key_packet"))
 check(mtn("automate", "drop_public_key", "foo@bar.com"), 0, false, false)
 

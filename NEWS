@@ -83,8 +83,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         New Features
 
-        - New automate commands 'pubkey' and 'drop_public_key'. Closes
-          bug 30345.
+        - New automate commands 'get_public_key' and
+          'drop_public_key'. Closes bug 30345.
 
         - The 'disapprove' command now accepts a revision range in
           addition to a single revision.

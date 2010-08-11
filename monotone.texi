@@ -9341,7 +9341,7 @@ None.
 
 @end table
 
-@item mtn automate pubkey @var{keyid}
+@item mtn automate get_public_key @var{keyid}
 
 @table @strong
 @item Arguments:
@@ -9396,12 +9396,19 @@ FIXME -- initial
 
 @item Purpose:
 
-Same as @command{dropkey}, except that it does not drop private keys. This
-command should be used with caution as changes are irreversible
-without a backup of the key(s) that were dropped.
+Drop a public key from the database (does @emph{not} drop private or
+public keys from the keystore). Signatures made with the key can no
+longer be verified.
 
-Private keys are not dropped because that is very dangerous on a
-server. The only way to drop private keys on a server is via the
+This command should be used with caution as changes are irreversible
+without a backup of the key(s) that were dropped. You may wish to use
+the @command{k:} selector to check if the key is used in a signature.
+
+Note that public keys that are used to sign a revision may be
+restored to the database by a future sync.
+
+Keys in the keystore are not dropped because that is very dangerous on
+a server. The only way to drop private keys on a server is via the
 direct @command{mtn dropkey}.
 
 @item Sample output:

@@ -26,9 +26,9 @@ using std::istringstream;
 using std::vector;
 
 static void
-pubkey_common (app_state & app,
-               args_vector args,
-               std::ostream & output)
+pubkey_common(app_state & app,
+              args_vector args,
+              std::ostream & output)
 {
   database db(app);
   key_store keys(app);
@@ -67,10 +67,10 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("KEY_NAME_OR_HASH"),
   if (args.size() != 1)
     throw usage(execid);
 
-  pubkey_common (app, args, cout);
+  pubkey_common(app, args, cout);
 }
 
-CMD_AUTOMATE(pubkey, N_("KEY_NAME_OR_HASH"),
+CMD_AUTOMATE(get_public_key, N_("KEY_NAME_OR_HASH"),
     N_("Prints a public key packet"),
     "",
     options::opts::none)
@@ -78,7 +78,7 @@ CMD_AUTOMATE(pubkey, N_("KEY_NAME_OR_HASH"),
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
-  pubkey_common (app, args, output);
+  pubkey_common(app, args, output);
 }
 
 CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),

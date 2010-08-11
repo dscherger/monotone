@@ -138,9 +138,9 @@ CMD_AUTOMATE(genkey, N_("KEY_NAME PASSPHRASE"),
 }
 
 static void
-dropkey_common (app_state & app,
-                args_vector args,
-                bool drop_private)
+dropkey_common(app_state & app,
+               args_vector args,
+               bool drop_private)
 {
   database db(app);
   key_store keys(app);
@@ -191,8 +191,8 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
   if (args.size() != 1)
     throw usage(execid);
 
-  dropkey_common (app, args,
-                  true); // drop_private
+  dropkey_common(app, args,
+                 true); // drop_private
 }
 
 CMD_AUTOMATE(drop_public_key, N_("KEY_NAME_OR_HASH"),
@@ -203,8 +203,8 @@ CMD_AUTOMATE(drop_public_key, N_("KEY_NAME_OR_HASH"),
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
-  dropkey_common (app, args,
-                  false); // drop_private
+  dropkey_common(app, args,
+                 false); // drop_private
 }
 
 CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
