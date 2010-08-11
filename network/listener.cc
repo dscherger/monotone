@@ -21,7 +21,7 @@
 #include "network/reactor.hh"
 #include "network/session.hh"
 
-using std::list;
+using std::vector;
 using std::string;
 
 using boost::lexical_cast;
@@ -32,7 +32,7 @@ listener::listener(app_state & app,
                    key_store & keys,
                    reactor & react,
                    protocol_role role,
-                   list<utf8> const & addresses,
+                   vector<utf8> const & addresses,
                    shared_ptr<transaction_guard> &guard,
                    bool use_ipv6)
   : listener_base(shared_ptr<Netxx::StreamServer>()),

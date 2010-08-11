@@ -34,8 +34,8 @@ _mtn() {
     {'(--key)-k+','(-k)--key='}'[set key for signatures]:keys keys:_mtn_keys'\
     '--keydir=[set location of key store]:dir:_files -/'\
     '--log=[file to write the log to]:file:_files'\
-    '--norc[do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files]'\
-    '--nostd[do not load standard lua hooks]'\
+    '--no-standard-rcfiles[do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files]'\
+    '--no-builtin-rcfiles[do not load standard lua hooks]'\
     '--quiet[suppress log and progress messages]'\
     '--rcfile=[load extra rc file]:file:_files'\
     '--reallyquiet[suppress warning, verbose, informational and progress messages]'\
@@ -460,7 +460,7 @@ _mtn_update() {
 (( $+functions[_mtn_version] )) ||
 _mtn_version() {
     _arguments -s : \
-	'--full[print detailed version number]'
+	'--verbose[print detailed version number]'
 }
 
 # define completion functions for files maintained by monotone.

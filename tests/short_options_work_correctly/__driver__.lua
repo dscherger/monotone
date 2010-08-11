@@ -11,7 +11,7 @@ writefile("liver", "the file liver")
 -- same as mtn() but without --db and --key
 function short_mtn(...)
   return raw_mtn("--rcfile", test.root.."/test_hooks.lua",
-                 "--nostd", "--norc", "--root", test.root,
+                 "--no-builtin-rcfile", "--no-standard-rcfiles", "--root", test.root,
                  "--keydir", test.root.."/keys", ...)
 end
 

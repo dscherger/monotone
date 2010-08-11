@@ -30,7 +30,7 @@ struct netsync_connection_info
   class Server
   {
   public:
-    std::list<utf8> addrs;
+    std::vector<utf8> addrs;
   } server;
   class Client
   {

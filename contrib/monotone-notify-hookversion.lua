@@ -96,7 +96,7 @@ _MN_templates = {
       "#! /bin/sh",
       "",
       "LANG=C; export LANG",
-      "mtn --db=@database@ --norc pull @host@ \"@collection@\""
+      "mtn --db=@database@ --no-standard-rcfiles pull @host@ \"@collection@\""
    },
 
    do_revncert_init = {

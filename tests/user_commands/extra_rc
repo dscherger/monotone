@@ -24,9 +24,19 @@ function diff_two_revs(rev_a, rev_b)
         io.stderr:write("automate call failed: " .. out .. "\n")
         return 1
     end
+    io.stdout:write(out)
     return 0
 end
 
 
 register_command("diff_two_revs", "", "Outputs the differences between two revs",
       "This is a bogus command used to demonstrate user commands with options.", "diff_two_revs")
+
+function get_default_command_options(command)
+    local ret = {}
+    if command[1] == "automate" and command[2] == "content_diff"
+    then
+        table.insert(ret, "--with-header")
+    end
+    return ret
+end

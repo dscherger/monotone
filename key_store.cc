@@ -83,6 +83,7 @@ struct key_store_state
       have_read(false), lua(app.lua)
   {
     E(app.opts.key_dir_given
+      || app.opts.key_dir != system_path(get_default_keydir(), origin::user)
       || app.opts.conf_dir_given
       || !app.opts.no_default_confdir,
       origin::user,
