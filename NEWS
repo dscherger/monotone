@@ -23,14 +23,14 @@ Xxx Xxx 99 99:99:99 UTC 2010
           mtn:// URIs.
 
           The possibility to specify include patterns by using
-          "include=" and exclude patterns by using "exclude="
+          'include=' and exclude patterns by using 'exclude='
           in the query string has been removed.
 
           Monotone's native protocol (mtn://) is still the default
           protocol if nothing is specified.
 
-          The format for the server part of the `default-server`,
-          `known-server`, `server-include` and `server-exclude`
+          The format for the server part of the 'default-server',
+          'known-server', 'server-include' and 'server-exclude'
           database variables has been changed and now always includes
           the complete (normalized) URI resource, consisting of the
           used protocol, user, host, port and path parts.  Older entries
@@ -40,7 +40,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           Please check the manual section 5.3 for more details on the
           URI syntax.
 
-        - Naturally, the `clone` command now also accepts mtn:// URIs,
+        - Naturally, the 'clone' command now also accepts mtn:// URIs,
           though the use of branch globs is forbidden unless a branch is
           specified separately with the new --branch option.
 
@@ -54,8 +54,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
           the exchange was successful.  The progress messages which have
           been issued for this previously have been removed, since they
           would come up now unexpectedly and would clutter the output of
-          commands such as `clone`, `automate remote` and
-          `automate remote_stdio`.
+          commands such as 'clone', 'automate remote' and
+          'automate remote_stdio'.
 
         - The following characters have been deprecated in branch names
 
@@ -70,7 +70,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           monotone warns on the creation of branches which violate these
           restrictions and gives further directions.
 
-        - The `import` command now keeps the created bookkeeping root if
+        - The 'import' command now keeps the created bookkeeping root if
           --dry-run is not specified.  This makes it possible to re-use
           the import directory as workspace and is also more closely
           to what our documentation states, when it says that import
@@ -78,10 +78,10 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         - monotone no longer passes syntactically correct, but non-existent
           revision ids through the selector machinery.  The most visible
-          place for this change is `automate select`, which no longer
+          place for this change is 'automate select', which no longer
           echoes every possible 40 hex-byte string.
 
-        New Features
+        New features
 
         - Options can now be overridden; you can specify --no-unknown
           --unknown on the command line. Similarly, you can specify
@@ -183,12 +183,12 @@ Xxx Xxx 99 99:99:99 UTC 2010
           normal 'log' command, except that it only outputs the
           revision ids.
 
-        Bugs Fixed
+        Bugs fixed
 
-        - the 'mv' command now warns when a source is being renamed onto
+        - The 'mv' command now warns when a source is being renamed onto
           itself or one of its children (fixes monotone bug #29484).
 
-        - the 'mv' command now handles this usage properly, where
+        - The 'mv' command now handles this usage properly, where
           'foo' is a directory:
           mv foo bar
           mtn mv --bookkeep-only foo bar
@@ -209,7 +209,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           to write out _MTN/options on --dry-run
           (fixes monotone bug #30225)
 
-        - `automate remote' and `automate remote_stdio' can now be used
+        - 'automate remote' and 'automate remote_stdio' can now be used
           without transport authentication (e.g. on file:// or ssh://
           transports) as well as anonymously over netsync
           (fixes monotone bug #30237)
@@ -230,20 +230,20 @@ Xxx Xxx 99 99:99:99 UTC 2010
           private key is addressed with some non-existing key id
           (fixes monotone bug #30462)
 
-        - A regression in 0.48 made a path-restricted `mtn log' show
+        - A regression in 0.48 made a path-restricted 'mtn log' show
           revisions, in which not the picked path(s), but one of its parents
           were changed.  This has been fixed.
 
-        - `mtn trusted` will no longer accept single bogus revision ids,
+        - 'mtn trusted' will no longer accept single bogus revision ids,
           but instead validates if the given revision really exists in the
           current database.
 
-        - `mtn read` (and also `mtn automate read_packets`) now tests public
+        - 'mtn read' (and also 'mtn automate read_packets') now tests public
           and private key data more thoroughly and aborts if it encounters
           invalid data.
 
-        - `mtn conflicts store` now gives a nice error message when
-          run outside a workspace (fixes bug #30473)
+        - 'mtn conflicts store' now gives a proper error message when
+          run outside a workspace (fixes monotone bug #30473)
 
         Other
 
