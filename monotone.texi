@@ -9396,9 +9396,8 @@ FIXME -- initial
 
 @item Purpose:
 
-Drop a public key from the database (does @emph{not} drop private or
-public keys from the keystore). Signatures made with the key can no
-longer be verified.
+Drop a public key from the database (@emph{not} the private key from
+the keystore). Signatures made with the key can no longer be verified.
 
 This command should be used with caution as changes are irreversible
 without a backup of the key(s) that were dropped. You may wish to use
@@ -9409,7 +9408,7 @@ restored to the database by a future sync.
 
 Keys in the keystore are not dropped because that is very dangerous on
 a server. The only way to drop private keys on a server is via the
-direct @command{mtn dropkey}.
+command @command{mtn dropkey}.
 
 @item Sample output:
 
