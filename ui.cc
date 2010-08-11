@@ -46,6 +46,7 @@ using std::max;
 using std::ofstream;
 using std::string;
 using std::vector;
+using std::set;
 
 using boost::lexical_cast;
 
