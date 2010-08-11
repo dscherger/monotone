@@ -17,6 +17,7 @@
 #include "asciik.hh"
 #include "charset.hh"
 #include "cmd.hh"
+#include "colorizer.hh"
 #include "date_format.hh"
 #include "diff_output.hh"
 #include "file_io.hh"
@@ -70,6 +71,7 @@ dump_diff(lua_hooks & lua,
           bool external_diff_args_given,
           string external_diff_args,
           string const & encloser,
+          colorizer const & colorizer,
           ostream & output)
 {
   if (diff_format == external_diff)
@@ -111,7 +113,8 @@ dump_diff(lua_hooks & lua,
       make_diff(left, right,
                 left_id, right_id,
                 left_data, right_data,
-                output, diff_format, encloser);
+                output, diff_format,
+                encloser, colorizer);
     }
 
 }
@@ -127,7 +130,8 @@ dump_diffs(lua_hooks & lua,
            string external_diff_args,
            bool left_from_db,
            bool right_from_db,
-           bool show_encloser)
+           bool show_encloser,
+           colorizer const & colorizer)
 {
   parallel::iter<node_map> i(left_roster.all_nodes(), right_roster.all_nodes());
   while (i.next())
@@ -163,7 +167,7 @@ dump_diffs(lua_hooks & lua,
                         left_id, right_id,
                         left_data, right_data,
                         diff_format, external_diff_args_given, external_diff_args,
-                        encloser, output);
+                        encloser, colorizer, output);
             }
           break;
 
@@ -192,7 +196,7 @@ dump_diffs(lua_hooks & lua,
                         left_id, right_id,
                         left_data, right_data,
                         diff_format, external_diff_args_given, external_diff_args,
-                        encloser, output);
+                        encloser, colorizer, output);
             }
           break;
 
@@ -225,7 +229,7 @@ dump_diffs(lua_hooks & lua,
                         left_id, right_id,
                         left_data, right_data,
                         diff_format, external_diff_args_given, external_diff_args,
-                        encloser, output);
+                        encloser, colorizer, output);
             }
           break;
         }
@@ -390,6 +394,7 @@ void dump_header(std::string const & revs,
                  roster_t const & old_roster,
                  roster_t const & new_roster,
                  std::ostream & out,
+                 colorizer const & colorizer,
                  bool show_if_empty)
 {
   cset changes;
@@ -402,19 +407,23 @@ void dump_header(std::string const & revs,
 
   vector<string> lines;
   split_into_lines(summary(), lines);
-  out << "#\n";
+  out << colorizer.colorize("#", colorizer::diff_comment) << "\n";
   if (!summary().empty())
     {
-      out << revs << "#\n";
+      out << colorizer.colorize(revs, colorizer::diff_comment);
+      out << colorizer.colorize("#", colorizer::diff_comment) << "\n";
+
       for (vector<string>::iterator i = lines.begin();
            i != lines.end(); ++i)
-        out << "# " << *i << '\n';
+        out << colorizer.colorize(string("# ") + *i,
+                                  colorizer::diff_comment) << "\n";
     }
   else
     {
-      out << "# " << _("no changes") << '\n';
+      out << colorizer.colorize(string("# ") + _("no changes"),
+                                colorizer::diff_comment) << "\n";
     }
-  out << "#\n";
+  out << colorizer.colorize("#", colorizer::diff_comment) << "\n";
 }
 
 CMD_PRESET_OPTIONS(diff)
@@ -445,9 +454,11 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
 
   prepare_diff(app, db, old_roster, new_roster, args, old_from_db, new_from_db, revs);
 
+  colorizer colorizer(app.opts.colorize);
+
   if (app.opts.with_header)
     {
-      dump_header(revs, old_roster, new_roster, cout, true);
+      dump_header(revs, old_roster, new_roster, cout, colorizer, true);
     }
 
   dump_diffs(app.lua, db, old_roster, new_roster, cout,
@@ -455,7 +466,8 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
              app.opts.external_diff_args_given,
              app.opts.external_diff_args,
              old_from_db, new_from_db,
-             !app.opts.no_show_encloser);
+             !app.opts.no_show_encloser,
+             colorizer);
 }
 
 
@@ -484,16 +496,20 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
   prepare_diff(app, db, old_roster, new_roster, args, old_from_db, new_from_db,
                dummy_header);
 
+  // never colorize the diff output
+  colorizer colorizer(false);
 
   if (app.opts.with_header)
     {
-      dump_header(dummy_header, old_roster, new_roster, output, false);
+      dump_header(dummy_header, old_roster, new_roster, output, colorizer, false);
     }
 
   dump_diffs(app.lua, db, old_roster, new_roster, output,
              app.opts.diff_format,
              app.opts.external_diff_args_given, app.opts.external_diff_args,
-             old_from_db, new_from_db, !app.opts.no_show_encloser);
+             old_from_db, new_from_db,
+             !app.opts.no_show_encloser,
+             colorizer);
 }
 
 
@@ -551,27 +567,27 @@ typedef priority_queue<pair<rev_height, revision_id>,
                        rev_cmp> frontier_t;
 
 void
-log_print_rev (app_state &      app,
-               database &       db,
-               project_t &      project,
-               revision_id      rid,
-               revision_t &     rev,
-               string           date_fmt,
-               node_restriction mask,
-               ostream &        out)
+log_print_rev(app_state & app,
+              database & db,
+              project_t const & project,
+              revision_id const & rid,
+              revision_t const & rev,
+              string const & date_fmt,
+              node_restriction const & mask,
+              colorizer const & color,
+              ostream & out)
 {
-  cert_name const author_name(author_cert_name);
-  cert_name const date_name(date_cert_name);
-  cert_name const branch_name(branch_cert_name);
-  cert_name const tag_name(tag_cert_name);
-  cert_name const changelog_name(changelog_cert_name);
-  cert_name const comment_name(comment_cert_name);
   vector<cert> certs;
   project.get_revision_certs(rid, certs);
 
   if (app.opts.brief)
     {
-      out << rid;
+      cert_name const author_name(author_cert_name);
+      cert_name const date_name(date_cert_name);
+      cert_name const branch_name(branch_cert_name);
+
+      out << color.colorize(encode_hexenc(rid.inner()(), rid.inner().made_from),
+                            colorizer::log_revision);
       log_certs(certs, out, author_name);
       if (app.opts.no_graph)
         log_certs(certs, out, date_name, date_fmt);
@@ -586,7 +602,7 @@ log_print_rev (app_state &      app,
   else
     {
       utf8 header;
-      revision_header(rid, rev, certs, date_fmt, header);
+      revision_header(rid, rev, certs, date_fmt, color, header);
 
       external header_external;
       utf8_to_system_best_effort(header, header_external);
@@ -595,7 +611,7 @@ log_print_rev (app_state &      app,
       if (!app.opts.no_files)
         {
           utf8 summary;
-          revision_summary(rev, summary);
+          revision_summary(rev, color, summary);
           external summary_external;
           utf8_to_system_best_effort(summary, summary_external);
           out << summary_external;
@@ -627,16 +643,17 @@ log_print_rev (app_state &      app,
                      app.opts.external_diff_args_given,
                      app.opts.external_diff_args,
                      true, true,
-                     !app.opts.no_show_encloser);
+                     !app.opts.no_show_encloser,
+                     color);
         }
     }
 }
 
 void
-log_common (app_state & app,
-            args_vector args,
-            bool automate,
-            std::ostream & output)
+log_common(app_state & app,
+           args_vector args,
+           bool automate,
+           std::ostream & output)
 {
   database db(app);
   project_t project(db);
@@ -846,8 +863,11 @@ log_common (app_state & app,
 
   set<revision_id> seen;
   revision_t rev;
+
+  colorizer color(app.opts.colorize && !automate);
   // this is instantiated even when not used, but it's lightweight
-  asciik graph(output);
+  asciik graph(output, color);
+
   while(!frontier.empty() && last != 0 && next != 0)
     {
       revision_id const & rid = frontier.top().second;
@@ -943,7 +963,7 @@ log_common (app_state & app,
           else
             {
               ostringstream out;
-              log_print_rev (app, db, project, rid, rev, date_fmt, mask_diff, out);
+              log_print_rev(app, db, project, rid, rev, date_fmt, mask_diff, color, out);
 
               string out_system;
               utf8_to_system_best_effort(utf8(out.str(), origin::internal), out_system);
@@ -991,9 +1011,9 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     options::opts::brief | options::opts::diffs |
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges | options::opts::no_files |
-    options::opts::no_graph)
+    options::opts::no_graph )
 {
-  log_common (app, args, false, cout);
+  log_common(app, args, false, cout);
 }
 
 CMD_AUTOMATE(log, N_("[PATH] ..."),
@@ -1004,7 +1024,7 @@ CMD_AUTOMATE(log, N_("[PATH] ..."),
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges)
 {
-  log_common (app, args, true, output);
+  log_common(app, args, true, output);
 }
 
 // Local Variables:
