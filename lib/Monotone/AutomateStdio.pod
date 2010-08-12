@@ -6,7 +6,7 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 VERSION
 
-0.08
+0.09
 
 =head1 SYNOPSIS
 
@@ -967,6 +967,7 @@ that is currently being used by this object. The list of valid features are:
     MTN_STREAM_IO
     MTN_SYNCHRONISATION
     MTN_U_SELECTOR
+    MTN_UPDATE
     MTN_W_SELECTOR
 
 In order to get these constants into your namespace you need to use the
