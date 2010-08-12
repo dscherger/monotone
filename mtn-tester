@@ -686,6 +686,43 @@ my @test_list =
 		  {
 		      print($branch . "\n");
 		  }
+	      }},
+
+     {fn   => undef,
+      desc => "update",
+      feat => MTN_UPDATE,
+      type => CODE,
+      code => sub {
+	          foreach my $op ([revision => "i:1d8d91f5976860dbcabe209829ff"
+				       . "2e34d8119a58"],
+				  [branch   => "net.venge.monotone",
+				   revision => "i:c2de1dbfe651d26a0d0a33d43c50"
+				       . "444583c5dad8"],
+				  [branch   => "net.venge.monotone.contrib.lib"
+				       . ".automate-stdio.test",
+				   revision => "h:"])
+		  {
+		      my($p_buffer,
+			 $pfh,
+			 $t_buffer,
+			 $tfh);
+		      $p_buffer = $t_buffer = "";
+		      open($pfh, ">", \$p_buffer);
+		      open($tfh, ">", \$t_buffer);
+		      $mtn->register_stream_handle(MTN_P_STREAM, $pfh);
+		      $mtn->register_stream_handle(MTN_T_STREAM, $tfh);
+		      $mtn->update($op);
+		      $mtn->register_stream_handle(MTN_P_STREAM, undef);
+		      $mtn->register_stream_handle(MTN_T_STREAM, undef);
+		      $pfh->close();
+		      $tfh->close();
+		      print(" ----- Output of progress stream -----\n");
+		      print($p_buffer);
+		      print("\n ----------\n");
+		      print(" ----- Output of ticker stream -----\n");
+		      print($t_buffer);
+		      print("\n ----------\n");
+		  }
 	      }});
 
 print <<EOF;
@@ -838,6 +875,8 @@ foreach my $test (@test_list)
 	{
 	    $test->{posc}();
 	}
+	printf("\nget_error_message() method returned `%s'\n",
+	       $mtn->get_error_message());
     }
 }
 

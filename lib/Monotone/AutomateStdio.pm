@@ -99,7 +99,8 @@ use constant MTN_SHOW_CONFLICTS                => 22;
 use constant MTN_STREAM_IO                     => 23;
 use constant MTN_SYNCHRONISATION               => 24;
 use constant MTN_U_SELECTOR                    => 25;
-use constant MTN_W_SELECTOR                    => 26;
+use constant MTN_UPDATE                        => 26;
+use constant MTN_W_SELECTOR                    => 27;
 
 # Constants used to represent the different error levels.
 
@@ -340,6 +341,7 @@ sub switch_to_ws_root($$);
 sub sync($;$$@);
 sub tags($$;$);
 sub toposort($$@);
+sub update($;$);
 
 # Public aliased methods.
 
@@ -398,6 +400,7 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_COMMON_KEY_HASH
 					MTN_STREAM_IO
 					MTN_SYNCHRONISATION
 					MTN_U_SELECTOR
+					MTN_UPDATE
 					MTN_W_SELECTOR)],
 		    severities	 => [qw(MTN_SEVERITY_ALL
 					MTN_SEVERITY_ERROR
@@ -406,7 +409,7 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_COMMON_KEY_HASH
 					MTN_T_STREAM)]);
 our @EXPORT = qw();
 Exporter::export_ok_tags(qw(capabilities severities streams));
-our $VERSION = 0.08;
+our $VERSION = 0.09;
 #
 ##############################################################################
 #
@@ -3034,6 +3037,55 @@ sub toposort($$@)
 #
 ##############################################################################
 #
+#   Routine      - update
+#
+#   Description  - Updates the current workspace to the specified revision and
+#                  possible branch. If no options are specified then the
+#                  workspace is updated to the head revision of the current
+#                  branch.
+#
+#   Data         - $self        : The object.
+#                  $options     : A reference to a list containing the options
+#                                 to use.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub update($;$)
+{
+
+    my($self, $options) = @_;
+
+    my($dummy,
+       @opts);
+
+    # Process any options.
+
+    if (defined($options))
+    {
+	for (my $i = 0; $i < scalar(@$options); ++ $i)
+	{
+	    if ($$options[$i] eq "move-conflicting-paths")
+	    {
+		push(@opts, {key => $$options[$i], value => ""});
+	    }
+	    else
+	    {
+		push(@opts, {key => $$options[$i], value => $$options[++ $i]});
+	    }
+	}
+    }
+
+    # Run the command.
+
+    return $self->mtn_command_with_options("update", 1, 1, \$dummy, \@opts);
+
+}
+#
+##############################################################################
+#
 #   Routine      - closedown
 #
 #   Description  - If started then stop the mtn subprocess.
@@ -3790,6 +3842,14 @@ sub supports($$)
 	# These are only available from version 0.46 (i/f version 12.x).
 
 	return 1 if ($this->{mtn_aif_version} >= 12);
+
+    }
+    elsif ($feature == MTN_UPDATE)
+    {
+
+	# This is only available from version 0.48 (i/f version 12.1).
+
+	return 1 if ($this->{mtn_aif_version} >= 12.1);
 
     }
     else
@@ -4811,7 +4871,7 @@ sub mtn_read_output_format_2($$)
 		$$offset_ref += $bytes_read;
 
 	    }
-	    else
+	    if ($size <= 0)
 	    {
 
 		# We have finished processing the current data chunk so if it
@@ -4838,6 +4898,7 @@ sub mtn_read_output_format_2($$)
 		$chunk_start = 1;
 
 	    }
+
 	}
 	elsif ($size == 1)
 	{

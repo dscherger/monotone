@@ -36,7 +36,7 @@ $mtn-E<gt>closedown() is called.
 All automate commands have been implemented in this class except for the
 `stdio' command, hopefully the reason is obvious :-). Versions of Monotone that
 are supported by this class range from 0.35 up to and including the latest
-version (currently 0.47). If you happen to be using a newer version of Monotone
+version (currently 0.48). If you happen to be using a newer version of Monotone
 then this class will hopefully largely work but without the support for new or
 changed features.
 
@@ -993,7 +993,7 @@ options like this:
                 "key-to-push"         => "me@mydomain.com",
                 "max-netsync-version" => 2,
                 "min-netsync-version" => 1,
-                "set-default");
+                "set-default"]);
 
 (feature: MTN_SYNCHRONISATION)
 
@@ -1016,6 +1016,22 @@ anonymous hashes, each one containing the following fields:
 =item B<$mtn-E<gt>toposort(\@list[, $revision_id ...])>
 
 Sort the specified revision ids such that the ancestors come out first.
+
+=item B<$mtn-E<gt>update([@options])>
+
+Updates the current workspace to the specified revision and possible branch. If
+no options are specified then the workspace is updated to the head revision of
+the current branch.
+
+The $options argument is a list of valid options, with some having
+arguments. For example, one could call this method specifying all of the
+options like this:
+
+    $mtn->update(["branch"                  => "experiments.hacks",
+                  "move-conflicting-paths",
+                  "revision"                => "h:"]);
+
+(feature: MTN_UPDATE)
 
 =back
 
