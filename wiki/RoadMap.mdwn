@@ -14,10 +14,10 @@ Disapprove multiple revisions | n/a | `nvm.tkoskine.disapprove-multirev` | compl
 Less verbose restrictions | [savannah](https://savannah.nongnu.org/bugs/?30291) | `nvm.restriction-fixes` | completed, merged |
 Fix anonymous remote_stdio | [savannah](https://savannah.nongnu.org/bugs/?30237) | `nvm` | completed |
 Branch name deprecation | [monotone-devel](http://article.gmane.org/gmane.comp.version-control.monotone.devel/17117/match=netsync+connection+info+cleanup) | `nvm.deprecate_weird_branch_names` | completed, merged |
-netsync --anonymous | n/a | `nvm.bugfest-2010.28805-rlevitte` | in development |
 Overwritable, negatable options | [[OverwritableNegatableOptions]] | `nvm.options` | completed, merged |
 Key management in automate | [savannah](https://savannah.nongnu.org/bugs/?30345) | `nvm.key_management` | completed |
 Fix changelog editor issues | [monotone-devel](http://thread.gmane.org/gmane.comp.version-control.monotone.devel/17851) | n/a | not started |
+Dump man page from command tree | n/a | `nvm.man-page*` | in development |
 """ ]]
 
 ## Release 1.x - 2010 / 2011
@@ -26,6 +26,8 @@ Fix changelog editor issues | [monotone-devel](http://thread.gmane.org/gmane.com
 Description | More Info | Branch(es) | Status |
 `rename --guess` | n/a | `nvm.rename-guess` | somewhat abandoned |
 Clean workspace from unknown / ignored files | n/a | `nvm.tkoskine.purge` | in development |
+netsync --anonymous | n/a | `nvm.bugfest-2010.28805-rlevitte` | in development |
+Colored diff and log output | n/a | `nvm.colored-diff` | in development |
 """ ]]
 
 ## Release 2.0 - 2011
@@ -41,8 +43,6 @@ Remove netsync's SERVER [PATTERN] syntax | n/a | n/a | not started |
 Description | More Info | Branch(es) | Status | Major Version Change |
 Sane SQLite locking | [monotone-devel](http://thread.gmane.org/gmane.comp.version-control.monotone.devel/13327/focus=13343) | n/a | not started | No |
 Policy Branches | [[VersionedPolicy]] |  `nvm.tbrownaw.policy-branches`,<br />`nvm.experimental.policy-branches*` | in development | Yes |
-Colored diff and log output | n/a | `nvm.colored-diff` | in development | No |
-Dump man page from command tree | n/a | `nvm.man-page*` | in development | No |
 Daggy refinement | [[DagBasedRefinement]] | n/a | not started | No - netsync version negotiation |
 SSL for netsync | n/a | n/a | not started | No - netsync version negotiation |
 Partial pull | [[PartialPull]] | n/a | not started | No - netsync version negotiation |
@@ -52,6 +52,7 @@ Command naming cleanup | n/a | n/a | not started | Probably - if sufficiently ex
 Netsync preview | n/a | n/a | not started | No - I don't think this would need any on-the-wire changes at all |
 Update conflict handling | UpdateConflicts | n/a | not started | No |
 Allow `-` and `_` interchangeably in commands and options | n/a | n/a | not started | No |
+"Packed" revisions | [monotone-devel](http://article.gmane.org/gmane.comp.version-control.monotone.devel/18030) | n/a | not started | Probably not |
 """ ]]
 
 # Original ROADMAP file, slightly updated for current monotone
