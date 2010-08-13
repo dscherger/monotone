@@ -412,8 +412,10 @@ GROUPED_SIMPLE_OPTION(globals, key, "key,k/use-default-key", external_key_name,
        gettext_noop("sets the key for signatures, using either the key "
                     "name or the key hash"))
 
-GROUPED_SIMPLE_OPTION(globals, key_dir, "keydir", system_path,
-                     gettext_noop("set location of key store"))
+OPTSET_REL(globals, key_dir)
+SIMPLE_INITIALIZED_OPTION(key_dir, "keydir", system_path,
+                          system_path(get_default_keydir(), origin::internal),
+                          gettext_noop("set location of key store"))
 
 SIMPLE_OPTION(keys_to_push, "key-to-push", std::vector<external_key_name>,
         gettext_noop("push the specified key even if it hasn't signed anything"))
