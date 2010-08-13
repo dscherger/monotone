@@ -5406,10 +5406,10 @@ history stored in ComboBox menus</property>
 				<widget class="GtkCheckButton" id="static_lists_checkbutton">
 				  <property name="visible">True</property>
 				  <property name="tooltip" translatable="yes">Select this if you do not want the
-branch and revision ComboBox entry
-lists to update as you type in values
-(can help with speed when dealing
-with large lists)</property>
+branch, revision and directory
+ComboBox entry lists to update as
+you type in values (can help with
+speed when dealing with large lists)</property>
 				  <property name="can_focus">True</property>
 				  <property name="label" translatable="yes">Static lists</property>
 				  <property name="use_underline">True</property>

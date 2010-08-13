@@ -258,28 +258,26 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
     return FALSE if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    my($complete,
-       $completion,
-       $item,
-       $len,
-       $old_complete,
-       $old_value,
-       $success,
-       $value);
-    my $change_state = $details->{change_state};
     my $combo_details = $details->{combo_details};
     my $entry = $widget->child();
-    my $name = $details->{name};
+    my $old_value = $combo_details->{value};
+    my $value = $entry->get_text();
 
     # The user has typed something in then validate it and auto-complete it if
     # necessary.
 
-    $complete = 0;
-    $old_complete = $combo_details->{complete};
-    $old_value = $combo_details->{value};
-    $value = $entry->get_text();
     if ($value ne $old_value)
     {
+
+	my($busy,
+	   $completion,
+	   $len,
+	   $success);
+	my $change_state = $details->{change_state};
+	my $complete = 0;
+	my $name = $details->{name};
+	my $old_complete = $combo_details->{complete};
+	my $wm = WindowManager->instance();
 
 	# Don't auto-complete if the user is simply deleting from the extreme
 	# right.
@@ -305,7 +303,6 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 		       get_completion($value, \$completion, \$complete)))
 	    {
 		$value =~ s/\s+$//;
-		$len = length($value);
 		$success = $combo_details->{completion}->
 		       get_completion($value, \$completion, \$complete);
 	    }
@@ -322,9 +319,9 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 		# Tell the user what is wrong via the status bar.
 
 		$message = __x("Invalid {name} name `{value}'",
-				  name  => $name,
-				  value => $value);
-		$instance->{appbar}->push($message);
+			       name  => $name,
+			       value => $value);
+		$instance->{appbar}->set_status($message);
 
 		# Also via a tooltip as well if so desired (need to position it
 		# to be just below the comboboxentry widget).
@@ -346,7 +343,6 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 		    $x += $root_x - 10;
 		    $y += $height + $root_y + 5;
 		    get_tooltip_window($instance->{window}, $message, $x, $y);
-		    WindowManager->update_gui();
 		}
 
 	    }
@@ -362,26 +358,62 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 	    $instance->{appbar}->clear_stack();
 	    hide_tooltip_window();
 	}
+	$wm->update_gui();
 	$combo_details->{value} = $value;
 	$combo_details->{complete} = $complete;
 
-	# Update the pulldown choices if that is what the user wants.
+	# Update the pulldown choices if the value has actually changed (what
+	# the user has entered may have been discarded due to not being valid)
+	# and that is what the user wants.
 
-	$widget->get_model()->clear()
-	    unless ($user_preferences->{static_lists});
-	foreach $item (@{$combo_details->{list}})
+	if ($value ne $old_value)
 	{
-	    my $item_len = length($item);
-	    if ($len <= $item_len && $value eq substr($item, 0, $len))
+
+	    my @item_list;
+
+	    foreach my $item (@{$combo_details->{list}})
 	    {
-		$widget->append_text($item)
-		    unless ($user_preferences->{static_lists});
+		my $item_len = length($item);
+		if ($len <= $item_len && $value eq substr($item, 0, $len))
+		{
+		    push(@item_list, $item)
+			unless ($user_preferences->{static_lists});
 
-		# The following check is needed in the case when the user is
-		# simply deleting characters from the right.
+		    # The following check is needed in the case when the user
+		    # is simply deleting characters from the right.
 
-		$combo_details->{complete} = 1 if ($len == $item_len);
+		    $combo_details->{complete} = 1 if ($len == $item_len);
+		}
 	    }
+	    if (! $user_preferences->{static_lists})
+	    {
+		my $counter = 1;
+		$busy = 1;
+		$wm->make_busy($instance, 1);
+		$instance->{appbar}->set_progress_percentage(0);
+		$instance->{appbar}->push(__x("Populating {name} list",
+					      name => $name));
+		$wm->update_gui();
+		$widget->get_model()->clear()
+		    unless ($user_preferences->{static_lists});
+		foreach my $item (@item_list)
+		{
+		    $widget->append_text($item);
+		    if (($counter % 10) == 0)
+		    {
+			$instance->{appbar}->set_progress_percentage
+			    ($counter / scalar(@item_list));
+			$wm->update_gui();
+		    }
+		    ++ $counter;
+		}
+		$instance->{appbar}->set_progress_percentage(1);
+		$wm->update_gui();
+		$instance->{appbar}->set_progress_percentage(0);
+		$instance->{appbar}->pop();
+		$wm->update_gui();
+	    }
+
 	}
 
 	# Update the window state on a significant change.
@@ -390,6 +422,8 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 	    if ($combo_details->{complete} != $old_complete
 		|| ($combo_details->{complete}
 		    && $combo_details->{value} ne $old_value));
+
+	$wm->make_busy($instance, 0) if ($busy);
 
     }
 

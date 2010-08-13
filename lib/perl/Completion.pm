@@ -223,7 +223,7 @@ sub get_completion($$$$)
     else
     {
 
-	# The comepletion list is empty and so nothing can be matched.
+	# The completion list is empty and so nothing can be matched.
 
 	$$complete = 0;
 	$match = undef;

@@ -1167,9 +1167,7 @@ sub directory_up_button_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    my($len,
-       $old_len,
-       $value);
+    my $value;
 
     # Simply go up one directory level in the manifest if we aren't already at
     # the top.
@@ -1177,24 +1175,64 @@ sub directory_up_button_clicked_cb($$)
     $value = $browser->{directory_combo_details}->{value};
     if ($value ne "")
     {
-	$old_len = length($value);
+
+	my $wm = WindowManager->instance();
+
+	$wm->make_busy($browser, 1);
+	$browser->{appbar}->set_status("");
+	$wm->update_gui();
+
 	$value = dirname($value);
 	$value = "" if ($value eq ".");
 	$browser->{directory_combo_details}->{value} = $value;
 	$browser->{directory_combo_details}->{complete} = 1;
-	$len = length($value);
-	if ($len < $old_len)
+
+	# Only update the comboboxentry's pulldown list if that is what the
+	# user wants.
+
+	if (! $user_preferences->{static_lists})
 	{
-	    $browser->{directory_comboboxentry}->get_model()->clear();
+
+	    my($counter,
+	       @directory_list,
+	       $len);
+
+	    $len = length($value);
+	    $browser->{appbar}->set_progress_percentage(0);
+	    $browser->{appbar}->set_status(__("Populating directory list"));
+	    $wm->update_gui();
 	    foreach my $item (@{$browser->{directory_combo_details}->{list}})
 	    {
-		$browser->{directory_comboboxentry}->append_text($item)
+		push(@directory_list, $item)
 		    if ($value eq substr($item, 0, $len));
 	    }
+	    $counter = 1;
+	    $browser->{directory_comboboxentry}->get_model()->clear();
+	    foreach my $item (@directory_list)
+	    {
+		$browser->{directory_comboboxentry}->append_text($item);
+		if (($counter % 10) == 0)
+		{
+		    $browser->{appbar}->set_progress_percentage
+			($counter / scalar(@directory_list));
+		    $wm->update_gui();
+		}
+		++ $counter;
+	    }
+	    $browser->{appbar}->set_progress_percentage(1);
+	    $wm->update_gui();
+	    $browser->{appbar}->set_progress_percentage(0);
+
 	}
+
 	$browser->{directory_comboboxentry}->child()->set_text($value);
 	$browser->{appbar}->clear_stack();
+	$wm->update_gui();
+
 	&{$browser->{update_handler}}($browser, DIRECTORY_CHANGED);
+
+	$wm->make_busy($browser, 0);
+
     }
 
 }
