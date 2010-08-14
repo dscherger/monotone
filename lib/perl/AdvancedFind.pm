@@ -846,7 +846,9 @@ sub update_advanced_find_state($$)
     if ($changed & BRANCH)
     {
 
-	my @branch_list;
+	my(@branch_list,
+	   $counter,
+	   $update_interval);
 
 	# Reset the query mode.
 
@@ -879,12 +881,13 @@ sub update_advanced_find_state($$)
 
 	$advanced_find->{appbar}->set_status(__("Populating branch list"));
 	$wm->update_gui();
-	my $counter = 1;
+	$counter = 1;
+	$update_interval = calculate_update_interval(\@branch_list);
 	$advanced_find->{branch_comboboxentry}->get_model()->clear();
 	foreach my $branch (@branch_list)
 	{
 	    $advanced_find->{branch_comboboxentry}->append_text($branch);
-	    if (($counter % 10) == 0)
+	    if (($counter % $update_interval) == 0)
 	    {
 		$advanced_find->{appbar}->set_progress_percentage
 		    ($counter / scalar(@branch_list));
@@ -896,6 +899,7 @@ sub update_advanced_find_state($$)
 	$wm->update_gui();
 	$advanced_find->{branch_comboboxentry}->child()->
 	    set_text($advanced_find->{branch_combo_details}->{value});
+	$advanced_find->{branch_comboboxentry}->child()->set_position(-1);
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status("");
 	$wm->update_gui();
@@ -907,7 +911,9 @@ sub update_advanced_find_state($$)
     if ($changed & REVISION)
     {
 
-	my @revision_list;
+	my($counter,
+	   @revision_list,
+	   $update_interval);
 
 	# Reset the revision selection.
 
@@ -943,12 +949,13 @@ sub update_advanced_find_state($$)
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status(__("Populating revision list"));
 	$wm->update_gui();
-	my $counter = 1;
+	$counter = 1;
+	$update_interval = calculate_update_interval(\@revision_list);
 	$advanced_find->{revision_comboboxentry}->get_model()->clear();
 	foreach my $revision (@revision_list)
 	{
 	    $advanced_find->{revision_comboboxentry}->append_text($revision);
-	    if (($counter % 10) == 0)
+	    if (($counter % $update_interval) == 0)
 	    {
 		$advanced_find->{appbar}->set_progress_percentage
 		    ($counter / scalar(@revision_list));

@@ -72,6 +72,7 @@ my %help_ref_to_url_map;
 # Public routines.
 
 sub cache_extra_file_info($$$);
+sub calculate_update_interval($;$);
 sub colour_to_string($);
 sub create_format_tags($);
 sub data_is_binary($);
@@ -2025,6 +2026,40 @@ sub build_help_ref_to_url_map()
     $dir->close();
 
     return;
+
+}
+#
+##############################################################################
+#
+#   Routine      - calculate_update_interval
+#
+#   Description  - Given a list of items to display or process, calculate the
+#                  update interval (in number of items processed) for updating
+#                  the display.
+#
+#   Data         - $list_ref    : A reference to the list containing the items
+#                                 that are to be processed.
+#                  $granularity : The number of times the display is to be
+#                                 updated whilst processing the list of items.
+#                                 This is optional.
+#                  Return Value : The calculated update interval.
+#
+##############################################################################
+
+
+
+sub calculate_update_interval($;$)
+{
+
+    my($list_ref, $granularity) = @_;
+
+    my $update_interval;
+
+    $granularity = 20 unless (defined($granularity));
+    $update_interval = int(scalar(@{$list_ref}) / $granularity);
+    $update_interval = 1 if ($update_interval < 1);
+
+    return $update_interval;
 
 }
 

@@ -221,9 +221,9 @@ sub auto_completion_comboboxentry_changed_cb($$)
 	    $combo_details->{value} = $value;
 	    $combo_details->{complete} = 1;
 	    $instance->{appbar}->clear_stack();
-	    &{$instance->{update_handler}}($instance, $change_state);
 	    hide_tooltip_window();
 	    $widget->child()->set_position(-1) if ($move_to_end);
+	    &{$instance->{update_handler}}($instance, $change_state);
 	    last;
 	}
     }
@@ -376,8 +376,8 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 
 	    my @item_list;
 
-	    $busy = 1;
 	    $wm->make_busy($instance, 1);
+	    $busy = 1;
 	    $wm->update_gui();
 
 	    foreach my $item (@{$combo_details->{list}})
@@ -397,17 +397,22 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 
 	    if (! $user_preferences->{static_lists})
 	    {
-		my $counter = 1;
+
+		my($counter,
+		   $update_interval);
+
 		$instance->{appbar}->set_progress_percentage(0);
 		$instance->{appbar}->push(__x("Populating {name} list",
 					      name => $name));
 		$wm->update_gui();
+		$counter = 1;
+		$update_interval = calculate_update_interval(\@item_list);
 		$widget->get_model()->clear()
 		    unless ($user_preferences->{static_lists});
 		foreach my $item (@item_list)
 		{
 		    $widget->append_text($item);
-		    if (($counter % 10) == 0)
+		    if (($counter % $update_interval) == 0)
 		    {
 			$instance->{appbar}->set_progress_percentage
 			    ($counter / scalar(@item_list));
@@ -420,6 +425,7 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 		$instance->{appbar}->set_progress_percentage(0);
 		$instance->{appbar}->pop();
 		$wm->update_gui();
+
 	    }
 
 	}
@@ -432,8 +438,8 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 	{
 	    if (! $busy)
 	    {
-		$busy = 1;
 		$wm->make_busy($instance, 1);
+		$busy = 1;
 	    }
 	    $wm->update_gui();
 	    &{$instance->{update_handler}}($instance, $change_state);

@@ -1195,7 +1195,8 @@ sub directory_up_button_clicked_cb($$)
 
 	    my($counter,
 	       @directory_list,
-	       $len);
+	       $len,
+	       $update_interval);
 
 	    $len = length($value);
 	    $browser->{appbar}->set_progress_percentage(0);
@@ -1207,13 +1208,14 @@ sub directory_up_button_clicked_cb($$)
 		    if ($value eq substr($item, 0, $len));
 	    }
 	    $counter = 1;
+	    $update_interval = calculate_update_interval(\@directory_list);
 	    $browser->{directory_comboboxentry}->get_model()->clear();
 	    $browser->{directory_comboboxentry}->child()->set_text($value);
 	    $browser->{directory_comboboxentry}->child()->set_position(-1);
 	    foreach my $item (@directory_list)
 	    {
 		$browser->{directory_comboboxentry}->append_text($item);
-		if (($counter % 10) == 0)
+		if (($counter % $update_interval) == 0)
 		{
 		    $browser->{appbar}->set_progress_percentage
 			($counter / scalar(@directory_list));
@@ -2488,7 +2490,9 @@ sub update_browser_state($$)
     if ($changed & BRANCH)
     {
 
-	my @branch_list;
+	my(@branch_list,
+	   $counter,
+	   $update_interval);
 
 	# Reset the branch selection.
 
@@ -2515,12 +2519,13 @@ sub update_browser_state($$)
 
 	$browser->{appbar}->set_status(__("Populating branch list"));
 	$wm->update_gui();
-	my $counter = 1;
+	$counter = 1;
+	$update_interval = calculate_update_interval(\@branch_list);
 	$browser->{branch_comboboxentry}->get_model()->clear();
 	foreach my $branch (@branch_list)
 	{
 	    $browser->{branch_comboboxentry}->append_text($branch);
-	    if (($counter % 10) == 0)
+	    if (($counter % $update_interval) == 0)
 	    {
 		$browser->{appbar}->set_progress_percentage
 		    ($counter / scalar(@branch_list));
@@ -2544,7 +2549,9 @@ sub update_browser_state($$)
     if ($changed & REVISION)
     {
 
-	my @revision_list;
+	my($counter,
+	   @revision_list,
+	   $update_interval);
 
 	# If auto-selection of the head revision is wanted by the user and it
 	# is appropriate then preset the revision id.
@@ -2683,12 +2690,13 @@ sub update_browser_state($$)
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status(__("Populating revision list"));
 	$wm->update_gui();
-	my $counter = 1;
+	$counter = 1;
+	$update_interval = calculate_update_interval(\@revision_list);
 	$browser->{revision_comboboxentry}->get_model()->clear();
 	foreach my $revision (@revision_list)
 	{
 	    $browser->{revision_comboboxentry}->append_text($revision);
-	    if (($counter % 10) == 0)
+	    if (($counter % $update_interval) == 0)
 	    {
 		$browser->{appbar}->set_progress_percentage
 		    ($counter / scalar(@revision_list));
@@ -2711,8 +2719,10 @@ sub update_browser_state($$)
     if ($changed & DIRECTORY)
     {
 
-	my(@directory_list,
-	   @manifest_list);
+	my($counter,
+	   @directory_list,
+	   @manifest_list,
+	   $update_interval);
 
 	# Reset the directory combo.
 
@@ -2881,12 +2891,13 @@ sub update_browser_state($$)
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status(__("Populating directory list"));
 	$wm->update_gui();
-	my $counter = 1;
+	$counter = 1;
+	$update_interval = calculate_update_interval(\@directory_list);
 	$browser->{directory_comboboxentry}->get_model()->clear();
 	foreach my $item (@directory_list)
 	{
 	    $browser->{directory_comboboxentry}->append_text($item);
-	    if (($counter % 10) == 0)
+	    if (($counter % $update_interval) == 0)
 	    {
 		$browser->{appbar}->set_progress_percentage
 		    ($counter / scalar(@directory_list));
