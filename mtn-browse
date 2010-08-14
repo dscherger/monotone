@@ -1208,6 +1208,8 @@ sub directory_up_button_clicked_cb($$)
 	    }
 	    $counter = 1;
 	    $browser->{directory_comboboxentry}->get_model()->clear();
+	    $browser->{directory_comboboxentry}->child()->set_text($value);
+	    $browser->{directory_comboboxentry}->child()->set_position(-1);
 	    foreach my $item (@directory_list)
 	    {
 		$browser->{directory_comboboxentry}->append_text($item);
@@ -1224,8 +1226,12 @@ sub directory_up_button_clicked_cb($$)
 	    $browser->{appbar}->set_progress_percentage(0);
 
 	}
+	else
+	{
+	    $browser->{directory_comboboxentry}->child()->set_text($value);
+	    $browser->{directory_comboboxentry}->child()->set_position(-1);
+	}
 
-	$browser->{directory_comboboxentry}->child()->set_text($value);
 	$browser->{appbar}->clear_stack();
 	$wm->update_gui();
 
@@ -1700,6 +1706,7 @@ sub manifest_browser_treeview_row_activated_cb($$$$)
 	$browser->{directory_combo_details}->{complete} = 1;
 	$browser->{directory_comboboxentry}->child()->
 	    set_text($manifest_entry->{name});
+	$browser->{directory_comboboxentry}->child()->set_position(-1);
 	$browser->{appbar}->clear_stack();
 	&{$browser->{update_handler}}($browser, DIRECTORY_CHANGED);
     }
@@ -2891,6 +2898,7 @@ sub update_browser_state($$)
 	$wm->update_gui();
 	$browser->{directory_comboboxentry}->child()->
 	    set_text($browser->{directory_combo_details}->{value});
+	$browser->{directory_comboboxentry}->child()->set_position(-1);
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status("");
 	foreach my $widget (@{$browser->{revision_sensitive_group}})

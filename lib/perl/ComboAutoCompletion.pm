@@ -93,6 +93,7 @@ sub activate_auto_completion($$)
     my($change_state,
        $combo_details,
        $details,
+       $move_to_end,
        $name);
 
     # Sort out the precise details depending upon which comboboxentry widget
@@ -102,6 +103,7 @@ sub activate_auto_completion($$)
     {
 	$change_state = BRANCH_CHANGED;
 	$combo_details = $instance->{branch_combo_details};
+	$move_to_end = 1;
 	$name = __("branch");
     }
     elsif ($comboboxentry == $instance->{revision_comboboxentry})
@@ -114,6 +116,7 @@ sub activate_auto_completion($$)
     {
 	$change_state = DIRECTORY_CHANGED;
 	$combo_details = $instance->{directory_combo_details};
+	$move_to_end = 1;
 	$name = __("directory");
     }
     else
@@ -126,6 +129,7 @@ sub activate_auto_completion($$)
     $details = {instance      => $instance,
 		change_state  => $change_state,
 		combo_details => $combo_details,
+		move_to_end   => $move_to_end,
 		name          => $name};
     $comboboxentry->signal_connect("changed",
 				   \&auto_completion_comboboxentry_changed_cb,
@@ -200,6 +204,7 @@ sub auto_completion_comboboxentry_changed_cb($$)
     my $value;
     my $change_state = $details->{change_state};
     my $combo_details = $details->{combo_details};
+    my $move_to_end = $details->{move_to_end};
 
     # For some reason best known to itself, Gtk+ calls this callback when the
     # user presses a key for the first time (but not subsequently) after a
@@ -218,6 +223,7 @@ sub auto_completion_comboboxentry_changed_cb($$)
 	    $instance->{appbar}->clear_stack();
 	    &{$instance->{update_handler}}($instance, $change_state);
 	    hide_tooltip_window();
+	    $widget->child()->set_position(-1) if ($move_to_end);
 	    last;
 	}
     }
@@ -358,7 +364,6 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 	    $instance->{appbar}->clear_stack();
 	    hide_tooltip_window();
 	}
-	$wm->update_gui();
 	$combo_details->{value} = $value;
 	$combo_details->{complete} = $complete;
 
@@ -370,6 +375,10 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 	{
 
 	    my @item_list;
+
+	    $busy = 1;
+	    $wm->make_busy($instance, 1);
+	    $wm->update_gui();
 
 	    foreach my $item (@{$combo_details->{list}})
 	    {
@@ -385,11 +394,10 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 		    $combo_details->{complete} = 1 if ($len == $item_len);
 		}
 	    }
+
 	    if (! $user_preferences->{static_lists})
 	    {
 		my $counter = 1;
-		$busy = 1;
-		$wm->make_busy($instance, 1);
 		$instance->{appbar}->set_progress_percentage(0);
 		$instance->{appbar}->push(__x("Populating {name} list",
 					      name => $name));
@@ -418,10 +426,18 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 
 	# Update the window state on a significant change.
 
-	&{$instance->{update_handler}}($instance, $change_state)
-	    if ($combo_details->{complete} != $old_complete
-		|| ($combo_details->{complete}
-		    && $combo_details->{value} ne $old_value));
+	if ($combo_details->{complete} != $old_complete
+	    || ($combo_details->{complete}
+		&& $combo_details->{value} ne $old_value))
+	{
+	    if (! $busy)
+	    {
+		$busy = 1;
+		$wm->make_busy($instance, 1);
+	    }
+	    $wm->update_gui();
+	    &{$instance->{update_handler}}($instance, $change_state);
+	}
 
 	$wm->make_busy($instance, 0) if ($busy);
 
