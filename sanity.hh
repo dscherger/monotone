@@ -68,15 +68,18 @@ struct sanity {
   virtual ~sanity();
   virtual void initialize(int, char **, char const *);
   void dump_buffer();
-  void set_debug();
-  void set_quiet();
-  void set_reallyquiet();
+  int set_verbosity(int level);
+  int get_verbosity() const;
+  void set_debug(); // wrapper on set_verbosity
   // This takes a bare std::string because we don't want to expose vocab.hh
   // or paths.hh here.
   void set_dump_path(std::string const & path);
 
   // set out of band handler (e.g. for automate stdio)
-  void set_out_of_band_handler(void (*out_of_band_function)(char channel, std::string const& text, void *opaque)=NULL, void *opaque_data=NULL);
+  void set_out_of_band_handler(void (*out_of_band_function)(char channel,
+                                                            std::string const& text,
+                                                            void *opaque)=NULL,
+                               void *opaque_data=NULL);
 
   // if such an out of band handler is set, this directly writes to it
   bool maybe_write_to_out_of_band_handler(char channel, std::string const& str);
@@ -84,12 +87,6 @@ struct sanity {
   // A couple of places need to look at the debug flag to avoid doing
   // expensive logging if it's off.
   bool debug_p();
-
-  // ??? --quiet overrides any --ticker= setting if both are on the
-  // command line (and needs to look at this to do so).
-  bool quiet_p();
-
-  bool reallyquiet_p();
 
   void log(plain_format const & fmt,
            char const * file, int line);
@@ -336,7 +333,7 @@ do { \
 // normally like to see some indication of progress of
 #define P(fmt) \
 do { \
-  if (!global_sanity.quiet_p()) \
+  if (global_sanity.get_verbosity() > -1) \
     global_sanity.progress(fmt, __FILE__, __LINE__); \
 } while (0)
 
@@ -344,7 +341,7 @@ do { \
 // they are only issued once and are prefixed with "warning: "
 #define W(fmt) \
 do { \
-  if (!global_sanity.reallyquiet_p()) \
+  if (global_sanity.get_verbosity() > -2) \
     global_sanity.warning(fmt, __FILE__, __LINE__); \
 } while (0)
 

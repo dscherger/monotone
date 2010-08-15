@@ -313,7 +313,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
 CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
     N_("Approves a particular revision"),
     "",
-    options::opts::branch | options::opts::maybe_auto_update)
+    options::opts::branch | options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -339,7 +339,7 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
 CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
     N_("Suspends a particular revision"),
     "",
-    options::opts::branch | options::opts::maybe_auto_update)
+    options::opts::branch | options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);

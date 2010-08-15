@@ -48,10 +48,16 @@ void dump(T const &, std::string &)
 template <> void dump(std::string const & obj, std::string & out);
 template <> void dump(char const * const & obj, std::string & out);
 template <> void dump(bool const & obj, std::string & out);
-template <> void dump(s32 const & obj, std::string & out);
-template <> void dump(u32 const & obj, std::string & out);
-template <> void dump(s64 const & obj, std::string & out);
-template <> void dump(u64 const & obj, std::string & out);
+template <> void dump(int const & obj, std::string & out);
+template <> void dump(unsigned int const & obj, std::string & out);
+template <> void dump(long const & obj, std::string & out);
+template <> void dump(unsigned long const & obj, std::string & out);
+#ifdef USING_LONG_LONG
+// I don't think these are standard, so only specialize on them
+// if we're actually using them.
+template <> void dump(long long const & obj, std::string & out);
+template <> void dump(unsigned long long const & obj, std::string & out);
+#endif
 
 // NORETURN(void function()); declares a function that will never return
 // in the normal fashion. a function that invariably throws an exception

@@ -66,9 +66,7 @@ origin::type_to_string(origin::type t)
 
 struct sanity::impl
 {
-  bool debug;
-  bool quiet;
-  bool reallyquiet;
+  int verbosity;
   boost::circular_buffer<char> logbuf;
   std::string real_prog_name;
   std::string filename;
@@ -80,7 +78,7 @@ struct sanity::impl
   void *out_of_band_opaque;
 
   impl() :
-    debug(false), quiet(false), reallyquiet(false), logbuf(0xffff),
+    verbosity(0), logbuf(0xffff),
     already_dumping(false), out_of_band_function(0), out_of_band_opaque(0)
   {}
 };
@@ -171,41 +169,37 @@ sanity::dump_buffer()
                    "(maybe you want --debug or --dump?)");
 }
 
+int
+sanity::set_verbosity(int level)
+{
+  I(imp);
+  int ret = imp->verbosity;
+  imp->verbosity = level;
+
+  if (level >= 1)
+    {
+      // it is possible that some pre-setting-of-debug data
+      // accumulated in the log buffer (during earlier option processing)
+      // so we will dump it now
+      ostringstream oss;
+      vector<string> lines;
+      copy(imp->logbuf.begin(), imp->logbuf.end(), ostream_iterator<char>(oss));
+      split_into_lines(oss.str(), lines);
+      for (vector<string>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+        inform_log((*i) + "\n");
+    }
+  return ret;
+}
 void
 sanity::set_debug()
 {
-  I(imp);
-  imp->quiet = false;
-  imp->reallyquiet = false;
-  imp->debug = true;
-
-  // it is possible that some pre-setting-of-debug data
-  // accumulated in the log buffer (during earlier option processing)
-  // so we will dump it now
-  ostringstream oss;
-  vector<string> lines;
-  copy(imp->logbuf.begin(), imp->logbuf.end(), ostream_iterator<char>(oss));
-  split_into_lines(oss.str(), lines);
-  for (vector<string>::const_iterator i = lines.begin(); i != lines.end(); ++i)
-    inform_log((*i) + "\n");
+  set_verbosity(1);
 }
-
-void
-sanity::set_quiet()
+int
+sanity::get_verbosity() const
 {
   I(imp);
-  imp->debug = false;
-  imp->quiet = true;
-  imp->reallyquiet = false;
-}
-
-void
-sanity::set_reallyquiet()
-{
-  I(imp);
-  imp->debug = false;
-  imp->quiet = true;
-  imp->reallyquiet = true;
+  return imp->verbosity;
 }
 
 void
@@ -242,25 +236,7 @@ sanity::debug_p()
   if (!imp)
     throw std::logic_error("sanity::debug_p called "
                             "before sanity::initialize");
-  return imp->debug;
-}
-
-bool
-sanity::quiet_p()
-{
-  if (!imp)
-    throw std::logic_error("sanity::quiet_p called "
-                            "before sanity::initialize");
-  return imp->quiet;
-}
-
-bool
-sanity::reallyquiet_p()
-{
-  if (!imp)
-    throw std::logic_error("sanity::reallyquiet_p called "
-                            "before sanity::initialize");
-  return imp->reallyquiet;
+  return imp->verbosity >= 1;
 }
 
 void
@@ -380,7 +356,7 @@ sanity::index_failure(char const * vec_expr,
   if (!imp)
     throw std::logic_error("sanity::index_failure occured "
                             "before sanity::initialize");
-  if (imp->debug)
+  if (debug_p())
     log(FL(pattern) % file % line % idx_expr % idx % vec_expr % sz,
         file, line);
   gasp();
@@ -449,7 +425,7 @@ sanity::gasp()
     }
   imp->gasp_dump = out.str();
   L(FL("finished saving work set"));
-  if (imp->debug)
+  if (debug_p())
     {
       inform_log("contents of work set:");
       inform_log(imp->gasp_dump);
@@ -489,25 +465,37 @@ dump(bool const & obj, string & out)
   out = (obj ? "true" : "false");
 }
 template <> void
-dump(s32 const & val, string & out)
+dump(int const & val, string & out)
 {
   out = lexical_cast<string>(val);
 }
 template <> void
-dump(u32 const & val, string & out)
+dump(unsigned int const & val, string & out)
 {
   out = lexical_cast<string>(val);
 }
 template <> void
-dump(s64 const & val, string & out)
+dump(long const & val, string & out)
 {
   out = lexical_cast<string>(val);
 }
 template <> void
-dump(u64 const & val, string & out)
+dump(unsigned long const & val, string & out)
 {
   out = lexical_cast<string>(val);
 }
+#ifdef USING_LONG_LONG
+template <> void
+dump(long long const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+template <> void
+dump(unsigned long long const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+#endif
 
 void
 sanity::print_var(std::string const & value, char const * var,

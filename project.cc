@@ -15,7 +15,7 @@
 
 #include "cert.hh"
 #include "database.hh"
-#include "file_io.hh"
+#include "date_format.hh"
 #include "globish.hh"
 //#include "policy.hh"
 #include "policies/base_policy.hh"
@@ -1664,14 +1664,7 @@ describe_revision(options const & opts, lua_hooks & lua,
 
   description += encode_hexenc(id.inner()(), id.inner().made_from);
 
-  string date_fmt;
-  if (opts.format_dates)
-    {
-      if (!opts.date_fmt.empty())
-        date_fmt = opts.date_fmt;
-      else
-        lua.hook_get_date_format_spec(date_time_short, date_fmt);
-    }
+  string date_fmt = get_date_format(opts, lua, date_time_short);
 
   // append authors and date of this revision
   vector<cert> certs;

@@ -142,7 +142,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
   database db(app);
   project_t project(db, app.lua, app.opts);
 
-  if ((args.size() != 1) || (app.opts.revision_selectors.size() > 1))
+  if ((args.size() != 1) || (app.opts.revision.size() > 1))
     throw usage(execid);
 
   file_path file = file_path_external(idx(args, 0));
@@ -150,7 +150,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
   L(FL("annotate file '%s'") % file);
 
   roster_t roster;
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       // What this _should_ do is calculate the current workspace roster
       // and/or revision and hand that to do_annotate.  This should just
@@ -178,7 +178,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
     }
   else
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), rid);
       db.get_roster(rid, roster);
     }
 
@@ -296,7 +296,7 @@ CMD(cat, "cat", "", CMD_REF(informative),
 
   database db(app);
   revision_id rid;
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       workspace work(app);
       parent_map parents;
@@ -308,7 +308,7 @@ CMD(cat, "cat", "", CMD_REF(informative),
   else
     {
       project_t project(db, app.lua, app.opts);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), rid);
     }
 
   dump_file(db, cout, rid, idx(args, 0));
@@ -363,7 +363,7 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
   database db(app);
 
   revision_id rid;
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       workspace work(app);
 
@@ -376,7 +376,7 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
   else
     {
       project_t project(db, app.lua, app.opts);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), rid);
     }
 
   dump_file(db, output, rid, idx(args, 0));

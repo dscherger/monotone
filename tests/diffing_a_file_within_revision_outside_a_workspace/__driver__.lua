@@ -26,7 +26,7 @@ copy(test.root .. "/test.db", tmpdir)
 copy(test.root .. "/keys", tmpdir)
 
 check(indir(tmpdir,
-        { monotone_path, "--norc",
+        { monotone_path, "--no-standard-rcfiles",
            "--no-workspace",
            "--db="..tmpdir.."/test.db",
            "--confdir="..tmpdir,
@@ -35,7 +35,7 @@ check(indir(tmpdir,
       0, false, false)
 
 check(indir(tmpdir,
-        { monotone_path, "--norc", "--root="..tmpdir,
+        { monotone_path, "--no-standard-rcfiles", "--root="..tmpdir,
            "--no-workspace",
            "--db="..tmpdir.."/test.db",
            "--confdir="..tmpdir,
@@ -44,7 +44,7 @@ check(indir(tmpdir,
       0, false, false)
 
 check(indir(tmpdir,
-        { monotone_path, "--norc", "--root=.",
+        { monotone_path, "--no-standard-rcfiles", "--root=.",
            "--no-workspace",
            "--db="..tmpdir.."/test.db",
            "--confdir="..tmpdir,
@@ -53,7 +53,7 @@ check(indir(tmpdir,
       0, false, false)
 
 check(indir(tmpdir,
-        { monotone_path, "--norc",
+        { monotone_path, "--no-standard-rcfiles",
            "--no-workspace",
            "--db="..tmpdir.."/test.db",
            "--confdir="..tmpdir,
@@ -62,7 +62,7 @@ check(indir(tmpdir,
       0, false, false)
 
 check(indir(tmpdir,
-        { monotone_path, "--norc", "--root="..tmpdir,
+        { monotone_path, "--no-standard-rcfiles", "--root="..tmpdir,
            "--no-workspace",
            "--db="..tmpdir.."/test.db",
            "--confdir="..tmpdir,
@@ -71,7 +71,7 @@ check(indir(tmpdir,
       0, false, false)
 
 check(indir(tmpdir,
-        { monotone_path, "--norc", "--root=.",
+        { monotone_path, "--no-standard-rcfiles", "--root=.",
            "--no-workspace",
            "--db="..tmpdir.."/test.db",
            "--confdir="..tmpdir,

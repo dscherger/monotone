@@ -21,6 +21,7 @@
 #include "constants.hh"
 #include "cset.hh"
 #include "database.hh"
+#include "date_format.hh"
 #include "interner.hh"
 #include "lcs.hh"
 #include "platform.hh"
@@ -399,14 +400,7 @@ annotate_context::build_revisions_to_annotations
     }
 
   size_t max_note_length = 0;
-  string date_fmt;
-  if (app.opts.format_dates)
-    {
-      if (!app.opts.date_fmt.empty())
-        date_fmt = app.opts.date_fmt;
-      else
-        app.lua.hook_get_date_format_spec(date_short, date_fmt);
-    }
+  string date_fmt = get_date_format(app.opts, app.lua, date_short);
 
   // build revision -> annotation string mapping
   for (set<revision_id>::const_iterator i = seen.begin();

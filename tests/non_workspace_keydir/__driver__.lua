@@ -6,7 +6,7 @@ function pure_mtn(...)
       err("'mtn' environment variable not set")
     end
   end
-  return {monotone_path, "--ssh-sign=no", "--norc",
+  return {monotone_path, "--ssh-sign=no", "--no-standard-rcfiles",
 	  "--root=" .. test.root, "--db", "test.db",
 	  "--rcfile", test.root .. "/test_hooks.lua", ...}
 end

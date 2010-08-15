@@ -53,9 +53,15 @@ bad_arg_internal::bad_arg_internal(string const & str)
 
 
 
-void splitname(char const * f, string & name, string & n)
+void splitname(char const * f, string & name, string & n, string & cancel)
 {
   string from(f);
+  if (from.find("/") != string::npos)
+    {
+      string::size_type slash = from.find("/");
+      cancel = from.substr(slash+1);
+      from.erase(slash);
+    }
   // from looks like "foo" or "foo,f"
   string::size_type comma = from.find(',');
   name = from.substr(0, comma);
@@ -83,16 +89,24 @@ concrete_option::concrete_option(char const * names,
                                  char const * desc,
                                  bool arg,
                                  boost::function<void (std::string)> set,
-                                 boost::function<void ()> reset)
+                                 boost::function<void ()> reset,
+                                 bool hide,
+                                 char const * deprecate)
 {
   description = desc;
-  splitname(names, longname, shortname);
+  splitname(names, longname, shortname, cancelname);
   I((desc && desc[0]) || !longname.empty() || !shortname.empty());
+  // not sure how to display if it can only be reset (and what would that mean?)
+  I((!longname.empty() || !shortname.empty()) || cancelname.empty());
   // If an option has a name (ie, can be set), it must have a setter function
   I(set || (longname.empty() && shortname.empty()));
+  // If an option can be canceled, it must have a resetter function
+  I(reset || cancelname.empty());
   has_arg = arg;
   setter = set;
   resetter = reset;
+  hidden = hide;
+  deprecated = deprecate;
 }
 
 bool concrete_option::operator<(concrete_option const & other) const
@@ -101,6 +115,8 @@ bool concrete_option::operator<(concrete_option const & other) const
     return longname < other.longname;
   if (shortname != other.shortname)
     return shortname < other.shortname;
+  if (cancelname != other.cancelname)
+    return cancelname < other.cancelname;
   return description < other.description;
 }
 
@@ -138,9 +154,12 @@ concrete_option_set &
 concrete_option_set::operator()(char const * names,
                                 char const * desc,
                                 boost::function<void ()> set,
-                                boost::function<void ()> reset)
+                                boost::function<void ()> reset,
+                                bool hide,
+                                char const * deprecate)
 {
-  options.insert(concrete_option(names, desc, false, discard_argument(set), reset));
+  options.insert(concrete_option(names, desc, false, discard_argument(set),
+                                 reset, hide, deprecate));
   return *this;
 }
 
@@ -148,9 +167,11 @@ concrete_option_set &
 concrete_option_set::operator()(char const * names,
                                 char const * desc,
                                 boost::function<void (string)> set,
-                                boost::function<void ()> reset)
+                                boost::function<void ()> reset,
+                                bool hide,
+                                char const * deprecate)
 {
-  options.insert(concrete_option(names, desc, true, set, reset));
+  options.insert(concrete_option(names, desc, true, set, reset, hide, deprecate));
   return *this;
 }
 
@@ -243,43 +264,119 @@ tokenize_for_command_line(string const & from, args_vector & to)
     to.push_back(arg_type(cur, origin::user));
 }
 
-void concrete_option_set::from_command_line(int argc, char const * const * argv)
+void concrete_option_set::from_command_line(int argc,
+                                            char const * const * argv)
 {
   args_vector arguments;
   for (int i = 1; i < argc; ++i)
     arguments.push_back(arg_type(argv[i], origin::user));
-  from_command_line(arguments, true);
+  from_command_line(arguments);
 }
 
 static concrete_option const &
-getopt(map<string, concrete_option> const & by_name, string const & name)
+getopt(map<string, concrete_option> const & by_name, string & name)
 {
+  // try to match the option name as a whole first, so if the user
+  // specified "--foo" and we have "--foo" and "--foo-bar", don't
+  // display both choices
   map<string, concrete_option>::const_iterator i = by_name.find(name);
   if (i != by_name.end())
     return i->second;
-  else
+
+  // try to find the option by partial name
+  vector<string> candidates;
+  for (i = by_name.begin(); i != by_name.end(); ++i)
+    {
+      if (i->first.find(name) == 0)
+        candidates.push_back(i->first);
+    }
+
+  if (candidates.size() == 0)
     throw unknown_option(name);
+
+  if (candidates.size() == 1)
+    {
+       i = by_name.find(candidates[0]);
+       I(i != by_name.end());
+       L(FL("expanding option '%s' to '%s'") % name % candidates[0]);
+       name = candidates[0];
+       return i->second;
+    }
+
+  string err = (F("option '%s' has multiple ambiguous expansions:")
+                % name).str();
+
+  for (vector<string>::const_iterator j = candidates.begin();
+       j != candidates.end(); ++j)
+    {
+        i = by_name.find(*j);
+        I(i != by_name.end());
+
+        err += "\n--" + *j + " (";
+        if (*j != i->second.longname)
+          err += (F("negation of --%s") % i->second.longname).str();
+        else
+          err +=  + i->second.description;
+        err += ")";
+    }
+
+  E(false, origin::user, i18n_format(err));
 }
 
+// helper for get_by_name
+// Make sure that either:
+//   * There are no duplicate options, or
+//   * If we're only parsing options (and not applying them), any duplicates
+//     are consistent WRT whether they take an option
+typedef pair<map<string, concrete_option>::iterator, bool> by_name_res_type;
+static void check_by_name_insertion(by_name_res_type const & res,
+                                    concrete_option const & opt,
+                                    concrete_option_set::preparse_flag pf)
+{
+  switch (pf)
+    {
+    case concrete_option_set::preparse:
+      if (!res.second)
+        {
+          string const & name = res.first->first;
+          concrete_option const & them = res.first->second;
+          bool const i_have_arg = (name != opt.cancelname && opt.has_arg);
+          bool const they_have_arg = (name != them.cancelname && them.has_arg);
+          I(i_have_arg == they_have_arg);
+        }
+      break;
+    case concrete_option_set::no_preparse:
+      I(res.second);
+      break;
+    }
+}
+
+// generate an index that lets us look options up by name
 static map<string, concrete_option>
-get_by_name(std::set<concrete_option> const & options)
+get_by_name(std::set<concrete_option> const & options,
+            concrete_option_set::preparse_flag pf)
 {
   map<string, concrete_option> by_name;
   for (std::set<concrete_option>::const_iterator i = options.begin();
        i != options.end(); ++i)
     {
       if (!i->longname.empty())
-        by_name.insert(make_pair(i->longname, *i));
+        check_by_name_insertion(by_name.insert(make_pair(i->longname, *i)),
+                                *i, pf);
       if (!i->shortname.empty())
-        by_name.insert(make_pair(i->shortname, *i));
+        check_by_name_insertion(by_name.insert(make_pair(i->shortname, *i)),
+                                *i, pf);
+      if (!i->cancelname.empty())
+        check_by_name_insertion(by_name.insert(make_pair(i->cancelname, *i)),
+                                *i, pf);
     }
   return by_name;
 }
 
 void concrete_option_set::from_command_line(args_vector & args,
-                                            bool allow_xargs)
+                                            preparse_flag pf)
 {
-  map<string, concrete_option> by_name = get_by_name(options);
+  map<string, concrete_option> by_name = get_by_name(options, pf);
 
   bool seen_dashdash = false;
   for (args_vector::size_type i = 0; i < args.size(); ++i)
@@ -287,18 +384,19 @@ void concrete_option_set::from_command_line(args_vector & args,
       concrete_option o;
       string name;
       arg_type arg;
+      bool is_cancel;
       bool separate_arg(false);
       if (idx(args,i)() == "--" || seen_dashdash)
         {
           if (!seen_dashdash)
             {
               seen_dashdash = true;
-              allow_xargs = false;
               continue;
             }
           name = "--";
           o = getopt(by_name, name);
           arg = idx(args,i);
+          is_cancel = false;
         }
       else if (idx(args,i)().substr(0,2) == "--")
         {
@@ -309,10 +407,11 @@ void concrete_option_set::from_command_line(args_vector & args,
             name = idx(args,i)().substr(2, equals-2);
 
           o = getopt(by_name, name);
-          if (!o.has_arg && equals != string::npos)
-            throw extra_arg(name);
+          is_cancel = (name == o.cancelname);
+          if ((!o.has_arg || is_cancel) && equals != string::npos)
+              throw extra_arg(name);
 
-          if (o.has_arg)
+          if (o.has_arg && !is_cancel)
             {
               if (equals == string::npos)
                 {
@@ -330,6 +429,8 @@ void concrete_option_set::from_command_line(args_vector & args,
           name = idx(args,i)().substr(1,1);
 
           o = getopt(by_name, name);
+          is_cancel = (name == o.cancelname);
+          I(!is_cancel);
           if (!o.has_arg && idx(args,i)().size() != 2)
             throw extra_arg(name);
 
@@ -351,9 +452,10 @@ void concrete_option_set::from_command_line(args_vector & args,
           name = "--";
           o = getopt(by_name, name);
           arg = idx(args,i);
+          is_cancel = false;
         }
 
-      if (allow_xargs && (name == "xargs" || name == "@"))
+      if (name == "xargs" || name == "@")
         {
           // expand the --xargs in place
           data dat;
@@ -373,8 +475,19 @@ void concrete_option_set::from_command_line(args_vector & args,
             ++i;
           try
             {
-              if (o.setter)
-                o.setter(arg());
+              if (o.deprecated)
+                W(F("deprecated option '%s' used: %s")
+                  % o.longname % gettext(o.deprecated));
+              if (!is_cancel)
+                {
+                  if (o.setter)
+                    o.setter(arg());
+                }
+              else
+                {
+                  if (o.resetter)
+                    o.resetter();
+                }
             }
           catch (boost::bad_lexical_cast)
             {
@@ -393,20 +506,33 @@ void concrete_option_set::from_command_line(args_vector & args,
 
 void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > const & keyvals)
 {
-  map<string, concrete_option> by_name = get_by_name(options);
+  map<string, concrete_option> by_name = get_by_name(options, no_preparse);
 
   for (vector<pair<string, string> >::const_iterator i = keyvals.begin();
        i != keyvals.end(); ++i)
     {
-      string const & key(i->first);
+      string key(i->first);
       arg_type const & value(arg_type(i->second, origin::user));
 
       concrete_option o = getopt(by_name, key);
+      bool const is_cancel = (key == o.cancelname);
 
       try
         {
-          if (o.setter)
-            o.setter(value());
+          if (o.deprecated)
+            W(F("deprecated option '%s' used: %s")
+              % o.longname % gettext(o.deprecated));
+
+          if (!is_cancel)
+            {
+              if (o.setter)
+                o.setter(value());
+            }
+          else
+            {
+              if (o.resetter)
+                o.resetter();
+            }
         }
       catch (boost::bad_lexical_cast)
         {
@@ -423,7 +549,7 @@ void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > con
 }
 
 // Get the non-description part of the usage string,
-// looks like "--long [ -s ] <arg>".
+// looks like "--long [ -s ] <arg> / --cancel".
 static string usagestr(concrete_option const & opt)
 {
   string out;
@@ -435,18 +561,28 @@ static string usagestr(concrete_option const & opt)
     out = "--" + opt.longname;
   else if (!opt.shortname.empty())
     out = "-" + opt.shortname;
-  else
-    return "";
-  if (opt.has_arg)
-    return out + " <arg>";
-  else
+
+  if (out.empty())
     return out;
+
+  if (opt.has_arg)
+    out += " <arg>";
+
+  if (!opt.cancelname.empty())
+    {
+      if (!out.empty())
+        out += " / ";
+      out += "--" + opt.cancelname;
+    }
+
+  return out;
 }
 
 void
 concrete_option_set::get_usage_strings(vector<string> & names,
                                        vector<string> & descriptions,
-                                       unsigned int & maxnamelen) const
+                                       unsigned int & maxnamelen,
+                                       bool show_hidden) const
 {
   unsigned int namelen = 0; // the longest option name string
   names.clear();
@@ -454,6 +590,10 @@ concrete_option_set::get_usage_strings(vector<string> & names,
   for (std::set<concrete_option>::const_iterator i = options.begin();
        i != options.end(); ++i)
     {
+      if (i->hidden && !show_hidden)
+        continue;
+      if (i->deprecated)
+        continue;
       string name = usagestr(*i);
       if (name.size() > namelen)
         namelen = name.size();

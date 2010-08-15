@@ -358,7 +358,7 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
 CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
     N_("Converts the database to the rosters format"),
     "",
-    options::opts::drop_attr)
+    options::opts::attrs_to_drop)
 {
   database db(app);
   key_store keys(app);
@@ -555,15 +555,13 @@ CMD(complete, "complete", "", CMD_REF(informative),
     N_("(revision|file|key) PARTIAL-ID"),
     N_("Completes a partial identifier"),
     "",
-    options::opts::verbose)
+    options::opts::none)
 {
   if (args.size() != 2)
     throw usage(execid);
 
   database db(app);
   project_t project(db, app.lua, app.opts);
-
-  bool verbose = app.opts.verbose;
 
   E(idx(args, 1)().find_first_not_of("abcdef0123456789") == string::npos,
     origin::user,
@@ -576,7 +574,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
       for (set<revision_id>::const_iterator i = completions.begin();
            i != completions.end(); ++i)
         {
-          if (!verbose) cout << *i << '\n';
+          if (!app.opts.full) cout << *i << '\n';
           else cout << describe_revision(app.opts, app.lua, project, *i) << '\n';
         }
     }
@@ -597,7 +595,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
            i != completions.end(); ++i)
         {
           cout << i->first;
-          if (verbose) cout << ' ' << i->second();
+          if (app.opts.full) cout << ' ' << i->second();
           cout << '\n';
         }
     }

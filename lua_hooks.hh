@@ -51,7 +51,7 @@ public:
   lua_hooks(app_state * app);
   ~lua_hooks();
   bool check_lua_state(lua_State * st) const;
-  void load_rcfiles(options & opts);
+  void load_rcfiles(options const & opts);
   bool hook_exists(string const & func_name);
 
   // cert hooks
