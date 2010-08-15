@@ -488,36 +488,38 @@ SIMPLE_OPTION(pidfile, "pid-file/no-pid-file", system_path,
 OPTSET(verbosity)
 OPTSET_REL(globals, verbosity)
 OPTVAR(verbosity, int, verbosity, 0)
-OPTION(verbosity, set_verbosity, true, "verbosity",
-       gettext_noop("set verbosity level: 0 is default; 1 is print debug messages; "
-                    "-1 is hide tickers and progress messages; -2 is also hide warnings"))
+
+OPTION(verbosity, quiet, false, "quiet,q",
+     gettext_noop("decrease verbosity (undo previous -v, then disable informational output, then disable warnings"))
 #ifdef option_bodies
 {
-  verbosity = boost::lexical_cast<long>(arg);
+  --verbosity;
+  if (verbosity < -2)
+    verbosity = -2;
+}
+#endif
+OPTION(verbosity, verbose, false, "verbose,v",
+       gettext_noop("increase verbosity (undo previous -q, and then enable debug output)"))
+#ifdef option_bodies
+{
+  ++verbosity;
+  if (verbosity > 1)
+    verbosity = 1;
 }
 #endif
 
+DEPRECATE(debug,
+          gettext_noop("please us -v (or -v -v -v if there are previous -q options)"),
+          1.0, 2.0)
 OPTION(globals, debug, false, "debug",
-       gettext_noop("print debug log to stderr while running (--verbosity=1)"))
+       gettext_noop("print debug log to stderr while running"))
 #ifdef option_bodies
 {
   verbosity = 1;
 }
 #endif
 
-SIMPLE_OPTION(full, "full/concise", bool,
-       gettext_noop("print detailed information"))
-
-OPTION(verbosity, quiet, false, "quiet,q",
-     gettext_noop("suppress verbose, informational and progress messages (set verbosity to -1)"))
-#ifdef option_bodies
-{
-  if (verbosity > -1)
-    verbosity = -1;
-}
-#endif
-
-DEPRECATE(reallyquiet, gettext_noop("please use --verbosity=-2"), 1.0, 2.0)
+DEPRECATE(reallyquiet, gettext_noop("please use -q -q"), 1.0, 2.0)
 OPTION(verbosity, reallyquiet, false, "reallyquiet",
      gettext_noop("suppress warning, verbose, informational and progress messages (set verbosity to -2)"))
 #ifdef option_bodies
@@ -525,6 +527,9 @@ OPTION(verbosity, reallyquiet, false, "reallyquiet",
   verbosity = -2;
 }
 #endif
+
+SIMPLE_OPTION(full, "full/concise", bool,
+       gettext_noop("print detailed information"))
 
 
 GROUPED_SIMPLE_OPTION(globals, timestamps, "timestamps", bool,

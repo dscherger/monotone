@@ -27,11 +27,12 @@ function dotest(main_options, subcmd_options, have_p, have_w, have_debug)
 end
 
 dotest({}, {}, true, true, false)
-dotest({"--quiet"}, {{"verbosity", "0"}}, true, true, false)
+dotest({}, {{"v", ""}}, true, true, false)
+dotest({"--quiet"}, {{"v", ""}}, true, true, false)
 dotest({"--quiet"}, {}, false, true, false)
-dotest({"--verbosity=-2"}, {}, false, false, false)
+dotest({"-q", "-q"}, {}, false, false, false)
 
-dotest({"--debug"}, {}, true, true, true)
-dotest({"--debug"}, {{"verbosity", "0"}}, true, true, true)
-dotest({"--debug"}, {{"verbosity", "-1"}}, false, true, true)
-dotest({"--debug"}, {{"verbosity", "-2"}}, false, false, true)
+dotest({"--v"}, {}, true, true, true)
+dotest({"--v"}, {{"q", ""}}, true, true, true)
+dotest({"--v"}, {{"q", ""}, {"q", ""}}, false, true, true)
+dotest({"--v"}, {{"q", ""}, {"q", ""}, {"q", ""}}, false, false, true)
