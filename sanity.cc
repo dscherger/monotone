@@ -67,6 +67,12 @@ origin::type_to_string(origin::type t)
 struct sanity::impl
 {
   int verbosity;
+  // logically this should be "verbosity >= 1", but debug messages aren't
+  // captured for automate output and doing so would probably be an
+  // information leak in the case of remote_automate. So track debug-ness
+  // separately so it can be unchanged when a subcommand changes the
+  // verbosity level.
+  bool is_debug;
   boost::circular_buffer<char> logbuf;
   std::string real_prog_name;
   std::string filename;
@@ -170,30 +176,35 @@ sanity::dump_buffer()
 }
 
 int
-sanity::set_verbosity(int level)
+sanity::set_verbosity(int level, bool allow_debug_change)
 {
   I(imp);
   int ret = imp->verbosity;
   imp->verbosity = level;
 
-  if (level >= 1)
+  if (allow_debug_change)
     {
-      // it is possible that some pre-setting-of-debug data
-      // accumulated in the log buffer (during earlier option processing)
-      // so we will dump it now
-      ostringstream oss;
-      vector<string> lines;
-      copy(imp->logbuf.begin(), imp->logbuf.end(), ostream_iterator<char>(oss));
-      split_into_lines(oss.str(), lines);
-      for (vector<string>::const_iterator i = lines.begin(); i != lines.end(); ++i)
-        inform_log((*i) + "\n");
+      imp->is_debug = (level >= 1);
+
+      if (imp->is_debug)
+        {
+          // it is possible that some pre-setting-of-debug data
+          // accumulated in the log buffer (during earlier option processing)
+          // so we will dump it now
+          ostringstream oss;
+          vector<string> lines;
+          copy(imp->logbuf.begin(), imp->logbuf.end(), ostream_iterator<char>(oss));
+          split_into_lines(oss.str(), lines);
+          for (vector<string>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+            inform_log((*i) + "\n");
+        }
     }
   return ret;
 }
 void
 sanity::set_debug()
 {
-  set_verbosity(1);
+  set_verbosity(1, true);
 }
 int
 sanity::get_verbosity() const
@@ -236,7 +247,7 @@ sanity::debug_p()
   if (!imp)
     throw std::logic_error("sanity::debug_p called "
                             "before sanity::initialize");
-  return imp->verbosity >= 1;
+  return imp->is_debug;
 }
 
 void
