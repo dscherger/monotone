@@ -99,7 +99,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           --no-builtin-rcfile           replaces --nostd
           --builtin-rcfile              undo previous --no-builtin-rcfile
           --clear-rcfiles               undo previous --rcfile
-          --verbosity <arg>             set verbosity level
+	  --verbose [-v]                increase verbosity (opposite of --quiet)
 
         - Global options now hidden:
           --roster-cache-performance-log
@@ -166,7 +166,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - Deprecated options:
           --norc         use --no-standard-rcfiles
           --nostd        use --no-builtin-rcfile
-          --reallyquiet  use --verbosity=-2
+          --reallyquiet  use --quiet --quiet
+          --debug        use --verbose
 
         - To aid command line typing, partial option names are tried to
           be expanded; if the expansion leads to multiple possibilities,

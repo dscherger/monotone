@@ -21,7 +21,6 @@ public:
   options_applicator::for_what what;
   bool were_timestamps_enabled;
   int prev_verbosity;
-  bool set_verbosity;
   user_interface::ticker_type tick_type;
 };
 
@@ -39,14 +38,8 @@ options_applicator::options_applicator(options const & opts,
 
   // debug messages are not captured for automate, so don't allow
   // changing the debug-ness for automate commands
-  if (what == for_primary_cmd ||
-      (!global_sanity.debug_p() && (opts.verbosity < 2)))
-    {
-      _impl->prev_verbosity = global_sanity.set_verbosity(opts.verbosity);
-      _impl->set_verbosity = true;
-    }
-  else
-    _impl->set_verbosity = false;
+  _impl->prev_verbosity = global_sanity.set_verbosity(opts.verbosity,
+                                                      what == for_primary_cmd);
 
   _impl->tick_type = ui.get_ticker_type();
   if (global_sanity.get_verbosity() < 0)
@@ -70,8 +63,7 @@ options_applicator::~options_applicator()
 {
   ui.enable_timestamps(_impl->were_timestamps_enabled);
 
-  if (_impl->set_verbosity)
-    global_sanity.set_verbosity(_impl->prev_verbosity);
+  global_sanity.set_verbosity(_impl->prev_verbosity, false);
 
   ui.set_ticker_type(_impl->tick_type);
 

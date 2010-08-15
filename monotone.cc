@@ -231,10 +231,7 @@ cpp_main(int argc, char ** argv)
             {
               ui.redirect_log_to(app.opts.log);
             }
-          if (app.opts.verbosity >= 1)
-            {
-              global_sanity.set_debug();
-            }
+          global_sanity.set_verbosity(app.opts.verbosity, true);
           if (app.opts.dump_given)
             {
               global_sanity.set_dump_path(app.opts.dump.as_external());
