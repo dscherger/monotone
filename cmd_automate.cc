@@ -137,6 +137,7 @@ CMD_AUTOMATE_HIDDEN(bandtest, "{ info | warning | error | ticker }",
     F("wrong argument count"));
 
   std::string type = args.at(0)();
+  L(FL("running bandtest %s") % type);
   if (type.compare("info") == 0)
     P(F("this is an informational message"));
   else if (type.compare("warning") == 0)

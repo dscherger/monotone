@@ -50,7 +50,9 @@ function parse_stdio(data, err, which, band)
     band = "m"
   end
 
-  check(bands[which][band] ~= nil)
+  if bands[which][band] == nil then
+     bands[which][band] = {}
+  end
 
   return bands[which][band]
 end
