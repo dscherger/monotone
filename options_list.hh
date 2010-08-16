@@ -490,7 +490,7 @@ OPTSET_REL(globals, verbosity)
 OPTVAR(verbosity, int, verbosity, 0)
 
 OPTION(verbosity, quiet, false, "quiet,q",
-     gettext_noop("decrease verbosity (undo previous -v, then disable informational output, then disable warnings"))
+     gettext_noop("decrease verbosity (undo previous -v, then disable informational output, then disable warnings)"))
 #ifdef option_bodies
 {
   --verbosity;
