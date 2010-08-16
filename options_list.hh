@@ -521,7 +521,7 @@ OPTION(globals, debug, false, "debug",
 
 DEPRECATE(reallyquiet, gettext_noop("please use -q -q"), 1.0, 2.0)
 OPTION(verbosity, reallyquiet, false, "reallyquiet",
-     gettext_noop("suppress warning, verbose, informational and progress messages (set verbosity to -2)"))
+     gettext_noop("suppress warning, verbose, informational and progress messages"))
 #ifdef option_bodies
 {
   verbosity = -2;
