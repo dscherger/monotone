@@ -23,16 +23,19 @@
 
 #ifndef _WIN32
 #include <signal.h>
+#include <errno.h>
 #endif
 
 #include <iostream>
+#include <cstring>
 
 using std::string;
+using std::stringstream;
 using std::vector;
 using std::set;
 using std::ostream;
 using std::make_pair;
-using std::cout
+using std::cout;
 using boost::lexical_cast;
 
 //
@@ -677,7 +680,9 @@ get_options_string(options::options_type const & optset, options & opts, int wid
   vector<string> descriptions;
   unsigned int maxnamelen;
 
-  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
+  optset.instantiate(&opts).get_usage_strings(
+    names, descriptions, maxnamelen, opts.show_hidden_commands
+  );
 
   string out;
   vector<string>::const_iterator name;
@@ -847,61 +852,80 @@ get_command_groups(options & opts)
   return out;
 }
 
-CMD_HIDDEN(manpage, "manpage", "", CMD_REF(informative), "",
-    N_("Dumps monotone's command tree in a (g)roff compatible format"),
+CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
+    N_("Displays monotone's command help as manual page"),
     "",
     options::opts::show_hidden_commands)
 {
-  cout << man_title("monotone");
-  cout << man_section(_("Name"));
+  stringstream ss;
+  ss << man_title("monotone");
+  ss << man_section(_("Name"));
 
-  cout << _("monotone - a distributed version control system") << "\n";
-  cout << man_section(_("Synopsis"));
-  cout << man_bold(prog_name) << " "
-            << man_italic(_("[options...] command [arguments...]"))
-            << "\n";
+  ss << _("monotone - a distributed version control system") << "\n";
+  ss << man_section(_("Synopsis"));
+  ss << man_bold(prog_name) << " "
+     << man_italic(_("[options...] command [arguments...]"))
+     << "\n";
 
-  cout << man_section(_("Description"));
-  cout << _("monotone is a highly reliable, very customizable distributed "
-            "version control system that provides lightweight branches, "
-            "history-sensitive merging and a flexible trust setup. "
-            "monotone has an easy-to-learn command set and comes with a rich "
-            "interface for scripting purposes and thorough documentation.")
-       << "\n\n";
-  cout << (F("For more information on monotone, visit %s.")
-            % man_bold("http://www.monotone.ca")).str()
-       << "\n\n";
-  cout << (F("The complete documentation, including a tutorial for a quick start "
-             "with the system, can be found online on %s.")
-            % man_bold("http://www.monotone.ca/docs")).str() << "\n";
+  ss << man_section(_("Description"));
+  ss << _("monotone is a highly reliable, very customizable distributed "
+          "version control system that provides lightweight branches, "
+          "history-sensitive merging and a flexible trust setup. "
+          "monotone has an easy-to-learn command set and comes with a rich "
+          "interface for scripting purposes and thorough documentation.")
+     << "\n\n";
+  ss << (F("For more information on monotone, visit %s.")
+          % man_bold("http://www.monotone.ca")).str()
+     << "\n\n";
+  ss << (F("The complete documentation, including a tutorial for a quick start "
+           "with the system, can be found online on %s.")
+          % man_bold("http://www.monotone.ca/docs")).str() << "\n";
 
-  cout << man_section(_("Global Options"));
-  cout << get_options_string(options::opts::globals(), app.opts, 25) << "\n";
+  ss << man_section(_("Global Options"));
+  ss << get_options_string(options::opts::globals(), app.opts, 25) << "\n";
 
-  cout << man_section(_("Commands"));
-  cout << get_command_groups(app.opts);
+  ss << man_section(_("Commands"));
+  ss << get_command_groups(app.opts);
 
-  cout << man_section(_("See Also"));
-  cout << (F("info %s and the documentation on %s")
-                % prog_name % man_bold("http://monotone.ca/docs")).str() << "\n";
+  ss << man_section(_("See Also"));
+  ss << (F("info %s and the documentation on %s")
+          % prog_name % man_bold("http://monotone.ca/docs")).str() << "\n";
 
-  cout << man_section("Bugs");
-  cout << (F("Please report bugs to %s.")
-                % man_bold("http://savannah.nongnu.org/bugs/?group=monotone")).str()<< "\n";
+  ss << man_section("Bugs");
+  ss << (F("Please report bugs to %s.")
+          % man_bold("http://savannah.nongnu.org/bugs/?group=monotone")).str()<< "\n";
 
-  cout << man_section("Authors");
-  cout << _("monotone was written originally by Graydon Hoare "
-            "<graydon@pobox.com> in 2004 and has since then received "
-            "numerous contributions from many individuals. "
-            "A complete list of authors can be found in AUTHORS.")
-       << "\n\n";
-  cout << _("Nowadays, monotone is maintained by a collective of enthusiastic "
-            "programmers, known as the monotone developement team.") << "\n";
+  ss << man_section("Authors");
+  ss << _("monotone was written originally by Graydon Hoare "
+          "<graydon@pobox.com> in 2004 and has since then received "
+          "numerous contributions from many individuals. "
+          "A complete list of authors can be found in AUTHORS.")
+     << "\n\n";
+  ss << _("Nowadays, monotone is maintained by a collective of enthusiastic "
+          "programmers, known as the monotone developement team.") << "\n";
 
-  cout << man_section("Copyright");
-  cout << (F("monotone and this man page is Copyright (c) 2004 - %s by "
-             "the monotone development team.")
-             % date_t::now().as_formatted_localtime("%Y")).str() << "\n";
+  ss << man_section("Copyright");
+  ss << (F("monotone and this man page is Copyright (c) 2004 - %s by "
+           "the monotone development team.")
+           % date_t::now().as_formatted_localtime("%Y")).str() << "\n";
+
+  if (!isatty(STDOUT_FILENO))
+    {
+      cout << ss.str();
+      return;
+    }
+
+  string cmd;
+  E(app.lua.hook_get_man_page_formatter_command(cmd) && !cmd.empty(),
+    origin::user, F("no man page formatter command configured"));
+
+  FILE * fp = popen(cmd.c_str(), "w");
+  E(fp != NULL, origin::system,
+    F("could not execute man page formatter command '%s': %s")
+      % cmd % strerror(errno));
+
+  I(fprintf(fp, ss.str().c_str()) != -1);
+  pclose(fp);
 }
 
 // There isn't really a better place for this function.
