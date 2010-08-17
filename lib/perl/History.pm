@@ -672,7 +672,7 @@ sub display_revision_comparison($$$;$)
 	    {
 		$rest = expand(substr($line, 3)) . " ";
 		$max_len = $len if (($len = length($rest)) > $max_len);
-		$separator = 0 if ($line =~ m/^\+\+\+ .+\s+[0-9a-f]{40}$/);
+		$separator = 0 if ($line =~ m/^\+\+\+ .+$/);
 	    }
 	    else
 	    {
@@ -738,14 +738,37 @@ sub display_revision_comparison($$$;$)
 		# binary.
 
 		++ $i;
-		($name) = ($lines[$i] =~ m/^--- (.+)\t[0-9a-f]{40}$/);
+		if ($lines[$i] =~ m/^--- (.+)\t[0-9a-f]{40}$/)
+		{
+		    $name = $1;
+		}
+		elsif ($lines[$i + 1] =~ m/^\+\+\+ (.+)\t[0-9a-f]{40}$/)
+		{
+		    $name = $1;
+		}
+		else
+		{
+		    $name = undef;
+		}
 		if (defined($name))
 		{
 		    $is_binary = 0;
-		    ($file_id_1) =
-			($lines[$i] =~ m/^--- .+\t([0-9a-f]{40})$/);
-		    ($file_id_2) =
-			($lines[$i + 1] =~ m/^\+\+\+ .+\t([0-9a-f]{40})$/);
+		    if ($lines[$i] =~ m/^--- .+\t([0-9a-f]{40})$/)
+		    {
+			$file_id_1 = $1;
+		    }
+		    else
+		    {
+			$file_id_1 = "";
+		    }
+		    if ($lines[$i + 1] =~ m/^\+\+\+ .+\t([0-9a-f]{40})$/)
+		    {
+			$file_id_2 = $1;
+		    }
+		    else
+		    {
+			$file_id_2 = "";
+		    }
 		}
 		else
 		{
@@ -874,15 +897,41 @@ sub display_revision_comparison($$$;$)
 		# probably a comment stating that the file is binary.
 
 		++ $i;
-		($name) = ($instance->{diff_output}->[$i] =~
-			   m/^--- (.+)\t[0-9a-f]{40}$/);
+		if ($instance->{diff_output}->[$i] =~
+		    m/^--- (.+)\t[0-9a-f]{40}$/)
+		{
+		    $name = $1;
+		}
+		elsif ($instance->{diff_output}->[$i + 1] =~
+		       m/^\+\+\+ (.+)\t[0-9a-f]{40}$/)
+		{
+		    $name = $1;
+		}
+		else
+		{
+		    $name = undef;
+		}
 		if (defined($name))
 		{
 		    $is_binary = 0;
-		    ($file_id_1) = ($instance->{diff_output}->[$i] =~
-				    m/^--- .+\t([0-9a-f]{40})$/);
-		    ($file_id_2) = ($instance->{diff_output}->[$i + 1]
-				    =~ m/^\+\+\+ .+\t([0-9a-f]{40})$/);
+		    if ($instance->{diff_output}->[$i] =~
+			m/^--- .+\t([0-9a-f]{40})$/)
+		    {
+			$file_id_1 = $1;
+		    }
+		    else
+		    {
+			$file_id_1 = "";
+		    }
+		    if ($instance->{diff_output}->[$i + 1]
+			=~ m/^\+\+\+ .+\t([0-9a-f]{40})$/)
+		    {
+			$file_id_2 = $1;
+		    }
+		    else
+		    {
+			$file_id_2 = "";
+		    }
 		}
 		else
 		{
@@ -1487,7 +1536,7 @@ sub file_comparison_combobox_changed_cb($$)
 	    get($iter, CLS_FILE_ID_1_COLUMN);
 	my $file_id_2 = $instance->{file_comparison_combobox}->get_model()->
 	    get($iter, CLS_FILE_ID_2_COLUMN);
-	if ($file_id_1 ne "" && $file_id_1 ne $file_id_2)
+	if ($file_id_1 ne "" && $file_id_2 ne "" && $file_id_1 ne $file_id_2)
 	{
 	    $instance->{external_diffs_button}->set_sensitive(TRUE);
 	}
