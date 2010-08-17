@@ -337,6 +337,69 @@ sub view_button_clicked_cb($$);
     CachingAutomateStdio->register_error_handler(MTN_SEVERITY_ALL,
 						 \&mtn_error_handler);
 
+    # Setup the character encodings and Monotone authentication keys lists,
+    # these both need to be set up before creating any windows.
+
+    @encodings = sort(Encode->encodings(":all"));
+    if (defined($mtn))
+    {
+	my @list;
+	$mtn->keys(\@list);
+	foreach my $key (@list)
+	{
+	    my $keystore;
+	    foreach my $location (@{$key->{private_location}})
+	    {
+		if ($location eq "keystore")
+		{
+		    $keystore = 1;
+		    last;
+		}
+	    }
+	    if ($keystore)
+	    {
+		my $name;
+		if (exists($key->{name}))
+		{
+		    $name = $key->{name};
+		}
+		else
+		{
+		    $name = $key->{local_name};
+		}
+		eval
+		{
+		    $name = decode_utf8($name, Encode::FB_CROAK);
+		};
+		push(@keys, $name);
+	    }
+	}
+    }
+    else
+    {
+	my $buffer;
+	if (run_command(\$buffer, undef, "mtn", "automate", "keys"))
+	{
+	    my $name;
+	    my @lines = split(/\n/, $buffer);
+	    foreach my $line (@lines)
+	    {
+		if ($line =~ m/^\s+(local_)?name\s+\"(.+)\"$/)
+		{
+		    $name = $2;
+		}
+		elsif ($line =~ m/^\s*private_location\s+\"keystore\"$/)
+		{
+		    eval
+		    {
+			$name = decode_utf8($name, Encode::FB_CROAK);
+		    };
+		    push(@keys, $name);
+		}
+	    }
+	}
+    }
+
     # Create the browser window and display it. Please note that updating the
     # browser to reflect the current database or workspace is done in an idle
     # handler so that control can be handed over to Gtk2 before updating the
@@ -461,7 +524,16 @@ sub connect_to_server_activate_cb($$)
 				       server => $host));
     eval
     {
-	$mtn = CachingAutomateStdio->new_from_service($details->{server});
+	if (defined($mtn_key))
+	{
+	    $mtn = CachingAutomateStdio->new_from_service
+		($details->{server}, ["--key" => $mtn_key]);
+	}
+	else
+	{
+	    $mtn = CachingAutomateStdio->new_from_service($details->{server});
+	}
+
     };
     $exception = $@;
     CachingAutomateStdio->register_error_handler
@@ -1824,7 +1896,6 @@ sub get_browser_window(;$$$$$)
     {
 
 	my($cb,
-	   @encodings,
 	   $image,
 	   $menu_item,
 	   $renderer,
@@ -1856,6 +1927,7 @@ sub get_browser_window(;$$$$$)
 			    "connect_to_server_menutiem",
 			    "close_menuitem",
 			    "file_encoding_menuitem",
+			    "choose_authentication_key_menuitem",
 			    "compare_arbitrary_revisions_menuitem",
 			    "main_vbox",
 			    "browser_hpaned",
@@ -1906,7 +1978,6 @@ sub get_browser_window(;$$$$$)
 
 	# Setup the file encodings submenu.
 
-	@encodings = sort(Encode->encodings(":all"));
 	$submenu = Gtk2::Menu->new();
 	$cb = sub
 	{
@@ -1922,7 +1993,7 @@ sub get_browser_window(;$$$$$)
 	};
 	for my $encoding ("ascii", "utf8", "UTF-16")
 	{
-	    $menu_item = Gtk2::MenuItem->new(__($encoding));
+	    $menu_item = Gtk2::MenuItem->new_with_label(__($encoding));
 	    $menu_item->signal_connect("activate",
 				       $cb,
 				       {instance => $browser,
@@ -1933,7 +2004,7 @@ sub get_browser_window(;$$$$$)
 	$subsubmenu = Gtk2::Menu->new();
 	for my $encoding (@encodings)
 	{
-	    $menu_item = Gtk2::MenuItem->new(__($encoding));
+	    $menu_item = Gtk2::MenuItem->new_with_label(__($encoding));
 	    $menu_item->signal_connect("activate",
 				       $cb,
 				       {instance => $browser,
@@ -1948,6 +2019,42 @@ sub get_browser_window(;$$$$$)
 	$submenu->append($menu_item);
 	$submenu->show();
 	$browser->{file_encoding_menuitem}->set_submenu($submenu);
+
+	# Setup the authentication keys submenu.
+
+	$submenu = Gtk2::Menu->new();
+	$cb = sub
+	{
+	    my($widget, $details) = @_;
+	    return if ($details->{instance}->{in_cb});
+	    local $details->{instance}->{in_cb} = 1;
+	    $details->{instance}->{appbar}->set_status
+		(__x("Changed authentication key from `{old_key}' to "
+		         . "`{new_key}'",
+		     old_key => defined($mtn_key) ? $mtn_key : "",
+		     new_key => defined($details->{key})
+		                    ? $details->{key} : ""));
+	    $mtn_key = $details->{key};
+	};
+	$menu_item = Gtk2::MenuItem->new(__("Unspecified"));
+	$menu_item->signal_connect("activate",
+				   $cb,
+				   {instance => $browser,
+				    key      => undef});
+	$menu_item->show();
+	$submenu->append($menu_item);
+	for my $key (@keys)
+	{
+	    $menu_item = Gtk2::MenuItem->new_with_label($key);
+	    $menu_item->signal_connect("activate",
+				       $cb,
+				       {instance => $browser,
+					key      => $key});
+	    $menu_item->show();
+	    $submenu->append($menu_item);
+	}
+	$submenu->show();
+	$browser->{choose_authentication_key_menuitem}->set_submenu($submenu);
 
 	# Setup button sensitivity groups.
 
@@ -2353,7 +2460,7 @@ sub update_server_bookmarks_menu($)
     {
 	for my $server (@{$user_preferences->{server_bookmarks}})
 	{
-	    $menu_item = Gtk2::MenuItem->new(__($server));
+	    $menu_item = Gtk2::MenuItem->new_with_label($server);
 	    $menu_item->signal_connect("activate",
 				       \&connect_to_server_activate_cb,
 				       {browser => $browser,

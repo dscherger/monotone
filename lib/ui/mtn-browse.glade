@@ -64,7 +64,7 @@
 			  <signal name="activate" handler="new_blank_menu_item_clicked_cb" last_modification_time="Thu, 05 Jun 2008 10:14:27 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image154">
+			    <widget class="GtkImage" id="image160">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-new</property>
 			      <property name="icon_size">1</property>
@@ -92,7 +92,7 @@
 			  <property name="use_underline">True</property>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image155">
+			    <widget class="GtkImage" id="image161">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-network</property>
 			      <property name="icon_size">1</property>
@@ -127,7 +127,7 @@
 			  <signal name="activate" handler="quit_activate_cb" last_modification_time="Fri, 20 Jun 2008 12:07:24 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image156">
+			    <widget class="GtkImage" id="image162">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-quit</property>
 			      <property name="icon_size">1</property>
@@ -194,6 +194,14 @@
 		    <widget class="GtkMenu" id="tools1_menu">
 
 		      <child>
+			<widget class="GtkMenuItem" id="choose_authentication_key_menuitem">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">Choose _Authentication Key</property>
+			  <property name="use_underline">True</property>
+			</widget>
+		      </child>
+
+		      <child>
 			<widget class="GtkMenuItem" id="compare_arbitrary_revisions_menuitem">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">_Compare Arbitrary Revisions</property>
@@ -223,7 +231,7 @@
 			  <accelerator key="F1" modifiers="0" signal="activate"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image157">
+			    <widget class="GtkImage" id="image163">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-help</property>
 			      <property name="icon_size">1</property>
@@ -245,7 +253,7 @@
 			  <accelerator key="F1" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image158">
+			    <widget class="GtkImage" id="image164">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-help</property>
 			      <property name="icon_size">1</property>
@@ -267,7 +275,7 @@
 			  <accelerator key="F1" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image159">
+			    <widget class="GtkImage" id="image165">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-help</property>
 			      <property name="icon_size">1</property>
@@ -294,7 +302,7 @@
 			  <signal name="activate" handler="home_page_activate_cb" last_modification_time="Sun, 15 Feb 2009 17:15:45 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image160">
+			    <widget class="GtkImage" id="image166">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-home</property>
 			      <property name="icon_size">1</property>

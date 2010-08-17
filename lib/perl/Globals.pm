@@ -90,9 +90,17 @@ our $tooltips;
 
 our $mono_font;
 
-# The encoding used for file contents.
+# The full character encoding list and the current encoding used for file
+# contents.
 
+our @encodings;
 our $file_encoding = "utf8";
+
+# The full list of local authentication keys that can be used with Monotone and
+# the current key being used.
+
+our @keys;
+our $mtn_key;
 
 # Assorted pixmaps.
 
@@ -133,11 +141,14 @@ our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
 				     REVISION_DETAILS
 				     REVISION_LIST
 				     SELECTED_REVISION_CHANGED)],
-		    variables => [qw($file_encoding
+		    variables => [qw(@encodings
+				     $file_encoding
 				     $glade_file
+				     @keys
 				     $line_image
 				     $mime_match_table
 				     $mono_font
+				     $mtn_key
 				     $suppress_mtn_warnings
 				     $tmp_dir
 				     $tooltips
