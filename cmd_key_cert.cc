@@ -69,25 +69,7 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
   keys.create_key_pair(db, name);
 }
 
-// Name: genkey
-// Arguments:
-//   1: the key ID
-//   2: the key passphrase
-// Added in: 3.1
-// Changed in: 10.0
-// Purpose: Generates a key with the given ID and passphrase
-//
-// Output format: a basic_io stanza for the new key, as for ls keys
-//
-// Sample output:
-//               name "tbrownaw@gmail.com"
-//               hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-//    public_location "database" "keystore"
-//   private_location "keystore"
-//
-// Error conditions: If the passphrase is empty or the key already exists,
-// prints an error message to stderr and exits with status 1.
-CMD_AUTOMATE(genkey, N_("KEY_NAME PASSPHRASE"),
+CMD_AUTOMATE(generate_key, N_("KEY_NAME PASSPHRASE"),
              N_("Generates an RSA key-pair"),
              "",
              options::opts::force_duplicate_key)

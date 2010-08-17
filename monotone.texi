@@ -8510,7 +8510,7 @@ If a netsync error occurs, the command outputs an error and exits with status 1.
 @end table
 
 
-@item mtn automate genkey @var{name} @var{passphrase}
+@item mtn automate generate_key @var{name} @var{passphrase}
 
 @table @strong
 @item Aguments
@@ -8520,6 +8520,9 @@ the passphrase that will be used to encrypt the private half.
 
 @item Changes:
 @itemize
+@item
+FIXME: renamed from @command{genkey} to @command{generate_key}
+
 @item
 10.0 -- The separate hashes for the private half of a key really didn't
 make much sense; have one @code{hash [...]} line instead of separate

@@ -1,15 +1,15 @@
 -- Test automate key management functions:
--- genkey
--- pubkey
+-- generate_key (also tested in ../automate_genkey)
+-- get_public_key
 -- drop_public_key
--- read_packets (putkey)
+-- read_packets (put_public_key)
 -- keys
 
 mtn_setup()
 
 include("common/basic_io.lua")
 
-check(mtn("automate", "genkey", "foo@bar.com", "foopass"), 0, false, false)
+check(mtn("automate", "generate_key", "foo@bar.com", "foopass"), 0, false, false)
 check(mtn("pubkey", "foo@bar.com"), 0, true)
 -- non-automate output uses OS-specific line endings, while automate uses Unix line endings.
 canonicalize("stdout")

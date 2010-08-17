@@ -3,8 +3,8 @@ mtn_setup()
 
 addfile("testfile", "foo bar")
 check(mtn("ci", "-m", "foobar"), 0, false, false)
-check(mtn("automate", "genkey", "foo@bar.com", "foopass"), 0, false, false)
-check(mtn("automate", "genkey", "dbkey@bar.com", "foopass"), 0, false, false)
+check(mtn("automate", "generate_key", "foo@bar.com", "foopass"), 0, false, false)
+check(mtn("automate", "generate_key", "dbkey@bar.com", "foopass"), 0, false, false)
 check(mtn("pubkey", "dbkey@bar.com"), 0, true)
 rename("stdout", "dbkey")
 check(mtn("dropkey", "dbkey@bar.com"), 0, false, false)
@@ -13,16 +13,16 @@ check(mtn("read"), 0, false, false, {"dbkey"})
 -- foo@bar.com is now in keystore, dbkey@bar.com is in the DB
 
 -- Should fail, foo@bar.com exists in the keystore
-check(mtn("automate", "genkey", "foo@bar.com", "foopass"), 1, false, false)
+check(mtn("automate", "generate_key", "foo@bar.com", "foopass"), 1, false, false)
 
 -- Should fail, dbkey@bar.com exists in the DB
-check(mtn("automate", "genkey", "dbkey@bar.com", "foopass"), 1, false, false)
+check(mtn("automate", "generate_key", "dbkey@bar.com", "foopass"), 1, false, false)
 
 -- Should fail, missing parameters
-check(mtn("automate", "genkey", "bar@foo.com"), 1, false, false)
+check(mtn("automate", "generate_key", "bar@foo.com"), 1, false, false)
 
 -- Should work, we'll check the output below
-check(mtn("automate", "genkey", "foo@baz.com", "foopass"), 0, true, false)
+check(mtn("automate", "generate_key", "foo@baz.com", "foopass"), 0, true, false)
 
 parsed = parse_basic_io(readfile("stdout"))
 locs = {}
