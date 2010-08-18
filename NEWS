@@ -176,6 +176,16 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - The 'disapprove' command now accepts a revision range in
           addition to a single revision.
 
+        - A new 'manpage' command has been added which dumps the monotone
+          command help including all global and command specific options in
+          standard troff format.  If this command is used interactively, its
+          output is automatically processed through nroff and less, in case 
+          both are available on your system.  If not, you can change the default
+          command by overwriting the 'get_man_page_formatter_command' hook.
+
+          The 'manpage' command is also used to create a static version of
+          mtn(1) which is now installed with the rest of monotone's docs.
+
         - New 'k:' selector type to query revisions where at least one
           certificate was signed with the given key.
 
