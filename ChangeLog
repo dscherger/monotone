@@ -1,5 +1,35 @@
 Revision history for mtn-browse.
 
+0.71  Wed Aug 18 09:57:00 2010 Anthony Cooper <support@coosoft.plus.com>
+	- Updated to take into account the changes in diff output made in
+	  Monotone version 0.48.
+	- Added the ability for a user to select an authorisation key when
+	  connecting to remote databases.
+	- The ComboBoxEntry autocompletion code now displays `busy' state
+	  feedback along with status messages when updating ComboBoxEntry
+	  pulldown lists. Also the display is updated more often and more
+	  consistently.
+	- The directory up button now displays `busy' state feedback when doing
+	  stuff.
+	- The directory up button now honours the static list setting.
+	- Made the text cursor in branch and directory ComboBox entry fields
+	  move to the end on update as it is more useful to display the end of
+	  a branch or path name rather than the beginning.
+	- Entry fields are now populated before the pull down lists for the
+	  affected ComboBox entry fields.
+	- Made display updates scalable depending upon how big the number of
+	  items to update is. Applies to branch, revision and directory
+	  ComboBox entry fields.
+	- Made the above cursor movement more snappy.
+	- Switched over to using Gtk2::MenuItem->new_with_label() instead of
+	  Gtk2::MenuItem->new() when creating menu entries that may
+	  legitimately contain underscore characters as part of their name.
+	- Updated tooltips accordingly to be consistent with the second item
+	  above.
+	- Updated the help documentation to reflect recent changes made to the
+	  mtn-browse.
+	- More typos corrected.
+
 0.70  Mon May 31 14:50:00 2010 Anthony Cooper <support@coosoft.plus.com>
 	- Updated the help documentation in light of the changes made to
 	  mtn-browse (the manage server bookmarks dialog window, the file

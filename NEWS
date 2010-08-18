@@ -1,3 +1,25 @@
+Overview Of Changes In mtn-browse 0.71 (2010-08-18 09:57:00)
+============================================================
+
+New:
+- Added the ability for a user to select an authorisation key when connecting
+  to remote databases.
+
+Changes:
+- Updated to take into account the changes in diff output made in
+  Monotone version 0.48.
+- Made the text cursor in branch and directory ComboBox entry fields move to
+  the end on update as it is more useful to display the end of a branch or path
+  name rather than the beginning.
+- Updated the help documentation and the translation files in light of the
+  changes made to mtn-browse.
+
+Bugs Fixed:
+- The ComboBoxEntry autocompletion and directory up button now display `busy'
+  state feedback along with status messages when updating ComboBoxEntry
+  pulldown lists. Also the display is updated more often and more consistently.
+- The directory up button now honours the static list setting.
+
 Overview Of Changes In mtn-browse 0.70 (2010-05-31 14:50:00)
 ============================================================
 
