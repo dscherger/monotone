@@ -767,7 +767,7 @@ html: monotone.texi version.texi std_hooks.lua texinfo.css
 		rm -f $$f.bak; \
 	done
 
-mtn.1: mtn
+mtn.1: mtn$(EXEEXT)
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
 	(cd $(srcdir) && $$REAL_BLDDIR/mtn manpage --norc) 2>/dev/null >$@ || rm -f $@
 
