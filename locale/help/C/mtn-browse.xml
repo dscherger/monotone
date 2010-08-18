@@ -327,13 +327,16 @@ GNOME or DocBook.
             <para><menuchoice><guimenu>File</guimenu><guimenuitem>New Blank</guimenuitem></menuchoice> - Displays a new <guilabel>Monotone Browser</guilabel> window but in its closed state rather than initially duplicating the contents of the existing window. This is particularly useful if the first thing you are going to do is to open a completely different database.</para>
           </listitem>
           <listitem>
-            <para><menuchoice><guimenu>File</guimenu><guimenuitem>Connect To Server</guimenuitem></menuchoice> - Presents the user with a remote server bookmark menu from which they can select a server to connect to. There is also the <guimenuitem>Manage Server Bookmarks</guimenuitem> menu option for managing these bookmarks (see <xref linkend="mtnb-upc-the-manage-server-bookmarks-dialog-window"/>).</para>
+            <para><menuchoice><guimenu>File</guimenu><guimenuitem>Connect To Server</guimenuitem></menuchoice> - Presents the user with a remote Monotone server bookmark menu from which they can select a server to connect to. There is also the <guimenuitem>Manage Server Bookmarks</guimenuitem> menu option for managing these bookmarks (see <xref linkend="mtnb-upc-the-manage-server-bookmarks-dialog-window"/>).</para>
           </listitem>
           <listitem>
             <para><menuchoice><guimenu>File</guimenu><guimenuitem>Quit</guimenuitem></menuchoice> - This completely quits out of the application regardless of what windows you may have open. Normally the application only exits when all of its <guilabel>Monotone Browser</guilabel> windows have been closed.</para>
           </listitem>
           <listitem>
             <para><menuchoice><guimenu>View</guimenu><guimenuitem>File Encoding</guimenuitem></menuchoice> - Allows the user to select the character encoding for the files that they are going to display in <application>&APP;</application>. The most popular encodings are listed first but there is also the <guisubmenu>All Encodings</guisubmenu> submenu containing all of the encodings known to your system. The default character encoding used by <application>&APP;</application> is UTF-8.</para>
+          </listitem>
+          <listitem>
+            <para><menuchoice><guimenu>Tools</guimenu><guimenuitem>Choose Authentication Key</guimenuitem></menuchoice> - Allows the user to select the local authentication key that is to be used when connecting to remote Monotone servers. This menu is only useful if you happen to have more than one local authentication key, which is not usually the case. The <guisubmenu>Unspecified</guisubmenu> menu option can be used to reinstate the default behaviour where Monotone is not told which authentication key to use.</para>
           </listitem>
           <listitem>
             <para><menuchoice><guimenu>Tools</guimenu><guimenuitem>Compare Arbitrary Revisions</guimenuitem></menuchoice> - Displays a <guilabel>Compare Arbitrary Revisions</guilabel> window that allows the user to compare any two revisions in the database (see <xref linkend="mtnb-lachc-the-compare-arbitrary-revisions-window"/>).</para>
@@ -1486,7 +1489,7 @@ GNOME or DocBook.
                     </row>
                     <row valign="top">
                       <entry><para><guilabel>Static lists</guilabel></para></entry>
-                      <entry><para>If this is ticked then the pull down lists on <guilabel>Branch</guilabel> and <guilabel>Revision</guilabel> combobox entry fields are not updated each time the user enters something into the corresponding entry field. Otherwise the pull down lists are updated on each key press.</para></entry>
+                      <entry><para>If this is ticked then the pull down lists on <guilabel>Branch</guilabel>, <guilabel>Revision</guilabel> and <guilabel>Directory</guilabel> combobox entry fields are not updated each time the user enters something into the corresponding entry field. Otherwise the pull down lists are updated on each key release.</para></entry>
                     </row>
                     <row valign="top">
                       <entry><para><guilabel>Show tooltips</guilabel></para></entry>
@@ -1807,7 +1810,7 @@ GNOME or DocBook.
           <para><emphasis>Handling Revision Comparisons Is Very Slow</emphasis> - If it takes a long time during the <literal>Formatting and displaying differences</literal> stage then try unticking <guilabel>Coloured comparison listings</guilabel> under user preferences. If it takes a long time during the <literal>Calculating differences</literal> stage then that is down to the performance of Monotone rather than <application>&APP;</application>.</para>
         </listitem>
         <listitem>
-          <para><emphasis>It Is Slow When Entering Branch And Revision Names</emphasis> - Try ticking <guilabel>Static branch and revision lists</guilabel> under user preferences. Each time you enter a character into a <guilabel>Branch</guilabel> or <guilabel>Revision</guilabel> combobox entry field, <application>&APP;</application> revises the completion list accordingly. For branch lists in particular, as their size is unrestricted, this can take some time to do. However, with this option ticked completion lists are left unaltered.</para>
+          <para><emphasis>It Is Slow When Entering Branch, Revision And Directory Names</emphasis> - Try ticking <guilabel>Static lists</guilabel> under user preferences. Each time you enter a character into a <guilabel>Branch</guilabel>, <guilabel>Revision</guilabel> or <guilabel>Directory</guilabel> combobox entry field, <application>&APP;</application> revises the pull down list accordingly. For branch and directory lists this can take some time to do as their size is unrestricted. However, with this option ticked, pull down lists are left unaltered.</para>
         </listitem>
       </itemizedlist>
 

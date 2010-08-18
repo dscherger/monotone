@@ -45,7 +45,7 @@ require 5.008005;
 BEGIN
 {
     use constant APPLICATION_NAME    => "mtn-browse";
-    use constant APPLICATION_VERSION => 0.70;
+    use constant APPLICATION_VERSION => 0.71;
     use constant FILE_COMPARE_CMD    => "@INST:FILE_COMPARE_CMD@";
     use constant HTML_VIEWER_CMD     => "@INST:HTML_VIEWER_CMD@";
     use constant LIB_DIR             => "@INST:LIB_DIR@";
@@ -2031,9 +2031,10 @@ sub get_browser_window(;$$$$$)
 	    $details->{instance}->{appbar}->set_status
 		(__x("Changed authentication key from `{old_key}' to "
 		         . "`{new_key}'",
-		     old_key => defined($mtn_key) ? $mtn_key : "",
+		     old_key => defined($mtn_key)
+		                    ? $mtn_key : __("Unspecified"),
 		     new_key => defined($details->{key})
-		                    ? $details->{key} : ""));
+		                    ? $details->{key} : __("Unspecified")));
 	    $mtn_key = $details->{key};
 	};
 	$menu_item = Gtk2::MenuItem->new(__("Unspecified"));
@@ -2043,13 +2044,26 @@ sub get_browser_window(;$$$$$)
 				    key      => undef});
 	$menu_item->show();
 	$submenu->append($menu_item);
-	for my $key (@keys)
+	$menu_item = Gtk2::SeparatorMenuItem->new();
+	$menu_item->show();
+	$submenu->append($menu_item);
+	if (scalar(@keys) > 0)
 	{
-	    $menu_item = Gtk2::MenuItem->new_with_label($key);
-	    $menu_item->signal_connect("activate",
-				       $cb,
-				       {instance => $browser,
-					key      => $key});
+	    for my $key (@keys)
+	    {
+		$menu_item = Gtk2::MenuItem->new_with_label($key);
+		$menu_item->signal_connect("activate",
+					   $cb,
+					   {instance => $browser,
+					    key      => $key});
+		$menu_item->show();
+		$submenu->append($menu_item);
+	    }
+	}
+	else
+	{
+	    $menu_item = Gtk2::MenuItem->new(__("No Keys"));
+	    $menu_item->set_sensitive(FALSE);
 	    $menu_item->show();
 	    $submenu->append($menu_item);
 	}
