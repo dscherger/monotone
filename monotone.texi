@@ -11077,6 +11077,13 @@ formatting and parsing cycle. Otherwise the @command{status} command
 will issue warnings that the format is unsuitable and the
 @command{commit} command will abort.
 
+@item get_man_page_formatter_command ()
+
+Specifies the command chain which should be executed if the
+@command{manpage} command is executed interactively. The default is
+to call the @command{nroff} formatter and pipe that output into the
+@command{less} pager.
+
 @end ftable
 
 @subsection Netsync Permission Hooks
