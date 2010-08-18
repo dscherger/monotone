@@ -2,7 +2,7 @@
 -- generate_key (also tested in ../automate_genkey)
 -- get_public_key
 -- drop_public_key
--- read_packets (put_public_key)
+-- put_public_key
 -- keys
 
 mtn_setup()
@@ -27,7 +27,7 @@ check_basic_io_line (i, parsed[i], "public_location", {"keystore"}, false)
 i = i + 1
 check_basic_io_line (i, parsed[i], "private_location", {"keystore"}, false)
 
-check(mtn("automate", "read_packets", readfile("key_packet")), 0)
+check(mtn("automate", "put_public_key", readfile("key_packet")), 0)
 check(mtn("automate", "keys"), 0, true)
 parsed = parse_basic_io(readfile("stdout"))
 i = find_basic_io_line (parsed, {name = "local_name", values = "foo@bar.com"})
@@ -35,3 +35,9 @@ i = i + 1
 check_basic_io_line (i, parsed[i], "public_location", {"database", "keystore"}, false)
 i = i + 1
 check_basic_io_line (i, parsed[i], "private_location", {"keystore"}, false)
+
+-- Reading input that is not in packet format does not produce an
+-- error message. It also does not create a key in the database.
+check(mtn("automate", "put_public_key", readfile("stdout")), 0)
+check(mtn("automate", "read_packets", readfile("stdout")), 0)
+

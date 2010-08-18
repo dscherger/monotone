@@ -58,6 +58,7 @@ MOST_SOURCES = 								\
 	ssh_agent.cc ssh_agent.hh					\
 	keys.cc keys.hh							\
 	packet.cc packet.hh						\
+	key_packet.cc key_packet.hh					\
 	rcs_file.cc rcs_file.hh						\
 	xdelta.cc xdelta.hh						\
 	migration.hh migrate_schema.cc migrate_ancestry.cc		\
@@ -186,8 +187,8 @@ UNIT_TESTERS =								\
 # test is not part of UNIT_TESTEES.
 
 UNIT_TESTERS_PRIV =							\
-	unit-tests/dates.cc unit-tests/packet.cc unit-tests/paths.cc	\
-	unit-tests/rev_height.cc unit-tests/roster.cc
+	unit-tests/dates.cc unit-tests/key_packet.cc unit-tests/packet.cc \
+	unit-tests/paths.cc unit-tests/rev_height.cc unit-tests/roster.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # note that some are and some aren't part of the main program
@@ -489,7 +490,7 @@ monotone-$(PACKAGE_VERSION).dmg: monotone-$(PACKAGE_VERSION).pkg
 # build win32 installer using INNO setup
 ISCC=@ISCC@
 
-win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe 
+win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe
 
 monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
 	$(ISCC) monotone.iss

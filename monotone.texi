@@ -9344,6 +9344,36 @@ None.
 
 @end table
 
+@item mtn automate put_public_key @var{key-packet-data}
+
+@table @strong
+@item Arguments:
+
+A data packet, @var{key-packet-data}, as produced by @command{mtn
+automate get_public_key @var{keyid}}.
+
+@item Added in:
+
+FIXME:
+
+@item Purpose:
+
+Store public keys into the database.
+
+Note that this duplicates part of @command{automate read_packets}; the
+intent is to deprecate @command{automate read_packets}, and only keep
+facilities for key packets.
+
+@item Output format:
+
+No output.
+
+@item Error conditions:
+
+An error will be produced if the argument is not a valid key packet.
+
+@end table
+
 @item mtn automate get_public_key @var{keyid}
 
 @table @strong
@@ -9362,7 +9392,7 @@ FIXME -- initial
 @item Purpose:
 
 Same as @command{pubkey}; print the key in packet format, suitable for
-reading by @command{automate read_packets}.
+reading by @command{automate put_public_key}.
 
 @item Sample output:
 
