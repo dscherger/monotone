@@ -15,14 +15,16 @@
 class mtn_pipe
 { Netxx::PipeStream *pipe;
   int cmdnum;
+  bool first_reaction;
+  int format_version;
 
 public:
-  mtn_pipe() : pipe(),cmdnum() {}
+  mtn_pipe() : pipe(),cmdnum(),first_reaction(),format_version(1) {}
   ~mtn_pipe() { close(); }
-  void open(std::string const& command="mtn", 
+  void open(std::string const& command="mtn",
         std::vector<std::string> const& options=std::vector<std::string>());
   void close();
-  std::string automate(std::string const& command, 
+  std::string automate(std::string const& command,
         std::vector<std::string> const& args=std::vector<std::string>())
         throw (std::runtime_error);
   bool is_open() { return pipe; }

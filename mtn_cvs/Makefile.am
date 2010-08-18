@@ -9,7 +9,7 @@ libmtn_a_SOURCES=../netxx_pipe.cc ../sanity.cc ../ui.cc \
 	../commands.cc ../basic_io.cc piece_table.cc \
 	../mtn-sanity.cc ../package_revision.cc ../option.cc \
 	../file_io.cc ../ssh_agent.cc ../specialized_lexical_cast.cc \
-	../gzip.cc ../lua.cc ../globish.cc ../pcrewrap.cc
+	../gzip.cc ../lua.cc ../globish.cc ../pcrewrap.cc ../dates.cc
 
 bin_PROGRAMS = mtn_cvs
 

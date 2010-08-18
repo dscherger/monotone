@@ -21,6 +21,7 @@ void mtn_pipe::open(std::string const& command, std::vector<std::string> const& 
   std::copy(options.begin(),options.end(),std::back_inserter(args));
   args.push_back("automate");
   args.push_back("stdio");
+  first_reaction=true;
   pipe=new Netxx::PipeStream(command,args);
 }
 
@@ -85,7 +86,7 @@ std::ostream &operator<<(std::ostream &os, std::vector<std::string> const& v)
   return os;
 }
 
-std::string mtn_pipe::automate(std::string const& command, 
+std::string mtn_pipe::automate(std::string const& command,
         std::vector<std::string> const& args) throw (std::runtime_error)
 { L(FL("mtn automate: %s %s") % command % args);
   std::string s_cmdnum=boost::lexical_cast<std::string>(cmdnum);
@@ -99,34 +100,77 @@ std::string mtn_pipe::automate(std::string const& command,
 again:
   char buf[1024];
   // at least we can expect 8 bytes
-  
-  int read=blocking_read(*pipe,probe,buf,7+s_cmdnum.size());
-  E(read==7+s_cmdnum.size(), origin::internal, F("mtn pipe failure\n"));
-  int colons;
-  while ((colons=count_colons(buf,read))<4 && read+(4-colons)<=sizeof(buf))
-  { int res=blocking_read(*pipe,probe,buf+read,4-colons);
-    I(res==4-colons);
-    read+=res;
+
+  int baselen= format_version==1 ? 7 : 5;
+  int read=blocking_read(*pipe,probe,buf,baselen+s_cmdnum.size());
+  E(read==baselen+s_cmdnum.size(), origin::internal, F("mtn pipe failure\n"));
+  if (first_reaction)
+  {
+    first_reaction=false;
+    if (!strncmp(buf,"format-v",8))
+    { read+=blocking_read(*pipe,probe,buf+read,19-read);
+      I(read==19);
+      I(!strncmp(buf,"format-version: 2\n\n",19));
+      format_version=2;
+      goto again;
+    }
   }
-  I(colons==4);
-  std::vector<std::string> results;
-  stringtok(results,std::string(buf,buf+read),":");
-  I(results.size()==4);
-  I(results[0]==s_cmdnum);
-  int cmdresult=boost::lexical_cast<int>(results[1]);
-  I(results[2].size()==1);
-  unsigned chars=boost::lexical_cast<unsigned>(results[3]);
-  while (chars)
-  { unsigned toread=chars<=sizeof(buf)?chars:sizeof(buf);
-    int res=blocking_read(*pipe,probe,buf,toread);
-    I(res==toread);
-    result+=std::string(buf,buf+toread);
-    chars-=toread;
+  int colons=0;
+  int cmdresult=0;
+  if (format_version==1)
+  {
+    while ((colons=count_colons(buf,read))<4 && read+(4-colons)<=sizeof(buf))
+    { int res=blocking_read(*pipe,probe,buf+read,4-colons);
+      I(res==4-colons);
+      read+=res;
+    }
+    I(colons==4);
+    std::vector<std::string> results;
+    stringtok(results,std::string(buf,buf+read),":");
+    I(results.size()==4);
+    I(results[0]==s_cmdnum);
+    cmdresult=boost::lexical_cast<int>(results[1]);
+    I(results[2].size()==1);
+    unsigned chars=boost::lexical_cast<unsigned>(results[3]);
+    while (chars)
+    { unsigned toread=chars<=sizeof(buf)?chars:sizeof(buf);
+      int res=blocking_read(*pipe,probe,buf,toread);
+      I(res==toread);
+      result+=std::string(buf,buf+toread);
+      chars-=toread;
+    }
+    if (results[2]=="m") goto again;
+    I(results[2]=="l");
   }
-  if (results[2]=="m") goto again;
-  I(results[2]=="l");
+  else // format version: 2
+  {
+    while ((colons=count_colons(buf,read))<3 && read+(3-colons)<=sizeof(buf))
+    { int res=blocking_read(*pipe,probe,buf+read,3-colons);
+      I(res==3-colons);
+      read+=res;
+    }
+    I(colons==3);
+    std::vector<std::string> results;
+    stringtok(results,std::string(buf,buf+read),":");
+    I(results.size()==3);
+    I(results[0]==s_cmdnum);
+    unsigned chars=boost::lexical_cast<unsigned>(results[2]);
+    std::string stringresult;
+    while (chars)
+    { unsigned toread=chars<=sizeof(buf)?chars:sizeof(buf);
+      int res=blocking_read(*pipe,probe,buf,toread);
+      I(res==toread);
+      if (results[1]=="m")
+	result+=std::string(buf,buf+toread);
+      else if (results[1]=="l")
+	stringresult+=std::string(buf,buf+toread);
+      chars-=toread;
+    }
+    if (results[1]!="l") goto again;
+    cmdresult= boost::lexical_cast<unsigned>(stringresult);
+  }
   ++cmdnum;
-  if (cmdresult) 
+  if (cmdresult)
   { L(FL("mtn returned %d %s") % cmdresult % result);
     throw std::runtime_error(result);
   }
@@ -139,7 +183,7 @@ again:
 
 int main(int argc, char **argv)
 { mtn_pipe p;
-  if (argc==1 && std::string(argv[0])=="--help") 
+  if (argc==1 && std::string(argv[0])=="--help")
   { std::cerr << "USAGE: " << argv[0] << " [binary [options]]\n";
     return 0;
   }
