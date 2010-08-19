@@ -31,7 +31,7 @@ public:
     : std::streambuf(), _bufsize(bufsize), out(&o), cmdnum(0)
   {
     _CharT *inbuf = new _CharT[_bufsize];
-    setp(inbuf, inbuf + _bufsize);
+    this->setp(inbuf, inbuf + _bufsize);
   }
 
   basic_automate_streambuf()
@@ -57,7 +57,7 @@ public:
   {
     if (!out)
       {
-        setp(this->pbase(), this->pbase() + _bufsize);
+        this->setp(this->pbase(), this->pbase() + _bufsize);
         return;
       }
     int num = this->pptr() - this->pbase();
@@ -67,7 +67,7 @@ public:
                << 'm' << ':'
                << num << ':'
                << std::basic_string<_CharT,_Traits>(this->pbase(), num);
-        setp(this->pbase(), this->pbase() + _bufsize);
+        this->setp(this->pbase(), this->pbase() + _bufsize);
         out->flush();
       }
   }
@@ -102,7 +102,7 @@ public:
   overflow(int_type c = traits_type::eof())
   {
     sync();
-    sputc(c);
+    this->sputc(c);
     return 0;
   }
 };
