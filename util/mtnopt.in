@@ -53,6 +53,7 @@ while [ ! $# = 0 ]; do
 	--version)
 	    echo "mtnopt from monotone @PACKAGE_VERSION@"
 	    exit 0
+	    ;;
     esac
     shift
 done
@@ -60,7 +61,7 @@ done
 if [ ! -d "$mtn_dir" ]; then
     echo "mtnopt: $mtn_dir isn't a directory or is missing"
     exit 1
-if [ ! -d "$mtn_dir/_MTN" ]; then
+elif [ ! -d "$mtn_dir/_MTN" ]; then
     echo "mtnopt: $mtn_dir isn't a monotone workspace"
     exit 1
 elif [ ! -f "$mtn_dir/_MTN/options" ]; then
