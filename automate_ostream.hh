@@ -28,7 +28,7 @@ class basic_automate_streambuf : public std::basic_streambuf<_CharT, _Traits>
 
 public:
   basic_automate_streambuf(std::ostream & o, size_t bufsize)
-    : std::streambuf(), _bufsize(bufsize), out(&o), cmdnum(0)
+    : std::basic_streambuf<_CharT, _Traits>(), _bufsize(bufsize), out(&o), cmdnum(0)
   {
     _CharT *inbuf = new _CharT[_bufsize];
     this->setp(inbuf, inbuf + _bufsize);

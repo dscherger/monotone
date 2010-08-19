@@ -27,7 +27,7 @@ class basic_automate_streambuf_demuxed : public std::basic_streambuf<_CharT, _Tr
 public:
   basic_automate_streambuf_demuxed(std::ostream & out, std::ostream & err,
                                    size_t bufsize) :
-    std::streambuf(),
+    std::basic_streambuf<_CharT, _Traits>(),
     _bufsize(bufsize),
     mystdout(&out),
     errout(&err)
