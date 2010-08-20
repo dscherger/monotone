@@ -202,6 +202,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
           empty or untrusted date cert values
           (fixes monotone bug #30150)
 
+        - A globish that ended with a bracket pair with an empty branch,
+          would not handle the empty branch correctly, e.g. the pattern
+          "net.venge.monotone{,.*}" would not match the string
+          "net.venge.monotone". This has been fixed.
+
         - monotone now tries harder to find the cancel hint in a commit
           message and only aborts if it can't find it anywhere
           (fixes monotone bug #30215)
