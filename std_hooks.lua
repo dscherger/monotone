@@ -1464,6 +1464,6 @@ function validate_git_author(author)
 end
 
 function get_man_page_formatter_command()
-   return "nroff -man -Tutf8 | less -R"
+   return "nroff -man | less -R"
 end
 
