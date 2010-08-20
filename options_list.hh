@@ -524,6 +524,9 @@ OPTION(verbosity, reallyquiet, false, "reallyquiet",
 }
 #endif
 
+SIMPLE_OPTION(formatted, "formatted/plain", bool,
+              gettext_noop("automatically run the output through nroff (default if the output is a terminal)"))
+
 
 GROUPED_SIMPLE_OPTION(globals, timestamps, "timestamps", bool,
                       gettext_noop("show timestamps in front of errors, warnings and progress messages"))

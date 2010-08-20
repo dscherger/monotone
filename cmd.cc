@@ -24,9 +24,7 @@
 #ifndef _WIN32
 #include <signal.h>
 #include <errno.h>
-#endif
-
-#ifdef WIN32
+#else
 #include <io.h>
 #endif
 
@@ -856,10 +854,14 @@ get_command_groups(options & opts)
   return out;
 }
 
+CMD_PRESET_OPTIONS(manpage)
+{
+    opts.formatted = isatty(STDOUT_FILENO);
+}
 CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
-    N_("Displays monotone's command help as manual page"),
+    N_("Generate a manual page from monotone's command help"),
     "",
-    options::opts::show_hidden_commands)
+    options::opts::show_hidden_commands | options::opts::formatted)
 {
   stringstream ss;
   ss << man_title("monotone");
@@ -913,7 +915,7 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
            "the monotone development team.")
            % date_t::now().as_formatted_localtime("%Y")).str() << "\n";
 
-  if (!isatty(STDOUT_FILENO))
+  if (!app.opts.formatted)
     {
       cout << ss.str();
       return;
