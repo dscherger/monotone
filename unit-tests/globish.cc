@@ -218,16 +218,79 @@ UNIT_TEST(complex_matches)
 }
 
 UNIT_TEST(nested_matches)
-{
-  globish g("a.{i.{x,y},j}", origin::internal);
-  UNIT_TEST_CHECK(g.matches("a.i.x"));
-  UNIT_TEST_CHECK(g.matches("a.i.y"));
-  UNIT_TEST_CHECK(g.matches("a.j"));
-  UNIT_TEST_CHECK(!g.matches("q"));
-  UNIT_TEST_CHECK(!g.matches("a.q"));
-  UNIT_TEST_CHECK(!g.matches("a.j.q"));
-  UNIT_TEST_CHECK(!g.matches("a.i.q"));
-  UNIT_TEST_CHECK(!g.matches("a.i.x.q"));
+{  {
+    globish g("a.{i.{x,y},j}", origin::internal);
+    UNIT_TEST_CHECK(g.matches("a.i.x"));
+    UNIT_TEST_CHECK(g.matches("a.i.y"));
+    UNIT_TEST_CHECK(g.matches("a.j"));
+    UNIT_TEST_CHECK(!g.matches("q"));
+    UNIT_TEST_CHECK(!g.matches("a.q"));
+    UNIT_TEST_CHECK(!g.matches("a.j.q"));
+    UNIT_TEST_CHECK(!g.matches("a.i.q"));
+    UNIT_TEST_CHECK(!g.matches("a.i.x.q"));
+  }
+  {
+    globish g("a.b{,.c}", origin::internal);
+    UNIT_TEST_CHECK(g.matches("a.b"));
+    UNIT_TEST_CHECK(g.matches("a.b.c"));
+    UNIT_TEST_CHECK(!g.matches("a.b."));
+    UNIT_TEST_CHECK(!g.matches("a.b.\\,"));
+    UNIT_TEST_CHECK(!g.matches("a.b.\\,.c"));
+  }
+  {
+    globish g("a.b{.c,}", origin::internal);
+    UNIT_TEST_CHECK(g.matches("a.b"));
+    UNIT_TEST_CHECK(g.matches("a.b.c"));
+    UNIT_TEST_CHECK(!g.matches("a.b.c\\,"));
+  }
+  {
+    globish g("a.b{.c,,.d}", origin::internal);
+    UNIT_TEST_CHECK(g.matches("a.b"));
+    UNIT_TEST_CHECK(g.matches("a.b.c"));
+    UNIT_TEST_CHECK(g.matches("a.b.d"));
+    UNIT_TEST_CHECK(!g.matches("a.b."));
+    UNIT_TEST_CHECK(!g.matches("a.b.c\\,"));
+    UNIT_TEST_CHECK(!g.matches("a.b.c\\,\\,"));
+    UNIT_TEST_CHECK(!g.matches("a.b.c\\,\\,.d"));
+    UNIT_TEST_CHECK(!g.matches("a.b.c\\,.d"));
+    UNIT_TEST_CHECK(!g.matches("a.b.c.d"));
+  }
+  {
+    globish g("a.b{.c,}.d", origin::internal);
+    UNIT_TEST_CHECK(g.matches("a.b.d"));
+    UNIT_TEST_CHECK(g.matches("a.b.c.d"));
+    UNIT_TEST_CHECK(!g.matches("a.b.c\\,.d"));
+  }
+  {
+    globish g("a.b{,.c}.d", origin::internal);
+    UNIT_TEST_CHECK(g.matches("a.b.d"));
+    UNIT_TEST_CHECK(g.matches("a.b.c.d"));
+    UNIT_TEST_CHECK(!g.matches("a.b.c\\,.d"));
+  }
+  {
+    globish g("a.b{.c,,.e}.d", origin::internal);
+    UNIT_TEST_CHECK(g.matches("a.b.d"));
+    UNIT_TEST_CHECK(g.matches("a.b.c.d"));
+    UNIT_TEST_CHECK(g.matches("a.b.e.d"));
+  }
+  {
+    globish g("{a.,}b", origin::internal);
+    UNIT_TEST_CHECK(g.matches("a.b"));
+    UNIT_TEST_CHECK(g.matches("b"));
+    UNIT_TEST_CHECK(!g.matches("a.\\,b"));
+  }
+  {
+    globish g("{,a.}b", origin::internal);
+    UNIT_TEST_CHECK(g.matches("b"));
+    UNIT_TEST_CHECK(g.matches("a.b"));
+    UNIT_TEST_CHECK(!g.matches("\\,a.b"));
+  }
+  {
+    globish g("{a.,,c.}b", origin::internal);
+    UNIT_TEST_CHECK(g.matches("a.b"));
+    UNIT_TEST_CHECK(g.matches("c.b"));
+    UNIT_TEST_CHECK(g.matches("b"));
+  }
 }
 
 // Local Variables:

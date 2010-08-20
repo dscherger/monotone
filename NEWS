@@ -99,7 +99,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           --no-builtin-rcfile           replaces --nostd
           --builtin-rcfile              undo previous --no-builtin-rcfile
           --clear-rcfiles               undo previous --rcfile
-          --verbosity <arg>             set verbosity level
+	  --verbose [-v]                increase verbosity (opposite of --quiet)
 
         - Global options now hidden:
           --roster-cache-performance-log
@@ -166,7 +166,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - Deprecated options:
           --norc         use --no-standard-rcfiles
           --nostd        use --no-builtin-rcfile
-          --reallyquiet  use --verbosity=-2
+          --reallyquiet  use --quiet --quiet
+          --debug        use --verbose
 
         - To aid command line typing, partial option names are tried to
           be expanded; if the expansion leads to multiple possibilities,
@@ -239,6 +240,15 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - monotone no longer throws an unrecoverable error if a public or
           private key is addressed with some non-existing key id
           (fixes monotone bug #30462)
+
+        - A globish that contains a bracket pair with an empty sub-pattern
+          such as "{,.foo}", "{.foo,}" or even "{.foo,,.bar}" now correctly
+          expands the empty target, so e.g. the branch pattern
+
+             "net.venge.monotone{,.*}"
+
+          now matches "net.venge.monotone" and "net.venge.monotone.*"
+          as expected. (fixes monotone bug #30655)
 
         - A regression in 0.48 made a path-restricted 'mtn log' show
           revisions, in which not the picked path(s), but one of its parents

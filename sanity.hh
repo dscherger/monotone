@@ -63,7 +63,7 @@ struct sanity {
   virtual ~sanity();
   virtual void initialize(int, char **, char const *);
   void dump_buffer();
-  int set_verbosity(int level);
+  int set_verbosity(int level, bool allow_debug_change);
   int get_verbosity() const;
   void set_debug(); // wrapper on set_verbosity
   // This takes a bare std::string because we don't want to expose vocab.hh

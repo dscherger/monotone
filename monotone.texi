@@ -11397,11 +11397,21 @@ The default definition of this hook follows:
 @smallexample
 @group
 function accept_testresult_change(old_results, new_results)
-   for test,res in pairs(old_results)
+   local reqfile = io.open("_MTN/wanted-testresults", "r")
+   if (reqfile == nil) then return true end
+   local line = reqfile:read()
+   local required = @{@}
+   while (line ~= nil)
    do
-      if res == true and new_results[test] ~= true
+      required[line] = true
+      line = reqfile:read()
+   end
+   io.close(reqfile)
+   for test, res in pairs(required)
+   do
+      if old_results[test] == true and new_results[test] ~= true
       then
-     return false
+         return false
       end
    end
    return true
@@ -11409,11 +11419,9 @@ end
 @end group
 @end smallexample
 
-This definition accepts only those updates which preserve the set of
-@code{true} test results from update source to target. If no test
-results exist, this hook has no affect; but once a @code{true} test
-result is present, future updates will require it. If you want a more
-lenient behavior you must redefine this hook.
+This definition looks at the file @code{_MTN/wanted-testresults} and
+requires that once any test listed there has returned @code{true}, updates
+will only take revisions where that test still returned @code{true}.
 
 @end ftable
 
