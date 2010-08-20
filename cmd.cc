@@ -26,6 +26,10 @@
 #include <errno.h>
 #endif
 
+#ifdef WIN32
+#include <io.h>
+#endif
+
 #include <iostream>
 #include <cstring>
 
