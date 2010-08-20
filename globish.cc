@@ -402,10 +402,13 @@ do_match(string::const_iterator sb, string::const_iterator se,
 
   while (p < pe)
     {
+      // pc will be the current pattern character
+      // p will point after pc
       pc = widen<unsigned int, char>(*p++);
+      // sc will be the current string character
+      // s will point to sc
       if(s < se) {
         sc = widen<unsigned int, char>(*s);
-        s++;
       } else {
         sc = 0;
       }
@@ -463,22 +466,22 @@ do_match(string::const_iterator sb, string::const_iterator se,
           // starting from places in s where that character appears.
           if (pc >= ' ')
             {
-              L(FL("after *: looking for '%c' in '%c%s'")
-                % (char)pc % (char)sc % string(s, se));
+              L(FL("after *: looking for '%c' in '%s'")
+                % (char)pc % string(s, se));
               p++;
               for (;;)
                 {
+                  ++s;
                   if (sc == pc && do_match(s, se, p, pe))
                     return true;
                   if (s >= se)
                     break;
-                  sc = widen<unsigned int, char>(*s++);
+                  sc = widen<unsigned int, char>(*s);
                 }
             }
           else
             {
               L(FL("metacharacter after *: doing it the slow way"));
-              s--;
               do
                 {
                   if (do_match(s, se, p, pe))
@@ -496,12 +499,13 @@ do_match(string::const_iterator sb, string::const_iterator se,
 
             prest = find_next_subpattern(p, pe, false);
             psub = p;
-            if(s > sb) {
-              s--;
-            }
+            // [ psub ... prest ) is the current bracket pair
+            // (including the *closing* braket, but not the opening braket)
             do
               {
                 pnext = find_next_subpattern(psub, pe, true);
+                // pnext points just after a comma or the closing braket
+                // [ psub ... pnext ) is one branch with trailing delimiter
                 srest = (prest == pe ? se : s);
                 for (; srest < se; srest++)
                   {
@@ -519,6 +523,10 @@ do_match(string::const_iterator sb, string::const_iterator se,
             while (pnext < prest);
             return false;
           }
+        }
+      if (s < se)
+        {
+          ++s;
         }
     }
   return s == se;
