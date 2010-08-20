@@ -6250,6 +6250,24 @@ the given revisions.
 
 Note that this does not show conflicts due to update commands, since
 in that case one revision is the workspace.
+
+@item mtn manpage [--formatted/--plain] [--[no-]hidden]
+
+The manpage command generates a complete (and if monotone is available
+in your language, also localized) manual page for all available commands,
+including all custom Lua commands.
+
+If the command's output is directly written to a terminal, its output is
+automatically formatted using @command{nroff} and displayed in the
+@command{less} pager.  If the auto-detection does not work for you for
+some reason, you can enforce the formatting by giving the @option{--formatted}
+option to the command and the @option{--plain} option to achieve the
+opposite, i.e. plain, unformatted troff output.  If you wish to use a
+different formatter or pager, please have a look at the
+@code{get_man_page_formatter_command} Lua hook.
+
+The option @option{--hidden} additionally enables the output of hidden
+commands and options, which is deactivated by default.
 @end ftable
 
 
