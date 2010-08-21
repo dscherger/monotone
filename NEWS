@@ -226,6 +226,15 @@ Xxx Xxx 99 99:99:99 UTC 2010
           private key is addressed with some non-existing key id
           (fixes monotone bug #30462)
 
+        - A globish that contains a bracket pair with an empty sub-pattern
+          such as "{,.foo}", "{.foo,}" or even "{.foo,,.bar}" now correctly
+          expands the empty target, so e.g. the branch pattern
+
+             "net.venge.monotone{,.*}"
+
+          now matches "net.venge.monotone" and "net.venge.monotone.*"
+          as expected. (fixes monotone bug #30655)
+
         - A regression in 0.48 made a path-restricted 'mtn log' show
           revisions, in which not the picked path(s), but one of its parents
           were changed.  This has been fixed.
