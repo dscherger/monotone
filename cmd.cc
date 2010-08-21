@@ -930,7 +930,7 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
     F("could not execute man page formatter command '%s': %s")
       % cmd % strerror(errno));
 
-  I(fprintf(fp, ss.str().c_str()) != -1);
+  fprintf(fp, ss.str().c_str());
   pclose(fp);
 }
 
