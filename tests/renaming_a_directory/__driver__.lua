@@ -2,7 +2,8 @@
 
 mtn_setup()
 
-include ("common/test_utils_inventory.lua")
+include("common/basic_io.lua")
+include("common/test_utils_inventory.lua")
 
 mkdir("foo")
 

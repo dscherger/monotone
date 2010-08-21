@@ -8,7 +8,8 @@ mtn_setup()
 
 check(getstd("inventory_hooks.lua"))
 
-include ("common/test_utils_inventory.lua")
+include("common/basic_io.lua")
+include("common/test_utils_inventory.lua")
 
 ----------
 -- create a basic file history; add some files, then operate on

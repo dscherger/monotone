@@ -4,6 +4,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         Changes
 
+        - 'automate genkey' is renamed to 'automate generate_key'
+
         - Selectors are much more powerful now, and the characters '(',
           ')', and ';' need to be quoted if mean literally (just like
           '/'). See section 3.2 in the documentation for details.
@@ -171,8 +173,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         - To aid command line typing, partial option names are tried to
           be expanded; if the expansion leads to multiple possibilities,
-          all matches and an accompanying short description of the 
+          all matches and an accompanying short description of the
           particular expansion are displayed.
+
+        - New automate commands 'put_public_key', 'get_public_key' and
+          'drop_public_key'. (closes monotone bug #30345)
 
         - The 'disapprove' command now accepts a revision range in
           addition to a single revision.

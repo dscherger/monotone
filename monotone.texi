@@ -31,7 +31,7 @@
 This manual is for the ``monotone'' distributed version control system.
 This edition documents version @value{VERSION}.
 
-Copyright @copyright{} 2003, 2004, 2010 Graydon Hoare @*
+Copyright @copyright{} 2003, 2004 Graydon Hoare @*
 Copyright @copyright{} 2004, 2005, 2006 Nathaniel Smith @*
 Copyright @copyright{} 2005 - 2010 Derek Scherger @*
 Copyright @copyright{} 2005, 2006 Daniel Carosone @*
@@ -8531,7 +8531,7 @@ If a netsync error occurs, the command outputs an error and exits with status 1.
 @end table
 
 
-@item mtn automate genkey @var{name} @var{passphrase}
+@item mtn automate generate_key @var{name} @var{passphrase}
 
 @table @strong
 @item Aguments
@@ -8541,6 +8541,9 @@ the passphrase that will be used to encrypt the private half.
 
 @item Changes:
 @itemize
+@item
+FIXME: renamed from @command{genkey} to @command{generate_key}
+
 @item
 10.0 -- The separate hashes for the private half of a key really didn't
 make much sense; have one @code{hash [...]} line instead of separate
@@ -9359,6 +9362,119 @@ The keys are ordered by hash value.
 @item Error conditions:
 
 None.
+
+@end table
+
+@item mtn automate put_public_key @var{key-packet-data}
+
+@table @strong
+@item Arguments:
+
+A data packet, @var{key-packet-data}, as produced by @command{mtn
+automate get_public_key @var{keyid}}.
+
+@item Added in:
+
+FIXME:
+
+@item Purpose:
+
+Store public keys into the database.
+
+Note that this duplicates part of @command{automate read_packets}; the
+intent is to deprecate @command{automate read_packets}, and only keep
+facilities for key packets.
+
+@item Output format:
+
+No output.
+
+@item Error conditions:
+
+An error will be produced if the argument is not a valid key packet.
+
+@end table
+
+@item mtn automate get_public_key @var{keyid}
+
+@table @strong
+@item Arguments:
+
+@var{keyid} identifies the key to display, by name or hash.
+
+@item Changes:
+
+@itemize
+@item
+FIXME -- initial
+
+@end itemize
+
+@item Purpose:
+
+Same as @command{pubkey}; print the key in packet format, suitable for
+reading by @command{automate put_public_key}.
+
+@item Sample output:
+
+@verbatim
+[pubkey foo@bar.com]
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQs4OEcqULwepphO5Rsb/aSLpiEryGtEkQRNQPNFxvcu1rwVnNKRxep1KCDrwV3se9f4hUQ8zz73NQggS82guSI/YuyXZDZHrw+v3YgAMV/mKGnAjgYnyRNUL1xCywV7fnqTduBBqkDEVSCqphWlii/gFB/PVo4sbJ4Hk7O6ujWwIDAQAB
+[end]
+@end verbatim
+
+@item Output format:
+
+See example.
+
+@item Error conditions:
+
+If the key does not exist, an error message is printed on the error stream.
+
+@end table
+
+@item mtn automate drop_public_key @var{keyid}
+
+@table @strong
+@item Arguments:
+
+@var{keyid} identifies the key to drop, by name or hash.
+
+@item Changes:
+
+@itemize
+@item
+FIXME -- initial
+
+@end itemize
+
+@item Purpose:
+
+Drop a public key from the database (@emph{not} the private key from
+the keystore). Signatures made with the key can no longer be verified.
+
+This command should be used with caution as changes are irreversible
+without a backup of the key(s) that were dropped. You may wish to use
+the @command{k:} selector to check if the key is used in a signature.
+
+Note that public keys that are used to sign a revision may be
+restored to the database by a future sync.
+
+Keys in the keystore are not dropped because that is very dangerous on
+a server. The only way to drop private keys on a server is via the
+command @command{mtn dropkey}.
+
+@item Sample output:
+
+None.
+
+@item Output format:
+
+None on the main stream; progress message on the progress stream.
+
+@item Error conditions:
+
+If the key does not exist, an error message is printed on the error stream.
 
 @end table
 
@@ -10316,7 +10432,7 @@ see @command{update} in @ref{Workspace}.
 @table @strong
 @item Arguments:
 
-A data packet, @var{packet-data}, as produced by @command{mtn pubkey @var{keyname}}.
+A data packet, @var{packet-data}, as produced by @command{mtn pubkey @var{keyid}}.
 
 @item Added in:
 
