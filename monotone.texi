@@ -11794,6 +11794,11 @@ more of the following characters:
 @end group
 @end smallexample
 
+@item guess_terminal_width()
+
+Returns the size of the terminal window as number or a sane default
+(72) if the information cannot be retrieved.
+
 @item include(@var{scriptfile})
 
 This function tries to load and execute the script contained into
