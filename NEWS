@@ -101,7 +101,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           --no-builtin-rcfile           replaces --nostd
           --builtin-rcfile              undo previous --no-builtin-rcfile
           --clear-rcfiles               undo previous --rcfile
-	  --verbose [-v]                increase verbosity (opposite of --quiet)
+          --verbose [-v]                increase verbosity (opposite of --quiet)
 
         - Global options now hidden:
           --roster-cache-performance-log
@@ -115,7 +115,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
             --no-move-conflicting-paths     undo previous --move-conflicting-paths
           diff
             --without-header                undo previous --with-header
-            --show-encloser                 undo previous --show-encloser
+            --show-encloser                 undo previous --no-show-encloser
           disapprove, suspend
             --no-update                     undo previous --update
           drop
@@ -138,23 +138,18 @@ Xxx Xxx 99 99:99:99 UTC 2010
             --respect-ignore                undo previous --no-respect-ignore
           serve
             --no-pid-file                   undo previous --pid-file
-
           sync, pull, push, automate remote_stdio, automate remote
           automate pull, automate push, automate sync
             --no-set-default                undo previous --set-default
-
           automate inventory
             --corresponding-renames         undo previous --no-corresponding-renames
             --ignored                       undo previous --no-ignored
             --unchanged                     undo previous --no-unchanged
             --unknown                       undo previous --no-unknown
-
           automate content_diff
             --without-header                undo previous --with-header
-
           automate show_conflicts
             --no-ignore-suspend-certs       undo previous --ignore-suspend-certs
-
           automate log
             --clear-from                    undo previous --from
             --merges                        undo previous --no-merges
