@@ -312,12 +312,15 @@ getopt(map<string, concrete_option> const & by_name, string & name)
         i = by_name.find(*j);
         I(i != by_name.end());
 
-        err += "\n--" + *j + " (";
-        if (*j != i->second.longname)
-          err += (F("negation of --%s") % i->second.longname).str();
+        if (*j == "--")
+          continue;
+
+        if (*j == i->second.shortname)
+          err += "\n-" + *j + " (" + i->second.description + ")";
+        else if (*j == i->second.cancelname)
+          err += "\n--" + *j + " (" + (F("negation of --%s") % i->second.longname).str() + ")";
         else
-          err +=  + i->second.description;
-        err += ")";
+          err += "\n--" + *j + " (" + i->second.description + ")";
     }
 
   E(false, origin::user, i18n_format(err));
