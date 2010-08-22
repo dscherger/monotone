@@ -85,7 +85,7 @@ struct sanity::impl
   void *out_of_band_opaque;
 
   impl() :
-    verbosity(0), logbuf(0xffff),
+    verbosity(0), is_debug(false), logbuf(0xffff),
     already_dumping(false), out_of_band_function(0), out_of_band_opaque(0)
   {}
 };

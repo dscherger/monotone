@@ -283,6 +283,9 @@ getopt(map<string, concrete_option> const & by_name, string & name)
   if (i != by_name.end())
     return i->second;
 
+  if (name.size() == 0)
+    throw unknown_option(name);
+
   // try to find the option by partial name
   vector<string> candidates;
   for (i = by_name.begin(); i != by_name.end(); ++i)
