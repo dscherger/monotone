@@ -17,6 +17,7 @@
 #include "paths.hh"
 #include "sanity.hh"
 #include "ui.hh"
+#include "lua.hh"
 #include "charset.hh"
 #include "simplestring_xform.hh"
 #include "constants.hh"
@@ -46,6 +47,7 @@ using std::max;
 using std::ofstream;
 using std::string;
 using std::vector;
+using std::set;
 
 using boost::lexical_cast;
 
@@ -848,6 +850,13 @@ guess_terminal_width()
   if (!w)
     w = constants::default_terminal_width;
   return w;
+}
+
+LUAEXT(guess_terminal_width, )
+{
+  int w = guess_terminal_width();
+  lua_pushinteger(LS, w);
+  return 1;
 }
 
 // A very simple class that adds an operator() to a string that returns

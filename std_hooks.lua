@@ -1462,3 +1462,9 @@ function validate_git_author(author)
 
    return false
 end
+
+function get_man_page_formatter_command()
+   local term_width = guess_terminal_width() - 2
+   return string.format("nroff -man -rLL=%dn | less -R", term_width)
+end
+

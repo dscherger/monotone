@@ -743,6 +743,19 @@ bool lua_hooks::hook_hook_wrapper(string const & func_name,
 }
 
 bool
+lua_hooks::hook_get_man_page_formatter_command(string & command)
+{
+  bool exec_ok
+     = Lua(st)
+     .func("get_man_page_formatter_command")
+     .call(0, 1)
+     .extract_str(command)
+     .ok();
+
+  return exec_ok;
+}
+
+bool
 lua_hooks::hook_use_inodeprints()
 {
   bool use = false, exec_ok = false;
