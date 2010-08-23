@@ -908,7 +908,7 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
           "A complete list of authors can be found in AUTHORS.")
      << "\n\n";
   ss << _("Nowadays, monotone is maintained by a collective of enthusiastic "
-          "programmers, known as the monotone developement team.") << "\n";
+          "programmers, known as the monotone development team.") << "\n";
 
   ss << man_section("Copyright");
   ss << (F("monotone and this man page is Copyright (c) 2004 - %s by "

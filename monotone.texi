@@ -11102,6 +11102,10 @@ Specifies the command chain which should be executed if the
 to call the @command{nroff} formatter and pipe that output into the
 @command{less} pager.
 
+Note that on the native Windows build of monotone, the command
+specified by this hook is run in the @command{cmd.exe} shell. On Unix
+and Cygwin, it is run in the @command{sh} shell.
+
 @end ftable
 
 @subsection Netsync Permission Hooks
