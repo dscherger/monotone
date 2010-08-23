@@ -13,6 +13,7 @@
 
 #include "lua.hh"
 #include "app_state.hh"
+#include "globish.hh"
 #include "options_applicator.hh"
 #include "work.hh"
 #include "ui.hh"
@@ -529,6 +530,19 @@ CMD_NO_WORKSPACE(version, "version", "", CMD_REF(informative), "",
     print_full_version();
   else
     print_version();
+}
+
+CMD_HIDDEN(check_globish, "check_globish", "", CMD_REF(debug),
+           "globish string",
+           N_("Check that a particular globish matches a particular string"),
+           "",
+           options::opts::none)
+{
+  globish g = typecast_vocab<globish>(idx(args,0));
+  string s(idx(args,1)());
+
+  E(g.matches(s), origin::user,
+    F("Globish <%s> does not match string <%s>") % g % s);
 }
 
 CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
