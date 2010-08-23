@@ -60,6 +60,7 @@ MOST_SOURCES = 								\
 	ssh_agent.cc ssh_agent.hh					\
 	keys.cc keys.hh							\
 	packet.cc packet.hh						\
+	key_packet.cc key_packet.hh					\
 	rcs_file.cc rcs_file.hh						\
 	xdelta.cc xdelta.hh						\
 	migration.hh migrate_schema.cc migrate_ancestry.cc		\
@@ -190,8 +191,8 @@ UNIT_TESTERS =								\
 # test is not part of UNIT_TESTEES.
 
 UNIT_TESTERS_PRIV =							\
-	unit-tests/dates.cc unit-tests/packet.cc unit-tests/paths.cc	\
-	unit-tests/rev_height.cc unit-tests/roster.cc
+	unit-tests/dates.cc unit-tests/key_packet.cc unit-tests/packet.cc \
+	unit-tests/paths.cc unit-tests/rev_height.cc unit-tests/roster.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # note that some are and some aren't part of the main program
@@ -329,6 +330,7 @@ PNG_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.pn
 EPS_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.eps)))
 TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
+man1_MANS = mtn.1
 info_TEXINFOS = monotone.texi
 EXTRA_DIST =								\
 	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
@@ -493,7 +495,7 @@ monotone-$(PACKAGE_VERSION).dmg: monotone-$(PACKAGE_VERSION).pkg
 # build win32 installer using INNO setup
 ISCC=@ISCC@
 
-win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe 
+win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe
 
 monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
 	$(ISCC) monotone.iss
@@ -766,6 +768,10 @@ html: monotone.texi version.texi std_hooks.lua texinfo.css
 		sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $$f.bak >$$f; \
 		rm -f $$f.bak; \
 	done
+
+mtn.1: mtn$(EXEEXT)
+	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
+	(cd $(srcdir) && $$REAL_BLDDIR/mtn manpage --norc) 2>/dev/null >$@ || rm -f $@
 
 # Verbosity goo.
 V_bcxx       = $(V_bcxx_$(V))

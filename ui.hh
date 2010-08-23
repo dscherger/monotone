@@ -111,9 +111,11 @@ struct ui_library
 unsigned int guess_terminal_width();
 
 std::string format_text(std::string const & text,
-                        size_t const col = 0, size_t curcol = 0);
+                        size_t const col = 0, size_t curcol = 0,
+                        bool indent_first_line = false);
 std::string format_text(i18n_format const & text,
-                        size_t const col = 0, size_t curcol = 0);
+                        size_t const col = 0, size_t curcol = 0,
+                        bool indent_first_line = false);
 
 #endif // __UI_HH__
 
