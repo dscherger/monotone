@@ -15,7 +15,7 @@ Less verbose restrictions | [savannah](https://savannah.nongnu.org/bugs/?30291) 
 Fix anonymous remote_stdio | [savannah](https://savannah.nongnu.org/bugs/?30237) | `nvm` | completed |
 Branch name deprecation | [monotone-devel](http://article.gmane.org/gmane.comp.version-control.monotone.devel/17117/match=netsync+connection+info+cleanup) | `nvm.deprecate_weird_branch_names` | completed, merged |
 Overwritable, negatable options | [[OverwritableNegatableOptions]] | `nvm.options` | completed, merged |
-Key management in automate | [savannah](https://savannah.nongnu.org/bugs/?30345) | `nvm.key_management` | completed |
+Key management in automate | [savannah](https://savannah.nongnu.org/bugs/?30345) | `nvm.key_management` | completed, merged |
 Dump man page from command tree | n/a | `nvm.man-page*` | completed |
 Fix changelog editor issues | [monotone-devel](http://thread.gmane.org/gmane.comp.version-control.monotone.devel/17851) | n/a | not started |
 """ ]]
