@@ -352,7 +352,7 @@ namespace commands {
       out << format_text(F("Description for '%s %s':") %
                          prog_name % visibleid)
           << "\n\n";
-    out << format_text(cmd->desc(), 2) << "\n\n";
+    out << format_text(cmd->desc(), 2, 0, true) << "\n\n";
 
     // Print all available aliases.
     if (cmd->names().size() > 1)
@@ -360,7 +360,7 @@ namespace commands {
         command::names_set othernames = cmd->names();
         othernames.erase(ident[ident.size() - 1]);
         out << format_text(F("Aliases: %s.") %
-                           join_words(othernames, ", ")(), 2)
+                           join_words(othernames, ", ")(), 2, 0, true)
             << '\n';
       }
   }
