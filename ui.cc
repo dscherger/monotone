@@ -902,7 +902,8 @@ wrap_paragraph(string const & text, size_t const line_length,
 }
 
 static string
-format_paragraph(string const & text, size_t const col, size_t curcol)
+format_paragraph(string const & text, size_t const col,
+                 size_t curcol, bool indent_first_line)
 {
   string ret;
   size_t const maxcol = guess_terminal_width();
@@ -910,7 +911,9 @@ format_paragraph(string const & text, size_t const col, size_t curcol)
   for (vector<string>::iterator w = wrapped.begin(); w != wrapped.end(); ++w)
     {
       if (w != wrapped.begin())
-        ret += "\n" + string(col, ' ');
+        ret += "\n";
+      if (w != wrapped.begin() || indent_first_line)
+        ret += string(col, ' ');
       ret += *w;
     }
   return ret;
@@ -926,7 +929,8 @@ format_paragraph(string const & text, size_t const col, size_t curcol)
 // 'col' specifies the column where the text will start and 'curcol'
 // specifies the current position of the cursor.
 string
-format_text(string const & text, size_t const col, size_t curcol)
+format_text(string const & text, size_t const col,
+            size_t curcol, bool indent_first_line)
 {
   I(curcol <= col);
 
@@ -939,7 +943,7 @@ format_text(string const & text, size_t const col, size_t curcol)
     {
       string const & line = *iter;
 
-      formatted += format_paragraph(line, col, curcol);
+      formatted += format_paragraph(line, col, curcol, indent_first_line);
       if (iter + 1 != lines.end())
         formatted += "\n\n";
       curcol = 0;
@@ -950,9 +954,10 @@ format_text(string const & text, size_t const col, size_t curcol)
 
 // See description for the other format_text above for more details.
 string
-format_text(i18n_format const & text, size_t const col, size_t curcol)
+format_text(i18n_format const & text, size_t const col,
+            size_t curcol, bool indent_first_line)
 {
-  return format_text(text.str(), col, curcol);
+  return format_text(text.str(), col, curcol, indent_first_line);
 }
 
 namespace {
