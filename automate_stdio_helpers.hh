@@ -11,7 +11,6 @@
 #ifndef __AUTOMATE_STDIO_HELPERS__
 #define __AUTOMATE_STDIO_HELPERS__
 
-#include <string>
 #include <utility>
 
 #include <boost/function.hpp>
