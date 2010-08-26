@@ -611,7 +611,8 @@ DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep	\
 CLEAN_SOURCES = std_hooks.cc testlib.cc schema.cc \
 	package_revision.cc package_full_revision.cc \
 	package_revision_raw.txt \
-	package_full_revision.txt package_full_revision_raw.txt
+	package_full_revision.txt package_full_revision_raw.txt \
+	mtn.1
 
 BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
