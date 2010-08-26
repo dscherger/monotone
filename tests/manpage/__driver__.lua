@@ -5,7 +5,7 @@ rename("stdout", "manpage")
 
 -- check for a proper header line
 check(mtn("version"), 0, true, false)
-local s,e,version = string.find(readfile("stdout"), "(monotone %d+\.%d+%l*)")
+local s,e,version = string.find(readfile("stdout"), "(monotone %d+\.%d+%S*)")
 check(qgrep(".TH \"monotone\" 1 \"" .. os.date("%Y-%m-%d") .. "\" \"" .. version .. "\"", "manpage"))
 
 -- check required sections
