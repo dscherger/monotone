@@ -17,6 +17,7 @@
 #include "paths.hh"
 #include "sanity.hh"
 #include "ui.hh"
+#include "lua.hh"
 #include "charset.hh"
 #include "simplestring_xform.hh"
 #include "constants.hh"
@@ -46,6 +47,7 @@ using std::max;
 using std::ofstream;
 using std::string;
 using std::vector;
+using std::set;
 
 using boost::lexical_cast;
 
@@ -850,6 +852,13 @@ guess_terminal_width()
   return w;
 }
 
+LUAEXT(guess_terminal_width, )
+{
+  int w = guess_terminal_width();
+  lua_pushinteger(LS, w);
+  return 1;
+}
+
 // A very simple class that adds an operator() to a string that returns
 // the string itself.  This is to make it compatible with, for example,
 // the utf8 class, allowing it to be usable in other contexts without
@@ -902,7 +911,8 @@ wrap_paragraph(string const & text, size_t const line_length,
 }
 
 static string
-format_paragraph(string const & text, size_t const col, size_t curcol)
+format_paragraph(string const & text, size_t const col,
+                 size_t curcol, bool indent_first_line)
 {
   string ret;
   size_t const maxcol = guess_terminal_width();
@@ -910,7 +920,9 @@ format_paragraph(string const & text, size_t const col, size_t curcol)
   for (vector<string>::iterator w = wrapped.begin(); w != wrapped.end(); ++w)
     {
       if (w != wrapped.begin())
-        ret += "\n" + string(col, ' ');
+        ret += "\n";
+      if (w != wrapped.begin() || indent_first_line)
+        ret += string(col, ' ');
       ret += *w;
     }
   return ret;
@@ -926,7 +938,8 @@ format_paragraph(string const & text, size_t const col, size_t curcol)
 // 'col' specifies the column where the text will start and 'curcol'
 // specifies the current position of the cursor.
 string
-format_text(string const & text, size_t const col, size_t curcol)
+format_text(string const & text, size_t const col,
+            size_t curcol, bool indent_first_line)
 {
   I(curcol <= col);
 
@@ -939,7 +952,7 @@ format_text(string const & text, size_t const col, size_t curcol)
     {
       string const & line = *iter;
 
-      formatted += format_paragraph(line, col, curcol);
+      formatted += format_paragraph(line, col, curcol, indent_first_line);
       if (iter + 1 != lines.end())
         formatted += "\n\n";
       curcol = 0;
@@ -950,9 +963,10 @@ format_text(string const & text, size_t const col, size_t curcol)
 
 // See description for the other format_text above for more details.
 string
-format_text(i18n_format const & text, size_t const col, size_t curcol)
+format_text(i18n_format const & text, size_t const col,
+            size_t curcol, bool indent_first_line)
 {
-  return format_text(text.str(), col, curcol);
+  return format_text(text.str(), col, curcol, indent_first_line);
 }
 
 namespace {
