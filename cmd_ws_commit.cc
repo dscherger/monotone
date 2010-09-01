@@ -1819,6 +1819,17 @@ void perform_commit(app_state & app,
   }
 }
 
+CMD_PRESET_OPTIONS(commit)
+{
+  // Dates are never parseable on Win32 (see win32/parse_date.cc),
+  // so don't warn about that, just use the default format.
+#ifdef WIN32
+  opts.no_format_dates = true;
+#else
+  opts.no_format_dates = false;
+#endif
+}
+
 CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     N_("Commits workspace changes to the database"),
     "",

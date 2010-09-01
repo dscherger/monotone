@@ -1248,14 +1248,6 @@ end
 
 function get_default_command_options(command)
     local default_args = {}
-    local ostype = get_ostype()
-
-    --  Dates are never parseable on Win32 (see win32/parse_date.cc),
-    --  so don't warn about that, just use the default format.
-    if (command[1] == "commit") and string.find(ostype, "Windows") then
-        table.insert(default_args, "--no-format-dates")
-    end
-
     return default_args
 end
 
