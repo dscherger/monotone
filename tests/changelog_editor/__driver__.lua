@@ -5,21 +5,8 @@ writefile("a", "aaa")
 
 check(get("changelog.lua"))
 
--- status warns with bad date format
-
-check(mtn("status"), 0, false, false)
-check(mtn("status", "--date-format", "%Y-%m-%d"), 0, false, true)
-check(qgrep("date format", "stderr"))
-
-
 -- commits that fail
 
-
--- commit fails with bad date format
-
-check(mtn("commit", "--date-format", "%Y-%m-%d"), 1, false, true)
-check(qgrep("date format", "stderr"))
-check(not exists("_MTN/commit"))
 
 -- commit fails with empty message
 
@@ -187,6 +174,18 @@ remove("_MTN/commit")
 
 -- commits that succeed
 
+-- commit succeeds with bad date format (uses default format instead)
+
+writefile("_MTN/log", "ok")
+check(mtn("commit", "--date-format", "%Y-%m-%d", "--rcfile=changelog.lua"), 0, false, true)
+if ostype == "Windows" then
+   -- date parsing never works on Win32, so
+   -- get_default_command_options specifies --no-format-dates, and
+   -- we don't get a warning message.
+else
+   check(qgrep("warning: .* using default instead", "stderr"))
+end
+
 
 -- test unchanged --date, --author and --branch options
 
@@ -199,7 +198,7 @@ check(qgrep("Author:   bobo", "stdout"))
 check(qgrep("Branch:   left", "stdout"))
 check(not exists("_MTN/commit"))
 
--- test changed --date, --author and --branch options 
+-- test changed --date, --author and --branch options
 
 writefile("a", "a2.2")
 writefile("_MTN/log", "change author/date/branch")
