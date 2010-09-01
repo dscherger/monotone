@@ -171,6 +171,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
           all matches and an accompanying short description of the
           particular expansion are displayed.
 
+        - New automate command 'checkout'
+
         - New automate commands 'put_public_key', 'get_public_key' and
           'drop_public_key'. (closes monotone bug #30345)
 
@@ -180,7 +182,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - A new 'manpage' command has been added which dumps the monotone
           command help including all global and command specific options in
           standard troff format.  If this command is used interactively, its
-          output is automatically processed through nroff and less, in case 
+          output is automatically processed through nroff and less, in case
           both are available on your system.  If not, you can change the default
           command by overwriting the 'get_man_page_formatter_command' hook.
 

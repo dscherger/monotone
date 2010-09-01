@@ -10445,6 +10445,36 @@ see @command{update} in @ref{Workspace}.
 
 @end table
 
+@item mtn automate checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
+
+@table @strong
+@item Arguments:
+
+Same as @command{mtn checkout}; directory to create workspace in.
+
+@item Added in:
+
+FIXME
+
+@item Purpose:
+
+Create a new workspace containing the given revision; see
+@command{checkout} in @ref{Workspace}.
+
+@item Sample output:
+
+None.
+
+@item Output format:
+
+None.
+
+@item Error conditions:
+
+see @command{checkout} in @ref{Workspace}.
+
+@end table
+
 @item mtn automate read_packets @var{packet-data}
 
 @table @strong

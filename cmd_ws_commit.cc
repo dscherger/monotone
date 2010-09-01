@@ -1034,13 +1034,9 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   cout << summary_external;
 }
 
-CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
-    N_("Checks out a revision from the database into a directory"),
-    N_("If a revision is given, that's the one that will be checked out.  "
-       "Otherwise, it will be the head of the branch (given or implicit).  "
-       "If no directory is given, the branch name will be used as directory."),
-    options::opts::branch | options::opts::revision |
-    options::opts::move_conflicting_paths)
+static void
+checkout_common(app_state & app,
+                args_vector const & args)
 {
   revision_id revid;
   system_path dir;
@@ -1048,9 +1044,6 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   database db(app);
   project_t project(db);
   transaction_guard guard(db, false);
-
-  if (args.size() > 1 || app.opts.revision.size() > 1)
-    throw usage(execid);
 
   if (app.opts.revision.empty())
     {
@@ -1141,6 +1134,37 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
 
   work.maybe_update_inodeprints(db);
   guard.commit();
+}
+
+CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
+    N_("Checks out a revision from the database into a directory"),
+    N_("If a revision is given, that's the one that will be checked out.  "
+       "Otherwise, it will be the head of the branch (given or implicit).  "
+       "If no directory is given, the branch name will be used as directory."),
+    options::opts::branch | options::opts::revision |
+    options::opts::move_conflicting_paths)
+{
+  if (args.size() > 1 || app.opts.revision.size() > 1)
+    throw usage(execid);
+
+  checkout_common(app, args);
+}
+
+CMD_AUTOMATE(checkout, N_("[DIRECTORY]"),
+    N_("Checks out a revision from the database into a directory"),
+    N_("If a revision is given, that's the one that will be checked out.  "
+       "Otherwise, it will be the head of the branch (given or implicit).  "
+       "If no directory is given, the branch name will be used as directory."),
+    options::opts::branch | options::opts::revision |
+    options::opts::move_conflicting_paths)
+{
+  E(args.size() < 2, origin::user,
+    F("wrong argument count"));
+
+  E(app.opts.revision.size() < 2, origin::user,
+    F("wrong revision count"));
+
+  checkout_common(app, args);
 }
 
 CMD_GROUP(attr, "attr", "", CMD_REF(workspace),
