@@ -24,6 +24,15 @@ test_tz_fmt(nil, nil,                 "1999-12-31T13:00:00")
 test_tz_fmt(nil, "%Y-%m-%d %H:%M:%S", "1999-12-31 13:00:00")
 test_tz_fmt(nil, "%Y-%m-%d %I:%M:%S", "1999-12-31 01:00:00")
 
+-- check that --date-format=xxx and --no-format-dates override eachother
+check(mtn("log", "--brief", "--no-graph", "--date-format=%Y", "--no-format-dates"),
+      0, true, false)
+check(samelines("stdout", { rev .. " tester@test.net 1999-12-31T13:00:00 B" }))
+check(mtn("log", "--brief", "--no-graph", "--no-format-dates", "--date-format=%Y"),
+      0, true, false)
+check(samelines("stdout", { rev .. " tester@test.net 1999 B" }))
+
+
 -- Windows' strftime() doesn't support %T, and MinGW uses the
 -- version provided by Windows rather than having its own.
 skip_if(ostype=="Windows")

@@ -50,9 +50,32 @@ function parse_stdio(data, err, which, band)
     band = "m"
   end
 
-  check(bands[which][band] ~= nil)
+  if bands[which][band] == nil then
+     bands[which][band] = {}
+  end
 
   return bands[which][band]
+end
+
+-- make_stdio_cmd({"cmd", "arg", "arg"}, {{"opt", "val"}, {"opt", "val"}})
+function make_stdio_cmd(cmd, args)
+   local function lenstr(str)
+      return str:len() .. ":" .. str
+   end
+   local ret = ""
+   if args then
+      ret = ret .. "o"
+      for _, c in ipairs(args) do
+	 ret = ret .. lenstr(c[1]) .. lenstr(c[2])
+      end
+      ret = ret .. "e"
+   end
+   ret = ret .. "l"
+   for _, c in ipairs(cmd) do
+      ret = ret .. lenstr(c)
+   end
+   ret = ret .. "e"
+   return ret
 end
 
 function run_stdio(cmd, err, which, band)

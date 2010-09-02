@@ -416,6 +416,7 @@ public:
                                    std::set<revision_id> & completions);
   void select_date(std::string const & date, std::string const & comparison,
                    std::set<revision_id> & completions);
+  void select_key(key_id const & id, std::set<revision_id> & completions);
 
   //
   // --== The 'db' family of top-level commands ==--

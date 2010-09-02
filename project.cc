@@ -12,6 +12,7 @@
 
 #include "cert.hh"
 #include "database.hh"
+#include "date_format.hh"
 #include "project.hh"
 #include "revision.hh"
 #include "transforms.hh"
@@ -582,7 +583,7 @@ project_t::get_given_name_of_key(key_store * const keys,
     }
   else
     {
-      E(false, origin::internal,
+      E(false, id.inner().made_from,
         F("key %s does not exist") % id);
     }
 }
@@ -663,7 +664,7 @@ project_t::get_key_identity(lua_hooks & lua,
 
 string
 describe_revision(options const & opts, lua_hooks & lua,
-		  project_t & project, revision_id const & id)
+                  project_t & project, revision_id const & id)
 {
   cert_name author_name(author_cert_name);
   cert_name date_name(date_cert_name);
@@ -672,14 +673,7 @@ describe_revision(options const & opts, lua_hooks & lua,
 
   description += encode_hexenc(id.inner()(), id.inner().made_from);
 
-  string date_fmt;
-  if (opts.format_dates)
-    {
-      if (!opts.date_fmt.empty())
-        date_fmt = opts.date_fmt;
-      else
-        lua.hook_get_date_format_spec(date_time_short, date_fmt);
-    }
+  string date_fmt = get_date_format(opts, lua, date_time_short);
 
   // append authors and date of this revision
   vector<cert> certs;

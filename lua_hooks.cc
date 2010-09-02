@@ -253,7 +253,7 @@ lua_hooks::load_rcfile(any_path const & rc, bool required)
 }
 
 void
-lua_hooks::load_rcfiles(options & opts)
+lua_hooks::load_rcfiles(options const & opts)
 {
   // Built-in rc settings are defaults.
   if (!opts.nostd)
@@ -743,6 +743,19 @@ bool lua_hooks::hook_hook_wrapper(string const & func_name,
 }
 
 bool
+lua_hooks::hook_get_man_page_formatter_command(string & command)
+{
+  bool exec_ok
+     = Lua(st)
+     .func("get_man_page_formatter_command")
+     .call(0, 1)
+     .extract_str(command)
+     .ok();
+
+  return exec_ok;
+}
+
+bool
 lua_hooks::hook_use_inodeprints()
 {
   bool use = false, exec_ok = false;
@@ -1070,6 +1083,25 @@ lua_hooks::hook_clear_attribute(string const & attr,
     .push_str(filename.as_external())
     .push_nil()
     .call(2,0)
+    .ok();
+}
+
+bool
+lua_hooks::hook_validate_changes(revision_data const & new_rev,
+                                 branch_name const & branchname,
+                                 bool & validated,
+                                 string & reason)
+{
+  validated = true;
+  return Lua(st)
+    .func("validate_changes")
+    .push_str(new_rev.inner()())
+    .push_str(branchname())
+    .call(2, 2)
+    .extract_str(reason)
+    // XXX When validated, the extra returned string is superfluous.
+    .pop()
+    .extract_bool(validated)
     .ok();
 }
 

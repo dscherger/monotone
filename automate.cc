@@ -1,5 +1,5 @@
 // Copyright (C) 2004 Nathaniel Smith <njs@pobox.com>
-//               2007 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2007, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -21,6 +21,7 @@
 #include <boost/tuple/tuple.hpp>
 
 #include "app_state.hh"
+#include "automate_stdio_helpers.hh"
 #include "project.hh"
 #include "basic_io.hh"
 #include "cert.hh"
@@ -31,6 +32,7 @@
 #include "keys.hh"
 #include "key_store.hh"
 #include "file_io.hh"
+#include "options_applicator.hh"
 #include "packet.hh"
 #include "restrictions.hh"
 #include "revision.hh"
@@ -521,7 +523,7 @@ CMD_AUTOMATE(select, N_("SELECTOR"),
   project_t project(db);
   set<revision_id> completions;
 
-  // FIXME: replace this with 
+  // FIXME: replace this with
   //   complete(app.opts, app.lua,  project, idx(args, 0)(), completions);
   // some time which errors out if no completions could be found for a
   // specific selector - this breaks BC with earlier automate versions though
@@ -1019,10 +1021,7 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
              "",
              options::opts::depth |
              options::opts::exclude |
-             options::opts::no_ignored |
-             options::opts::no_unknown |
-             options::opts::no_unchanged |
-             options::opts::no_corresponding_renames)
+             options::opts::automate_inventory_opts)
 {
   database db(app);
   workspace work(app);
@@ -1043,7 +1042,7 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
 
   inventory_map inventory;
   vector<file_path> includes = args_to_paths(args);
-  vector<file_path> excludes = args_to_paths(app.opts.exclude_patterns);
+  vector<file_path> excludes = args_to_paths(app.opts.exclude);
 
   if (!app.opts.no_corresponding_renames)
     {
@@ -1286,7 +1285,7 @@ CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
   work.get_current_roster_shape(db, nis, new_roster);
 
   node_restriction mask(args_to_paths(args),
-                        args_to_paths(app.opts.exclude_patterns),
+                        args_to_paths(app.opts.exclude),
                         app.opts.depth,
                         old_rosters, new_roster);
 
@@ -1750,83 +1749,13 @@ namespace
   {
     symbol const key("key");
     symbol const signature("signature");
-    symbol const name("name");
     symbol const value("value");
     symbol const trust("trust");
-
-    symbol const hash("hash");
-    symbol const public_location("public_location");
-    symbol const private_location("private_location");
 
     symbol const domain("domain");
     symbol const entry("entry");
   }
 };
-
-// Name: genkey
-// Arguments:
-//   1: the key ID
-//   2: the key passphrase
-// Added in: 3.1
-// Changed in: 10.0
-// Purpose: Generates a key with the given ID and passphrase
-//
-// Output format: a basic_io stanza for the new key, as for ls keys
-//
-// Sample output:
-//               name "tbrownaw@gmail.com"
-//               hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-//    public_location "database" "keystore"
-//   private_location "keystore"
-//
-// Error conditions: If the passphrase is empty or the key already exists,
-// prints an error message to stderr and exits with status 1.
-CMD_AUTOMATE(genkey, N_("KEY_NAME PASSPHRASE"),
-             N_("Generates a key"),
-             "",
-             options::opts::force_duplicate_key)
-{
-  E(args.size() == 2, origin::user,
-    F("wrong argument count"));
-
-  database db(app);
-  key_store keys(app);
-
-  key_name name = typecast_vocab<key_name>(idx(args, 0));
-
-  if (!app.opts.force_duplicate_key)
-    {
-      E(!keys.key_pair_exists(name), origin::user,
-        F("you already have a key named '%s'") % name);
-      if (db.database_specified())
-        {
-          E(!db.public_key_exists(name), origin::user,
-            F("there is another key named '%s'") % name);
-        }
-    }
-
-  utf8 passphrase = idx(args, 1);
-
-  key_id hash;
-  keys.create_key_pair(db, name, key_store::create_quiet, &passphrase, &hash);
-
-  basic_io::printer prt;
-  basic_io::stanza stz;
-  vector<string> publocs, privlocs;
-  if (db.database_specified())
-    publocs.push_back("database");
-  publocs.push_back("keystore");
-  privlocs.push_back("keystore");
-
-  stz.push_str_pair(syms::name, name());
-  stz.push_binary_pair(syms::hash, hash.inner());
-  stz.push_str_multi(syms::public_location, publocs);
-  stz.push_str_multi(syms::private_location, privlocs);
-  prt.print_stanza(stz);
-
-  output.write(prt.buf.data(), prt.buf.size());
-
-}
 
 // Name: get_option
 // Arguments:
@@ -2343,6 +2272,128 @@ CMD_AUTOMATE(lua, "LUA_FUNCTION [ARG1 [ARG2 [...]]]",
   // the output already contains a trailing newline, so we don't add
   // another one here
   output << out;
+}
+
+CMD_FWD_DECL(automate);
+
+void automate_stdio_helpers::
+automate_stdio_shared_setup(app_state & app,
+                            vector<string> const & cmdline,
+                            vector<pair<string, string> > const * const params,
+                            commands::command_id & id,
+                            commands::automate const * & acmd,
+                            force_ticker_t ft)
+{
+  using commands::command_id;
+  using commands::command;
+  using commands::automate;
+
+  args_vector args;
+  for (vector<string>::const_iterator i = cmdline.begin();
+       i != cmdline.end(); ++i)
+    {
+      args.push_back(arg_type(*i, origin::user));
+      id.push_back(utf8(*i, origin::user));
+    }
+
+  set< command_id > matches =
+    CMD_REF(automate)->complete_command(id);
+
+  if (matches.empty())
+    {
+      E(false, origin::network,
+        F("no completions for this command"));
+    }
+  else if (matches.size() > 1)
+    {
+      E(false, origin::network,
+        F("multiple completions possible for this command"));
+    }
+
+  id = *matches.begin();
+
+  command const * cmd = CMD_REF(automate)->find_command(id);
+  I(cmd != NULL);
+
+  acmd = dynamic_cast< automate const * >(cmd);
+  I(acmd != NULL);
+
+  E(acmd->can_run_from_stdio(), origin::network,
+    F("sorry, that can't be run remotely or over stdio"));
+
+
+  commands::command_id my_id_for_hook = id;
+  my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automate", origin::internal));
+  // group name
+  my_id_for_hook.insert(my_id_for_hook.begin(), utf8("automation", origin::internal));
+  commands::reapply_options(app,
+                            app.reset_info.cmd,
+                            commands::command_id() /* doesn't matter */,
+                            cmd, my_id_for_hook, 2,
+                            args,
+                            params);
+
+  // disable user prompts, f.e. for password decryption
+  app.opts.non_interactive = true;
+
+
+  // set a fixed ticker type regardless what the user wants to
+  // see, because anything else would screw the stdio-encoded output
+  if (ft == force_stdio_ticker)
+    app.opts.ticker.unchecked_set("stdio");
+}
+
+std::pair<int, string> automate_stdio_helpers::
+automate_stdio_shared_body(app_state & app,
+                           std::vector<std::string> const & cmdline,
+                           std::vector<std::pair<std::string,std::string> >
+                           const & params,
+                           std::ostream & os,
+                           boost::function<void()> init_fn,
+                           boost::function<void(commands::command_id const &)> pre_exec_fn)
+{
+  using commands::command_id;
+  using commands::command;
+  using commands::automate;
+
+  options original_opts = app.opts;
+  automate const * acmd = 0;
+  command_id id;
+  try
+    {
+      if (init_fn)
+        init_fn();
+      automate_stdio_shared_setup(app, cmdline, &params, id, acmd);
+    }
+  catch (option::option_error & e)
+    {
+      return make_pair(1, e.what());
+    }
+  catch (recoverable_failure & f)
+    {
+      return make_pair(1, f.what());
+    }
+  if (pre_exec_fn)
+    pre_exec_fn(id);
+  try
+    {
+      options_applicator oa(app.opts, options_applicator::for_automate_subcmd);
+      // as soon as a command requires a workspace, this is set to true
+      workspace::used = false;
+
+      acmd->exec_from_automate(app, id, app.opts.args, os);
+
+      // usually, if a command succeeds, any of its workspace-relevant
+      // options are saved back to _MTN/options, this shouldn't be
+      // any different here
+      workspace::maybe_set_options(app.opts, app.lua);
+    }
+  catch (recoverable_failure & f)
+    {
+      return make_pair(2, f.what());
+    }
+  app.opts = original_opts;
+  return make_pair(0, string());
 }
 
 // Local Variables:

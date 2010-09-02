@@ -22,6 +22,7 @@
 #include "transforms.hh"
 #include "roster.hh"
 #include "vector.hh"
+#include "vocab_cast.hh"
 
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
@@ -80,6 +81,26 @@ public:
   {
     set<revision_id> ret;
     project.db.select_cert(author_cert_name(), value, ret);
+    return ret;
+  }
+};
+class key_selector : public selector
+{
+  key_identity_info identity;
+public:
+  key_selector(string const & arg, lua_hooks & lua, project_t & project)
+  {
+    E(!arg.empty(), origin::user,
+      F("the key selector k: must not be empty"));
+
+    project.get_key_identity(lua,
+                             external_key_name(arg, origin::user),
+                             identity);
+  }
+  virtual set<revision_id> complete(project_t & project)
+  {
+    set<revision_id> ret;
+    project.db.select_key(identity.id, ret);
     return ret;
   }
 };
@@ -145,7 +166,7 @@ string preprocess_date_for_selector(string sel, lua_hooks & lua, bool equals)
     tmp += "T00:00:00";
   E(tmp.size()==19 || equals, origin::user,
     F("selector '%s' is not a valid date (%s)") % sel % tmp);
-  
+
   if (sel != tmp)
     {
       P (F ("expanded date '%s' -> '%s'\n") % sel % tmp);
@@ -468,6 +489,16 @@ set<revision_id> get_ancestors(project_t const & project,
   return ret;
 }
 
+static void
+diagnose_wrong_arg_count(string const & func, int expected, int actual)
+{
+  E(expected == actual, origin::user,
+    FP("the '%s' function takes %d argument, not %d",
+       "the '%s' function takes %d arguments, not %d",
+       expected)
+      % func % expected % actual);
+}
+
 class fn_selector : public selector
 {
   string name;
@@ -482,8 +513,7 @@ public:
   {
     if (name == "difference")
       {
-        E(args.size() == 2, origin::user,
-          F("the 'difference' function takes 2 arguments, not %d") % args.size());
+        diagnose_wrong_arg_count("difference", 2, args.size());
         set<revision_id> lhs = args[0]->complete(project);
         set<revision_id> rhs = args[1]->complete(project);
 
@@ -495,8 +525,7 @@ public:
       }
     else if (name == "lca")
       {
-        E(args.size() == 2, origin::user,
-          F("the 'lca' function takes 2 arguments, not %d") % args.size());
+        diagnose_wrong_arg_count("lca", 2, args.size());
         set<revision_id> lhs_heads = args[0]->complete(project);
         set<revision_id> rhs_heads = args[1]->complete(project);
         set<revision_id> lhs = get_ancestors(project, lhs_heads);
@@ -512,22 +541,19 @@ public:
       }
     else if (name == "max")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'max' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("max", 1, args.size());
         set<revision_id> ret = args[0]->complete(project);
         erase_ancestors(project.db, ret);
         return ret;
       }
     else if (name == "ancestors")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'ancestors' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("ancestors", 1, args.size());
         return get_ancestors(project, args[0]->complete(project));
       }
     else if (name == "descendants")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'descendants' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("descendants", 1, args.size());
         set<revision_id> frontier = args[0]->complete(project);
         set<revision_id> ret;
         while (!frontier.empty())
@@ -550,8 +576,7 @@ public:
       }
     else if (name == "parents")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'parents' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("parents", 1, args.size());
         set<revision_id> ret;
         set<revision_id> tmp = args[0]->complete(project);
         for (set<revision_id>::const_iterator i = tmp.begin();
@@ -566,8 +591,7 @@ public:
       }
     else if (name == "children")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'children' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("children", 1, args.size());
         set<revision_id> ret;
         set<revision_id> tmp = args[0]->complete(project);
         for (set<revision_id>::const_iterator i = tmp.begin();
@@ -582,8 +606,7 @@ public:
       }
     else if (name == "pick")
       {
-        E(args.size() == 1, origin::user,
-          F("the 'pick' function takes 1 argument, not %d") % args.size());
+        diagnose_wrong_arg_count("pick", 1, args.size());
         set<revision_id> tmp = args[0]->complete(project);
         set<revision_id> ret;
         if (!tmp.empty())
@@ -650,6 +673,8 @@ selector::create_simple_selector(options const & opts,
       return shared_ptr<selector>(new head_selector(sel, opts));
     case 'i':
       return shared_ptr<selector>(new ident_selector(sel));
+    case 'k':
+      return shared_ptr<selector>(new key_selector(sel, lua, project));
     case 'l':
       return shared_ptr<selector>(new later_than_selector(sel, lua));
     case 'm':

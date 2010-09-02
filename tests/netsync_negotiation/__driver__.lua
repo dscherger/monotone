@@ -16,7 +16,7 @@ function make_old(ver)
       rcfile = "test_hooks.lua"
    end
    local fn = function (...)
-                 return {exe, "--norc", "--root=.",
+                 return {exe, "--no-standard-rcfiles", "--root=.",
                     "--confdir=.",
                     "--rcfile="..rcfile,
                     "--key=tester@test.net",

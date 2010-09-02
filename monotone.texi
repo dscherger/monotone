@@ -927,6 +927,8 @@ keep separate.
 
 You can see all the available branches using @command{mtn list branches}.
 
+@subsection Heads and merging
+
 Branches are indicated with certs.  The cert name @code{branch} is
 reserved for use by monotone, for the purpose of identifying the
 revisions which are members of a branch. A @code{branch} cert has a
@@ -1046,12 +1048,12 @@ branch names must be @emph{globally} unique, over all branches in the
 world.  Otherwise, bad things can happen.  Fortunately, we have a handy
 source of globally unique names --- the DNS system.
 
-When naming a branch, always prepend the reversed, fully qualified, domain name of a host that
-you control or are otherwise authorized to use.  For example, monotone
-development happens on the branch @code{net.venge.monotone}, because
-@code{venge.net} belongs to monotone's primary author.  The idea is that
-this way, you can coordinate with other people using a host to make sure
-there are no conflicts --- in the example, monotone's primary author can
+When naming a branch, always prepend the reversed, fully qualified, domain
+name of a host that you control or are otherwise authorized to use.  For
+example, monotone development happens on the branch @code{net.venge.monotone},
+because @code{venge.net} belongs to monotone's original author.  The idea is
+that this way, you can coordinate with other people using a host to make sure
+there are no conflicts --- in the example, monotone's original author can
 be certain that no-one else using @code{venge.net} will start up a
 different program named @code{monotone}.  If you work for Yoyodyne,
 Inc. (owners of yoyodyne.com), then all your branch names should look
@@ -1061,9 +1063,22 @@ What the @code{@emph{something}} part looks like is up to you, but
 usually the first part is the project name (the @code{monotone} in
 @code{net.venge.monotone}), and then possibly more stuff after that to
 describe a particular branch.  For example, monotone's win32 support
-was initially developed on the branch @code{net.venge.monotone.win32}.
+was initially developed on the branch @code{net.venge.monotone.win32}
+(for more information, see @ref{Naming Conventions}).
 
-(For more information, see @ref{Naming Conventions}.)
+It has to be noted that earlier versions of monotone enforced no restrictions
+on branch names.  Newer versions, starting with 0.99, exclude a set of control
+characters though, which mostly denote either meta characters in monotone's
+URI syntax or are used in globs to resolve branch patterns.  These characters are
+@code{?}, @code{,}, @code{*}, @code{%}, @code{+}, @code{@{}, @code{@}}, @code{[},
+@code{]}, @code{!} and @code{^}.  Additionally, @code{-} is deprecated as first
+character of a branch name, since it is used to denote branch exclude patterns
+in the aforementioned URI syntax.
+
+monotone warns on the creation of branch names which violate one of the above
+restrictions and gives further directions.  Future versions of monotone are
+likely to enforce these restrictions by disallowing such branch names completely.
+
 
 @page
 @node    Tutorial, Advanced Uses, Concepts, Top
@@ -2799,6 +2814,11 @@ example, @code{c:tag} matches all revisions that have a tag, and
 @item Author selection
 Uses selector type @code{a}. For example, @code{a:graydon} matches
 @code{author} certs where the cert value contains @code{graydon}.
+@item Key selection
+Uses selector type @code{k}. For example, @code{k:graydon@@pobox.com} matches
+all revisions where at least one cert was signed by the key
+@code{graydon@@pobox.com}.  Instead of the key's given name, the local
+name or the full hash ID of the key can be specified as well.
 @item Branch selection
 Uses selector type @code{b}. For example, @code{b:net.venge.monotone} matches
 @code{branch} certs where the cert value is @code{net.venge.monotone}.
@@ -3736,7 +3756,7 @@ changes, monotone will notice, and refuse to connect until you have run
 @item server-include
 Contains server-specific branch inclusion globs.  These overrule
 @var{default-include-pattern} if existant and are recorded automatically
-the first time you connect to a specific server or use the 
+the first time you connect to a specific server or use the
 @option{--set-default} option for a netsync operation.
 
 @item server-exclude
@@ -4846,6 +4866,24 @@ users.
 Monotone has a large number of commands. To help navigate through them
 all, commands are grouped into logical categories.
 
+Many command options come in pairs that affect the same value. For example,
+@command{mtn log} takes a @var{brief} option; this can be reversed by
+@var{no-brief}. This is convenient when building command strings
+automatically; @command{mtn log --brief --no-brief} is the same as
+@command{mtn log}.
+
+It also helps when setting options in the
+@var{get_default_command_options} hook; those options can be
+overridden on the command line. For example, if
+@var{get_default_command_options} specifies @var{brief} for
+@command{log}, you can override that with @command{mtn log
+--no-brief}.
+
+The command descriptions describe the most important options for each
+command, and only one of each pair of options. For a complete list of
+options, see the online help (@command{mtn help cmd}), or the manpage.
+
+
 @menu
 * Tree::                        Operations on tree states in your database
 * Workspace::                   Operations on your workspace
@@ -4878,10 +4916,10 @@ the command be executed from within a workspace.
 With an explicit @option{--revision} argument, the command outputs
 contents of @var{path} at that revision.
 
-@item mtn checkout [--move-conflicting-paths] --revision=@var{id} @var{directory}
-@itemx mtn co [--move-conflicting-paths] --revision=@var{id} @var{directory}
-@itemx mtn [--move-conflicting-paths] --branch=@var{branchname} checkout @var{directory}
-@itemx mtn [--move-conflicting-paths] --branch=@var{branchname} co @var{directory}
+@item mtn checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
+@itemx mtn co [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
+@itemx mtn [--[no-]move-conflicting-paths] --branch=@var{branchname} checkout @var{directory}
+@itemx mtn [--[no-]move-conflicting-paths] --branch=@var{branchname} co @var{directory}
 
 These commands copy a revision @var{id} out of your database,
 recording the chosen revision (the @dfn{base revision}) in the file
@@ -5035,8 +5073,8 @@ both projects nested as in @var{destbranch} instead of only the project
 originally in @var{sourcebranch}, which is almost certainly not what would be
 intended.
 
-@item mtn import --branch=@var{branch} [--message=@var{message}] [--dry-run] @var{dir}
-@item mtn import --revision=@var{revision} [--message=@var{message}] [--dry-run] @var{dir}
+@item mtn import --branch=@var{branch} [--message=@var{message}] [--[no-]dry-run] @var{dir}
+@item mtn import --revision=@var{revision} [--message=@var{message}] [--[no-]dry-run] @var{dir}
 This command imports the contents of the given directory and commits it
 to the head of the given branch or as a child of the given revision (and
 consequently into the branch that revision resides in).
@@ -5225,8 +5263,8 @@ or within an existing directory full of files, prior to using
 @command{mtn commit}. If no directory is specified, the current
 directory is used.
 
-@item mtn add [--recursive | -R] [--no-respect-ignore] @var{pathname...}
-@item mtn add [--recursive | -R] [--no-respect-ignore] --unknown [@var{pathname...}]
+@item mtn add [--[no-]recursive | -R] [--[no-]respect-ignore] @var{pathname...}
+@item mtn add [--[no-]recursive | -R] [--[no-]respect-ignore] --[no-]unknown [@var{pathname...}]
 This command places ``add'' entries for the paths specified in
 @var{pathname...} in the workspace's ``work list''. The work list of
 your workspace is stored in @file{_MTN/revision}, and is a list of
@@ -5249,7 +5287,7 @@ made recursive using the @option{--recursive} option.  When adding a
 directory non-recursively, monotone will warn if the directory has
 any files that would be added by a recursive add.
 
-@item mtn [--no-respect-ignore] mkdir @var{directory...}
+@item mtn [--[no-]respect-ignore] mkdir @var{directory...}
 This command creates a directory in the filesystem relative to your
 current location and adds it to your workspace's ``work list''.  The
 changes are not reflected in your database until such time as you
@@ -5457,8 +5495,8 @@ files which monotone has listed in its manifest, but which have been
 deleted from the workspace.  Only missing files matching the given
 file or directory arguments are reverted.
 
-@item mtn update [--move-conflicting-paths]
-@itemx mtn update [--move-conflicting-paths] --revision=@var{revision}
+@item mtn update [--[no-]move-conflicting-paths]
+@itemx mtn update [--[no-]move-conflicting-paths] --revision=@var{revision}
 Without a @option{--revision} argument, this command incorporates
 ``recent'' changes found in your database into your workspace. It
 does this by performing 3 separate stages. If any of these stages
@@ -5500,8 +5538,8 @@ specify an explicit @option{--revision} argument).
 When running @command{update}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
-@item mtn pluck [--move-conflicting-paths] --revision=@var{to}
-@itemx mtn pluck [--move-conflicting-paths] --revision=@var{from} --revision=@var{to}
+@item mtn pluck [--[no-]move-conflicting-paths] --revision=@var{to}
+@itemx mtn pluck [--[no-]move-conflicting-paths] --revision=@var{from} --revision=@var{to}
 
 This command takes changes made at any point in history, and attempts to
 edit your current workspace to include those changes.  The end result is
@@ -5544,7 +5582,7 @@ After running this command, you are guaranteed that your workspace is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
-@item mtn pivot_root [--bookkeep-only] [--move-conflicting-paths] pivot_root @var{new_root} @var{put_old}
+@item mtn pivot_root [--bookkeep-only] [--[no-]move-conflicting-paths] pivot_root @var{new_root} @var{put_old}
 Most users will never need this command.  It is primarily useful in
 certain tricky cases where one wishes to combine several projects
 into one, or split one project into several. See also @command{merge_into_dir}.
@@ -5577,7 +5615,7 @@ records, but not in the filesystem itself.
 When running @command{pivot_root}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
-@item mtn bisect good [--revision=@var{id} ...] [--move-conflicting-paths]
+@item mtn bisect good [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
 Mark the specified revisions as ``good'' for the current bisection
 operation. If no bisection operation is in progress a new bisection is
 initialized. If a bisection operation is in progress the next update
@@ -5590,7 +5628,7 @@ the workspace this command may be re-issued with the
 @command{bisect update} command can be used with this option to update
 the workspace and move the conflicting paths out of the way.
 
-@item mtn bisect bad [--revision=@var{id} ...] [--move-conflicting-paths]
+@item mtn bisect bad [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
 Mark the specified revisions as ``bad'' for the current bisection
 operation. If no bisection operation is in progress a new bisection is
 initialized. If a bisection operation is in progress the next update
@@ -5603,7 +5641,7 @@ the workspace this command may be re-issued with the
 @command{bisect update} command can be used with this option to update
 the workspace and move the conflicting paths out of the way.
 
-@item mtn bisect skip [--revision=@var{id} ...] [--move-conflicting-paths]
+@item mtn bisect skip [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
 Mark the specified revisions as ``skipped'' for the current bisection
 operation. If no bisection operation is in progress a new bisection is
 initialized. If a bisection operation is in progress the next update
@@ -5616,7 +5654,7 @@ the workspace this command may be re-issued with the
 @command{bisect update} command can be used with this option to update
 the workspace and move the conflicting paths out of the way.
 
-@item mtn bisect update [--move-conflicting-paths]
+@item mtn bisect update [--[no-]move-conflicting-paths]
 Update the workspace to the next revision selected by the previous
 bisect operation. This command can be useful when the previous bisect
 operation fails to update the workspace because of conflicting
@@ -5641,13 +5679,12 @@ current bisection information.
 
 @ftable @command
 @item mtn serve [--bind=[@var{address}][:@var{port}]]
-@item mtn serve --stdio [--no-transport-auth]
-@itemx mtn pull [--set-default] [@var{uri}]
-@itemx mtn push [--set-default] [--keys-to-push=@var{key}] [@var{uri}]
-@itemx mtn sync [--set-default] [--keys-to-push=@var{key}] [@var{uri}]
-@itemx mtn pull [--set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
-@itemx mtn push [--set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
-@itemx mtn sync [--set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+@itemx mtn pull [--[no-]set-default] [@var{uri}]
+@itemx mtn push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn pull [--[no-]set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+@itemx mtn push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+@itemx mtn sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 
 These commands operate the ``netsync'' protocol built into
 monotone. This is a custom protocol for rapidly synchronizing two
@@ -5741,9 +5778,9 @@ When the operation completes, all branches matching
 databases.
 
 The @command{pull}, @command{push}, and @command{sync} commands only
-require you pass @var{uri} (or @var{address} and @var{glob}) the first time 
+require you pass @var{uri} (or @var{address} and @var{glob}) the first time
 you use one of them; monotone will memorize this use and in the future default
-to the same URI (or server and glob).  For instance, if Bob wants to 
+to the same URI (or server and glob).  For instance, if Bob wants to
 @command{sync} with Alice again, he can simply run:
 
 @smallexample
@@ -5768,7 +5805,7 @@ If a @option{--pid-file} option is specified, the command
 identifier of the server in the file.  This file can then be read to
 identify specific monotone server processes.
 
-The syntax for patterns, both in globs as well as URIs, is very simple.  
+The syntax for patterns, both in globs as well as URIs, is very simple.
 @code{*} matches 0 or more arbitrary characters.  @code{?} matches exactly
 1 arbitrary character (you need to escape that with @code{%3F} in an URI).
 @code{@{foo,bar,baz@}} matches ``foo'', or ``bar'', or ``baz''.  These
@@ -5814,7 +5851,7 @@ Specifying only the pathname "." will restrict @command{status} to files
 changed within the current subdirectory of the workspace.
 
 @item mtn log
-@itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--to=@var{id} [...]] [--revision=@var{id} [...]] [--brief] [--no-merges] [--no-files] [--no-graph] [--diffs] [@var{pathname...}]
+@itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--clear-from] [--to=@var{id} [...]] [--clear-to] [--revision=@var{id} [...]] [--[no-]brief] [--[no-]merges] [--[no-]files] [--[no-]graph] [--[no-]diffs] [@var{pathname...}]
 
 This command prints out a log, in forward ancestry order by default
 but optionally in reverse ancestry order, of small history summaries.
@@ -5841,6 +5878,10 @@ history from the specified revisions, otherwise it starts from the
 base revision of your workspace. Log will stop when it reaches the end
 of the revision history or revisions specified by the @option{--to}
 option.
+
+@option{--clear-from} erases the effect of all previous
+@option{--from} options. @option{--clear-to} erases the effect of all
+previous @option{--to} options.
 
 When tracing through history in reverse-ancestry order and
 @option{--to=}@var{id} is given, log will stop when it reaches the
@@ -5935,8 +5976,8 @@ $ mtn complete revision 01f
 @end group
 @end smallexample
 
-@item mtn diff [--unified] [--no-show-encloser]
-@itemx mtn diff --context [--no-show-encloser]
+@item mtn diff [--unified] [--[no-]show-encloser]
+@itemx mtn diff --context [--[no-]show-encloser]
 @itemx mtn diff --external [--diff-args=@var{argstring}]
 @itemx mtn diff @var{pathname...}
 @itemx mtn diff [--reverse] --revision=@var{id}
@@ -6209,6 +6250,24 @@ the given revisions.
 
 Note that this does not show conflicts due to update commands, since
 in that case one revision is the workspace.
+
+@item mtn manpage [--formatted/--plain] [--[no-]hidden]
+
+The manpage command generates a complete (and if monotone is available
+in your language, also localized) manual page for all available commands,
+including all custom Lua commands.
+
+If the command's output is directly written to a terminal, its output is
+automatically formatted using @command{nroff} and displayed in the
+@command{less} pager.  If the auto-detection does not work for you for
+some reason, you can enforce the formatting by giving the @option{--formatted}
+option to the command and the @option{--plain} option to achieve the
+opposite, i.e. plain, unformatted troff output.  If you wish to use a
+different formatter or pager, please have a look at the
+@code{get_man_page_formatter_command} Lua hook.
+
+The option @option{--hidden} additionally enables the output of hidden
+commands and options, which is deactivated by default.
 @end ftable
 
 
@@ -7476,16 +7535,16 @@ Maximum number of directories to descend.
 @item --exclude=@var{exclude-glob}
 File or directory to exclude.
 
-@item --no-ignored
+@item --[no-]ignored
 Don't output ignored files or directories.
 
-@item --no-unknown
+@item --[no-]unknown
 Don't output unknown directories.
 
-@item --no-unchanged
+@item --[no-]unchanged
 Don't output files that are known but not changed in any way.
 
-@item --no-corresponding-renames
+@item --[no-]corresponding-renames
 If restricted to a renamed path, do not output the corresponding old / new
 paths for this restriction.
 
@@ -8400,12 +8459,12 @@ therefor fail unless a @code{get_passphrase} hook is set up remotely.
 
 @end table
 
-@item mtn automate pull [--set-default] [@var{uri}]
-@itemx mtn automate push [--set-default] [--keys-to-push=@var{key}] [@var{uri}]
-@itemx mtn automate sync [--set-default] [--keys-to-push=@var{key}] [@var{uri}]
-@itemx mtn automate pull [--set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
-@itemx mtn automate push [--set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
-@itemx mtn automate sync [--set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+@item mtn automate pull [--[no-]set-default] [@var{uri}]
+@itemx mtn automate push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn automate sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn automate pull [--[no-]set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+@itemx mtn automate push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+@itemx mtn automate sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 
 @table @strong
 @item Arguments:
@@ -8490,7 +8549,7 @@ If a netsync error occurs, the command outputs an error and exits with status 1.
 @end table
 
 
-@item mtn automate genkey @var{name} @var{passphrase}
+@item mtn automate generate_key @var{name} @var{passphrase}
 
 @table @strong
 @item Aguments
@@ -8500,6 +8559,9 @@ the passphrase that will be used to encrypt the private half.
 
 @item Changes:
 @itemize
+@item
+FIXME: renamed from @command{genkey} to @command{generate_key}
+
 @item
 10.0 -- The separate hashes for the private half of a key really didn't
 make much sense; have one @code{hash [...]} line instead of separate
@@ -9321,6 +9383,119 @@ None.
 
 @end table
 
+@item mtn automate put_public_key @var{key-packet-data}
+
+@table @strong
+@item Arguments:
+
+A data packet, @var{key-packet-data}, as produced by @command{mtn
+automate get_public_key @var{keyid}}.
+
+@item Added in:
+
+FIXME:
+
+@item Purpose:
+
+Store public keys into the database.
+
+Note that this duplicates part of @command{automate read_packets}; the
+intent is to deprecate @command{automate read_packets}, and only keep
+facilities for key packets.
+
+@item Output format:
+
+No output.
+
+@item Error conditions:
+
+An error will be produced if the argument is not a valid key packet.
+
+@end table
+
+@item mtn automate get_public_key @var{keyid}
+
+@table @strong
+@item Arguments:
+
+@var{keyid} identifies the key to display, by name or hash.
+
+@item Changes:
+
+@itemize
+@item
+FIXME -- initial
+
+@end itemize
+
+@item Purpose:
+
+Same as @command{pubkey}; print the key in packet format, suitable for
+reading by @command{automate put_public_key}.
+
+@item Sample output:
+
+@verbatim
+[pubkey foo@bar.com]
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQs4OEcqULwepphO5Rsb/aSLpiEryGtEkQRNQPNFxvcu1rwVnNKRxep1KCDrwV3se9f4hUQ8zz73NQggS82guSI/YuyXZDZHrw+v3YgAMV/mKGnAjgYnyRNUL1xCywV7fnqTduBBqkDEVSCqphWlii/gFB/PVo4sbJ4Hk7O6ujWwIDAQAB
+[end]
+@end verbatim
+
+@item Output format:
+
+See example.
+
+@item Error conditions:
+
+If the key does not exist, an error message is printed on the error stream.
+
+@end table
+
+@item mtn automate drop_public_key @var{keyid}
+
+@table @strong
+@item Arguments:
+
+@var{keyid} identifies the key to drop, by name or hash.
+
+@item Changes:
+
+@itemize
+@item
+FIXME -- initial
+
+@end itemize
+
+@item Purpose:
+
+Drop a public key from the database (@emph{not} the private key from
+the keystore). Signatures made with the key can no longer be verified.
+
+This command should be used with caution as changes are irreversible
+without a backup of the key(s) that were dropped. You may wish to use
+the @command{k:} selector to check if the key is used in a signature.
+
+Note that public keys that are used to sign a revision may be
+restored to the database by a future sync.
+
+Keys in the keystore are not dropped because that is very dangerous on
+a server. The only way to drop private keys on a server is via the
+command @command{mtn dropkey}.
+
+@item Sample output:
+
+None.
+
+@item Output format:
+
+None on the main stream; progress message on the progress stream.
+
+@item Error conditions:
+
+If the key does not exist, an error message is printed on the error stream.
+
+@end table
+
 @item mtn automate packet_for_rdata @var{id}
 
 @table @strong
@@ -9728,7 +9903,7 @@ prints to stderr and exits with status 1.
 @item Arguments:
 
 The optional @var{base-id} specifies a file-id on which the contents are
-based on. This is used for delta encoding. @var{contents} are the contents of
+based. This is used for delta encoding. @var{contents} are the contents of
 the new file.
 
 @item Added in:
@@ -10195,8 +10370,8 @@ stderr and exits with status 1.
 @item Arguments:
 
 [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]]
-[--to=@var{id} [...]] [--no-merges]
-[@var{pathname...}]
+[--clear-from] [--to=@var{id} [...]] [--clear-to]
+[--[no-]merges] [@var{pathname...}]
 
 Same as @command{mtn log}, but without the output control options; see
 @ref{Informative}.
@@ -10235,7 +10410,7 @@ see @command{mtn log} in @ref{Informative}.
 @item Arguments:
 
 Same as @command{mtn update}; no arguments, options
-@var{--move-conflicting-paths}, @var{--revision=revision}
+@var{--[no-]move-conflicting-paths}, @var{--revision=revision}
 
 @item Added in:
 
@@ -10270,12 +10445,42 @@ see @command{update} in @ref{Workspace}.
 
 @end table
 
+@item mtn automate checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
+
+@table @strong
+@item Arguments:
+
+Same as @command{mtn checkout}; directory to create workspace in.
+
+@item Added in:
+
+FIXME
+
+@item Purpose:
+
+Create a new workspace containing the given revision; see
+@command{checkout} in @ref{Workspace}.
+
+@item Sample output:
+
+None.
+
+@item Output format:
+
+None.
+
+@item Error conditions:
+
+see @command{checkout} in @ref{Workspace}.
+
+@end table
+
 @item mtn automate read_packets @var{packet-data}
 
 @table @strong
 @item Arguments:
 
-A data packet, @var{packet-data}, as produced by @command{mtn pubkey @var{keyname}}.
+A data packet, @var{packet-data}, as produced by @command{mtn pubkey @var{keyid}}.
 
 @item Added in:
 
@@ -11036,6 +11241,17 @@ formatting and parsing cycle. Otherwise the @command{status} command
 will issue warnings that the format is unsuitable and the
 @command{commit} command will abort.
 
+@item get_man_page_formatter_command ()
+
+Specifies the command chain which should be executed if the
+@command{manpage} command is executed interactively. The default is
+to call the @command{nroff} formatter and pipe that output into the
+@command{less} pager.
+
+Note that on the native Windows build of monotone, the command
+specified by this hook is run in the @command{cmd.exe} shell. On Unix
+and Cygwin, it is run in the @command{sh} shell.
+
 @end ftable
 
 @subsection Netsync Permission Hooks
@@ -11349,11 +11565,21 @@ The default definition of this hook follows:
 @smallexample
 @group
 function accept_testresult_change(old_results, new_results)
-   for test,res in pairs(old_results)
+   local reqfile = io.open("_MTN/wanted-testresults", "r")
+   if (reqfile == nil) then return true end
+   local line = reqfile:read()
+   local required = @{@}
+   while (line ~= nil)
    do
-      if res == true and new_results[test] ~= true
+      required[line] = true
+      line = reqfile:read()
+   end
+   io.close(reqfile)
+   for test, res in pairs(required)
+   do
+      if old_results[test] == true and new_results[test] ~= true
       then
-     return false
+         return false
       end
    end
    return true
@@ -11361,11 +11587,9 @@ end
 @end group
 @end smallexample
 
-This definition accepts only those updates which preserve the set of
-@code{true} test results from update source to target. If no test
-results exist, this hook has no affect; but once a @code{true} test
-result is present, future updates will require it. If you want a more
-lenient behavior you must redefine this hook.
+This definition looks at the file @code{_MTN/wanted-testresults} and
+requires that once any test listed there has returned @code{true}, updates
+will only take revisions where that test still returned @code{true}.
 
 @end ftable
 
@@ -11624,18 +11848,33 @@ If there is a policy decision to make, Monotone defines certain hooks to
 allow a client to validate or reject certain behaviors.
 
 @ftable @code
+@item validate_changes (@var{revision_text}, @var{branchname})
+
+This hook is called just after the to-be-committed changes and the branch
+have been logically verified and before the user enters his/her commit message.
+@var{revision_text} is the full text of the changes for this revision,
+which can be parsed with the parse_basic_io function. The second parameter,
+@var{branchname}, is the branch for this commit - unless it gets changed
+in the editor later on.
+
+If the hook finds the changes satisfactory, it can return @code{true,
+""}. If it finds fault, then it can return @code{false, reason} where
+@var{reason} is the reason the changes were rejected. By default, this hook
+is not defined and is thus ignored during a commit.
+
 @item validate_commit_message (@var{message}, @var{revision_text}, @var{branchname})
 
 This hook is called after the user has entered his/her commit message.
 @var{message} is the commit message that the user has entered and
 @var{revision_text} is the full text of the changes for this revision,
-which can be parsed with the parse_basic_io function. The @var{branchname} on
-which the new revision will be committed if all goes well is passed in as the third
-parameter.
+which, again, can be parsed with the parse_basic_io function.
+The @var{branchname} on which the new revision will be committed if all goes
+well is passed in as the third parameter.
+
 If the hook finds the commit message satisfactory, it can return @code{true,
 ""}. If it finds fault, then it can return @code{false, reason} where
 @var{reason} is the reason the message was rejected. By default, this hook
-rejects empty log messages.
+is not defined and is thus ignored during a commit.
 
 @end ftable
 
@@ -11713,6 +11952,11 @@ more of the following characters:
 @end group
 @end smallexample
 
+@item guess_terminal_width()
+
+Returns the size of the terminal window as number or a sane default
+(72) if the information cannot be retrieved.
+
 @item include(@var{scriptfile})
 
 This function tries to load and execute the script contained into
@@ -11774,7 +12018,7 @@ to create temporary files outside the current directory.
 
 @strong{Important notice:}@*
 To create a temporary file, you must use the @code{temp_file()}
-function, unless you need to run monotone with the @option{--nostd}
+function, unless you need to run monotone with the @option{--no-builtin-rcfiles}
 option.  @code{temp_file()} builds on @code{mkstemp()} and creates a
 file in the standard TMP/TEMP directories.
 For the definition of @code{temp_file()}, see @ref{Default hooks}.
@@ -11865,7 +12109,7 @@ Calls fork/execvp on POSIX, CreateProcess on Win32.
 
 @strong{Important notice:}@*
 To spawn a process and wait for its completion, use the @code{execute()}
-function, unless you need to run monotone with the @option{--nostd}
+function, unless you need to run monotone with the @option{--no-builtin-rcfiles}
 option.  @code{execute()} builds on @code{spawn()} and @code{wait()}
 in a standardized way.
 
@@ -13295,7 +13539,7 @@ expected by the Perl-Compatible Regular Expression library (PCRE).
 
 This section contains the entire source code of the standard hook file,
 that is built in to the monotone executable, and read before any user
-hooks files (unless @option{--nostd} is passed).  It contains the
+hooks files (unless @option{--no-builtin-rcfiles} is passed).  It contains the
 default values for all hooks.
 
 @verbatiminclude std_hooks.lua

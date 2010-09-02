@@ -83,6 +83,7 @@ struct key_store_state
       have_read(false), lua(app.lua)
   {
     E(app.opts.key_dir_given
+      || app.opts.key_dir != system_path(get_default_keydir(), origin::user)
       || app.opts.conf_dir_given
       || !app.opts.no_default_confdir,
       origin::user,
@@ -409,6 +410,43 @@ key_store_state::put_key_pair_memory(full_key_info const & info)
   return true;
 }
 
+struct key_delete_validator : public packet_consumer
+{
+  key_id expected_ident;
+  system_path file;
+  key_delete_validator(key_id const & id, system_path const & f)
+    : expected_ident(id), file(f) {}
+  virtual ~key_delete_validator() {}
+  virtual void consume_file_data(file_id const & ident,
+                                 file_data const & dat)
+  { E(false, origin::system, F("Invalid data in key file.")); }
+  virtual void consume_file_delta(file_id const & id_old,
+                                  file_id const & id_new,
+                                  file_delta const & del)
+  { E(false, origin::system, F("Invalid data in key file.")); }
+  virtual void consume_revision_data(revision_id const & ident,
+                                     revision_data const & dat)
+  { E(false, origin::system, F("Invalid data in key file.")); }
+  virtual void consume_revision_cert(cert const & t)
+  { E(false, origin::system, F("Invalid data in key file.")); }
+  virtual void consume_public_key(key_name const & ident,
+                                  rsa_pub_key const & k)
+  { E(false, origin::system, F("Invalid data in key file.")); }
+  virtual void consume_key_pair(key_name const & name,
+                                keypair const & kp)
+  {
+     L(FL("reading key pair '%s' from key store for validation") % name);
+     key_id ident;
+     key_hash_code(name, kp.pub, ident);
+     E(ident == expected_ident, origin::user,
+       F("expected key with id '%s' in key file '%s', got key with id '%s'")
+         % expected_ident % file % ident);
+  }
+  virtual void consume_old_private_key(key_name const & ident,
+                                       old_arc4_rsa_priv_key const & k)
+  { L(FL("skipping id check before deleting old private key in '%s'") % file); }
+};
+
 void
 key_store::delete_key(key_id const & ident)
 {
@@ -418,6 +456,22 @@ key_store::delete_key(key_id const & ident)
     {
       system_path file;
       s->get_key_file(ident, i->second.first, file);
+      if (!file_exists(file))
+          s->get_old_key_file(i->second.first, file);
+
+      // sanity: if we read the key originally from a file which did not
+      // follow the NAME.IDENT scheme and have another key pair with NAME
+      // in the key dir, we could accidentially drop the wrong private key
+      // here, so validate if the file really contains the key with the
+      // ID we want to delete, before going mad
+        {
+          key_delete_validator val(ident, file);
+          data dat;
+          read_data(file, dat);
+          istringstream is(dat());
+          I(read_packets(is, val));
+        }
+
       delete_file(file);
 
       s->keys.erase(i);

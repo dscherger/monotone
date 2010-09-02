@@ -1,5 +1,9 @@
+-- Test various rename directory cases
 
 mtn_setup()
+
+include("common/basic_io.lua")
+include("common/test_utils_inventory.lua")
 
 mkdir("foo")
 
@@ -36,3 +40,25 @@ check(not qgrep("foo/bar", "manifest"))
 check(not qgrep("foo/foo", "manifest"))
 check(exists("bar/bar"))
 check(exists("bar/foo"))
+
+-- Now do directory rename in other order; mtn 0.48 got this wrong
+rename("bar", "foo")
+check(mtn("rename", "--bookkeep-only", "bar", "foo"), 0, false, false)
+check(mtn("automate", "inventory", "--no-unknown"), 0, true, false)
+parsed = parse_basic_io(readfile("stdout"))
+
+check_inventory (parsed, 7,
+{path = "bar",
+ old_type = "directory",
+ new_path = "foo",
+ fs_type = "none",
+ status = {"rename_source"}})
+
+check_inventory (parsed, 22,
+{path = "foo",
+ new_type = "directory",
+ old_path = "bar",
+ fs_type = "directory",
+ birth = root_r_sha,
+ status = {"rename_target", "known"}})
+

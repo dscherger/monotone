@@ -17,7 +17,7 @@ function safe_mtn(...)
       err("'mtn' environment variable not set")
     end
   end
-  return {monotone_path, "--norc", "--root=" .. test.root,
+  return {monotone_path, "--no-standard-rcfiles", "--root=" .. test.root,
           "--confdir="..test.root, ...}
 end
 
@@ -31,7 +31,7 @@ function mtn_ws_opts(...)
       err("'mtn' environment variable not set")
     end
   end
-  return {monotone_path, "--ssh-sign=no", "--no-default-confdir", "--norc", "--rcfile", test.root .. "/test_hooks.lua", ...}
+  return {monotone_path, "--ssh-sign=no", "--no-default-confdir", "--no-standard-rcfiles", "--rcfile", test.root .. "/test_hooks.lua", ...}
 end
 
 function mtn_outside_ws(...)
@@ -46,7 +46,7 @@ function mtn_outside_ws(...)
   return {monotone_path,
          "--no-workspace",
          "--ssh-sign=no",
-         "--norc", "--rcfile", test.root .. "/test_hooks.lua",
+         "--no-standard-rcfiles", "--rcfile", test.root .. "/test_hooks.lua",
          "--confdir="..test.root,
          "--db=" .. test.root .. "/test.db",
          "--keydir", test.root .. "/keys",
@@ -67,20 +67,20 @@ function raw_mtn(...)
 end
 
 function mtn(...)
-  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
+  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--no-builtin-rcfiles",
          "--db=" .. test.root .. "/test.db",
          "--keydir", test.root .. "/keys",
          "--key=tester@test.net", ...)
 end
 
 function nodb_mtn(...)
-  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
+  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--no-builtin-rcfiles",
          "--keydir", test.root .. "/keys",
          "--key=tester@test.net", ...)
 end
 
 function nokey_mtn(...)
-  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
+  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--no-builtin-rcfiles",
          "--db=" .. test.root .. "/test.db",
          "--keydir", test.root .. "/keys", ...)
 end

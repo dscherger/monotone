@@ -8,7 +8,7 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 # PURPOSE.
 
-mtn_dir=./_MTN
+mtn_dir=.
 mtn_keys=
 shell_type=sh
 if echo $SHELL | grep '/t?csh' > /dev/null; then shell_type=csh; fi
@@ -53,6 +53,7 @@ while [ ! $# = 0 ]; do
 	--version)
 	    echo "mtnopt from monotone @PACKAGE_VERSION@"
 	    exit 0
+	    ;;
     esac
     shift
 done
@@ -60,12 +61,15 @@ done
 if [ ! -d "$mtn_dir" ]; then
     echo "mtnopt: $mtn_dir isn't a directory or is missing"
     exit 1
-elif [ ! -f "$mtn_dir/options" ]; then
-    echo "mtnopt: $mtn_dir/options isn't a file or is missing"
+elif [ ! -d "$mtn_dir/_MTN" ]; then
+    echo "mtnopt: $mtn_dir isn't a monotone workspace"
+    exit 1
+elif [ ! -f "$mtn_dir/_MTN/options" ]; then
+    echo "mtnopt: $mtn_dir/_MTN/options isn't a file or is missing"
     exit 1
 fi
 
-cat $mtn_dir/options | while read L; do
+cat $mtn_dir/_MTN/options | while read L; do
     eval `echo "$L" | sed -e 's/^ *\([a-z][a-z]*\) \(.*\)$/key=\1; val=\2/'`
     if [ -z "$mtn_keys" ] || echo "$key" | egrep "^$mtn_keys\$" > /dev/null; then
 	if $values_only; then

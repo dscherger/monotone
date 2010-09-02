@@ -50,7 +50,7 @@ public:
   lua_hooks(app_state * app);
   ~lua_hooks();
   bool check_lua_state(lua_State * st) const;
-  void load_rcfiles(options & opts);
+  void load_rcfiles(options const & opts);
   bool hook_exists(string const & func_name);
 
   // cert hooks
@@ -149,16 +149,23 @@ public:
                             file_path const & filename);
 
   // validation hooks
+  bool hook_validate_changes(revision_data const & new_rev,
+                             branch_name const & branchname,
+                             bool & validated,
+                             string & reason);
+
   bool hook_validate_commit_message(utf8 const & message,
                                     revision_data const & new_rev,
                                     branch_name const & branchname,
                                     bool & validated,
                                     string & reason);
 
-  // meta hooks
+  // misc hooks
   bool hook_hook_wrapper(string const & func_name,
                          vector<string> const & args,
                          string & out);
+
+  bool hook_get_man_page_formatter_command(string & command);
 
   // notification hooks
   bool hook_note_commit(revision_id const & new_id,

@@ -10,7 +10,7 @@
 
 /*
  * This is a list of all options that monotone can take, what variables
- * they get put into, and how they get there. There are 4 important macros
+ * they get put into, and how they get there. There are 6 important macros
  * available here (and only here):
  *
  *   OPTSET(name)
@@ -18,9 +18,31 @@
  *     a particular command or reset together. It is named
  *     'options::opts::name'.
  *
+ *     This is used primarily for convenience in specifying options for the
+ *     CMD macro. Especially if several options always go together, they
+ *     can be grouped into an optset and then only that optset has to be
+ *     specified as an argument to the CMD macro when declaring commands
+ *     that use all of those options.
+ *
+ *     This is also used for resettable options; any option that has a
+ *     reset flag needs to be directly in an optset that *only* contains
+ *     (directly or through OPTSET_REL) the optvar's that should be
+ *     re-initialized when the reset flag is given. Because the
+ *     SIMPLE_OPTION family all declare an optset containing only the
+ *     one option and its one optvar, you don't typically need to care
+ *     about this.
+ *
  *   OPTSET_REL(parent, child)
  *     Declare a relationship between two optsets, so that if the parent
  *     is reset or allowed for a command the child will also be.
+ *
+ *     For example "diff" takes all of the options that "automate diff"
+ *     takes, plus some additional ones. So there is a line below,
+ *     "OPTSET_REL(diff_options, au_diff_options)", and then "diff" takes
+ *     options::opts::diff_options and "automate diff" takes
+ *     options::opts::au_diff_options. Options that only apply to "diff"
+ *     go in the diff_options optset, while options that apply to both
+ *     go in the au_diff_options optset.
  *
  *   OPTVAR(optset, type, name, default)
  *     Defines a variable 'type options::name' which is initialized to
@@ -45,27 +67,133 @@
  *     part of the same optset as the option, or they won't get reset
  *     properly. When the function body is needed, 'option_bodies' will
  *     be defined.
+ *
+ *
+ *   HIDE(option)
+ *     Do not show the named option in normal help output. Hidden options
+ *     are shown by the --hidden option.
+ *
+ *     In general, options should be hidden if they are introduced for
+ *     testing purposes.
+ *
+ *   DEPRECATE(option, reason, deprecated_in, will_remove_in)
+ *     Do not show the named option in help output (even with --hidden), and
+ *     give a warning if it is used. The reason should be
+ *     gettext_noopt("some text here") as it is translatable.
+ *
+ *
+ *   Option Strings
+ *
+ *     Options can have a long name, a short name, and a 'reset' name. The
+ *     long and short names run the function body in the '#ifdef
+ *     option_bodies'. The 'reset' name is slightly different, it makes the
+ *     optset that the option belongs to get reset. This means that if you
+ *     have several related options in the same optset, you probably *don't*
+ *     want to specify a reset name for any of them.
+ *
+ *     If you want an option to belong to an optset and also be resettable,
+ *     you can use OPTSET_REL to make the desired optset include the option's
+ *     personal optset.
+ *
+ *     The option string format is "long,s/reset". "--long" and "-s" are
+ *     the long and short names, and set the option. "--reset" is the
+ *     reset name, and resets the option. An option *must* have a long
+ *     and/or short name, but isn't required to have a reset name. So
+ *     "/foo" is invalid, but "foo,f", "foo/no-foo", "f/no-f", and
+ *     "foo,f/no-foo" are all allowed.
  */
 
-// This is a shortcut for an option which has its own variable and optset.
-// It will take an argument unless 'type' is 'bool'.
-#define OPT(name, string, type, default_, description)               \
-  OPTVAR(name, type, name, default_)                                    \
-  OPTION(name, name, has_arg<type >(), string, description)
+/*
+ * If you want different *default* values for an option based on what command
+ * is being run (for example --with-header/--no-with-header for 'diff' and
+ * 'automate diff'), use CMD_PRESET_OPTIONS(cmdname) { ... } defined in cmd.hh.
+ * It doesn't go in this file, but rather in the file where the command is
+ * defined (ideally immediately before the CMD() declaration for that same
+ * command, just to be consistent).
+ */
 
-// This is the same, except that the option and variable belong to the
-// 'globals' optset. These are global options, not specific to a particular
-// command.
-#define GOPT(name, string, type, default_, description)                 \
-  OPTVAR(globals, type, name, default_)                                 \
-  OPTION(globals, name, has_arg<type >(), string, description)
+#ifdef option_bodies
+template<typename T>
+void set_simple_option(T & t, std::string const & arg)
+{ t = T(arg, origin::user); }
+template<typename T>
+void set_simple_option(std::vector<T> & t, std::string const & arg)
+{ t.push_back(T(arg, origin::user)); }
+template<typename T>
+void set_simple_option(std::set<T> & t, std::string const & arg)
+{ t.insert(T(arg, origin::user)); }
+template<>
+void set_simple_option(bool & t, std::string const & arg)
+{ t = true; }
+void set_simple_option(u8 & t, std::string const & arg)
+{
+  long l = boost::lexical_cast<long>(arg);
+  if (l < 0 || l > 255)
+    throw bad_arg_internal(F("must be between 0 and 255").str());
+  else
+    t = (u8)l;
+}
+template<>
+void set_simple_option(std::string & t, std::string const & arg)
+{ t = arg; }
+void set_simple_option(date_t & t, std::string const & arg)
+{
+  try { t = date_t(arg); }
+  catch (std::exception & e)
+    { throw bad_arg_internal(e.what()); }
+}
+template<>
+void set_simple_option(std::vector<string> & t, std::string const & arg)
+{ t.push_back(arg); }
+template<>
+void set_simple_option(std::set<string> & t, std::string const & arg)
+{ t.insert(arg); }
+template<>
+void set_simple_option(enum_string & t, std::string const & arg)
+{ t.set(arg); }
+template<>
+void set_simple_option(enum_string_set & t, std::string const & arg)
+{ t.add(arg); }
+
+# define SIMPLE_OPTION_BODY(name) { set_simple_option(name, arg); }
+#else
+# define SIMPLE_OPTION_BODY(name)
+#endif
+/*
+ * This is a 'magic' option, and Does The Right Thing based on its data type:
+ *  * If it's a bool, it will be true if the option is given and false if
+ *    not given (or reset), and will not take an argument.
+ *  * If it's a string or vocab type, it will be set to the argument if
+ *    given, and set to the empty value (default constructor) if reset
+ *    or not given.
+ *  * If it's a container (vector/set) of strings or vocab types, each
+ *    time the option is given the argument will be added to the collection
+ *    (with push_back or insert), and the collection will be empty if the
+ *    option is not given or is reset.
+ */
+#define SIMPLE_INITIALIZED_OPTION(name, optstring, type, init, description) \
+  OPTSET(name)                                                          \
+  OPTVAR(name, type, name, init)                                        \
+  OPTION(name, name, has_arg<type >(), optstring, description)          \
+  SIMPLE_OPTION_BODY(name)
+
+#define SIMPLE_OPTION(name, optstring, type, description)               \
+  SIMPLE_INITIALIZED_OPTION(name, optstring, type, , description)
+
+#define GROUPED_SIMPLE_OPTION(group, name, optstring, type, description) \
+  OPTSET_REL(group, name)                                               \
+  SIMPLE_OPTION(name, optstring, type, description)
+
 
 // because 'default_' is constructor arguments, and may need to be a list
-// This doesn't work if fed through the OPT / GOPT shorthand versions
+// This doesn't work if fed through SIMPLE_INITIALIZED_OPTION (it wouldn't
+// work with the other 2 SIMPLE_OPTION macros either, but it wouldn't make
+// sense in the first place with those).
 #define COMMA ,
 
 OPTSET(globals)
 
+// this is a magic option
 OPTVAR(globals, args_vector, args, )
 OPTION(globals, positionals, true, "--", "")
 #ifdef option_bodies
@@ -73,127 +201,58 @@ OPTION(globals, positionals, true, "--", "")
   args.push_back(arg_type(arg, origin::user));
 }
 #endif
-
-OPT(author, "author", utf8, , gettext_noop("override author for commit"))
+// this is a more magic option
+OPTION(globals, xargs, true, "xargs,@",
+       gettext_noop("insert command line arguments taken from the given file"))
 #ifdef option_bodies
 {
-  author = utf8(arg, origin::user);
 }
 #endif
 
-OPT(automate_stdio_size, "automate-stdio-size", size_t, 32768,
-     gettext_noop("block size in bytes for \"automate stdio\" output"))
-#ifdef option_bodies
-{
-  automate_stdio_size = boost::lexical_cast<long>(arg);
-  if (automate_stdio_size <= 0)
-    throw bad_arg_internal(F("cannot be zero or negative").str());
-}
-#endif
 
-OPTSET(maybe_auto_update)
-OPTVAR(maybe_auto_update, bool, do_auto_update, false)
-OPTION(maybe_auto_update, yes_update, false, "update",
-       gettext_noop("automatically update the workspace, if it is clean and the base "
-                    "revision is a head of an affected branch"))
-#ifdef option_bodies
-{
-  do_auto_update = true;
-}
-#endif
-OPTION(maybe_auto_update, no_update, false, "no-update",
-       gettext_noop("do not touch the workspace (default)"))
-#ifdef option_bodies
-{
-  do_auto_update = false;
-}
-#endif
+SIMPLE_OPTION(author, "author", utf8, gettext_noop("override author for commit"))
+
+SIMPLE_OPTION(automate_stdio_size, "automate-stdio-size",
+              restricted_long<1>,
+              gettext_noop("block size in bytes for \"automate stdio\" output"))
+
+SIMPLE_OPTION(auto_update, "update/no-update", bool,
+              gettext_noop("automatically update the workspace, if it is clean and the base "
+                           "revision is a head of an affected branch"))
 
 OPTSET(bind_opts)
-OPTVAR(bind_opts, std::list<utf8>, bind_uris, )
-OPTVAR(bind_opts, bool, bind_stdio, false)
-OPTVAR(bind_opts, bool, use_transport_auth, true)
+GROUPED_SIMPLE_OPTION(bind_opts, bind_uris, "bind", std::vector<utf8>,
+                      gettext_noop("address:port to listen on (default :4691)"))
+HIDE(no_transport_auth)
+GROUPED_SIMPLE_OPTION(bind_opts, no_transport_auth, "no-transport-auth", bool,
+                      gettext_noop("disable transport authentication"))
+HIDE(bind_stdio)
+GROUPED_SIMPLE_OPTION(bind_opts, bind_stdio, "stdio", bool,
+                      gettext_noop("serve netsync on stdio"))
 
-OPTION(bind_opts, bind, true, "bind",
-       gettext_noop("address:port to listen on (default :4691)"))
-#ifdef option_bodies
-{
-  bind_uris.push_back(utf8(arg, origin::user));
-  bind_stdio = false;
-}
-#endif
-OPTION(bind_opts, no_transport_auth, false, "no-transport-auth",
-       gettext_noop("disable transport authentication"))
-#ifdef option_bodies
-{
-  use_transport_auth = false;
-}
-#endif
-OPTION(bind_opts, bind_stdio, false, "stdio",
-       gettext_noop("serve netsync on stdio"))
-#ifdef option_bodies
-{
-  bind_stdio = true;
-}
-#endif
+HIDE(max_netsync_version)
+SIMPLE_OPTION(max_netsync_version, "max-netsync-version", u8,
+              gettext_noop("cause monotone to lie about the maximum netsync "
+                           "protocol version that it supports, mostly for debugging"))
+HIDE(min_netsync_version)
+SIMPLE_OPTION(min_netsync_version, "min-netsync-version", u8,
+              gettext_noop("cause monotone to lie about the minimum netsync "
+                           "protocol version it supports, useful for debugging or "
+                           "if you want to prevent use of older protocol versions"))
 
-OPT(max_netsync_version, "max-netsync-version",
-    u8, constants::netcmd_current_protocol_version,
-    gettext_noop("cause monotone to lie about the maximum netsync "
-                 "protocol version that it supports, mostly for debugging"))
-#ifdef option_bodies
-{
-  max_netsync_version = (u8)boost::lexical_cast<u32>(arg);
-}
-#endif
-
-OPT(min_netsync_version, "min-netsync-version",
-    u8, constants::netcmd_minimum_protocol_version,
-    gettext_noop("cause monotone to lie about the minimum netsync "
-                 "protocol version it supports, useful for debugging or "
-                 "if you want to prevent use of older protocol versions"))
-#ifdef option_bodies
-{
-  min_netsync_version = (u8)boost::lexical_cast<u32>(arg);
-}
-#endif
-
-OPT(remote_stdio_host, "remote-stdio-host", arg_type, ,
+SIMPLE_OPTION(remote_stdio_host, "remote-stdio-host", arg_type,
     gettext_noop("sets the host (and optionally the port) for a "
                  "remote netsync action"))
-#ifdef option_bodies
-{
-  remote_stdio_host = arg_type(arg, origin::user);
-}
-#endif
 
-OPT(branch, "branch,b", branch_name, ,
-    gettext_noop("select branch cert for operation"))
-#ifdef option_bodies
-{
-  branch = branch_name(arg, origin::user);
-}
-#endif
+SIMPLE_OPTION(branch, "branch,b", branch_name,
+              gettext_noop("select branch cert for operation"))
 
-OPT(brief, "brief", bool, false,
-     gettext_noop("print a brief version of the normal output"))
-#ifdef option_bodies
-{
-  brief = true;
-}
-#endif
+SIMPLE_OPTION(brief, "brief/no-brief", bool,
+              gettext_noop("print a brief version of the normal output"))
 
-OPT(revs_only, "revs-only", bool, false,
-     gettext_noop("annotate using full revision ids only"))
-#ifdef option_bodies
-{
-  revs_only = true;
-}
-#endif
+SIMPLE_OPTION(revs_only, "revs-only", bool,
+              gettext_noop("annotate using full revision ids only"))
 
-// Remember COMMA doesn't work with GOPT, use long form.
-//GOPT(conf_dir, "confdir", system_path, get_default_confdir() COMMA origin::user,
-//     gettext_noop("set location of configuration directory"))
 OPTVAR(globals, system_path, conf_dir, get_default_confdir() COMMA origin::user)
 OPTION(globals, conf_dir, true, "confdir",
        gettext_noop("set location of configuration directory"))
@@ -205,49 +264,32 @@ OPTION(globals, conf_dir, true, "confdir",
 }
 #endif
 
-GOPT(no_default_confdir, "no-default-confdir", bool, false,
-     gettext_noop("forbid use of the default confdir"))
-#ifdef option_bodies
-{
-  no_default_confdir = true;
-}
-#endif
+GROUPED_SIMPLE_OPTION(globals, no_default_confdir, "no-default-confdir/allow-default-confdir", bool,
+                     gettext_noop("forbid use of the default confdir"))
 
-OPT(date, "date", date_t, ,
-     gettext_noop("override date/time for commit"))
-#ifdef option_bodies
-{
-  try
-    {
-      date = date_t(arg);
-    }
-  catch (std::exception &e)
-    {
-      throw bad_arg_internal(e.what());
-    }
-}
-#endif
+SIMPLE_OPTION(date, "date", date_t,
+              gettext_noop("override date/time for commit"))
 
-GOPT(date_fmt, "date-format", std::string, ,
-    gettext_noop("strftime(3) format specification for printing dates"))
+OPTSET(date_formats)
+OPTSET_REL(globals, date_formats)
+OPTVAR(date_formats, std::string, date_fmt, )
+OPTION(date_formats, date_fmt, true, "date-format",
+       gettext_noop("strftime(3) format specification for printing dates"))
 #ifdef option_bodies
 {
   date_fmt = arg;
+  no_format_dates = false;
 }
 #endif
-
-GOPT(format_dates, "no-format-dates", bool, true,
-    gettext_noop("print date certs exactly as stored in the database"))
-#ifdef option_bodies
-{
-  format_dates = false;
-}
-#endif
+GROUPED_SIMPLE_OPTION(date_formats, no_format_dates,
+                      "no-format-dates", bool,
+                      gettext_noop("print date certs exactly as stored in the database"))
 
 
-OPTVAR(globals, db_type, dbname_type, );
-OPTVAR(globals, std::string, dbname_alias, );
-GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
+OPTVAR(globals, db_type, dbname_type, )
+OPTVAR(globals, std::string, dbname_alias, )
+OPTVAR(globals, system_path, dbname, )
+OPTION(globals, dbname, true, "db,d", gettext_noop("set name of database"))
 #ifdef option_bodies
 {
   if (arg == memory_db_identifier)
@@ -267,52 +309,29 @@ GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 }
 #endif
 
-GOPT(roster_cache_performance_log, "roster-cache-performance-log",
-     system_path, , gettext_noop("log roster cache statistic to the given file"))
-#ifdef option_bodies
-{
-  roster_cache_performance_log = system_path(arg, origin::user);
-}
-#endif
+HIDE(roster_cache_performance_log)
+GROUPED_SIMPLE_OPTION(globals, roster_cache_performance_log, "roster-cache-performance-log",
+                     system_path,
+                     gettext_noop("log roster cache statistic to the given file"))
 
-OPTION(globals, debug, false, "debug",
-        gettext_noop("print debug log to stderr while running"))
-#ifdef option_bodies
-{
-  global_sanity.set_debug();
-}
-#endif
-
-OPT(depth, "depth", long, -1,
-     gettext_noop("limit the number of levels of directories to descend"))
-#ifdef option_bodies
-{
-  depth = boost::lexical_cast<long>(arg);
-  if (depth < 0)
-    throw bad_arg_internal(F("cannot be negative").str());
-}
-#endif
+SIMPLE_OPTION(depth, "depth", restricted_long<0>,
+              gettext_noop("limit the number of levels of directories to descend"))
 
 
 OPTSET(diff_options)
+OPTSET(au_diff_options)
+OPTSET_REL(diff_options, au_diff_options)
 
-OPTVAR(diff_options, std::string, external_diff_args, )
-OPTION(diff_options, external_diff_args, true, "diff-args",
+GROUPED_SIMPLE_OPTION(diff_options, external_diff_args, "diff-args", std::string,
         gettext_noop("argument to pass external diff hook"))
-#ifdef option_bodies
-{
-  external_diff_args = arg;
-}
-#endif
-
-OPTVAR(diff_options, bool, reverse, false)
-OPTION(diff_options, reverse, false, "reverse",
+GROUPED_SIMPLE_OPTION(au_diff_options, reverse, "reverse", bool,
         gettext_noop("reverse order of diff"))
-#ifdef option_bodies
-{
-  reverse = true;
-}
-#endif
+GROUPED_SIMPLE_OPTION(diff_options, no_show_encloser, "no-show-encloser/show-encloser", bool,
+     gettext_noop("do not show the function containing each block of changes"))
+OPTSET_REL(au_diff_options, with_header)
+SIMPLE_OPTION(with_header, "with-header/without-header", bool,
+              gettext_noop("show the matching cset in the diff header"))
+
 OPTVAR(diff_options, diff_type, diff_format, unified_diff)
 OPTION(diff_options, diff_context, false, "context",
         gettext_noop("use context diff format"))
@@ -329,514 +348,248 @@ OPTION(diff_options, diff_external, false, "external",
 }
 #endif
 OPTION(diff_options, diff_unified, false, "unified",
-        gettext_noop("use unified diff format"))
+       gettext_noop("use unified diff format"))
 #ifdef option_bodies
 {
   diff_format = unified_diff;
 }
 #endif
-OPTVAR(diff_options, bool, no_show_encloser, false)
-OPTION(diff_options, no_show_encloser, false, "no-show-encloser",
-     gettext_noop("do not show the function containing each block of changes"))
-#ifdef option_bodies
-{
-  no_show_encloser = true;
-}
-#endif
 
-OPTVAR(diff_options, bool, without_header, false);
-OPTVAR(diff_options, bool, with_header, false);
-OPTION(diff_options, without_header, false, "without-header",
-       gettext_noop("show the matching cset in the diff header"))
-#ifdef option_bodies
-{
-  with_header = false;
-  without_header = true;
-}
-#endif
-OPTION(diff_options, with_header, false, "with-header",
-       gettext_noop("do not show the matching cset in the diff header"))
-#ifdef option_bodies
-{
-  with_header = true;
-  without_header = false;
-}
-#endif
 
-OPT(diffs, "diffs", bool, false, gettext_noop("print diffs along with logs"))
-#ifdef option_bodies
-{
-  diffs = true;
-}
-#endif
+SIMPLE_OPTION(diffs, "diffs/no-diffs", bool, gettext_noop("print diffs along with logs"))
 
-OPTVAR(drop_attr, std::set<std::string>, attrs_to_drop, )
-OPTION(drop_attr, drop_attr, true, "drop-attr",
-        gettext_noop("when rosterifying, drop attrs entries with the given key"))
-#ifdef option_bodies
-{
-  attrs_to_drop.insert(arg);
-}
-#endif
+SIMPLE_OPTION(attrs_to_drop, "drop-attr", std::set<std::string>,
+              gettext_noop("when rosterifying, drop attrs entries with the given key"))
 
-OPT(dryrun, "dry-run", bool, false,
-     gettext_noop("don't perform the operation, just show what would have happened"))
-#ifdef option_bodies
-{
-  dryrun = true;
-}
-#endif
+SIMPLE_OPTION(dryrun, "dry-run/no-dry-run", bool,
+              gettext_noop("don't perform the operation, just show what would have happened"))
 
-OPT(drop_bad_certs, "drop-bad-certs", bool, false,
-    gettext_noop("drop certs signed by keys we don't know about"))
-#ifdef option_bodies
-{
-  drop_bad_certs = true;
-}
-#endif
+SIMPLE_OPTION(drop_bad_certs, "drop-bad-certs", bool,
+              gettext_noop("drop certs signed by keys we don't know about"))
 
-OPTION(globals, dump, true, "dump",
+GROUPED_SIMPLE_OPTION(globals, dump, "dump", system_path,
         gettext_noop("file to dump debugging log to, on failure"))
-#ifdef option_bodies
-{
-  global_sanity.set_dump_path(system_path(arg, origin::user).as_external());
-}
-#endif
 
-OPTVAR(exclude, args_vector, exclude_patterns, )
-OPTION(exclude, exclude, true, "exclude",
-        gettext_noop("leave out anything described by its argument"))
-#ifdef option_bodies
-{
-  exclude_patterns.push_back(arg_type(arg, origin::user));
-}
-#endif
+SIMPLE_OPTION(exclude, "exclude", args_vector,
+              gettext_noop("leave out anything described by its argument"))
+SIMPLE_OPTION(include, "include", args_vector,
+        gettext_noop("include anything described by its argument"))
 
-OPT(bookkeep_only, "bookkeep-only", bool, false,
+SIMPLE_OPTION(bookkeep_only, "bookkeep-only", bool,
         gettext_noop("only update monotone's internal bookkeeping, not the filesystem"))
-#ifdef option_bodies
-{
-  bookkeep_only = true;
-}
-#endif
 
-OPT(move_conflicting_paths, "move-conflicting-paths", bool, false,
-        gettext_noop("move conflicting, unversioned paths into _MTN/resolutions "
-                     "before proceeding with any workspace change"))
-#ifdef option_bodies
-{
-  move_conflicting_paths = true;
-}
-#endif
+SIMPLE_OPTION(move_conflicting_paths,
+              "move-conflicting-paths/no-move-conflicting-paths",
+              bool,
+              gettext_noop("move conflicting, unversioned paths into _MTN/resolutions "
+                           "before proceeding with any workspace change"))
 
-GOPT(ssh_sign, "ssh-sign", std::string, "yes",
+OPTSET_REL(globals, ssh_sign)
+SIMPLE_INITIALIZED_OPTION(ssh_sign, "ssh-sign", enum_string, "yes,no,only,check",
      gettext_noop("controls use of ssh-agent.  valid arguments are: "
                   "'yes' to use ssh-agent to make signatures if possible, "
                   "'no' to force use of monotone's internal code, "
                   "'only' to force use of ssh-agent, "
                   "'check' to sign with both and compare"))
-#ifdef option_bodies
-{
-  if (arg.empty())
-    throw bad_arg_internal(F("--ssh-sign requires a value "
-                             "['yes', 'no', 'only', or 'check']").str());
-  if (arg != "yes"
-      && arg != "no"
-      && arg != "check"
-      && arg != "only") // XXX what does "only" do? not documented
-    throw bad_arg_internal(F("--ssh-sign must be set to 'yes', 'no', "
-                             "'only', or 'check'").str());
 
-  ssh_sign = arg;
-}
-#endif
+SIMPLE_OPTION(force_duplicate_key, "force-duplicate-key", bool,
+              gettext_noop("force genkey to not error out when the named key "
+                           "already exists"))
 
-OPT(force_duplicate_key, "force-duplicate-key", bool, false,
-    gettext_noop("force genkey to not error out when the named key "
-                 "already exists"))
-#ifdef option_bodies
-{
-  force_duplicate_key = true;
-}
-#endif
 
-OPT(full, "full", bool, false,
-     gettext_noop("print detailed information"))
-#ifdef option_bodies
-{
-  full = true;
-}
-#endif
+GROUPED_SIMPLE_OPTION(globals, help, "help,h", bool, gettext_noop("display help message"))
 
-GOPT(help, "help,h", bool, false, gettext_noop("display help message"))
-#ifdef option_bodies
-{
-  help = true;
-}
-#endif
+SIMPLE_OPTION(show_hidden_commands, "hidden/no-hidden", bool,
+              gettext_noop("show hidden commands and options"))
 
-OPT(show_hidden_commands, "hidden", bool, false,
-     gettext_noop("show hidden commands"))
-#ifdef option_bodies
-{
-  show_hidden_commands = true;
-}
-#endif
+GROUPED_SIMPLE_OPTION(globals, ignore_suspend_certs, "ignore-suspend-certs/no-ignore-suspend-certs", bool,
+                     gettext_noop("do not ignore revisions marked as suspended"))
 
-OPTVAR(include, args_vector, include_patterns, )
-OPTION(include, include, true, "include",
-        gettext_noop("include anything described by its argument"))
-#ifdef option_bodies
-{
-  include_patterns.push_back(arg_type(arg, origin::user));
-}
-#endif
+GROUPED_SIMPLE_OPTION(globals, non_interactive, "non-interactive/interactive", bool,
+                     gettext_noop("do not prompt the user for input"))
 
-GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
-     gettext_noop("do not ignore revisions marked as suspended"))
-#ifdef option_bodies
-{
-  ignore_suspend_certs = true;
-}
-#endif
-
-GOPT(non_interactive, "non-interactive", bool, false,
-     gettext_noop("do not prompt the user for input"))
-#ifdef option_bodies
-{
-  non_interactive = true;
-}
-#endif
-
-OPTVAR(key, external_key_name, signing_key, )
-OPTION(globals, key, true, "key,k",
+GROUPED_SIMPLE_OPTION(globals, key, "key,k/use-default-key", external_key_name,
        gettext_noop("sets the key for signatures, using either the key "
                     "name or the key hash"))
-#ifdef option_bodies
-{
-  signing_key = external_key_name(arg, origin::user);
-}
-#endif
 
-// Remember COMMA doesn't work with GOPT, use long form.
-//GOPT(key_dir, "keydir", system_path, get_default_keydir() COMMA origin::user,
-//     gettext_noop("set location of key store"))
-OPTVAR(globals, system_path, key_dir, get_default_keydir() COMMA origin::user)
-OPTION(globals, key_dir, true, "keydir", gettext_noop("set location of key store"))
-#ifdef option_bodies
-{
-  key_dir = system_path(arg, origin::user);
-}
-#endif
+OPTSET_REL(globals, key_dir)
+SIMPLE_INITIALIZED_OPTION(key_dir, "keydir", system_path,
+                          system_path(get_default_keydir(), origin::internal),
+                          gettext_noop("set location of key store"))
 
-OPTVAR(key_to_push, std::vector<external_key_name>, keys_to_push, )
-OPTION(key_to_push, key_to_push, true, "key-to-push",
+SIMPLE_OPTION(keys_to_push, "key-to-push", std::vector<external_key_name>,
         gettext_noop("push the specified key even if it hasn't signed anything"))
-#ifdef option_bodies
-{
-  keys_to_push.push_back(external_key_name(arg, origin::user));
-}
-#endif
 
-OPT(last, "last", long, -1,
-     gettext_noop("limit log output to the last number of entries"))
-#ifdef option_bodies
-{
-  last = boost::lexical_cast<long>(arg);
-  if (last <= 0)
-    throw bad_arg_internal(F("cannot be zero or negative").str());
-}
-#endif
+SIMPLE_OPTION(last, "last", restricted_long<1>,
+              gettext_noop("limit log output to the last number of entries"))
 
-OPTION(globals, log, true, "log", gettext_noop("file to write the log to"))
-#ifdef option_bodies
-{
-  ui.redirect_log_to(system_path(arg, origin::user));
-}
-#endif
+GROUPED_SIMPLE_OPTION(globals, log, "log", system_path,
+                     gettext_noop("file to write the log to"))
 
 OPTSET(messages)
-OPTVAR(messages, std::vector<std::string>, message, )
-OPTVAR(messages, utf8, msgfile, )
-OPTVAR(messages, bool, no_prefix, false)
-OPTION(messages, message, true, "message,m",
+GROUPED_SIMPLE_OPTION(messages, message, "message,m", std::vector<std::string>,
         gettext_noop("set commit changelog message"))
-#ifdef option_bodies
-{
-  message.push_back(arg);
-}
-#endif
-OPTION(messages, msgfile, true, "message-file",
+GROUPED_SIMPLE_OPTION(messages, msgfile, "message-file", utf8,
         gettext_noop("set filename containing commit changelog message"))
-#ifdef option_bodies
-{
-  msgfile = utf8(arg, origin::user);
-}
-#endif
-OPTION(messages, no_prefix, false, "no-prefix",
+HIDE(no_prefix)
+GROUPED_SIMPLE_OPTION(messages, no_prefix, "no-prefix", bool,
         gettext_noop("no prefix to message"))
+
+SIMPLE_OPTION(missing, "missing", bool,
+              gettext_noop("perform the operations for files missing from workspace"))
+
+SIMPLE_OPTION(next, "next", restricted_long<1>,
+              gettext_noop("limit log output to the next number of entries"))
+
+SIMPLE_OPTION(no_files, "no-files/files", bool,
+              gettext_noop("exclude files when printing logs"))
+
+SIMPLE_OPTION(no_graph, "no-graph/graph", bool,
+              gettext_noop("do not use ASCII graph to display ancestry"))
+
+SIMPLE_OPTION(no_ignore, "no-respect-ignore/respect-ignore", bool,
+              gettext_noop("do not ignore any files"))
+
+SIMPLE_OPTION(no_merges, "no-merges/merges", bool,
+              gettext_noop("exclude merges when printing logs"))
+
+#ifdef WIN32
+# define NORC_TEXT gettext_noop("do not load %APPDATA%\\monotone\\monotonerc or " \
+                                "_MTN\\monotonerc lua files")
+#else
+# define NORC_TEXT gettext_noop("do not load ~/.monotone/monotonerc or " \
+                                "_MTN/monotonerc lua files")
+#endif
+GROUPED_SIMPLE_OPTION(globals, norc, "no-standard-rcfiles/standard-rcfiles", bool, NORC_TEXT)
+#undef NORC_TEXT
+
+GROUPED_SIMPLE_OPTION(globals, nostd, "no-builtin-rcfile/builtin-rcfile", bool,
+                     gettext_noop("do not load the built-in lua file with the default hooks"))
+
+DEPRECATE(old_norc, gettext_noop("please use --no-standard-rcfiles instead"), 1.0, 2.0)
+OPTION(globals, old_norc, false, "norc",
+       gettext_noop("old version of --no-standard-rcfiles"))
+#ifdef option_bodies
+{ norc = true; }
+#endif
+DEPRECATE(old_nostd, gettext_noop("please use --no-builtin-rcfile instead"), 1.0, 2.0)
+OPTION(globals, old_nostd, false, "nostd",
+       gettext_noop("old version of --no-builtin-rcfile"))
+#ifdef option_bodies
+{ nostd = true; }
+#endif
+
+GROUPED_SIMPLE_OPTION(globals, extra_rcfiles, "rcfile/clear-rcfiles", args_vector,
+                     gettext_noop("load extra lua file"))
+
+SIMPLE_OPTION(pidfile, "pid-file/no-pid-file", system_path,
+              gettext_noop("record process id of server"))
+
+OPTSET(verbosity)
+OPTSET_REL(globals, verbosity)
+OPTVAR(verbosity, int, verbosity, 0)
+
+OPTION(verbosity, quiet, false, "quiet,q",
+     gettext_noop("decrease verbosity (undo previous -v, then disable informational output, then disable warnings)"))
 #ifdef option_bodies
 {
-  no_prefix = true;
+  --verbosity;
+  if (verbosity < -2)
+    verbosity = -2;
+}
+#endif
+OPTION(verbosity, verbose, false, "verbose,v",
+       gettext_noop("increase verbosity (undo previous -q, and then enable debug output)"))
+#ifdef option_bodies
+{
+  ++verbosity;
+  if (verbosity > 1)
+    verbosity = 1;
 }
 #endif
 
-OPT(missing, "missing", bool, false,
-     gettext_noop("perform the operations for files missing from workspace"))
+DEPRECATE(debug,
+          gettext_noop("please us -v (or -v -v -v if there are previous -q options)"),
+          1.0, 2.0)
+OPTION(globals, debug, false, "debug",
+       gettext_noop("print debug log to stderr while running"))
 #ifdef option_bodies
 {
-  missing = true;
+  verbosity = 1;
 }
 #endif
 
-OPT(next, "next", long, -1,
-     gettext_noop("limit log output to the next number of entries"))
+DEPRECATE(reallyquiet, gettext_noop("please use -q -q"), 1.0, 2.0)
+OPTION(verbosity, reallyquiet, false, "reallyquiet",
+     gettext_noop("suppress warning, verbose, informational and progress messages"))
 #ifdef option_bodies
 {
-  next = boost::lexical_cast<long>(arg);
-  if (next <= 0)
-    throw bad_arg_internal(F("cannot be zero or negative").str());
+  verbosity = -2;
 }
 #endif
 
-OPT(no_files, "no-files", bool, false,
-     gettext_noop("exclude files when printing logs"))
-#ifdef option_bodies
-{
-  no_files = true;
-}
-#endif
+SIMPLE_OPTION(full, "full/concise", bool,
+       gettext_noop("print detailed information"))
 
-OPT(no_graph, "no-graph", bool, false,
-     gettext_noop("do not use ASCII graph to display ancestry"))
-#ifdef option_bodies
-{
-  no_graph = true;
-}
-#endif
+SIMPLE_OPTION(formatted, "formatted/plain", bool,
+              gettext_noop("automatically run the output through nroff (default if the output is a terminal)"))
 
-OPT(no_ignore, "no-respect-ignore", bool, false,
-     gettext_noop("do not ignore any files"))
-#ifdef option_bodies
-{
-  no_ignore = true;
-}
-#endif
 
-OPT(no_merges, "no-merges", bool, false,
-     gettext_noop("exclude merges when printing logs"))
-#ifdef option_bodies
-{
-  no_merges = true;
-}
-#endif
+GROUPED_SIMPLE_OPTION(globals, timestamps, "timestamps", bool,
+                      gettext_noop("show timestamps in front of errors, warnings and progress messages"))
 
-GOPT(norc, "norc", bool, false,
-gettext_noop("do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"))
-#ifdef option_bodies
-{
-  norc = true;
-}
-#endif
+SIMPLE_OPTION(recursive, "recursive,R/no-recursive", bool,
+              gettext_noop("also operate on the contents of any listed directories"))
 
-GOPT(nostd, "nostd", bool, false,
-     gettext_noop("do not load standard lua hooks"))
-#ifdef option_bodies
-{
-  nostd = true;
-}
-#endif
-
-OPT(pidfile, "pid-file", system_path, ,
-     gettext_noop("record process id of server"))
-#ifdef option_bodies
-{
-  pidfile = system_path(arg, origin::user);
-}
-#endif
-
-GOPT(quiet, "quiet", bool, false,
-     gettext_noop("suppress verbose, informational and progress messages"))
-#ifdef option_bodies
-{
-  quiet = true;
-  global_sanity.set_quiet();
-  ui.set_tick_write_nothing();
-}
-#endif
-
-GOPT(extra_rcfiles, "rcfile", args_vector, ,
-     gettext_noop("load extra rc file"))
-#ifdef option_bodies
-{
-  extra_rcfiles.push_back(arg_type(arg, origin::user));
-}
-#endif
-
-GOPT(reallyquiet, "reallyquiet", bool, false,
-gettext_noop("suppress warning, verbose, informational and progress messages"))
-#ifdef option_bodies
-{
-  reallyquiet = true;
-  global_sanity.set_reallyquiet();
-  ui.set_tick_write_nothing();
-}
-#endif
-
-GOPT(timestamps, "timestamps", bool, false,
-gettext_noop("show timestamps in front of errors, warnings and progress messages"))
-#ifdef option_bodies
-{
-  timestamps = true;
-  ui.enable_timestamps();
-}
-#endif
-
-OPT(recursive, "recursive,R", bool, false,
-     gettext_noop("also operate on the contents of any listed directories"))
-#ifdef option_bodies
-{
-  recursive = true;
-}
-#endif
-
-OPTVAR(revision, args_vector, revision_selectors, )
-OPTION(revision, revision, true, "revision,r",
+SIMPLE_OPTION(revision, "revision,r",args_vector,
      gettext_noop("select revision id for operation"))
-#ifdef option_bodies
-{
-  revision_selectors.push_back(arg_type(arg, origin::user));
-}
-#endif
 
-GOPT(root, "root", std::string, ,
-     gettext_noop("limit search for workspace to specified root"))
-#ifdef option_bodies
-{
-  root = arg;
-}
-#endif
+GROUPED_SIMPLE_OPTION(globals, root, "root", std::string,
+                      gettext_noop("limit search for workspace to specified root"))
 
-GOPT(no_workspace, "no-workspace", bool, false,
-     gettext_noop("don't look for a workspace"))
-#ifdef option_bodies
-{
-  no_workspace = true;
-}
-#endif
+GROUPED_SIMPLE_OPTION(globals, no_workspace, "no-workspace/allow-workspace", bool,
+                      gettext_noop("don't look for a workspace"))
 
-OPT(set_default, "set-default", bool, false,
-     gettext_noop("use the current netsync arguments and options "
-                  "as the future default"))
-#ifdef option_bodies
-{
-  set_default = true;
-}
-#endif
+SIMPLE_OPTION(set_default, "set-default/no-set-default", bool,
+              gettext_noop("use the current netsync arguments and options "
+                           "as the future default"))
 
-GOPT(ticker, "ticker", std::string, ,
-     gettext_noop("set ticker style (count|dot|none)"))
-#ifdef option_bodies
-{
-  ticker = arg;
-  if (ticker == "none" || global_sanity.quiet_p())
-    ui.set_tick_write_nothing();
-  else if (ticker == "dot")
-    ui.set_tick_write_dot();
-  else if (ticker == "count")
-    ui.set_tick_write_count();
-  else
-    throw bad_arg_internal(F("argument must be 'none', 'dot', or 'count'").str());
-}
-#endif
+OPTSET_REL(globals, ticker)
+SIMPLE_INITIALIZED_OPTION(ticker, "ticker", enum_string, "count,dot,none",
+                          gettext_noop("set ticker style (count|dot|none)"))
 
-OPT(from, "from", args_vector, , gettext_noop("revision(s) to start logging at"))
-#ifdef option_bodies
-{
-  from.push_back(arg_type(arg, origin::user));
-}
-#endif
+SIMPLE_OPTION(from, "from/clear-from", args_vector,
+              gettext_noop("revision(s) to start logging at"))
 
-OPT(to, "to", args_vector, , gettext_noop("revision(s) to stop logging at"))
-#ifdef option_bodies
-{
-  to.push_back(arg_type(arg, origin::user));
-}
-#endif
+SIMPLE_OPTION(to, "to/clear-to", args_vector,
+              gettext_noop("revision(s) to stop logging at"))
 
-OPT(unknown, "unknown", bool, false,
-     gettext_noop("perform the operations for unknown files from workspace"))
-#ifdef option_bodies
-{
-  unknown = true;
-}
+SIMPLE_OPTION(unknown, "unknown/no-unknown", bool,
+              gettext_noop("perform the operations for unknown files from workspace"))
 
-#endif
+GROUPED_SIMPLE_OPTION(globals, version, "version", bool,
+                      gettext_noop("print version number, then exit"))
 
-OPT(verbose, "verbose", bool, false,
-     gettext_noop("verbose completion output"))
-#ifdef option_bodies
-{
-  verbose = true;
-}
-#endif
-
-GOPT(version, "version", bool, false,
-     gettext_noop("print version number, then exit"))
-#ifdef option_bodies
-{
-  version = true;
-}
-#endif
-
-OPTION(globals, xargs, true, "xargs,@",
-       gettext_noop("insert command line arguments taken from the given file"))
-#ifdef option_bodies
-{
-}
-#endif
 
 OPTSET(automate_inventory_opts)
-OPTVAR(automate_inventory_opts, bool, no_ignored, false)
-OPTVAR(automate_inventory_opts, bool, no_unknown, false)
-OPTVAR(automate_inventory_opts, bool, no_unchanged, false)
-OPTVAR(automate_inventory_opts, bool, no_corresponding_renames, false)
 
-OPTION(automate_inventory_opts, no_ignored, false, "no-ignored",
-       gettext_noop("don't output ignored files"))
-#ifdef option_bodies
-{
-  no_ignored = true;
-}
-#endif
+OPTSET_REL(automate_inventory_opts, no_ignored)
+SIMPLE_OPTION(no_ignored, "no-ignored/ignored", bool,
+              gettext_noop("don't output ignored files"))
+OPTSET_REL(automate_inventory_opts, no_unknown)
+SIMPLE_OPTION(no_unknown, "no-unknown/unknown",bool,
+              gettext_noop("don't output unknown files"))
+OPTSET_REL(automate_inventory_opts, no_unchanged)
+SIMPLE_OPTION(no_unchanged, "no-unchanged/unchanged", bool,
+              gettext_noop("don't output unchanged files"))
+OPTSET_REL(automate_inventory_opts, no_corresponding_renames)
+SIMPLE_OPTION(no_corresponding_renames, "no-corresponding-renames/corresponding-renames", bool,
+              gettext_noop("don't output corresponding renames if restricted on such nodes"))
 
-OPTION(automate_inventory_opts, no_unknown, false, "no-unknown",
-       gettext_noop("don't output unknown files"))
-#ifdef option_bodies
-{
-  no_unknown = true;
-}
-#endif
-
-OPTION(automate_inventory_opts, no_unchanged, false, "no-unchanged",
-       gettext_noop("don't output unchanged files"))
-#ifdef option_bodies
-{
-  no_unchanged = true;
-}
-#endif
-
-OPTION(automate_inventory_opts, no_corresponding_renames, false, "no-corresponding-renames",
-       gettext_noop("don't output corresponding renames if restricted on such nodes"))
-#ifdef option_bodies
-{
-  no_corresponding_renames = true;
-}
-#endif
 
 OPTSET(resolve_conflicts_opts)
-OPTVAR(resolve_conflicts_opts, bookkeeping_path, resolve_conflicts_file, )
-OPTVAR(resolve_conflicts_opts, bool, resolve_conflicts, )
+OPTVAR(resolve_conflicts_opts, bookkeeping_path,
+       resolve_conflicts_file, "_MTN/conflicts")
 
 OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-file",
        gettext_noop("use file to resolve conflicts"))
@@ -848,18 +601,13 @@ OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-
     origin::user,
     F("conflicts file must be under _MTN"));
   resolve_conflicts_file = bookkeeping_path(arg, origin::user);
+  resolve_conflicts = true;
 }
 #endif
 
-OPTION(resolve_conflicts_opts, resolve_conflicts, false, "resolve-conflicts",
-       gettext_noop("use _MTN/conflicts to resolve conflicts"))
-#ifdef option_bodies
-{
-  E(!resolve_conflicts_file_given, origin::user,
-    F("only one of --resolve-conflicts or --resolve-conflicts-file may be given"));
-  resolve_conflicts_file = bookkeeping_path("_MTN/conflicts");
-}
-#endif
+OPTSET_REL(resolve_conflicts_opts, resolve_conflicts)
+SIMPLE_OPTION(resolve_conflicts, "resolve-conflicts/no-resolve-conflicts", bool,
+       gettext_noop("specify conflict resolutions in a file, instead of interactively"))
 
 OPTSET(conflicts_opts)
 OPTVAR(conflicts_opts, bookkeeping_path, conflicts_file, bookkeeping_path("_MTN/conflicts"))
@@ -877,73 +625,36 @@ OPTION(conflicts_opts, conflicts_file, true, "conflicts-file",
 }
 #endif
 
-OPT(use_one_changelog, "use-one-changelog", bool, false,
-    gettext_noop("use only one changelog cert for the git commit message"))
-#ifdef option_bodies
-{
-  use_one_changelog = true;
-}
-#endif
+SIMPLE_OPTION(use_one_changelog, "use-one-changelog", bool,
+              gettext_noop("use only one changelog cert for the git commit message"))
 
-OPT(authors_file, "authors-file", system_path, ,
-    gettext_noop("file mapping author names from original to new values"))
-#ifdef option_bodies
-{
-  authors_file = system_path(arg, origin::user);
-}
-#endif
+SIMPLE_OPTION(authors_file, "authors-file", system_path,
+              gettext_noop("file mapping author names from original to new values"))
 
-OPT(branches_file, "branches-file", system_path, ,
-    gettext_noop("file mapping branch names from original to new values "))
-#ifdef option_bodies
-{
-  branches_file = system_path(arg, origin::user);
-}
-#endif
+SIMPLE_OPTION(branches_file, "branches-file", system_path,
+              gettext_noop("file mapping branch names from original to new values "))
 
-OPT(refs, "refs", std::set<std::string>, ,
-    gettext_noop("include git refs for 'revs', 'roots' or 'leaves'"))
-#ifdef option_bodies
-{
-  if (arg == "revs" || arg == "roots" || arg == "leaves")
-    refs.insert(arg);
-  else
-    throw bad_arg_internal
-      (F("git ref type must be 'revs', 'roots', or 'leaves'").str());
-}
-#endif
+SIMPLE_INITIALIZED_OPTION(refs, "refs", enum_string_set, "revs,roots,leaves",
+                          gettext_noop("include git refs for 'revs', 'roots' or 'leaves'"))
 
-OPT(log_revids, "log-revids", bool, false,
-    gettext_noop("include revision ids in commit logs"))
-#ifdef option_bodies
-{
-  log_revids = true;
-}
-#endif
+SIMPLE_OPTION(log_revids, "log-revids/no-log-revids", bool,
+              gettext_noop("include revision ids in commit logs"))
 
-OPT(log_certs, "log-certs", bool, false,
-    gettext_noop("include standard cert values in commit logs"))
-#ifdef option_bodies
-{
-  log_certs = true;
-}
-#endif
+SIMPLE_OPTION(log_certs, "log-certs/no-log-certs", bool,
+              gettext_noop("include standard cert values in commit logs"))
 
-OPT(import_marks, "import-marks", system_path, ,
-    gettext_noop("load the internal marks table before exporting revisions"))
-#ifdef option_bodies
-{
-  import_marks = system_path(arg, origin::user);
-}
-#endif
+SIMPLE_OPTION(import_marks, "import-marks", system_path,
+              gettext_noop("load the internal marks table before exporting revisions"))
 
-OPT(export_marks, "export-marks", system_path, ,
-    gettext_noop("save the internal marks table after exporting revisions"))
-#ifdef option_bodies
-{
-  export_marks = system_path(arg, origin::user);
-}
-#endif
+SIMPLE_OPTION(export_marks, "export-marks", system_path,
+              gettext_noop("save the internal marks table after exporting revisions"))
+
+// clean up after ourselves
+#undef SIMPLE_OPTION
+#undef SIMPLE_OPTION_BODY
+#undef GROUPED_SIMPLE_OPTION
+#undef SIMPLE_INITIALIZED_OPTION
+#undef COMMA
 
 // Local Variables:
 // mode: C++

@@ -17,6 +17,7 @@
 #include "paths.hh"
 #include "sanity.hh"
 #include "ui.hh"
+#include "lua.hh"
 #include "charset.hh"
 #include "simplestring_xform.hh"
 #include "constants.hh"
@@ -46,6 +47,7 @@ using std::max;
 using std::ofstream;
 using std::string;
 using std::vector;
+using std::set;
 
 using boost::lexical_cast;
 
@@ -605,6 +607,26 @@ user_interface::set_tick_write_nothing()
   tick_type = none;
 }
 
+user_interface::ticker_type
+user_interface::set_ticker_type(user_interface::ticker_type type)
+{
+  ticker_type ret = tick_type;
+  switch (type)
+    {
+    case count: set_tick_write_count(); break;
+    case dot: set_tick_write_dot(); break;
+    case stdio: set_tick_write_stdio(); break;
+    case none: set_tick_write_nothing(); break;
+    }
+  return ret;
+}
+
+user_interface::ticker_type
+user_interface::get_ticker_type() const
+{
+  return tick_type;
+}
+
 
 void
 user_interface::write_ticks()
@@ -830,6 +852,13 @@ guess_terminal_width()
   return w;
 }
 
+LUAEXT(guess_terminal_width, )
+{
+  int w = guess_terminal_width();
+  lua_pushinteger(LS, w);
+  return 1;
+}
+
 // A very simple class that adds an operator() to a string that returns
 // the string itself.  This is to make it compatible with, for example,
 // the utf8 class, allowing it to be usable in other contexts without
@@ -844,43 +873,59 @@ public:
 };
 
 // See description for format_text below for more details.
-static string
-format_paragraph(string const & text, size_t const col, size_t curcol)
+static vector<string>
+wrap_paragraph(string const & text, size_t const line_length,
+               size_t const first_line_length)
 {
   I(text.find('\n') == string::npos);
 
-  string formatted;
-  if (curcol < col)
-    {
-      formatted = string(col - curcol, ' ');
-      curcol = col;
-    }
-
-  const size_t maxcol = guess_terminal_width();
+  vector<string> wrapped;
+  size_t line_len = 0;
+  string this_line;
 
   vector< string_adaptor > words = split_into_words(string_adaptor(text));
   for (vector< string_adaptor >::const_iterator iter = words.begin();
        iter != words.end(); iter++)
     {
       string const & word = (*iter)();
-
-      if (iter != words.begin() &&
-          curcol + display_width(utf8(word, origin::no_fault)) + 1 > maxcol)
+      size_t word_len = display_width(utf8(word, origin::no_fault));
+      size_t wanted_len = (wrapped.empty() ? first_line_length : line_length);
+      if (iter != words.begin() && line_len + word_len >= wanted_len)
         {
-          formatted += '\n' + string(col, ' ');
-          curcol = col;
+          wrapped.push_back(this_line);
+          line_len = 0;
+          this_line.clear();
         }
-      else if (iter != words.begin())
+      if (!this_line.empty())
         {
-          formatted += ' ';
-          curcol++;
+          this_line += " ";
+          ++line_len;
         }
-
-      formatted += word;
-      curcol += display_width(utf8(word, origin::no_fault));
+      line_len += word_len;
+      this_line += word;
     }
+  if (!this_line.empty())
+    wrapped.push_back(this_line);
 
-  return formatted;
+  return wrapped;
+}
+
+static string
+format_paragraph(string const & text, size_t const col,
+                 size_t curcol, bool indent_first_line)
+{
+  string ret;
+  size_t const maxcol = guess_terminal_width();
+  vector<string> wrapped = wrap_paragraph(text, maxcol - col, maxcol - curcol);
+  for (vector<string>::iterator w = wrapped.begin(); w != wrapped.end(); ++w)
+    {
+      if (w != wrapped.begin())
+        ret += "\n";
+      if (w != wrapped.begin() || indent_first_line)
+        ret += string(col, ' ');
+      ret += *w;
+    }
+  return ret;
 }
 
 // Reformats the given text so that it fits in the current screen with no
@@ -893,7 +938,8 @@ format_paragraph(string const & text, size_t const col, size_t curcol)
 // 'col' specifies the column where the text will start and 'curcol'
 // specifies the current position of the cursor.
 string
-format_text(string const & text, size_t const col, size_t curcol)
+format_text(string const & text, size_t const col,
+            size_t curcol, bool indent_first_line)
 {
   I(curcol <= col);
 
@@ -906,7 +952,7 @@ format_text(string const & text, size_t const col, size_t curcol)
     {
       string const & line = *iter;
 
-      formatted += format_paragraph(line, col, curcol);
+      formatted += format_paragraph(line, col, curcol, indent_first_line);
       if (iter + 1 != lines.end())
         formatted += "\n\n";
       curcol = 0;
@@ -917,16 +963,76 @@ format_text(string const & text, size_t const col, size_t curcol)
 
 // See description for the other format_text above for more details.
 string
-format_text(i18n_format const & text, size_t const col, size_t curcol)
+format_text(i18n_format const & text, size_t const col,
+            size_t curcol, bool indent_first_line)
 {
-  return format_text(text.str(), col, curcol);
+  return format_text(text.str(), col, curcol, indent_first_line);
+}
+
+namespace {
+  class option_text
+  {
+    string names;
+    string desc;
+    vector<string> formatted_names;
+    vector<string> formatted_desc;
+  public:
+    option_text(string const & n, string const & d)
+      : names(n), desc(d) { }
+    size_t format_names(size_t const width)
+    {
+      size_t const full_len = display_width(utf8(names, origin::no_fault));
+      size_t const slash = names.find('/');
+      if (slash == string::npos || full_len <= width)
+        {
+          formatted_names.push_back(names);
+          return full_len;
+        }
+
+      formatted_names.push_back(names.substr(0, slash-1));
+      formatted_names.push_back(" " + names.substr(slash-1));
+
+      size_t ret = 0;
+      for (vector<string>::const_iterator i = formatted_names.begin();
+           i != formatted_names.end(); ++i)
+        {
+          ret = max(ret, display_width(utf8(*i, origin::no_fault)));
+        }
+      return ret;
+    }
+    void format_desc(size_t const width)
+    {
+      formatted_desc = wrap_paragraph(desc, width, width);
+    }
+    string formatted(size_t pre_indent, size_t space, size_t namelen) const
+    {
+      string ret;
+      string empty;
+      size_t const lines = max(formatted_names.size(), formatted_desc.size());
+      for (size_t i = 0; i < lines; ++i)
+        {
+          string const * left = &empty;
+          if (i < formatted_names.size())
+            left = &formatted_names.at(i);
+          string const * right = &empty;
+          if (i < formatted_desc.size())
+            right = &formatted_desc.at(i);
+
+          ret += string(pre_indent, ' ')
+            + *left + string(namelen - left->size(), ' ')
+            + string(space, ' ')
+            + *right
+            + "\n";
+        }
+      return ret;
+    }
+  };
 }
 
 // Format a block of options and their descriptions.
 static string
 format_usage_strings(vector<string> const & names,
-                     vector<string> const & descriptions,
-                     unsigned int namelen)
+                     vector<string> const & descriptions)
 {
   // "    --long [ -s ] <arg>    description goes here"
   //  ^  ^^                 ^^  ^^                          ^
@@ -934,33 +1040,38 @@ format_usage_strings(vector<string> const & names,
   //  ^^^^                   ^^^^
   // pre_indent              space
   string result;
-  int pre_indent = 2; // empty space on the left
-  int space = 2; // space after the longest option, before the description
-  int termwidth = guess_terminal_width();
-  int descindent = pre_indent + namelen + space;
-  int descwidth = termwidth - descindent;
 
+  size_t const pre_indent = 2; // empty space on the left
+  size_t const space = 2; // space after the longest option, before the description
+  size_t const termwidth = guess_terminal_width();
+  size_t const desired_namewidth = (termwidth - pre_indent - space) / 3;
+  size_t namelen = 0;
+
+  vector<option_text> texts;
   I(names.size() == descriptions.size());
-
-  vector<string>::const_iterator name;
-  vector<string>::const_iterator desc;
-  for (name = names.begin(), desc = descriptions.begin(); name != names.end();
-       ++name, ++desc)
+  for (vector<string>::const_iterator n = names.begin(), d = descriptions.begin();
+       n != names.end(); ++n, ++d)
     {
-      if (name->empty())
+      if (n->empty())
         continue;
+      texts.push_back(option_text(*n, *d));
 
-      result += string(pre_indent, ' ')
-                + *name + string(namelen - name->size(), ' ');
-
-      if (!desc->empty())
-        {
-          result += string(space, ' ');
-          result += format_text(*desc, descindent, descindent);
-        }
-
-      result += '\n';
+      size_t my_name_len = texts.back().format_names(desired_namewidth);
+      if (my_name_len > namelen)
+        namelen = my_name_len;
     }
+
+  size_t const descindent = pre_indent + namelen + space;
+  size_t const descwidth = termwidth - descindent;
+
+  for (vector<option_text>::iterator i = texts.begin();
+       i != texts.end(); ++i)
+    {
+      i->format_desc(descwidth);
+
+      result += i->formatted(pre_indent, space, namelen);
+    }
+
   result += '\n';
   return result;
 }
@@ -972,8 +1083,9 @@ get_usage_str(options::options_type const & optset, options & opts)
   vector<string> descriptions;
   unsigned int maxnamelen;
 
-  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
-  return format_usage_strings(names, descriptions, maxnamelen);
+  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen,
+                                              opts.show_hidden_commands);
+  return format_usage_strings(names, descriptions);
 }
 
 void
@@ -1013,10 +1125,12 @@ user_interface::inform_usage(usage const & u, options & opts)
   commands::explain_usage(u.which, opts.show_hidden_commands, usage_stream);
 }
 
-void
-user_interface::enable_timestamps()
+bool
+user_interface::enable_timestamps(bool enable)
 {
-  timestamps_enabled = true;
+  bool ret = timestamps_enabled;
+  timestamps_enabled = enable;
+  return ret;
 }
 
 // Local Variables:

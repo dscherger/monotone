@@ -217,7 +217,7 @@ update(app_state & app,
     F("cannot determine branch for update"));
 
   revision_id chosen_rid;
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       P(F("updating along branch '%s'") % app.opts.branch);
       set<revision_id> candidates;
@@ -244,7 +244,7 @@ update(app_state & app,
     }
   else
     {
-      complete(app.opts, app.lua, project, app.opts.revision_selectors[0](), chosen_rid);
+      complete(app.opts, app.lua, project, app.opts.revision[0](), chosen_rid);
     }
   I(!null_id(chosen_rid));
 
@@ -368,7 +368,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   if (!args.empty())
     throw usage(execid);
 
-  if (app.opts.revision_selectors.size() > 1)
+  if (app.opts.revision.size() > 1)
     throw usage(execid);
 
   update(app, args);
@@ -383,7 +383,7 @@ CMD_AUTOMATE(update, "",
   E(args.empty(), origin::user,
     F("wrong argument count"));
 
-  E(app.opts.revision_selectors.size() <= 1, origin::user,
+  E(app.opts.revision.size() <= 1, origin::user,
     F("at most one revision selector may be specified"));
 
   update(app, args);
@@ -513,7 +513,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     "",
     options::opts::branch | options::opts::date | options::opts::author |
     options::opts::messages | options::opts::resolve_conflicts_opts |
-    options::opts::maybe_auto_update)
+    options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -547,7 +547,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
 
   size_t pass = 1, todo = heads.size() - 1;
 
-  if (app.opts.resolve_conflicts_given || app.opts.resolve_conflicts_file_given)
+  if (app.opts.resolve_conflicts)
     {
       // conflicts and resolutions only apply to first merge, so only do that one.
       todo = 1;
@@ -587,20 +587,6 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   updater.maybe_do_update();
 }
 
-CMD(propagate, "propagate", "", CMD_REF(tree),
-    N_("SOURCE-BRANCH DEST-BRANCH"),
-    N_("Merges from one branch to another asymmetrically"),
-    "",
-    options::opts::date | options::opts::author | options::opts::messages |
-    options::opts::resolve_conflicts_opts)
-{
-  if (args.size() != 2)
-    throw usage(execid);
-  args_vector a = args;
-  a.push_back(arg_type());
-  process(app, make_command_id("tree merge_into_dir"), a);
-}
-
 //   This is a special merge operator, but very useful for people
 //   maintaining "slightly disparate but related" trees. It does a one-way
 //   merge; less powerful than putting things in the same branch and also
@@ -627,12 +613,9 @@ CMD(propagate, "propagate", "", CMD_REF(tree),
 //   If dir is not the empty string, rename the root of N1 to have the name
 //   'dir' in the merged tree. (ie, it has name "basename(dir)", and its
 //   parent node is "N2.get_node(dirname(dir))")
-CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
-    N_("SOURCE-BRANCH DEST-BRANCH DIR"),
-    N_("Merges one branch into a subdirectory in another branch"),
-    "",
-    options::opts::date | options::opts::author | options::opts::messages |
-    options::opts::resolve_conflicts_opts | options::opts::maybe_auto_update)
+void perform_merge_into_dir(app_state & app,
+                            commands::command_id const & execid,
+                            args_vector const & args)
 {
   database db(app);
   key_store keys(app);
@@ -783,6 +766,30 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
   updater.maybe_do_update();
 }
 
+CMD(propagate, "propagate", "", CMD_REF(tree),
+    N_("SOURCE-BRANCH DEST-BRANCH"),
+    N_("Merges from one branch to another asymmetrically"),
+    "",
+    options::opts::date | options::opts::author | options::opts::messages |
+    options::opts::resolve_conflicts_opts)
+{
+  if (args.size() != 2)
+    throw usage(execid);
+  args_vector a = args;
+  a.push_back(arg_type());
+  perform_merge_into_dir(app, make_command_id("tree merge_into_dir"), a);
+}
+
+CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
+    N_("SOURCE-BRANCH DEST-BRANCH DIR"),
+    N_("Merges one branch into a subdirectory in another branch"),
+    "",
+    options::opts::date | options::opts::author | options::opts::messages |
+    options::opts::resolve_conflicts_opts | options::opts::auto_update)
+{
+  perform_merge_into_dir(app, execid, args);
+}
+
 CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
     N_("OTHER-REVISION"),
     N_("Merges a revision into the current workspace's base revision"),
@@ -907,7 +914,7 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
        "DEST-BRANCH."),
     options::opts::date | options::opts::author |
     options::opts::messages | options::opts::resolve_conflicts_opts |
-    options::opts::maybe_auto_update)
+    options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -1167,6 +1174,8 @@ CMD(store, "store", "", CMD_REF(conflicts),
   project_t   project(db);
   revision_id left_id, right_id;
 
+  workspace::require_workspace(F("conflicts file must be under _MTN"));
+
   get_conflicts_rids(args, db, project, app, left_id, right_id);
 
   std::ostringstream output;
@@ -1254,9 +1263,9 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
 
   // Work out our arguments
   revision_id from_rid, to_rid;
-  if (app.opts.revision_selectors.size() == 1)
+  if (app.opts.revision.size() == 1)
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), to_rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), to_rid);
       std::set<revision_id> parents;
       db.get_revision_parents(to_rid, parents);
       E(parents.size() == 1, origin::user,
@@ -1268,10 +1277,10 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
         % to_rid);
       from_rid = *parents.begin();
     }
-  else if (app.opts.revision_selectors.size() == 2)
+  else if (app.opts.revision.size() == 2)
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), from_rid);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 1)(), to_rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), from_rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 1)(), to_rid);
     }
   else
     throw usage(execid);
@@ -1326,7 +1335,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
     roster_t to_true_roster;
     db.get_roster(to_rid, to_true_roster);
     node_restriction mask(args_to_paths(args),
-                          args_to_paths(app.opts.exclude_patterns),
+                          args_to_paths(app.opts.exclude),
                           app.opts.depth,
                           *from_roster, to_true_roster,
                           ignored_file(work));

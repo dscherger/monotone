@@ -18,6 +18,9 @@
 #include "app_state.hh"
 #include "automate_ostream.hh"
 #include "automate_reader.hh"
+#include "automate_stdio_helpers.hh"
+#include "constants.hh"
+#include "options_applicator.hh"
 #include "ui.hh"
 #include "lua.hh"
 #include "lua_hooks.hh"
@@ -134,6 +137,7 @@ CMD_AUTOMATE_HIDDEN(bandtest, "{ info | warning | error | ticker }",
     F("wrong argument count"));
 
   std::string type = args.at(0)();
+  L(FL("running bandtest %s") % type);
   if (type.compare("info") == 0)
     P(F("this is an informational message"));
   else if (type.compare("warning") == 0)
@@ -203,6 +207,24 @@ static void out_of_band_to_automate_streambuf(char channel, std::string const& t
 // Error conditions: Errors encountered by the commands run only set
 //   the error code in the output for that command. Malformed input
 //   results in exit with a non-zero return value and an error message.
+
+class done_reading_input {};
+// lambda expressions would be really nice right about now
+// even the ability to use local classes as template arguments would help
+class local_stdio_pre_fn {
+  automate_reader & ar;
+  vector<string> & cmdline;
+  vector<pair<string,string> > & params;
+public:
+  local_stdio_pre_fn(automate_reader & a, vector<string> & c,
+                     vector<pair<string,string> > & p)
+    : ar(a), cmdline(c), params(p)
+  { }
+  void operator()() {
+    if (!ar.get_command(params, cmdline))
+      throw done_reading_input();
+  }
+};
 CMD_AUTOMATE_NO_STDIO(stdio, "",
                       N_("Automates several commands in one run"),
                       "",
@@ -217,11 +239,10 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
   // immediately if a version discrepancy exists
   db.ensure_open();
 
-  // disable user prompts, f.e. for password decryption
-  app.opts.non_interactive = true;
-  options original_opts = app.opts;
-
-  automate_ostream os(output, app.opts.automate_stdio_size);
+  long packet_size = constants::default_stdio_packet_size;
+  if (app.opts.automate_stdio_size_given)
+    packet_size = app.opts.automate_stdio_size;
+  automate_ostream os(output, packet_size);
   automate_reader ar(std::cin);
 
   std::vector<std::pair<std::string, std::string> > headers;
@@ -234,113 +255,24 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
 
   while (true)
     {
-      automate const * acmd = 0;
-      command_id id;
-      args_vector args;
-
-      // FIXME: what follows is largely duplicated
-      // in network/automate_session.cc::do_work()
-      //
-      // stdio decoding errors should be noted with errno 1,
-      // errno 2 is reserved for errors from the commands itself
       try
         {
-          if (!ar.get_command(params, cmdline))
-            break;
-
-          vector<string>::iterator i = cmdline.begin();
-          for (; i != cmdline.end(); ++i)
-            {
-              args.push_back(arg_type(*i, origin::user));
-              id.push_back(utf8(*i, origin::user));
-            }
-
-          set< command_id > matches =
-            CMD_REF(automate)->complete_command(id);
-
-          if (matches.empty())
-            {
-              E(false, origin::user,
-                F("no completions for this command"));
-            }
-          else if (matches.size() > 1)
-            {
-              E(false, origin::user,
-                F("multiple completions possible for this command"));
-            }
-
-          id = *matches.begin();
-
-          I(args.size() >= id.size());
-          for (command_id::size_type i = 0; i < id.size(); i++)
-            args.erase(args.begin());
-
-          command const * cmd = CMD_REF(automate)->find_command(id);
-          I(cmd != NULL);
-
-          acmd = dynamic_cast< automate const * >(cmd);
-          I(acmd != NULL);
-
-          E(acmd->can_run_from_stdio(), origin::network,
-            F("sorry, that can't be run remotely or over stdio"));
-
-          if (cmd->use_workspace_options())
-            {
-              // Re-read the ws options file, rather than just copying
-              // the options from the previous apts.opts object, because
-              // the file may have changed due to user activity.
-              workspace::check_format();
-              workspace::get_options(app.opts);
-            }
-
-          options::options_type opts;
-          opts = options::opts::globals() | cmd->opts();
-          opts.instantiate(&app.opts).from_key_value_pairs(params);
-
-          // set a fixed ticker type regardless what the user wants to
-          // see, because anything else would screw the stdio-encoded output
-          ui.set_tick_write_stdio();
+          pair<int, string> err = automate_stdio_helpers::
+            automate_stdio_shared_body(app, cmdline, params, os,
+                                       local_stdio_pre_fn(ar, cmdline, params),
+                                       boost::function<void(command_id const &)>());
+          if (err.first != 0)
+            os.write_out_of_band('e', err.second);
+          os.end_cmd(err.first);
+          if (err.first == 1)
+            ar.reset();
         }
-      // FIXME: we need to re-package and rethrow this special exception
-      // since it is not based on informative_failure
-      catch (option::option_error & e)
+      catch (done_reading_input)
         {
-          os.write_out_of_band('e', e.what());
-          os.end_cmd(1);
-          ar.reset();
-          continue;
-        }
-      catch (recoverable_failure & f)
-        {
-          os.write_out_of_band('e', f.what());
-          os.end_cmd(1);
-          ar.reset();
-          continue;
-        }
-
-      try
-        {
-          // as soon as a command requires a workspace, this is set to true
-          workspace::used = false;
-
-          acmd->exec_from_automate(app, id, args, os);
-          os.end_cmd(0);
-
-          // usually, if a command succeeds, any of its workspace-relevant
-          // options are saved back to _MTN/options, this shouldn't be
-          // any different here
-          workspace::maybe_set_options(app.opts, app.lua);
-
-          // restore app.opts
-          app.opts = original_opts;
-        }
-      catch (recoverable_failure & f)
-        {
-          os.write_out_of_band('e', f.what());
-          os.end_cmd(2);
+          break;
         }
     }
-    global_sanity.set_out_of_band_handler();
+  global_sanity.set_out_of_band_handler();
 }
 
 LUAEXT(change_workspace, )
@@ -378,7 +310,6 @@ LUAEXT(change_workspace, )
 
 LUAEXT(mtn_automate, )
 {
-  args_vector args;
   std::stringstream output;
   bool result = true;
   std::stringstream & os = output;
@@ -402,72 +333,29 @@ LUAEXT(mtn_automate, )
 
       L(FL("Starting call to mtn_automate lua hook"));
 
+      vector<string> args;
       for (int i=1; i<=n; i++)
         {
-          arg_type next_arg(luaL_checkstring(LS, i), origin::user);
-          L(FL("arg: %s")%next_arg());
+          string next_arg(luaL_checkstring(LS, i));
+          L(FL("arg: %s") % next_arg);
           args.push_back(next_arg);
         }
 
-      // disable user prompts, f.e. for password decryption
-      app_p->opts.non_interactive = true;
-
-      options::options_type opts;
-      opts = options::opts::all_options() - options::opts::globals();
-      opts.instantiate(&app_p->opts).reset();
-
-      // the arguments for a command are read from app.opts.args which
-      // is already cleaned from all options. this variable, however, still
-      // contains the original arguments with which the user function was
-      // called. Since we're already in lua context, it makes no sense to
-      // preserve them for the outside world, so we're just clearing them.
-      app_p->opts.args.clear();
-
       commands::command_id id;
-      for (args_vector::const_iterator iter = args.begin();
-           iter != args.end(); iter++)
-        id.push_back(*iter);
+      commands::automate const * cmd;
 
-      E(!id.empty(), origin::user, F("no command found"));
+      automate_stdio_helpers::
+        automate_stdio_shared_setup(*app_p, args, 0,
+                                    id, cmd,
+                                    automate_stdio_helpers::no_force_stdio_ticker);
 
-      set< commands::command_id > matches =
-        CMD_REF(automate)->complete_command(id);
-
-      if (matches.empty())
-        {
-          E(false, origin::user, F("no completions for this command"));
-        }
-      else if (matches.size() > 1)
-        {
-          E(false, origin::user,
-            F("multiple completions possible for this command"));
-        }
-
-      id = *matches.begin();
-
-      I(args.size() >= id.size());
-      for (commands::command_id::size_type i = 0; i < id.size(); i++)
-        args.erase(args.begin());
-
-      commands::command const * cmd = CMD_REF(automate)->find_command(id);
-      I(cmd != NULL);
-      opts = options::opts::globals() | cmd->opts();
-
-      if (cmd->use_workspace_options())
-        {
-          // Re-read the ws options file, rather than just copying
-          // the options from the previous apts.opts object, because
-          // the file may have changed due to user activity.
-          workspace::check_format();
-          workspace::get_options(app_p->opts);
-        }
-
-      opts.instantiate(&app_p->opts).from_command_line(args, false);
-      args_vector & parsed_args = app_p->opts.args;
 
       commands::automate const * acmd
         = dynamic_cast< commands::automate const * >(cmd);
       I(acmd);
+
+
+      options_applicator oa(app_p->opts, options_applicator::for_automate_subcmd);
 
       // as soon as a command requires a workspace, this is set to true
       workspace::used = false;

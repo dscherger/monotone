@@ -130,13 +130,13 @@ _monotone() {
               --db -d
               --debug
               --dump
-              --full-version
+              --verbose
               --help -h
               --key -k
               --keydir
               --log
-              --norc
-              --nostd
+              --no-standard-rcfiles
+              --no-builtin-rcfiles
               --pid-file
               --quiet
               --rcfile

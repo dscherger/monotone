@@ -2230,7 +2230,7 @@ parse_resolve_conflicts_opts (options const & opts,
                               roster_merge_result & result,
                               bool & resolutions_given)
 {
-if (opts.resolve_conflicts_given || opts.resolve_conflicts_file_given)
+  if (opts.resolve_conflicts)
     {
       resolutions_given = true;
 

@@ -60,7 +60,7 @@ namespace restricted_path
     {
       included,
       excluded,
-      required, 
+      required,
       included_required,
       excluded_required
     };
@@ -74,7 +74,7 @@ class restriction
 
   enum include_rules
     {
-      explicit_includes, 
+      explicit_includes,
       implicit_includes
     };
 
@@ -99,7 +99,8 @@ class node_restriction : public restriction
                    long depth,
                    roster_t const & roster,
                    path_predicate<file_path> const & ignore_file
-                   = path_always_false<file_path>());
+                   = path_always_false<file_path>(),
+                   include_rules const & rules = implicit_includes);
 
   node_restriction(std::vector<file_path> const & includes,
                    std::vector<file_path> const & excludes,
@@ -116,7 +117,8 @@ class node_restriction : public restriction
                    parent_map const & rosters1,
                    roster_t const & roster2,
                    path_predicate<file_path> const & ignore_file
-                   = path_always_false<file_path>());
+                   = path_always_false<file_path>(),
+                   include_rules const & rules = implicit_includes);
 
   bool includes(roster_t const & roster, node_id nid) const;
 
