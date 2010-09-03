@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -1077,6 +1077,17 @@ mark_std_paths_used(void)
   working_root.get();
   initial_rel_path.get();
 }
+
+void
+reset_std_paths(void)
+{
+  // we don't reset initial_abs_path here, because it is only set in
+  // monotone.cc:cpp_main. initial_rel_path, working_root are reset for each
+  // command.
+  initial_rel_path.unset();
+  working_root.unset();
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
 // utility used by migrate_ancestry

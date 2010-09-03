@@ -2341,6 +2341,10 @@ automate_stdio_shared_setup(app_state & app,
   // see, because anything else would screw the stdio-encoded output
   if (ft == force_stdio_ticker)
     app.opts.ticker.unchecked_set("stdio");
+
+  // clear path globals set by previous commands
+  reset_std_paths();
+
 }
 
 std::pair<int, string> automate_stdio_helpers::
