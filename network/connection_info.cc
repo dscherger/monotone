@@ -324,7 +324,7 @@ netsync_connection_info::parse_includes_excludes_from_query(string const & query
   includes.clear();
   excludes.clear();
 
-  char const separator = ',';
+  char const separator = ';';
   char const negate = '-';
 
   string::size_type begin = 0;
