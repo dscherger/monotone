@@ -462,6 +462,8 @@ netsync_connection_info::setup_from_server_and_pattern(options const & opts,
   info->client.conn_type = type;
 
   info->client.set_raw_uri(host());
+  E(info->client.uri.query.empty(), origin::user,
+    F("you can specify either a query string or separate include/exclude parameters, but not both"));
   info->client.set_include_exclude_pattern(includes, excludes);
 
   info->client.ensure_completeness();
