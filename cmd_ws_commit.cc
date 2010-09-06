@@ -238,7 +238,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   if (!is_date_fmt_valid)
     {
-      W(F("date format '%s' cannot be used for commit; using default instead") % date_fmt);
+      W(F("date format '%s' cannot be parsed; using default instead") % date_fmt);
       revision_header(rid, rev, author, date, branch, changelog, null_date_fmt, header);
     }
   else
@@ -930,9 +930,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 
-  if (!date_fmt_valid(date_fmt))
-    W(F("date format '%s' cannot be used for commit") % date_fmt);
-
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
 
@@ -1036,13 +1033,9 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   cout << summary_external;
 }
 
-CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
-    N_("Checks out a revision from the database into a directory"),
-    N_("If a revision is given, that's the one that will be checked out.  "
-       "Otherwise, it will be the head of the branch (given or implicit).  "
-       "If no directory is given, the branch name will be used as directory."),
-    options::opts::branch | options::opts::revision |
-    options::opts::move_conflicting_paths)
+static void
+checkout_common(app_state & app,
+                args_vector const & args)
 {
   revision_id revid;
   system_path dir;
@@ -1050,9 +1043,6 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   database db(app);
   project_t project(db, app.lua, app.opts);
   transaction_guard guard(db, false);
-
-  if (args.size() > 1 || app.opts.revision.size() > 1)
-    throw usage(execid);
 
   if (app.opts.revision.empty())
     {
@@ -1143,6 +1133,37 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
 
   work.maybe_update_inodeprints(db);
   guard.commit();
+}
+
+CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
+    N_("Checks out a revision from the database into a directory"),
+    N_("If a revision is given, that's the one that will be checked out.  "
+       "Otherwise, it will be the head of the branch (given or implicit).  "
+       "If no directory is given, the branch name will be used as directory."),
+    options::opts::branch | options::opts::revision |
+    options::opts::move_conflicting_paths)
+{
+  if (args.size() > 1 || app.opts.revision.size() > 1)
+    throw usage(execid);
+
+  checkout_common(app, args);
+}
+
+CMD_AUTOMATE(checkout, N_("[DIRECTORY]"),
+    N_("Checks out a revision from the database into a directory"),
+    N_("If a revision is given, that's the one that will be checked out.  "
+       "Otherwise, it will be the head of the branch (given or implicit).  "
+       "If no directory is given, the branch name will be used as directory."),
+    options::opts::branch | options::opts::revision |
+    options::opts::move_conflicting_paths)
+{
+  E(args.size() < 2, origin::user,
+    F("wrong argument count"));
+
+  E(app.opts.revision.size() < 2, origin::user,
+    F("wrong revision count"));
+
+  checkout_common(app, args);
 }
 
 CMD_GROUP(attr, "attr", "", CMD_REF(workspace),
@@ -1803,6 +1824,17 @@ void perform_commit(app_state & app,
     db.get_revision(restricted_rev_id, rdat);
     app.lua.hook_note_commit(restricted_rev_id, rdat, certs);
   }
+}
+
+CMD_PRESET_OPTIONS(commit)
+{
+  // Dates are never parseable on Win32 (see win32/parse_date.cc),
+  // so don't warn about that, just use the default format.
+#ifdef WIN32
+  opts.no_format_dates = true;
+#else
+  opts.no_format_dates = false;
+#endif
 }
 
 CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),

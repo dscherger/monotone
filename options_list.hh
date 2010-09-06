@@ -505,7 +505,7 @@ OPTSET_REL(globals, verbosity)
 OPTVAR(verbosity, int, verbosity, 0)
 
 OPTION(verbosity, quiet, false, "quiet,q",
-     gettext_noop("decrease verbosity (undo previous -v, then disable informational output, then disable warnings"))
+     gettext_noop("decrease verbosity (undo previous -v, then disable informational output, then disable warnings)"))
 #ifdef option_bodies
 {
   --verbosity;
@@ -536,7 +536,7 @@ OPTION(globals, debug, false, "debug",
 
 DEPRECATE(reallyquiet, gettext_noop("please use -q -q"), 1.0, 2.0)
 OPTION(verbosity, reallyquiet, false, "reallyquiet",
-     gettext_noop("suppress warning, verbose, informational and progress messages (set verbosity to -2)"))
+     gettext_noop("suppress warning, verbose, informational and progress messages"))
 #ifdef option_bodies
 {
   verbosity = -2;
@@ -545,6 +545,9 @@ OPTION(verbosity, reallyquiet, false, "reallyquiet",
 
 SIMPLE_OPTION(full, "full/concise", bool,
        gettext_noop("print detailed information"))
+
+SIMPLE_OPTION(formatted, "formatted/plain", bool,
+              gettext_noop("automatically run the output through nroff (default if the output is a terminal)"))
 
 
 GROUPED_SIMPLE_OPTION(globals, timestamps, "timestamps", bool,

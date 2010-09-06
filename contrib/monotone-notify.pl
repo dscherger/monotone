@@ -310,9 +310,11 @@ if ($mail || $debug) {
 		my $to = $sendinfo->[2];
 		next if !defined $to;
 
+		# Depending on mtn version, the line will start with
+		# "Ancestor:" or "Parent:"
 		my @ancestors =
 		    map { (split ' ')[1] }
-			grep(/^Ancestor:/, @{$revision_data{$revision}});
+			grep(/^(Ancestor|Parent):/, @{$revision_data{$revision}});
 
 		# If this revision has more than one ancestor, it's the
 		# result of a merge.  If we have already shown the

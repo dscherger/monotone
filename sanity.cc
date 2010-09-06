@@ -20,6 +20,7 @@
 #include "lexical_cast.hh"
 #include "constants.hh"
 #include "platform.hh"
+#include "file_io.hh" // make_dir_for
 #include "sanity.hh"
 #include "simplestring_xform.hh"
 
@@ -84,7 +85,7 @@ struct sanity::impl
   void *out_of_band_opaque;
 
   impl() :
-    verbosity(0), logbuf(0xffff),
+    verbosity(0), is_debug(false), logbuf(0xffff),
     already_dumping(false), out_of_band_function(0), out_of_band_opaque(0)
   {}
 };
@@ -156,6 +157,19 @@ sanity::dump_buffer()
   if (!imp->filename.empty())
     {
       ofstream out(imp->filename.c_str());
+      if (!out)
+        {
+          try
+            {
+              make_dir_for(system_path(imp->filename, origin::internal));
+              out.open(imp->filename.c_str());
+            }
+          catch (...)
+            {
+              inform_message((FL("failed to create directory for %s")
+                              % imp->filename).str());
+            }
+        }
       if (out)
         {
           copy(imp->logbuf.begin(), imp->logbuf.end(),

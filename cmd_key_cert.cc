@@ -12,6 +12,7 @@
 #include <sstream>
 #include <iterator>
 
+#include "basic_io.hh"
 #include "charset.hh"
 #include "cmd.hh"
 #include "app_state.hh"
@@ -29,6 +30,17 @@ using std::ostream_iterator;
 using std::ostringstream;
 using std::set;
 using std::string;
+
+namespace
+{
+  namespace syms
+  {
+    symbol const name("name");
+    symbol const hash("hash");
+    symbol const public_location("public_location");
+    symbol const private_location("private_location");
+  }
+};
 
 CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
     N_("Generates an RSA key-pair"),
@@ -57,18 +69,65 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
   keys.create_key_pair(db, name);
 }
 
-CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
-    N_("Drops a public and/or private key"),
-    "",
-    options::opts::none)
+CMD_AUTOMATE(generate_key, N_("KEY_NAME PASSPHRASE"),
+             N_("Generates an RSA key-pair"),
+             "",
+             options::opts::force_duplicate_key)
+{
+  // not unified with CMD(genkey), because the call to create_key_pair is
+  // significantly different.
+
+  E(args.size() == 2, origin::user,
+    F("wrong argument count"));
+
+  database db(app);
+  key_store keys(app);
+
+  key_name name = typecast_vocab<key_name>(idx(args, 0));
+
+  if (!app.opts.force_duplicate_key)
+    {
+      E(!keys.key_pair_exists(name), origin::user,
+        F("you already have a key named '%s'") % name);
+      if (db.database_specified())
+        {
+          E(!db.public_key_exists(name), origin::user,
+            F("there is another key named '%s'") % name);
+        }
+    }
+
+  utf8 passphrase = idx(args, 1);
+
+  key_id hash;
+  keys.create_key_pair(db, name, key_store::create_quiet, &passphrase, &hash);
+
+  basic_io::printer prt;
+  basic_io::stanza stz;
+  vector<string> publocs, privlocs;
+  if (db.database_specified())
+    publocs.push_back("database");
+  publocs.push_back("keystore");
+  privlocs.push_back("keystore");
+
+  stz.push_str_pair(syms::name, name());
+  stz.push_binary_pair(syms::hash, hash.inner());
+  stz.push_str_multi(syms::public_location, publocs);
+  stz.push_str_multi(syms::private_location, privlocs);
+  prt.print_stanza(stz);
+
+  output.write(prt.buf.data(), prt.buf.size());
+
+}
+
+static void
+dropkey_common(app_state & app,
+               args_vector args,
+               bool drop_private)
 {
   database db(app);
   key_store keys(app);
   bool key_deleted = false;
   bool checked_db = false;
-
-  if (args.size() != 1)
-    throw usage(execid);
 
   key_identity_info identity;
   project_t project(db, app.lua, app.opts);
@@ -89,7 +148,7 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
       checked_db = true;
     }
 
-  if (keys.key_pair_exists(identity.id))
+  if (drop_private && keys.key_pair_exists(identity.id))
     {
       P(F("dropping key pair '%s' from keystore") % identity.id);
       keys.delete_key(identity.id);
@@ -104,6 +163,30 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
     fmt = F("public or private key '%s' does not exist "
             "in keystore, and no database was specified");
   E(key_deleted, origin::user, fmt % idx(args, 0)());
+}
+
+CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
+    N_("Drops a public and/or private key"),
+    "",
+    options::opts::none)
+{
+  if (args.size() != 1)
+    throw usage(execid);
+
+  dropkey_common(app, args,
+                 true); // drop_private
+}
+
+CMD_AUTOMATE(drop_public_key, N_("KEY_NAME_OR_HASH"),
+    N_("Drops a public key"),
+    "",
+    options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  dropkey_common(app, args,
+                 false); // drop_private
 }
 
 CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),

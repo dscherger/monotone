@@ -166,10 +166,12 @@ public:
                                     bool & validated,
                                     string & reason);
 
-  // meta hooks
+  // misc hooks
   bool hook_hook_wrapper(string const & func_name,
                          vector<string> const & args,
                          string & out);
+
+  bool hook_get_man_page_formatter_command(string & command);
 
   // notification hooks
   bool hook_note_commit(revision_id const & new_id,

@@ -13,6 +13,7 @@
 
 #include "lua.hh"
 #include "app_state.hh"
+#include "globish.hh"
 #include "options_applicator.hh"
 #include "work.hh"
 #include "ui.hh"
@@ -23,13 +24,22 @@
 
 #ifndef _WIN32
 #include <signal.h>
+#include <errno.h>
+#else
+#include <io.h>
 #endif
 
+#include <iostream>
+#include <cstring>
+
 using std::string;
+using std::stringstream;
 using std::vector;
+using std::set;
 using std::ostream;
 using std::make_pair;
-using std::set;
+using std::cout;
+using boost::lexical_cast;
 
 //
 // Definition of top-level commands, used to classify the real commands
@@ -351,7 +361,7 @@ namespace commands {
       out << format_text(F("Description for '%s %s':") %
                          prog_name % visibleid)
           << "\n\n";
-    out << format_text(cmd->desc(), 2) << "\n\n";
+    out << format_text(cmd->desc(), 2, 0, true) << "\n\n";
 
     // Print all available aliases.
     if (cmd->names().size() > 1)
@@ -359,7 +369,7 @@ namespace commands {
         command::names_set othernames = cmd->names();
         othernames.erase(ident[ident.size() - 1]);
         out << format_text(F("Aliases: %s.") %
-                           join_words(othernames, ", ")(), 2)
+                           join_words(othernames, ", ")(), 2, 0, true)
             << '\n';
       }
   }
@@ -522,6 +532,19 @@ CMD_NO_WORKSPACE(version, "version", "", CMD_REF(informative), "",
     print_version();
 }
 
+CMD_HIDDEN(check_globish, "check_globish", "", CMD_REF(debug),
+           "globish string",
+           N_("Check that a particular globish matches a particular string"),
+           "",
+           options::opts::none)
+{
+  globish g = typecast_vocab<globish>(idx(args,0));
+  string s(idx(args,1)());
+
+  E(g.matches(s), origin::user,
+    F("Globish <%s> does not match string <%s>") % g % s);
+}
+
 CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
            "{ N | E | I | double-throw | exception | signal }",
            N_("Triggers the specified kind of crash"),
@@ -592,6 +615,337 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
     }
 #undef maybe_throw
 #undef maybe_throw_bare
+}
+
+static string
+man_italic(string const & content)
+{
+  return "\\fI" + content + "\\fP";
+}
+
+static string
+man_bold(string const & content)
+{
+  return "\\fB" + content + "\\fP";
+}
+
+static string
+man_definition(vector<string> const & labels, string const & content, int width = -1)
+{
+  string out;
+  out += ".IP \"" + (*labels.begin()) + "\"";
+
+  if (width != -1)
+    out += " " + lexical_cast<string>(width);
+  out += "\n";
+
+  if (labels.size() > 1)
+    {
+      out += ".PD 0\n";
+      for (vector<string>::const_iterator i = labels.begin() + 1;
+           i < labels.end(); ++i)
+        {
+          out += ".IP \"" + (*i) + "\"\n";
+        }
+      out += ".PD\n";
+    }
+  out += content;
+  if (content.rfind('\n') != (content.size() - 1))
+     out += "\n";
+  return out;
+}
+
+static string
+man_definition(string const & label, string const & content, int width = -1)
+{
+  vector<string> labels;
+  labels.push_back(label);
+  return man_definition(labels, content, width);
+}
+
+static string
+man_indent(string const & content)
+{
+  return ".RS\n" + content + ".RE\n";
+}
+
+static string
+man_subsection(string const & content)
+{
+  return ".SS \"" + content + "\"\n";
+}
+
+static string
+man_section(string const & content)
+{
+  return ".SH \"" + uppercase(content) + "\"\n";
+}
+
+static string
+man_title(string const & title)
+{
+  return ".TH \"" + title + "\" 1 "+
+         "\"" + date_t::now().as_formatted_localtime("%Y-%m-%d") + "\" " +
+         "\"" + PACKAGE_STRING + "\"\n";
+}
+
+static string
+get_options_string(options::options_type const & optset, options & opts, int width = -1)
+{
+  vector<string> names;
+  vector<string> descriptions;
+  unsigned int maxnamelen;
+
+  optset.instantiate(&opts).get_usage_strings(
+    names, descriptions, maxnamelen, opts.show_hidden_commands
+  );
+
+  string out;
+  vector<string>::const_iterator name;
+  vector<string>::const_iterator desc;
+  for (name = names.begin(), desc = descriptions.begin();
+       name != names.end(); ++name, ++desc)
+    {
+      if (name->empty())
+        continue;
+      out += man_definition(*name, *desc, width);
+    }
+  return out;
+}
+
+static string
+get_commands(options & opts, commands::command const * group)
+{
+  vector<commands::command const *> sorted_commands;
+  commands::command::children_set commands = group->children();
+  for (commands::command::children_set::const_iterator i = commands.begin();
+       i != commands.end(); ++i)
+    {
+      commands::command * command = *i;
+      if (command->hidden() && !opts.show_hidden_commands)
+        continue;
+
+      // there are no top level commands, so this must be an
+      // empty group - skip it
+      if (group->is_leaf())
+        continue;
+
+      sorted_commands.push_back(command);
+    }
+
+  sort(sorted_commands.begin(),
+       sorted_commands.end(),
+       commands::cmd_ptr_compare());
+
+  string out;
+  for (vector<commands::command const * >::const_iterator i = sorted_commands.begin();
+       i != sorted_commands.end(); ++i)
+    {
+      commands::command const * command = *i;
+
+      // don't print sub groups explicitely, just their leaves
+      if (!command->is_leaf())
+        {
+          out += get_commands(opts, command);
+          continue;
+        }
+
+      // this builds a list of already formatted command calls
+      // which are used as label for the specific command section
+      vector<string> cmd_calls;
+
+      //
+      // newline characters in the parameter section mark
+      // alternative call syntaxes which we expand here, i.e.
+      // a command "do-foo" with an alias of "foo" and an argument
+      // list of "BAR\nBAR BAZ" will be expanded to
+      //
+      //  do-foo BAR
+      //  do-foo BAR BAZ
+      //  foo BAR
+      //  foo BAR BAZ
+      //
+      vector<string> params;
+      if (!command->params().empty())
+        split_into_lines(command->params(), params);
+
+      vector<utf8> main_ident = command->ident();
+      typedef set<vector<string> > ident_set;
+      ident_set idents;
+
+      commands::command::names_set allnames = command->names();
+      for (set<utf8>::const_iterator i = allnames.begin();
+           i != allnames.end(); ++i)
+        {
+          vector<string> full_ident;
+          for (vector<utf8>::const_iterator j = main_ident.begin() + 1;
+                j < main_ident.end() - 1;  ++j)
+            {
+              full_ident.push_back((*j)());
+            }
+          full_ident.push_back((*i)());
+          idents.insert(full_ident);
+        }
+
+      for (ident_set::const_iterator i = idents.begin();
+           i != idents.end();  ++i)
+        {
+          string call, name;
+          // cannot use join_words here, since this only
+          // works on containers
+          join_lines(*i, name, " ");
+
+          if (params.size() == 0)
+            {
+              call = man_bold(name);
+              cmd_calls.push_back(call);
+              continue;
+            }
+
+          for (vector<string>::const_iterator j = params.begin();
+               j < params.end(); ++j)
+            {
+              call = man_bold(name) + " " + *j;
+              cmd_calls.push_back(call);
+            }
+        }
+
+      string cmd_desc;
+      cmd_desc += command->desc() + "\n";
+
+      // this prints an indented list of available command options
+      options::options_type cmd_options =
+        commands::command_options(main_ident);
+      if (!cmd_options.empty())
+        {
+          cmd_desc += man_indent(get_options_string(cmd_options, opts, 4));
+        }
+
+      // compile everything into a man definition
+      out += man_definition(cmd_calls, cmd_desc, 4);
+    }
+
+  return out;
+}
+
+static string
+get_command_groups(options & opts)
+{
+  vector<commands::command const *> sorted_groups;
+  commands::command::children_set groups = CMD_REF(__root__)->children();
+  for (commands::command::children_set::const_iterator i = groups.begin();
+       i != groups.end(); ++i)
+    {
+      commands::command * group = *i;
+      if (group->hidden() && !opts.show_hidden_commands)
+        continue;
+
+      // there are no top level commands, so this must be an
+      // empty group - skip it
+      if (group->is_leaf())
+        continue;
+
+      sorted_groups.push_back(group);
+    }
+
+  sort(sorted_groups.begin(),
+       sorted_groups.end(),
+       commands::cmd_ptr_compare());
+
+  string out;
+  for (vector<commands::command const * >::const_iterator i = sorted_groups.begin();
+       i != sorted_groups.end(); ++i)
+    {
+      commands::command const * group = *i;
+      out += man_subsection(
+        (F("command group '%s'") % group->primary_name()).str()
+      );
+      out += group->desc() + "\n";
+
+      out += get_commands(opts, group);
+    }
+
+  return out;
+}
+
+CMD_PRESET_OPTIONS(manpage)
+{
+    opts.formatted = isatty(STDOUT_FILENO);
+}
+CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
+    N_("Generate a manual page from monotone's command help"),
+    "",
+    options::opts::show_hidden_commands | options::opts::formatted)
+{
+  stringstream ss;
+  ss << man_title("monotone");
+  ss << man_section(_("Name"));
+
+  ss << _("monotone - a distributed version control system") << "\n";
+  ss << man_section(_("Synopsis"));
+  ss << man_bold(prog_name) << " "
+     << man_italic(_("[options...] command [arguments...]"))
+     << "\n";
+
+  ss << man_section(_("Description"));
+  ss << _("monotone is a highly reliable, very customizable distributed "
+          "version control system that provides lightweight branches, "
+          "history-sensitive merging and a flexible trust setup. "
+          "monotone has an easy-to-learn command set and comes with a rich "
+          "interface for scripting purposes and thorough documentation.")
+     << "\n\n";
+  ss << (F("For more information on monotone, visit %s.")
+          % man_bold("http://www.monotone.ca")).str()
+     << "\n\n";
+  ss << (F("The complete documentation, including a tutorial for a quick start "
+           "with the system, can be found online on %s.")
+          % man_bold("http://www.monotone.ca/docs")).str() << "\n";
+
+  ss << man_section(_("Global Options"));
+  ss << get_options_string(options::opts::globals(), app.opts, 25) << "\n";
+
+  ss << man_section(_("Commands"));
+  ss << get_command_groups(app.opts);
+
+  ss << man_section(_("See Also"));
+  ss << (F("info %s and the documentation on %s")
+          % prog_name % man_bold("http://monotone.ca/docs")).str() << "\n";
+
+  ss << man_section("Bugs");
+  ss << (F("Please report bugs to %s.")
+          % man_bold("http://savannah.nongnu.org/bugs/?group=monotone")).str()<< "\n";
+
+  ss << man_section("Authors");
+  ss << _("monotone was written originally by Graydon Hoare "
+          "<graydon@pobox.com> in 2004 and has since then received "
+          "numerous contributions from many individuals. "
+          "A complete list of authors can be found in AUTHORS.")
+     << "\n\n";
+  ss << _("Nowadays, monotone is maintained by a collective of enthusiastic "
+          "programmers, known as the monotone development team.") << "\n";
+
+  ss << man_section("Copyright");
+  ss << (F("monotone and this man page is Copyright (c) 2004 - %s by "
+           "the monotone development team.")
+           % date_t::now().as_formatted_localtime("%Y")).str() << "\n";
+
+  if (!app.opts.formatted)
+    {
+      cout << ss.str();
+      return;
+    }
+
+  string cmd;
+  E(app.lua.hook_get_man_page_formatter_command(cmd) && !cmd.empty(),
+    origin::user, F("no man page formatter command configured"));
+
+  FILE * fp = popen(cmd.c_str(), "w");
+  E(fp != NULL, origin::system,
+    F("could not execute man page formatter command '%s': %s")
+      % cmd % strerror(errno));
+
+  fprintf(fp, ss.str().c_str());
+  pclose(fp);
 }
 
 // There isn't really a better place for this function.

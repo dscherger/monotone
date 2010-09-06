@@ -15,8 +15,10 @@ commit("branch-test-exclude")
 
 srv = netsync.start()
 
+check(mtn2("pull", srv.url .. "?foo", "bar"), 1, false, false)
+
 -- %61 = 'a'
-check(mtn2("pull", srv.url .. "?br%61nch-te*,-br%61nch-test-*"), 0, false, false)
+check(mtn2("pull", srv.url .. "?br%61nch-te*;-br%61nch-test-*"), 0, false, false)
 check(mtn2("ls", "branches"), 0, true)
 check(not qgrep("^branch$", "stdout"))
 check(    qgrep("^branch-test$", "stdout"))

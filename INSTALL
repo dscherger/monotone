@@ -89,20 +89,20 @@ building and installation process for monotone
 
            Package  | Version | location
            --------------------------
-           MinGW    | 5.1.4   | Automated MinGW Installer | MinGW-5.1.4.exe
-           MSYS     | 1.0.11  | MSYS Base System | Current Release: msys-1.0.10 | MSYS-1.0.10.exe
-           msysDTK  | 1.0.1   | MSYS Supplementary Tools | Current Release: msysDTK-1.0.1 | msysDTK-1.0.1.exe
+           MingGW   | 5.1.4   | Automated MinGW Installer | MinGW 5.1.4 | MinGW-5.1.4.exe
+           MSYS     | 1.0.11  | MSYS Base System | msys-1.0.11 | MSYS-1.0.11.exe
+           msysDTK  | 1.0.1   | MSYS Supplementary Tools | msysDTK-1.0.1 | msysDTK-1.0.1.exe
            libiconv | 1.13    | MinGW libiconv | Release 1.13 |
                     |         |  libiconv-1.13-mingw32-bin.tar.gz
                     |         |  libiconv-1.13-mingw32-dev.tar.gz
                     |         |  libiconv-1.13-mingw32-dll-2.tar.gz
            autoconf | 2.63    | MSYS autoconf | autoconf-2.63-1 | autoconf-2.63-1-msys-1.0.11-bin.tar.lzma
            automake | 1.11    | MSYS automake | automake-1.11-1 | automake-1.11-1-msys-1.0.11-bin.tar.lzma
-           zlib     | 1.2.3   | MinGW zlib |
+           zlib     | 1.2.3   | zlib-1.2.3-1-mingw32 |
                     |         | libz-1.2.3-1-mingw32-dev.tar.gz
                     |         | libz-1.2.3-1-mingw32-dll-1.tar.gz
-           gcc dll  |         | GCC Version 4 | gcc-core-4.4.0-mingw32-dll.tar.gz
-           gettext  | 0.17    | MinGW gettext |
+           gcc dll  |         | GCC Version 4 | Current Release_gcc-4.4.0 | gcc-core-4.4.0-mingw32-dll.tar.gz
+           gettext  | 0.17    | MinGW gettext | gettext-0.17-1 |
                     |         | gettext-0.17-1-mingw32-bin.tar.lzma
                     |         | gettext-0.17-1-mingw32-dev.tar.lzma
                     |         | libgettextpo-0.17-1-mingw32-dll-0.tar.lzma
@@ -110,7 +110,7 @@ building and installation process for monotone
            boost    | 1.34.1  | http://prdownloads.sf.net/boost/boost_1_34_1.tar.bz2?download
            Lua      | 5.1.4   | http://www.lua.org/ | lua-5.1.4.tar.gz
            pcre     | 7.8     | http://www.pcre.org/ | pcre-7.8.tar.bz2
-           botan    | 1.8.4   | http://botan.randombit.net/news/ | Botan-1.8.4.tbz
+           botan    | 1.8.4   | http://botan.randombit.net/download.html | Botan-1.8.4.tbz
            sqlite3  | 3.6.16  | http://www.sqlite.org/download.html | sqlite-amalgamation-3.6.16.tar.gz, with makefile
            libidn   | 1.9     | ftp://ftp.gnu.org/gnu/libidn | libidn-1.9.tar.gz
            Depends.exe|       | http://www.dependencywalker.com/ ; also comes with Visual Studio
@@ -129,8 +129,8 @@ building and installation process for monotone
            executable, so we need the MinGW versions of those.
 
            1. MinGW - run installer, accept defaults but add g++ on the package selection page (installs to c:/MinGW)
-           2. MSYS - run installer, accept defaults (installs to c:/Msys)
-           3. msysDTK - run installer, accept defaults (installs to c:/Msys)
+           2. MSYS - run installer, accept defaults (installs to c:/Msys/1.0)
+           3. msysDTK - run installer, accept defaults (installs to c:/Msys/1.0)
 
            4. libiconv
               start the Msys shell.
@@ -162,7 +162,9 @@ building and installation process for monotone
               $ tar zxf gcc-core-4.4.0-mingw32-dll.tar.gz
 
            9. boost; only need headers
-              $ cd /usr/src
+              $ cd /usr
+              $ mkdir src
+              $ cd src
               $ tar jxf boost_1_34_1.tar.bz2
               $ cd boost_1_34_1
               $ cp -a boost /mingw/include

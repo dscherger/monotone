@@ -4,6 +4,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         Changes
 
+        - On Win32 native, '--no-format-dates' is the default for
+          'commit', since dates are not parseable on Win32 native.
+
+        - 'automate genkey' is renamed to 'automate generate_key'
+
         - Selectors are much more powerful now, and the characters '(',
           ')', and ';' need to be quoted if mean literally (just like
           '/'). See section 3.2 in the documentation for details.
@@ -24,7 +29,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
           The possibility to specify include patterns by using
           'include=' and exclude patterns by using 'exclude='
-          in the query string has been removed.
+          in the query string has been removed. Patterns are separated
+          by ';' and will be treated as include patterns unless prefixed
+          with '-'. Where you could previously specify
+          "mtn://host/?include=foo,exclude=bar", you would now give
+          "mtn://host/?foo;-bar" instead.
 
           Monotone's native protocol (mtn://) is still the default
           protocol if nothing is specified.
@@ -99,7 +108,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           --no-builtin-rcfile           replaces --nostd
           --builtin-rcfile              undo previous --no-builtin-rcfile
           --clear-rcfiles               undo previous --rcfile
-	  --verbose [-v]                increase verbosity (opposite of --quiet)
+          --verbose [-v]                increase verbosity (opposite of --quiet)
 
         - Global options now hidden:
           --roster-cache-performance-log
@@ -113,7 +122,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
             --no-move-conflicting-paths     undo previous --move-conflicting-paths
           diff
             --without-header                undo previous --with-header
-            --show-encloser                 undo previous --show-encloser
+            --show-encloser                 undo previous --no-show-encloser
           disapprove, suspend
             --no-update                     undo previous --update
           drop
@@ -136,23 +145,18 @@ Xxx Xxx 99 99:99:99 UTC 2010
             --respect-ignore                undo previous --no-respect-ignore
           serve
             --no-pid-file                   undo previous --pid-file
-
           sync, pull, push, automate remote_stdio, automate remote
           automate pull, automate push, automate sync
             --no-set-default                undo previous --set-default
-
           automate inventory
             --corresponding-renames         undo previous --no-corresponding-renames
             --ignored                       undo previous --no-ignored
             --unchanged                     undo previous --no-unchanged
             --unknown                       undo previous --no-unknown
-
           automate content_diff
             --without-header                undo previous --with-header
-
           automate show_conflicts
             --no-ignore-suspend-certs       undo previous --ignore-suspend-certs
-
           automate log
             --clear-from                    undo previous --from
             --merges                        undo previous --no-merges
@@ -171,11 +175,26 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         - To aid command line typing, partial option names are tried to
           be expanded; if the expansion leads to multiple possibilities,
-          all matches and an accompanying short description of the 
+          all matches and an accompanying short description of the
           particular expansion are displayed.
+
+        - New automate command 'checkout'
+
+        - New automate commands 'put_public_key', 'get_public_key' and
+          'drop_public_key'. (closes monotone bug #30345)
 
         - The 'disapprove' command now accepts a revision range in
           addition to a single revision.
+
+        - A new 'manpage' command has been added which dumps the monotone
+          command help including all global and command specific options in
+          standard troff format.  If this command is used interactively, its
+          output is automatically processed through nroff and less, in case
+          both are available on your system.  If not, you can change the default
+          command by overwriting the 'get_man_page_formatter_command' hook.
+
+          The 'manpage' command is also used to create a static version of
+          mtn(1) which is now installed with the rest of monotone's docs.
 
         - New 'k:' selector type to query revisions where at least one
           certificate was signed with the given key.
@@ -230,6 +249,15 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - monotone no longer throws an unrecoverable error if a public or
           private key is addressed with some non-existing key id
           (fixes monotone bug #30462)
+
+        - A globish that contains a bracket pair with an empty sub-pattern
+          such as "{,.foo}", "{.foo,}" or even "{.foo,,.bar}" now correctly
+          expands the empty target, so e.g. the branch pattern
+
+             "net.venge.monotone{,.*}"
+
+          now matches "net.venge.monotone" and "net.venge.monotone.*"
+          as expected. (fixes monotone bug #30655)
 
         - A regression in 0.48 made a path-restricted 'mtn log' show
           revisions, in which not the picked path(s), but one of its parents

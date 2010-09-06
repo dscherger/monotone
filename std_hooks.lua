@@ -1490,3 +1490,23 @@ function validate_git_author(author)
 
    return false
 end
+
+function get_man_page_formatter_command()
+   local term_width = guess_terminal_width() - 2
+   -- The string returned is run in a process created with 'popen'
+   -- (see cmd.cc manpage).
+   --
+   -- On Unix (and POSIX compliant systems), 'popen' runs 'sh' with
+   -- the inherited path.
+   --
+   -- On MinGW, 'popen' runs 'cmd.exe' with the inherited path. MinGW
+   -- does not (currently) provide nroff or equivalent. So we assume
+   -- sh, nroff and less are also installed, from Cygwin or some other
+   -- toolset.
+   if string.sub(get_ostype(), 1, 7) == "Windows" then
+      return string.format("sh -c 'nroff -man -rLL=%dn' | less -R", term_width)
+   else
+      return string.format("nroff -man -rLL=%dn | less -R", term_width)
+   end
+end
+

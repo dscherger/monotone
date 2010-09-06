@@ -21,6 +21,7 @@ check(get("expected-renames-target-no-unchanged.stdout"))
 check(get("expected-renames-target-no-ignored.stdout"))
 check(get("expected-renames-target-no-unknown.stdout"))
 
+include("common/basic_io.lua")
 include("common/test_utils_inventory.lua")
 
 mkdir("source")

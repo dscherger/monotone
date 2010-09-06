@@ -1,5 +1,5 @@
 // Copyright (C) 2004 Nathaniel Smith <njs@pobox.com>
-//               2007 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2007, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -523,7 +523,7 @@ CMD_AUTOMATE(select, N_("SELECTOR"),
   project_t project(db, app.lua, app.opts);
   set<revision_id> completions;
 
-  // FIXME: replace this with 
+  // FIXME: replace this with
   //   complete(app.opts, app.lua,  project, idx(args, 0)(), completions);
   // some time which errors out if no completions could be found for a
   // specific selector - this breaks BC with earlier automate versions though
@@ -1749,83 +1749,13 @@ namespace
   {
     symbol const key("key");
     symbol const signature("signature");
-    symbol const name("name");
     symbol const value("value");
     symbol const trust("trust");
-
-    symbol const hash("hash");
-    symbol const public_location("public_location");
-    symbol const private_location("private_location");
 
     symbol const domain("domain");
     symbol const entry("entry");
   }
 };
-
-// Name: genkey
-// Arguments:
-//   1: the key ID
-//   2: the key passphrase
-// Added in: 3.1
-// Changed in: 10.0
-// Purpose: Generates a key with the given ID and passphrase
-//
-// Output format: a basic_io stanza for the new key, as for ls keys
-//
-// Sample output:
-//               name "tbrownaw@gmail.com"
-//               hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-//    public_location "database" "keystore"
-//   private_location "keystore"
-//
-// Error conditions: If the passphrase is empty or the key already exists,
-// prints an error message to stderr and exits with status 1.
-CMD_AUTOMATE(genkey, N_("KEY_NAME PASSPHRASE"),
-             N_("Generates a key"),
-             "",
-             options::opts::force_duplicate_key)
-{
-  E(args.size() == 2, origin::user,
-    F("wrong argument count"));
-
-  database db(app);
-  key_store keys(app);
-
-  key_name name = typecast_vocab<key_name>(idx(args, 0));
-
-  if (!app.opts.force_duplicate_key)
-    {
-      E(!keys.key_pair_exists(name), origin::user,
-        F("you already have a key named '%s'") % name);
-      if (db.database_specified())
-        {
-          E(!db.public_key_exists(name), origin::user,
-            F("there is another key named '%s'") % name);
-        }
-    }
-
-  utf8 passphrase = idx(args, 1);
-
-  key_id hash;
-  keys.create_key_pair(db, name, key_store::create_quiet, &passphrase, &hash);
-
-  basic_io::printer prt;
-  basic_io::stanza stz;
-  vector<string> publocs, privlocs;
-  if (db.database_specified())
-    publocs.push_back("database");
-  publocs.push_back("keystore");
-  privlocs.push_back("keystore");
-
-  stz.push_str_pair(syms::name, name());
-  stz.push_binary_pair(syms::hash, hash.inner());
-  stz.push_str_multi(syms::public_location, publocs);
-  stz.push_str_multi(syms::private_location, privlocs);
-  prt.print_stanza(stz);
-
-  output.write(prt.buf.data(), prt.buf.size());
-
-}
 
 // Name: get_option
 // Arguments:
@@ -2411,6 +2341,10 @@ automate_stdio_shared_setup(app_state & app,
   // see, because anything else would screw the stdio-encoded output
   if (ft == force_stdio_ticker)
     app.opts.ticker.unchecked_set("stdio");
+
+  // clear path globals set by previous commands
+  reset_std_paths();
+
 }
 
 std::pair<int, string> automate_stdio_helpers::
