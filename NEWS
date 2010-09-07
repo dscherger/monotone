@@ -29,7 +29,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
           The possibility to specify include patterns by using
           'include=' and exclude patterns by using 'exclude='
-          in the query string has been removed.
+          in the query string has been removed. Patterns are separated
+          by ';' and will be treated as include patterns unless prefixed
+          with '-'. Where you could previously specify
+          "mtn://host/?include=foo,exclude=bar", you would now give
+          "mtn://host/?foo;-bar" instead.
 
           Monotone's native protocol (mtn://) is still the default
           protocol if nothing is specified.
