@@ -15,6 +15,13 @@ check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
 check(qgrep("empty log message", "stderr"))
 check(not exists("_MTN/commit"))
 
+-- commit can be cancelled
+
+writefile("_MTN/log", "cancel hint removed")
+check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
+check(qgrep("Commit cancelled.", "stderr"))
+check(not exists("_MTN/commit"))
+
 -- commit fails with modified/missing instructions
 
 writefile("_MTN/log", "missing instructions")
@@ -31,45 +38,6 @@ check(exists("_MTN/commit"))
 check(fsize("_MTN/commit") > 0)
 id2=sha1("_MTN/commit")
 check(id1 == id2)
-remove("_MTN/commit")
-
--- commit can be cancelled
-
-writefile("_MTN/log", "cancel hint removed")
-check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Commit cancelled.", "stderr"))
-check(not exists("_MTN/commit"))
-
--- and we notice if the cancel message is still intact and
--- hasn't been moved
-
-writefile("_MTN/log", "cancel hint moved")
-check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Cancel hint not found.", "stderr"))
-check(exists("_MTN/commit"))
-remove("_MTN/commit")
-
--- commit fails with modified/missing separator, Revision: or Parent: lines
-
-writefile("_MTN/log", "missing separator")
-check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Revision/Parent header not found", "stderr"))
-check(exists("_MTN/commit"))
-check(fsize("_MTN/commit") > 0)
-remove("_MTN/commit")
-
-writefile("_MTN/log", "missing revision")
-check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Revision/Parent header not found", "stderr"))
-check(exists("_MTN/commit"))
-check(fsize("_MTN/commit") > 0)
-remove("_MTN/commit")
-
-writefile("_MTN/log", "missing parent")
-check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Revision/Parent header not found", "stderr"))
-check(exists("_MTN/commit"))
-check(fsize("_MTN/commit") > 0)
 remove("_MTN/commit")
 
 -- commit fails with modified/missing Author: line
@@ -122,51 +90,6 @@ remove("_MTN/commit")
 writefile("_MTN/log", "empty branch")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
 check(qgrep("Branch value empty", "stderr"))
-check(exists("_MTN/commit"))
-check(fsize("_MTN/commit") > 0)
-remove("_MTN/commit")
-
--- commit fails with modified/missing blank line before Changelog section
-
-writefile("_MTN/log", "missing blank line")
-check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Changelog header not found", "stderr"))
-check(exists("_MTN/commit"))
-check(fsize("_MTN/commit") > 0)
-remove("_MTN/commit")
-
--- commit fails with modified/missing Changelog section
-
-writefile("_MTN/log", "missing changelog")
-check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Changelog header not found", "stderr"))
-check(exists("_MTN/commit"))
-check(fsize("_MTN/commit") > 0)
-remove("_MTN/commit")
-
--- commit fails with missing Change summary section
-
-writefile("_MTN/log", "missing summary")
-check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Change summary not found", "stderr"))
-check(exists("_MTN/commit"))
-check(fsize("_MTN/commit") > 0)
-remove("_MTN/commit")
-
--- commit fails with duplicated Change summary section
-
-writefile("_MTN/log", "duplicated summary")
-check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Text following Change summary", "stderr"))
-check(exists("_MTN/commit"))
-check(fsize("_MTN/commit") > 0)
-remove("_MTN/commit")
-
--- commit fails with new text after Change summary section
-
-writefile("_MTN/log", "trailing text")
-check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Text following Change summary", "stderr"))
 check(exists("_MTN/commit"))
 check(fsize("_MTN/commit") > 0)
 remove("_MTN/commit")
@@ -228,13 +151,6 @@ writefile("_MTN/log", "change date")
 check(mtn("commit", "--rcfile=changelog.lua"), 0, false, false)
 check(mtn("log", "--last", "1", "--no-graph"), 0, true, false)
 check(qgrep("Date:     2010-01-01T01:01:01", "stdout"))
-check(not exists("_MTN/commit"))
-
--- message on same line as Changelog: header
-
-writefile("a", "a4")
-writefile("_MTN/log", "changelog line")
-check(mtn("commit", "--rcfile=changelog.lua"), 0, false, false)
 check(not exists("_MTN/commit"))
 
 -- message filling entire Changelog section (no leading/trailing blank lines)
