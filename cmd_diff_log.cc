@@ -249,7 +249,7 @@ prepare_diff(app_state & app,
   ostringstream header;
 
   // initialize before transaction so we have a database to work with.
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   E(app.opts.revision.size() <= 2, origin::user,
     F("more than two revisions given"));
@@ -639,7 +639,7 @@ log_common (app_state & app,
             std::ostream & output)
 {
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 

@@ -184,7 +184,7 @@ CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "ID",
   revision_id revid;
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   complete(app.opts, app.lua, project, idx(args, 0)(), revid);
 
   // Check that the revision does not have any children
@@ -260,7 +260,7 @@ CMD(db_kill_certs_locally, "kill_certs", "", CMD_REF(db_local),
   cert_name name = typecast_vocab<cert_name>(idx(args,1));
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   set<revision_id> revisions;
   complete(app.opts, app.lua, project, selector, revisions);
@@ -294,6 +294,12 @@ CMD(db_kill_certs_locally, "kill_certs", "", CMD_REF(db_local),
       cert_value value = typecast_vocab<cert_value>(idx(args,2));
       L(FL("deleting all certs with name '%s' and value '%s' on %d revisions")
         % name % value % revisions.size());
+      if (name == branch_cert_name)
+        {
+          branch_name const the_name = typecast_vocab<branch_name>(value);
+          branch_uid const the_uid = project.translate_branch(the_name);
+          value = typecast_vocab<cert_value>(the_uid);
+        }
       for (set<revision_id>::const_iterator r = revisions.begin();
            r != revisions.end(); ++r)
         {
@@ -309,7 +315,7 @@ CMD(db_kill_certs_locally, "kill_certs", "", CMD_REF(db_local),
       set<revision_id> leaves;
       db.get_branch_leaves(*i, leaves);
       if (leaves.empty())
-        db.clear_epoch(typecast_vocab<branch_name>(*i));
+        db.clear_epoch(typecast_vocab<branch_uid>(*i));
     }
 
   guard.commit();
@@ -335,7 +341,7 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
@@ -356,7 +362,6 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
 
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
@@ -365,6 +370,7 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
   db.check_is_not_rosterified();
 
   // early short-circuit to avoid failure after lots of work
+  project_t project(db, app.lua, app.opts);
   cache_user_key(app.opts, project, keys, app.lua);
 
   build_roster_style_revs_from_manifest_style_revs(db, keys, project,
@@ -391,8 +397,11 @@ CMD_HIDDEN(clear_epoch, "clear_epoch", "", CMD_REF(db), "BRANCH",
   if (args.size() != 1)
     throw usage(execid);
 
+  branch_name name = typecast_vocab<branch_name>(idx(args, 0));
   database db(app);
-  db.clear_epoch(typecast_vocab<branch_name>(idx(args, 0)));
+  project_t project(db, app.lua, app.opts);
+  branch_uid branch = project.translate_branch(name);
+  project.db.clear_epoch(branch);
 }
 
 CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
@@ -405,10 +414,12 @@ CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
 
   E(idx(args, 1)().size() == constants::epochlen, origin::user,
     F("The epoch must be %s characters") % constants::epochlen);
-
+  branch_name name = typecast_vocab<branch_name>(idx(args, 0));
   epoch_data ed(decode_hexenc_as<epoch_data>(idx(args, 1)(), origin::user));
   database db(app);
-  db.set_epoch(branch_name(idx(args, 0)(), origin::user), ed);
+  project_t project(db, app.lua, app.opts);
+  branch_uid branch = project.translate_branch(name);
+  project.db.set_epoch(branch, ed);
 }
 
 CMD(set, "set", "", CMD_REF(variables), N_("DOMAIN NAME VALUE"),
@@ -550,7 +561,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
     throw usage(execid);
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   E(idx(args, 1)().find_first_not_of("abcdef0123456789") == string::npos,
     origin::user,

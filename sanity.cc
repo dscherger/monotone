@@ -338,6 +338,9 @@ sanity::generic_failure(char const * expr,
     throw std::logic_error("sanity::generic_failure occured "
                            "before sanity::initialize");
 
+  if (caused_by == origin::try_xform)
+    throw try_xform_failed();
+
   log(FL("Encountered an error while musing upon the following:"),
       file, line);
   gasp();

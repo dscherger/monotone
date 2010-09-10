@@ -16,6 +16,7 @@
 
 #include <set>
 #include <map>
+#include "branch_name.hh"
 #include "file_io.hh"
 #include "option.hh"
 #include "vocab.hh"
@@ -78,6 +79,11 @@ public:
                                     cert_value const & val);
   bool hook_accept_testresult_change(map<key_id, bool> const & old_results,
                                      map<key_id, bool> const & new_results);
+
+
+  bool hook_get_projects(std::map<std::string, data> & project_definitions);
+  bool hook_write_projects(std::map<std::string, data> const & project_definitions);
+
 
   // network hooks
   bool hook_get_netsync_key(utf8 const & server_address,
