@@ -3,7 +3,12 @@ include("/common/netsync.lua")
 mtn_setup()
 netsync.setup()
 
-check(mtn("create_project", "test_project"), 0, false, false)
+check(mtn("create_project", "test_project"), 0, true, false)
+local project_args = {}
+for w in string.gmatch(readfile("stdout"), "[^%s]+") do
+   table.insert(project_args, w)
+end
+
 check(mtn("create_branch", "test_project.testbranch"), 0, false, false)
 
 netsync.pull("test_project.*")
@@ -11,6 +16,8 @@ netsync.pull("test_project.*")
 addfile("testfile", "file contents")
 commit("test_project.testbranch")
 rev1 = base_revision()
+
+check(mtn2("create_project", unpack(project_args)), 0, false, false)
 
 netsync.pull("test_project.*")
 check(mtn2("ls", "certs", rev1), 0, false)

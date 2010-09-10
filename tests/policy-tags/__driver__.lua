@@ -17,7 +17,8 @@ check(qgrep("test_project.mytag", "stdout"))
 check(qgrep(revid:sub(0,10) .. ".*test_project.testbranch", "stdout"))
 
 
-rename("projects/test_project", "projects/testproj")
+check(mtn("db", "execute", "update db_vars set name = cast('testproj' as blob) " ..
+	  "where name = cast('test_project' as blob)"), 0, false, false)
 
 check(mtn("ls", "tags"), 0, true)
 check(qgrep("testproj.mytag", "stdout"))

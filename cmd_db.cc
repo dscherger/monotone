@@ -362,7 +362,6 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
 {
   database db(app);
   key_store keys(app);
-  project_t project(db, app.lua, app.opts);
 
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
@@ -371,6 +370,7 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
   db.check_is_not_rosterified();
 
   // early short-circuit to avoid failure after lots of work
+  project_t project(db, app.lua, app.opts);
   cache_user_key(app.opts, project, keys, app.lua);
 
   build_roster_style_revs_from_manifest_style_revs(db, keys, project,

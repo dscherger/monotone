@@ -26,6 +26,8 @@ namespace policies {
     std::set<external_key_name> signers;
   public:
     branch();
+    branch(branch_uid const & uid,
+           std::set<external_key_name> const & admins);
     static branch create(std::set<external_key_name> const & admins);
 
     branch_uid const & get_uid() const;

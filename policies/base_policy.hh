@@ -14,7 +14,6 @@
 #include "policies/policy.hh"
 
 class database;
-class lua_hooks;
 class options;
 
 namespace policies {
@@ -22,16 +21,15 @@ namespace policies {
   class base_policy : public policy
   {
     options const & _opts;
-    lua_hooks & _lua;
+    database & _db;
     bool _empty;
   public:
-    base_policy(options const & opts, lua_hooks & lua);
+    base_policy(options const & opts, database & db);
     bool empty() const;
     void reload();
     inline bool outdated() const { return false; }
 
-    // Use lua hooks to write out the given policy.
-    static void write(lua_hooks & lua, policy const & pol);
+    static void write(database & db, policy const & pol);
   };
 }
 

@@ -42,39 +42,53 @@ key_id_to_external_name(key_id const & ident)
 }
 
 CMD(create_project, "create_project", "", CMD_REF(policy),
-    N_("NAME"),
+    N_("NAME [BRANCH_UID SIGNER SIGNER ...]"),
     N_("Bootstrap creation of a new project."),
     "",
     options::opts::none)
 {
-  if (args.size() != 1)
+  if (args.size() == 0 || args.size() == 2)
     throw usage(execid);
 
   database db(app);
   key_store keys(app);
   project_t project(db, app.lua, app.opts);
 
-  std::string project_name = idx(args, 0)();
-  system_path project_dir = app.opts.conf_dir / "projects";
-  system_path project_file = project_dir / path_component(project_name, origin::user);
-
-  require_path_is_directory(app.opts.conf_dir,
-                            F("Cannot find configuration directory."),
-                            F("Configuration directory is a file."));
-  require_path_is_nonexistent(project_file,
-                              F("You already have a project with that name."));
-
-  cache_user_key(app.opts, project, keys, app.lua);
-
-
-  std::set<external_key_name> signers;
-  signers.insert(key_id_to_external_name(keys.signing_key));
+  string const project_name = idx(args, 0)();
 
   policies::editable_policy bp(project.get_base_policy());
 
-  bp.set_delegation(project_name, policies::delegation::create(signers));
+  if (args.size() == 1)
+    {
+      cache_user_key(app.opts, project, keys, app.lua);
 
-  policies::base_policy::write(app.lua, bp);
+      std::set<external_key_name> signers;
+      signers.insert(key_id_to_external_name(keys.signing_key));
+
+      bp.set_delegation(project_name, policies::delegation::create(signers));
+      policies::delegation const & del = bp.get_delegation(project_name);
+      std::cout<<project_name<<" "
+               <<del.get_branch_spec().get_uid();
+      for (std::set<external_key_name>::iterator i = signers.begin();
+           i != signers.end(); ++i)
+        {
+          std::cout<<" "<<*i;
+        }
+      std::cout<<"\n";
+    }
+  else
+    {
+      branch_uid const uid = typecast_vocab<branch_uid>(idx(args, 1));
+      std::set<external_key_name> signers;
+      for (size_t i = 2; i < args.size(); ++i)
+        {
+          signers.insert(typecast_vocab<external_key_name>(idx(args,i)));
+        }
+      bp.set_delegation(project_name,
+                        policies::delegation::create(uid, signers));
+    }
+
+  policies::base_policy::write(db, bp);
 }
 
 CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),

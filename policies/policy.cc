@@ -65,6 +65,13 @@ namespace policies {
     return delegations;
   }
 
+  delegation const & policy::get_delegation(std::string const & name) const
+  {
+    del_map::const_iterator i = delegations.find(name);
+    I(i != delegations.end());
+    return i->second;
+  }
+
   map<string, branch> const & policy::list_branches() const
   {
     return branches;

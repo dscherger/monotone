@@ -42,6 +42,14 @@ namespace policies {
     ret.branch_desc = branch::create(admins);
     return ret;
   }
+  delegation delegation::create(branch_uid const & uid,
+                                std::set<external_key_name> const & admins)
+  {
+    delegation ret;
+    ret.type = branch_type;
+    ret.branch_desc = branch(uid, admins);
+    return ret;
+  }
 
   bool delegation::is_branch_type() const
   {

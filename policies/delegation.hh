@@ -35,6 +35,8 @@ namespace policies {
     explicit delegation(revision_id const & r);
     explicit delegation(branch const & b);
     static delegation create(std::set<external_key_name> const & admins);
+    static delegation create(branch_uid const & uid,
+                             std::set<external_key_name> const & admins);
 
     bool is_branch_type() const;
     branch const & get_branch_spec() const;

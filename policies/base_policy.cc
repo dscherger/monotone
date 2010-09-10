@@ -12,7 +12,7 @@
 #include "policies/base_policy.hh"
 
 #include "branch_name.hh"
-#include "lua_hooks.hh"
+#include "database.hh"
 #include "options.hh"
 #include "transforms.hh"
 
@@ -26,8 +26,9 @@ using std::string;
 class database;
 
 namespace policies {
-  base_policy::base_policy(options const & opts, lua_hooks & lua):
-    _opts(opts), _lua(lua), _empty(true)
+  var_domain const policy_domain("policy_roots", origin::internal);
+  base_policy::base_policy(options const & opts, database & db):
+    _opts(opts), _db(db), _empty(true)
   {
     reload();
   }
@@ -49,24 +50,37 @@ namespace policies {
         _empty = false;
       }
 
-    typedef map<string, data> hook_map;
-    hook_map hm;
-    _lua.hook_get_projects(hm);
-    for (hook_map::const_iterator i = hm.begin(); i != hm.end(); ++i)
+    map<var_key, var_value> all_db_vars;
+    _db.get_vars(all_db_vars);
+    for (map<var_key, var_value>::iterator i = all_db_vars.begin();
+         i != all_db_vars.end(); ++i)
       {
-        if (delegations.find(i->first) == delegations.end())
+        if (i->first.first != policy_domain)
+          continue;
+        string const delegation_name = i->first.second();
+        string const delegation_data = i->second();
+        pair<del_map::iterator, bool> r;
+        r = delegations.insert(make_pair(delegation_name, delegation()));
+        if (r.second)
           {
-            pair<del_map::iterator, bool> r;
-            r = delegations.insert(make_pair(i->first, delegation()));
-            r.first->second.deserialize(i->second());
+            r.first->second.deserialize(delegation_data);
             _empty = false;
           }
       }
   }
 
-  void base_policy::write(lua_hooks & lua, policy const & pol)
+  void base_policy::write(database & db, policy const & pol)
   {
-    map<string, data> hm;
+    transaction_guard guard(db);
+    map<var_key, var_value> all_db_vars;
+    db.get_vars(all_db_vars);
+    for (map<var_key, var_value>::iterator i = all_db_vars.begin();
+         i != all_db_vars.end(); ++i)
+      {
+        if (i->first.first != policy_domain)
+          continue;
+        db.clear_var(i->first);
+      }
 
     policy::del_map const & delegations = pol.list_delegations();
     for (policy::del_map::const_iterator d = delegations.begin();
@@ -74,10 +88,12 @@ namespace policies {
       {
         string s;
         d->second.serialize(s);
-        hm.insert(make_pair(d->first, data(s, origin::internal)));
+        var_name const delegation_name(d->first, origin::internal);
+        var_value const delegation_data(s, origin::internal);
+        db.set_var(make_pair(policy_domain, delegation_name), delegation_data);
       }
 
-    lua.hook_write_projects(hm);
+    guard.commit();
   }
 }
 

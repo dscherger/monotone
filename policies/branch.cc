@@ -39,6 +39,10 @@ namespace {
 
 namespace policies {
   branch::branch() { }
+  branch::branch(branch_uid const & uid,
+                 std::set<external_key_name> const & admins)
+    : uid(uid), signers(admins)
+  { }
   branch branch::create(std::set<external_key_name> const & admins)
   {
     branch ret;

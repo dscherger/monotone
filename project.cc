@@ -670,7 +670,7 @@ project_t::project_t(database & db)
 project_t::project_t(database & db, lua_hooks & lua, options & opts)
   : db(db), branch_option(opts.branch)
 {
-  shared_ptr<policies::base_policy> bp(new policies::base_policy(opts, lua));
+  shared_ptr<policies::base_policy> bp(new policies::base_policy(opts, db));
   project_policy.reset(new policy_info(bp->empty(), bp));
 }
 

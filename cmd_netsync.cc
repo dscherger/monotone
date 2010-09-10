@@ -451,11 +451,11 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
   helper.maybe_set_default_alias(app.opts);
 
   database db(app);
-  project_t project(db, app.lua, app.opts);
   key_store keys(app);
 
   db.create_if_not_exists();
   db.ensure_open();
+  project_t project(db, app.lua, app.opts);
 
   shared_conn_info info;
   arg_type server = idx(args, 0);
