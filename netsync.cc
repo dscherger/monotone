@@ -129,7 +129,8 @@ call_server(app_state & app,
                                         app.opts, app.lua, project,
                                         keys, role,
                                         info->client.get_include_pattern(),
-                                        info->client.get_exclude_pattern()));
+                                        info->client.get_exclude_pattern(),
+                                        info));
       break;
     case automate_connection:
       wrapped.reset(new automate_session(app, sess.get(),
@@ -232,6 +233,7 @@ session_from_server_sync_item(app_state & app,
                                     keys, request.role,
                                     info->client.get_include_pattern(),
                                     info->client.get_exclude_pattern(),
+                                    shared_conn_info(),
                                     true));
       sess->set_inner(wrapped);
       return sess;

@@ -75,6 +75,7 @@ netsync_session::netsync_session(session * owner,
                                  protocol_role role,
                                  globish const & our_include_pattern,
                                  globish const & our_exclude_pattern,
+                                 shared_conn_info info,
                                  bool initiated_by_server) :
   wrapped_session(owner),
   role(role),
@@ -101,6 +102,7 @@ netsync_session::netsync_session(session * owner,
   rev_refiner(revision_item, get_voice(), *this),
   is_dry_run(opts.dryrun),
   dry_run_keys_refined(false),
+  conn_info(info),
   rev_enumerator(project, *this),
   initiated_by_server(initiated_by_server)
 {
@@ -443,51 +445,21 @@ netsync_session::dry_run_finished() const
     && cert_refiner.done
     && dry_run_keys_refined;
 
-  if (all)
+  if (all && conn_info)
     {
-      if (role != source_role)
+      conn_info->client.dryrun_incoming_revs = rev_refiner.items_to_receive;
+      conn_info->client.dryrun_incoming_certs = cert_refiner.items_to_receive;
+      conn_info->client.dryrun_incoming_keys = key_refiner.min_items_to_receive;
+      conn_info->client.dryrun_incoming_keys_is_estimate
+        = key_refiner.may_receive_more_than_min;
+
+      for (set<id>::const_iterator i = rev_refiner.items_to_send.begin();
+           i != rev_refiner.items_to_send.end(); ++i)
         {
-          if (key_refiner.may_receive_more_than_min)
-            {
-              P(F("would receive %d revisions, %d certs, and at least %d keys")
-                % rev_refiner.items_to_receive
-                % cert_refiner.items_to_receive
-                % key_refiner.min_items_to_receive);
-            }
-          else
-            {
-              P(F("would receive %d revisions, %d certs, and %d keys")
-                % rev_refiner.items_to_receive
-                % cert_refiner.items_to_receive
-                % key_refiner.min_items_to_receive);
-            }
+          conn_info->client.dryrun_outgoing_revs.insert(revision_id(*i));
         }
-      if (role != sink_role)
-        {
-          P(F("would send %d certs and %d keys")
-            % cert_refiner.items_to_send.size()
-            % key_refiner.items_to_send.size());
-          P(F("would send %d revisions:")
-            % rev_refiner.items_to_send.size());
-          map<branch_name, int> branch_counts;
-          for (set<id>::const_iterator i = rev_refiner.items_to_send.begin();
-               i != rev_refiner.items_to_send.end(); ++i)
-            {
-              revision_id const rid(*i);
-              set<branch_name> my_branches;
-              project.get_revision_branches(rid, my_branches);
-              for(set<branch_name>::iterator b = my_branches.begin();
-                  b != my_branches.end(); ++b)
-                {
-                  ++branch_counts[*b];
-                }
-            }
-          for (map<branch_name, int>::iterator i = branch_counts.begin();
-               i != branch_counts.end(); ++i)
-            {
-              P(F("%9d in branch %s") % i->second % i->first);
-            }
-        }
+      conn_info->client.dryrun_outgoing_certs = cert_refiner.items_to_send.size();
+      conn_info->client.dryrun_outgoing_keys = key_refiner.items_to_send.size();
     }
 
   return all;

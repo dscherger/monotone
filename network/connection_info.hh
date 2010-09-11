@@ -76,6 +76,14 @@ struct netsync_connection_info
     connection_type get_connection_type() const;
 
     void set_connection_successful();
+
+    size_t dryrun_incoming_revs;
+    size_t dryrun_incoming_certs;
+    size_t dryrun_incoming_keys;
+    bool dryrun_incoming_keys_is_estimate;
+    std::set<revision_id> dryrun_outgoing_revs;
+    size_t dryrun_outgoing_certs;
+    size_t dryrun_outgoing_keys;
   } client;
 
   static void

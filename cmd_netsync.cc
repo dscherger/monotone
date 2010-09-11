@@ -272,6 +272,54 @@ CMD_AUTOMATE_NO_STDIO(remote,
     F("received remote error code %d") % os.get_error());
 }
 
+void print_dryrun_info(protocol_role role,
+                       shared_conn_info info,
+                       project_t & project)
+{
+  if (role != source_role)
+    {
+      if (info->client.dryrun_incoming_keys_is_estimate)
+        {
+          P(F("would receive %d revisions, %d certs, and at least %d keys")
+            % info->client.dryrun_incoming_revs
+            % info->client.dryrun_incoming_certs
+            % info->client.dryrun_incoming_keys);
+        }
+      else
+        {
+          P(F("would receive %d revisions, %d certs, and %d keys")
+            % info->client.dryrun_incoming_revs
+            % info->client.dryrun_incoming_certs
+            % info->client.dryrun_incoming_keys);
+        }
+    }
+  if (role != sink_role)
+    {
+      P(F("would send %d certs and %d keys")
+        % info->client.dryrun_outgoing_certs
+        % info->client.dryrun_outgoing_keys);
+      P(F("would send %d revisions:")
+        % info->client.dryrun_outgoing_revs.size());
+      map<branch_name, int> branch_counts;
+      for (set<revision_id>::const_iterator i = info->client.dryrun_outgoing_revs.begin();
+           i != info->client.dryrun_outgoing_revs.end(); ++i)
+        {
+          set<branch_name> my_branches;
+          project.get_revision_branches(*i, my_branches);
+          for(set<branch_name>::iterator b = my_branches.begin();
+              b != my_branches.end(); ++b)
+            {
+              ++branch_counts[*b];
+            }
+        }
+      for (map<branch_name, int>::iterator i = branch_counts.begin();
+           i != branch_counts.end(); ++i)
+        {
+          P(F("%9d in branch %s") % i->second % i->first);
+        }
+    }
+}
+
 CMD(push, "push", "", CMD_REF(network),
     N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pushes branches to a netsync server"),
@@ -291,6 +339,8 @@ CMD(push, "push", "", CMD_REF(network),
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
+  if (app.opts.dryrun)
+    print_dryrun_info(source_role, info, project);
 }
 
 CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -311,6 +361,8 @@ CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
+  if (app.opts.dryrun)
+    print_dryrun_info(source_role, info, project);
 }
 
 CMD(pull, "pull", "", CMD_REF(network),
@@ -339,6 +391,8 @@ CMD(pull, "pull", "", CMD_REF(network),
                        client_voice, sink_role, info);
 
   updater.maybe_do_update();
+  if (app.opts.dryrun)
+    print_dryrun_info(sink_role, info, project);
 }
 
 CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -359,6 +413,8 @@ CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
+  if (app.opts.dryrun)
+    print_dryrun_info(sink_role, info, project);
 }
 
 CMD(sync, "sync", "", CMD_REF(network),
@@ -392,6 +448,8 @@ CMD(sync, "sync", "", CMD_REF(network),
                        client_voice, source_and_sink_role, info);
 
   updater.maybe_do_update();
+  if (app.opts.dryrun)
+    print_dryrun_info(source_and_sink_role, info, project);
 }
 
 CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -418,6 +476,8 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
+  if (app.opts.dryrun)
+    print_dryrun_info(source_and_sink_role, info, project);
 }
 
 CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
