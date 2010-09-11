@@ -157,9 +157,7 @@ refiner::refiner(netcmd_item_type type, protocol_voice voice, refiner_callbacks 
     queries_in_flight(0),
     calculated_items_to_send(false),
     done(false),
-    items_to_receive(0),
-    min_items_to_receive(0),
-    may_receive_more_than_min(false)
+    items_to_receive(0)
 {
   merkle_ptr root = merkle_ptr(new merkle_node());
   root->type = type;
@@ -283,33 +281,6 @@ refiner::process_refinement_command(refinement_type ty,
       // Note any leaves they have.
       if (their_node.get_slot_state(slot) == leaf_state)
         note_item_in_peer(their_node, slot);
-
-      // esimate how many items to receive
-      if (their_node.get_slot_state(slot) != empty_state
-          && our_node->get_slot_state(slot) != subtree_state)
-        {
-          if (our_node->get_slot_state(slot) == empty_state)
-            {
-              if (their_node.get_slot_state(slot) == leaf_state)
-                ++min_items_to_receive;
-              else
-                {
-                  min_items_to_receive += 2;
-                  may_receive_more_than_min = true;
-                }
-            }
-          else if (their_node.get_slot_state(slot) == leaf_state)
-            {
-              // pair of leaves
-              id our_slotval, their_slotval;
-              their_node.get_raw_slot(slot, their_slotval);
-              our_node->get_raw_slot(slot, our_slotval);
-              if (our_slotval != their_slotval)
-                ++min_items_to_receive;
-            }
-          // else they have a tree and we have a leaf, in which
-          // case there will be more queries
-        }
 
       if (ty == refinement_query)
         {

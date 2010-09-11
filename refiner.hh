@@ -93,10 +93,6 @@ public:
   bool done;
   std::set<id> items_to_send;
   size_t items_to_receive;
-
-  // Estimate of what items_to_receive will be.
-  size_t min_items_to_receive;
-  bool may_receive_more_than_min;
 };
 
 
