@@ -185,28 +185,22 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
       "-- Edit fields below to modify certificate values --\n"));
 
   utf8 ignored(
-    _("\n-- Modifications below this line are ignored entirely --\n"));
+    _("\n-- Modifications below this line are ignored --\n"));
 
   utf8 cancel(_("*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"));
 
-  utf8 const BRANCH(trim_right(_("Branch: ")).c_str());
-  utf8 const AUTHOR(trim_right(_("Author: ")).c_str());
-  utf8 const DATE(trim_right(_("Date: ")).c_str());
+  utf8 const BRANCH(_("Branch:   "));
+  utf8 const AUTHOR(_("Author:   "));
+  utf8 const DATE(  _("Date:     "));
 
   bool is_date_fmt_valid = date_fmt_valid(date_fmt);
 
   utf8 changelog;
   work.read_user_log(changelog);
 
-  // ensure changelog ends in a newline
+  // ensure there are two blank lines after the changelog
 
-  string text = changelog();
-
-  if (text.empty() || text[text.length()-1] != '\n')
-    {
-      text += '\n';
-      changelog = utf8(text, origin::user);
-    }
+  changelog = utf8(changelog() + "\n\n", origin::user);
 
   // build editable fields
   utf8 editable;
@@ -287,6 +281,11 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   size_t changelog_end = full_message().find(cancel());
   if (changelog_end == string::npos)
     {
+      // try to save the edited changelog, now delimited by the instructions.
+      changelog_end = full_message().find(instructions());
+      if (changelog_end != string::npos)
+        work.write_user_log(utf8(trim_right(full_message().substr(0, changelog_end)) + '\n', origin::user));
+
       E(false, origin::user, F("Commit cancelled."));
     }
 
@@ -309,7 +308,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   // Branch:
 
-  E(message.read(BRANCH()), origin::user,
+  E(message.read(trim_right(BRANCH())), origin::user,
     F("Commit failed. Branch header not found."));
 
   string b = message.readline();
@@ -321,7 +320,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   // Author:
 
-  E(message.read(AUTHOR()), origin::user,
+  E(message.read(trim_right(AUTHOR())), origin::user,
     F("Commit failed. Author header not found."));
 
   author = message.readline();
@@ -331,7 +330,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   // Date:
 
-  E(message.read(DATE()), origin::user,
+  E(message.read(trim_right(DATE())), origin::user,
     F("Commit failed. Date header not found."));
 
   string d = message.readline();

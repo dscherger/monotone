@@ -15,12 +15,13 @@ check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
 check(qgrep("empty log message", "stderr"))
 check(not exists("_MTN/commit"))
 
--- commit can be cancelled
+-- commit can be cancelled, with modified changelog saved
 
 writefile("_MTN/log", "cancel hint removed")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
 check(qgrep("Commit cancelled.", "stderr"))
 check(not exists("_MTN/commit"))
+check(readfile("_MTN/log") == "changelog modified, cancel hint removed\n")
 
 -- commit fails with modified/missing instructions
 

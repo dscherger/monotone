@@ -6,7 +6,7 @@ function edit_comment(user_log_file)
     if (string.find(user_log_file, "empty message\n")) then
        return string.gsub(user_log_file, "empty message\n", "")
     elseif (string.find(user_log_file, "cancel hint removed\n")) then
-       return string.gsub(user_log_file, "... REMOVE THIS LINE TO CANCEL THE COMMIT ...\n", "")
+       return "changelog modified, " .. string.gsub(user_log_file, "... REMOVE THIS LINE TO CANCEL THE COMMIT ...\n", "")
     elseif (string.find(user_log_file, "missing instructions\n")) then
        return string.gsub(user_log_file, "Enter a description", "\n")
     elseif (string.find(user_log_file, "missing author\n")) then
@@ -27,9 +27,10 @@ function edit_comment(user_log_file)
 
     if (string.find(user_log_file, "change author/date/branch\n")) then
        result = user_log_file
-       result = string.gsub(result, "\nBranch: left\n",   "\nBranch:   right\n")
-       result = string.gsub(result, "\nAuthor: bobo\n",   "\nAuthor:   baba\n")
+       result = string.gsub(result, "\nBranch:    left\n",   "\nBranch:   right\n")
+       result = string.gsub(result, "\nAuthor:    bobo\n",   "\nAuthor:   baba\n")
        result = string.gsub(result, "\nDate: [^\n]*\n", "\nDate:     2010-02-02T02:02:02\n")
+       io.stderr:write("result:\n" .. result)
        return result
     elseif (string.find(user_log_file, "sleep\n")) then
        date = string.match(user_log_file, "\nDate: ([^\n]*)")

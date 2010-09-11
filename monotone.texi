@@ -1553,8 +1553,8 @@ $ mtn diff
 #  content [ad88bbbb1b7507ddff26be67efd91d95e069afb6]
 #
 ============================================================
---- include/jb.h	f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
-+++ include/jb.h	f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
+--- include/jb.h        f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
++++ include/jb.h        f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
 @@ -0,0 +1,13 @@
 +/* Standard JuiceBot hw interface */
 +
@@ -1570,8 +1570,8 @@ $ mtn diff
 +void dispense_apple_juice ();
 +void dispense_banana_juice ();
 ============================================================
---- src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
-+++ src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
+--- src/apple.c 1ce885d2cc59842ff16785834391e864068fbc3c
++++ src/apple.c 1ce885d2cc59842ff16785834391e864068fbc3c
 @@ -0,0 +1,7 @@
 +#include "jb.h"
 +
@@ -1581,8 +1581,8 @@ $ mtn diff
 +  /* Fill this in please, Abe. */
 +@}
 ============================================================
---- src/banana.c	ad88bbbb1b7507ddff26be67efd91d95e069afb6
-+++ src/banana.c	ad88bbbb1b7507ddff26be67efd91d95e069afb6
+--- src/banana.c        ad88bbbb1b7507ddff26be67efd91d95e069afb6
++++ src/banana.c        ad88bbbb1b7507ddff26be67efd91d95e069afb6
 @@ -0,0 +1,7 @@
 +#include "jb.h"
 +
@@ -1881,8 +1881,8 @@ $ mtn diff
 #    to [e2c64f6bde75a192d48d2256385df3dd7a963349]
 #
 ============================================================
---- src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
-+++ src/apple.c	e2c64f6bde75a192d48d2256385df3dd7a963349
+--- src/apple.c 1ce885d2cc59842ff16785834391e864068fbc3c
++++ src/apple.c e2c64f6bde75a192d48d2256385df3dd7a963349
 @@ -3,5 +3,8 @@ dispense_apple_juice()
  void
  dispense_apple_juice()
@@ -1905,30 +1905,23 @@ $ mtn commit
 @end smallexample
 
 Abe neglected to provide a @option{--message} option specifying the
-change log on the command line and the file @file{_MTN/log} is empty
-because he did not document his changes there.  Monotone therefore
-invokes an external ``log message editor'' --- typically an editor
-like @command{vi} --- with an explanation of the changes being
-committed and the opportunity to enter a log message.
+change log on the command line.  Monotone therefore invokes an
+external ``log message editor'' --- typically an editor like
+@command{vi} --- with an explanation of the changes being committed
+and the opportunity to enter a log message.
 
 @smallexample
 @group
-Enter a description of this change following the Changelog line below.
-The values of Author, Date and Branch may be modified as required.
+
 
 *** REMOVE THIS LINE TO CANCEL THE COMMIT ***
-----------------------------------------------------------------------
-Revision: 42eae36587508faa664b111cefc291f0b85ef83a
-Parent:   493bda86628fd72c992eb56f73899db9ead3cf6f
-Author:   abe@@juicebot.co.jp
-Date:     2004-10-26T02:53:08
-Branch:   jp.co.juicebot.jb7
+-- Enter a description of this change above --
+-- Edit fields below to modify certificate values --
+Branch:    right
+Author:    tester@@test.net
+Date:      2010-09-11T12:03:15
 
-Changelog:
-
-polling implementation of src/apple.c
-
-----------------------------------------------------------------------
+-- Modifications below this line are ignored --
 Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
 
   patched  src/apple.c
@@ -1936,12 +1929,10 @@ Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
 @end group
 @end smallexample
 
-Abe enters a single line below the Changelog: header, saying ``polling
+Abe enters a single line at the top of the file, saying ``polling
 implementation of src/apple.c''. He then saves the file and quits the
-editor. Monotone confirms that no other lines have been changed and
-extracts the message to be stored in the associated ``changelog''
-cert, leaving only Abe's short message. Returning to the shell, Abe's
-commit completes:
+editor. Monotone extracts the message to be stored in the associated
+``changelog'' cert. Returning to the shell, Abe's commit completes:
 
 @smallexample
 @group
@@ -2127,8 +2118,8 @@ $ mtn diff
 #    to [dd979c3c880e6a7221fcecd7148bd4afcfb3e964]
 #
 ============================================================
---- src/banana.c	d7e28a01cf6fc0f9ac04c6901dcafd77c2d32fb8
-+++ src/banana.c	dd979c3c880e6a7221fcecd7148bd4afcfb3e964
+--- src/banana.c        d7e28a01cf6fc0f9ac04c6901dcafd77c2d32fb8
++++ src/banana.c        dd979c3c880e6a7221fcecd7148bd4afcfb3e964
 @@ -1,10 +1,15 @@
  #include "jb.h"
 
@@ -2326,6 +2317,9 @@ mtn: beginning commit on branch 'jp.co.juicebot.jb7.muffins'
 mtn: committed revision d33caefd61823ecbb605c39ffb84705dec449857
 @end group
 @end smallexample
+
+Alternately, she could not specify a message on the command line, and
+edit the ``Branch'' field in the changelog editor.
 
 That's all there is to it --- there is now a
 @code{jp.co.juicebot.jb7.muffins} branch, with her initial checkin on
@@ -5398,11 +5392,58 @@ work to record the changes made to the workspace. When running the
 @command{commit} command without a @var{logmsg} supplied, the contents
 of the @file{_MTN/log} file will be read and passed to the Lua hook
 @code{edit_comment} as a parameter named @var{user_log_message}.  The
-log message passed to the user's editor will contain a line that the
-user may remove allowing them user to easily cancel a commit, without
-emptying the entire log message.  If the commit is successful, the
-@file{_MTN/log} file is cleared of all content making it ready for
-another edit/commit cycle.
+log message passed to the user's editor will contain additional text
+formatted as follows:
+
+@smallexample
+@group
+<contents of _MTN/log>
+
+*** REMOVE THIS LINE TO CANCEL THE COMMIT ***
+-- Enter a description of this change above --
+-- Edit fields below to modify certificate values --
+Branch:    <from _MTN/options or option>
+Author:    <from key or option>
+Date:      <from system clock>
+
+-- Modifications below this line are ignored --
+Changes against parent <from _MTN/revision>
+
+  <list of changes>
+
+@end group
+@end smallexample
+When the user quits the editor, the text is processed as follows:
+
+@itemize @bullet
+@item
+The final @var{logmsg} is all text up to the line ``*** REMOVE THIS LINE
+...'' (the @dfn{cancel} line).
+
+@item
+If the @var{logmsg} is empty, the commit is aborted.
+
+@item
+If the cancel line is deleted or modified, the edited @var{logmsg} is
+saved in @file{_MTN/log}, and the commit is aborted.
+
+@item
+The next two lines (instructions) are confirmed to be present. If not,
+the commit is aborted, and the entire file is saved in @file{_MTN/commit},
+so the user may recover.
+
+@item
+The @dfn{Branch}, @dfn{Author}, and @dfn{Date} fields are parsed, and
+the new values used for the commit. If the parsing fails, the commit
+is aborted, and the entire file is saved in @file{_MTN/commit},
+so the user may recover.
+
+@item
+The rest of the text is ignored.
+@end itemize
+
+If the commit is successful, the @file{_MTN/log} file is cleared of
+all content making it ready for another edit/commit cycle.
 
 If @option{--message-file=_MTN/log} is specified, the contents of
 @file{_MTN/log} will be used without confirmation.
