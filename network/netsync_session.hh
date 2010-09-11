@@ -72,6 +72,11 @@ netsync_session:
   refiner cert_refiner;
   refiner rev_refiner;
 
+  // dry-run info
+  bool is_dry_run;
+  bool dry_run_keys_refined;
+  bool dry_run_finished() const;
+
   // Interface to ancestry grovelling.
   revision_enumerator rev_enumerator;
 

@@ -99,6 +99,8 @@ netsync_session::netsync_session(session * owner,
   key_refiner(key_item, get_voice(), *this),
   cert_refiner(cert_item, get_voice(), *this),
   rev_refiner(revision_item, get_voice(), *this),
+  is_dry_run(opts.dryrun),
+  dry_run_keys_refined(false),
   rev_enumerator(project, *this),
   initiated_by_server(initiated_by_server)
 {
@@ -435,8 +437,68 @@ netsync_session::received_all_items() const
 }
 
 bool
+netsync_session::dry_run_finished() const
+{
+  bool all = rev_refiner.done
+    && cert_refiner.done
+    && dry_run_keys_refined;
+
+  if (all)
+    {
+      if (role != source_role)
+        {
+          if (key_refiner.may_receive_more_than_min)
+            {
+              P(F("would receive %d revisions, %d certs, and at least %d keys")
+                % rev_refiner.items_to_receive
+                % cert_refiner.items_to_receive
+                % key_refiner.min_items_to_receive);
+            }
+          else
+            {
+              P(F("would receive %d revisions, %d certs, and %d keys")
+                % rev_refiner.items_to_receive
+                % cert_refiner.items_to_receive
+                % key_refiner.min_items_to_receive);
+            }
+        }
+      if (role != sink_role)
+        {
+          P(F("would send %d certs and %d keys")
+            % cert_refiner.items_to_send.size()
+            % key_refiner.items_to_send.size());
+          P(F("would send %d revisions:")
+            % rev_refiner.items_to_send.size());
+          map<branch_name, int> branch_counts;
+          for (set<id>::const_iterator i = rev_refiner.items_to_send.begin();
+               i != rev_refiner.items_to_send.end(); ++i)
+            {
+              revision_id const rid(*i);
+              set<branch_name> my_branches;
+              project.get_revision_branches(rid, my_branches);
+              for(set<branch_name>::iterator b = my_branches.begin();
+                  b != my_branches.end(); ++b)
+                {
+                  ++branch_counts[*b];
+                }
+            }
+          for (map<branch_name, int>::iterator i = branch_counts.begin();
+               i != branch_counts.end(); ++i)
+            {
+              P(F("%9d in branch %s") % i->second % i->first);
+            }
+        }
+    }
+
+  return all;
+}
+
+bool
 netsync_session::finished_working() const
 {
+  if (dry_run_finished())
+    return true;
+
   bool all = done_all_refinements()
     && received_all_items()
     && queued_all_items()
@@ -607,6 +669,11 @@ netsync_session::queue_done_cmd(netcmd_item_type type,
 {
   string typestr;
   netcmd_item_type_to_string(type, typestr);
+  if (is_dry_run && type == key_item)
+    {
+      dry_run_keys_refined = true;
+      return;
+    }
   L(FL("queueing 'done' command for %s (%d items)")
     % typestr % n_items);
   netcmd cmd(get_version());

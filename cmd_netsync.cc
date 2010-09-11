@@ -279,7 +279,7 @@ CMD(push, "push", "", CMD_REF(network),
        "to the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::keys_to_push)
+    options::opts::keys_to_push | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -296,10 +296,10 @@ CMD(push, "push", "", CMD_REF(network),
 CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Pushes branches to a netsync server"),
              "",
-              options::opts::max_netsync_version |
-              options::opts::min_netsync_version |
-              options::opts::set_default | options::opts::exclude |
-              options::opts::keys_to_push)
+             options::opts::max_netsync_version |
+             options::opts::min_netsync_version |
+             options::opts::set_default | options::opts::exclude |
+             options::opts::keys_to_push | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -320,7 +320,7 @@ CMD(pull, "pull", "", CMD_REF(network),
        "from the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::auto_update)
+    options::opts::auto_update | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -346,7 +346,8 @@ CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              "",
              options::opts::max_netsync_version |
              options::opts::min_netsync_version |
-             options::opts::set_default | options::opts::exclude)
+             options::opts::set_default | options::opts::exclude |
+             options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -367,7 +368,8 @@ CMD(sync, "sync", "", CMD_REF(network),
        "with the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::keys_to_push | options::opts::auto_update)
+    options::opts::keys_to_push | options::opts::auto_update |
+    options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -397,7 +399,7 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              "",
              options::opts::max_netsync_version | options::opts::min_netsync_version |
              options::opts::set_default | options::opts::exclude |
-             options::opts::keys_to_push)
+             options::opts::keys_to_push | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
