@@ -75,6 +75,7 @@ netsync_session::netsync_session(session * owner,
                                  protocol_role role,
                                  globish const & our_include_pattern,
                                  globish const & our_exclude_pattern,
+                                 shared_conn_info info,
                                  bool initiated_by_server) :
   wrapped_session(owner),
   role(role),
@@ -99,6 +100,9 @@ netsync_session::netsync_session(session * owner,
   key_refiner(key_item, get_voice(), *this),
   cert_refiner(cert_item, get_voice(), *this),
   rev_refiner(revision_item, get_voice(), *this),
+  is_dry_run(opts.dryrun),
+  dry_run_keys_refined(false),
+  conn_info(info),
   rev_enumerator(project, *this),
   initiated_by_server(initiated_by_server)
 {
@@ -435,8 +439,38 @@ netsync_session::received_all_items() const
 }
 
 bool
+netsync_session::dry_run_finished() const
+{
+  bool all = rev_refiner.done
+    && cert_refiner.done
+    && dry_run_keys_refined;
+
+  if (all && conn_info)
+    {
+      conn_info->client.dryrun_incoming_revs = rev_refiner.items_to_receive;
+      conn_info->client.dryrun_incoming_certs = cert_refiner.items_to_receive;
+      conn_info->client.dryrun_incoming_keys = key_refiner.min_items_to_receive;
+      conn_info->client.dryrun_incoming_keys_is_estimate
+        = key_refiner.may_receive_more_than_min;
+
+      for (set<id>::const_iterator i = rev_refiner.items_to_send.begin();
+           i != rev_refiner.items_to_send.end(); ++i)
+        {
+          conn_info->client.dryrun_outgoing_revs.insert(revision_id(*i));
+        }
+      conn_info->client.dryrun_outgoing_certs = cert_refiner.items_to_send.size();
+      conn_info->client.dryrun_outgoing_keys = key_refiner.items_to_send.size();
+    }
+
+  return all;
+}
+
+bool
 netsync_session::finished_working() const
 {
+  if (dry_run_finished())
+    return true;
+
   bool all = done_all_refinements()
     && received_all_items()
     && queued_all_items()
@@ -607,6 +641,11 @@ netsync_session::queue_done_cmd(netcmd_item_type type,
 {
   string typestr;
   netcmd_item_type_to_string(type, typestr);
+  if (is_dry_run && type == key_item)
+    {
+      dry_run_keys_refined = true;
+      return;
+    }
   L(FL("queueing 'done' command for %s (%d items)")
     % typestr % n_items);
   netcmd cmd(get_version());

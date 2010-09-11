@@ -22,6 +22,7 @@
 #include "refiner.hh"
 #include "ui.hh"
 
+#include "network/connection_info.hh"
 #include "network/wrapped_session.hh"
 
 class cert;
@@ -72,6 +73,12 @@ netsync_session:
   refiner cert_refiner;
   refiner rev_refiner;
 
+  // dry-run info
+  bool is_dry_run;
+  bool dry_run_keys_refined;
+  shared_conn_info conn_info;
+  bool dry_run_finished() const;
+
   // Interface to ancestry grovelling.
   revision_enumerator rev_enumerator;
 
@@ -94,6 +101,7 @@ public:
                   protocol_role role,
                   globish const & our_include_pattern,
                   globish const & our_exclude_pattern,
+                  shared_conn_info info,
                   bool initiated_by_server = false);
 
   virtual ~netsync_session();
