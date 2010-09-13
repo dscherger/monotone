@@ -138,6 +138,18 @@ void netsync_session::on_end(size_t ident)
             keys_in || keys_out))
     error_code = error_codes::partial_transfer;
 
+  if (is_automate)
+    {
+      // Save data for automate output
+      conn_info->client.outgoing_revs  = sent_revisions;
+      conn_info->client.outgoing_certs = sent_certs;
+      conn_info->client.outgoing_keys  = sent_keys;
+      conn_info->client.incoming_revs  = written_revisions;
+      conn_info->client.incoming_certs = written_certs;
+      conn_info->client.incoming_keys  = written_keys;
+    }
+
+  // Call Lua hooks
   vector<cert> unattached_written_certs;
   map<revision_id, vector<cert> > rev_written_certs;
   for (vector<revision_id>::iterator i = written_revisions.begin();
@@ -456,7 +468,7 @@ netsync_session::dry_run_finished() const
       for (set<id>::const_iterator i = rev_refiner.items_to_send.begin();
            i != rev_refiner.items_to_send.end(); ++i)
         {
-          conn_info->client.dryrun_outgoing_revs.insert(revision_id(*i));
+          conn_info->client.outgoing_revs.push_back(revision_id(*i));
         }
       conn_info->client.dryrun_outgoing_certs = cert_refiner.items_to_send.size();
       conn_info->client.dryrun_outgoing_keys = key_refiner.items_to_send.size();

@@ -1,4 +1,4 @@
-// Copyright (C) 2005 and later by various people
+// Copyright (C) 2005, 2010 and later by various people
 // see monotone commit logs for details and authors
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -77,13 +77,23 @@ struct netsync_connection_info
 
     void set_connection_successful();
 
+    // dryrun output data
     size_t dryrun_incoming_revs;
     size_t dryrun_incoming_certs;
     size_t dryrun_incoming_keys;
     bool dryrun_incoming_keys_is_estimate;
-    std::set<revision_id> dryrun_outgoing_revs;
     size_t dryrun_outgoing_certs;
     size_t dryrun_outgoing_keys;
+
+    // automate and dryrun output data
+    std::vector<revision_id> outgoing_revs;
+
+    // automate output data
+    std::vector<cert>        outgoing_certs;
+    std::vector<key_id>      outgoing_keys;
+    std::vector<revision_id> incoming_revs;
+    std::vector<cert>        incoming_certs;
+    std::vector<key_id>      incoming_keys;
   } client;
 
   static void
