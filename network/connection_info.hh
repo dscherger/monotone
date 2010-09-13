@@ -25,6 +25,47 @@ struct netsync_connection_info;
 
 typedef boost::shared_ptr<netsync_connection_info> shared_conn_info;
 
+template<typename item_type>
+class future_set
+{
+public:
+  bool have_count;
+  bool have_items;
+  std::set<item_type> items;
+  size_t min_count;
+  bool can_have_more_than_min;
+
+  future_set() : have_count(false), have_items(false) {}
+  void set_count(size_t min, bool is_estimate)
+  {
+    have_count = true;
+    min_count = min;
+    can_have_more_than_min = is_estimate;
+  }
+  template<typename input_type>
+  void set_items(std::set<input_type> const & in)
+  {
+    have_items = true;
+    for (typename std::set<input_type>::const_iterator i = in.begin();
+         i != in.end(); ++i)
+      {
+        items.insert(items.end(), item_type(*i));
+      }
+    min_count = items.size();
+    can_have_more_than_min = false;
+    have_count = true;
+  }
+  void add_item(item_type const & i)
+  {
+    have_items = true;
+    items.insert(i);
+
+    min_count = items.size();
+    can_have_more_than_min = false;
+    have_count = true;
+  }
+};
+
 struct netsync_connection_info
 {
   class Server
@@ -77,13 +118,12 @@ struct netsync_connection_info
 
     void set_connection_successful();
 
-    size_t dryrun_incoming_revs;
-    size_t dryrun_incoming_certs;
-    size_t dryrun_incoming_keys;
-    bool dryrun_incoming_keys_is_estimate;
-    std::set<revision_id> dryrun_outgoing_revs;
-    size_t dryrun_outgoing_certs;
-    size_t dryrun_outgoing_keys;
+    future_set<key_id> keys_in;
+    future_set<cert> certs_in;
+    future_set<revision_id> revs_in;
+    future_set<key_id> keys_out;
+    future_set<cert> certs_out;
+    future_set<revision_id> revs_out;
   } client;
 
   static void

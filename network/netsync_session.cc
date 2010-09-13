@@ -447,19 +447,14 @@ netsync_session::dry_run_finished() const
 
   if (all && conn_info)
     {
-      conn_info->client.dryrun_incoming_revs = rev_refiner.items_to_receive;
-      conn_info->client.dryrun_incoming_certs = cert_refiner.items_to_receive;
-      conn_info->client.dryrun_incoming_keys = key_refiner.min_items_to_receive;
-      conn_info->client.dryrun_incoming_keys_is_estimate
-        = key_refiner.may_receive_more_than_min;
+      conn_info->client.revs_in.set_count(rev_refiner.items_to_receive, false);
+      conn_info->client.certs_in.set_count(cert_refiner.items_to_receive, false);
+      conn_info->client.keys_in.set_count(key_refiner.min_items_to_receive,
+                                          key_refiner.may_receive_more_than_min);
 
-      for (set<id>::const_iterator i = rev_refiner.items_to_send.begin();
-           i != rev_refiner.items_to_send.end(); ++i)
-        {
-          conn_info->client.dryrun_outgoing_revs.insert(revision_id(*i));
-        }
-      conn_info->client.dryrun_outgoing_certs = cert_refiner.items_to_send.size();
-      conn_info->client.dryrun_outgoing_keys = key_refiner.items_to_send.size();
+      conn_info->client.revs_out.set_items(rev_refiner.items_to_send);
+      conn_info->client.certs_out.set_count(cert_refiner.items_to_send.size(), false);
+      conn_info->client.keys_out.set_items(key_refiner.items_to_send);
     }
 
   return all;

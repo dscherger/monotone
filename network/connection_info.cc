@@ -38,13 +38,7 @@ netsync_connection_info::Client::Client(database & d, options const & o) :
   conn_type(netsync_connection),
   input_stream(0),
   output_stream(0),
-  db(d), opts(o),
-  dryrun_incoming_revs(0),
-  dryrun_incoming_certs(0),
-  dryrun_incoming_keys(0),
-  dryrun_incoming_keys_is_estimate(false),
-  dryrun_outgoing_certs(0),
-  dryrun_outgoing_keys(0)
+  db(d), opts(o)
 {
   var_key default_server_key(var_domain("database"),
                              var_name("default-server"));
