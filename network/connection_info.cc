@@ -32,6 +32,11 @@ netsync_connection_info::netsync_connection_info(database & d, options const & o
   client(d, o)
 { }
 
+netsync_connection_info::Client::Client()
+  : connection_successful(false),
+    db(*(database*)0) // horrible, horrible thing that needs to go away
+{ }
+
 netsync_connection_info::Client::Client(database & d, options const & o) :
   connection_successful(false),
   use_argv(false),
@@ -499,6 +504,14 @@ netsync_connection_info::setup_for_serve(options const & opts,
   else if (!opts.bind_stdio)
     W(F("The --no-transport-auth option is usually only used "
         "in combination with --stdio"));
+}
+
+netsync_connection_info::netsync_connection_info() { }
+
+shared_conn_info
+netsync_connection_info::create_empty()
+{
+  return shared_conn_info(new netsync_connection_info);
 }
 
 // Local Variables:

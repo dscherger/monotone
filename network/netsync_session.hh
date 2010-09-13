@@ -55,16 +55,6 @@ netsync_session:
   size_t revs_in, revs_out;
   size_t keys_in, keys_out;
 
-  // These are read from the server, written to the local database
-  std::vector<revision_id> written_revisions;
-  std::vector<key_id> written_keys;
-  std::vector<cert> written_certs;
-
-  // These are sent to the server
-  std::vector<revision_id> sent_revisions;
-  std::vector<key_id> sent_keys;
-  std::vector<cert> sent_certs;
-
   mutable bool set_totals;
 
   // Interface to refinement.

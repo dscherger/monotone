@@ -106,6 +106,9 @@ netsync_session::netsync_session(session * owner,
   rev_enumerator(project, *this),
   initiated_by_server(initiated_by_server)
 {
+  if (!conn_info)
+    conn_info = netsync_connection_info::create_empty();
+
   for (vector<external_key_name>::const_iterator i = opts.keys_to_push.begin();
        i != opts.keys_to_push.end(); ++i)
     {
@@ -140,11 +143,11 @@ void netsync_session::on_end(size_t ident)
 
   vector<cert> unattached_written_certs;
   map<revision_id, vector<cert> > rev_written_certs;
-  for (vector<revision_id>::iterator i = written_revisions.begin();
-       i != written_revisions.end(); ++i)
+  for (vector<revision_id>::const_iterator i = conn_info->revs_in.items.begin();
+       i != conn_info->revs_in.items.end(); ++i)
     rev_written_certs.insert(make_pair(*i, vector<cert>()));
-  for (vector<cert>::iterator i = written_certs.begin();
-       i != written_certs.end(); ++i)
+  for (vector<cert>::const_iterator i = conn_info->certs_in.items.begin();
+       i != conn_info->certs_in.items.end(); ++i)
     {
       map<revision_id, vector<cert> >::iterator j;
       j = rev_written_certs.find(revision_id(i->ident));
@@ -154,14 +157,14 @@ void netsync_session::on_end(size_t ident)
         j->second.push_back(*i);
     }
 
-  if (!written_keys.empty()
-      || !written_revisions.empty()
-      || !written_certs.empty())
+  if (!conn_info->revs_in.items.empty()
+      || !conn_info->keys_in.items.empty()
+      || !conn_info->certs_in.items.empty())
     {
 
       //Keys
-      for (vector<key_id>::iterator i = written_keys.begin();
-           i != written_keys.end(); ++i)
+      for (vector<key_id>::const_iterator i = conn_info->keys_in.items.begin();
+           i != conn_info->keys_in.items.end(); ++i)
         {
           key_identity_info identity;
           identity.id = *i;
@@ -170,8 +173,8 @@ void netsync_session::on_end(size_t ident)
         }
 
       //Revisions
-      for (vector<revision_id>::iterator i = written_revisions.begin();
-           i != written_revisions.end(); ++i)
+      for (vector<revision_id>::const_iterator i = conn_info->revs_in.items.begin();
+           i != conn_info->revs_in.items.end(); ++i)
         {
           vector<cert> & ctmp(rev_written_certs[*i]);
           set<pair<key_identity_info, pair<cert_name, cert_value> > > certs;
@@ -202,18 +205,18 @@ void netsync_session::on_end(size_t ident)
         }
     }
 
-  if (!sent_keys.empty()
-      || !sent_revisions.empty()
-      || !sent_certs.empty())
+  if (!conn_info->keys_out.items.empty()
+      || !conn_info->revs_out.items.empty()
+      || !conn_info->certs_out.items.empty())
     {
 
       vector<cert> unattached_sent_certs;
       map<revision_id, vector<cert> > rev_sent_certs;
-      for (vector<revision_id>::iterator i = sent_revisions.begin();
-           i != sent_revisions.end(); ++i)
+      for (vector<revision_id>::const_iterator i = conn_info->revs_out.items.begin();
+           i != conn_info->revs_out.items.end(); ++i)
         rev_sent_certs.insert(make_pair(*i, vector<cert>()));
-      for (vector<cert>::iterator i = sent_certs.begin();
-           i != sent_certs.end(); ++i)
+      for (vector<cert>::const_iterator i = conn_info->certs_out.items.begin();
+           i != conn_info->certs_out.items.end(); ++i)
         {
           map<revision_id, vector<cert> >::iterator j;
           j = rev_sent_certs.find(revision_id(i->ident));
@@ -224,8 +227,8 @@ void netsync_session::on_end(size_t ident)
         }
 
       //Keys
-      for (vector<key_id>::iterator i = sent_keys.begin();
-           i != sent_keys.end(); ++i)
+      for (vector<key_id>::const_iterator i = conn_info->keys_out.items.begin();
+           i != conn_info->keys_out.items.end(); ++i)
         {
           key_identity_info identity;
           identity.id = *i;
@@ -234,8 +237,8 @@ void netsync_session::on_end(size_t ident)
         }
 
       //Revisions
-      for (vector<revision_id>::iterator i = sent_revisions.begin();
-           i != sent_revisions.end(); ++i)
+      for (vector<revision_id>::const_iterator i = conn_info->revs_out.items.begin();
+           i != conn_info->revs_out.items.end(); ++i)
         {
           vector<cert> & ctmp(rev_sent_certs[*i]);
           set<pair<key_identity_info, pair<cert_name, cert_value> > > certs;
@@ -331,7 +334,7 @@ netsync_session::note_rev(revision_id const & rev)
   data tmp;
   write_revision(rs, tmp);
   queue_data_cmd(revision_item, rev.inner(), tmp());
-  sent_revisions.push_back(rev);
+  conn_info->revs_out.add_item(rev);
 }
 
 void
@@ -354,7 +357,7 @@ netsync_session::note_cert(id const & i)
       c.marshal_for_netio_v6(keyname, str);
     }
   queue_data_cmd(cert_item, i, str);
-  sent_certs.push_back(c);
+  conn_info->certs_out.add_item(c);
 }
 
 
@@ -445,16 +448,16 @@ netsync_session::dry_run_finished() const
     && cert_refiner.done
     && dry_run_keys_refined;
 
-  if (all && conn_info)
+  if (all)
     {
-      conn_info->client.revs_in.set_count(rev_refiner.items_to_receive, false);
-      conn_info->client.certs_in.set_count(cert_refiner.items_to_receive, false);
-      conn_info->client.keys_in.set_count(key_refiner.min_items_to_receive,
-                                          key_refiner.may_receive_more_than_min);
+      conn_info->revs_in.set_count(rev_refiner.items_to_receive, false);
+      conn_info->certs_in.set_count(cert_refiner.items_to_receive, false);
+      conn_info->keys_in.set_count(key_refiner.min_items_to_receive,
+                                   key_refiner.may_receive_more_than_min);
 
-      conn_info->client.revs_out.set_items(rev_refiner.items_to_send);
-      conn_info->client.certs_out.set_count(cert_refiner.items_to_send.size(), false);
-      conn_info->client.keys_out.set_items(key_refiner.items_to_send);
+      conn_info->revs_out.set_items(rev_refiner.items_to_send);
+      conn_info->certs_out.set_count(cert_refiner.items_to_send.size(), false);
+      conn_info->keys_out.set_items(key_refiner.items_to_send);
     }
 
   return all;
@@ -888,7 +891,7 @@ netsync_session::load_data(netcmd_item_type type,
         project.db.get_pubkey(key_id(item), keyid, pub);
         L(FL("public key '%s' is also called '%s'") % item % keyid);
         write_pubkey(keyid, pub, out);
-        sent_keys.push_back(key_id(item));
+        conn_info->keys_out.add_item(key_id(item));
       }
       break;
 
@@ -1015,7 +1018,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
                                % tmp);
           }
         if (project.db.put_key(keyid, pub))
-          written_keys.push_back(key_id(item));
+          conn_info->keys_in.add_item(key_id(item));
         else
           error(error_codes::partial_transfer,
                 (F("Received duplicate key %s") % keyid).str());
@@ -1059,7 +1062,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
             if (! (tmp == item))
               throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
             if (project.db.put_revision_cert(c))
-              written_certs.push_back(c);
+              conn_info->certs_in.add_item(c);
           }
       }
       break;
@@ -1075,7 +1078,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
         revision_t rev;
         read_revision(d, rev);
         if (project.db.put_revision(revision_id(item), rev))
-          written_revisions.push_back(revision_id(item));
+          conn_info->revs_in.add_item(revision_id(item));
       }
       break;
 

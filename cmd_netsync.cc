@@ -278,31 +278,31 @@ void print_dryrun_info(protocol_role role,
 {
   if (role != source_role)
     {
-      if (info->client.keys_in.can_have_more_than_min)
+      if (info->keys_in.can_have_more_than_min)
         {
           P(F("would receive %d revisions, %d certs, and at least %d keys")
-            % info->client.revs_in.min_count
-            % info->client.certs_in.min_count
-            % info->client.keys_in.min_count);
+            % info->revs_in.min_count
+            % info->certs_in.min_count
+            % info->keys_in.min_count);
         }
       else
         {
           P(F("would receive %d revisions, %d certs, and %d keys")
-            % info->client.revs_in.min_count
-            % info->client.certs_in.min_count
-            % info->client.keys_in.min_count);
+            % info->revs_in.min_count
+            % info->certs_in.min_count
+            % info->keys_in.min_count);
         }
     }
   if (role != sink_role)
     {
       P(F("would send %d certs and %d keys")
-        % info->client.certs_out.min_count
-        % info->client.keys_out.min_count);
+        % info->certs_out.min_count
+        % info->keys_out.min_count);
       P(F("would send %d revisions:")
-        % info->client.revs_out.min_count);
+        % info->revs_out.min_count);
       map<branch_name, int> branch_counts;
-      for (set<revision_id>::const_iterator i = info->client.revs_out.items.begin();
-           i != info->client.revs_out.items.end(); ++i)
+      for (vector<revision_id>::const_iterator i = info->revs_out.items.begin();
+           i != info->revs_out.items.end(); ++i)
         {
           set<branch_name> my_branches;
           project.get_revision_branches(*i, my_branches);

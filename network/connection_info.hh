@@ -31,7 +31,7 @@ class future_set
 public:
   bool have_count;
   bool have_items;
-  std::set<item_type> items;
+  std::vector<item_type> items;
   size_t min_count;
   bool can_have_more_than_min;
 
@@ -49,7 +49,7 @@ public:
     for (typename std::set<input_type>::const_iterator i = in.begin();
          i != in.end(); ++i)
       {
-        items.insert(items.end(), item_type(*i));
+        items.push_back(item_type(*i));
       }
     min_count = items.size();
     can_have_more_than_min = false;
@@ -58,7 +58,7 @@ public:
   void add_item(item_type const & i)
   {
     have_items = true;
-    items.insert(i);
+    items.push_back(i);
 
     min_count = items.size();
     can_have_more_than_min = false;
@@ -90,10 +90,11 @@ struct netsync_connection_info
     std::istream * input_stream;
     automate_ostream * output_stream;
 
-    database db;
+    database & db;
     options opts;
 
     Client(database & d, options const & o);
+    Client();
     ~Client();
 
     void set_raw_uri(std::string const & uri);
@@ -117,14 +118,14 @@ struct netsync_connection_info
     connection_type get_connection_type() const;
 
     void set_connection_successful();
-
-    future_set<key_id> keys_in;
-    future_set<cert> certs_in;
-    future_set<revision_id> revs_in;
-    future_set<key_id> keys_out;
-    future_set<cert> certs_out;
-    future_set<revision_id> revs_out;
   } client;
+
+  future_set<key_id> keys_in;
+  future_set<cert> certs_in;
+  future_set<revision_id> revs_in;
+  future_set<key_id> keys_out;
+  future_set<cert> certs_out;
+  future_set<revision_id> revs_out;
 
   static void
   setup_default(options const & opts,
@@ -164,7 +165,10 @@ struct netsync_connection_info
                   lua_hooks & lua,
                   shared_conn_info & info);
 
+  static shared_conn_info create_empty();
+
 private:
+  netsync_connection_info();
   netsync_connection_info(database & d, options const & o);
 
   static void
