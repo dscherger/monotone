@@ -426,50 +426,66 @@ print_info_auto(protocol_role role,
 {
   // print info for automate session
   basic_io::printer pr;
-  basic_io::stanza st;
 
   if (role != source_role)
     {
       // sink or sink_and_source; print sink info
-      st.push_symbol(syms::receive);
-      pr.print_stanza(st);
-      output.write(pr.buf.data(), pr.buf.size());
+      {
+        basic_io::stanza st;
+        st.push_symbol(syms::receive);
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
 
-      for (vector<revision_id>::const_iterator i = info->client.incoming_revs.begin();
-           i != info->client.incoming_revs.end(); ++i)
-        {
-          st.push_binary_pair(syms::revision, i->inner());
-        }
-      pr.print_stanza(st);
-      output.write(pr.buf.data(), pr.buf.size());
+      {
+        basic_io::stanza st;
+        for (vector<revision_id>::const_iterator i = info->client.incoming_revs.begin();
+             i != info->client.incoming_revs.end(); ++i)
+          {
+            st.push_binary_pair(syms::revision, i->inner());
+          }
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
 
       for (vector<cert>::const_iterator i = info->client.incoming_certs.begin();
            i != info->client.incoming_certs.end(); ++i)
         {
           print_cert(*i, pr, output);
         }
-      for (vector<key_id>::const_iterator i = info->client.incoming_keys.begin();
-           i != info->client.incoming_keys.end(); ++i)
-        {
-          st.push_binary_pair(syms::key, i->inner());
-        }
-      pr.print_stanza(st);
-      output.write(pr.buf.data(), pr.buf.size());
+
+      {
+        basic_io::stanza st;
+        for (vector<key_id>::const_iterator i = info->client.incoming_keys.begin();
+             i != info->client.incoming_keys.end(); ++i)
+          {
+            st.push_binary_pair(syms::key, i->inner());
+          }
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
     }
+
   if (role != sink_role)
     {
       // source or sink_and_source; print source info
-      st.push_symbol(syms::send);
-      pr.print_stanza(st);
-      output.write(pr.buf.data(), pr.buf.size());
+      {
+        basic_io::stanza st;
+        st.push_symbol(syms::send);
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
 
-      for (vector<revision_id>::const_iterator i = info->client.outgoing_revs.begin();
-           i != info->client.outgoing_revs.end(); ++i)
-        {
-          st.push_binary_pair(syms::revision, i->inner());
-        }
-      pr.print_stanza(st);
-      output.write(pr.buf.data(), pr.buf.size());
+      {
+        basic_io::stanza st;
+        for (vector<revision_id>::const_iterator i = info->client.outgoing_revs.begin();
+             i != info->client.outgoing_revs.end(); ++i)
+          {
+            st.push_binary_pair(syms::revision, i->inner());
+          }
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
 
       for (vector<cert>::const_iterator i = info->client.outgoing_certs.begin();
            i != info->client.outgoing_certs.end(); ++i)
@@ -477,13 +493,16 @@ print_info_auto(protocol_role role,
           print_cert(*i, pr, output);
         }
 
-      for (vector<key_id>::const_iterator i = info->client.outgoing_keys.begin();
-           i != info->client.outgoing_keys.end(); ++i)
-        {
-          st.push_binary_pair(syms::key, i->inner());
-        }
-      pr.print_stanza(st);
-      output.write(pr.buf.data(), pr.buf.size());
+      {
+        basic_io::stanza st;
+        for (vector<key_id>::const_iterator i = info->client.outgoing_keys.begin();
+             i != info->client.outgoing_keys.end(); ++i)
+          {
+            st.push_binary_pair(syms::key, i->inner());
+          }
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
     }
 }
 
