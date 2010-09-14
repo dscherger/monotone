@@ -1,5 +1,6 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //               2006 Timothy Brownawell <tbrownaw@gmail.com>
+//               2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -12,6 +13,7 @@
 #include "cmd.hh"
 
 #include "automate_ostream_demuxed.hh"
+#include "basic_io.hh"
 #include "merge_content.hh"
 #include "netsync.hh"
 #include "network/connection_info.hh"
@@ -272,10 +274,12 @@ CMD_AUTOMATE_NO_STDIO(remote,
     F("received remote error code %d") % os.get_error());
 }
 
-void print_dryrun_info(protocol_role role,
-                       shared_conn_info info,
-                       project_t & project)
+static void
+print_dryrun_info_cmd(protocol_role role,
+                      shared_conn_info info,
+                      project_t & project)
 {
+  // print dryrun info for command line
   if (role != source_role)
     {
       if (info->keys_in.can_have_more_than_min)
@@ -320,6 +324,188 @@ void print_dryrun_info(protocol_role role,
     }
 }
 
+namespace
+{
+  namespace syms
+  {
+    symbol const branch("branch");
+    symbol const cert("cert");
+    symbol const dryrun("dryrun");
+    symbol const estimate("estimate");
+    symbol const key("key");
+    symbol const name("name");
+    symbol const receive("receive");
+    symbol const revision("revision");
+    symbol const send("send");
+    symbol const value("value");
+  }
+}
+
+static void
+print_dryrun_info_auto(protocol_role role,
+                       shared_conn_info info,
+                       project_t & project,
+                       std::ostream & output)
+{
+  // print dry run info for automate session
+  basic_io::printer pr;
+  basic_io::stanza st;
+
+  st.push_symbol(syms::dryrun);
+
+  if (role != source_role)
+    {
+      // sink or sink_and_source; print sink info
+      st.push_symbol(syms::receive);
+
+      if (info->client.dryrun_incoming_keys_is_estimate)
+        {
+          st.push_symbol(syms::estimate);
+        }
+
+      st.push_str_pair(syms::revision,
+                       boost::lexical_cast<string>(info->client.dryrun_incoming_revs));
+      st.push_str_pair(syms::cert,
+                       boost::lexical_cast<string>(info->client.dryrun_incoming_certs));
+      st.push_str_pair(syms::key,
+                       boost::lexical_cast<string>(info->client.dryrun_incoming_keys));
+    }
+  if (role != sink_role)
+    {
+      // source or sink_and_source; print source info
+      st.push_symbol(syms::send);
+
+      st.push_str_pair(syms::revision,
+                       boost::lexical_cast<string>(info->client.outgoing_revs.size()));
+      st.push_str_pair(syms::cert,
+                       boost::lexical_cast<string>(info->client.dryrun_outgoing_certs));
+      st.push_str_pair(syms::key,
+                       boost::lexical_cast<string>(info->client.dryrun_outgoing_keys));
+      map<branch_name, int> branch_counts;
+      for (vector<revision_id>::const_iterator i = info->client.outgoing_revs.begin();
+           i != info->client.outgoing_revs.end(); ++i)
+        {
+          set<branch_name> my_branches;
+          project.get_revision_branches(*i, my_branches);
+          for(set<branch_name>::iterator b = my_branches.begin();
+              b != my_branches.end(); ++b)
+            {
+              ++branch_counts[*b];
+            }
+        }
+      for (map<branch_name, int>::iterator i = branch_counts.begin();
+           i != branch_counts.end(); ++i)
+        {
+          st.push_str_triple(syms::branch, i->first(), boost::lexical_cast<string>(i->second));
+        }
+    }
+  pr.print_stanza(st);
+  output.write(pr.buf.data(), pr.buf.size());
+}
+
+static void
+print_cert(cert const & item,
+           basic_io::printer & pr,
+           std::ostream & output)
+{
+  basic_io::stanza st;
+  st.push_symbol(syms::cert);
+  st.push_binary_pair(syms::revision, item.ident.inner());
+  st.push_str_pair(syms::name, item.name());
+  st.push_str_pair(syms::value, item.value());
+  st.push_binary_pair(syms::key, item.key.inner());
+  pr.print_stanza(st);
+  output.write(pr.buf.data(), pr.buf.size());
+}
+
+static void
+print_info_auto(protocol_role role,
+                shared_conn_info info,
+                project_t & project,
+                std::ostream & output)
+{
+  // print info for automate session
+  basic_io::printer pr;
+
+  if (role != source_role)
+    {
+      // sink or sink_and_source; print sink info
+      {
+        basic_io::stanza st;
+        st.push_symbol(syms::receive);
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
+
+      {
+        basic_io::stanza st;
+        for (vector<revision_id>::const_iterator i = info->client.incoming_revs.begin();
+             i != info->client.incoming_revs.end(); ++i)
+          {
+            st.push_binary_pair(syms::revision, i->inner());
+          }
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
+
+      for (vector<cert>::const_iterator i = info->client.incoming_certs.begin();
+           i != info->client.incoming_certs.end(); ++i)
+        {
+          print_cert(*i, pr, output);
+        }
+
+      {
+        basic_io::stanza st;
+        for (vector<key_id>::const_iterator i = info->client.incoming_keys.begin();
+             i != info->client.incoming_keys.end(); ++i)
+          {
+            st.push_binary_pair(syms::key, i->inner());
+          }
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
+    }
+
+  if (role != sink_role)
+    {
+      // source or sink_and_source; print source info
+      {
+        basic_io::stanza st;
+        st.push_symbol(syms::send);
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
+
+      {
+        basic_io::stanza st;
+        for (vector<revision_id>::const_iterator i = info->client.outgoing_revs.begin();
+             i != info->client.outgoing_revs.end(); ++i)
+          {
+            st.push_binary_pair(syms::revision, i->inner());
+          }
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
+
+      for (vector<cert>::const_iterator i = info->client.outgoing_certs.begin();
+           i != info->client.outgoing_certs.end(); ++i)
+        {
+          print_cert(*i, pr, output);
+        }
+
+      {
+        basic_io::stanza st;
+        for (vector<key_id>::const_iterator i = info->client.outgoing_keys.begin();
+             i != info->client.outgoing_keys.end(); ++i)
+          {
+            st.push_binary_pair(syms::key, i->inner());
+          }
+        pr.print_stanza(st);
+        output.write(pr.buf.data(), pr.buf.size());
+      }
+    }
+}
+
 CMD(push, "push", "", CMD_REF(network),
     N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pushes branches to a netsync server"),
@@ -340,7 +526,7 @@ CMD(push, "push", "", CMD_REF(network),
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
   if (app.opts.dryrun)
-    print_dryrun_info(source_role, info, project);
+    print_dryrun_info_cmd(source_role, info, project);
 }
 
 CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -362,7 +548,9 @@ CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
   if (app.opts.dryrun)
-    print_dryrun_info(source_role, info, project);
+    print_dryrun_info_auto(source_role, info, project, output);
+  else
+    print_info_auto(source_role, info, project, output);
 }
 
 CMD(pull, "pull", "", CMD_REF(network),
@@ -392,7 +580,7 @@ CMD(pull, "pull", "", CMD_REF(network),
 
   updater.maybe_do_update();
   if (app.opts.dryrun)
-    print_dryrun_info(sink_role, info, project);
+    print_dryrun_info_cmd(sink_role, info, project);
 }
 
 CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -414,7 +602,9 @@ CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
   if (app.opts.dryrun)
-    print_dryrun_info(sink_role, info, project);
+    print_dryrun_info_auto(sink_role, info, project, output);
+  else
+    print_info_auto(sink_role, info, project, output);
 }
 
 CMD(sync, "sync", "", CMD_REF(network),
@@ -449,7 +639,7 @@ CMD(sync, "sync", "", CMD_REF(network),
 
   updater.maybe_do_update();
   if (app.opts.dryrun)
-    print_dryrun_info(source_and_sink_role, info, project);
+    print_dryrun_info_cmd(source_and_sink_role, info, project);
 }
 
 CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -477,7 +667,9 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
   if (app.opts.dryrun)
-    print_dryrun_info(source_and_sink_role, info, project);
+    print_dryrun_info_auto(source_and_sink_role, info, project, output);
+  else
+    print_info_auto(source_and_sink_role, info, project, output);
 }
 
 CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
