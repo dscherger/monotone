@@ -199,6 +199,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - New 'k:' selector type to query revisions where at least one
           certificate was signed with the given key.
 
+        - Monotone has a new global '--colorize' option which colors the
+          output of commands like 'diff', 'fdiff' or 'log' for better
+          readability in terminals that support output coloring and
+          formatting.
+
         - New automation command 'log' which behaves identical to the
           normal 'log' command, except that it only outputs the
           revision ids.

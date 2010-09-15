@@ -17,6 +17,7 @@
 #include "simplestring_xform.hh"
 
 #include <ostream>
+#include <sstream>
 #include <iterator>
 #include <boost/scoped_ptr.hpp>
 
@@ -25,6 +26,7 @@ using std::min;
 using std::ostream;
 using std::ostream_iterator;
 using std::string;
+using std::stringstream;
 using std::vector;
 using boost::scoped_ptr;
 
@@ -45,6 +47,8 @@ struct hunk_consumer
   vector<string>::const_reverse_iterator encloser_last_match;
   vector<string>::const_reverse_iterator encloser_last_search;
 
+  colorizer color;
+
   virtual void flush_hunk(size_t pos) = 0;
   virtual void advance_to(size_t newpos) = 0;
   virtual void insert_at(size_t b_pos) = 0;
@@ -55,10 +59,12 @@ struct hunk_consumer
                 vector<string> const & b,
                 size_t ctx,
                 ostream & ost,
-                string const & encloser_pattern)
+                string const & encloser_pattern,
+                colorizer const & color)
     : a(a), b(b), ctx(ctx), ost(ost), encloser_re(0),
       a_begin(0), b_begin(0), a_len(0), b_len(0), skew(0),
-      encloser_last_match(a.rend()), encloser_last_search(a.rend())
+      encloser_last_match(a.rend()), encloser_last_search(a.rend()),
+      color(color)
   {
     if (encloser_pattern != "")
       encloser_re.reset(new pcre::regex(encloser_pattern, origin::user));
@@ -170,21 +176,24 @@ struct unidiff_hunk_writer : public hunk_consumer
                       vector<string> const & b,
                       size_t ctx,
                       ostream & ost,
-                      string const & encloser_pattern)
-  : hunk_consumer(a, b, ctx, ost, encloser_pattern)
+                      string const & encloser_pattern,
+                      colorizer const & color)
+  : hunk_consumer(a, b, ctx, ost, encloser_pattern, color)
   {}
 };
 
 void unidiff_hunk_writer::insert_at(size_t b_pos)
 {
   b_len++;
-  hunk.push_back(string("+") + b[b_pos]);
+  hunk.push_back(color.colorize(string("+") + b[b_pos],
+                                    colorizer::diff_add));
 }
 
 void unidiff_hunk_writer::delete_at(size_t a_pos)
 {
   a_len++;
-  hunk.push_back(string("-") + a[a_pos]);
+  hunk.push_back(color.colorize(string("-") + a[a_pos],
+                                    colorizer::diff_delete));
 }
 
 void unidiff_hunk_writer::flush_hunk(size_t pos)
@@ -201,22 +210,23 @@ void unidiff_hunk_writer::flush_hunk(size_t pos)
         }
 
       // write hunk to stream
+      stringstream ss;
       if (a_len == 0)
-        ost << "@@ -0,0";
+        ss << "@@ -0,0";
       else
         {
-          ost << "@@ -" << a_begin+1;
+          ss << "@@ -" << a_begin+1;
           if (a_len > 1)
-            ost << ',' << a_len;
+            ss << ',' << a_len;
         }
 
       if (b_len == 0)
-        ost << " +0,0";
+        ss << " +0,0";
       else
         {
-          ost << " +" << b_begin+1;
+          ss << " +" << b_begin+1;
           if (b_len > 1)
-            ost << ',' << b_len;
+            ss << ',' << b_len;
         }
 
       {
@@ -231,7 +241,11 @@ void unidiff_hunk_writer::flush_hunk(size_t pos)
             }
 
         find_encloser(a_begin + first_mod, encloser);
-        ost << " @@" << encloser << '\n';
+        ss << " @@";
+
+        ost << color.colorize(ss.str(), colorizer::diff_separator);
+        ost << color.colorize(encloser, colorizer::diff_encloser);
+        ost << '\n';
       }
       copy(hunk.begin(), hunk.end(), ostream_iterator<string>(ost, "\n"));
     }
@@ -297,8 +311,9 @@ struct cxtdiff_hunk_writer : public hunk_consumer
                       vector<string> const & b,
                       size_t ctx,
                       ostream & ost,
-                      string const & encloser_pattern)
-  : hunk_consumer(a, b, ctx, ost, encloser_pattern),
+                      string const & encloser_pattern,
+                      colorizer const & colorizer)
+  : hunk_consumer(a, b, ctx, ost, encloser_pattern, colorizer),
     have_insertions(false), have_deletions(false)
   {}
 };
@@ -360,7 +375,8 @@ void cxtdiff_hunk_writer::flush_hunk(size_t pos)
         find_encloser(a_begin + min(first_insert, first_delete),
                       encloser);
 
-        ost << "***************" << encloser << '\n';
+        ost << color.colorize("***************", colorizer::diff_separator)
+            << color.colorize(encloser, colorizer::diff_encloser) << '\n';
       }
 
       ost << "*** " << (a_begin + 1) << ',' << (a_begin + a_len) << " ****\n";
@@ -394,23 +410,33 @@ void cxtdiff_hunk_writer::flush_pending_mods()
 
   // if we have just insertions to flush, prefix them with "+"; if
   // just deletions, prefix with "-"; if both, prefix with "!"
+  colorizer::purpose p = colorizer::normal;
   if (inserts.empty() && !deletes.empty())
+  {
     prefix = "-";
+    p = colorizer::diff_delete;
+  }
   else if (deletes.empty() && !inserts.empty())
+  {
     prefix = "+";
+    p = colorizer::diff_add;
+  }
   else
+  {
     prefix = "!";
+    p = colorizer::diff_change;
+  }
 
   for (vector<size_t>::const_iterator i = deletes.begin();
        i != deletes.end(); ++i)
     {
-      from_file.push_back(prefix + string(" ") + a[*i]);
+      from_file.push_back(color.colorize(prefix + string(" ") + a[*i], p));
       a_len++;
     }
   for (vector<size_t>::const_iterator i = inserts.begin();
        i != inserts.end(); ++i)
     {
-      to_file.push_back(prefix + string(" ") + b[*i]);
+      to_file.push_back(color.colorize(prefix + string(" ") + b[*i], p));
       b_len++;
     }
 
@@ -471,11 +497,13 @@ make_diff(string const & filename1,
           data const & data2,
           ostream & ost,
           diff_type type,
-          string const & pattern)
+          string const & pattern,
+          colorizer const & color)
 {
   if (guess_binary(data1()) || guess_binary(data2()))
     {
-      ost << "# " << filename2 << " is binary\n";
+      ost << color.colorize(string("# ") + filename2 + " is binary",
+                            colorizer::diff_comment) << "\n";
       return;
     }
 
@@ -565,23 +593,23 @@ make_diff(string const & filename1,
     {
       case unified_diff:
       {
-        ost << "--- " << filename1 << '\t'
-            << id1 << '\n';
-        ost << "+++ " << filename2 << '\t'
-            << id2 << '\n';
+        ost << color.colorize(string("--- ") + filename1, colorizer::diff_delete)
+            << '\t' << id1 << '\n';
+        ost << color.colorize(string("+++ ") + filename2, colorizer::diff_add)
+            << '\t' << id2 << '\n';
 
-        unidiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
+        unidiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern, color);
         walk_hunk_consumer(lcs, left_interned, right_interned, hunks);
         break;
       }
       case context_diff:
       {
-        ost << "*** " << filename1 << '\t'
-            << id1 << '\n';
-        ost << "--- " << filename2 << '\t'
-            << id2 << '\n';
+        ost << color.colorize(string("*** ") + filename1, colorizer::diff_delete)
+            << '\t' << id1 << '\n';
+        ost << color.colorize(string("--- ") + filename2, colorizer::diff_add)
+            << '\t' << id2 << '\n';
 
-        cxtdiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
+        cxtdiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern, color);
         walk_hunk_consumer(lcs, left_interned, right_interned, hunks);
         break;
       }
