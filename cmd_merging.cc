@@ -1462,11 +1462,20 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
     cout << describe_revision(app.opts, app.lua, project, *i) << '\n';
 }
 
-CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
-    N_("Dumps the roster associated with a given identifier"),
-    N_("If no REVID is given, the workspace is used."),
-    options::opts::none)
+// Name: get_roster
+// Arguments: none
+// Added in: 13.0
+// Purpose: Prints the internal roster for the given revision
+// Output format: basicio
+// Error conditions: if the revision does not exist, prints an error and exits
+CMD_AUTOMATE(get_roster, "[REVISION]",
+             N_("Prints the roster associated with a given identifier"),
+             N_("If no REVISION is given, the workspace is used."),
+             options::opts::none)
 {
+  E(args.size() < 2, origin::user,
+    F("wrong argument count"));
+
   database db(app);
   roster_t roster;
   marking_map mm;
@@ -1520,7 +1529,6 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
     }
   else if (args.size() == 1)
     {
-      database db(app);
       project_t project(db);
       revision_id rid;
       complete(app.opts, app.lua, project, idx(args, 0)(), rid);
@@ -1528,13 +1536,12 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
       db.get_roster(rid, roster, mm);
     }
   else
-    throw usage(execid);
+    I(false);
 
   roster_data dat;
   write_roster_and_marking(roster, mm, dat);
-  cout << dat;
+  output << dat;
 }
-
 
 // Local Variables:
 // mode: C++
