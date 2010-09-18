@@ -568,7 +568,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(app.opts, app.lua, project, *i));
-          P(F("choose one with '%s clone -r<id> SERVER BRANCH'") % prog_name);
+          P(F("choose one with '%s clone -r<id> URL'") % prog_name);
           E(false, origin::user, F("branch %s has multiple heads") % app.opts.branch);
         }
       ident = *(heads.begin());
