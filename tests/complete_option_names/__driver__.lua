@@ -25,3 +25,12 @@ check(mtn("--key"), 1, false, true)
 check(qgrep("missing argument to option 'key'", "stderr"))
 check(not qgrep("option 'key' has multiple ambiguous expansions", "stderr"))
 
+-- check that abbreviated options work - use --hidden / --no-hidden / --nh as an example
+check(mtn("help"), 0, true, false)
+rename("stdout", "no-hidden-expected")
+check(mtn("help", "--hidden"), 0, true, false)
+rename("stdout", "hidden-expected")
+check(not samefile("no-hidden-expected", "hidden-expected"))
+-- this is the important part
+check(mtn("help", "--hidden", "--nh"), 0, true, false)
+check(samefile("stdout", "no-hidden-expected"))
