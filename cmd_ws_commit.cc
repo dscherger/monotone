@@ -182,7 +182,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   utf8 instructions(
     _("-- Enter a description of this change above --\n"
-      "-- Edit fields below to modify certificate values --\n"));
+      "-- You may edit the fields below            --\n"));
 
   utf8 ignored(
     _("\n-- Modifications below this line are ignored --\n"));
@@ -221,7 +221,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
       }
     else
       {
-        oss << DATE << date.as_formatted_localtime(date_fmt) << '\n';
+        oss << DATE << ' ' << date.as_formatted_localtime(date_fmt) << '\n';
       }
 
     editable = utf8(oss.str().c_str());
