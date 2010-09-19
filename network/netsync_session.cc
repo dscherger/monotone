@@ -140,6 +140,7 @@ void netsync_session::on_end(size_t ident)
             keys_in || keys_out))
     error_code = error_codes::partial_transfer;
 
+  // Call Lua hooks
   vector<cert> unattached_written_certs;
   map<revision_id, vector<cert> > rev_written_certs;
   for (vector<revision_id>::const_iterator i = counts->revs_in.items.begin();

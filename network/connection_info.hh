@@ -1,4 +1,4 @@
-// Copyright (C) 2005 and later by various people
+// Copyright (C) 2005, 2010 and later by various people
 // see monotone commit logs for details and authors
 //
 // This program is made available under the GNU GPL version 2.0 or
