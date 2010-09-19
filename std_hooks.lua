@@ -1212,7 +1212,7 @@ function get_netsync_connect_command(uri, args)
                     table.insert(argv, get_mtn_command(uri["host"]))
 
                     if args["debug"] then
-                            table.insert(argv, "--debug")
+                            table.insert(argv, "--verbose")
                     else
                             table.insert(argv, "--quiet")
                     end
