@@ -4,26 +4,16 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         Changes
 
-        - Changelog editor format simplified; user entered text at top
-          of file, instructions reduced. Edited text is saved if
-          commit is canceled.
-        
-        - On Win32 native, '--no-format-dates' is the default for
-          'commit', since dates are not parseable on Win32 native.
+        - The changelog editor format was simplified; user entered text
+          is back at the top of file and the instructions have been reduced.
+          The edited text is saved now even if a commit is canceled.
 
-        - 'automate genkey' is renamed to 'automate generate_key'
-
-        - Selectors are much more powerful now, and the characters '(',
-          ')', and ';' need to be quoted if mean literally (just like
-          '/'). See section 3.2 in the documentation for details.
+        - Selectors are much more powerful now and selector functions to
+          calculate common sets of revisions have been introduced.
+          The characters '(', ')', and ';' need to be quoted if mean literally
+          (just like '/') because of this. See section 3.2 in the documentation
+          for details.
           (fixes monotone bug #18302).
-
-        - The command 'db kill_rev_locally' has been renamed to
-          'local kill_revision', and 'db kill_tag_locally' and
-          'db kill_branch_certs_locally' have been replaced with a more
-          flexible command 'local kill_certs'.
-
-        - The 'cert' command can now operate on multiple revisions at once.
 
         - The SERVER [BRANCH] call syntax for network-related commands
           has been deprecated in favour of the existing, universal
@@ -83,11 +73,25 @@ Xxx Xxx 99 99:99:99 UTC 2010
           monotone warns on the creation of branches which violate these
           restrictions and gives further directions.
 
+        - The 'cert' command can now operate on multiple revisions at once.
+
+        - The command 'db kill_rev_locally' has been renamed to
+          'local kill_revision', and 'db kill_tag_locally' and
+          'db kill_branch_certs_locally' have been replaced with a more
+          flexible command 'local kill_certs'.
+
         - The 'import' command now keeps the created bookkeeping root if
           --dry-run is not specified.  This makes it possible to re-use
           the import directory as workspace and is also more closely
           to what our documentation states, when it says that import
           is basically "setup with a twist".
+
+        - The 'automate genkey' command has been renamed to
+          'automate generate_key'
+
+        - On Win32 native, the option '--no-format-dates' which disables
+          the localized date format, is now the default for 'commit', since
+          dates are not parseable on Win32 native.
 
         - monotone no longer passes syntactically correct, but non-existent
           revision ids through the selector machinery.  The most visible
@@ -96,10 +100,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         New features
 
-        - Options can now be overridden; you can specify --no-unknown
-          --unknown on the command line. Similarly, you can specify
-          --no-unknown in the get_default_command_options hook, then
-          change it to --unknown on the command line.
+        - Options can now be overridden; you can specify '--no-unknown
+          --unknown' on the command line and effectively get back the original
+          state in the application. Similarly, you can specify '--no-unknown'
+          in the 'get_default_command_options' hook and then override that
+          with '--unknown' on the command line.
 
         - New global options:
           --no-ignore-suspend-certs     undo previous --ignore-suspend-certs
@@ -187,7 +192,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           characters, in this example '--up' already matches.
           Multi-word options like for example '--ignore-suspend-certs' might
           collide however with single-worded ones and are best expanded from
-          abbreviations, in this case '--isc'. 
+          abbreviations, in this case '--isc'.
 
         - New automate command 'checkout'
 
@@ -219,10 +224,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - The 'mv' command now warns when a source is being renamed onto
           itself or one of its children (fixes monotone bug #29484).
 
-        - The 'mv' command now handles this usage properly, where
+        - The 'mv' command now also handles this usage properly, where
           'foo' is a directory:
-          mv foo bar
-          mtn mv --bookkeep-only foo bar
+
+             $ mv foo bar
+             $ mtn mv --bookkeep-only foo bar
 
         - monotone no longer asks to pick a branch from a set of branches
           of a revision in which all but one branch have been suspended
@@ -284,8 +290,6 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         - 'mtn conflicts store' now gives a proper error message when
           run outside a workspace (fixes monotone bug #30473)
-
-        Other
 
 Sun Jun 13 22:13:53 UTC 2010
 
