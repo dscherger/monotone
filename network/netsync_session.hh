@@ -66,7 +66,7 @@ netsync_session:
   // dry-run info
   bool is_dry_run;
   bool dry_run_keys_refined;
-  shared_conn_info conn_info;
+  shared_conn_counts counts;
   bool dry_run_finished() const;
 
   // Interface to ancestry grovelling.
@@ -91,7 +91,7 @@ public:
                   protocol_role role,
                   globish const & our_include_pattern,
                   globish const & our_exclude_pattern,
-                  shared_conn_info info,
+                  shared_conn_counts counts,
                   bool initiated_by_server = false);
 
   virtual ~netsync_session();

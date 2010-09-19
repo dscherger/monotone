@@ -66,6 +66,23 @@ public:
   }
 };
 
+class connection_counts;
+typedef boost::shared_ptr<connection_counts> shared_conn_counts;
+
+class connection_counts
+{
+  connection_counts();
+public:
+  static shared_conn_counts create();
+
+  future_set<key_id> keys_in;
+  future_set<cert> certs_in;
+  future_set<revision_id> revs_in;
+  future_set<key_id> keys_out;
+  future_set<cert> certs_out;
+  future_set<revision_id> revs_out;
+};
+
 struct netsync_connection_info
 {
   class Server
@@ -94,7 +111,6 @@ struct netsync_connection_info
     options opts;
 
     Client(database & d, options const & o);
-    Client();
     ~Client();
 
     void set_raw_uri(std::string const & uri);
@@ -119,13 +135,6 @@ struct netsync_connection_info
 
     void set_connection_successful();
   } client;
-
-  future_set<key_id> keys_in;
-  future_set<cert> certs_in;
-  future_set<revision_id> revs_in;
-  future_set<key_id> keys_out;
-  future_set<cert> certs_out;
-  future_set<revision_id> revs_out;
 
   static void
   setup_default(options const & opts,
@@ -165,10 +174,7 @@ struct netsync_connection_info
                   lua_hooks & lua,
                   shared_conn_info & info);
 
-  static shared_conn_info create_empty();
-
 private:
-  netsync_connection_info();
   netsync_connection_info(database & d, options const & o);
 
   static void

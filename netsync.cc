@@ -100,7 +100,8 @@ call_server(app_state & app,
             project_t & project,
             key_store & keys,
             protocol_role role,
-            shared_conn_info const & info)
+            shared_conn_info const & info,
+            shared_conn_counts const & counts)
 {
   Netxx::PipeCompatibleProbe probe;
   transaction_guard guard(project.db);
@@ -130,7 +131,7 @@ call_server(app_state & app,
                                         keys, role,
                                         info->client.get_include_pattern(),
                                         info->client.get_exclude_pattern(),
-                                        info));
+                                        counts));
       break;
     case automate_connection:
       wrapped.reset(new automate_session(app, sess.get(),
@@ -233,7 +234,7 @@ session_from_server_sync_item(app_state & app,
                                     keys, request.role,
                                     info->client.get_include_pattern(),
                                     info->client.get_exclude_pattern(),
-                                    shared_conn_info(),
+                                    connection_counts::create(),
                                     true));
       sess->set_inner(wrapped);
       return sess;
@@ -379,7 +380,8 @@ run_netsync_protocol(app_state & app,
                      project_t & project, key_store & keys,
                      protocol_voice voice,
                      protocol_role role,
-                     shared_conn_info & info)
+                     shared_conn_info & info,
+                     shared_conn_counts const & counts)
 {
   // We do not want to be killed by SIGPIPE from a network disconnect.
   ignore_sigpipe();
@@ -405,7 +407,7 @@ run_netsync_protocol(app_state & app,
       else
         {
           I(voice == client_voice);
-          call_server(app, project, keys, role, info);
+          call_server(app, project, keys, role, info, counts);
           info->client.set_connection_successful();
         }
     }
