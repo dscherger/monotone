@@ -16,7 +16,7 @@ function edit_comment(user_log_message)
       io.write("EDIT: BASE BAD\n")
    end
 
-   if string.find(user_log_message, "\n\n\n*** REMOVE THIS LINE") ~= nil then
+   if string.find(user_log_message, "^\n\n*** REMOVE THIS LINE") ~= nil then
       io.write("EDIT: MSG NONESUCH\n")
       return wanted .. user_log_message
    else
