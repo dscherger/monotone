@@ -16,11 +16,11 @@ function edit_comment(user_log_message)
       io.write("EDIT: BASE BAD\n")
    end
 
-   if string.find(user_log_message, "\nChangelog: \n\n\n") ~= nil then
+   if string.find(user_log_message, "\n\n\n*** REMOVE THIS LINE") ~= nil then
       io.write("EDIT: MSG NONESUCH\n")
-      return string.gsub(user_log_message, "\nChangelog: \n\n\n", "\nChangelog: \n\n" .. wanted .. "\n")
+      return wanted .. user_log_message
    else
-      if string.find(user_log_message, "\nChangelog: \n\n" .. wanted .. "\n") ~= nil then
+      if string.find(user_log_message, wanted .. "\n\n*** REMOVE THIS LINE") ~= nil then
          io.write("EDIT: MSG GOOD\n")
       else
          io.write("EDIT: MSG BAD\n")
