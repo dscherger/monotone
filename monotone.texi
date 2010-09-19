@@ -5765,7 +5765,7 @@ patterns for the exchange:
 
 @smallexample
 @group
-<scheme>://[[<user>@@]<host>[:<port>]][/<path>][?<pattern>[,-<exclude-pattern>[...]]]
+<scheme>://[[<user>@@]<host>[:<port>]][/<path>][?<pattern>[;-<exclude-pattern>[...]]]
 @end group
 @end smallexample
 
@@ -5774,7 +5774,7 @@ Valid examples of URIs monotone accepts are:
 @smallexample
 @group
 mtn://my.server:4690?my.branch
-mtn://my.server/project?my.other.branch*,-my.other.branch.test
+mtn://my.server/project?my.other.branch*;-my.other.branch.test
 file:///path/to/database.mtn?my.branch
 ssh://joe@@my.server/~/db.mtn?joes.branch
 @end group

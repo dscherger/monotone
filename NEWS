@@ -33,7 +33,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
           The possibility to specify include patterns by using
           'include=' and exclude patterns by using 'exclude='
-          in the query string has been removed.
+          in the query string has been removed. Patterns are separated
+          by ';' and will be treated as include patterns unless prefixed
+          with '-'. Where you could previously specify
+          "mtn://host/?include=foo,exclude=bar", you would now give
+          "mtn://host/?foo;-bar" instead.
 
           Monotone's native protocol (mtn://) is still the default
           protocol if nothing is specified.
@@ -68,7 +72,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         - The following characters have been deprecated in branch names
 
-                ?,*%+{}[]!^
+                ?,;*%+{}[]!^
 
           as they denote either meta characters in monotone's URI syntax
           or are used in globs to resolve branch patterns.
@@ -177,6 +181,13 @@ Xxx Xxx 99 99:99:99 UTC 2010
           be expanded; if the expansion leads to multiple possibilities,
           all matches and an accompanying short description of the
           particular expansion are displayed.
+          Two types of expansions are available: simple prefix matching
+          and word abbreviation matching. Single-word options like '--update'
+          are easier to expand from prefixes, as they're unique after a few
+          characters, in this example '--up' already matches.
+          Multi-word options like for example '--ignore-suspend-certs' might
+          collide however with single-worded ones and are best expanded from
+          abbreviations, in this case '--isc'. 
 
         - New automate command 'checkout'
 
