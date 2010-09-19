@@ -139,7 +139,8 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
   info->client.set_output_stream(os);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_and_sink_role, info);
+                       client_voice, source_and_sink_role, info,
+                       connection_counts::create());
 }
 
 // shamelessly copied and adapted from option.cc
@@ -266,10 +267,59 @@ CMD_AUTOMATE_NO_STDIO(remote,
   info->client.set_output_stream(os);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_and_sink_role, info);
+                       client_voice, source_and_sink_role, info,
+                       connection_counts::create());
 
   E(os.get_error() == 0, origin::network,
     F("received remote error code %d") % os.get_error());
+}
+
+void print_dryrun_info(protocol_role role,
+                       shared_conn_counts counts,
+                       project_t & project)
+{
+  if (role != source_role)
+    {
+      if (counts->keys_in.can_have_more_than_min)
+        {
+          P(F("would receive %d revisions, %d certs, and at least %d keys")
+            % counts->revs_in.min_count
+            % counts->certs_in.min_count
+            % counts->keys_in.min_count);
+        }
+      else
+        {
+          P(F("would receive %d revisions, %d certs, and %d keys")
+            % counts->revs_in.min_count
+            % counts->certs_in.min_count
+            % counts->keys_in.min_count);
+        }
+    }
+  if (role != sink_role)
+    {
+      P(F("would send %d certs and %d keys")
+        % counts->certs_out.min_count
+        % counts->keys_out.min_count);
+      P(F("would send %d revisions:")
+        % counts->revs_out.min_count);
+      map<branch_name, int> branch_counts;
+      for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
+           i != counts->revs_out.items.end(); ++i)
+        {
+          set<branch_name> my_branches;
+          project.get_revision_branches(*i, my_branches);
+          for(set<branch_name>::iterator b = my_branches.begin();
+              b != my_branches.end(); ++b)
+            {
+              ++branch_counts[*b];
+            }
+        }
+      for (map<branch_name, int>::iterator i = branch_counts.begin();
+           i != branch_counts.end(); ++i)
+        {
+          P(F("%9d in branch %s") % i->second % i->first);
+        }
+    }
 }
 
 CMD(push, "push", "", CMD_REF(network),
@@ -279,7 +329,7 @@ CMD(push, "push", "", CMD_REF(network),
        "to the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::keys_to_push)
+    options::opts::keys_to_push | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -289,17 +339,20 @@ CMD(push, "push", "", CMD_REF(network),
   extract_client_connection_info(app.opts, project, keys, app.lua,
                                  netsync_connection, args, info);
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_role, info);
+                       client_voice, source_role, info, counts);
+  if (app.opts.dryrun)
+    print_dryrun_info(source_role, counts, project);
 }
 
 CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Pushes branches to a netsync server"),
              "",
-              options::opts::max_netsync_version |
-              options::opts::min_netsync_version |
-              options::opts::set_default | options::opts::exclude |
-              options::opts::keys_to_push)
+             options::opts::max_netsync_version |
+             options::opts::min_netsync_version |
+             options::opts::set_default | options::opts::exclude |
+             options::opts::keys_to_push | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -309,8 +362,11 @@ CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   extract_client_connection_info(app.opts, project, keys, app.lua,
                                  netsync_connection, args, info);
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_role, info);
+                       client_voice, source_role, info, counts);
+  if (app.opts.dryrun)
+    print_dryrun_info(source_role, counts, project);
 }
 
 CMD(pull, "pull", "", CMD_REF(network),
@@ -320,7 +376,7 @@ CMD(pull, "pull", "", CMD_REF(network),
        "from the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::auto_update)
+    options::opts::auto_update | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -335,10 +391,13 @@ CMD(pull, "pull", "", CMD_REF(network),
   if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, sink_role, info);
+                       client_voice, sink_role, info, counts);
 
   updater.maybe_do_update();
+  if (app.opts.dryrun)
+    print_dryrun_info(sink_role, counts, project);
 }
 
 CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -346,7 +405,8 @@ CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              "",
              options::opts::max_netsync_version |
              options::opts::min_netsync_version |
-             options::opts::set_default | options::opts::exclude)
+             options::opts::set_default | options::opts::exclude |
+             options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -356,8 +416,11 @@ CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   extract_client_connection_info(app.opts, project, keys, app.lua,
                                  netsync_connection, args, info, key_optional);
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, sink_role, info);
+                       client_voice, sink_role, info, counts);
+  if (app.opts.dryrun)
+    print_dryrun_info(sink_role, counts, project);
 }
 
 CMD(sync, "sync", "", CMD_REF(network),
@@ -367,7 +430,8 @@ CMD(sync, "sync", "", CMD_REF(network),
        "with the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::keys_to_push | options::opts::auto_update)
+    options::opts::keys_to_push | options::opts::auto_update |
+    options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -386,10 +450,13 @@ CMD(sync, "sync", "", CMD_REF(network),
       workspace::set_options(app.opts, app.lua);
     }
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_and_sink_role, info);
+                       client_voice, source_and_sink_role, info, counts);
 
   updater.maybe_do_update();
+  if (app.opts.dryrun)
+    print_dryrun_info(source_and_sink_role, counts, project);
 }
 
 CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -397,7 +464,7 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              "",
              options::opts::max_netsync_version | options::opts::min_netsync_version |
              options::opts::set_default | options::opts::exclude |
-             options::opts::keys_to_push)
+             options::opts::keys_to_push | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -414,8 +481,11 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     workspace::set_options(app.opts, app.lua);
   }
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_and_sink_role, info);
+                       client_voice, source_and_sink_role, info, counts);
+  if (app.opts.dryrun)
+    print_dryrun_info(source_and_sink_role, counts, project);
 }
 
 CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
@@ -548,7 +618,8 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
   change_current_working_dir(start_dir);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, sink_role, info);
+                       client_voice, sink_role, info,
+                       connection_counts::create());
 
   change_current_working_dir(workspace_dir);
 
@@ -664,7 +735,8 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       server_voice, source_and_sink_role, info);
+                       server_voice, source_and_sink_role, info,
+                       connection_counts::create());
 }
 
 // Local Variables:

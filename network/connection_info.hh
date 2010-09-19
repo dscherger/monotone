@@ -25,6 +25,64 @@ struct netsync_connection_info;
 
 typedef boost::shared_ptr<netsync_connection_info> shared_conn_info;
 
+template<typename item_type>
+class future_set
+{
+public:
+  bool have_count;
+  bool have_items;
+  std::vector<item_type> items;
+  size_t min_count;
+  bool can_have_more_than_min;
+
+  future_set() : have_count(false), have_items(false) {}
+  void set_count(size_t min, bool is_estimate)
+  {
+    have_count = true;
+    min_count = min;
+    can_have_more_than_min = is_estimate;
+  }
+  template<typename input_type>
+  void set_items(std::set<input_type> const & in)
+  {
+    have_items = true;
+    for (typename std::set<input_type>::const_iterator i = in.begin();
+         i != in.end(); ++i)
+      {
+        items.push_back(item_type(*i));
+      }
+    min_count = items.size();
+    can_have_more_than_min = false;
+    have_count = true;
+  }
+  void add_item(item_type const & i)
+  {
+    have_items = true;
+    items.push_back(i);
+
+    min_count = items.size();
+    can_have_more_than_min = false;
+    have_count = true;
+  }
+};
+
+class connection_counts;
+typedef boost::shared_ptr<connection_counts> shared_conn_counts;
+
+class connection_counts
+{
+  connection_counts();
+public:
+  static shared_conn_counts create();
+
+  future_set<key_id> keys_in;
+  future_set<cert> certs_in;
+  future_set<revision_id> revs_in;
+  future_set<key_id> keys_out;
+  future_set<cert> certs_out;
+  future_set<revision_id> revs_out;
+};
+
 struct netsync_connection_info
 {
   class Server
@@ -49,7 +107,7 @@ struct netsync_connection_info
     std::istream * input_stream;
     automate_ostream * output_stream;
 
-    database db;
+    database & db;
     options opts;
 
     Client(database & d, options const & o);

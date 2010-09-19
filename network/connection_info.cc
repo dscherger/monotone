@@ -28,6 +28,12 @@ using std::vector;
 using std::string;
 using boost::lexical_cast;
 
+connection_counts::connection_counts() { }
+shared_conn_counts connection_counts::create()
+{
+  return shared_conn_counts(new connection_counts());
+}
+
 netsync_connection_info::netsync_connection_info(database & d, options const & o) :
   client(d, o)
 { }
