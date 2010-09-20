@@ -358,17 +358,17 @@ print_dryrun_info_auto(protocol_role role,
       // sink or sink_and_source; print sink info
       st.push_symbol(syms::receive);
 
-      if (info->client.dryrun_incoming_keys_is_estimate)
+      if (info->keys_in.can_have_more_than_min)
         {
           st.push_symbol(syms::estimate);
         }
 
       st.push_str_pair(syms::revision,
-                       boost::lexical_cast<string>(info->client.dryrun_incoming_revs));
+                       boost::lexical_cast<string>(info->revs_in.min_count));
       st.push_str_pair(syms::cert,
-                       boost::lexical_cast<string>(info->client.dryrun_incoming_certs));
+                       boost::lexical_cast<string>(info->certs_in.min_count));
       st.push_str_pair(syms::key,
-                       boost::lexical_cast<string>(info->client.dryrun_incoming_keys));
+                       boost::lexical_cast<string>(info->keys_in.min_count));
     }
   if (role != sink_role)
     {
@@ -376,14 +376,14 @@ print_dryrun_info_auto(protocol_role role,
       st.push_symbol(syms::send);
 
       st.push_str_pair(syms::revision,
-                       boost::lexical_cast<string>(info->client.outgoing_revs.size()));
+                       boost::lexical_cast<string>(info->revs_out.min_count));
       st.push_str_pair(syms::cert,
-                       boost::lexical_cast<string>(info->client.dryrun_outgoing_certs));
+                       boost::lexical_cast<string>(info->certs_out.min_count));
       st.push_str_pair(syms::key,
-                       boost::lexical_cast<string>(info->client.dryrun_outgoing_keys));
+                       boost::lexical_cast<string>(info->keys_out.min_count));
       map<branch_name, int> branch_counts;
-      for (vector<revision_id>::const_iterator i = info->client.outgoing_revs.begin();
-           i != info->client.outgoing_revs.end(); ++i)
+      for (vector<revision_id>::const_iterator i = info->revs_out.items.begin();
+           i != info->revs_out.items.end(); ++i)
         {
           set<branch_name> my_branches;
           project.get_revision_branches(*i, my_branches);
@@ -405,8 +405,7 @@ print_dryrun_info_auto(protocol_role role,
 
 static void
 print_cert(cert const & item,
-           basic_io::printer & pr,
-           std::ostream & output)
+           basic_io::printer & pr)
 {
   basic_io::stanza st;
   st.push_symbol(syms::cert);
@@ -415,7 +414,6 @@ print_cert(cert const & item,
   st.push_str_pair(syms::value, item.value());
   st.push_binary_pair(syms::key, item.key.inner());
   pr.print_stanza(st);
-  output.write(pr.buf.data(), pr.buf.size());
 }
 
 static void
@@ -434,35 +432,32 @@ print_info_auto(protocol_role role,
         basic_io::stanza st;
         st.push_symbol(syms::receive);
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
 
       {
         basic_io::stanza st;
-        for (vector<revision_id>::const_iterator i = info->client.incoming_revs.begin();
-             i != info->client.incoming_revs.end(); ++i)
+        for (vector<revision_id>::const_iterator i = info->revs_in.items.begin();
+             i != info->revs_in.items.end(); ++i)
           {
             st.push_binary_pair(syms::revision, i->inner());
           }
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
 
-      for (vector<cert>::const_iterator i = info->client.incoming_certs.begin();
-           i != info->client.incoming_certs.end(); ++i)
+      for (vector<cert>::const_iterator i = info->certs_in.items.begin();
+           i != info->certs_in.items.end(); ++i)
         {
-          print_cert(*i, pr, output);
+          print_cert(*i, pr);
         }
 
       {
         basic_io::stanza st;
-        for (vector<key_id>::const_iterator i = info->client.incoming_keys.begin();
-             i != info->client.incoming_keys.end(); ++i)
+        for (vector<key_id>::const_iterator i = info->keys_in.items.begin();
+             i != info->keys_in.items.end(); ++i)
           {
             st.push_binary_pair(syms::key, i->inner());
           }
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
     }
 
@@ -473,37 +468,36 @@ print_info_auto(protocol_role role,
         basic_io::stanza st;
         st.push_symbol(syms::send);
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
 
       {
         basic_io::stanza st;
-        for (vector<revision_id>::const_iterator i = info->client.outgoing_revs.begin();
-             i != info->client.outgoing_revs.end(); ++i)
+        for (vector<revision_id>::const_iterator i = info->revs_out.items.begin();
+             i != info->revs_out.items.end(); ++i)
           {
             st.push_binary_pair(syms::revision, i->inner());
           }
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
 
-      for (vector<cert>::const_iterator i = info->client.outgoing_certs.begin();
-           i != info->client.outgoing_certs.end(); ++i)
+      for (vector<cert>::const_iterator i = info->certs_out.items.begin();
+           i != info->certs_out.items.end(); ++i)
         {
-          print_cert(*i, pr, output);
+          print_cert(*i, pr);
         }
 
       {
         basic_io::stanza st;
-        for (vector<key_id>::const_iterator i = info->client.outgoing_keys.begin();
-             i != info->client.outgoing_keys.end(); ++i)
+        for (vector<key_id>::const_iterator i = info->keys_out.items.begin();
+             i != info->keys_out.items.end(); ++i)
           {
             st.push_binary_pair(syms::key, i->inner());
           }
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
     }
+
+  output.write(pr.buf.data(), pr.buf.size());
 }
 
 CMD(push, "push", "", CMD_REF(network),

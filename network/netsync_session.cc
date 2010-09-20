@@ -141,17 +141,6 @@ void netsync_session::on_end(size_t ident)
             keys_in || keys_out))
     error_code = error_codes::partial_transfer;
 
-  if (is_automate)
-    {
-      // Save data for automate output
-      conn_info->client.outgoing_revs  = sent_revisions;
-      conn_info->client.outgoing_certs = sent_certs;
-      conn_info->client.outgoing_keys  = sent_keys;
-      conn_info->client.incoming_revs  = written_revisions;
-      conn_info->client.incoming_certs = written_certs;
-      conn_info->client.incoming_keys  = written_keys;
-    }
-
   // Call Lua hooks
   vector<cert> unattached_written_certs;
   map<revision_id, vector<cert> > rev_written_certs;

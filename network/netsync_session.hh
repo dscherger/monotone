@@ -65,7 +65,6 @@ netsync_session:
 
   // dry-run & automate info
   bool is_dry_run;
-  bool is_automate;
   bool dry_run_keys_refined;
   shared_conn_info conn_info;
   bool dry_run_finished() const;
