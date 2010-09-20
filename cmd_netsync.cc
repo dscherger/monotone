@@ -407,8 +407,7 @@ print_dryrun_info_auto(protocol_role role,
 
 static void
 print_cert(cert const & item,
-           basic_io::printer & pr,
-           std::ostream & output)
+           basic_io::printer & pr)
 {
   basic_io::stanza st;
   st.push_symbol(syms::cert);
@@ -417,7 +416,6 @@ print_cert(cert const & item,
   st.push_str_pair(syms::value, item.value());
   st.push_binary_pair(syms::key, item.key.inner());
   pr.print_stanza(st);
-  output.write(pr.buf.data(), pr.buf.size());
 }
 
 static void
@@ -436,7 +434,6 @@ print_info_auto(protocol_role role,
         basic_io::stanza st;
         st.push_symbol(syms::receive);
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
 
       {
@@ -447,13 +444,12 @@ print_info_auto(protocol_role role,
             st.push_binary_pair(syms::revision, i->inner());
           }
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
 
       for (vector<cert>::const_iterator i = counts->certs_in.items.begin();
            i != counts->certs_in.items.end(); ++i)
         {
-          print_cert(*i, pr, output);
+          print_cert(*i, pr);
         }
 
       {
@@ -464,7 +460,6 @@ print_info_auto(protocol_role role,
             st.push_binary_pair(syms::key, i->inner());
           }
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
     }
 
@@ -475,7 +470,6 @@ print_info_auto(protocol_role role,
         basic_io::stanza st;
         st.push_symbol(syms::send);
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
 
       {
@@ -486,13 +480,12 @@ print_info_auto(protocol_role role,
             st.push_binary_pair(syms::revision, i->inner());
           }
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
 
       for (vector<cert>::const_iterator i = counts->certs_out.items.begin();
            i != counts->certs_out.items.end(); ++i)
         {
-          print_cert(*i, pr, output);
+          print_cert(*i, pr);
         }
 
       {
@@ -503,9 +496,10 @@ print_info_auto(protocol_role role,
             st.push_binary_pair(syms::key, i->inner());
           }
         pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
       }
     }
+
+  output.write(pr.buf.data(), pr.buf.size());
 }
 
 CMD(push, "push", "", CMD_REF(network),
