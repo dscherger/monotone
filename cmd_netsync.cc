@@ -335,7 +335,6 @@ namespace
     symbol const dryrun("dryrun");
     symbol const estimate("estimate");
     symbol const key("key");
-    symbol const name("name");
     symbol const receive("receive");
     symbol const revision("revision");
     symbol const send("send");
@@ -407,14 +406,15 @@ print_dryrun_info_auto(protocol_role role,
 
 static void
 print_cert(cert const & item,
-           basic_io::printer & pr)
+           basic_io::printer & pr,
+           bool print_rev)
 {
   basic_io::stanza st;
-  st.push_symbol(syms::cert);
-  st.push_binary_pair(syms::revision, item.ident.inner());
-  st.push_str_pair(syms::name, item.name());
+  st.push_str_pair(syms::cert, item.name());
   st.push_str_pair(syms::value, item.value());
   st.push_binary_pair(syms::key, item.key.inner());
+  if (print_rev)
+    st.push_binary_pair(syms::revision, item.ident.inner());
   pr.print_stanza(st);
 }
 
@@ -430,73 +430,167 @@ print_info_auto(protocol_role role,
   if (role != source_role)
     {
       // sink or sink_and_source; print sink info
-      {
-        basic_io::stanza st;
-        st.push_symbol(syms::receive);
-        pr.print_stanza(st);
-      }
 
-      {
-        basic_io::stanza st;
-        for (vector<revision_id>::const_iterator i = counts->revs_in.items.begin();
-             i != counts->revs_in.items.end(); ++i)
-          {
-            st.push_binary_pair(syms::revision, i->inner());
-          }
-        pr.print_stanza(st);
-      }
+      // Sort received certs into those associated with a received revision, and
+      // others.
+      vector<cert> unattached_certs;
+      map<revision_id, vector<cert> > rev_certs;
 
+      for (vector<revision_id>::const_iterator i = counts->revs_in.items.begin();
+           i != counts->revs_in.items.end(); ++i)
+        rev_certs.insert(make_pair(*i, vector<cert>()));
       for (vector<cert>::const_iterator i = counts->certs_in.items.begin();
            i != counts->certs_in.items.end(); ++i)
         {
-          print_cert(*i, pr);
+          map<revision_id, vector<cert> >::iterator j;
+          j = rev_certs.find(revision_id(i->ident));
+          if (j == rev_certs.end())
+            unattached_certs.push_back(*i);
+          else
+            j->second.push_back(*i);
         }
 
-      {
-        basic_io::stanza st;
-        for (vector<key_id>::const_iterator i = counts->keys_in.items.begin();
-             i != counts->keys_in.items.end(); ++i)
+      if (rev_certs.size() > 0)
+        {
           {
-            st.push_binary_pair(syms::key, i->inner());
+            basic_io::stanza st;
+            st.push_str_pair(syms::receive, syms::revision);
+            pr.print_stanza(st);
           }
-        pr.print_stanza(st);
-      }
+
+          {
+            for (map<revision_id, vector<cert> >::const_iterator i = rev_certs.begin();
+                 i != rev_certs.end(); ++i)
+              {
+                basic_io::stanza st;
+                st.push_binary_pair(syms::revision, i->first.inner());
+                pr.print_stanza(st);
+
+                for (vector<cert>::const_iterator j = i->second.begin();
+                     j != i->second.end(); ++j)
+                  {
+                    print_cert(*j, pr, false);
+                  }
+              }
+          }
+        }
+
+      if (unattached_certs.size() > 0)
+        {
+          {
+            basic_io::stanza st;
+            st.push_str_pair(syms::receive, syms::cert);
+            pr.print_stanza(st);
+          }
+
+          for (vector<cert>::const_iterator i = unattached_certs.begin();
+               i != unattached_certs.end(); ++i)
+            {
+              print_cert(*i, pr, true);
+            }
+        }
+
+      if (counts->keys_in.items.size() > 0)
+        {
+          {
+            basic_io::stanza st;
+            st.push_str_pair(syms::receive, syms::key);
+            pr.print_stanza(st);
+          }
+
+          {
+            basic_io::stanza st;
+            for (vector<key_id>::const_iterator i = counts->keys_in.items.begin();
+                 i != counts->keys_in.items.end(); ++i)
+              {
+                st.push_binary_pair(syms::key, i->inner());
+              }
+            pr.print_stanza(st);
+          }
+        }
     }
 
   if (role != sink_role)
     {
       // source or sink_and_source; print source info
-      {
-        basic_io::stanza st;
-        st.push_symbol(syms::send);
-        pr.print_stanza(st);
-      }
 
-      {
-        basic_io::stanza st;
-        for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
-             i != counts->revs_out.items.end(); ++i)
-          {
-            st.push_binary_pair(syms::revision, i->inner());
-          }
-        pr.print_stanza(st);
-      }
+      // Sort sent certs into those associated with a sent revision, and
+      // others.
+      vector<cert> unattached_certs;
+      map<revision_id, vector<cert> > rev_certs;
 
+      for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
+           i != counts->revs_out.items.end(); ++i)
+        rev_certs.insert(make_pair(*i, vector<cert>()));
       for (vector<cert>::const_iterator i = counts->certs_out.items.begin();
            i != counts->certs_out.items.end(); ++i)
         {
-          print_cert(*i, pr);
+          map<revision_id, vector<cert> >::iterator j;
+          j = rev_certs.find(revision_id(i->ident));
+          if (j == rev_certs.end())
+            unattached_certs.push_back(*i);
+          else
+            j->second.push_back(*i);
         }
 
-      {
-        basic_io::stanza st;
-        for (vector<key_id>::const_iterator i = counts->keys_out.items.begin();
-             i != counts->keys_out.items.end(); ++i)
+      if (rev_certs.size() > 0)
+        {
           {
-            st.push_binary_pair(syms::key, i->inner());
+            basic_io::stanza st;
+            st.push_str_pair(syms::send, syms::revision);
+            pr.print_stanza(st);
           }
-        pr.print_stanza(st);
-      }
+
+          {
+            for (map<revision_id, vector<cert> >::const_iterator i = rev_certs.begin();
+                 i != rev_certs.end(); ++i)
+              {
+                basic_io::stanza st;
+                st.push_binary_pair(syms::revision, i->first.inner());
+                pr.print_stanza(st);
+
+                for (vector<cert>::const_iterator j = i->second.begin();
+                     j != i->second.end(); ++j)
+                  {
+                    print_cert(*j, pr, false);
+                  }
+              }
+          }
+        }
+
+      if (unattached_certs.size() > 0)
+        {
+          {
+            basic_io::stanza st;
+            st.push_str_pair(syms::send, syms::cert);
+            pr.print_stanza(st);
+          }
+
+          for (vector<cert>::const_iterator i = unattached_certs.begin();
+               i != unattached_certs.end(); ++i)
+            {
+              print_cert(*i, pr, true);
+            }
+        }
+
+      if (counts->keys_out.items.size() > 0)
+        {
+          {
+            basic_io::stanza st;
+            st.push_str_pair(syms::receive, syms::key);
+            pr.print_stanza(st);
+          }
+
+          {
+            basic_io::stanza st;
+            for (vector<key_id>::const_iterator i = counts->keys_out.items.begin();
+                 i != counts->keys_out.items.end(); ++i)
+              {
+                st.push_binary_pair(syms::key, i->inner());
+              }
+            pr.print_stanza(st);
+          }
+        }
     }
 
   output.write(pr.buf.data(), pr.buf.size());
