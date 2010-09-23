@@ -676,7 +676,7 @@ char const migrate_add_heights[] =
   ;
 
 // this is a function because it has to refer to the numeric constant
-// defined in schema_migration.hh.
+// defined in migration.hh.
 static void
 migrate_add_ccode(sqlite3 * db, key_store &)
 {
@@ -716,7 +716,7 @@ char const migrate_to_binary_hashes[] =
   "DROP TABLE tmp;"
   "CREATE INDEX revision_certs__id ON revision_certs (id);"
 
-  // We altered a comment on this table, thus we need to recreated it.
+  // We altered a comment on this table, thus we need to recreate it.
   // Additionally, this is the only schema change, so that we get another
   // schema hash to upgrade to.
   "ALTER TABLE branch_epochs RENAME TO tmp;"
@@ -863,6 +863,13 @@ migrate_add_branch_leaf_cache(sqlite3 * db, key_store & keys)
     }
 }
 
+char const migrate_add_file_sizes[] =
+    "CREATE TABLE file_sizes\n"
+    "        (\n"
+    "        id primary key,     -- joins with files.id or file_deltas.id\n"
+    "        size not null       -- the size of the file in byte\n"
+    "        );";
+
 
 // these must be listed in order so that ones listed earlier override ones
 // listed later
@@ -950,9 +957,13 @@ const migration_event migration_events[] = {
 
   { "9c8d5a9ea8e29c69be6459300982a68321b0ec12",
     0, migrate_add_branch_leaf_cache, upgrade_none },
+
+  { "0c956abae3e52522e4e0b7c5cbe7868f5047153e",
+    migrate_add_file_sizes, 0, upgrade_regen_caches },
+
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "0c956abae3e52522e4e0b7c5cbe7868f5047153e", 0, 0, upgrade_none }
+  { "1f60cec1b0f6c8c095dc6d0ffeff2bd0af971ce1", 0, 0, upgrade_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);
@@ -1029,6 +1040,7 @@ calculate_schema_id(sqlite3 * db, string & ident)
   id tid;
   calculate_ident(data(schema, origin::database), tid);
   ident = encode_hexenc(tid(), tid.made_from);
+  L(FL("calculated schema id %s") % ident);
 }
 
 // Look through the migration_events table and return a pointer to the entry

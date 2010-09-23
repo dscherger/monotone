@@ -129,6 +129,10 @@ public:
   void get_file_version(file_id const & ident,
                         file_data & dat);
 
+  // gets the (cached) size of the file if it exists
+  void get_file_size(file_id const & ident,
+                     file_size & size);
+
   // put file w/o predecessor into db
   void put_file(file_id const & new_id,
                 file_data const & dat);
@@ -328,6 +332,7 @@ public:
   void compute_branch_leaves(cert_value const & branch_name, std::set<revision_id> & revs);
   void recalc_branch_leaves(cert_value const & branch_name);
   void delete_existing_branch_leaves();
+  void delete_existing_file_sizes();
 
   // Used through project.cc
   outdated_indicator get_revision_certs(revision_id const & ident,

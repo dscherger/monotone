@@ -993,6 +993,7 @@ regenerate_caches(database & db)
 
     db.delete_existing_rosters();
     db.delete_existing_heights();
+    db.delete_existing_file_sizes();
 
     vector<revision_id> sorted_ids;
     allrevs_toposorted(db, sorted_ids);

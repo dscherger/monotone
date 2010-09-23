@@ -113,9 +113,10 @@ namespace
 {
   struct query_param
   {
-    enum arg_type { text, blob };
+    enum arg_type { text, blob, int64 };
     arg_type type;
-    string data;
+    string string_data;
+    u64 int_data;
   };
 
   query_param
@@ -130,6 +131,7 @@ namespace
     query_param q = {
       query_param::text,
       txt,
+      0,
     };
     return q;
   }
@@ -140,6 +142,18 @@ namespace
     query_param q = {
       query_param::blob,
       blb,
+      0,
+    };
+    return q;
+  }
+
+  query_param
+  int64(u64 const & num)
+  {
+    query_param q = {
+      query_param::int64,
+      "",
+      num,
     };
     return q;
   }
@@ -336,11 +350,19 @@ private:
                    string const & data_table,
                    string const & delta_table);
 
+  void get_version_size(id const & ident,
+                        file_size & size,
+                        string const & size_table);
+
   void drop(id const & base,
             string const & table);
+
   void put_file_delta(file_id const & ident,
                       file_id const & base,
                       file_delta const & del);
+
+  void put_file_size(file_id const & ident,
+                     file_data const & data);
 
   void put_roster_delta(revision_id const & ident,
                         revision_id const & base,
@@ -617,7 +639,9 @@ database_impl::check_caches()
 {
   if (table_has_data("revisions"))
     {
-      E(table_has_data("rosters") && table_has_data("heights"),
+      E(table_has_data("rosters")
+        && table_has_data("heights")
+        && table_has_data("file_sizes"),
         origin::no_fault,
         F("database %s lacks some cached data\n"
           "run '%s db regenerate_caches' to restore use of this database")
@@ -995,6 +1019,7 @@ database::info(ostream & out, bool analyze)
   counts.push_back(imp->count("roster_deltas"));
   counts.push_back(imp->count("files"));
   counts.push_back(imp->count("file_deltas"));
+  counts.push_back(imp->count("file_sizes"));
   counts.push_back(imp->count("revisions"));
   counts.push_back(imp->count("revision_ancestry"));
   counts.push_back(imp->count("revision_certs"));
@@ -1032,6 +1057,8 @@ database::info(ostream & out, bool analyze)
     bytes.push_back(imp->space("files", "length(id) + length(data)", total));
     bytes.push_back(imp->space("file_deltas",
                           "length(id) + length(base) + length(delta)", total));
+    bytes.push_back(imp->space("file_sizes",
+                          "length(id) + length(size)", total));
     bytes.push_back(imp->space("revisions", "length(id) + length(data)", total));
     bytes.push_back(imp->space("revision_ancestry",
                           "length(parent) + length(child)", total));
@@ -1067,6 +1094,7 @@ database::info(ostream & out, bool analyze)
       "  roster deltas   : %s\n"
       "  full files      : %s\n"
       "  file deltas     : %s\n"
+      "  file sizes      : %s\n"
       "  revisions       : %s\n"
       "  ancestry edges  : %s\n"
       "  certs           : %s\n"
@@ -1076,6 +1104,7 @@ database::info(ostream & out, bool analyze)
       "  roster deltas   : %s\n"
       "  full files      : %s\n"
       "  file deltas     : %s\n"
+      "  file sizes      : %s\n"
       "  revisions       : %s\n"
       "  cached ancestry : %s\n"
       "  certs           : %s\n"
@@ -1444,12 +1473,20 @@ database_impl::fetch(results & res,
       if (global_sanity.debug_p())
         {
           string prefix;
-          string log(query.args[param-1].data);
+          string log;
 
           if (query.args[param-1].type == query_param::blob)
             {
               prefix = "x";
-              log = encode_hexenc(log, origin::internal);
+              log = encode_hexenc(query.args[param-1].string_data, origin::internal);
+            }
+          else if (query.args[param-1].type == query_param::int64)
+            {
+              log = lexical_cast<string>(query.args[param-1].int_data);
+            }
+          else
+            {
+              log = query.args[param-1].string_data;
             }
 
           if (log.size() > constants::db_log_line_sz)
@@ -1462,15 +1499,21 @@ database_impl::fetch(results & res,
         {
         case query_param::text:
           sqlite3_bind_text(i->second.stmt(), param,
-                            idx(query.args, param - 1).data.c_str(), -1,
+                            idx(query.args, param - 1).string_data.c_str(), -1,
                             SQLITE_STATIC);
           break;
         case query_param::blob:
           {
-            string const & data = idx(query.args, param - 1).data;
+            string const & data = idx(query.args, param - 1).string_data;
             sqlite3_bind_blob(i->second.stmt(), param,
                               data.data(), data.size(),
                               SQLITE_STATIC);
+          }
+          break;
+        case query_param::int64:
+          {
+            u64 data = idx(query.args, param - 1).int_data;
+            sqlite3_bind_int64(i->second.stmt(), param, data);
           }
           break;
         default:
@@ -1591,7 +1634,7 @@ database_impl::drop_or_cancel_file(file_id const & id)
 
 void
 database_impl::schedule_delayed_file(file_id const & an_id,
-                                      file_data const & dat)
+                                     file_data const & dat)
 {
   if (!have_delayed_file(an_id))
     {
@@ -1934,6 +1977,16 @@ database::put_file_delta(file_id const & ident,
 }
 
 void
+database_impl::put_file_size(file_id const & ident,
+                             file_data const & data)
+{
+  I(!null_id(ident));
+  file_size size = data.inner()().size();
+  query q("INSERT INTO file_sizes(id, size) VALUES (?, ?)");
+  execute(q % blob(ident.inner()()) % int64(size));
+}
+
+void
 database_impl::put_roster_delta(revision_id const & ident,
                                  revision_id const & base,
                                  roster_delta const & del)
@@ -2042,6 +2095,18 @@ database_impl::get_version(id const & ident,
 
   if (!vcache.exists(ident))
     vcache.insert_clean(ident, dat);
+}
+
+void
+database_impl::get_version_size(id const & ident,
+                                file_size & size,
+                                std::string const & size_table)
+{
+  results res;
+  query q("SELECT size FROM " + size_table + " WHERE id = ?");
+  fetch(res, one_col, one_row, q % blob(ident()));
+  I(!res.empty());
+  size = lexical_cast<u64>(res[0][0]);
 }
 
 struct roster_reconstruction_graph : public reconstruction_graph
@@ -2339,6 +2404,13 @@ database::get_file_version(file_id const & id,
 }
 
 void
+database::get_file_size(file_id const & id,
+                        file_size & size)
+{
+  imp->get_version_size(id.inner(), size, "file_sizes");
+}
+
+void
 database::get_manifest_version(manifest_id const & id,
                                manifest_data & dat)
 {
@@ -2352,9 +2424,12 @@ database::put_file(file_id const & id,
                    file_data const & dat)
 {
   if (file_version_exists(id))
-    L(FL("file version '%s' already exists in db") % id);
-  else
-    imp->schedule_delayed_file(id, dat);
+    {
+      L(FL("file version '%s' already exists in db") % id);
+      return;
+    }
+  imp->schedule_delayed_file(id, dat);
+  imp->put_file_size(id, dat);
 }
 
 void
@@ -2415,6 +2490,7 @@ database::put_file_version(file_id const & old_id,
       if (!file_or_manifest_base_exists(new_id, "files"))
         {
           imp->schedule_delayed_file(new_id, new_data);
+          imp->put_file_size(new_id, new_data);
         }
       if (!imp->delta_exists(old_id, new_id, "file_deltas"))
         {
@@ -2423,6 +2499,10 @@ database::put_file_version(file_id const & old_id,
     }
   if (make_forward_deltas)
     {
+      if (!file_or_manifest_base_exists(new_id, "files"))
+        {
+          imp->put_file_size(new_id, new_data);
+        }
       if (!imp->delta_exists(new_id, old_id, "file_deltas"))
         {
           put_file_delta(new_id, old_id, del);
@@ -3037,6 +3117,12 @@ void
 database::delete_existing_branch_leaves()
 {
   imp->execute(query("DELETE FROM branch_leaves"));
+}
+
+void
+database::delete_existing_file_sizes()
+{
+  imp->execute(query("DELETE FROM file_sizes"));
 }
 
 /// Deletes one revision from the local database.

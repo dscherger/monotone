@@ -68,9 +68,10 @@ struct checked_key {
 
 struct checked_file {
   bool found;           // found in db, retrieved and verified sha1 hash
+  bool size_ok;         // recorded file size is correct
   size_t roster_refs; // number of roster references to this file
 
-  checked_file(): found(false), roster_refs(0) {}
+  checked_file(): found(false), size_ok(false), roster_refs(0) {}
 };
 
 struct checked_roster {
@@ -170,6 +171,11 @@ check_files(database & db, map<file_id, checked_file> & checked_files)
       file_data data;
       db.get_file_version(*i, data);
       checked_files[*i].found = true;
+
+      file_size stored_size, calculated_size;
+      calculated_size = data.inner()().size();
+      db.get_file_size(*i, stored_size);
+      checked_files[*i].size_ok = stored_size == calculated_size;
       ++ticks;
     }
 
