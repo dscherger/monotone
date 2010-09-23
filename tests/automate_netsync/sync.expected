@@ -1,0 +1,20 @@
+receive revision
+
+revision [2a46f4b909071fae756b4911a247ce3ff1c3c4ce]
+
+ cert "branch"
+value "foo2"
+  key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+
+ cert "changelog"
+value "R2
+"
+  key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+
+ cert "date"
+value "2010-09-01T12:00:00"
+  key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+
+ cert "author"
+value "tester@test.net"
+  key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
