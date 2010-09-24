@@ -5754,14 +5754,14 @@ authentication and authorization facilities.
 The @var{uri-or-address} arguments given to @command{push},
 @command{pull}, and @command{sync} can be of two possible forms.
 
-If the argument is an URI, the Lua hook @code{get_netsync_connect_command}
-may transform it into a connection command, which is later executed as
-transport channel for netsync.  The URI itself consists of a connection
-scheme (defaults to @code{mtn}), an optional user (only used for
-@code{ssh}-related transports), a host with an optional port (which both
-might be optional as well, f.e. for the @code{file} scheme), a path and
-a query part, which denotes one or more branches and optionally also exclude
-patterns for the exchange:
+If the argument is an URI, the Lua hook
+@code{get_netsync_connect_command} may transform it into a connection
+command, which is later executed as transport channel for netsync.
+The URI itself consists of a connection scheme, an optional user (only
+used for @code{ssh}-related transports), a host with an optional port
+(which both might be optional as well, f.e. for the @code{file}
+scheme), a path and a query part, which denotes one or more branches
+and optionally also exclude patterns for the exchange:
 
 @smallexample
 @group
