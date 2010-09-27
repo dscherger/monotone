@@ -201,13 +201,25 @@ $self = "http://{$_SERVER['SERVER_NAME']}{$_SERVER['SCRIPT_NAME']}";
                                               '<a href="$1">$1</a>',
                                               $entry);
 
-                        // link monotone bugs
+                        // link old savannah bugs
                         $entry = preg_replace_callback(
                            '/monotone bugs?(?:(?:, |, and | and | )#\d+)+/',
                            create_function('$matches', '
                                 return preg_replace(
                                    "/#(\d+)/",
                                    "<a href=\"https://savannah.nongnu.org/bugs/?$1\">#$1</a>",
+                                   $matches[0]
+                                );
+                           '),
+                           $entry);
+                        // link new IDF issues (we use the same procedure as
+                        // above, just that we call them now "issues" by convention
+                        $entry = preg_replace_callback(
+                           '/monotone issues?(?:(?:, |, and | and | )#\d+)+/',
+                           create_function('$matches', '
+                                return preg_replace(
+                                   "/#(\d+)/",
+                                   "<a href=\"http://code.mtnserv.thomaskeller.biz/index.php/p/monotone/issues/$1/\">#$1</a>",
                                    $matches[0]
                                 );
                            '),
