@@ -50,7 +50,7 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
         <div class="box box-small">
             <h1 class="improveit">Improve it</h1>
             <ul>
-                <li><a href="https://savannah.nongnu.org/bugs/?group=monotone"><strong>bugs</strong></a></li>
+                <li><a href="http://code.mtnserv.thomaskeller.biz/index.php/p/monotone/issues/"><strong>bugs</strong></a></li>
                 <li><a href="http://lists.nongnu.org/mailman/listinfo/monotone-devel">developers mailing list</a></li>
                 <li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.org/irclogger/irclogger_logs/monotone">logs</a>)</li>
                 <li><a href="http://monotone.thomaskeller.biz/docbuild/html">nightly documentation build</a> (<a href="http://monotone.thomaskeller.biz/docbuild/monotone.html">one page</a>)</li>
