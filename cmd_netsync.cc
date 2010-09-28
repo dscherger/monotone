@@ -490,7 +490,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
       globish include_pattern = info->client.get_include_pattern();
       E(!include_pattern().empty() && !include_pattern.contains_meta_chars(),
         origin::user, F("you must specify an unambiguous branch to clone"));
-      app.opts.branch = branch_name(include_pattern(), origin::user);
+      app.opts.branch = branch_name(include_pattern.unescaped(), origin::user);
     }
 
   I(!app.opts.branch().empty());
