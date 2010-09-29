@@ -1,4 +1,4 @@
-receive revision
+send revision
 
 revision [2a46f4b909071fae756b4911a247ce3ff1c3c4ce]
 

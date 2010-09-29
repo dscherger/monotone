@@ -4,6 +4,9 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         Changes
 
+        - Automate sync, push, and pull now output information about
+          each transferred revision, cert and key, in basic_io format.
+        
         - Changelog editor format simplified; user entered text at top
           of file, instructions reduced. Edited text is saved if
           commit is canceled.

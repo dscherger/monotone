@@ -1,0 +1,21 @@
+receive cert
+
+    cert "test"
+   value "value"
+     key [111808abc306fd7423b564f2a8ef5c09745b87d2]
+revision [2a46f4b909071fae756b4911a247ce3ff1c3c4ce]
+
+receive key
+
+key [111808abc306fd7423b564f2a8ef5c09745b87d2]
+
+send cert
+
+    cert "test"
+   value "value"
+     key [05c26b6cb109ca39bc48bbbdce83564c97796155]
+revision [2a46f4b909071fae756b4911a247ce3ff1c3c4ce]
+
+send key
+
+key [05c26b6cb109ca39bc48bbbdce83564c97796155]

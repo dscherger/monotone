@@ -577,7 +577,7 @@ print_info_auto(protocol_role role,
         {
           {
             basic_io::stanza st;
-            st.push_str_pair(syms::receive, syms::key);
+            st.push_str_pair(syms::send, syms::key);
             pr.print_stanza(st);
           }
 
