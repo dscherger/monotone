@@ -350,10 +350,6 @@ private:
                    string const & data_table,
                    string const & delta_table);
 
-  void get_version_size(id const & ident,
-                        file_size & size,
-                        string const & size_table);
-
   void drop(id const & base,
             string const & table);
 
@@ -2097,18 +2093,6 @@ database_impl::get_version(id const & ident,
     vcache.insert_clean(ident, dat);
 }
 
-void
-database_impl::get_version_size(id const & ident,
-                                file_size & size,
-                                std::string const & size_table)
-{
-  results res;
-  query q("SELECT size FROM " + size_table + " WHERE id = ?");
-  fetch(res, one_col, one_row, q % blob(ident()));
-  I(!res.empty());
-  size = lexical_cast<u64>(res[0][0]);
-}
-
 struct roster_reconstruction_graph : public reconstruction_graph
 {
   database_impl & imp;
@@ -2404,10 +2388,37 @@ database::get_file_version(file_id const & id,
 }
 
 void
-database::get_file_size(file_id const & id,
+database::get_file_size(file_id const & ident,
                         file_size & size)
 {
-  imp->get_version_size(id.inner(), size, "file_sizes");
+  results res;
+  query q("SELECT size FROM file_sizes WHERE id = ?");
+  imp->fetch(res, one_col, one_row, q % blob(ident.inner()()));
+  I(!res.empty());
+  size = lexical_cast<u64>(res[0][0]);
+}
+
+void
+database::get_file_sizes(roster_t const & roster,
+                         map<file_id, file_size> & sizes)
+{
+  sizes.clear();
+
+  node_map const & nodes = roster.all_nodes();
+  for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+    {
+      node_id nid = i->first;
+      if (!is_file_t(i->second))
+        continue;
+
+      file_t file = downcast_to_file_t(i->second);
+      if (sizes.find(file->content) != sizes.end())
+        continue;
+
+      file_size size;
+      get_file_size(file->content, size);
+      sizes.insert(make_pair(file->content, size));
+    }
 }
 
 void

@@ -133,6 +133,10 @@ public:
   void get_file_size(file_id const & ident,
                      file_size & size);
 
+  // gets a map of all file sizes of this particular roster
+  void get_file_sizes(roster_t const & roster,
+                      std::map<file_id, file_size> & file_sizes);
+
   // put file w/o predecessor into db
   void put_file(file_id const & new_id,
                 file_data const & dat);

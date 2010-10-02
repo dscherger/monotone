@@ -16,6 +16,8 @@
 #include "rev_types.hh"
 #include "cset.hh" // need full definition of editable_tree
 
+#include <stack>
+
 struct node_id_source
 {
   virtual node_id next() = 0;
@@ -35,6 +37,24 @@ null_node(node_id n)
 template <> void dump(attr_map_t const & val, std::string & out);
 
 enum roster_node_type { node_type_none, node_type_file, node_type_dir };
+
+struct dfs_iter
+{
+  const_dir_t root;
+  std::string curr_path;
+  bool return_root;
+  bool track_path;
+  std::stack< std::pair<const_dir_t, dir_map::const_iterator> > stk;
+
+  dfs_iter(const_dir_t r, bool t);
+  bool finished() const;
+  std::string const & path() const;
+  const_node_t operator*() const;
+  void operator++();
+
+private:
+  void advance_top();
+};
 
 struct node
 {
