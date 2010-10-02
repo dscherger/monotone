@@ -2404,6 +2404,7 @@ database::get_file_sizes(roster_t const & roster,
 {
   sizes.clear();
 
+  vector<file_id> all_file_ids;
   node_map const & nodes = roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
     {
@@ -2412,12 +2413,43 @@ database::get_file_sizes(roster_t const & roster,
         continue;
 
       file_t file = downcast_to_file_t(i->second);
-      if (sizes.find(file->content) != sizes.end())
-        continue;
+      all_file_ids.push_back(file->content);
+    }
 
-      file_size size;
-      get_file_size(file->content, size);
-      sizes.insert(make_pair(file->content, size));
+  size_t concurrent_queries = 20;
+
+  for (size_t i = 0; i < all_file_ids.size(); )
+    {
+      results res;
+
+      size_t queried_sizes = all_file_ids.size() - i > concurrent_queries
+        ? concurrent_queries
+        : all_file_ids.size() - i;
+      I(queried_sizes > 0);
+
+      query q;
+      string placeholders = "";
+      for (size_t j=i; j< i + queried_sizes; ++j)
+        {
+          if (j != i)
+            placeholders += ",";
+          placeholders += "?";
+          q.args.push_back(blob(all_file_ids[j].inner()()));
+        }
+
+      q.sql_cmd = "SELECT id, size FROM file_sizes WHERE id IN(" + placeholders +")";
+
+      imp->fetch(res, 2, any_rows, q);
+      I(!res.empty());
+
+      for (size_t k=0; k<res.size(); ++k)
+        {
+          file_id ident(res[k][0], origin::database);
+          u64 size = lexical_cast<u64>(res[k][1]);
+          sizes.insert(make_pair(ident, size));
+        }
+
+      i+= queried_sizes;
     }
 }
 
