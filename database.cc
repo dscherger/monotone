@@ -2413,31 +2413,35 @@ database::get_file_sizes(roster_t const & roster,
         continue;
 
       file_t file = downcast_to_file_t(i->second);
+      // filtering out already existing file ids make the whole
+      // process slower than "accidentially" querying a double
+      // file id later twice or thrice
       all_file_ids.push_back(file->content);
     }
 
-  size_t concurrent_queries = 20;
-
+  // The overall runtime does not improve significantly after ~15, so
+  // 20 is a good guess. Note that large numbers over 1000 might even
+  // lead to sqlite errors like "too many SQL max_variables"
+  size_t max_variables = 20;
   for (size_t i = 0; i < all_file_ids.size(); )
     {
       results res;
 
-      size_t queried_sizes = all_file_ids.size() - i > concurrent_queries
-        ? concurrent_queries
+      size_t variables = all_file_ids.size() - i > max_variables
+        ? max_variables
         : all_file_ids.size() - i;
-      I(queried_sizes > 0);
+      I(variables > 0);
 
       query q;
       string placeholders = "";
-      for (size_t j=i; j< i + queried_sizes; ++j)
+      for (size_t j=i; j< i + variables; ++j)
         {
-          if (j != i)
-            placeholders += ",";
-          placeholders += "?";
+          placeholders += "?,";
           q.args.push_back(blob(all_file_ids[j].inner()()));
         }
 
-      q.sql_cmd = "SELECT id, size FROM file_sizes WHERE id IN(" + placeholders +")";
+      q.sql_cmd = "SELECT id, size FROM file_sizes "
+                  "WHERE id IN(" + placeholders +"null)";
 
       imp->fetch(res, 2, any_rows, q);
       I(!res.empty());
@@ -2449,7 +2453,7 @@ database::get_file_sizes(roster_t const & roster,
           sizes.insert(make_pair(ident, size));
         }
 
-      i+= queried_sizes;
+      i+= variables;
     }
 }
 
