@@ -119,6 +119,7 @@ private:
   //
 public:
   bool file_version_exists(file_id const & ident);
+  bool file_size_exists(file_id const & ident);
   bool revision_exists(revision_id const & ident);
   bool roster_link_exists_for_revision(revision_id const & ident);
   bool roster_exists_for_revision(revision_id const & ident);

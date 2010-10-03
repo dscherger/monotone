@@ -172,10 +172,19 @@ check_files(database & db, map<file_id, checked_file> & checked_files)
       db.get_file_version(*i, data);
       checked_files[*i].found = true;
 
-      file_size stored_size, calculated_size;
-      calculated_size = data.inner()().size();
-      db.get_file_size(*i, stored_size);
-      checked_files[*i].size_ok = stored_size == calculated_size;
+      if (db.file_size_exists(*i))
+        {
+          file_size stored_size, calculated_size;
+          calculated_size = data.inner()().size();
+          db.get_file_size(*i, stored_size);
+          checked_files[*i].size_ok = stored_size == calculated_size;
+        }
+      else
+        {
+          L(FL("missing file size entry for %s") % *i);
+          checked_files[*i].size_ok = false;
+        }
+
       ++ticks;
     }
 
@@ -682,7 +691,8 @@ check_branch_leaves(database & db, map<string, checked_branch> & checked_branche
 static void
 report_files(map<file_id, checked_file> const & checked_files,
              size_t & missing_files,
-             size_t & unreferenced_files)
+             size_t & unreferenced_files,
+             size_t & missing_or_invalid_file_sizes)
 {
   for (map<file_id, checked_file>::const_iterator
          i = checked_files.begin(); i != checked_files.end(); ++i)
@@ -702,6 +712,11 @@ report_files(map<file_id, checked_file> const & checked_files,
           P(F("file %s unreferenced") % i->first);
         }
 
+      if (file.size_ok == false)
+        {
+          missing_or_invalid_file_sizes++;
+          P(F("file %s has a missing or invalid file size") % i->first);
+        }
     }
 }
 
@@ -1015,6 +1030,7 @@ check_db(database & db)
 
   size_t missing_files = 0;
   size_t unreferenced_files = 0;
+  size_t missing_or_invalid_file_sizes = 0;
 
   size_t missing_rosters = 0;
   size_t unreferenced_rosters = 0;
@@ -1061,7 +1077,8 @@ check_db(database & db)
   check_heights_relation(db, checked_heights);
   check_branch_leaves(db, checked_branches);
 
-  report_files(checked_files, missing_files, unreferenced_files);
+  report_files(checked_files, missing_files, unreferenced_files,
+               missing_or_invalid_file_sizes);
 
   report_rosters(checked_rosters,
                  unreferenced_rosters,
@@ -1095,6 +1112,8 @@ check_db(database & db)
     W(F("%d missing files") % missing_files);
   if (unreferenced_files > 0)
     W(F("%d unreferenced files") % unreferenced_files);
+  if (missing_or_invalid_file_sizes > 0)
+    W(F("%d missing or invalid file sizes") % missing_or_invalid_file_sizes);
 
   if (unreferenced_rosters > 0)
     W(F("%d unreferenced rosters") % unreferenced_rosters);
@@ -1163,7 +1182,7 @@ check_db(database & db)
 
   // unreferenced files and rosters and mismatched certs are not actually
   // serious errors; odd, but nothing will break.
-  size_t serious = missing_files +
+  size_t serious = missing_files + missing_or_invalid_file_sizes +
     incomplete_rosters + missing_rosters +
     missing_revisions + incomplete_revisions +
     non_parseable_revisions + non_normalized_revisions +

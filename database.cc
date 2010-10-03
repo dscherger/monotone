@@ -2339,6 +2339,12 @@ database::file_version_exists(file_id const & id)
 }
 
 bool
+database::file_size_exists(file_id const & ident)
+{
+  return imp->table_has_entry(ident.inner(), "id", "file_sizes");
+}
+
+bool
 database::roster_version_exists(revision_id const & id)
 {
   return delta_exists(id.inner(), "roster_deltas")
