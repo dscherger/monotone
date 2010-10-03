@@ -633,16 +633,21 @@ database_impl::check_format()
 void
 database_impl::check_caches()
 {
+  bool caches_are_filled = true;
   if (table_has_data("revisions"))
     {
-      E(table_has_data("rosters")
-        && table_has_data("heights")
-        && table_has_data("file_sizes"),
-        origin::no_fault,
-        F("database %s lacks some cached data\n"
-          "run '%s db regenerate_caches' to restore use of this database")
-        % filename % prog_name);
+      caches_are_filled = table_has_data("rosters") &&
+                          table_has_data("heights");
     }
+  if (table_has_data("files"))
+    {
+      caches_are_filled = caches_are_filled && table_has_data("file_sizes");
+    }
+
+  E(caches_are_filled, origin::no_fault,
+    F("database %s lacks some cached data\n"
+      "run '%s db regenerate_caches' to restore use of this database")
+    % filename % prog_name);
 }
 
 static void
