@@ -697,8 +697,6 @@ database_impl::sql(enum open_mode mode)
         }
       install_functions();
     }
-  else
-    I(mode == normal_mode);
 
   return __sql;
 }
@@ -3098,6 +3096,40 @@ database::put_height_for_revision(revision_id const & new_id,
       ++childnr;
     }
   put_rev_height(new_id, candidate);
+}
+
+void
+database::put_file_sizes_for_revision(revision_t const & rev)
+{
+  // FIXME: could we safely drop merge revisions here since their
+  // individual file changes should be already recorded in other
+  // revisions?
+  for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
+    {
+      cset const & cs = edge_changes(*i);
+
+      for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
+           i != cs.files_added.end(); ++i)
+        {
+          if (imp->table_has_entry(i->second.inner(), "id", "file_sizes"))
+            continue;
+
+          file_data dat;
+          get_file_version(i->second, dat);
+          imp->put_file_size(i->second, dat);
+        }
+
+      for (map<file_path, pair<file_id, file_id> >::const_iterator
+           i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
+        {
+          if (imp->table_has_entry(i->second.second.inner(), "id", "file_sizes"))
+            continue;
+
+          file_data dat;
+          get_file_version(i->second.second, dat);
+          imp->put_file_size(i->second.second, dat);
+        }
+    }
 }
 
 void

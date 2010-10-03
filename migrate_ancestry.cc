@@ -981,24 +981,20 @@ allrevs_toposorted(database & db,
   toposort_rev_ancestry(graph, revisions);
 }
 
-void
-regenerate_caches(database & db)
+static void
+regenerate_rosters(database & db)
 {
-  P(F("regenerating cached rosters and heights"));
-
+  P(F("regenerating cached rosters"));
   db.ensure_open_for_cache_reset();
 
   {
     transaction_guard guard(db);
-
     db.delete_existing_rosters();
-    db.delete_existing_heights();
-    db.delete_existing_file_sizes();
 
     vector<revision_id> sorted_ids;
     allrevs_toposorted(db, sorted_ids);
 
-    ticker done(_("regenerated"), "r", 5);
+    ticker done(_("regenerated"), "r", 1);
     done.set_total(sorted_ids.size());
 
     for (std::vector<revision_id>::const_iterator i = sorted_ids.begin();
@@ -1008,39 +1004,124 @@ regenerate_caches(database & db)
         revision_id const & rev_id = *i;
         db.get_revision(rev_id, rev);
         db.put_roster_for_revision(rev_id, rev);
+        ++done;
+      }
+
+    guard.commit();
+  }
+  P(F("finished regenerating cached rosters"));
+}
+
+static void
+regenerate_heights(database & db)
+{
+  P(F("regenerating cached heights"));
+  db.ensure_open_for_cache_reset();
+
+  {
+    transaction_guard guard(db);
+    db.delete_existing_heights();
+
+    vector<revision_id> sorted_ids;
+    allrevs_toposorted(db, sorted_ids);
+
+    ticker done(_("regenerated"), "r", 1);
+    done.set_total(sorted_ids.size());
+
+    for (std::vector<revision_id>::const_iterator i = sorted_ids.begin();
+         i != sorted_ids.end(); ++i)
+      {
+        revision_t rev;
+        revision_id const & rev_id = *i;
+        db.get_revision(rev_id, rev);
         db.put_height_for_revision(rev_id, rev);
         ++done;
       }
 
     guard.commit();
   }
+  P(F("finished regenerating cached heights"));
+}
 
-  P(F("finished regenerating cached rosters and heights"));
-
+static void
+regenerate_branches(database & db)
+{
   P(F("regenerating cached branches"));
+  db.ensure_open_for_cache_reset();
+
   {
     transaction_guard guard(db);
-
     db.delete_existing_branch_leaves();
 
     vector<cert> all_branch_certs;
     db.get_revision_certs(branch_cert_name, all_branch_certs);
     set<string> seen_branches;
-    for (vector<cert>::const_iterator i = all_branch_certs.begin(); i != all_branch_certs.end(); ++i)
+
+    ticker done(_("regenerated"), "r", 1);
+
+    for (vector<cert>::const_iterator i = all_branch_certs.begin();
+         i != all_branch_certs.end(); ++i)
       {
         string const name = i->value();
 
-        std::pair<set<string>::iterator, bool> inserted = seen_branches.insert(name);
+        std::pair<set<string>::iterator, bool> inserted =
+          seen_branches.insert(name);
 
         if (inserted.second)
           {
-            db.recalc_branch_leaves (i->value);
+            db.recalc_branch_leaves(i->value);
+            ++done;
           }
       }
     guard.commit();
   }
   P(F("finished regenerating cached branches"));
+}
 
+static void
+regenerate_file_sizes(database & db)
+{
+  P(F("regenerating cached file sizes for revivisions"));
+  db.ensure_open_for_cache_reset();
+
+  {
+    transaction_guard guard(db);
+    db.delete_existing_file_sizes();
+
+    vector<revision_id> sorted_ids;
+    allrevs_toposorted(db, sorted_ids);
+
+    ticker done(_("regenerated"), "r", 1);
+    done.set_total(sorted_ids.size());
+
+    for (std::vector<revision_id>::const_iterator i = sorted_ids.begin();
+         i != sorted_ids.end(); ++i)
+      {
+        revision_t rev;
+        revision_id const & rev_id = *i;
+        db.get_revision(rev_id, rev);
+        db.put_file_sizes_for_revision(rev);
+        ++done;
+      }
+
+    guard.commit();
+  }
+  P(F("finished regenerating cached file sizes"));
+}
+
+void
+regenerate_caches(database & db, regen_cache_type type)
+{
+  I(type != regen_none);
+
+  if (type == regen_all || type == regen_rosters)
+    regenerate_rosters(db);
+  if (type == regen_all || type == regen_heights)
+    regenerate_heights(db);
+  if (type == regen_all || type == regen_branches)
+    regenerate_branches(db);
+  if (type == regen_all || type == regen_file_sizes)
+    regenerate_file_sizes(db);
 }
 
 // Local Variables:

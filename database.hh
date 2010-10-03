@@ -336,7 +336,6 @@ public:
   void compute_branch_leaves(cert_value const & branch_name, std::set<revision_id> & revs);
   void recalc_branch_leaves(cert_value const & branch_name);
   void delete_existing_branch_leaves();
-  void delete_existing_file_sizes();
 
   // Used through project.cc
   outdated_indicator get_revision_certs(revision_id const & ident,
@@ -488,6 +487,10 @@ public:
   void delete_existing_rosters();
   void put_roster_for_revision(revision_id const & new_id,
                                revision_t const & rev);
+
+  // for regenerate_rosters
+  void delete_existing_file_sizes();
+  void put_file_sizes_for_revision(revision_t const & rev);
 
 private:
   static database_cache dbcache;

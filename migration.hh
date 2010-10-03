@@ -28,18 +28,22 @@ class system_path;
 std::string describe_sql_schema(sqlite3 * db);
 void check_sql_schema(sqlite3 * db, system_path const & filename);
 
+enum regen_cache_type { regen_none, regen_all, regen_rosters,
+                        regen_heights, regen_branches, regen_file_sizes };
+
 class migration_status {
-  bool _need_regen;
+  regen_cache_type _regen_type;
   std::string _flag_day_name;
 public:
   migration_status(){}
-  explicit migration_status(bool regen, std::string flag_day_name = "")
-    : _need_regen(regen),
+  explicit migration_status(regen_cache_type type, std::string flag_day_name = "")
+    : _regen_type(type),
       _flag_day_name(flag_day_name)
   {}
-  bool need_regen() const { return _need_regen; }
+  bool need_regen() const { return _regen_type != regen_none; }
   bool need_flag_day() const { return !_flag_day_name.empty(); }
   std::string flag_day_name() const { return _flag_day_name; }
+  regen_cache_type regen_type() const { return _regen_type; }
 };
 migration_status migrate_sql_schema(sqlite3 * db, key_store & keys,
                                     system_path const & filename);
@@ -77,8 +81,9 @@ build_roster_style_revs_from_manifest_style_revs(database & db, key_store & keys
                                                  project_t & project,
                                                  std::set<std::string> const & attrs_to_drop);
 
+
 void
-regenerate_caches(database & db);
+regenerate_caches(database & db, regen_cache_type type);
 
 
 #endif // __MIGRATION__
