@@ -4,6 +4,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         Changes
 
+        - Normal and automate sync, push, and pull now take a
+          --dry-run option; no data is transferred, but the connection
+          is made and a summary of what would be transferred is
+          output.
+        
         - Automate sync, push, and pull now output information about
           each transferred revision, cert and key, in basic_io format.
         
@@ -17,7 +22,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - 'automate genkey' is renamed to 'automate generate_key'
 
         - Selectors are much more powerful now, and the characters '(',
-          ')', and ';' need to be quoted if mean literally (just like
+          ')', and ';' need to be quoted if meant literally (just like
           '/'). See section 3.2 in the documentation for details.
           (fixes monotone bug #18302).
 

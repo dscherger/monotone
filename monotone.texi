@@ -8500,9 +8500,9 @@ therefor fail unless a @code{get_passphrase} hook is set up remotely.
 
 @end table
 
-@item mtn automate pull [--[no-]set-default] [@var{uri}]
-@itemx mtn automate push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
-@itemx mtn automate sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@item mtn automate pull [--[no-]set-default] [--dry-run] [@var{uri}]
+@itemx mtn automate push [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn automate sync [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
 @itemx mtn automate pull [--[no-]set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn automate push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn automate sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
@@ -8510,15 +8510,15 @@ therefor fail unless a @code{get_passphrase} hook is set up remotely.
 @table @strong
 @item Arguments:
 
-The automate versions of pull, push and sync have the same set of arguments and
-options compared to the non-automate versions. Please check this manual in the
-appropriate section for a full explanation.
+The automate versions of pull, push and sync have the same set of
+arguments and options as the non-automate versions. See @ref{Network}
+for a full explanation.
 
 @item Changes:
 
 @itemize
 @item
-FIXME -- add sent/received revision, cert, and key output
+FIXME -- add sent/received revision, cert, and key output; add --dry-run.
 
 @item
 12.0 -- added
@@ -8529,7 +8529,7 @@ FIXME -- add sent/received revision, cert, and key output
 Pushes, pulls or syncs (push & pull) revisions, certificates and keys of
 the given database to, from or with the given netsync server.
 
-@item Sample output (stdio):
+@item Sample output (stdio, non-dry-run):
 Output consists of sent and received revisions, certs, and keys in the
 main stdio channel, progress messages, and ticker data for bytes,
 revisions, certs and keys.
@@ -8601,6 +8601,20 @@ send key
 key [05c26b6cb109ca39bc48bbbdce83564c97796155]
 @end verbatim
 
+The following is example dry-run main channel data:
+@verbatim
+  dryrun
+ receive
+revision "0"
+    cert "1"
+     key "1"
+    send
+revision "1"
+    cert "6"
+     key "1"
+  branch "foo2" "1"
+@end verbatim
+
 The following shows the progress and ticker data for a pull
 which transferred two revisions and eight certs.
 
@@ -8633,8 +8647,8 @@ added for better readability.
 
 @item Output format:
 
-All stanzas are optional; they are only output if the data they
-describe is transferred.
+For non-dry-run, all stanzas are optional; they are only output if the
+data they describe is transferred.
 
 If revisions are received, a header stanza @code{receive
 revision}. For each revision, a stanza containing the revision id. For
@@ -8676,6 +8690,10 @@ ticker stanzas in this phase are the following:
 @item @code{r}: The number of incoming revisions  (only pull and sync)
 @item @code{R}: The number of outgoing revisions  (only push and sync)
 @end itemize
+
+For dry-run, two optional stanzas are output, giving the revision,
+cert, and key counts for send and receive. For send, the branch names
+of sent revisions are also output.
 
 @item Error conditions:
 

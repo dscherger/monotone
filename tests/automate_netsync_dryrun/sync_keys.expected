@@ -1,0 +1,10 @@
+ receive 
+revision "0"
+    cert "1"
+     key "1"
+
+    send 
+revision "1"
+    cert "6"
+     key "1"
+  branch "foo2" "1"

@@ -332,7 +332,6 @@ namespace
   {
     symbol const branch("branch");
     symbol const cert("cert");
-    symbol const dryrun("dryrun");
     symbol const estimate("estimate");
     symbol const key("key");
     symbol const receive("receive");
@@ -350,13 +349,11 @@ print_dryrun_info_auto(protocol_role role,
 {
   // print dry run info for automate session
   basic_io::printer pr;
-  basic_io::stanza st;
-
-  st.push_symbol(syms::dryrun);
 
   if (role != source_role)
     {
       // sink or sink_and_source; print sink info
+      basic_io::stanza st;
       st.push_symbol(syms::receive);
 
       if (counts->keys_in.can_have_more_than_min)
@@ -370,10 +367,13 @@ print_dryrun_info_auto(protocol_role role,
                        boost::lexical_cast<string>(counts->certs_in.min_count));
       st.push_str_pair(syms::key,
                        boost::lexical_cast<string>(counts->keys_in.min_count));
+      pr.print_stanza(st);
     }
+
   if (role != sink_role)
     {
       // source or sink_and_source; print source info
+      basic_io::stanza st;
       st.push_symbol(syms::send);
 
       st.push_str_pair(syms::revision,
@@ -399,8 +399,9 @@ print_dryrun_info_auto(protocol_role role,
         {
           st.push_str_triple(syms::branch, i->first(), boost::lexical_cast<string>(i->second));
         }
+      pr.print_stanza(st);
     }
-  pr.print_stanza(st);
+
   output.write(pr.buf.data(), pr.buf.size());
 }
 
