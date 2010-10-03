@@ -361,6 +361,10 @@ CMD_AUTOMATE(get_file_size, N_("FILEID"),
   database db(app);
   hexenc<id> hident(idx(args, 0)(), origin::user);
   file_id ident(decode_hexenc_as<file_id>(hident(), hident.made_from));
+
+  E(db.file_version_exists(ident), origin::user,
+    F("no file version %s found in database") % ident);
+
   file_size size;
   db.get_file_size(ident, size);
   output << lexical_cast<string>(size) << "\n";
