@@ -1214,16 +1214,6 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
     m = find_migration(db);
     cat = classify_schema(db, m);
 
-    // if we should regenerate more than just one specific cache,
-    // we regenerate them all
-    if (m->regen_type != regen_none)
-      {
-        if (regen_type == regen_none)
-          regen_type = m->regen_type;
-        else
-          regen_type = regen_all;
-      }
-
     diagnose_unrecognized_schema(cat, filename);
 
     // We really want 'db migrate' on an up-to-date schema to be a no-op
@@ -1266,6 +1256,16 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
           break;
 
         regime = std::min(regime, m->regime);
+
+        // if we should regenerate more than just one specific cache,
+        // we regenerate them all
+        if (m->regen_type != regen_none)
+          {
+            if (regen_type == regen_none)
+              regen_type = m->regen_type;
+            else
+              regen_type = regen_all;
+          }
 
         m++;
         I(m < migration_events + n_migration_events);
