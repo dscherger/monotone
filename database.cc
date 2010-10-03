@@ -1981,7 +1981,11 @@ database_impl::put_file_size(file_id const & ident,
 {
   I(!null_id(ident));
   file_size size = data.inner()().size();
-  query q("INSERT INTO file_sizes(id, size) VALUES (?, ?)");
+  // really identical files should be rather rare, so the cost of checking
+  // whether an entry exists _everytime_ by hand should be higher than just
+  // replacing any (possibly existing) entry. and since each identical file
+  // should also have an identical size, we're done here
+  query q("INSERT OR REPLACE INTO file_sizes(id, size) VALUES (?, ?)");
   execute(q % blob(ident.inner()()) % int64(size));
 }
 
@@ -3116,9 +3120,6 @@ database::put_file_sizes_for_revision(revision_t const & rev)
       for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
            i != cs.files_added.end(); ++i)
         {
-          if (imp->table_has_entry(i->second.inner(), "id", "file_sizes"))
-            continue;
-
           file_data dat;
           get_file_version(i->second, dat);
           imp->put_file_size(i->second, dat);
@@ -3127,9 +3128,6 @@ database::put_file_sizes_for_revision(revision_t const & rev)
       for (map<file_path, pair<file_id, file_id> >::const_iterator
            i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
         {
-          if (imp->table_has_entry(i->second.second.inner(), "id", "file_sizes"))
-            continue;
-
           file_data dat;
           get_file_version(i->second.second, dat);
           imp->put_file_size(i->second.second, dat);
