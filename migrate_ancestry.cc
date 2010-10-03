@@ -982,37 +982,6 @@ allrevs_toposorted(database & db,
 }
 
 static void
-regenerate_rosters(database & db)
-{
-  P(F("regenerating cached rosters"));
-  db.ensure_open_for_cache_reset();
-
-  {
-    transaction_guard guard(db);
-    db.delete_existing_rosters();
-
-    vector<revision_id> sorted_ids;
-    allrevs_toposorted(db, sorted_ids);
-
-    ticker done(_("regenerated"), "r", 1);
-    done.set_total(sorted_ids.size());
-
-    for (std::vector<revision_id>::const_iterator i = sorted_ids.begin();
-         i != sorted_ids.end(); ++i)
-      {
-        revision_t rev;
-        revision_id const & rev_id = *i;
-        db.get_revision(rev_id, rev);
-        db.put_roster_for_revision(rev_id, rev);
-        ++done;
-      }
-
-    guard.commit();
-  }
-  P(F("finished regenerating cached rosters"));
-}
-
-static void
 regenerate_heights(database & db)
 {
   P(F("regenerating cached heights"));
@@ -1041,6 +1010,37 @@ regenerate_heights(database & db)
     guard.commit();
   }
   P(F("finished regenerating cached heights"));
+}
+
+static void
+regenerate_rosters(database & db)
+{
+  P(F("regenerating cached rosters"));
+  db.ensure_open_for_cache_reset();
+
+  {
+    transaction_guard guard(db);
+    db.delete_existing_rosters();
+
+    vector<revision_id> sorted_ids;
+    allrevs_toposorted(db, sorted_ids);
+
+    ticker done(_("regenerated"), "r", 1);
+    done.set_total(sorted_ids.size());
+
+    for (std::vector<revision_id>::const_iterator i = sorted_ids.begin();
+         i != sorted_ids.end(); ++i)
+      {
+        revision_t rev;
+        revision_id const & rev_id = *i;
+        db.get_revision(rev_id, rev);
+        db.put_roster_for_revision(rev_id, rev);
+        ++done;
+      }
+
+    guard.commit();
+  }
+  P(F("finished regenerating cached rosters"));
 }
 
 static void
@@ -1114,10 +1114,10 @@ regenerate_caches(database & db, regen_cache_type type)
 {
   I(type != regen_none);
 
-  if (type == regen_all || type == regen_rosters)
-    regenerate_rosters(db);
   if (type == regen_all || type == regen_heights)
     regenerate_heights(db);
+  if (type == regen_all || type == regen_rosters)
+    regenerate_rosters(db);
   if (type == regen_all || type == regen_branches)
     regenerate_branches(db);
   if (type == regen_all || type == regen_file_sizes)
