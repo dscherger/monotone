@@ -4,6 +4,10 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         Changes
 
+        - Monotone now tracks file size information. Please execute 
+          'mtn db migrate' to migrate the database scheme and refresh the
+          file size cache.
+
         - The changelog editor format was simplified; user entered text
           is back at the top of file and the instructions have been reduced.
           The edited text is saved now even if a commit is canceled.
@@ -194,7 +198,13 @@ Xxx Xxx 99 99:99:99 UTC 2010
           collide however with single-worded ones and are best expanded from
           abbreviations, in this case '--isc'.
 
-        - New automate command 'checkout'
+        - New automate command 'checkout' which works just as its
+          non-automate counterpart.
+
+        - New automate commands 'get_extended_manifest_of', which prints
+          a beefed-up manifest format with file size other change information,
+          as well as 'get_file_size', which prints the recorded file size
+          of a specific file.
 
         - New automate commands 'put_public_key', 'get_public_key' and
           'drop_public_key'. (closes monotone bug #30345)

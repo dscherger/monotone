@@ -16,15 +16,7 @@ How to read this file:
     will be described there, not here.
 
 If you are upgrading from:
-  - 0.45 or earlier: The database format has changed.  You must run
-    (after remembering to take a backup copy):
-       $ mtn -d mydb.mtn db migrate
-    on each of your databases.
-  - 0.44 or earlier: The database format has changed.  You must run
-    (after remembering to take a backup copy):
-       $ mtn -d mydb.mtn db migrate
-    on each of your databases.
-  - 0.39 or earlier: The database format has changed.  You must run
+  - 0.48 or earlier: The database format has changed.  You must run
     (after remembering to take a backup copy):
        $ mtn -d mydb.mtn db migrate
     on each of your databases.
