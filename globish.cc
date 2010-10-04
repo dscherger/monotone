@@ -290,7 +290,7 @@ globish::globish(vector<arg_type>::const_iterator const & beg,
 // Debugging.
 
 static string
-decode(string::const_iterator p, string::const_iterator end)
+decode(string::const_iterator p, string::const_iterator end, bool escaped = true)
 {
   string s;
   for (; p != end; p++)
@@ -308,11 +308,12 @@ decode(string::const_iterator p, string::const_iterator end)
       case META_ALT_OR:     s.push_back(','); break;
 
         // Some of these are only special in certain contexts,
-        // but it does no harm to escape them always.
+        // so for these contexts we don't want to escape them
       case '[': case ']': case '-': case '!': case '^':
       case '{': case '}': case ',':
       case '*': case '?': case '\\':
-        s.push_back('\\');
+        if (escaped)
+          s.push_back('\\');
         // fall through
       default:
         s.push_back(*p);
@@ -324,6 +325,12 @@ string
 globish::operator()() const
 {
   return decode(compiled_pattern.begin(), compiled_pattern.end());
+}
+
+string
+globish::unescaped() const
+{
+  return decode(compiled_pattern.begin(), compiled_pattern.end(), false);
 }
 
 bool

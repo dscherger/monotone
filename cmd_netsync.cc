@@ -490,7 +490,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
       globish include_pattern = info->client.get_include_pattern();
       E(!include_pattern().empty() && !include_pattern.contains_meta_chars(),
         origin::user, F("you must specify an unambiguous branch to clone"));
-      app.opts.branch = branch_name(include_pattern(), origin::user);
+      app.opts.branch = branch_name(include_pattern.unescaped(), origin::user);
     }
 
   I(!app.opts.branch().empty());
@@ -568,7 +568,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(app.opts, app.lua, project, *i));
-          P(F("choose one with '%s clone -r<id> SERVER BRANCH'") % prog_name);
+          P(F("choose one with '%s clone -r<id> URL'") % prog_name);
           E(false, origin::user, F("branch %s has multiple heads") % app.opts.branch);
         }
       ident = *(heads.begin());

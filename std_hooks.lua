@@ -1206,13 +1206,13 @@ function get_netsync_connect_command(uri, args)
                 table.insert(argv, "-")
                 table.insert(argv, "UNIX-CONNECT:" .. uri["path"])
         else
-            -- start remote monotone process
             if argv then
+                    -- start remote monotone process
 
                     table.insert(argv, get_mtn_command(uri["host"]))
 
                     if args["debug"] then
-                            table.insert(argv, "--debug")
+                            table.insert(argv, "--verbose")
                     else
                             table.insert(argv, "--quiet")
                     end
@@ -1223,6 +1223,8 @@ function get_netsync_connect_command(uri, args)
                     table.insert(argv, "--stdio")
                     table.insert(argv, "--no-transport-auth")
 
+            -- else scheme does not require starting a new remote
+            -- process (ie mtn:)
             end
         end
         return argv
