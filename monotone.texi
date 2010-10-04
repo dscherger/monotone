@@ -8826,7 +8826,7 @@ as meaning ``give me the manifest of THIS''.)
 
 @item Purpose:
 
-Prints the contents of the manifest associated with the given roster.
+Prints the contents of the manifest associated with the given revision.
 
 @item Sample output:
 
@@ -8946,6 +8946,122 @@ information, with one line describing each attr.  These lines take the
 form ('attr', attr name, attr value).
 
 Stanzas are sorted by the path string.
+
+@item Error conditions:
+
+If the revision ID specified is unknown or invalid prints an error
+message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_extended_manifest_of @var{revid}
+
+@table @strong
+@item Arguments:
+
+The @var{revid} specifies the revision for which the extended manifest
+should be printed.
+
+@item Added in:
+
+13.0
+
+@item Purpose:
+
+Prints the contents of the extended manifest associated with the given revision.
+
+@item Sample output:
+
+@verbatim
+      dir ""
+    birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+
+         dir "dir"
+dormant_attr "dirprop"
+       birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+   path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+   attr_mark "dirprop" [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
+
+        file "file"
+     content [d3395867d05cc4c27f013d6e6f48d644e96d8241]
+        size "8"
+        attr "fileprop" "value"
+       birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+   path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+content_mark [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
+   attr_mark "fileprop" [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
+@end verbatim
+
+@item Output format:
+
+There is one basic_io stanza for each file or directory in the
+extended manifest.
+
+All stanzas are formatted by basic_io. Stanzas are separated
+by a blank line. Values will be escaped, '\' to '\\' and
+'"' to '\"'.
+
+The 'dir' and 'file' lines are the first in every stanza and
+specify its type as follows:
+
+@verbatim
+'dir':
+      Represents a directory.  The path "" (the empty string) is used
+      to represent the root of the tree.
+      format: ('dir', pathname)
+      occurs: one or more times
+'file':
+      Represents a file.
+      format: ('file', pathname)
+      occurs: zero or more times
+@end verbatim
+
+In addition, both 'dir' and 'file' stanzas include more information
+on the particular node:
+
+@verbatim
+'birth':
+      The revision id in which the node was added ("born").
+      format: ('birth', revision id)
+      occurs: once per node
+'path_mark':
+      The revision id in which the node was last renamed.
+      format: ('path_mark', revision id)
+      occurs: once per node
+'content':
+      The id of the file node, i.e. the hash of its contents.
+      format: ('content', file id)
+      occurs: once per file node
+'content_mark':
+      The revision id in which the node's content was changed at last.
+      format: ('content_mark', revision id)
+      occurs: once per file node
+'size':
+      The recorded file size, in bytes.
+      format: ('size', size in bytes)
+      occurs: once per file node
+@end verbatim
+
+Finally, attributes are also part of the format:
+
+@verbatim
+'attr':
+      The name and the value of a specific attribute.
+      format: ('attr', attribute name, attribute value)
+      occurs: zero or more times per node
+'dormant_attr':
+      The name of a previously deleted attribute.
+      format: ('dormant_attr', attribute name)
+      occurs: zero or more times per node
+'attr_mark':
+      The revision id in which a particular attribute's value was
+      changed at last.
+      format: ('attr_mark', attribute name, revision id)
+      occurs: zero or more times per node
+@end verbatim
+
+All stanzas are sorted by the path string.
 
 @item Error conditions:
 
@@ -9239,6 +9355,43 @@ The file contents are output without modification.
 If the filename specified is unknown in the given revision or invalid, or
 if the given revision is unknown, prints an error message to stderr and exits
 with status 1.
+
+@end table
+
+@item mtn automate get_file_size @var{id}
+
+@table @strong
+@item Arguments:
+
+The  @var{id} argument specifies the file hash of the file for which
+the size should be printed.
+
+@item Added in:
+
+13.0
+
+@item Purpose:
+
+Prints the recorded file size of the specified file.
+
+If you need to know the file sizes of multiple files of the same revision,
+its usually faster to use the @command{automate get_extended_manifest_of}
+command.
+
+@item Sample output:
+
+@verbatim
+1241
+@end verbatim
+
+@item Output format:
+
+The size of the file in bytes followed by a linefeed character ('\n').
+
+@item Error conditions:
+
+If the file id specified is unknown or invalid prints an error message
+to stderr and exits with status 1.
 
 @end table
 
