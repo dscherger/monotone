@@ -1084,7 +1084,7 @@ regenerate_branches(database & db)
 static void
 regenerate_file_sizes(database & db)
 {
-  P(F("regenerating cached file sizes for revivisions"));
+  P(F("regenerating cached file sizes for revisions"));
   db.ensure_open_for_cache_reset();
 
   {
