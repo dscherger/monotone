@@ -1,0 +1,16 @@
+      dir ""
+    birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+
+      dir "bardir"
+     attr "barprop" "barpropval"
+    birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+attr_mark "barprop" [0cd607d6dda3a2df18f777112947f3c70811581e]
+
+        file "foofile"
+     content [5bf1fd927dfb8679496a2e6cf00cbe50c1c87145]
+        size "4"
+       birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+   path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+content_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
