@@ -50,13 +50,13 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
         <div class="box box-small">
             <h1 class="improveit">Improve it</h1>
             <ul>
-                <li><a href="http://code.mtnserv.thomaskeller.biz/index.php/p/monotone/issues/"><strong>bugs</strong></a></li>
+                <li><a href="http://code.monotone.ca/index.php/p/monotone/issues/"><strong>bugs</strong></a></li>
                 <li><a href="http://lists.nongnu.org/mailman/listinfo/monotone-devel">developers mailing list</a></li>
                 <li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.org/irclogger/irclogger_logs/monotone">logs</a>)</li>
                 <li><a href="http://monotone.thomaskeller.biz/docbuild/html">nightly documentation build</a> (<a href="http://monotone.thomaskeller.biz/docbuild/monotone.html">one page</a>)</li>
                 <li><a href="http://monotone.thomaskeller.biz/autobuild/index.php"><strong>nightly builds for openSUSE and Fedora</strong></a></li>
                 <li><a href="wiki/SelfHostingInfo/">self-hosting info</a></li>
-                <li><a href="http://mtn-view.1erlei.de/branch/changes/net.venge.monotone">browse source</a></li>
+                <li><a href="http://code.monotone.ca/index.php/p/monotone/source/tree/h:net.venge.monotone/">browse source</a></li>
                 <li><a href="http://cia.navi.cx/stats/project/monotone">latest work</a> (<a class="lesser" href="http://cia.navi.cx/stats/project/monotone/.rss">RSS</a>)</li>
                 <li>commit mailing list:<br />
                   <a href="http://lists.nongnu.org/mailman/listinfo/monotone-commits-diffs">with</a> /
