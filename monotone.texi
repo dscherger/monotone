@@ -6879,19 +6879,19 @@ Each stanza then describes a particular item, with the different lines
 (@code{symbol}s followed by @code{string} and @code{hex} values) describing
 different aspects of that item.
 @item
-@code{symbol}s in a stanza are right-aligned with eachother; each @code{symbol}
+@code{symbol}s in a stanza are right-aligned with each other; each @code{symbol}
 other than the longest is preceeded by spaces. The longest @code{symbol} in a
 stanza is not preceeded by spaces, even if there are longer @code{symbol}s in
 other stanzas.
 @item
-Lines and stanzas are generally required to be in a particular order. This is
-particularly important for objects such as for example revisions, where the
-logical structure is nested more deeply that the basic_io format can represent.
-In this case the logical structure is a list of changes vs. each parent
-revision, with each changed file being a separate stanza and header information
-for each parent and the revision as a whole also being separate stanzas;
-reordering the stanzas could cause a particular file change to be interpreted
-against the wrong parent.
+Lines and stanzas are generally required to be in a particular
+order. This is particularly important for objects such as revisions,
+where the logical structure is nested more deeply that the basic_io
+format can represent.  In this case the logical structure is header
+stanzas followed by a list of changes vs. each parent revision, with
+each change represented by a separate stanza; reordering the stanzas
+could cause a particular change to be interpreted against the wrong
+parent.
 @end itemize
 
 @subsection Automation Commands
