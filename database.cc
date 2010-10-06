@@ -3116,9 +3116,6 @@ database::put_height_for_revision(revision_id const & new_id,
 void
 database::put_file_sizes_for_revision(revision_t const & rev)
 {
-  // FIXME: could we safely drop merge revisions here since their
-  // individual file changes should be already recorded in other
-  // revisions?
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
       cset const & cs = edge_changes(*i);
