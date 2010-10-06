@@ -28,8 +28,11 @@ class system_path;
 std::string describe_sql_schema(sqlite3 * db);
 void check_sql_schema(sqlite3 * db, system_path const & filename);
 
-enum regen_cache_type { regen_none, regen_all, regen_rosters,
-                        regen_heights, regen_branches, regen_file_sizes };
+// if you add a new item here, don't forget to raise the
+// value of the "catch all" item "regen_all"
+enum regen_cache_type { regen_none = 0, regen_rosters = 1,
+                        regen_heights = 2, regen_branches = 4,
+                        regen_file_sizes = 8, regen_all = 15 };
 
 class migration_status {
   regen_cache_type _regen_type;

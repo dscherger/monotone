@@ -1256,16 +1256,9 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
           break;
 
         regime = std::min(regime, m->regime);
-
-        // if we should regenerate more than just one specific cache,
-        // we regenerate them all
-        if (m->regen_type != regen_none)
-          {
-            if (regen_type == regen_none)
-              regen_type = m->regen_type;
-            else
-              regen_type = regen_all;
-          }
+        // yes, this is ugly, but I don't want to introduce bitwise-enum
+        // or anything fancy else for this single use case
+        regen_type = static_cast<regen_cache_type>(regen_type | m->regen_type);
 
         m++;
         I(m < migration_events + n_migration_events);

@@ -1117,13 +1117,13 @@ regenerate_caches(database & db, regen_cache_type type)
 {
   I(type != regen_none);
 
-  if (type == regen_all || type == regen_heights)
+  if ((type & regen_heights) == regen_heights)
     regenerate_heights(db);
-  if (type == regen_all || type == regen_rosters)
+  if ((type & regen_rosters) == regen_rosters)
     regenerate_rosters(db);
-  if (type == regen_all || type == regen_branches)
+  if ((type & regen_branches) == regen_branches)
     regenerate_branches(db);
-  if (type == regen_all || type == regen_file_sizes)
+  if ((type & regen_file_sizes) == regen_file_sizes)
     regenerate_file_sizes(db);
 }
 
