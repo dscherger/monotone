@@ -5720,9 +5720,9 @@ current bisection information.
 
 @ftable @command
 @item mtn serve [--bind=[@var{address}][:@var{port}]]
-@itemx mtn pull [--[no-]set-default] [@var{uri}]
-@itemx mtn push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
-@itemx mtn sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn pull [--[no-]set-default] [--dry-run] [@var{uri}]
+@itemx mtn push [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn sync [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
 @itemx mtn pull [--[no-]set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
@@ -5753,6 +5753,11 @@ authentication and authorization facilities.
 
 The @var{uri-or-address} arguments given to @command{push},
 @command{pull}, and @command{sync} can be of two possible forms.
+
+If @option{--dry-run} is given, the connection is made, but no data is
+transferred. Instead, a summary of what would be transferred is
+output; the number of revisions, certs and keys that would be sent and
+received. For sent revisions, the branch names are also output.
 
 If the argument is an URI, the Lua hook @code{get_netsync_connect_command}
 may transform it into a connection command, which is later executed as
