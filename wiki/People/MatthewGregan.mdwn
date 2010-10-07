@@ -1,9 +1,0 @@
-[[!tag migration-wip]]
-[[!tag developer]]
-
-## Matthew Gregan (kinetik)
-
- * using monotone since November 2003
- * working on monotone since April 2005
- * meddling in various areas
- * contact: <kinetik@flim.org>

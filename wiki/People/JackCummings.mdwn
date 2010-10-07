@@ -1,9 +1,0 @@
-[[!tag migration-wip]]
-[[!tag developer]]
-
-## Jack Cummings (Necronom)
-
- * uses monotone since November 2003
- * works on monotone since well, I've never had a patch accepted. :)
- * using monotone for absurd things, like storing Maildirs. 
- * contact <jack-monotone@mudshark.org>

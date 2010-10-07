@@ -1,6 +1,0 @@
-[[!tag migration-done]]
-Contact: [[People/ThomasKeller]]
-
-An attempt to bring warnings and informal messages properly encoded into automate stdio.
-
-Status: [[status/Stalled]] Doesn't compile, not even alpha state. Hope to find some time for this on the next summit.

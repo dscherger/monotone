@@ -1,4 +1,3 @@
-^\.ikiwiki
 figures/.*\.pdf$
 semantic\.cache$
 _analog\.html

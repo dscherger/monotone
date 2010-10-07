@@ -1,3 +1,0 @@
-Branches that are marked Needs_Review:
-
-[[!inline pages="wiki/Branches/* and link(status/Needs_Review)" sort=title show=0 ]]

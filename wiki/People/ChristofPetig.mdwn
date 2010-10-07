@@ -1,6 +1,0 @@
-[[!tag migration-wip]]
-[[!tag developer]]
-
-## Christoph Petig
-
- * E-Mail: <christof@petig-baender.de>

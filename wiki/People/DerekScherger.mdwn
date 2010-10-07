@@ -1,9 +1,0 @@
-[[!tag migration-wip]]
-[[!tag developer]]
-
-## Derek Scherger (dscherger)
-
- * uses monotone since April 2004
- * works on monotone since May 2004
- * responsible for restrictions code and various other things
- * contact: <derek@echologic.com>

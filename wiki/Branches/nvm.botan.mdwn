@@ -1,6 +1,0 @@
-[[!tag migration-done]]
-Contact: [[People/MarkusWanner]] or [[People/TimothyBrownawell]]
-
-This is the staging branch for Botan, i.e. where we manually propagate new upstream Botan versions to, before landing on mainline. See also botan/README.botan-monotone.
-
-Status: Botan version 1.7.4 [[status/landed]] on mainline.

@@ -1,8 +1,0 @@
-[[!tag migration-wip]]
-[[!tag developer]]
-
-## Graydon Hoare (graydon)
-
- * wrote the initial version (starting summer/fall 2002)
- * mostly passive now, still do some features and optimization, design discussion
- * contact: <graydon@pobox.com>

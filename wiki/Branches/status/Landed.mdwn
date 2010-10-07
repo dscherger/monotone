@@ -1,3 +1,0 @@
-Branches that are marked Landed:
-
-[[!inline pages="wiki/Branches/* and link(status/Landed)" sort=title show=0 ]]

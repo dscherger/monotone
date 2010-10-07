@@ -1,9 +1,0 @@
-[[!tag migration-wip]]
-[[!tag developer]]
-
-## Daniel Carosone (uep)
-
- * uses monotone since June 2005
- * works (a little) on monotone since Sept 2005
- * meddles mostly on documentation
- * contact: dan (a) geek com au

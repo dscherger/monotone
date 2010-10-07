@@ -1,7 +1,0 @@
-[[!tag migration-wip]]
-[[!tag developer]]
-
-## Markus Schiltknecht
-
-I've married and am now known as [[People/MarkusWanner]], please update your links.
-

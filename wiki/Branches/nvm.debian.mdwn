@@ -1,6 +1,0 @@
-[[!tag migration-done]]
-Contact: [[People/MatthewNicholson]]
-
-This branch adds a monotone-server debian package and also includes some tweaks to the existing package like installing the bash completion files.  This package handles creation and management of a monotone database and key pair and also includes scripts for stopping and starting the server. The package will also attempt to do db migrate and similar operations if necessary during upgrades.
-
-Status: [[status/Landed]] on mainline.

@@ -1,7 +1,0 @@
-[[!tag migration-done]]
-[[!tag MtnSummit/2008]]
-Contact: [[People/DanielCarosone]], all [[Developers]]
-
-Migration of website content and MoinMoin wiki to [[ikiwiki]].
-
-Status: [[status/Work_in_Progress]]

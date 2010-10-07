@@ -1,5 +1,0 @@
-[[!tag migration-wip]]
-
-## Georg-W. Koltermann
-
- * Email: <mailto:Georg.Koltermann@mscsoftware.com>
