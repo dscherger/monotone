@@ -8608,11 +8608,11 @@ key [05c26b6cb109ca39bc48bbbdce83564c97796155]
 
 The following is example dry-run main channel data:
 @verbatim
-  dryrun
  receive
 revision "0"
     cert "1"
      key "1"
+
     send
 revision "1"
     cert "6"
@@ -8655,17 +8655,17 @@ added for better readability.
 For non-dry-run, all stanzas are optional; they are only output if the
 data they describe is transferred.
 
-If revisions are received, a header stanza @code{receive
-revision}. For each revision, a stanza containing the revision id. For
-each cert associated with the revision, a stanza containing the cert
-name, value, and key.
+If revisions are received, there is a header stanza @code{receive
+revision}. Then for each revision, there is a stanza containing the
+revision id, followed by a stanza containing the cert name, value, and
+key for each cert associated with the revision.
 
-If certs not associated with a transmitted revision are received, a
-header stanza @code{receive cert}. For each cert, a stanza giving the cert
-name, value, key, and revision.
+If certs not associated with a transmitted revision are received,
+there is a header stanza @code{receive cert}. Then for each cert,
+there is a stanza giving the cert name, value, key, and revision.
 
-If keys are received, a stanza containing one line for each key,
-giving the key id.
+If keys are received, there is one stanza containing one line for each
+key, giving the key id.
 
 Similarly for sent revisions, certs, and keys.
 
@@ -8698,7 +8698,10 @@ ticker stanzas in this phase are the following:
 
 For dry-run, two optional stanzas are output, giving the revision,
 cert, and key counts for send and receive. For send, the branch names
-of sent revisions are also output.
+of sent revisions are also output. Note that in the branch list,
+revisions that have multiple branch certs are listed twice, so the sum
+of the revision counts in the branch list may be greater than the
+number of revisions transferred.
 
 @item Error conditions:
 

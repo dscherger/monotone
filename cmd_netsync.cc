@@ -304,7 +304,9 @@ print_dryrun_info_cmd(protocol_role role,
       P(F("would send %d certs and %d keys")
         % counts->certs_out.min_count
         % counts->keys_out.min_count);
-      P(F("would send %d revisions:")
+      P(FP("would send %d revisions", // 0 revisions; nothing following, so no trailing colon
+           "would send %d revisions:",
+           counts->revs_out.min_count + 1)
         % counts->revs_out.min_count);
       map<branch_name, int> branch_counts;
       for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
@@ -432,24 +434,9 @@ print_info_auto(protocol_role role,
     {
       // sink or sink_and_source; print sink info
 
-      // Sort received certs into those associated with a received revision, and
-      // others.
       vector<cert> unattached_certs;
       map<revision_id, vector<cert> > rev_certs;
-
-      for (vector<revision_id>::const_iterator i = counts->revs_in.items.begin();
-           i != counts->revs_in.items.end(); ++i)
-        rev_certs.insert(make_pair(*i, vector<cert>()));
-      for (vector<cert>::const_iterator i = counts->certs_in.items.begin();
-           i != counts->certs_in.items.end(); ++i)
-        {
-          map<revision_id, vector<cert> >::iterator j;
-          j = rev_certs.find(revision_id(i->ident));
-          if (j == rev_certs.end())
-            unattached_certs.push_back(*i);
-          else
-            j->second.push_back(*i);
-        }
+      sort_rev_order (counts->revs_in, counts->certs_in, unattached_certs, rev_certs);
 
       if (rev_certs.size() > 0)
         {
@@ -515,24 +502,9 @@ print_info_auto(protocol_role role,
     {
       // source or sink_and_source; print source info
 
-      // Sort sent certs into those associated with a sent revision, and
-      // others.
       vector<cert> unattached_certs;
       map<revision_id, vector<cert> > rev_certs;
-
-      for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
-           i != counts->revs_out.items.end(); ++i)
-        rev_certs.insert(make_pair(*i, vector<cert>()));
-      for (vector<cert>::const_iterator i = counts->certs_out.items.begin();
-           i != counts->certs_out.items.end(); ++i)
-        {
-          map<revision_id, vector<cert> >::iterator j;
-          j = rev_certs.find(revision_id(i->ident));
-          if (j == rev_certs.end())
-            unattached_certs.push_back(*i);
-          else
-            j->second.push_back(*i);
-        }
+      sort_rev_order (counts->revs_out, counts->certs_out, unattached_certs, rev_certs);
 
       if (rev_certs.size() > 0)
         {
@@ -672,9 +644,14 @@ CMD(pull, "pull", "", CMD_REF(network),
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info, counts);
 
-  updater.maybe_do_update();
   if (app.opts.dryrun)
-    print_dryrun_info_cmd(sink_role, counts, project);
+    {
+      print_dryrun_info_cmd(sink_role, counts, project);
+    }
+  else
+    {
+      updater.maybe_do_update();
+    }
 }
 
 CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -733,9 +710,14 @@ CMD(sync, "sync", "", CMD_REF(network),
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info, counts);
 
-  updater.maybe_do_update();
   if (app.opts.dryrun)
-    print_dryrun_info_cmd(source_and_sink_role, counts, project);
+    {
+      print_dryrun_info_cmd(source_and_sink_role, counts, project);
+    }
+  else
+    {
+      updater.maybe_do_update();
+    }
 }
 
 CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
