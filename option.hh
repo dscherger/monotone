@@ -256,13 +256,15 @@ namespace option {
            void(T::*reset)(),
            bool hide,
            char const * deprecate)
+      // VS2010 is finding std::tr1::mem_fn by argument-dependent lookup
+      : setter(boost::mem_fn(set)), resetter(boost::mem_fn(reset))
     {
       I((name && name[0]) || (desc && desc[0]));
       description = desc;
       names = name;
       has_arg = arg;
-      setter = set;
-      resetter = reset;
+      //setter = set;
+      //resetter = reset;
       hidden = hide;
       deprecated = deprecate;
     }
