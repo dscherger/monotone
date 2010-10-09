@@ -1168,6 +1168,7 @@ check_db(database & db)
     W(F("%d branches missing from branch cache") % missing_branches);
 
   size_t total = missing_files + unreferenced_files +
+    missing_or_invalid_file_sizes +
     unreferenced_rosters + incomplete_rosters +
     missing_revisions + incomplete_revisions +
     non_parseable_revisions + non_normalized_revisions +
