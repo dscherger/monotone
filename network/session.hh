@@ -19,7 +19,7 @@
 class app_state;
 class key_store;
 class lua_hooks;
-class options;
+struct options;
 class project_t;
 
 // This reads and writes netcmds to the network.

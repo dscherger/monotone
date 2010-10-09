@@ -11,6 +11,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <iterator>
 
 #include <cstring> // for strerror
 #include <cstdio>  // for rename

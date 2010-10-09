@@ -244,9 +244,9 @@ int process_kill(pid_t pid, int signal)
   return 0;
 }
 
-int process_sleep(unsigned int seconds)
+int process_sleep(float seconds)
 {
-  Sleep(seconds*1000);
+  Sleep((unsigned int)(seconds*1000));
   return 0;
 }
 

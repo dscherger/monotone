@@ -8,6 +8,7 @@
 // PURPOSE.
 
 #include "base.hh"
+#include "sanity.hh"
 
 #include "sanity.hh"
 

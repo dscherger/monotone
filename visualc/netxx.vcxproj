@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A075E27B-893B-4426-9B52-D6A795F699DE}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(ProjectName)$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(ProjectName)$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\visualc;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_CONSOLE;NETXX_NO_INET6;NETXX_NO_PTON;NETXX_NO_NTOP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\visualc;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_CONSOLE;NETXX_NO_INET6;NETXX_NO_PTON;NETXX_NO_NTOP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\netxx\accept.cxx" />
+    <ClCompile Include="..\netxx\address.cxx" />
+    <ClCompile Include="..\netxx\datagram.cxx" />
+    <ClCompile Include="..\netxx\datagramserver.cxx" />
+    <ClCompile Include="..\netxx\inet_ntop.cxx" />
+    <ClCompile Include="..\netxx\inet_pton.cxx" />
+    <ClCompile Include="..\netxx\osutil.cxx" />
+    <ClCompile Include="..\netxx\peer.cxx" />
+    <ClCompile Include="..\netxx\probe.cxx" />
+    <ClCompile Include="..\netxx\probe_select.cxx" />
+    <ClCompile Include="..\netxx\recvfrom.cxx" />
+    <ClCompile Include="..\netxx\resolve_gethostbyname.cxx" />
+    <ClCompile Include="..\netxx\resolve_getservbyname.cxx" />
+    <ClCompile Include="..\netxx\serverbase.cxx" />
+    <ClCompile Include="..\netxx\sockaddr.cxx" />
+    <ClCompile Include="..\netxx\socket.cxx" />
+    <ClCompile Include="..\netxx\sockopt.cxx" />
+    <ClCompile Include="..\netxx\stream.cxx" />
+    <ClCompile Include="..\netxx\streambase.cxx" />
+    <ClCompile Include="..\netxx\streamserver.cxx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\netxx\accept.h" />
+    <ClInclude Include="..\netxx\address.h" />
+    <ClInclude Include="..\netxx\common.h" />
+    <ClInclude Include="..\netxx\compat.h" />
+    <ClInclude Include="..\netxx\datagram.h" />
+    <ClInclude Include="..\netxx\datagramserver.h" />
+    <ClInclude Include="..\netxx\inet_ntop.h" />
+    <ClInclude Include="..\netxx\inet_pton.h" />
+    <ClInclude Include="..\netxx\netbuf.h" />
+    <ClInclude Include="..\netxx\netxx.h" />
+    <ClInclude Include="..\netxx\osutil.h" />
+    <ClInclude Include="..\netxx\peer.h" />
+    <ClInclude Include="..\netxx\probe.h" />
+    <ClInclude Include="..\netxx\probe_impl.h" />
+    <ClInclude Include="..\netxx\probeinfo.h" />
+    <ClInclude Include="..\netxx\recvfrom.h" />
+    <ClInclude Include="..\netxx\resolve.h" />
+    <ClInclude Include="..\netxx\serverbase.h" />
+    <ClInclude Include="..\netxx\sockaddr.h" />
+    <ClInclude Include="..\netxx\socket.h" />
+    <ClInclude Include="..\netxx\sockopt.h" />
+    <ClInclude Include="..\netxx\stream.h" />
+    <ClInclude Include="..\netxx\streambase.h" />
+    <ClInclude Include="..\netxx\streamserver.h" />
+    <ClInclude Include="..\netxx\timeout.h" />
+    <ClInclude Include="..\netxx\types.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
