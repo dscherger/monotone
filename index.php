@@ -30,11 +30,11 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
             <ul>
                 <li><a href="docs/index.html"><b>manual</b> (with tutorial)</a><br/>(<a class="lesser" href="monotone.html">one page</a>, <a class="lesser" href="monotone.pdf">PDF</a>)</li>
                 <li><a href="INSTALL">INSTALL</a></li>
-                <li><a href="wiki/FAQ/">FAQ</a></li>
-                <li><a href="wiki/InterfacesFrontendsAndTools/">GUIs/other tools</a></li>
+                <li><a href="http://wiki.monotone.ca/FAQ/">FAQ</a></li>
+                <li><a href="http://wiki.monotone.ca/InterfacesFrontendsAndTools/">GUIs/other tools</a></li>
                 <li><a href="http://lists.nongnu.org/mailman/listinfo/monotone-users"><strong>users mailing list</strong></a></li>
                 <li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.org/irclogger/irclogger_logs/monotone">logs</a>)</li>
-                <li><a href="wiki/FrontPage/"><strong>wiki</strong></a></li>
+                <li><a href="http://wiki.monotone.ca/"><strong>wiki</strong></a></li>
                 <li><a href="http://www.cafepress.com/monotone_rcs">swag <strong>new</strong></a></li>
                 <li><a href="http://www.frappr.com/monotone">frappr</a></li>
             </ul>
@@ -55,14 +55,14 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
                 <li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.org/irclogger/irclogger_logs/monotone">logs</a>)</li>
                 <li><a href="http://monotone.thomaskeller.biz/docbuild/html">nightly documentation build</a> (<a href="http://monotone.thomaskeller.biz/docbuild/monotone.html">one page</a>)</li>
                 <li><a href="http://monotone.thomaskeller.biz/autobuild/index.php"><strong>nightly builds for openSUSE and Fedora</strong></a></li>
-                <li><a href="wiki/SelfHostingInfo/">self-hosting info</a></li>
+                <li><a href="http://wiki.monotone.ca/SelfHostingInfo/">self-hosting info</a></li>
                 <li><a href="http://code.monotone.ca/p/monotone/source/tree/h:net.venge.monotone/">browse source</a></li>
                 <li><a href="http://cia.navi.cx/stats/project/monotone">latest work</a> (<a class="lesser" href="http://cia.navi.cx/stats/project/monotone/.rss">RSS</a>)</li>
                 <li>commit mailing list:<br />
                   <a href="http://lists.nongnu.org/mailman/listinfo/monotone-commits-diffs">with</a> /
                   <a href="http://lists.nongnu.org/mailman/listinfo/monotone-commits-nodiffs">without</a> diffs</li>
                 <li><a href="buildbot/">build status</a></li>
-                <li><a href="wiki/QuickieTasks/">quickie tasks</a></li>
+                <li><a href="http://wiki.monotone.ca/QuickieTasks/">quickie tasks</a></li>
             </ul>
         </div>
         <div class="clearfloat"></div>
