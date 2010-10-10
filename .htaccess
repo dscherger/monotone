@@ -2,3 +2,11 @@
   Order deny,allow
   Deny from all
 </Files>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine on
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^wiki/FrontPage/?   http://wiki.monotone.ca
+    RewriteRule ^wiki(.*)           http://wiki.monotone.ca$1 [L]
+</IfModule>
