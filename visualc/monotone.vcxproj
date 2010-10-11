@@ -240,11 +240,10 @@
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(TargetDir)\txt2c.exe;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">schema.cc;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Generating $(ProjectDir)\..\schema.c from $(ProjectDir)\..\schema.sql</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(TargetDir)\txt2c.exe" --strip-trailing --no-static "$(ProjectDir)\..\schema.sql" schema &gt;"$(ProjectDir)\..\schema.c"
-</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">txt2c schema.sql</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(TargetDir)\txt2c.exe" --strip-trailing schema "$(ProjectDir)\..\schema.sql" "$(ProjectDir)\..\schema.cc"</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(TargetDir)\txt2c.exe;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">schema.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">schema.cc;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\std_hooks.lua">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">txt2c std_hooks.lua</Message>
@@ -252,11 +251,11 @@
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(TargetDir)\txt2c.exe;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">std_hooks.cc;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Generating $(ProjectDir)\..\std_hooks.c from $(ProjectDir)\..\std_hooks.lua</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(TargetDir)\txt2c.exe" --strip-trailing --no-static "$(ProjectDir)\..\std_hooks.lua" std_hooks &gt;"$(ProjectDir)\..\std_hooks.c"
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">txt2c std_hooks.lua</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(TargetDir)\txt2c.exe" --strip-trailing std_hooks "$(ProjectDir)\..\std_hooks.lua" "$(ProjectDir)\..\std_hooks.cc"
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(TargetDir)\txt2c.exe;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">std_hooks.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">std_hooks.cc;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="unknown_package.txt">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Writing package_full_revision.cc</Message>
