@@ -46,10 +46,11 @@ check(mtn("db", "check", "--ticker=dot"), 1, false, true)
 check(not qgrep('database is good', "stderr"))
 check(qgrep('problems detected', "stderr"))
 check(qgrep('1 missing file', "stderr"))
+check(qgrep('1 missing or invalid file sizes', "stderr"))
 check(qgrep('2 incomplete roster', "stderr"))
 check(qgrep('2 incomplete revision', "stderr"))
-check(qgrep('total problems detected: 5', "stderr"))
-check(qgrep('5 serious', "stderr"))
+check(qgrep('total problems detected: 6', "stderr"))
+check(qgrep('6 serious', "stderr"))
 
 
 -- add an unreferenced file
