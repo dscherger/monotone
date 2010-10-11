@@ -1,5 +1,11 @@
 <?php
 
+// this is needed for simplepie on PHP 5.3 onwards unfortunately
+error_reporting(E_ALL ^ E_DEPRECATED);
+
+// prevent another PHP 5.3 nagging
+date_default_timezone_set('Europe/Berlin');
+
 $CFG = array();
 
 // Must be writable by the www user
