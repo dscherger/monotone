@@ -160,6 +160,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
           sync, pull, push, automate remote_stdio, automate remote
           automate pull, automate push, automate sync
             --no-set-default                undo previous --set-default
+	  sync, pull, push, automate pull, automate push, automate sync
+	    --dry-run 	    	     	    just report what would be sent/received
           automate inventory
             --corresponding-renames         undo previous --no-corresponding-renames
             --ignored                       undo previous --no-ignored
