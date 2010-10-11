@@ -1,4 +1,3 @@
- receive 
-revision "1"
-    cert "4"
-     key "1"
+receive_revision "1"
+    receive_cert "4"
+     receive_key "1"

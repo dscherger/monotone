@@ -332,13 +332,16 @@ namespace
 {
   namespace syms
   {
-    symbol const branch("branch");
-    symbol const cert("cert");
     symbol const estimate("estimate");
     symbol const key("key");
-    symbol const receive("receive");
+    symbol const receive_cert("receive_cert");
+    symbol const receive_key("receive_key");
+    symbol const receive_revision("receive_revision");
     symbol const revision("revision");
-    symbol const send("send");
+    symbol const send_branch("send_branch");
+    symbol const send_cert("send_cert");
+    symbol const send_key("send_key");
+    symbol const send_revision("send_revision");
     symbol const value("value");
   }
 }
@@ -351,39 +354,37 @@ print_dryrun_info_auto(protocol_role role,
 {
   // print dry run info for automate session
   basic_io::printer pr;
+  basic_io::stanza st;
 
   if (role != source_role)
     {
       // sink or sink_and_source; print sink info
-      basic_io::stanza st;
-      st.push_symbol(syms::receive);
 
       if (counts->keys_in.can_have_more_than_min)
         {
           st.push_symbol(syms::estimate);
         }
 
-      st.push_str_pair(syms::revision,
+      st.push_str_pair(syms::receive_revision,
                        boost::lexical_cast<string>(counts->revs_in.min_count));
-      st.push_str_pair(syms::cert,
+      st.push_str_pair(syms::receive_cert,
                        boost::lexical_cast<string>(counts->certs_in.min_count));
-      st.push_str_pair(syms::key,
+      st.push_str_pair(syms::receive_key,
                        boost::lexical_cast<string>(counts->keys_in.min_count));
-      pr.print_stanza(st);
     }
 
   if (role != sink_role)
     {
       // source or sink_and_source; print source info
-      basic_io::stanza st;
-      st.push_symbol(syms::send);
 
-      st.push_str_pair(syms::revision,
+      st.push_str_pair(syms::send_revision,
                        boost::lexical_cast<string>(counts->revs_out.items.size()));
-      st.push_str_pair(syms::cert,
+      st.push_str_pair(syms::send_cert,
                        boost::lexical_cast<string>(counts->certs_out.min_count));
-      st.push_str_pair(syms::key,
+      st.push_str_pair(syms::send_key,
                        boost::lexical_cast<string>(counts->keys_out.min_count));
+
+      // count revisions per branch
       map<branch_name, int> branch_counts;
       for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
            i != counts->revs_out.items.end(); ++i)
@@ -399,25 +400,31 @@ print_dryrun_info_auto(protocol_role role,
       for (map<branch_name, int>::iterator i = branch_counts.begin();
            i != branch_counts.end(); ++i)
         {
-          st.push_str_triple(syms::branch, i->first(), boost::lexical_cast<string>(i->second));
+          st.push_str_triple(syms::send_branch, i->first(), boost::lexical_cast<string>(i->second));
         }
-      pr.print_stanza(st);
     }
 
+  pr.print_stanza(st);
   output.write(pr.buf.data(), pr.buf.size());
 }
 
 static void
-print_cert(cert const & item,
-           basic_io::printer & pr,
-           bool print_rev)
+print_cert(bool send,
+           cert const & item,
+           basic_io::printer & pr)
 {
   basic_io::stanza st;
-  st.push_str_pair(syms::cert, item.name());
+  if (send)
+    {
+      st.push_str_pair(syms::send_cert, item.name());
+    }
+  else
+    {
+      st.push_str_pair(syms::receive_cert, item.name());
+    }
   st.push_str_pair(syms::value, item.value());
   st.push_binary_pair(syms::key, item.key.inner());
-  if (print_rev)
-    st.push_binary_pair(syms::revision, item.ident.inner());
+  st.push_binary_pair(syms::revision, item.ident.inner());
   pr.print_stanza(st);
 }
 
@@ -438,63 +445,41 @@ print_info_auto(protocol_role role,
       map<revision_id, vector<cert> > rev_certs;
       sort_rev_order (counts->revs_in, counts->certs_in, unattached_certs, rev_certs);
 
-      if (rev_certs.size() > 0)
-        {
-          {
-            basic_io::stanza st;
-            st.push_str_pair(syms::receive, syms::revision);
-            pr.print_stanza(st);
-          }
-
-          {
-            for (map<revision_id, vector<cert> >::const_iterator i = rev_certs.begin();
-                 i != rev_certs.end(); ++i)
-              {
-                basic_io::stanza st;
-                st.push_binary_pair(syms::revision, i->first.inner());
-                pr.print_stanza(st);
-
-                for (vector<cert>::const_iterator j = i->second.begin();
-                     j != i->second.end(); ++j)
-                  {
-                    print_cert(*j, pr, false);
-                  }
-              }
-          }
-        }
-
       if (unattached_certs.size() > 0)
         {
-          {
-            basic_io::stanza st;
-            st.push_str_pair(syms::receive, syms::cert);
-            pr.print_stanza(st);
-          }
-
           for (vector<cert>::const_iterator i = unattached_certs.begin();
                i != unattached_certs.end(); ++i)
             {
-              print_cert(*i, pr, true);
+              print_cert(false, *i, pr);
+            }
+        }
+
+      if (rev_certs.size() > 0)
+        {
+          for (map<revision_id, vector<cert> >::const_iterator i = rev_certs.begin();
+               i != rev_certs.end(); ++i)
+            {
+              basic_io::stanza st;
+              st.push_binary_pair(syms::receive_revision, i->first.inner());
+              pr.print_stanza(st);
+
+              for (vector<cert>::const_iterator j = i->second.begin();
+                   j != i->second.end(); ++j)
+                {
+                  print_cert(false, *j, pr);
+                }
             }
         }
 
       if (counts->keys_in.items.size() > 0)
         {
-          {
-            basic_io::stanza st;
-            st.push_str_pair(syms::receive, syms::key);
-            pr.print_stanza(st);
-          }
-
-          {
-            basic_io::stanza st;
-            for (vector<key_id>::const_iterator i = counts->keys_in.items.begin();
-                 i != counts->keys_in.items.end(); ++i)
-              {
-                st.push_binary_pair(syms::key, i->inner());
-              }
-            pr.print_stanza(st);
-          }
+          basic_io::stanza st;
+          for (vector<key_id>::const_iterator i = counts->keys_in.items.begin();
+               i != counts->keys_in.items.end(); ++i)
+            {
+              st.push_binary_pair(syms::receive_key, i->inner());
+            }
+          pr.print_stanza(st);
         }
     }
 
@@ -506,63 +491,41 @@ print_info_auto(protocol_role role,
       map<revision_id, vector<cert> > rev_certs;
       sort_rev_order (counts->revs_out, counts->certs_out, unattached_certs, rev_certs);
 
-      if (rev_certs.size() > 0)
-        {
-          {
-            basic_io::stanza st;
-            st.push_str_pair(syms::send, syms::revision);
-            pr.print_stanza(st);
-          }
-
-          {
-            for (map<revision_id, vector<cert> >::const_iterator i = rev_certs.begin();
-                 i != rev_certs.end(); ++i)
-              {
-                basic_io::stanza st;
-                st.push_binary_pair(syms::revision, i->first.inner());
-                pr.print_stanza(st);
-
-                for (vector<cert>::const_iterator j = i->second.begin();
-                     j != i->second.end(); ++j)
-                  {
-                    print_cert(*j, pr, false);
-                  }
-              }
-          }
-        }
-
       if (unattached_certs.size() > 0)
         {
-          {
-            basic_io::stanza st;
-            st.push_str_pair(syms::send, syms::cert);
-            pr.print_stanza(st);
-          }
-
           for (vector<cert>::const_iterator i = unattached_certs.begin();
                i != unattached_certs.end(); ++i)
             {
-              print_cert(*i, pr, true);
+              print_cert(true, *i, pr);
+            }
+        }
+
+      if (rev_certs.size() > 0)
+        {
+          for (map<revision_id, vector<cert> >::const_iterator i = rev_certs.begin();
+               i != rev_certs.end(); ++i)
+            {
+              basic_io::stanza st;
+              st.push_binary_pair(syms::send_revision, i->first.inner());
+              pr.print_stanza(st);
+
+              for (vector<cert>::const_iterator j = i->second.begin();
+                   j != i->second.end(); ++j)
+                {
+                  print_cert(true, *j, pr);
+                }
             }
         }
 
       if (counts->keys_out.items.size() > 0)
         {
-          {
-            basic_io::stanza st;
-            st.push_str_pair(syms::send, syms::key);
-            pr.print_stanza(st);
-          }
-
-          {
-            basic_io::stanza st;
-            for (vector<key_id>::const_iterator i = counts->keys_out.items.begin();
-                 i != counts->keys_out.items.end(); ++i)
-              {
-                st.push_binary_pair(syms::key, i->inner());
-              }
-            pr.print_stanza(st);
-          }
+          basic_io::stanza st;
+          for (vector<key_id>::const_iterator i = counts->keys_out.items.begin();
+               i != counts->keys_out.items.end(); ++i)
+            {
+              st.push_binary_pair(syms::send_key, i->inner());
+            }
+          pr.print_stanza(st);
         }
     }
 

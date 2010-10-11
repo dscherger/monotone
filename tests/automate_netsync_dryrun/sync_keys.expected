@@ -1,10 +1,7 @@
- receive 
-revision "0"
-    cert "1"
-     key "1"
-
-    send 
-revision "1"
-    cert "6"
-     key "1"
-  branch "foo2" "1"
+receive_revision "0"
+    receive_cert "1"
+     receive_key "1"
+   send_revision "1"
+       send_cert "6"
+        send_key "1"
+     send_branch "foo2" "1"

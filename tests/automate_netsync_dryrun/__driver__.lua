@@ -25,7 +25,7 @@ srv = netsync.start()
 -- Pull branch 'bar' from test.db to test2.db; nothing to transfer, so
 -- all zeros on stdout. stderr has progress messages, ticker
 check(mtn2("automate", "pull", "--dry-run", "mtn://" .. srv.address .. "?bar"), 0, true, false)
-check(readfile("stdout") == " receive \nrevision \"0\"\n    cert \"0\"\n     key \"0\"\n")
+check(readfile("stdout") == "receive_revision \"0\"\n    receive_cert \"0\"\n     receive_key \"0\"\n")
 
 -- Pull branch 'foo', confirm dryrun output
 get("pull_r1.expected")
