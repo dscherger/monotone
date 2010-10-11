@@ -4,10 +4,10 @@
 # Américo Monteiro <a_monteiro@netcabo.pt>, 2009, 2010.
 msgid ""
 msgstr ""
-"Project-Id-Version: monotone n/a\n"
+"Project-Id-Version: monotone 0.99\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-10-10 13:01+0200\n"
-"PO-Revision-Date: 2010-06-04 11:06+0100\n"
+"PO-Revision-Date: 2010-10-11 22:57+0100\n"
 "Last-Translator: Américo Monteiro <a_monteiro@netcabo.pt>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
 "Language: pt\n"
@@ -672,48 +672,45 @@ msgstr "nenhum argumento permitido"
 
 #: cmd.cc:537
 msgid "Check that a particular globish matches a particular string"
-msgstr ""
+msgstr "Verifica se um globish particular coincide com uma string particular"
 
 #: cmd.cc:545
 #, c-format
 msgid "Globish <%s> does not match string <%s>"
-msgstr ""
+msgstr "Globish <%s> não coincide com a string <%s>"
 
 #: cmd.cc:550
 msgid "Triggers the specified kind of crash"
 msgstr "Despoleta o tipo de crash específico"
 
 #: cmd.cc:861
-#, fuzzy, c-format
+#, c-format
 msgid "command group '%s'"
-msgstr "Comandos no grupo '%s':"
+msgstr "grupo de comandos '%s':"
 
 #: cmd.cc:876
 msgid "Generate a manual page from monotone's command help"
-msgstr ""
+msgstr "Gera uma pagina de manual a partir do comando de ajuda do monotone"
 
 #: cmd.cc:882
 msgid "Name"
-msgstr ""
+msgstr "Nome"
 
 #: cmd.cc:884
-#, fuzzy
 msgid "monotone - a distributed version control system"
-msgstr "Comandos para interagir com outros sistemas de controlo de revisão"
+msgstr "monotone - um sistema de controlo de versão distribuído"
 
 #: cmd.cc:885
 msgid "Synopsis"
-msgstr ""
+msgstr "Sinopse"
 
 #: cmd.cc:887
-#, fuzzy
 msgid "[options...] command [arguments...]"
-msgstr "demasiados argumentos"
+msgstr "[opções...] comando [argumentos...]"
 
 #: cmd.cc:890
-#, fuzzy
 msgid "Description"
-msgstr "Descrição para  '%s %s':"
+msgstr "Descrição"
 
 #: cmd.cc:891
 msgid ""
@@ -722,11 +719,16 @@ msgid ""
 "flexible trust setup. monotone has an easy-to-learn command set and comes "
 "with a rich interface for scripting purposes and thorough documentation."
 msgstr ""
+"O monotone é um sistema de controle de versão distribuído de alta confiança "
+"e muito personalizável que disponibiliza branches leves, fusão sensitiva ao "
+"histórico e uma configuração de confiança flexível. O monotone tem um "
+"conjunto de comandos fácil de aprender e vem com uma interface rica para "
+"objectivos de scripting e com documentação minuciosa."
 
 #: cmd.cc:897
 #, c-format
 msgid "For more information on monotone, visit %s."
-msgstr ""
+msgstr "Para mais informação sobre o monotone, visite %s."
 
 #: cmd.cc:900
 #, c-format
@@ -734,29 +736,30 @@ msgid ""
 "The complete documentation, including a tutorial for a quick start with the "
 "system, can be found online on %s."
 msgstr ""
+"A documentação completa, incluindo um tutorial para um início rápido ao "
+"sistema, pode ser encontrada online em %s."
 
 #: cmd.cc:904
 msgid "Global Options"
-msgstr ""
+msgstr "Opções Globais"
 
 #: cmd.cc:907
-#, fuzzy
 msgid "Commands"
-msgstr "Grupos de comandos:"
+msgstr "Comandos"
 
 #: cmd.cc:910
 msgid "See Also"
-msgstr ""
+msgstr "Veja Também"
 
 #: cmd.cc:911
 #, c-format
 msgid "info %s and the documentation on %s"
-msgstr ""
+msgstr "info %s e a documentação em %s"
 
 #: cmd.cc:915
 #, c-format
 msgid "Please report bugs to %s."
-msgstr ""
+msgstr "Por favor reporte bugs para %s."
 
 #: cmd.cc:919
 msgid ""
@@ -764,12 +767,18 @@ msgid ""
 "and has since then received numerous contributions from many individuals. A "
 "complete list of authors can be found in AUTHORS."
 msgstr ""
+"O monotone foi originalmente escrito por Graydon Hoare <graydon@pobox.com> "
+"em "
+"2004 e tem recebido numerosas contribuições de muitos indivíduos. Uma lista "
+"completa dos autores pode ser encontrada em AUTORES."
 
 #: cmd.cc:924
 msgid ""
 "Nowadays, monotone is maintained by a collective of enthusiastic "
 "programmers, known as the monotone development team."
 msgstr ""
+"Nos dias de hoje, o monotone é mantido por um colectivo de programadores "
+"entusiastas, conhecidos como a equipa de desenvolvimento do monotone."
 
 #: cmd.cc:928
 #, c-format
@@ -777,16 +786,18 @@ msgid ""
 "monotone and this man page is Copyright (c) 2004 - %s by the monotone "
 "development team."
 msgstr ""
+"O monotone e o seu manual tem o Copyright (c) 2004 - %s pela equipa de "
+"desenvolvimento do monotone."
 
 #: cmd.cc:940
 #, c-format
 msgid "no man page formatter command configured"
-msgstr ""
+msgstr "nenhum comando formatador de página de manual configurado"
 
 #: cmd.cc:944
-#, fuzzy, c-format
+#, c-format
 msgid "could not execute man page formatter command '%s': %s"
-msgstr "não pôde criar directório '%s': %s"
+msgstr "incapaz de executar o comando formatador da página de manual '%s': %s"
 
 #: cmd.cc:961
 #, c-format
@@ -796,14 +807,15 @@ msgstr "--message e --message-file são exclusivas mutuamente"
 #: cmd_netsync.cc:66 cmd_netsync.cc:467
 #, c-format
 msgid "cannot use --exclude in URL mode"
-msgstr ""
+msgstr "não pode usar --exclude em modo URL"
 
 #: cmd_netsync.cc:106
-#, fuzzy
 msgid ""
 "[URL]\n"
 "[ADDRESS[:PORTNUMBER]]"
-msgstr "[ADDRESS[:PORTNUMBER]]"
+msgstr ""
+"[URL]\n"
+"[ADDRESS[:PORTNUMBER]]"
 
 #: cmd_netsync.cc:107
 msgid "Opens an 'automate stdio' connection to a remote server"
@@ -850,11 +862,12 @@ msgstr "recebido código de erro remoto %d"
 
 #: cmd_netsync.cc:276 cmd_netsync.cc:296 cmd_netsync.cc:317 cmd_netsync.cc:344
 #: cmd_netsync.cc:364 cmd_netsync.cc:395
-#, fuzzy
 msgid ""
 "[URL]\n"
 "[ADDRESS[:PORTNUMBER] [PATTERN ...]]"
-msgstr "[ADDRESS[:PORTNUMBER] [PATTERN ...]]"
+msgstr ""
+"[URL]\n"
+"[ADDRESS[:PORTNUMBER] [PATTERN ...]]"
 
 #: cmd_netsync.cc:277 cmd_netsync.cc:297
 msgid "Pushes branches to a netsync server"
@@ -898,11 +911,12 @@ msgstr ""
 "com o servidor netsync no endereço ADDRESS."
 
 #: cmd_netsync.cc:422
-#, fuzzy
 msgid ""
 "URL [DIRECTORY]\n"
 "HOST[:PORTNUMBER] BRANCH [DIRECTORY]"
-msgstr "ADDRESS[:PORTNUMBER] BRANCH [DIRECTORY]"
+msgstr ""
+"URL [DIRECTORY]\n"
+"HOST[:PORTNUMBER] BRANCH [DIRECTORY]"
 
 #: cmd_netsync.cc:423
 msgid "Checks out a revision from a remote database into a directory"
@@ -923,12 +937,12 @@ msgstr ""
 #: cmd_netsync.cc:443
 #, c-format
 msgid "the --branch option is only valid with an URI to clone"
-msgstr ""
+msgstr "a opção --branch apenas é válida com um URI para clonar"
 
 #: cmd_netsync.cc:492
-#, fuzzy, c-format
+#, c-format
 msgid "you must specify an unambiguous branch to clone"
-msgstr "você tem que especificar um branch para clonar"
+msgstr "você tem que especificar um branch não ambíguo para clonar"
 
 #: cmd_netsync.cc:524
 #, c-format
@@ -952,9 +966,9 @@ msgid "branch %s has multiple heads:"
 msgstr "branch %s tem múltiplos cabeçalhos:"
 
 #: cmd_netsync.cc:571
-#, fuzzy, c-format
+#, c-format
 msgid "choose one with '%s clone -r<id> URL'"
-msgstr "escolha um com '%s clone -r<id> SERVER BRANCH'"
+msgstr "escolha um com '%s clone -r<id> URL'"
 
 #: cmd_netsync.cc:572 cmd_ws_commit.cc:1039 cmd_ws_commit.cc:1916
 #, c-format
@@ -1176,14 +1190,12 @@ msgid "no such revision '%s'"
 msgstr "não existe tal revisão '%s'"
 
 #: cmd_packet.cc:67
-#, fuzzy
 msgid "KEY-PACKET-DATA"
-msgstr "PACKET-DATA"
+msgstr "KEY-PACKET-DATA"
 
 #: cmd_packet.cc:68
-#, fuzzy
 msgid "Store the public key in the database"
-msgstr "Armazena um ficheiro na base de dados"
+msgstr "Armazena a chave pública na base de dados"
 
 #: cmd_packet.cc:111
 #, c-format
@@ -1217,9 +1229,8 @@ msgid "PACKET-DATA"
 msgstr "PACKET-DATA"
 
 #: cmd_packet.cc:252
-#, fuzzy
 msgid "Load the given packets into the database"
-msgstr "Carrega os packets fornecidos na base de dados."
+msgstr "Carrega os packets fornecidos na base de dados"
 
 #: cmd_packet.cc:268
 msgid "Reads packets from files"
@@ -1299,9 +1310,8 @@ msgid "Drops a public and/or private key"
 msgstr "Abandona uma chave pública e/ou privada"
 
 #: cmd_key_cert.cc:181
-#, fuzzy
 msgid "Drops a public key"
-msgstr "Abandona uma chave pública e/ou privada"
+msgstr "Abandona uma chave pública"
 
 #: cmd_key_cert.cc:193
 msgid "Changes the passphrase of a private RSA key"
@@ -1325,20 +1335,20 @@ msgid "Adds a private key to ssh-agent"
 msgstr "Adiciona uma chave privada ao ssh-agent"
 
 #: cmd_key_cert.cc:260
-#, fuzzy
 msgid "SELECTOR CERTNAME [CERTVAL]"
-msgstr "REVISION CERTNAME [CERTVAL]"
+msgstr "SELECTOR CERTNAME [CERTVAL]"
 
 #: cmd_key_cert.cc:261
-#, fuzzy
 msgid "Creates a certificate for a revision or set of revisions"
-msgstr "Cria um certificado para uma revisão"
+msgstr "Cria um certificado para uma revisão ou conjunto de revisões"
 
 #: cmd_key_cert.cc:262
 msgid ""
 "Creates a certificate with the given name and value on each revision that "
 "matches the given selector"
 msgstr ""
+"Cria um certificado com um nome e valor fornecidos em cada revisão que "
+"corresponde ao selector fornecido"
 
 #: cmd_key_cert.cc:300
 msgid "REVISION NAME VALUE SIGNER1 [SIGNER2 [...]]"
@@ -1779,9 +1789,8 @@ msgid "[LEFT_REVID RIGHT_REVID]"
 msgstr "[LEFT_REVID RIGHT_REVID]"
 
 #: cmd_merging.cc:1152
-#, fuzzy
 msgid "Shows the conflicts between two revisions"
-msgstr "Mostra os conflitos entre duas revisões."
+msgstr "Mostra os conflitos entre duas revisões"
 
 #: cmd_merging.cc:1153
 msgid ""
@@ -1793,9 +1802,8 @@ msgstr ""
 "comando 'merge'."
 
 #: cmd_merging.cc:1167
-#, fuzzy
 msgid "Store the conflicts from merging two revisions"
-msgstr "Armazena os conflitos da fusão de duas revisões."
+msgstr "Armazena os conflitos da fusão de duas revisões"
 
 #: cmd_merging.cc:1168
 msgid ""
@@ -2020,15 +2028,17 @@ msgid "Directly executes the given SQL command on the database"
 msgstr "Executa directamente o comando SQL fornecido na base de dados"
 
 #: cmd_db.cc:172
-#, fuzzy
 msgid "Commands that delete items from the local database"
-msgstr "Comandos para manipular a base de dados"
+msgstr "Comandos que apagam itens da base de dados local"
 
 #: cmd_db.cc:173
 msgid ""
 "Deletions cannot be propagated through netsync, so the deleted items will "
 "come back if you sync with a database that still has them."
 msgstr ""
+"As funções de apagar não podem ser propagadas através do netsync, então os "
+"itens apagados irão voltar se você sincronizar com uma base de dados que "
+"ainda os contenha."
 
 #: cmd_db.cc:177
 msgid "Kills a revision from the local database"
@@ -2062,15 +2072,17 @@ msgid "applying changes from %s on the current workspace"
 msgstr "a aplicar alterações de %s no espaço de trabalho actual"
 
 #: cmd_db.cc:250
-#, fuzzy
 msgid "Deletes the specified certs from the local database"
-msgstr "Mata certificados de branch da base de dados local"
+msgstr "Apaga os certificados especificados da base de dados local"
 
 #: cmd_db.cc:251
 msgid ""
 "Deletes all certs which are on the given revision(s) and have the given name "
 "and if a value is specified then also the given value."
 msgstr ""
+"Apaga todos os certificados que estejam nas revisões fornecidas e tenham o "
+"nome fornecido, e, se um valor for especificado, então que tenham também o "
+"mesmo valor."
 
 #: cmd_db.cc:319
 msgid "Does some sanity checks on the database"
@@ -2409,9 +2421,8 @@ msgstr ""
 "filtrando-o por PATH se fornecida."
 
 #: cmd_diff_log.cc:1000
-#, fuzzy
 msgid "list selected revision history"
-msgstr "revisão submetida %s"
+msgstr "lista o histórico da revisão seleccionada"
 
 #: cmd_ws_commit.cc:179
 #, c-format
@@ -2429,12 +2440,16 @@ msgid ""
 "-- Enter a description of this change above --\n"
 "-- You may edit the fields below            --\n"
 msgstr ""
+"-- Insira uma descrição para esta alteração em cima--\n"
+"-- Você pode editar os campos em baixo                --\n"
 
 #: cmd_ws_commit.cc:188
 msgid ""
 "\n"
 "-- Modifications below this line are ignored --\n"
 msgstr ""
+"\n"
+"-- Modificações abaixo desta linha são ignoradas --\n"
 
 #: cmd_ws_commit.cc:190
 msgid "*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"
@@ -2453,11 +2468,11 @@ msgid "Date:     "
 msgstr "Data:     "
 
 #: cmd_ws_commit.cc:215
-#, fuzzy, c-format
+#, c-format
 msgid "date format '%s' cannot be parsed; using default instead"
 msgstr ""
-"o formato de data '%s' não pode ser usado para submissão, a usar o formato "
-"predefinido"
+"o formato de data '%s' não pode ser analisado, a usar o formato predefinido "
+"em substituição"
 
 #: cmd_ws_commit.cc:237 cmd_ws_commit.cc:985
 msgid "*** THIS REVISION WILL CREATE A NEW BRANCH ***"
@@ -2569,24 +2584,22 @@ msgstr ""
 "'revert'. Caso contrário, apenas remove o 'drop' do manifesto."
 
 #: cmd_ws_commit.cc:566 cmd_ws_commit.cc:575
-#, fuzzy, c-format
+#, c-format
 msgid "revision %s it not a child of %s, cannot invert"
-msgstr "revisão %s tem, %d conjuntos de alterações, não pode inverter"
+msgstr "a revisão %s não é um filho de %s, não pode inverter"
 
 #: cmd_ws_commit.cc:571 cmd_ws_commit.cc:610 cmd_ws_commit.cc:650
-#, fuzzy, c-format
+#, c-format
 msgid "revision %s has %d parents, cannot invert"
-msgstr "revisão %s tem, %d conjuntos de alterações, não pode inverter"
+msgstr "a revisão %s tem %d pais, não pode inverter"
 
 #: cmd_ws_commit.cc:583
-#, fuzzy
 msgid "[PARENT-REVISION] CHILD-REVISION"
-msgstr "LEFT-REVISION RIGHT-REVISION DEST-BRANCH"
+msgstr "[PARENT-REVISION] CHILD-REVISION"
 
 #: cmd_ws_commit.cc:584
-#, fuzzy
 msgid "Disapproves a particular revision or revision range"
-msgstr "Desaprova uma revisão particular"
+msgstr "Desaprova uma revisão particular ou alcance de revisão"
 
 #: cmd_ws_commit.cc:615 cmd_ws_commit.cc:655
 #, c-format
@@ -2594,16 +2607,19 @@ msgid "need --branch argument for disapproval"
 msgstr "necessário argumento --branch para desaprovação"
 
 #: cmd_ws_commit.cc:638
-#, fuzzy, c-format
+#, c-format
 msgid "revisions %s and %s do not share common history, cannot invert"
-msgstr "revisão %s tem, %d conjuntos de alterações, não pode inverter"
+msgstr ""
+"as revisões %s e %s não partilham um histórico comum, não pode inverter"
 
 #: cmd_ws_commit.cc:641
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "revisions share common history, but %s is not an ancestor of %s, cannot "
 "invert"
-msgstr "revisão %s tem, %d conjuntos de alterações, não pode inverter"
+msgstr ""
+"as revisões partilham um histórico comum, mas %s não é um antecessor de %s, "
+"não pode inverter"
 
 #: cmd_ws_commit.cc:702 cmd_ws_commit.cc:1771
 #, c-format
@@ -2726,9 +2742,9 @@ msgstr ""
 "directório for fornecido, o nome do branch será usado como directório."
 
 #: cmd_ws_commit.cc:1137
-#, fuzzy, c-format
+#, c-format
 msgid "wrong revision count"
-msgstr "contagem de argumentos errada"
+msgstr "contagem de revisão errada"
 
 #: cmd_ws_commit.cc:1143
 msgid "Manages file attributes"
@@ -2849,9 +2865,9 @@ msgstr ""
 "por favor especifique um nome de branch para a submissão, com --branch."
 
 #: cmd_ws_commit.cc:1556
-#, fuzzy, c-format
+#, c-format
 msgid "changes rejected by hook: %s"
-msgstr "mensagem de log rejeitada pelo hook: %s"
+msgstr "alterações rejeitadas pelo hook: %s"
 
 #: cmd_ws_commit.cc:1570
 #, c-format
@@ -3391,9 +3407,8 @@ msgid "Prints the contents of a file (given an identifier)"
 msgstr "Escreve o conteúdo de um ficheiro (fornecendo um identificador)"
 
 #: cmd_files.cc:354
-#, fuzzy
 msgid "Prints the size of a file (given an identifier)"
-msgstr "Escreve o conteúdo de um ficheiro (fornecendo um identificador)"
+msgstr "Escreve o tamanho de um ficheiro (fornecendo um identificador)"
 
 #: cmd_files.cc:388
 msgid "Prints the contents of a file (given a name)"
@@ -3864,14 +3879,14 @@ msgid "source file %s is not versioned"
 msgstr "ficheiro fonte %s não está versionado"
 
 #: work.cc:1975 work.cc:2041
-#, fuzzy, c-format
+#, c-format
 msgid "cannot move `%s' to a subdirectory of itself, `%s/%s'"
-msgstr "incapaz de mudar para directório %s: %s"
+msgstr "incapaz de mover `%s' para um sub-directório dele próprio,  `%s/%s'"
 
 #: work.cc:1977
-#, fuzzy, c-format
+#, c-format
 msgid "`%s' and `%s' are the same file"
-msgstr "%s e %s são a mesma revisão, a abortar"
+msgstr "`%s' e `%s' são o mesmo ficheiro"
 
 #: work.cc:1993
 #, c-format
@@ -4179,7 +4194,7 @@ msgid "%u"
 msgstr "%u"
 
 #: database.cc:1089
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "creator code      : %s\n"
 "schema version    : %s\n"
@@ -4215,6 +4230,7 @@ msgstr ""
 "  deltas de roster   : %s\n"
 "  ficheiros completos      : %s\n"
 "  deltas de ficheiro     : %s\n"
+"  tamanhos de ficheiros      : %s\n"
 "  revisões       : %s\n"
 "  edges ancestrais  : %s\n"
 "  certificados           : %s\n"
@@ -4224,6 +4240,7 @@ msgstr ""
 "  deltas de roster   : %s\n"
 "  ficheiros completos      : %s\n"
 "  deltas de ficheiro    : %s\n"
+"  tamanhos de ficheiro      : %s\n"
 "  revisões       : %s\n"
 "  ancestral em cache : %s\n"
 "  certificados           : %s\n"
@@ -4441,6 +4458,15 @@ msgid ""
 "'%s local kill_certs' command to delete the particular branch\n"
 "cert and re-add a valid one."
 msgstr ""
+"O nome de branch\n"
+"  '%s'\n"
+"contém meta caracteres (um ou mais de '?,;*%%+{}[]!^') ou\n"
+"começa com um traço, o que pode causar erros quando usado\n"
+"num padrão de branch do netsync.\n"
+"\n"
+"Se desejar desfazer esta operação, por favor use o\n"
+"comando '%s local kill_certs' para apagar o certificado do branch\n"
+"particular e re-adicionar um válido."
 
 #: database.cc:4109
 #, c-format
@@ -4551,14 +4577,15 @@ msgstr "ignorado o ficheiro de chave inválido ('%s') no chaveiro"
 
 #: key_store.cc:422 key_store.cc:426 key_store.cc:429 key_store.cc:431
 #: key_store.cc:434
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid data in key file."
-msgstr "escape inválido em ficheiro --xargs"
+msgstr "Dados inválidos no ficheiro da chave."
 
 #: key_store.cc:442
 #, c-format
 msgid "expected key with id '%s' in key file '%s', got key with id '%s'"
 msgstr ""
+"esperada chave com id '%s' no ficheiro chave '%s', obtida chave com id '%s'"
 
 #: key_store.cc:508
 #, c-format
@@ -4811,14 +4838,14 @@ msgid "malformed packet: invalid key name"
 msgstr "packet mal formado: nome de chave inválido"
 
 #: packet.cc:168
-#, fuzzy, c-format
+#, c-format
 msgid "malformed packet: invalid public key data for '%s': %s"
-msgstr "packet mal formado: nome de chave inválido"
+msgstr "packet mal formado: dados de chave pública inválidos para '%s': %s"
 
 #: packet.cc:187
-#, fuzzy, c-format
+#, c-format
 msgid "malformed packet: invalid private key data for '%s': %s"
-msgstr "packet mal formado: nome de chave inválido"
+msgstr "packet mal formado: dados de chave privada inválidos para '%s': %s"
 
 #: packet.cc:199
 #, c-format
@@ -4836,34 +4863,36 @@ msgid "unknown packet type: '%s'"
 msgstr "tipo de packet desconhecido: '%s'"
 
 #: key_packet.cc:91 key_packet.cc:97
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid base64 block"
-msgstr "packet mal formado: bloco base64 inválido"
+msgstr "packet chave mal formado: bloco base64 inválido"
 
 #: key_packet.cc:104
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid key name"
-msgstr "packet mal formado: nome de chave inválido"
+msgstr "packet chave mal formado: nome de chave inválido"
 
 #: key_packet.cc:118
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid public key data for '%s': %s"
-msgstr "packet mal formado: nome de chave inválido"
+msgstr ""
+"packet chave mal formado: dados de chave pública inválidos para '%s': %s"
 
 #: key_packet.cc:137
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid private key data for '%s': %s"
-msgstr "packet mal formado: nome de chave inválido"
+msgstr ""
+"packet chave mal formado: dados de chave privada inválidos para '%s': %s"
 
 #: key_packet.cc:149
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: too many arguments in header"
-msgstr "packet mal formado: demasiados argumentos no cabeçalho"
+msgstr "packet chave mal formado: demasiados argumentos no cabeçalho"
 
 #: key_packet.cc:213
-#, fuzzy, c-format
+#, c-format
 msgid "unknown key_packet type: '%s'"
-msgstr "tipo de packet desconhecido: '%s'"
+msgstr "tipo de packet chave desconhecido: '%s'"
 
 #: rcs_file.cc:354
 #, c-format
@@ -5087,9 +5116,9 @@ msgid "rebuilding revision graph from manifest certs"
 msgstr "a reconstruir gráfico de revisão a partir de certificados de manifesto"
 
 #: migrate_ancestry.cc:990
-#, fuzzy, c-format
+#, c-format
 msgid "regenerating cached heights"
-msgstr "a regenerar os branches em cache"
+msgstr "a regenerar os heights em cache"
 
 #: migrate_ancestry.cc:1000 migrate_ancestry.cc:1031 migrate_ancestry.cc:1063
 #: migrate_ancestry.cc:1097
@@ -5097,19 +5126,19 @@ msgid "regenerated"
 msgstr "regenerado"
 
 #: migrate_ancestry.cc:1015
-#, fuzzy, c-format
+#, c-format
 msgid "finished regenerating cached heights"
-msgstr "regeneração terminada dos branches em cache"
+msgstr "regeneração terminada dos heights em cache"
 
 #: migrate_ancestry.cc:1021
-#, fuzzy, c-format
+#, c-format
 msgid "regenerating cached rosters"
-msgstr "a regenerar os branches em cache"
+msgstr "a regenerar os rosters em cache"
 
 #: migrate_ancestry.cc:1046
-#, fuzzy, c-format
+#, c-format
 msgid "finished regenerating cached rosters"
-msgstr "regeneração terminada dos branches em cache"
+msgstr "regeneração terminada dos rosters em cache"
 
 #: migrate_ancestry.cc:1052
 #, c-format
@@ -5122,14 +5151,14 @@ msgid "finished regenerating cached branches"
 msgstr "regeneração terminada dos branches em cache"
 
 #: migrate_ancestry.cc:1087
-#, fuzzy, c-format
+#, c-format
 msgid "regenerating cached file sizes for revisions"
-msgstr "a regenerar rosters e heights em cache"
+msgstr "a regenerar tamanhos de ficheiros em cache para revisões"
 
 #: migrate_ancestry.cc:1112
-#, fuzzy, c-format
+#, c-format
 msgid "finished regenerating cached file sizes"
-msgstr "regeneração terminada dos branches em cache"
+msgstr "regeneração terminada dos tamanhos de ficheiros em cache"
 
 #: refiner.cc:371
 #, c-format
@@ -5174,7 +5203,7 @@ msgstr "Erro de rede: %s"
 #: netsync.cc:355
 #, c-format
 msgid "beginning service on %s"
-msgstr "iniciando serviço em %s"
+msgstr "a iniciar serviço em %s"
 
 #: netsync.cc:413 netsync.cc:417
 #, c-format
@@ -5199,12 +5228,12 @@ msgstr "netcmd '%d' inesperado recebido em ligação automatizada"
 #: network/connection_info.cc:61
 #, c-format
 msgid "ignoring invalid default server address '%s': %s"
-msgstr ""
+msgstr "a ignorar endereço de servidor predefinido inválido '%s': %s"
 
 #: network/connection_info.cc:88
-#, fuzzy, c-format
+#, c-format
 msgid "ignoring invalid default include / exclude pattern: %s"
-msgstr "a definir padrão excluído do branch predefinido para '%s'"
+msgstr "a ignorar padrão de inclusão / exclusão predefinido inválido: %s"
 
 #: network/connection_info.cc:200
 #, c-format
@@ -5228,21 +5257,23 @@ msgstr ""
 #, c-format
 msgid "connection host / path is empty and no default value could be loaded"
 msgstr ""
+"a ligação máquina / caminho está vazia e nenhum valor predefinido pôde ser "
+"carregado"
 
 #: network/connection_info.cc:316
-#, fuzzy, c-format
+#, c-format
 msgid "branch pattern is empty and no default value could be loaded"
 msgstr ""
-"nenhum padrão de branch fornecido e o padrão predefinido não está definido"
+"o padrão do branch está vazio e nenhum valor predefinido pôde ser carregado"
 
 #: network/connection_info.cc:388
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "include / exclude pattern was given both as part of the URL and as a "
 "separate argument."
 msgstr ""
-"Padrão inclui/exclui forneceu ambos como parte do URL e como um argumento "
-"separado."
+"o padrão de inclusão / exclusão foi fornecido tanto como parte do URL e como "
+"um argumento separado."
 
 #: network/connection_info.cc:436
 #, c-format
@@ -5250,6 +5281,8 @@ msgid ""
 "no branch pattern found in URI, will try to use suitable database defaults "
 "if available"
 msgstr ""
+"nenhum padrão de branch encontrado em URI, irei tentar usar predefinições "
+"apropriadas da base de dados se disponíveis"
 
 #: network/connection_info.cc:458
 #, c-format
@@ -5257,6 +5290,8 @@ msgid ""
 "separate server and pattern arguments are deprecated, please consider using "
 "the URI calling syntax instead"
 msgstr ""
+"os argumentos de servidor e padrão em separado está descontinuado, por favor "
+"considere usar antes a sintaxe de chamada de URI"
 
 #: network/connection_info.cc:466
 #, c-format
@@ -5264,6 +5299,8 @@ msgid ""
 "you can specify either a query string or separate include/exclude "
 "parameters, but not both"
 msgstr ""
+"você pode especificar ou uma string de consulta ou padrões de "
+"inclusão/exclusão separados, mas não ambos"
 
 #: network/connection_info.cc:486
 #, c-format
@@ -6006,9 +6043,8 @@ msgid "Shows the manifest associated with a revision"
 msgstr "Mostra o manifesto associado com uma revisão"
 
 #: automate.cc:1551
-#, fuzzy
 msgid "Prints the extended manifest for the given identifier"
-msgstr "Escreve os descendentes das revisões fornecidas"
+msgstr "Escreve o manifesto extenso para o identificador fornecido"
 
 #: automate.cc:1587
 msgid "Prints the revision data in packet format"
@@ -6219,7 +6255,7 @@ msgstr "ficheiro %s não referenciado"
 #: database_check.cc:718
 #, c-format
 msgid "file %s has a missing or invalid file size"
-msgstr ""
+msgstr "o ficheiro %s tem o tamanho de ficheiro em falta ou inválido"
 
 #: database_check.cc:736
 #, c-format
@@ -6368,9 +6404,9 @@ msgid "%d unreferenced files"
 msgstr "%d ficheiros não referenciados"
 
 #: database_check.cc:1116
-#, fuzzy, c-format
+#, c-format
 msgid "%d missing or invalid file sizes"
-msgstr "%d ficheiros em falta"
+msgstr "%d tamanhos de ficheiros em falta ou inválidos"
 
 #: database_check.cc:1119
 #, c-format
@@ -6512,9 +6548,9 @@ msgid "selection '%s' has multiple ambiguous expansions:"
 msgstr "selecção '%s' tem múltiplas expansões ambíguas:"
 
 #: selectors.cc:94
-#, fuzzy, c-format
+#, c-format
 msgid "the key selector k: must not be empty"
-msgstr "o selector de certificados c: pode não estar vazio"
+msgstr "o selector de chaves k: não pode estar vazio"
 
 #: selectors.cc:115
 #, c-format
@@ -6578,16 +6614,16 @@ msgid "the selector w: returns the base revision(s) of the workspace"
 msgstr "o selector w: devolve a(s) revisão(ões) base do espaço de trabalho"
 
 #: selectors.cc:496
-#, fuzzy, c-format
+#, c-format
 msgid "the '%s' function takes %d argument, not %d"
 msgid_plural "the '%s' function takes %d arguments, not %d"
-msgstr[0] "opção '%s' não aceita um argumento"
-msgstr[1] "opção '%s' não aceita um argumento"
+msgstr[0] "a função '%s' aceita %d argumento, não %d"
+msgstr[1] "a função '%s' aceita %d argumentos, não %d"
 
 #: selectors.cc:619
-#, fuzzy, c-format
+#, c-format
 msgid "unknown selection function '%s'"
-msgstr "opção desconhecida '%s'"
+msgstr "função de selecção desconhecida '%s'"
 
 #: selectors.cc:652
 #, c-format
@@ -6602,23 +6638,27 @@ msgstr "tipo de selector desconhecido: %c"
 #: selectors.cc:726
 #, c-format
 msgid "selector '%s' is invalid, it ends with the escape character '\\'"
-msgstr ""
+msgstr "o selector '%s' é inválido, termina com o caractere de escape '\\'"
 
 #: selectors.cc:731
 #, c-format
 msgid "selector '%s' is invalid, it contains an unknown escape sequence '%s%s'"
 msgstr ""
+"o selector '%s' é inválido, contém uma sequência de escape desconhecida "
+"'%s%s'"
 
 #: selectors.cc:770
-#, fuzzy, c-format
+#, c-format
 msgid "selector '%s' is invalid, unmatched ')'"
-msgstr "selector '%s' não é uma data válida (%s)"
+msgstr "selector '%s' é inválido, ')' não coincidente"
 
 #: selectors.cc:787
 #, c-format
 msgid ""
 "selector '%s' is invalid, function argument doesn't look like an arg-list"
 msgstr ""
+"o selector '%s' é inválido, o argumento de função não parece uma lista de "
+"argumentos"
 
 #: selectors.cc:798
 #, c-format
@@ -6626,33 +6666,38 @@ msgid ""
 "selector '%s' is invalid, grouping parentheses contain something that "
 "doesn't look like an expr"
 msgstr ""
+"o selector '%s' é inválido, o agrupamento de parênteses contém algo que não "
+"parece uma expressão"
 
 #: selectors.cc:809
-#, fuzzy, c-format
+#, c-format
 msgid "selector '%s' is invalid, because it starts with a '/'"
-msgstr "selector '%s' não é uma data válida (%s)"
+msgstr "o selector '%s' é inválido, porque começa com um '/'"
 
 #: selectors.cc:813
-#, fuzzy, c-format
+#, c-format
 msgid "selector '%s' is invalid, because it starts with a '|'"
-msgstr "selector '%s' não é uma data válida (%s)"
+msgstr "o selector '%s' é inválido, porque começa com um '|'"
 
 #: selectors.cc:838
 #, c-format
 msgid ""
 "selector '%s is invalid, because there is a '%s' someplace it shouldn't be"
 msgstr ""
+"o selector '%s' é inválido, porque existe um '%s' onde não deveria estar"
 
 #: selectors.cc:843 selectors.cc:846
 #, c-format
 msgid ""
 "selector '%s' is invalid, don't mix '/' and '|' operators without parentheses"
 msgstr ""
+"o selector '%s' é inválido, não misture os operadores '/' e '|' sem "
+"parênteses"
 
 #: selectors.cc:885
-#, fuzzy, c-format
+#, c-format
 msgid "selector '%s' is invalid, it doesn't look like an expr"
-msgstr "selector '%s' não é uma data válida\n"
+msgstr "o selector '%s' é inválido, não parece uma expressão"
 
 #: selectors.cc:908
 #, c-format
@@ -6675,19 +6720,19 @@ msgid "%s.. by %s %s: "
 msgstr "%s.. por %s %s: "
 
 #: annotate.cc:431
-#, fuzzy, c-format
+#, c-format
 msgid "%s.. by %s: "
-msgstr "%s.. por %s %s: "
+msgstr "%s.. por %s: "
 
 #: annotate.cc:433
-#, fuzzy, c-format
+#, c-format
 msgid "%s.. %s: "
-msgstr "%s.. por %s %s: "
+msgstr "%s.. %s: "
 
 #: annotate.cc:435
 #, c-format
 msgid "%s..: "
-msgstr ""
+msgstr "%s..: "
 
 #: restrictions.cc:79 restrictions.cc:159
 #, c-format
@@ -7497,34 +7542,34 @@ msgid "Invalid escape in --xargs file"
 msgstr "escape inválido em ficheiro --xargs"
 
 #: option.cc:331
-#, fuzzy, c-format
+#, c-format
 msgid "option '%s' has multiple ambiguous expansions:"
-msgstr "selecção '%s' tem múltiplas expansões ambíguas:"
+msgstr "a opção '%s' tem múltiplas expansões ambíguas:"
 
 #: option.cc:346
 #, c-format
 msgid "negation of --%s"
-msgstr ""
+msgstr "negação de --%s"
 
 #: option.cc:507 option.cc:551
 #, c-format
 msgid "deprecated option '%s' used: %s"
-msgstr ""
+msgstr "usada opção '%s' descontinuada: %s"
 
 #: options.hh:46
 #, c-format
 msgid "must not be less than %d"
-msgstr ""
+msgstr "não pode ser menos de %d"
 
 #: options.hh:75
 #, c-format
 msgid "must be one of the following: %s"
-msgstr ""
+msgstr "tem de ser um dos seguintes: %s"
 
 #: options_list.hh:132
 #, c-format
 msgid "must be between 0 and 255"
-msgstr ""
+msgstr "tem de estar entre 0 e 255"
 
 #: options_list.hh:206
 msgid "insert command line arguments taken from the given file"
@@ -7719,9 +7764,8 @@ msgid "display help message"
 msgstr "mostra a mensagem de ajuda"
 
 #: options_list.hh:403
-#, fuzzy
 msgid "show hidden commands and options"
-msgstr "mostra comandos escondidos"
+msgstr "mostra comandos e opções escondidas"
 
 #: options_list.hh:406
 msgid "do not ignore revisions marked as suspended"
@@ -7791,11 +7835,11 @@ msgid "exclude merges when printing logs"
 msgstr "exclui fusões ao escrever logs"
 
 #: options_list.hh:457
-#, fuzzy
 msgid ""
 "do not load %APPDATA%\\monotone\\monotonerc or _MTN\\monotonerc lua files"
 msgstr ""
-"não carrega os ficheiros do lua ~/.monotone/monotonerc ou _MTN/monotonerc"
+"não carrega os ficheiros do lua %APPDATA%\\monotone\\monotonerc ou "
+"_MTN\\monotonerc"
 
 #: options_list.hh:460
 msgid "do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"
@@ -7804,28 +7848,27 @@ msgstr ""
 
 #: options_list.hh:467
 msgid "do not load the built-in lua file with the default hooks"
-msgstr ""
+msgstr "não carrega o ficheiro do lua embutido com os hooks predefinidos"
 
 #: options_list.hh:469
 msgid "please use --no-standard-rcfiles instead"
-msgstr ""
+msgstr "por favor use antes --no-standard-rcfiles"
 
 #: options_list.hh:471
 msgid "old version of --no-standard-rcfiles"
-msgstr ""
+msgstr "versão antiga de --no-standard-rcfiles"
 
 #: options_list.hh:475
 msgid "please use --no-builtin-rcfile instead"
-msgstr ""
+msgstr "por favor use antes --no-builtin-rcfile"
 
 #: options_list.hh:477
 msgid "old version of --no-builtin-rcfile"
-msgstr ""
+msgstr "versão antiga de --no-builtin-rcfile"
 
 #: options_list.hh:483
-#, fuzzy
 msgid "load extra lua file"
-msgstr "carregar ficheiro rc extra"
+msgstr "carregar ficheiro lua extra"
 
 #: options_list.hh:486
 msgid "record process id of server"
@@ -7836,14 +7879,17 @@ msgid ""
 "decrease verbosity (undo previous -v, then disable informational output, "
 "then disable warnings)"
 msgstr ""
+"reduz o detalhe (desfaz o -v prévio, depois desactiva a saída informativa, e "
+"depois desactiva os avisos)"
 
 #: options_list.hh:502
 msgid "increase verbosity (undo previous -q, and then enable debug output)"
 msgstr ""
+"aumenta o detalhe (desfaz o -q prévio, e depois activa a saída de depuração)"
 
 #: options_list.hh:512
 msgid "please us -v (or -v -v -v if there are previous -q options)"
-msgstr ""
+msgstr "por favor use -v (ou -v -v -v se existirem opções -q prévias)"
 
 #: options_list.hh:515
 msgid "print debug log to stderr while running"
@@ -7851,7 +7897,7 @@ msgstr "escreve log de depuração para stderr durante o funcionamento"
 
 #: options_list.hh:522
 msgid "please use -q -q"
-msgstr ""
+msgstr "por favor use -q -q"
 
 #: options_list.hh:524
 msgid "suppress warning, verbose, informational and progress messages"
@@ -7866,6 +7912,8 @@ msgid ""
 "automatically run the output through nroff (default if the output is a "
 "terminal)"
 msgstr ""
+"corre automaticamente a saída pelo nroff (predefinido se a saída for um "
+"terminal)"
 
 #: options_list.hh:539
 msgid "show timestamps in front of errors, warnings and progress messages"
@@ -7937,6 +7985,8 @@ msgstr "usar ficheiro para resolver conflitos"
 #: options_list.hh:610
 msgid "specify conflict resolutions in a file, instead of interactively"
 msgstr ""
+"especifica as resoluções de conflitos num ficheiro, em vez de "
+"interactivamente"
 
 #: options_list.hh:616
 msgid "file in which to store conflicts"
@@ -8164,9 +8214,9 @@ msgid "unable to parse date '%s' with format '%s'"
 msgstr "incapaz de analisar data '%s' com formato '%s'"
 
 #: unix/parse_date.cc:24
-#, fuzzy, c-format
+#, c-format
 msgid "invalid date '%s' not matched by format '%s'"
-msgstr "padrão inválido '%s': '[' não correspondente"
+msgstr "data inválida '%s' não corresponde ao formato '%s'"
 
 #: win32/get_system_flavour.cc:161
 #, c-format
@@ -8247,9 +8297,9 @@ msgid "Asked to read more than %u from pageant."
 msgstr "Pedido para ler mais de %u no pageant."
 
 #: win32/parse_date.cc:21
-#, fuzzy, c-format
+#, c-format
 msgid "date parsing not available on win32"
-msgstr "nenhuma revisão de actualização disponível"
+msgstr "análise de data não disponível em win32"
 
 #: monotone.cc:83
 #, c-format
