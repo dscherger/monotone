@@ -354,6 +354,12 @@
     <ClCompile Include="..\rev_output.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\options_applicator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\key_packet.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\schema.sql" />

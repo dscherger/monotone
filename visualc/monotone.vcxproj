@@ -152,6 +152,7 @@
     <ClCompile Include="..\hmac.cc" />
     <ClCompile Include="..\inodeprint.cc" />
     <ClCompile Include="..\keys.cc" />
+    <ClCompile Include="..\key_packet.cc" />
     <ClCompile Include="..\key_store.cc" />
     <ClCompile Include="..\lcs.cc" />
     <ClCompile Include="..\legacy.cc" />
@@ -191,6 +192,7 @@
     <ClCompile Include="..\netxx_pipe.cc" />
     <ClCompile Include="..\option.cc" />
     <ClCompile Include="..\options.cc" />
+    <ClCompile Include="..\options_applicator.cc" />
     <ClCompile Include="..\outdated_indicator.cc" />
     <ClCompile Include="..\package_full_revision.cc" />
     <ClCompile Include="..\package_revision.cc" />
