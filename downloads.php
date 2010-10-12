@@ -161,7 +161,7 @@ END;
                 $size = round($size / (1024*1024), 2)."MB";
                 echo <<<END
             <dd>
-                <a href="{$CFG['download_webdir']}/$file">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
+                <a href="{$CFG['download_webdir']}/$file" class="piwik_download">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
                 <span style="font-size:75%"><a href="?type=$type">&#187; all downloads of this type</a></span>
             </dd>
 END;
@@ -188,7 +188,7 @@ END;
             $size = round($size / (1024*1024), 2)."MB";
             echo <<<END
             <dd>
-                <a href="{$CFG['download_webdir']}/$file">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
+                <a href="{$CFG['download_webdir']}/$file" class="piwik_download">$name</a> <small>($size, SHA1 <code>$sha1</code>)</small><br/>
             </dd>
 END;
         endforeach;
@@ -210,19 +210,19 @@ END;
     <div class="box box-small">
         <h1 class="relateddownload">mtn-browse</h1>
         <p>Perl/Gtk+-based browser application for monotone databases</p>
-        <p><a href="http://sourceforge.net/projects/mtn-browse/">&#187; download site</a></p>
+        <p><a href="http://sourceforge.net/projects/mtn-browse/" class="piwik_link">&#187; download site</a></p>
     </div>
 
     <div class="box box-small">
         <h1 class="relateddownload">guitone</h1>
         <p>A Qt-based cross-platform GUI for monotone</p>
-        <p><a href="http://guitone.thomaskeller.biz/g/download">&#187; download site</a></p>
+        <p><a href="http://guitone.thomaskeller.biz/g/download" class="piwik_link">&#187; download site</a></p>
     </div>
 
     <div class="box box-small">
         <h1 class="relateddownload">monotone-viz</h1>
         <p>A Gtk+-based application to visualize monotone ancestry graphs</p>
-        <p><a href="http://oandrieu.nerim.net/monotone-viz/">&#187; download site</a></p>
+        <p><a href="http://oandrieu.nerim.net/monotone-viz/" class="piwik_link">&#187; download site</a></p>
     </div>
 </div>
 
@@ -230,13 +230,13 @@ END;
     <div class="box box-small">
         <h1 class="relateddownload">ViewMTN</h1>
         <p>A Python-based web frontend for monotone</p>
-        <p><a href="http://viewmtn.1erlei.de/">&#187; download site</a></p>
+        <p><a href="http://viewmtn.1erlei.de/" class="piwik_link">&#187; download site</a></p>
     </div>
 
     <div class="box box-small">
         <h1 class="relateddownload">TracMonotone</h1>
         <p>A <a href="http://trac.edgewall.org/">Trac</a> plugin for monotone</p>
-        <p><a href="http://tracmtn.1erlei.de/">&#187; download site</a></p>
+        <p><a href="http://tracmtn.1erlei.de/" class="piwik_link">&#187; download site</a></p>
     </div>
 </div>
 

@@ -100,7 +100,7 @@ require_once("simplepie-1.2.0/simplepie.inc.php");
                         endif;
                         echo $desc;
                     ?>
-                    <a href="<?php echo $item->get_link(0) ?>" target="_blank">&#187; read more</a>
+                    <a href="<?php echo $item->get_link(0) ?>" target="_blank" class="piwik_link">&#187; read more</a>
                 </p>
             </div>
 <?php
