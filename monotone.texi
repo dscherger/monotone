@@ -6862,7 +6862,7 @@ of double-quotes containing arbitrary characters, with only backslash and
 double-quote escaped with a backslash), and a @code{hex} matches
 @code{/\[[0-9a-f]@{40@}\]/} (40 lowercase hex digits enclosed by square
 brackets; this will necessarily change in some manner when we eventually move
-to a stronger hash than sha1). Each @code{symbol} is followed by one or more
+to a stronger hash than sha1). Each @code{symbol} is followed by zero or more
 @code{string}s and/or @code{hex}es.
 
 While the above is all that is strictly necessary to parse basic_io, there is
@@ -6884,10 +6884,13 @@ other than the longest is preceeded by spaces. The longest @code{symbol} in a
 stanza is not preceeded by spaces, even if there are longer @code{symbol}s in
 other stanzas.
 @item
-Lines and stanzas are generally required to be in a particular
-order. This is particularly important for objects such as revisions,
-where the logical structure is nested more deeply than the basic_io
-format can represent.  In this case the logical structure is header
+Lines within stanzas have a consistent order, although some may be
+optional in some commands.
+@item
+Stanzas typically have no defined order, although some commands define
+a partial order to aid in parsing.
+
+For example, revisions have associated data; the structure is header
 stanzas followed by a list of changes vs. each parent revision, with
 each change represented by a separate stanza; reordering the stanzas
 could cause a particular change to be interpreted against the wrong
