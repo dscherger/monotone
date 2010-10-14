@@ -424,8 +424,10 @@ namespace commands
   complete_command(args_vector const & args)
   {
     // Handle categories early; no completion allowed.
-    if (CMD_REF(__root__)->find_command(make_command_id(args[0]())) != NULL)
-      return make_command_id(args[0]());
+    command_id first_cmd_part = make_command_id(args[0]());
+    if (!first_cmd_part.empty() &&
+         CMD_REF(__root__)->find_command(first_cmd_part) != NULL)
+      return first_cmd_part;
 
     command_id id;
     for (args_vector::const_iterator iter = args.begin();
