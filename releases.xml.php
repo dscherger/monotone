@@ -1,5 +1,7 @@
 <?php
 
+require_once("config.inc.php");
+
 setlocale(LC_ALL, "en_US.UTF-8");
 
 $parser = new news_parser(dirname(__FILE__) . "/NEWS");
