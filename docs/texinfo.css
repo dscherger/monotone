@@ -1,14 +1,19 @@
 body {
-    margin: 20px;
+    margin: 0px;
     font-family: Helvetica, Arial, sans-serif;
     font-size: 0.625em;
+}
+
+body > * {
+    margin-left: 20px;
+    margin-right: 20px;
 }
 
 h1.settitle,
 div.node {
     position: fixed;
     top: 0;
-    margin: 0 -20px;
+    margin: 0;
     width: 100%;
     background: url(images/bg.png);
     padding: 20px;
