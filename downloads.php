@@ -57,7 +57,7 @@ function getAllFiles($type)
 
     foreach ($releaseDirs as $dir)
     {
-        if (!is_dir("{$CFG['download_dir']}/$dir") || $dir == "." || $dir == "..")
+        if (!is_dir("{$CFG['download_dir']}/$dir") || strpos($dir, ".") === 0)
             continue;
 
         $files = scandir("{$CFG['download_dir']}/$dir", 1);
