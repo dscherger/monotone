@@ -668,6 +668,7 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
                  failure.replace(pos, prefix.size(), "");
 
               W(F("%s") % failure);
+              W(F("ignoring database '%s'") % db_path);
               continue;
             }
 
