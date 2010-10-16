@@ -331,7 +331,12 @@ netsync_connection_info::parse_includes_excludes_from_query(string const & query
   string::size_type end = query.find(separator);
   while (begin < query.size())
     {
-      std::string item = query.substr(begin, end);
+      std::string item;
+      if (end == string::npos)
+        item = query.substr(begin);
+      else
+        item = query.substr(begin, end - begin);
+
       if (end == string::npos)
         begin = end;
       else

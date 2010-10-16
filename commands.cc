@@ -325,8 +325,6 @@ namespace commands
   {
     map< command_id, command * > matches;
 
-    I(!prefix().empty());
-
     for (children_set::const_iterator iter = children().begin();
          iter != children().end(); iter++)
       {
