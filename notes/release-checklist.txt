@@ -29,7 +29,7 @@ How to release a new version of monotone
 
 4) Check the NEWS if any changes in the automation interface have happened.
 
-   Document changes in the wiki under http://monotone.ca/wiki/AutomateVersions/
+   Document changes in the wiki under http://wiki.monotone.ca/AutomateVersions/
    by adding new commands with an 'A' marker or set a 'B' (for _B_ackwards
    compatible change) or 'C' (for backwards in_C_ompatible change) markers for
    changed commands.
@@ -96,11 +96,11 @@ How to release a new version of monotone
     #
     $ mkdir <NEW VERSION>
     $ mv SOMEDIR/monotone-<NEW VERSION>.tar.gz <NEW VERSION>/
-    $ scp -r <NEW VERSION> mtn-uploads@monotone.ca:downloads/
+    $ scp -r <NEW VERSION> mtn-uploads@monotone.ca:~/
 
     # The rest is done via monotone.
     #
-    $ mtn -d DATABASE co -b net.venge.monotone.web WEBDIR
+    $ mtn -d DATABASE co -b net.venge.monotone.web.mainsite WEBDIR
     $ cp monotone-<NEW VERSION>/{NEWS,INSTALL,UPGRADE,monotone.pdf,monotone.html} \
           WEBDIR/
     $ rm -rf WEBDIR/docs

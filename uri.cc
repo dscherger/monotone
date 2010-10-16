@@ -112,31 +112,25 @@ parse_uri(string const & in, uri_t & uri, origin::type made_from)
   // This is a simplified URI grammar. It does the basics.
 
   // First there may be a scheme: one or more characters which are not
-  // ":/?#", followed by a colon.
+  // ":/?#", followed by a colon and two slashes.
   stringpos scheme_end = in.find_first_of(":/?#", p);
 
-  if (scheme_end != 0 && scheme_end < in.size() && in.at(scheme_end) == ':')
+  if (scheme_end != 0 && scheme_end + 2 < in.size()
+      && in.substr(scheme_end, 3) == "://")
     {
       uri.scheme.assign(in, p, scheme_end - p);
-      p = scheme_end + 1;
+      p = scheme_end + 3;
       L(FL("matched URI scheme: '%s'") % uri.scheme);
     }
 
-  // Next, there may be an authority: "//" followed by zero or more
-  // characters which are not "/?#".
-
-  if (p + 1 < in.size() && in.at(p) == '/' && in.at(p+1) == '/')
+  stringpos authority_end = in.find_first_of("/?#", p);
+  if (authority_end != p)
     {
-      p += 2;
-      stringpos authority_end = in.find_first_of("/?#", p);
-      if (authority_end != p)
-        {
-          parse_authority(string(in, p, authority_end - p), uri, made_from);
-          p = authority_end;
-        }
-      if (p >= in.size())
-        return;
+      parse_authority(string(in, p, authority_end - p), uri, made_from);
+      p = authority_end;
     }
+  if (p >= in.size())
+    return;
 
   // Next, a path: zero or more characters which are not "?#".
   {
