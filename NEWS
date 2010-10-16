@@ -1,3 +1,34 @@
+XXX XXX XX XX:XX:XX XXX XXXX
+
+        0.48.1 bugfix release.
+
+        Security related changes:
+
+        - Running "mtn ''" or "mtn ls ''" doesn't cause an internal
+          error anymore. In monotone 0.48 and earlier this behavior
+          could be used to crash a server remotely (but only if it was
+          configured to allow execution of remote commands).
+
+          Therefore everyone running such a server should update as
+          soon as possible.
+
+        Other changes:
+
+        - The --no-format-dates option is now set per default on Win32
+          for the commit command, because there's no date parsing
+          method in the Win32 API. In the changelog editor dates are
+          thus showed and (expected to be entered) in monotone's
+          internal datetime format (YYYY-MM-DDTHH:MM:SS).
+
+        - Using mtn:// style URIs for netsync operations didn't work
+          with 0.48 on systems which only have a 'monotone' entry in
+          /etc/services. Failing to find a corresponding entry for the
+          schema in a given URI isn't considered fatal now, instead
+          mtn falls back to its default port.
+
+        - Compilation issues on Win32 have been fixed.
+
+
 Sun Jun 13 22:13:53 UTC 2010
 
         0.48 release.
