@@ -139,12 +139,10 @@ Netxx::port_type Netxx::resolve_service (const char *service)
     std::memset(&flags, 0, sizeof(flags));
     flags.ai_family = AF_INET;
 
-    if (getaddrinfo(0, service, &flags, &info) != 0) {
-	std::string error("service name resolution failed for: "); error += service;
-	throw NetworkException(error);
+    if (getaddrinfo(0, service, &flags, &info) == 0) {
+	auto_addrinfo ai(info);
+	return ntohs(reinterpret_cast<sockaddr_in*>(info->ai_addr)->sin_port);
     }
-
-    auto_addrinfo ai(info);
-    return ntohs(reinterpret_cast<sockaddr_in*>(info->ai_addr)->sin_port);
+    return 0;
 }
 //####################################################################
