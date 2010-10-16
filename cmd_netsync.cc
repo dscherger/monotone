@@ -286,14 +286,14 @@ print_dryrun_info_cmd(protocol_role role,
     {
       if (counts->keys_in.can_have_more_than_min)
         {
-          std::cout << (F("would receive %d revisions, %d certs, and at least %d keys")
+          std::cout << (F("would receive %d revisions, %d certs, and at least %d keys\n")
             % counts->revs_in.min_count
             % counts->certs_in.min_count
             % counts->keys_in.min_count);
         }
       else
         {
-          std::cout << (F("would receive %d revisions, %d certs, and %d keys")
+          std::cout << (F("would receive %d revisions, %d certs, and %d keys\n")
             % counts->revs_in.min_count
             % counts->certs_in.min_count
             % counts->keys_in.min_count);
@@ -301,12 +301,12 @@ print_dryrun_info_cmd(protocol_role role,
     }
   if (role != sink_role)
     {
-      std::cout << (F("would send %d certs and %d keys")
+      std::cout << (F("would send %d certs and %d keys\n")
         % counts->certs_out.min_count
         % counts->keys_out.min_count);
       std::cout <<
-        (FP("would send %d revisions", // 0 revisions; nothing following, so no trailing colon
-           "would send %d revisions:",
+        (FP("would send %d revisions\n", // 0 revisions; nothing following, so no trailing colon
+           "would send %d revisions:\n",
            counts->revs_out.min_count + 1)
         % counts->revs_out.min_count);
       map<branch_name, int> branch_counts;
@@ -324,7 +324,7 @@ print_dryrun_info_cmd(protocol_role role,
       for (map<branch_name, int>::iterator i = branch_counts.begin();
            i != branch_counts.end(); ++i)
         {
-          std::cout << (F("%9d in branch %s") % i->second % i->first);
+          std::cout << (F("%9d in branch %s\n") % i->second % i->first);
         }
     }
 }
