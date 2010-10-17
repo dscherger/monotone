@@ -1,4 +1,4 @@
-// Copyright (C) 2005 and later by various people
+// Copyright (C) 2005, 2010 and later by various people
 // see monotone commit logs for details and authors
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -81,7 +81,24 @@ public:
   future_set<key_id> keys_out;
   future_set<cert> certs_out;
   future_set<revision_id> revs_out;
+
 };
+
+// 'revs' is a list of revs that were transferred (normally
+// connection_counts.revs_in or connection_counts.revs_out).
+//
+// 'certs' is a list of certs that were transferred (normally
+// connection_counts.certs_in or connection_counts.certs_out).
+//
+// Populate unattached_certs with certs that are associated with a
+// revision that was _not_ transferred.
+//
+// Populate rev_certs with certs that are associated with a revision that
+// _was_ transferred.
+void sort_rev_order (future_set<revision_id> & revs,
+                     future_set<cert> & certs,
+                     std::vector<cert> & unattached_certs,
+                     std::map<revision_id, std::vector<cert> > & rev_certs);
 
 struct netsync_connection_info
 {

@@ -140,26 +140,16 @@ void netsync_session::on_end(size_t ident)
             keys_in || keys_out))
     error_code = error_codes::partial_transfer;
 
-  vector<cert> unattached_written_certs;
-  map<revision_id, vector<cert> > rev_written_certs;
-  for (vector<revision_id>::const_iterator i = counts->revs_in.items.begin();
-       i != counts->revs_in.items.end(); ++i)
-    rev_written_certs.insert(make_pair(*i, vector<cert>()));
-  for (vector<cert>::const_iterator i = counts->certs_in.items.begin();
-       i != counts->certs_in.items.end(); ++i)
-    {
-      map<revision_id, vector<cert> >::iterator j;
-      j = rev_written_certs.find(revision_id(i->ident));
-      if (j == rev_written_certs.end())
-        unattached_written_certs.push_back(*i);
-      else
-        j->second.push_back(*i);
-    }
-
+  // Call Lua hooks
   if (!counts->revs_in.items.empty()
       || !counts->keys_in.items.empty()
       || !counts->certs_in.items.empty())
     {
+
+      vector<cert> unattached_written_certs;
+      map<revision_id, vector<cert> > rev_written_certs;
+      sort_rev_order (counts->revs_in, counts->certs_in,
+                      unattached_written_certs, rev_written_certs);
 
       //Keys
       for (vector<key_id>::const_iterator i = counts->keys_in.items.begin();
@@ -211,19 +201,8 @@ void netsync_session::on_end(size_t ident)
 
       vector<cert> unattached_sent_certs;
       map<revision_id, vector<cert> > rev_sent_certs;
-      for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
-           i != counts->revs_out.items.end(); ++i)
-        rev_sent_certs.insert(make_pair(*i, vector<cert>()));
-      for (vector<cert>::const_iterator i = counts->certs_out.items.begin();
-           i != counts->certs_out.items.end(); ++i)
-        {
-          map<revision_id, vector<cert> >::iterator j;
-          j = rev_sent_certs.find(revision_id(i->ident));
-          if (j == rev_sent_certs.end())
-            unattached_sent_certs.push_back(*i);
-          else
-            j->second.push_back(*i);
-        }
+      sort_rev_order (counts->revs_out, counts->certs_out,
+                      unattached_sent_certs, rev_sent_certs);
 
       //Keys
       for (vector<key_id>::const_iterator i = counts->keys_out.items.begin();
@@ -368,6 +347,10 @@ netsync_session::setup_client_tickers()
   byte_in_ticker.reset(new ticker(N_("bytes in"), ">", 1024, true));
   // xgettext: please use short message and try to avoid multibytes chars
   byte_out_ticker.reset(new ticker(N_("bytes out"), "<", 1024, true));
+
+  if (is_dry_run)
+    return;
+
   if (role == sink_role)
     {
       // xgettext: please use short message and try to avoid multibytes chars

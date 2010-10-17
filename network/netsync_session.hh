@@ -63,7 +63,7 @@ netsync_session:
   refiner cert_refiner;
   refiner rev_refiner;
 
-  // dry-run info
+  // dry-run & automate info
   bool is_dry_run;
   bool dry_run_keys_refined;
   shared_conn_counts counts;

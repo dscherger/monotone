@@ -1445,6 +1445,132 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
   output << dat;
 }
 
+namespace
+{
+  namespace syms
+  {
+    symbol const dormant_attr("dormant_attr");
+    symbol const path_mark("path_mark");
+    symbol const content_mark("content_mark");
+    symbol const attr_mark("attr_mark");
+  }
+};
+
+static void
+print_extended_manifest(roster_t const & roster, marking_map const & mm,
+                        map<file_id, file_size> const & file_sizes, data & dat)
+{
+  basic_io::printer pr;
+
+  for (dfs_iter i(roster.root(), true); !i.finished(); ++i)
+    {
+      const_node_t curr = *i;
+      basic_io::stanza st;
+
+      if (is_dir_t(curr))
+        {
+          st.push_str_pair(basic_io::syms::dir, i.path());
+        }
+      else
+        {
+          const_file_t ftmp = downcast_to_file_t(curr);
+          st.push_str_pair(basic_io::syms::file, i.path());
+          st.push_binary_pair(basic_io::syms::content, ftmp->content.inner());
+
+          map<file_id, file_size>::const_iterator s = file_sizes.find(ftmp->content);
+          I(s != file_sizes.end());
+          st.push_str_pair(basic_io::syms::size,
+                           boost::lexical_cast<string>(s->second));
+        }
+
+      // Push the non-dormant part of the attr map
+      for (attr_map_t::const_iterator j = curr->attrs.begin();
+           j != curr->attrs.end(); ++j)
+        {
+          if (!j->second.first)
+            continue;
+          st.push_str_triple(basic_io::syms::attr, j->first(), j->second.second());
+        }
+
+      // Push the dormant part of the attr map
+      for (attr_map_t::const_iterator j = curr->attrs.begin();
+           j != curr->attrs.end(); ++j)
+        {
+          if (j->second.first)
+            continue;
+
+          I(j->second.second().empty());
+          st.push_str_pair(syms::dormant_attr, j->first());
+        }
+
+      const_marking_t mark = mm.get_marking(curr->self);
+      I(!null_id(mark->birth_revision));
+
+      st.push_binary_pair(syms::birth, mark->birth_revision.inner());
+
+      for (set<revision_id>::const_iterator j = mark->parent_name.begin();
+           j != mark->parent_name.end(); ++j)
+        {
+          st.push_binary_pair(syms::path_mark, (*j).inner());
+        }
+
+      if (is_file_t(curr))
+        {
+          for (set<revision_id>::const_iterator j = mark->file_content.begin();
+               j != mark->file_content.end(); ++j)
+            {
+              st.push_binary_pair(syms::content_mark, (*j).inner());
+            }
+        }
+      else
+        I(mark->file_content.empty());
+
+      for (map<attr_key, set<revision_id> >::const_iterator j = mark->attrs.begin();
+           j != mark->attrs.end(); ++j)
+        {
+          for (set<revision_id>::const_iterator k = j->second.begin();
+               k != j->second.end(); ++k)
+            {
+              st.push_binary_triple(syms::attr_mark, j->first(), (*k).inner());
+            }
+        }
+
+      pr.print_stanza(st);
+    }
+
+  dat = data(pr.buf.data(), origin::database);
+}
+
+// Name: get_extended_manifest_of
+// Arguments: none
+// Added in: 13.0
+// Purpose: Prints the extended manifest for the given identifier
+// Output format: basicio
+// Error conditions: if the revision does not exist, prints an error and exits
+CMD_AUTOMATE(get_extended_manifest_of, "REVISION",
+             N_("Prints the extended manifest for the given identifier"),
+             "",
+             options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  database db(app);
+  roster_t roster;
+  marking_map mm;
+
+  revision_id rid = decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user);
+  E(db.revision_exists(rid), origin::user,
+    F("no revision %s found in database") % rid);
+  db.get_roster(rid, roster, mm);
+
+  map<file_id, file_size> file_sizes;
+  db.get_file_sizes(roster, file_sizes);
+
+  data dat;
+  print_extended_manifest(roster, mm, file_sizes, dat);
+  output << dat;
+}
 
 // Name: packet_for_rdata
 // Arguments:
