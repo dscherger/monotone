@@ -311,6 +311,15 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - 'mtn conflicts store' now gives a proper error message when
           run outside a workspace (fixes monotone bug #30473)
 
+        - monotone did not properly parse URIs with paths which missed a
+          scheme and / or contained a port specification. This has been 
+          fixed.  Additionally, if a scheme is specified now, we require 
+          that the scheme is followed by two slashes per RFC 1738, i.e. 
+          "file:path/to/db.mtn" is no longer considered valid, but must be
+          given as "file://path/to/db.mtn".
+          (fixes monotone issue 94)
+          
+
 Sun Jun 13 22:13:53 UTC 2010
 
         0.48 release.

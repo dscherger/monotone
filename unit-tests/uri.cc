@@ -25,8 +25,10 @@ test_one_uri(string scheme,
 {
   string built;
 
+  // we follow the common internet scheme syntax here (sec 3.1 RFC1738)
+  // i.e. all our URI schemes must start with '//' if given
   if (!scheme.empty())
-    built += scheme + ':';
+    built += scheme + "://";
 
   string host;
 
@@ -43,8 +45,6 @@ test_one_uri(string scheme,
          && host.empty()
          && port.empty()))
     {
-      built += "//";
-
       if (! user.empty())
         built += (user + '@');
 
@@ -107,6 +107,8 @@ UNIT_TEST(basic)
 
 UNIT_TEST(bizarre)
 {
+  test_one_uri("", "", "", "venge.net", "", "", "", "");
+  test_one_uri("", "", "", "venge.net", "4692", "", "", "");
   test_one_uri("", "graydon", "", "venge.net", "22", "/tmp/foo.mtn", "", "");
   test_one_uri("", "", "", "", "", "/graydon@venge.net:22/tmp/foo.mtn", "", "");
   test_one_uri("ssh", "graydon", "", "venge.net", "22", "/tmp/foo.mtn", "", "");
