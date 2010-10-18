@@ -28,29 +28,38 @@ function netsync.setup_with_notes()
   check(getstd("common/netsync-hooks_with_notes.lua", "netsync.lua"))
 end
 
-function netsync.internal.client(srv, oper, pat, n, res)
-  if n == nil then n = 2 end
-  if n == 1 then
-  args = {"--rcfile=netsync.lua", "--keydir=keys",
-          "--db=test.db", oper, srv.address}
-  else
-  args = {"--rcfile=netsync.lua", "--keydir=keys"..n,
-          "--db=test"..n..".db", oper, srv.address}
-  end
-  if type(pat) == "string" then
-    table.insert(args, pat)
-  elseif type(pat) == "table" then
-    for k, v in pairs(pat) do
-      table.insert(args, v)
-    end
-  elseif pat ~= nil then
-    err("Bad pattern type "..type(pat))
-  end
-  check(mtn(unpack(args)), res, false, false)
+function netsync.internal.client(srv, oper, pat, n, res, save_output)
+   if n == nil then n = 2 end
+   if n == 1 then
+      args = {"--rcfile=netsync.lua", "--keydir=keys",
+	      "--db=test.db", oper, srv.address}
+   else
+      args = {"--rcfile=netsync.lua", "--keydir=keys"..n,
+	      "--db=test"..n..".db", oper, srv.address}
+   end
+   if type(pat) == "string" then
+      table.insert(args, pat)
+   elseif type(pat) == "table" then
+      for k, v in pairs(pat) do
+	 table.insert(args, v)
+      end
+   elseif pat ~= nil then
+      err("Bad pattern type "..type(pat))
+   end
+   if save_output == nil then
+      save_output = false
+   end
+   check(mtn(unpack(args)), res, save_output, save_output)
 end
-function netsync.internal.pull(srv, pat, n, res) srv:client("pull", pat, n, res) end
-function netsync.internal.push(srv, pat, n, res) srv:client("push", pat, n, res) end
-function netsync.internal.sync(srv, pat, n, res) srv:client("sync", pat, n, res) end
+function netsync.internal.pull(srv, pat, n, res, save_output)
+   srv:client("pull", pat, n, res, save_output)
+end
+function netsync.internal.push(srv, pat, n, res, save_output)
+   srv:client("push", pat, n, res, save_output)
+end
+function netsync.internal.sync(srv, pat, n, res, save_output)
+   srv:client("sync", pat, n, res, save_output)
+end
 
 function netsync.start(opts, n, min)
   if type(opts) == "number" then
