@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: monotone 0.99\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-10-18 14:10+0200\n"
-"PO-Revision-Date: 2010-10-11 22:57+0100\n"
+"PO-Revision-Date: 2010-10-19 19:56+0100\n"
 "Last-Translator: Américo Monteiro <a_monteiro@netcabo.pt>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
 "MIME-Version: 1.0\n"
@@ -862,29 +862,29 @@ msgstr "recebido código de erro remoto %d"
 #: cmd_netsync.cc:289
 #, c-format
 msgid "would receive %d revisions, %d certs, and at least %d keys\n"
-msgstr ""
+msgstr "deverá receber %d revisões, %d certificados, e pelo menos %d chaves\n"
 
 #: cmd_netsync.cc:296
 #, c-format
 msgid "would receive %d revisions, %d certs, and %d keys\n"
-msgstr ""
+msgstr "deverá receber %d revisões, %d certificados, e %d chaves\n"
 
 #: cmd_netsync.cc:304
 #, c-format
 msgid "would send %d certs and %d keys\n"
-msgstr ""
+msgstr "deverá enviar %d certificados e %d chaves\n"
 
 #: cmd_netsync.cc:308
-#, fuzzy, c-format
+#, c-format
 msgid "would send %d revisions\n"
 msgid_plural "would send %d revisions:\n"
-msgstr[0] "%d revisões em falta"
-msgstr[1] "%d revisões em falta"
+msgstr[0] "deverá enviar %d revisões\n"
+msgstr[1] "deverá enviar %d revisões:\n"
 
 #: cmd_netsync.cc:327
-#, fuzzy, c-format
+#, c-format
 msgid "%9d in branch %s\n"
-msgstr "%d cabeçalho no branch '%s'"
+msgstr "%9d no branch %s\n"
 
 #: cmd_netsync.cc:537 cmd_netsync.cc:560 cmd_netsync.cc:586 cmd_netsync.cc:621
 #: cmd_netsync.cc:647 cmd_netsync.cc:687
