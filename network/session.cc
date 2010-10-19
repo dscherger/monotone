@@ -660,7 +660,8 @@ bool session::handle_service_request()
                                         keys,
                                         corresponding_role(role),
                                         their_include,
-                                        their_exclude));
+                                        their_exclude,
+                                        connection_counts::create()));
       break;
     case is_automate:
       wrapped.reset(new automate_session(app, this, 0, 0));

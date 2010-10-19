@@ -1,0 +1,4 @@
+send_cert "test"
+    value "value"
+      key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+ revision [114f6aa58c7707bf83516d4080ca6268c36640ad]
