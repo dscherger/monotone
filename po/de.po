@@ -815,13 +815,13 @@ msgstr ""
 "betreut, die als monotone Entwicklerteam bekannt sind."
 
 #: cmd.cc:928
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "monotone and this man page is Copyright (c) 2004 - %s by the monotone "
 "development team."
 msgstr ""
-"monotone und diese Handbuchseite sind Copyright (C) Das monotone "
-"Entwicklerteam, 2004 - %s."
+"monotone und diese Handbuchseite sind urheberrechtlich geschützt "
+"(C) 2004 - %s durch das monotone Entwicklerteam."
 
 #: cmd.cc:940
 #, c-format
@@ -897,29 +897,29 @@ msgstr "erhielt entfernten Fehlercode %d"
 #: cmd_netsync.cc:289
 #, c-format
 msgid "would receive %d revisions, %d certs, and at least %d keys\n"
-msgstr ""
+msgstr "würde %d Revisionen, %d Zertifikate und mindestens %d Schlüssel erhalten\n"
 
 #: cmd_netsync.cc:296
 #, c-format
 msgid "would receive %d revisions, %d certs, and %d keys\n"
-msgstr ""
+msgstr "würde %d Revisionen, %d Zertifikate und %d Schlüssel erhalten\n"
 
 #: cmd_netsync.cc:304
 #, c-format
 msgid "would send %d certs and %d keys\n"
-msgstr ""
+msgstr "würde %d Zertifikate und %d Schlüssel senden\n"
 
 #: cmd_netsync.cc:308
-#, fuzzy, c-format
+#, c-format
 msgid "would send %d revisions\n"
 msgid_plural "would send %d revisions:\n"
-msgstr[0] "%d fehlende Revisionen"
-msgstr[1] "%d fehlende Revisionen"
+msgstr[0] "würde %d Revisionen senden\n"
+msgstr[1] "würde %d Revisionen senden:\n"
 
 #: cmd_netsync.cc:327
-#, fuzzy, c-format
+#, c-format
 msgid "%9d in branch %s\n"
-msgstr "%d Kopf auf Zweig '%s'"
+msgstr "%9d in Zweig %s\n"
 
 #: cmd_netsync.cc:537 cmd_netsync.cc:560 cmd_netsync.cc:586 cmd_netsync.cc:621
 #: cmd_netsync.cc:647 cmd_netsync.cc:687
@@ -1029,9 +1029,9 @@ msgid "branch %s has multiple heads:"
 msgstr "Zweig %s hat mehrere Köpfe:"
 
 #: cmd_netsync.cc:869
-#, fuzzy, c-format
+#, c-format
 msgid "choose one with '%s clone -r<id> URL'"
-msgstr "wählen Sie eine durch '%s clone -r<id> SERVER ZWEIG'"
+msgstr "wählen Sie eine durch '%s clone -r<id> URL'"
 
 #: cmd_netsync.cc:870 cmd_ws_commit.cc:1039 cmd_ws_commit.cc:1916
 #, c-format
@@ -2533,12 +2533,17 @@ msgid ""
 "-- Enter a description of this change above --\n"
 "-- You may edit the fields below            --\n"
 msgstr ""
+"-- Geben Sie eine Beschreibung für diese Änderung oben ein --\n"
+"-- Die untenstehenden Felder dürfen verändert werden       --\n"
 
 #: cmd_ws_commit.cc:188
 msgid ""
 "\n"
 "-- Modifications below this line are ignored --\n"
 msgstr ""
+"\n"
+"-- Änderungen unterhalb dieser Zeile werden ignoriert      --\n"
+
 
 #: cmd_ws_commit.cc:190
 msgid "*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"
@@ -2557,10 +2562,10 @@ msgid "Date:     "
 msgstr "Datum:      "
 
 #: cmd_ws_commit.cc:215
-#, fuzzy, c-format
+#, c-format
 msgid "date format '%s' cannot be parsed; using default instead"
 msgstr ""
-"Datumsformat '%s' kann nicht zum Einpflegen genutzt werden; nutze "
+"Datumsformat '%s' kann nicht analysiert werden; nutze "
 "stattdessen Standardformat"
 
 #: cmd_ws_commit.cc:237 cmd_ws_commit.cc:985
@@ -2837,9 +2842,9 @@ msgstr ""
 "Verzeichnisname verwendet."
 
 #: cmd_ws_commit.cc:1137
-#, fuzzy, c-format
+#, c-format
 msgid "wrong revision count"
-msgstr "falsche Anzahl an Parametern"
+msgstr "falsche Anzahl von Revisionen"
 
 #: cmd_ws_commit.cc:1143
 msgid "Manages file attributes"
@@ -3517,9 +3522,8 @@ msgid "Prints the contents of a file (given an identifier)"
 msgstr "Gibt die Inhalte einer Datei aus (anhand einer gegebenen ID)"
 
 #: cmd_files.cc:354
-#, fuzzy
 msgid "Prints the size of a file (given an identifier)"
-msgstr "Gibt die Inhalte einer Datei aus (anhand einer gegebenen ID)"
+msgstr "Gibt die Dateigröße einer Datei aus (anhand einer gegebenen ID)"
 
 #: cmd_files.cc:388
 msgid "Prints the contents of a file (given a name)"
@@ -4317,7 +4321,7 @@ msgid "%u"
 msgstr "%u"
 
 #: database.cc:1089
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "creator code      : %s\n"
 "schema version    : %s\n"
@@ -4353,6 +4357,7 @@ msgstr ""
 "  Katalog-Deltas       : %s\n"
 "  komplette Dateien    : %s\n"
 "  Datei-Deltas         : %s\n"
+"  Datei-Größenangaben  : %s\n"
 "  Revisionen           : %s\n"
 "  Kanten in Abstammung : %s\n"
 "  Zertifikate          : %s\n"
@@ -4362,6 +4367,7 @@ msgstr ""
 "  Katalog-Deltas       : %s\n"
 "  komplette Dateien    : %s\n"
 "  Datei-Deltas         : %s\n"
+"  Datei-Größenangaben  : %s\n"
 "  Revisionen           : %s\n"
 "  gecachte Abstammung  : %s\n"
 "  Zertifikate          : %s\n"
@@ -4566,7 +4572,7 @@ msgid "dropping cert"
 msgstr "entferne Zertifikat"
 
 #: database.cc:3792
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "The branch name\n"
 "  '%s'\n"
@@ -4580,7 +4586,7 @@ msgid ""
 msgstr ""
 "Der Zweigname\n"
 "  '%s'\n"
-"beinhaltet Meta-Zeichen (eine oder mehrere Vorkommnisse von '?,*%%+{}[]!^')\n"
+"beinhaltet Meta-Zeichen (eine oder mehrere Vorkommnisse von '?,;*%%+{}[]!^')\n"
 "oder beginnt mit einem Bindestrich, was Fehlfunktionen hervorrufen könnte,\n"
 "wenn er in einem Netsync-Zweigmuster verwendet wird.\n"
 "\n"
@@ -5247,9 +5253,9 @@ msgid "rebuilding revision graph from manifest certs"
 msgstr "erneuere Revisions-Graph auf Basis der Manifest-Zertifikate"
 
 #: migrate_ancestry.cc:990
-#, fuzzy, c-format
+#, c-format
 msgid "regenerating cached heights"
-msgstr "erstelle Zweig-Cache neu"
+msgstr "erstelle Revisionshöhen-Cache neu"
 
 #: migrate_ancestry.cc:1000 migrate_ancestry.cc:1031 migrate_ancestry.cc:1063
 #: migrate_ancestry.cc:1097
@@ -5257,19 +5263,19 @@ msgid "regenerated"
 msgstr "neu erstellt"
 
 #: migrate_ancestry.cc:1015
-#, fuzzy, c-format
+#, c-format
 msgid "finished regenerating cached heights"
-msgstr "Zweig-Cache wurde neu erstellt"
+msgstr "Revisionshöhen-Cache wurde neu erstellt"
 
 #: migrate_ancestry.cc:1021
-#, fuzzy, c-format
+#, c-format
 msgid "regenerating cached rosters"
-msgstr "erstelle Zweig-Cache neu"
+msgstr "erstelle Katalog-Cache neu"
 
 #: migrate_ancestry.cc:1046
-#, fuzzy, c-format
+#, c-format
 msgid "finished regenerating cached rosters"
-msgstr "Zweig-Cache wurde neu erstellt"
+msgstr "Katalog-Cache wurde neu erstellt"
 
 #: migrate_ancestry.cc:1052
 #, c-format
@@ -5282,14 +5288,14 @@ msgid "finished regenerating cached branches"
 msgstr "Zweig-Cache wurde neu erstellt"
 
 #: migrate_ancestry.cc:1087
-#, fuzzy, c-format
+#, c-format
 msgid "regenerating cached file sizes for revisions"
-msgstr "erstelle Katalog-Cache und Höhenangaben neu"
+msgstr "erstelle Dateigrößen-Cache und Höhenangaben neu"
 
 #: migrate_ancestry.cc:1112
-#, fuzzy, c-format
+#, c-format
 msgid "finished regenerating cached file sizes"
-msgstr "Zweig-Cache wurde neu erstellt"
+msgstr "Dateigrößen-Cache wurde neu erstellt"
 
 #: refiner.cc:400
 #, c-format
@@ -5432,6 +5438,8 @@ msgid ""
 "you can specify either a query string or separate include/exclude "
 "parameters, but not both"
 msgstr ""
+"Es dürfen entweder ein Anfrage-Parameter in der URL oder separate 'include/--exclude'- Parameter "
+"angegeben werden, aber nicht beides."
 
 #: network/connection_info.cc:520
 #, c-format
@@ -6192,9 +6200,8 @@ msgid "Shows the manifest associated with a revision"
 msgstr "Zeigt das Manifest, welches einer Revision zugeordnet ist"
 
 #: automate.cc:1551
-#, fuzzy
 msgid "Prints the extended manifest for the given identifier"
-msgstr "Gibt die Nachfahren der übergebenen Revisionen aus"
+msgstr "Gibt das erweiterte Manifest für die Revision mit der übergebenen ID aus"
 
 #: automate.cc:1587
 msgid "Prints the revision data in packet format"
@@ -6413,7 +6420,7 @@ msgstr "Datei %s nicht referenziert"
 #: database_check.cc:718
 #, c-format
 msgid "file %s has a missing or invalid file size"
-msgstr ""
+msgstr "Datei %s hat eine fehlende oder ungültige Dateigröße"
 
 #: database_check.cc:736
 #, c-format
@@ -6564,9 +6571,9 @@ msgid "%d unreferenced files"
 msgstr "%d nicht referenzierte Dateien"
 
 #: database_check.cc:1116
-#, fuzzy, c-format
+#, c-format
 msgid "%d missing or invalid file sizes"
-msgstr "%d fehlende Dateien"
+msgstr "%d fehlende oder ungültige Dateigrößen"
 
 #: database_check.cc:1119
 #, c-format
