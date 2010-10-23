@@ -18,8 +18,7 @@ if rcfile ~= nil then
    rcfile:close()
 end
 
-local cwd = chdir(".").."/"
-check(mtn("sync", "file:///"..cwd.."test2.db?testbranch"), 0, true, false)
+check(mtn("sync", "file://" .. test.root .. "/test2.db?testbranch"), 0, true, false)
 
 n = 0
 

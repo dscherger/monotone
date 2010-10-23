@@ -1,0 +1,7 @@
+receive_revision "0"
+    receive_cert "1"
+     receive_key "1"
+   send_revision "1"
+       send_cert "6"
+        send_key "1"
+     send_branch "foo2" "1"

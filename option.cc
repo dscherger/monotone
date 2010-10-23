@@ -307,13 +307,13 @@ getopt(map<string, concrete_option> const & by_name, string & name)
     throw unknown_option(name);
 
   // try to find the option by partial name
-  vector<string> candidates;
+  set<string> candidates;
   for (i = by_name.begin(); i != by_name.end(); ++i)
     {
       if (i->first.find(name) == 0)
-        candidates.push_back(i->first);
+        candidates.insert(i->first);
       if (abbrev_match(i->first, name))
-        candidates.push_back(i->first);
+        candidates.insert(i->first);
     }
 
   if (candidates.size() == 0)
@@ -321,17 +321,18 @@ getopt(map<string, concrete_option> const & by_name, string & name)
 
   if (candidates.size() == 1)
     {
-       i = by_name.find(candidates[0]);
+       string expanded_name = *candidates.begin();
+       i = by_name.find(expanded_name);
        I(i != by_name.end());
-       L(FL("expanding option '%s' to '%s'") % name % candidates[0]);
-       name = candidates[0];
+       L(FL("expanding option '%s' to '%s'") % name % expanded_name);
+       name = expanded_name;
        return i->second;
     }
 
   string err = (F("option '%s' has multiple ambiguous expansions:")
                 % name).str();
 
-  for (vector<string>::const_iterator j = candidates.begin();
+  for (set<string>::const_iterator j = candidates.begin();
        j != candidates.end(); ++j)
     {
         i = by_name.find(*j);
