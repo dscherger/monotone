@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: monotone 0.48dev\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-08-23 09:45+0200\n"
-"PO-Revision-Date: 2010-10-13 19:03+0100\n"
+"PO-Revision-Date: 2010-10-24 13:36+0100\n"
 "Last-Translator: Roberta Lazzeri <ripley@lapo.it>\n"
 "Language-Team: \n"
 "Language: \n"
@@ -2935,7 +2935,7 @@ msgstr "Aggiorna lo spazio di lavoro alla prossima revisione per essere verifica
 
 #: cmd_ws_commit.cc:2398
 msgid "This command can be used if updates by good, bad or skip commands fail due to blocked paths or other problems."
-msgstr ""
+msgstr "Questo comando può essere usato se falliscono aggiurnamenti da buoni, cattivi o tralasciati comandi dovuti a percorsi bloccati o da altri problemi."
 
 #: cmd_ws_commit.cc:2408
 msgid "Excludes the current revision or specified revisions from the search"
@@ -3344,11 +3344,11 @@ msgstr "non risolvibili ancora non risolti conflitti file-singolo"
 
 #: cmd_conflicts.cc:426
 msgid "Show the first unresolved conflict in the conflicts file, and possible resolutions"
-msgstr ""
+msgstr "Mostra il primo conflitto irrisolto nel file conflitti, e le possibili soluzioni"
 
 #: cmd_conflicts.cc:439
 msgid "Show the remaining unresolved conflicts in the conflicts file"
-msgstr ""
+msgstr "Mostra i rimanenti conflitti irrisolti nel file conflitti"
 
 #: cmd_conflicts.cc:451
 #: cmd_conflicts.cc:465
@@ -3358,7 +3358,7 @@ msgstr "RISOLUZIONE"
 
 #: cmd_conflicts.cc:452
 msgid "Set the resolution for the first unresolved single-file conflict"
-msgstr ""
+msgstr "Fissa la soluzione per il primo unico-file irrisolto"
 
 #: cmd_conflicts.cc:466
 msgid "Set the left resolution for the first unresolved two-file conflict"
