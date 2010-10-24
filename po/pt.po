@@ -6,14 +6,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.99\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-10-10 13:01+0200\n"
-"PO-Revision-Date: 2010-10-11 22:57+0100\n"
+"POT-Creation-Date: 2010-10-18 14:10+0200\n"
+"PO-Revision-Date: 2010-10-19 19:56+0100\n"
 "Last-Translator: Américo Monteiro <a_monteiro@netcabo.pt>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
-"Language: pt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: pt\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Lokalize 1.0\n"
 
@@ -22,7 +22,7 @@ msgstr ""
 msgid "fatal: formatter failed on %s:%d: %s"
 msgstr "fatal: formatter falhou em %s:%d: %s"
 
-#: sanity.cc:351
+#: sanity.cc:351 cmd_list.cc:664
 msgid "misuse: "
 msgstr "má utilização: "
 
@@ -42,7 +42,7 @@ msgstr ""
 msgid "Current work set: %i items"
 msgstr "Trabalho actual definido: %i items"
 
-#: sanity.hh:371 lua_hooks.cc:105
+#: sanity.hh:371 cmd_list.cc:670 lua_hooks.cc:105
 #, c-format
 msgid "%s"
 msgstr "%s"
@@ -499,12 +499,12 @@ msgstr "Má entrada para automatizar stdio: esperado '%c' token"
 msgid "Bad input to automate stdio: command name is missing"
 msgstr "Má entrada para automatizar stdio: nome de comando em falta"
 
-#: commands.cc:498
+#: commands.cc:496
 #, c-format
 msgid "unknown command '%s'"
 msgstr "comando desconhecido '%s'"
 
-#: commands.cc:508
+#: commands.cc:506
 #, c-format
 msgid "'%s' is ambiguous; possible completions are:"
 msgstr "'%s' está ambíguo: as completações possíveis são:"
@@ -768,9 +768,8 @@ msgid ""
 "complete list of authors can be found in AUTHORS."
 msgstr ""
 "O monotone foi originalmente escrito por Graydon Hoare <graydon@pobox.com> "
-"em "
-"2004 e tem recebido numerosas contribuições de muitos indivíduos. Uma lista "
-"completa dos autores pode ser encontrada em AUTORES."
+"em 2004 e tem recebido numerosas contribuições de muitos indivíduos. Uma "
+"lista completa dos autores pode ser encontrada em AUTORES."
 
 #: cmd.cc:924
 msgid ""
@@ -804,12 +803,12 @@ msgstr "incapaz de executar o comando formatador da página de manual '%s': %s"
 msgid "--message and --message-file are mutually exclusive"
 msgstr "--message e --message-file são exclusivas mutuamente"
 
-#: cmd_netsync.cc:66 cmd_netsync.cc:467
+#: cmd_netsync.cc:68 cmd_netsync.cc:764
 #, c-format
 msgid "cannot use --exclude in URL mode"
 msgstr "não pode usar --exclude em modo URL"
 
-#: cmd_netsync.cc:106
+#: cmd_netsync.cc:108
 msgid ""
 "[URL]\n"
 "[ADDRESS[:PORTNUMBER]]"
@@ -817,11 +816,11 @@ msgstr ""
 "[URL]\n"
 "[ADDRESS[:PORTNUMBER]]"
 
-#: cmd_netsync.cc:107
+#: cmd_netsync.cc:109
 msgid "Opens an 'automate stdio' connection to a remote server"
 msgstr "Abre uma ligação 'stdio automatizada' a um servidor remoto"
 
-#: cmd_netsync.cc:120 cmd_netsync.cc:220
+#: cmd_netsync.cc:122 cmd_netsync.cc:223
 #, c-format
 msgid ""
 "No database given; assuming '%s' database. This means that we can't\n"
@@ -831,15 +830,15 @@ msgstr ""
 "significa que não podemos verificar a chave do servidor, porque não temos\n"
 "registo do que deverá ser."
 
-#: cmd_netsync.cc:207
+#: cmd_netsync.cc:210
 msgid "COMMAND [ARGS]"
 msgstr "COMMAND [ARGS]"
 
-#: cmd_netsync.cc:208
+#: cmd_netsync.cc:211
 msgid "Executes COMMAND on a remote server"
 msgstr "Executa COMMAND num servidor remoto"
 
-#: cmd_netsync.cc:216 cmd_list.cc:981 cmd_packet.cc:73 cmd_packet.cc:134
+#: cmd_netsync.cc:219 cmd_list.cc:987 cmd_packet.cc:73 cmd_packet.cc:134
 #: cmd_packet.cc:257 cmd_key_cert.cc:81 cmd_key_cert.cc:186 cmd_merging.cc:384
 #: cmd_merging.cc:1131 cmd_merging.cc:1202 cmd_ws_commit.cc:1134
 #: cmd_ws_commit.cc:1342 cmd_ws_commit.cc:1456 cmd_ws_commit.cc:1478
@@ -855,13 +854,40 @@ msgstr "Executa COMMAND num servidor remoto"
 msgid "wrong argument count"
 msgstr "contagem de argumentos errada"
 
-#: cmd_netsync.cc:272
+#: cmd_netsync.cc:276
 #, c-format
 msgid "received remote error code %d"
 msgstr "recebido código de erro remoto %d"
 
-#: cmd_netsync.cc:276 cmd_netsync.cc:296 cmd_netsync.cc:317 cmd_netsync.cc:344
-#: cmd_netsync.cc:364 cmd_netsync.cc:395
+#: cmd_netsync.cc:289
+#, c-format
+msgid "would receive %d revisions, %d certs, and at least %d keys\n"
+msgstr "deverá receber %d revisões, %d certificados, e pelo menos %d chaves\n"
+
+#: cmd_netsync.cc:296
+#, c-format
+msgid "would receive %d revisions, %d certs, and %d keys\n"
+msgstr "deverá receber %d revisões, %d certificados, e %d chaves\n"
+
+#: cmd_netsync.cc:304
+#, c-format
+msgid "would send %d certs and %d keys\n"
+msgstr "deverá enviar %d certificados e %d chaves\n"
+
+#: cmd_netsync.cc:308
+#, c-format
+msgid "would send %d revisions\n"
+msgid_plural "would send %d revisions:\n"
+msgstr[0] "deverá enviar %d revisões\n"
+msgstr[1] "deverá enviar %d revisões:\n"
+
+#: cmd_netsync.cc:327
+#, c-format
+msgid "%9d in branch %s\n"
+msgstr "%9d no branch %s\n"
+
+#: cmd_netsync.cc:537 cmd_netsync.cc:560 cmd_netsync.cc:586 cmd_netsync.cc:621
+#: cmd_netsync.cc:647 cmd_netsync.cc:687
 msgid ""
 "[URL]\n"
 "[ADDRESS[:PORTNUMBER] [PATTERN ...]]"
@@ -869,11 +895,11 @@ msgstr ""
 "[URL]\n"
 "[ADDRESS[:PORTNUMBER] [PATTERN ...]]"
 
-#: cmd_netsync.cc:277 cmd_netsync.cc:297
+#: cmd_netsync.cc:538 cmd_netsync.cc:561
 msgid "Pushes branches to a netsync server"
 msgstr "Empurra branches para um servidor netsync"
 
-#: cmd_netsync.cc:278
+#: cmd_netsync.cc:539
 msgid ""
 "This will push all branches that match the pattern given in PATTERN to the "
 "netsync server at the address ADDRESS."
@@ -881,11 +907,11 @@ msgstr ""
 "Isto irá empurrar todos os branches que correspondem ao padrão fornecido em "
 "PATTERN para o servidor netsync no endereço ADDRESS."
 
-#: cmd_netsync.cc:318 cmd_netsync.cc:345
+#: cmd_netsync.cc:587 cmd_netsync.cc:622
 msgid "Pulls branches from a netsync server"
 msgstr "Puxa branches de um servidor netsync"
 
-#: cmd_netsync.cc:319
+#: cmd_netsync.cc:588
 msgid ""
 "This pulls all branches that match the pattern given in PATTERN from the "
 "netsync server at the address ADDRESS."
@@ -893,16 +919,16 @@ msgstr ""
 "Isto puxa todos os branches que correspondem ao padrão fornecido em PATTERN "
 "do servidor netsync no endereço ADDRESS."
 
-#: cmd_netsync.cc:336 cmd_netsync.cc:545
+#: cmd_netsync.cc:605 cmd_netsync.cc:842
 #, c-format
 msgid "doing anonymous pull; use -kKEYNAME if you need authentication"
 msgstr "a puxar anonimamente; use -kKEYNAME se precisar de autenticação"
 
-#: cmd_netsync.cc:365 cmd_netsync.cc:396
+#: cmd_netsync.cc:648 cmd_netsync.cc:688
 msgid "Synchronizes branches with a netsync server"
 msgstr "Sincroniza branches com um servidor netsync"
 
-#: cmd_netsync.cc:366
+#: cmd_netsync.cc:649
 msgid ""
 "This synchronizes branches that match the pattern given in PATTERN with the "
 "netsync server at the address ADDRESS."
@@ -910,7 +936,7 @@ msgstr ""
 "Isto sincroniza os branches que correspondem ao padrão fornecido em PATTERN "
 "com o servidor netsync no endereço ADDRESS."
 
-#: cmd_netsync.cc:422
+#: cmd_netsync.cc:719
 msgid ""
 "URL [DIRECTORY]\n"
 "HOST[:PORTNUMBER] BRANCH [DIRECTORY]"
@@ -918,13 +944,13 @@ msgstr ""
 "URL [DIRECTORY]\n"
 "HOST[:PORTNUMBER] BRANCH [DIRECTORY]"
 
-#: cmd_netsync.cc:423
+#: cmd_netsync.cc:720
 msgid "Checks out a revision from a remote database into a directory"
 msgstr ""
 "Faz o checkout a uma revisão a partir duma base de dados remota para um "
 "directório"
 
-#: cmd_netsync.cc:424
+#: cmd_netsync.cc:721
 msgid ""
 "If a revision is given, that's the one that will be checked out.  Otherwise, "
 "it will be the head of the branch supplied.  If no directory is given, the "
@@ -934,63 +960,63 @@ msgstr ""
 "contrário, será o cabeçalho do branch fornecido. Se nenhum directório for "
 "fornecido, o nome do branch será usado como directório"
 
-#: cmd_netsync.cc:443
+#: cmd_netsync.cc:740
 #, c-format
 msgid "the --branch option is only valid with an URI to clone"
 msgstr "a opção --branch apenas é válida com um URI para clonar"
 
-#: cmd_netsync.cc:492
+#: cmd_netsync.cc:789
 #, c-format
 msgid "you must specify an unambiguous branch to clone"
 msgstr "você tem que especificar um branch não ambíguo para clonar"
 
-#: cmd_netsync.cc:524
+#: cmd_netsync.cc:821
 #, c-format
 msgid "clone destination directory '%s' already exists"
 msgstr "directório de destino clone '%s' já existe"
 
-#: cmd_netsync.cc:531 cmd_ws_commit.cc:1842 cmd_ws_commit.cc:1931
+#: cmd_netsync.cc:828 cmd_ws_commit.cc:1842 cmd_ws_commit.cc:1931
 #, c-format
 msgid "bookkeeping directory already exists in '%s'"
 msgstr "o directório bookkeeping já existe em '%s'"
 
-#: cmd_netsync.cc:564 cmd_merging.cc:535 cmd_merging.cc:636 cmd_merging.cc:641
+#: cmd_netsync.cc:862 cmd_merging.cc:535 cmd_merging.cc:636 cmd_merging.cc:641
 #: cmd_merging.cc:1454 cmd_ws_commit.cc:1030
 #, c-format
 msgid "branch '%s' is empty"
 msgstr "branch '%s' está vazio"
 
-#: cmd_netsync.cc:567 cmd_ws_commit.cc:1033 cmd_ws_commit.cc:1910
+#: cmd_netsync.cc:865 cmd_ws_commit.cc:1033 cmd_ws_commit.cc:1910
 #, c-format
 msgid "branch %s has multiple heads:"
 msgstr "branch %s tem múltiplos cabeçalhos:"
 
-#: cmd_netsync.cc:571
+#: cmd_netsync.cc:869
 #, c-format
 msgid "choose one with '%s clone -r<id> URL'"
 msgstr "escolha um com '%s clone -r<id> URL'"
 
-#: cmd_netsync.cc:572 cmd_ws_commit.cc:1039 cmd_ws_commit.cc:1916
+#: cmd_netsync.cc:870 cmd_ws_commit.cc:1039 cmd_ws_commit.cc:1916
 #, c-format
 msgid "branch %s has multiple heads"
 msgstr "branch %s tem múltiplos cabeçalhos"
 
-#: cmd_netsync.cc:583 cmd_ws_commit.cc:1054 cmd_ws_commit.cc:1896
+#: cmd_netsync.cc:881 cmd_ws_commit.cc:1054 cmd_ws_commit.cc:1896
 #, c-format
 msgid "revision %s is not a member of branch %s"
 msgstr "revisão %s não é um membro do branch %s"
 
-#: cmd_netsync.cc:616
+#: cmd_netsync.cc:914
 #, c-format
 msgid "pid file '%s' already exists"
 msgstr "ficheiro pid '%s' já existe"
 
-#: cmd_netsync.cc:618
+#: cmd_netsync.cc:916
 #, c-format
 msgid "failed to create pid file '%s'"
 msgstr "falha ao criar ficheiro pid '%s'"
 
-#: cmd_netsync.cc:641
+#: cmd_netsync.cc:939
 msgid "Serves the database to connecting clients"
 msgstr "Serve a base de dados a clientes que se ligam"
 
@@ -1013,7 +1039,7 @@ msgstr ""
 msgid "Lists certificates attached to an identifier"
 msgstr "Lista certificados anexados a um identificador"
 
-#: cmd_list.cc:128 cmd_list.cc:1010
+#: cmd_list.cc:128 cmd_list.cc:1016
 #, c-format
 msgid "no public key '%s' found in database"
 msgstr "nenhuma chave pública '%s' encontrada na base de dados"
@@ -1122,48 +1148,48 @@ msgstr ""
 msgid "could not query default database locations"
 msgstr "incapaz de questionar localizações da base de dados predefinida"
 
-#: cmd_list.cc:671
+#: cmd_list.cc:677
 #, c-format
 msgid ":%s (in %s):"
 msgstr ":%s (em %s):"
 
-#: cmd_list.cc:706
+#: cmd_list.cc:712
 msgid "<no branch set>"
 msgstr "<nenhum branch definido>"
 
-#: cmd_list.cc:708
+#: cmd_list.cc:714
 #, c-format
 msgid "\t%s (in %s)"
 msgstr "\t%s (em %s)"
 
-#: cmd_list.cc:712
+#: cmd_list.cc:718
 #, c-format
 msgid "\tno known valid workspaces"
 msgstr "\tnenhum espaço de trabalho válido conhecido"
 
-#: cmd_list.cc:718
+#: cmd_list.cc:724
 msgid "Lists workspace files that belong to the current branch"
 msgstr "Lista ficheiros do espaço de trabalho que pertencem ao branch actual"
 
-#: cmd_list.cc:758
+#: cmd_list.cc:764
 msgid "Lists workspace files that do not belong to the current branch"
 msgstr ""
 "Lista ficheiros do espaço de trabalho que não pertencem ao branch actual"
 
-#: cmd_list.cc:789
+#: cmd_list.cc:795
 msgid "Lists files that belong to the branch but are not in the workspace"
 msgstr ""
 "Lista ficheiros que pertencem ao branch mas não estão no espaço de trabalho"
 
-#: cmd_list.cc:812
+#: cmd_list.cc:818
 msgid "Lists files that have changed with respect to the current revision"
 msgstr "Lista ficheiros que foram alterados com respeito à revisão actual"
 
-#: cmd_list.cc:917
+#: cmd_list.cc:923
 msgid "Lists all keys in the keystore"
 msgstr "Lista todas as chaves no chaveiro"
 
-#: cmd_list.cc:922 cmd_db.cc:50 cmd_db.cc:62 cmd_db.cc:74 cmd_db.cc:91
+#: cmd_list.cc:928 cmd_db.cc:50 cmd_db.cc:62 cmd_db.cc:74 cmd_db.cc:91
 #: cmd_db.cc:105 cmd_db.cc:119 cmd_db.cc:135 cmd_db.cc:325 cmd_db.cc:341
 #: cmd_db.cc:362 cmd_db.cc:380 cmd_automate.cc:112 cmd_automate.cc:234
 #: automate.cc:344 automate.cc:370 automate.cc:472 automate.cc:1320
@@ -1172,15 +1198,15 @@ msgstr "Lista todas as chaves no chaveiro"
 msgid "no arguments needed"
 msgstr "nenhum argumento necessário"
 
-#: cmd_list.cc:975 cmd_db.cc:610 automate.cc:394 automate.cc:425
+#: cmd_list.cc:981 cmd_db.cc:610 automate.cc:394 automate.cc:425
 msgid "REV"
 msgstr "REV"
 
-#: cmd_list.cc:976
+#: cmd_list.cc:982
 msgid "Prints all certificates attached to a revision"
 msgstr "Escreve todos os certificados anexados a uma revisão"
 
-#: cmd_list.cc:994 cmd_db.cc:621 cmd_files.cc:269 automate.cc:132
+#: cmd_list.cc:1000 cmd_db.cc:621 cmd_files.cc:269 automate.cc:132
 #: automate.cc:185 automate.cc:235 automate.cc:265 automate.cc:307
 #: automate.cc:312 automate.cc:406 automate.cc:437 automate.cc:1602
 #: automate.cc:1634 automate.cc:1701 automate.cc:1703 automate.cc:2175
@@ -2247,7 +2273,7 @@ msgstr ""
 msgid "loading revisions"
 msgstr "a carregar revisões"
 
-#: cmd_db.cc:643 network/netsync_session.cc:1345 rcs_import.cc:1234
+#: cmd_db.cc:643 network/netsync_session.cc:1364 rcs_import.cc:1234
 #: database_check.cc:340
 msgid "revisions"
 msgstr "revisões"
@@ -4516,8 +4542,8 @@ msgstr "base de dados %s já existe"
 #: database.cc:4829
 #, c-format
 msgid ""
-"existing (possibly stale) journal file '%s' has same stem as new database "
-"'%s'\n"
+"existing (possibly stale) journal file '%s' has same stem as new database '%"
+"s'\n"
 "cancelling database creation"
 msgstr ""
 "ficheiro journal existente '%s' (possivelmente a não responder) tem o mesmo "
@@ -4740,8 +4766,8 @@ msgstr ""
 #: ssh_agent.cc:376
 #, c-format
 msgid ""
-"ssh_agent: get_keys: not all or too many packet bytes consumed, location "
-"(%u), length (%i)"
+"ssh_agent: get_keys: not all or too many packet bytes consumed, location (%"
+"u), length (%i)"
 msgstr ""
 "ssh_agent: get_keys: nem todos ou demasiados bytes de pacote consumidos, "
 "localização (%u), comprimento (%i)"
@@ -4763,8 +4789,8 @@ msgstr ""
 #: ssh_agent.cc:472
 #, c-format
 msgid ""
-"ssh_agent: sign_data: not all or too many packet bytes consumed, location "
-"(%u), length (%i)"
+"ssh_agent: sign_data: not all or too many packet bytes consumed, location (%"
+"u), length (%i)"
 msgstr ""
 "ssh_agent: sign_data: nem todos ou demasiados bytes de pacote consumidos, "
 "localização (%u), comprimento (%i)"
@@ -5160,52 +5186,52 @@ msgstr "a regenerar tamanhos de ficheiros em cache para revisões"
 msgid "finished regenerating cached file sizes"
 msgstr "regeneração terminada dos tamanhos de ficheiros em cache"
 
-#: refiner.cc:371
+#: refiner.cc:400
 #, c-format
 msgid "underflow on query-in-flight counter"
 msgstr "valor baixo na contagem query-in-flight"
 
-#: netsync.cc:111 netsync.cc:215
+#: netsync.cc:112 netsync.cc:217
 #, c-format
 msgid "connecting to %s"
 msgstr "a ligar a %s"
 
-#: netsync.cc:159
+#: netsync.cc:161
 #, c-format
 msgid "processing failure while talking to peer %s, disconnecting"
 msgstr "falha de processamento ao falar com o peer %s, a desligar"
 
-#: netsync.cc:167
+#: netsync.cc:169
 #, c-format
 msgid "timed out waiting for I/O with peer %s, disconnecting"
 msgstr "esgotou o tempo ao esperar por I/O com peer %s, a desligar"
 
-#: netsync.cc:184
+#: netsync.cc:186
 #, c-format
 msgid "successful exchange with %s"
 msgstr "intercâmbio com %s com sucesso"
 
-#: netsync.cc:190
+#: netsync.cc:192
 #, c-format
 msgid "peer %s disconnected after we informed them of error"
 msgstr "peer %s desligou após nós informar-lhes de erro"
 
-#: netsync.cc:196
+#: netsync.cc:198
 #, c-format
 msgid "I/O failure while talking to peer %s, disconnecting"
 msgstr "falha de I/O ao falar com peer %s, a desligar"
 
-#: netsync.cc:241
+#: netsync.cc:244
 #, c-format
 msgid "Network error: %s"
 msgstr "Erro de rede: %s"
 
-#: netsync.cc:355
+#: netsync.cc:358
 #, c-format
 msgid "beginning service on %s"
 msgstr "a iniciar serviço em %s"
 
-#: netsync.cc:413 netsync.cc:417
+#: netsync.cc:417 netsync.cc:421
 #, c-format
 msgid "network error: %s"
 msgstr "erro de rede: %s"
@@ -5225,17 +5251,17 @@ msgstr "Desculpe, não lhe é permitido fazer isso."
 msgid "unexpected netcmd '%d' received on automate connection"
 msgstr "netcmd '%d' inesperado recebido em ligação automatizada"
 
-#: network/connection_info.cc:61
+#: network/connection_info.cc:90
 #, c-format
 msgid "ignoring invalid default server address '%s': %s"
 msgstr "a ignorar endereço de servidor predefinido inválido '%s': %s"
 
-#: network/connection_info.cc:88
+#: network/connection_info.cc:117
 #, c-format
 msgid "ignoring invalid default include / exclude pattern: %s"
 msgstr "a ignorar padrão de inclusão / exclusão predefinido inválido: %s"
 
-#: network/connection_info.cc:200
+#: network/connection_info.cc:229
 #, c-format
 msgid ""
 "include branch pattern contains a quote character:\n"
@@ -5244,7 +5270,7 @@ msgstr ""
 "padrão do branch de inclusão contém um caractere de citação:\n"
 "%s"
 
-#: network/connection_info.cc:216
+#: network/connection_info.cc:245
 #, c-format
 msgid ""
 "exclude branch pattern contains a quote character:\n"
@@ -5253,20 +5279,20 @@ msgstr ""
 "padrão do branch de exclusão contém um caractere de citação:\n"
 "%s"
 
-#: network/connection_info.cc:313
+#: network/connection_info.cc:342
 #, c-format
 msgid "connection host / path is empty and no default value could be loaded"
 msgstr ""
 "a ligação máquina / caminho está vazia e nenhum valor predefinido pôde ser "
 "carregado"
 
-#: network/connection_info.cc:316
+#: network/connection_info.cc:345
 #, c-format
 msgid "branch pattern is empty and no default value could be loaded"
 msgstr ""
 "o padrão do branch está vazio e nenhum valor predefinido pôde ser carregado"
 
-#: network/connection_info.cc:388
+#: network/connection_info.cc:422
 #, c-format
 msgid ""
 "include / exclude pattern was given both as part of the URL and as a "
@@ -5275,7 +5301,7 @@ msgstr ""
 "o padrão de inclusão / exclusão foi fornecido tanto como parte do URL e como "
 "um argumento separado."
 
-#: network/connection_info.cc:436
+#: network/connection_info.cc:470
 #, c-format
 msgid ""
 "no branch pattern found in URI, will try to use suitable database defaults "
@@ -5284,7 +5310,7 @@ msgstr ""
 "nenhum padrão de branch encontrado em URI, irei tentar usar predefinições "
 "apropriadas da base de dados se disponíveis"
 
-#: network/connection_info.cc:458
+#: network/connection_info.cc:492
 #, c-format
 msgid ""
 "separate server and pattern arguments are deprecated, please consider using "
@@ -5293,16 +5319,16 @@ msgstr ""
 "os argumentos de servidor e padrão em separado está descontinuado, por favor "
 "considere usar antes a sintaxe de chamada de URI"
 
-#: network/connection_info.cc:466
+#: network/connection_info.cc:500
 #, c-format
 msgid ""
 "you can specify either a query string or separate include/exclude "
 "parameters, but not both"
 msgstr ""
-"você pode especificar ou uma string de consulta ou padrões de "
-"inclusão/exclusão separados, mas não ambos"
+"você pode especificar ou uma string de consulta ou padrões de inclusão/"
+"exclusão separados, mas não ambos"
 
-#: network/connection_info.cc:486
+#: network/connection_info.cc:520
 #, c-format
 msgid ""
 "need permission to store persistent passphrase (see hook persist_phrase_ok())"
@@ -5310,7 +5336,7 @@ msgstr ""
 "permissão necessária para guardar frase-passe persistente (veja hook "
 "persist_phrase_ok())"
 
-#: network/connection_info.cc:500
+#: network/connection_info.cc:534
 #, c-format
 msgid ""
 "The --no-transport-auth option is usually only used in combination with --"
@@ -5342,69 +5368,69 @@ msgstr "<todas as interfaces>"
 msgid "check of '%s' failed"
 msgstr "verificação de '%s' falhada"
 
-#: network/netsync_session.cc:362
+#: network/netsync_session.cc:347
 msgid "bytes in"
 msgstr "bytes entrados"
 
-#: network/netsync_session.cc:364
+#: network/netsync_session.cc:349
 msgid "bytes out"
 msgstr "bytes saídos"
 
-#: network/netsync_session.cc:368 network/netsync_session.cc:389
+#: network/netsync_session.cc:357 network/netsync_session.cc:378
 msgid "certs in"
 msgstr "certificados entrados"
 
-#: network/netsync_session.cc:370 network/netsync_session.cc:383
+#: network/netsync_session.cc:359 network/netsync_session.cc:372
 msgid "revs in"
 msgstr "revisões entradas"
 
-#: network/netsync_session.cc:375 network/netsync_session.cc:391
+#: network/netsync_session.cc:364 network/netsync_session.cc:380
 msgid "certs out"
 msgstr "certificados saídos"
 
-#: network/netsync_session.cc:377 network/netsync_session.cc:385
+#: network/netsync_session.cc:366 network/netsync_session.cc:374
 msgid "revs out"
 msgstr "revisões saídas"
 
-#: network/netsync_session.cc:499
+#: network/netsync_session.cc:513
 #, c-format
 msgid "underflow on count of %s items to receive"
 msgstr "valor baixo na contagem de %s items a receber"
 
-#: network/netsync_session.cc:737
+#: network/netsync_session.cc:756
 #, c-format
 msgid "Unexpected 'refine' command on non-refined item type"
 msgstr "Comando 'refine' não esperado em tipo de item não refinado"
 
-#: network/netsync_session.cc:769
+#: network/netsync_session.cc:788
 #, c-format
 msgid "Unexpected 'done' command on non-refined item type"
 msgstr "Comando 'done' não esperado em tipo de item não refinado"
 
-#: network/netsync_session.cc:837
+#: network/netsync_session.cc:856
 #, c-format
 msgid "%s with hash '%s' does not exist in our database"
 msgstr "%s com hash '%s' não existe na sua base de dados"
 
-#: network/netsync_session.cc:959
+#: network/netsync_session.cc:978
 #, c-format
 msgid "Mismatched epoch on branch %s. Server has '%s', client has '%s'."
 msgstr ""
 "Epoch não correspondente em branch %s. Servidor tem '%s', cliente tem '%s'."
 
-#: network/netsync_session.cc:978
+#: network/netsync_session.cc:997
 #, c-format
 msgid "hash check failed for public key '%s' (%s); wanted '%s' got '%s'"
 msgstr ""
 "verificação de hash falhada para chave pública '%s' (%s); queria '%s' obteve "
 "'%s'"
 
-#: network/netsync_session.cc:987
+#: network/netsync_session.cc:1006
 #, c-format
 msgid "Received duplicate key %s"
 msgstr "Recebido chave duplicada %s"
 
-#: network/netsync_session.cc:1001
+#: network/netsync_session.cc:1020
 #, c-format
 msgid ""
 "Dropping incoming cert which claims to be signed by key\n"
@@ -5413,7 +5439,7 @@ msgstr ""
 "A abandonar certificado chegado que afirma ser assinado pela chave\n"
 "'%s' (nome '%s'), mas tem uma assinatura má"
 
-#: network/netsync_session.cc:1011
+#: network/netsync_session.cc:1030
 #, c-format
 msgid ""
 "dropping incoming cert which was signed by a key we don't have\n"
@@ -5428,89 +5454,89 @@ msgstr ""
 "o nome da chave envolvida é '%s', mas note que existem várias chaves\n"
 "com este nome e não sabemos qual delas é"
 
-#: network/netsync_session.cc:1026
+#: network/netsync_session.cc:1045
 #, c-format
 msgid "hash check failed for revision cert '%s'"
 msgstr "verificação de hash falhada para certificado de revisão '%s'"
 
-#: network/netsync_session.cc:1040
+#: network/netsync_session.cc:1059
 #, c-format
 msgid "hash check failed for revision %s"
 msgstr "verificação de hash falhada para revisão '%s'"
 
-#: network/netsync_session.cc:1055
+#: network/netsync_session.cc:1074
 #, c-format
 msgid "hash check failed for file %s"
 msgstr "verificação de hash falhada para ficheiro '%s'"
 
-#: network/netsync_session.cc:1208
+#: network/netsync_session.cc:1227
 #, c-format
 msgid "rejected attempt at anonymous connection for write"
 msgstr "tentativa rejeitada de ligação anónima para escrita"
 
-#: network/netsync_session.cc:1227
+#: network/netsync_session.cc:1246
 #, c-format
 msgid "anonymous access to branch '%s' denied by server"
 msgstr "acesso anónimo ao branch '%s' negado pelo servidor"
 
-#: network/netsync_session.cc:1234
+#: network/netsync_session.cc:1253
 #, c-format
 msgid ""
 "denied '%s' read permission for '%s' excluding '%s' because of branch '%s'"
 msgstr ""
-"permissão de leitura '%s' negada para '%s' excluindo '%s' devido ao branch "
-"'%s'"
+"permissão de leitura '%s' negada para '%s' excluindo '%s' devido ao branch '%"
+"s'"
 
-#: network/netsync_session.cc:1245
+#: network/netsync_session.cc:1264
 #, c-format
 msgid "allowed '%s' read permission for '%s' excluding '%s'"
 msgstr "permissão de leitura '%s' permitida para '%s' excluindo '%s'"
 
-#: network/netsync_session.cc:1250
+#: network/netsync_session.cc:1269
 #, c-format
 msgid "allowed anonymous read permission for '%s' excluding '%s'"
 msgstr "permissão de leitura anónima permitida para '%s' excluindo '%s'"
 
-#: network/netsync_session.cc:1255
+#: network/netsync_session.cc:1274
 #, c-format
 msgid "allowed anonymous read/write permission for '%s' excluding '%s'"
 msgstr ""
 "permissão de leitura/escrita anónima permitida para '%s' excluindo '%s'"
 
-#: network/netsync_session.cc:1264
+#: network/netsync_session.cc:1283
 #, c-format
 msgid "denied '%s' write permission for '%s' excluding '%s'"
 msgstr "permissão de escrita '%s' negada para '%s' excluindo '%s'"
 
-#: network/netsync_session.cc:1269
+#: network/netsync_session.cc:1288
 #, c-format
 msgid "allowed '%s' write permission for '%s' excluding '%s'"
 msgstr "permissão de escrita '%s' permitida para '%s' excluindo '%s'"
 
-#: network/netsync_session.cc:1293 network/reactor.cc:53
+#: network/netsync_session.cc:1312 network/reactor.cc:53
 #, c-format
 msgid "protocol error while processing peer %s: '%s'"
 msgstr "erro de protocolo ao processar peer %s: '%s'"
 
-#: network/netsync_session.cc:1299 network/reactor.cc:59
+#: network/netsync_session.cc:1318 network/reactor.cc:59
 #, c-format
 msgid "recoverable '%s' error while processing peer %s: '%s'"
 msgstr "erro '%s' recuperável ao processar peer %s: '%s'"
 
-#: network/netsync_session.cc:1339
+#: network/netsync_session.cc:1358
 #, c-format
 msgid "finding items to synchronize:"
 msgstr "a procurar items para sincronizar:"
 
-#: network/netsync_session.cc:1347
+#: network/netsync_session.cc:1366
 msgid "certificates"
 msgstr "certificados"
 
-#: network/netsync_session.cc:1349 database_check.cc:469
+#: network/netsync_session.cc:1368 database_check.cc:469
 msgid "keys"
 msgstr "chaves"
 
-#: network/netsync_session.cc:1448
+#: network/netsync_session.cc:1467
 #, c-format
 msgid "Cannot find key '%s'"
 msgstr "Incapaz de encontrar chave '%s'"
@@ -5645,7 +5671,7 @@ msgstr "peer %s IO falhou em estado de confirmação (sucesso)"
 msgid "Network error on peer %s, disconnecting"
 msgstr "Erro de rede no peer %s, a desligar"
 
-#: netxx_pipe.cc:50 netxx_pipe.cc:182
+#: netxx_pipe.cc:50 netxx_pipe.cc:189
 #, c-format
 msgid "this transport not supported on native Win32; use Cygwin"
 msgstr "este transporte não é suportado em Win32 nativo, use o Cygwin"
@@ -5655,47 +5681,47 @@ msgstr "este transporte não é suportado em Win32 nativo, use o Cygwin"
 msgid "pipe handle is invalid"
 msgstr "manuseamento do pipe é inválido"
 
-#: netxx_pipe.cc:206
+#: netxx_pipe.cc:213
 #, c-format
 msgid "CreateNamedPipe(%s,...) call failed: %s"
 msgstr "CreateNamedPipe(%s,...) chamada falhada: %s"
 
-#: netxx_pipe.cc:223
+#: netxx_pipe.cc:230
 #, c-format
 msgid "CreateFile(%s,...) call failed: %s"
 msgstr "chamada CreateFile(%s,...) falhada: %s"
 
-#: netxx_pipe.cc:254
+#: netxx_pipe.cc:261
 #, c-format
 msgid "CreateProcess(%s,...) call failed: %s"
 msgstr "chamada CreateProcess(%s,...) falhada: %s"
 
-#: netxx_pipe.cc:270
+#: netxx_pipe.cc:277
 #, c-format
 msgid "pipe/fork failed: %s"
 msgstr "pipe/fork falhado: %s"
 
-#: netxx_pipe.cc:316
+#: netxx_pipe.cc:323
 #, c-format
 msgid "WriteFile call failed: %s"
 msgstr "chamada WriteFile falhada: %s"
 
-#: netxx_pipe.cc:408
+#: netxx_pipe.cc:415
 #, c-format
 msgid "ReadFile call failed: %s"
 msgstr "chamada ReadFile falhada: %s"
 
-#: netxx_pipe.cc:443
+#: netxx_pipe.cc:450
 #, c-format
 msgid "WaitForMultipleObjects call failed: %s"
 msgstr "chamada WaitForMultipleObjects falhada: %s"
 
-#: netxx_pipe.cc:453
+#: netxx_pipe.cc:460
 #, c-format
 msgid "WaitForSingleObject call failed: %s"
 msgstr "chamada WaitForSingleObject falhada: %s"
 
-#: netxx_pipe.cc:473
+#: netxx_pipe.cc:480
 #, c-format
 msgid "GetOverlappedResult call failed: %s"
 msgstr "chamada GetOverlappedResult falhada: %s"
@@ -5717,8 +5743,8 @@ msgid ""
 "code %d)\n"
 "%s"
 msgstr ""
-"versão de protocolo não condiz: esperado entre  '%d' e '%d' obtive "
-"'%d' (netcmd code %d)\n"
+"versão de protocolo não condiz: esperado entre  '%d' e '%d' obtive '%"
+"d' (netcmd code %d)\n"
 "%s"
 
 #: netcmd.cc:146
@@ -6644,8 +6670,8 @@ msgstr "o selector '%s' é inválido, termina com o caractere de escape '\\'"
 #, c-format
 msgid "selector '%s' is invalid, it contains an unknown escape sequence '%s%s'"
 msgstr ""
-"o selector '%s' é inválido, contém uma sequência de escape desconhecida "
-"'%s%s'"
+"o selector '%s' é inválido, contém uma sequência de escape desconhecida '%s%"
+"s'"
 
 #: selectors.cc:770
 #, c-format
@@ -7260,7 +7286,7 @@ msgstr "especificação do número de porto explícito no URI não tem dígitos"
 msgid "explicit port-number specification in URI contains nondigits"
 msgstr "especificação do número de porto explícito no URI contém não-dígitos"
 
-#: uri.cc:186 uri.cc:189 uri.cc:211 uri.cc:232
+#: uri.cc:180 uri.cc:183 uri.cc:205 uri.cc:226
 #, c-format
 msgid "Bad URLencoded string '%s'"
 msgstr "Má string codificada em URL '%s'"
@@ -7838,8 +7864,8 @@ msgstr "exclui fusões ao escrever logs"
 msgid ""
 "do not load %APPDATA%\\monotone\\monotonerc or _MTN\\monotonerc lua files"
 msgstr ""
-"não carrega os ficheiros do lua %APPDATA%\\monotone\\monotonerc ou "
-"_MTN\\monotonerc"
+"não carrega os ficheiros do lua %APPDATA%\\monotone\\monotonerc ou _MTN"
+"\\monotonerc"
 
 #: options_list.hh:460
 msgid "do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"

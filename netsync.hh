@@ -27,7 +27,8 @@ void run_netsync_protocol(app_state & app,
                           project_t & project, key_store & keys,
                           protocol_voice voice,
                           protocol_role role,
-                          shared_conn_info & info);
+                          shared_conn_info & info,
+                          shared_conn_counts const & counts);
 
 #endif
 

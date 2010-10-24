@@ -24,9 +24,38 @@
 
 #include <vector>
 
+using std::map;
 using std::vector;
 using std::string;
 using boost::lexical_cast;
+
+connection_counts::connection_counts() { }
+shared_conn_counts connection_counts::create()
+{
+  return shared_conn_counts(new connection_counts());
+}
+
+void
+sort_rev_order (future_set<revision_id> & revs,
+                future_set<cert> & certs,
+                vector<cert> & unattached_certs,
+                map<revision_id, vector<cert> > & rev_certs)
+{
+  for (vector<revision_id>::const_iterator i = revs.items.begin();
+       i != revs.items.end(); ++i)
+    rev_certs.insert(make_pair(*i, vector<cert>()));
+
+  for (vector<cert>::const_iterator i = certs.items.begin();
+       i != certs.items.end(); ++i)
+    {
+      map<revision_id, vector<cert> >::iterator j;
+      j = rev_certs.find(revision_id(i->ident));
+      if (j == rev_certs.end())
+        unattached_certs.push_back(*i);
+      else
+        j->second.push_back(*i);
+    }
+}
 
 netsync_connection_info::netsync_connection_info(database & d, options const & o) :
   client(d, o)
@@ -331,7 +360,12 @@ netsync_connection_info::parse_includes_excludes_from_query(string const & query
   string::size_type end = query.find(separator);
   while (begin < query.size())
     {
-      std::string item = query.substr(begin, end);
+      std::string item;
+      if (end == string::npos)
+        item = query.substr(begin);
+      else
+        item = query.substr(begin, end - begin);
+
       if (end == string::npos)
         begin = end;
       else

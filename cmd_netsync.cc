@@ -1,5 +1,6 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //               2006 Timothy Brownawell <tbrownaw@gmail.com>
+//               2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -12,6 +13,7 @@
 #include "cmd.hh"
 
 #include "automate_ostream_demuxed.hh"
+#include "basic_io.hh"
 #include "merge_content.hh"
 #include "netsync.hh"
 #include "network/connection_info.hh"
@@ -139,7 +141,8 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
   info->client.set_output_stream(os);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_and_sink_role, info);
+                       client_voice, source_and_sink_role, info,
+                       connection_counts::create());
 }
 
 // shamelessly copied and adapted from option.cc
@@ -266,10 +269,268 @@ CMD_AUTOMATE_NO_STDIO(remote,
   info->client.set_output_stream(os);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_and_sink_role, info);
+                       client_voice, source_and_sink_role, info,
+                       connection_counts::create());
 
   E(os.get_error() == 0, origin::network,
     F("received remote error code %d") % os.get_error());
+}
+
+static void
+print_dryrun_info_cmd(protocol_role role,
+                      shared_conn_counts counts,
+                      project_t & project)
+{
+  // print dryrun info for command line
+  if (role != source_role)
+    {
+      if (counts->keys_in.can_have_more_than_min)
+        {
+          std::cout << (F("would receive %d revisions, %d certs, and at least %d keys\n")
+            % counts->revs_in.min_count
+            % counts->certs_in.min_count
+            % counts->keys_in.min_count);
+        }
+      else
+        {
+          std::cout << (F("would receive %d revisions, %d certs, and %d keys\n")
+            % counts->revs_in.min_count
+            % counts->certs_in.min_count
+            % counts->keys_in.min_count);
+        }
+    }
+  if (role != sink_role)
+    {
+      std::cout << (F("would send %d certs and %d keys\n")
+        % counts->certs_out.min_count
+        % counts->keys_out.min_count);
+      std::cout <<
+        (FP("would send %d revisions\n", // 0 revisions; nothing following, so no trailing colon
+           "would send %d revisions:\n",
+           counts->revs_out.min_count + 1)
+        % counts->revs_out.min_count);
+      map<branch_name, int> branch_counts;
+      for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
+           i != counts->revs_out.items.end(); ++i)
+        {
+          set<branch_name> my_branches;
+          project.get_revision_branches(*i, my_branches);
+          for(set<branch_name>::iterator b = my_branches.begin();
+              b != my_branches.end(); ++b)
+            {
+              ++branch_counts[*b];
+            }
+        }
+      for (map<branch_name, int>::iterator i = branch_counts.begin();
+           i != branch_counts.end(); ++i)
+        {
+          std::cout << (F("%9d in branch %s\n") % i->second % i->first);
+        }
+    }
+}
+
+namespace
+{
+  namespace syms
+  {
+    symbol const estimate("estimate");
+    symbol const key("key");
+    symbol const receive_cert("receive_cert");
+    symbol const receive_key("receive_key");
+    symbol const receive_revision("receive_revision");
+    symbol const revision("revision");
+    symbol const send_branch("send_branch");
+    symbol const send_cert("send_cert");
+    symbol const send_key("send_key");
+    symbol const send_revision("send_revision");
+    symbol const value("value");
+  }
+}
+
+static void
+print_dryrun_info_auto(protocol_role role,
+                       shared_conn_counts counts,
+                       project_t & project,
+                       std::ostream & output)
+{
+  // print dry run info for automate session
+  basic_io::printer pr;
+  basic_io::stanza st;
+
+  if (role != source_role)
+    {
+      // sink or sink_and_source; print sink info
+
+      if (counts->keys_in.can_have_more_than_min)
+        {
+          st.push_symbol(syms::estimate);
+        }
+
+      st.push_str_pair(syms::receive_revision,
+                       boost::lexical_cast<string>(counts->revs_in.min_count));
+      st.push_str_pair(syms::receive_cert,
+                       boost::lexical_cast<string>(counts->certs_in.min_count));
+      st.push_str_pair(syms::receive_key,
+                       boost::lexical_cast<string>(counts->keys_in.min_count));
+    }
+
+  if (role != sink_role)
+    {
+      // source or sink_and_source; print source info
+
+      st.push_str_pair(syms::send_revision,
+                       boost::lexical_cast<string>(counts->revs_out.items.size()));
+      st.push_str_pair(syms::send_cert,
+                       boost::lexical_cast<string>(counts->certs_out.min_count));
+      st.push_str_pair(syms::send_key,
+                       boost::lexical_cast<string>(counts->keys_out.min_count));
+
+      // count revisions per branch
+      map<branch_name, int> branch_counts;
+      for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
+           i != counts->revs_out.items.end(); ++i)
+        {
+          set<branch_name> my_branches;
+          project.get_revision_branches(*i, my_branches);
+          for(set<branch_name>::iterator b = my_branches.begin();
+              b != my_branches.end(); ++b)
+            {
+              ++branch_counts[*b];
+            }
+        }
+      for (map<branch_name, int>::iterator i = branch_counts.begin();
+           i != branch_counts.end(); ++i)
+        {
+          st.push_str_triple(syms::send_branch, i->first(), boost::lexical_cast<string>(i->second));
+        }
+    }
+
+  pr.print_stanza(st);
+  output.write(pr.buf.data(), pr.buf.size());
+}
+
+static void
+print_cert(bool send,
+           cert const & item,
+           basic_io::printer & pr)
+{
+  basic_io::stanza st;
+  if (send)
+    {
+      st.push_str_pair(syms::send_cert, item.name());
+    }
+  else
+    {
+      st.push_str_pair(syms::receive_cert, item.name());
+    }
+  st.push_str_pair(syms::value, item.value());
+  st.push_binary_pair(syms::key, item.key.inner());
+  st.push_binary_pair(syms::revision, item.ident.inner());
+  pr.print_stanza(st);
+}
+
+static void
+print_info_auto(protocol_role role,
+                shared_conn_counts counts,
+                project_t & project,
+                std::ostream & output)
+{
+  // print info for automate session
+  basic_io::printer pr;
+
+  if (role != source_role)
+    {
+      // sink or sink_and_source; print sink info
+
+      vector<cert> unattached_certs;
+      map<revision_id, vector<cert> > rev_certs;
+      sort_rev_order (counts->revs_in, counts->certs_in, unattached_certs, rev_certs);
+
+      if (unattached_certs.size() > 0)
+        {
+          for (vector<cert>::const_iterator i = unattached_certs.begin();
+               i != unattached_certs.end(); ++i)
+            {
+              print_cert(false, *i, pr);
+            }
+        }
+
+      if (rev_certs.size() > 0)
+        {
+          for (map<revision_id, vector<cert> >::const_iterator i = rev_certs.begin();
+               i != rev_certs.end(); ++i)
+            {
+              basic_io::stanza st;
+              st.push_binary_pair(syms::receive_revision, i->first.inner());
+              pr.print_stanza(st);
+
+              for (vector<cert>::const_iterator j = i->second.begin();
+                   j != i->second.end(); ++j)
+                {
+                  print_cert(false, *j, pr);
+                }
+            }
+        }
+
+      if (counts->keys_in.items.size() > 0)
+        {
+          basic_io::stanza st;
+          for (vector<key_id>::const_iterator i = counts->keys_in.items.begin();
+               i != counts->keys_in.items.end(); ++i)
+            {
+              st.push_binary_pair(syms::receive_key, i->inner());
+            }
+          pr.print_stanza(st);
+        }
+    }
+
+  if (role != sink_role)
+    {
+      // source or sink_and_source; print source info
+
+      vector<cert> unattached_certs;
+      map<revision_id, vector<cert> > rev_certs;
+      sort_rev_order (counts->revs_out, counts->certs_out, unattached_certs, rev_certs);
+
+      if (unattached_certs.size() > 0)
+        {
+          for (vector<cert>::const_iterator i = unattached_certs.begin();
+               i != unattached_certs.end(); ++i)
+            {
+              print_cert(true, *i, pr);
+            }
+        }
+
+      if (rev_certs.size() > 0)
+        {
+          for (map<revision_id, vector<cert> >::const_iterator i = rev_certs.begin();
+               i != rev_certs.end(); ++i)
+            {
+              basic_io::stanza st;
+              st.push_binary_pair(syms::send_revision, i->first.inner());
+              pr.print_stanza(st);
+
+              for (vector<cert>::const_iterator j = i->second.begin();
+                   j != i->second.end(); ++j)
+                {
+                  print_cert(true, *j, pr);
+                }
+            }
+        }
+
+      if (counts->keys_out.items.size() > 0)
+        {
+          basic_io::stanza st;
+          for (vector<key_id>::const_iterator i = counts->keys_out.items.begin();
+               i != counts->keys_out.items.end(); ++i)
+            {
+              st.push_binary_pair(syms::send_key, i->inner());
+            }
+          pr.print_stanza(st);
+        }
+    }
+
+  output.write(pr.buf.data(), pr.buf.size());
 }
 
 CMD(push, "push", "", CMD_REF(network),
@@ -279,7 +540,7 @@ CMD(push, "push", "", CMD_REF(network),
        "to the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::keys_to_push)
+    options::opts::keys_to_push | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -289,17 +550,20 @@ CMD(push, "push", "", CMD_REF(network),
   extract_client_connection_info(app.opts, project, keys, app.lua,
                                  netsync_connection, args, info);
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_role, info);
+                       client_voice, source_role, info, counts);
+  if (app.opts.dryrun)
+    print_dryrun_info_cmd(source_role, counts, project);
 }
 
 CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Pushes branches to a netsync server"),
              "",
-              options::opts::max_netsync_version |
-              options::opts::min_netsync_version |
-              options::opts::set_default | options::opts::exclude |
-              options::opts::keys_to_push)
+             options::opts::max_netsync_version |
+             options::opts::min_netsync_version |
+             options::opts::set_default | options::opts::exclude |
+             options::opts::keys_to_push | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -309,8 +573,13 @@ CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   extract_client_connection_info(app.opts, project, keys, app.lua,
                                  netsync_connection, args, info);
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_role, info);
+                       client_voice, source_role, info, counts);
+  if (app.opts.dryrun)
+    print_dryrun_info_auto(source_role, counts, project, output);
+  else
+    print_info_auto(source_role, counts, project, output);
 }
 
 CMD(pull, "pull", "", CMD_REF(network),
@@ -320,7 +589,7 @@ CMD(pull, "pull", "", CMD_REF(network),
        "from the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::auto_update)
+    options::opts::auto_update | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -335,10 +604,18 @@ CMD(pull, "pull", "", CMD_REF(network),
   if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, sink_role, info);
+                       client_voice, sink_role, info, counts);
 
-  updater.maybe_do_update();
+  if (app.opts.dryrun)
+    {
+      print_dryrun_info_cmd(sink_role, counts, project);
+    }
+  else
+    {
+      updater.maybe_do_update();
+    }
 }
 
 CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -346,7 +623,8 @@ CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              "",
              options::opts::max_netsync_version |
              options::opts::min_netsync_version |
-             options::opts::set_default | options::opts::exclude)
+             options::opts::set_default | options::opts::exclude |
+             options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -356,8 +634,13 @@ CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   extract_client_connection_info(app.opts, project, keys, app.lua,
                                  netsync_connection, args, info, key_optional);
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, sink_role, info);
+                       client_voice, sink_role, info, counts);
+  if (app.opts.dryrun)
+    print_dryrun_info_auto(sink_role, counts, project, output);
+  else
+    print_info_auto(sink_role, counts, project, output);
 }
 
 CMD(sync, "sync", "", CMD_REF(network),
@@ -367,7 +650,8 @@ CMD(sync, "sync", "", CMD_REF(network),
        "with the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
-    options::opts::keys_to_push | options::opts::auto_update)
+    options::opts::keys_to_push | options::opts::auto_update |
+    options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -386,10 +670,18 @@ CMD(sync, "sync", "", CMD_REF(network),
       workspace::set_options(app.opts, app.lua);
     }
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_and_sink_role, info);
+                       client_voice, source_and_sink_role, info, counts);
 
-  updater.maybe_do_update();
+  if (app.opts.dryrun)
+    {
+      print_dryrun_info_cmd(source_and_sink_role, counts, project);
+    }
+  else
+    {
+      updater.maybe_do_update();
+    }
 }
 
 CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -397,7 +689,7 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              "",
              options::opts::max_netsync_version | options::opts::min_netsync_version |
              options::opts::set_default | options::opts::exclude |
-             options::opts::keys_to_push)
+             options::opts::keys_to_push | options::opts::dryrun)
 {
   database db(app);
   key_store keys(app);
@@ -414,8 +706,13 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     workspace::set_options(app.opts, app.lua);
   }
 
+  shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, source_and_sink_role, info);
+                       client_voice, source_and_sink_role, info, counts);
+  if (app.opts.dryrun)
+    print_dryrun_info_auto(source_and_sink_role, counts, project, output);
+  else
+    print_info_auto(source_and_sink_role, counts, project, output);
 }
 
 CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
@@ -548,7 +845,8 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
   change_current_working_dir(start_dir);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       client_voice, sink_role, info);
+                       client_voice, sink_role, info,
+                       connection_counts::create());
 
   change_current_working_dir(workspace_dir);
 
@@ -664,7 +962,8 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
-                       server_voice, source_and_sink_role, info);
+                       server_voice, source_and_sink_role, info,
+                       connection_counts::create());
 }
 
 // Local Variables:
