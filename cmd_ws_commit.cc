@@ -1974,6 +1974,26 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
     }
 }
 
+CMD(export, "export", "", CMD_REF(tree), N_("DIRECTORY"),
+    N_("Exports a revision from the database into a directory"),
+    N_("If a revision is given, that's the one that will be exported.  "
+       "Otherwise, it will be the head of the branch (given or implicit)."),
+    options::opts::branch | options::opts::revision)
+{
+  if (args.size() != 1)
+    throw usage(execid);
+
+  system_path dir;
+
+  dir = system_path(idx(args, 0));
+  E(idx(args, 0) != utf8("."),
+    origin::user,
+    F("You can't export in the current directory"));
+
+  process(app, make_command_id("checkout"), args);
+  delete_dir_recursive(dir / bookkeeping_root_component);
+}
+
 CMD_NO_WORKSPACE(migrate_workspace, "migrate_workspace", "", CMD_REF(tree),
   N_("[DIRECTORY]"),
   N_("Migrates a workspace directory's metadata to the latest format"),
@@ -2366,8 +2386,8 @@ bisect_update(app_state & app, bisect::type type)
 
 CMD(bisect_status, "status", "", CMD_REF(bisect), "",
     N_("Reports on the current status of the bisection search"),
-    N_("Lists the total number of revisions in the search set; "
-       "the number of revisions that have been determined to be good or bad; "
+    N_("Lists the total number of revisions in the search set, "
+       "the number of revisions that have been determined to be good or bad, "
        "the number of revisions that have been skipped "
        "and the number of revisions remaining to be tested."),
     options::opts::none)
