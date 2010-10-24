@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: monotone 0.48dev\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-10-18 14:10+0200\n"
-"PO-Revision-Date: 2010-10-10 16:12+0100\n"
-"Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
+"PO-Revision-Date: 2010-10-24 13:36+0100\n"
+"Last-Translator: Roberta Lazzeri <ripley@lapo.it>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -693,7 +693,7 @@ msgstr "Mostra la versione del programma"
 msgid "no arguments allowed"
 msgstr "non è permesso nessun argomento"
 
-#: cmd.cc:537
+# cosa è globish?
 msgid "Check that a particular globish matches a particular string"
 msgstr ""
 
@@ -2120,10 +2120,8 @@ msgid "Deletes the specified certs from the local database"
 msgstr "Elimina i certificati specificati dal database locale"
 
 #: cmd_db.cc:251
-msgid ""
-"Deletes all certs which are on the given revision(s) and have the given name "
-"and if a value is specified then also the given value."
-msgstr ""
+msgid "Deletes all certs which are on the given revision(s) and have the given name and if a value is specified then also the given value."
+msgstr "Cancella tutti i certificati che sono nella revisione(i) data e che ha il nome dato e se è specificato un valore allora anche il valore dato."
 
 #: cmd_db.cc:319
 msgid "Does some sanity checks on the database"
@@ -3148,11 +3146,9 @@ msgstr ""
 "Aggiorna lo spazio di lavoro alla prossima revisione per essere verificato "
 "dalla bisezione"
 
-#: cmd_ws_commit.cc:2405
-msgid ""
-"This command can be used if updates by good, bad or skip commands fail due "
-"to blocked paths or other problems."
-msgstr ""
+#: cmd_ws_commit.cc:2398
+msgid "This command can be used if updates by good, bad or skip commands fail due to blocked paths or other problems."
+msgstr "Questo comando può essere usato se falliscono aggiurnamenti da buoni, cattivi o tralasciati comandi dovuti a percorsi bloccati o da altri problemi."
 
 #: cmd_ws_commit.cc:2415
 msgid "Excludes the current revision or specified revisions from the search"
@@ -3450,7 +3446,7 @@ msgstr "Comandi per la risoluzione dei conflitti"
 #: cmd_conflicts.cc:71
 #, c-format
 msgid "orphaned node %s"
-msgstr ""
+msgstr "nodo orfano %s"
 
 #: cmd_conflicts.cc:76 cmd_conflicts.cc:103 cmd_conflicts.cc:143
 #, c-format
@@ -3576,14 +3572,12 @@ msgid "no resolvable yet unresolved single-file conflicts"
 msgstr "non risolvibili ancora non risolti conflitti file-singolo"
 
 #: cmd_conflicts.cc:426
-msgid ""
-"Show the first unresolved conflict in the conflicts file, and possible "
-"resolutions"
-msgstr ""
+msgid "Show the first unresolved conflict in the conflicts file, and possible resolutions"
+msgstr "Mostra il primo conflitto irrisolto nel file conflitti, e le possibili soluzioni"
 
 #: cmd_conflicts.cc:439
 msgid "Show the remaining unresolved conflicts in the conflicts file"
-msgstr ""
+msgstr "Mostra i rimanenti conflitti irrisolti nel file conflitti"
 
 #: cmd_conflicts.cc:451 cmd_conflicts.cc:465 cmd_conflicts.cc:479
 msgid "RESOLUTION"
@@ -3591,7 +3585,7 @@ msgstr "RISOLUZIONE"
 
 #: cmd_conflicts.cc:452
 msgid "Set the resolution for the first unresolved single-file conflict"
-msgstr ""
+msgstr "Fissa la soluzione per il primo unico-file irrisolto"
 
 #: cmd_conflicts.cc:466
 msgid "Set the left resolution for the first unresolved two-file conflict"
@@ -3680,7 +3674,7 @@ msgstr "questo spazio di lavoro non ha subito alcun ‘update’"
 #: work.cc:266
 #, c-format
 msgid "no update revision available"
-msgstr ""
+msgstr "nessuna revisione aggiornata disponibile"
 
 #: work.cc:298
 #, c-format
@@ -4644,9 +4638,9 @@ msgid "key '%s' has hash '%s'"
 msgstr "la chiave ‘%s’ ha hash ‘%s’"
 
 #: key_store.cc:828
-#, c-format
+#, fuzzy, c-format
 msgid "Botan error decrypting data: '%s'"
-msgstr ""
+msgstr "errore Botan decrittando i dati: '%s'"
 
 #: key_store.cc:851
 #, c-format
@@ -4803,10 +4797,8 @@ msgstr ""
 
 #: keys.cc:145
 #, c-format
-msgid ""
-"a key is required for this operation, but the --key option was given with an "
-"empty argument"
-msgstr ""
+msgid "a key is required for this operation, but the --key option was given with an empty argument"
+msgstr "è richiesta una chiave per questa operazione, ma la opzione --key è stata data con un argomento vuoto"
 
 # TODO: valido/valido
 #: packet.cc:134
@@ -5210,7 +5202,7 @@ msgstr "errore di rete: %s"
 #: network/automate_session.cc:72
 #, c-format
 msgid "server is too old for remote automate connections"
-msgstr ""
+msgstr "il server è troppo vecchio per connessioni remote automatiche"
 
 #: network/automate_session.cc:131
 #, c-format
