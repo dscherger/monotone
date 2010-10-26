@@ -125,7 +125,15 @@ How to release a new version of monotone
     $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
     $ mtn sync
 
-13) Once you're pretty sure things have gone well, tag the source:
+13) Check if the releases newsfeed is properly updated, i.e. if the script
+    <http://www.monotone.ca/releases.xml.php> can parse the NEWS file as is
+    and links issues and URLs, while keeping the overall structure.
+    (If your NEWS entries match the previous ones, this shouldn't be a problem.)
+
+    If you encounter problems, either patch the NEWS file or adapt the code
+    in releases.xml.php and commit your changes accordingly.
+
+14) Once you're pretty sure things have gone well, tag the source:
 
     $ mtn tag <REVISION> monotone-<NEW VERSION>
 
@@ -133,10 +141,10 @@ How to release a new version of monotone
 
     $ mtn sync
 
-14) Change the topic in the IRC channel to state the new version
+15) Change the topic in the IRC channel to state the new version
     number.
 
-15) Send out a release announcement.  Format is something like:
+16) Send out a release announcement.  Format is something like:
 
     To: monotone-announce@nongnu.org
     CC: monotone-devel@nongnu.org
@@ -148,9 +156,9 @@ How to release a new version of monotone
 
     <sign off>
 
-16) Submit a release announcement to freshmeat.net.
+17) Submit a release announcement to freshmeat.net.
 
-17) Note any mistakes you made and update this file accordingly for
+18) Note any mistakes you made and update this file accordingly for
     next time.
 
-18) Party!
+19) Party!
