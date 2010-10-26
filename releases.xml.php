@@ -20,7 +20,8 @@ class news_parser
             throw Exception("couldn't open '$file' for reading");
 
         $this->sections = array(
-            "Changes", "New features", "Bugs fixed", "Other", "Internal"
+            "Changes", "New features", "Bugs fixed", "Other", "Internal",
+            "Security related changes:", "Other changes:"
         );
     }
 
