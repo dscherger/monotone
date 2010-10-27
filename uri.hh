@@ -37,13 +37,16 @@ struct uri_t
   {
     std::string res;
     if (!scheme.empty())
-      res += scheme + "://";
+      res += scheme + ":";
+    std::string authority;
     if (!user.empty())
-      res += user + "@";
+      authority += user + "@";
     if (!host.empty())
-      res += host;
+      authority += host;
     if (!port.empty())
-      res += ":" + port;
+      authority += ":" + port;
+    if (!authority.empty())
+      res += "//" + authority;
     if (!path.empty())
       res += path;
     return res;
