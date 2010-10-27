@@ -154,7 +154,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-10-27 16:42+0200\n"
+"POT-Creation-Date: 2010-10-28 00:42+0200\n"
 "PO-Revision-Date: 2010-10-27 16:44+0200\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
@@ -3247,7 +3247,10 @@ msgid ""
 "revisions that have been determined to be good or bad, the number of "
 "revisions that have been skipped and the number of revisions remaining to be "
 "tested."
-msgstr "Visar det totala antalet revisioner i sökmängden, antalet revisioner som markerats som bra eller dåliga, antalet revision som har hoppats över och antalet revisioner kvar att testa."
+msgstr ""
+"Visar det totala antalet revisioner i sökmängden, antalet revisioner som "
+"markerats som bra eller dåliga, antalet revision som har hoppats över och "
+"antalet revisioner kvar att testa."
 
 #: cmd_ws_commit.cc:2417
 #, c-format
@@ -7378,22 +7381,17 @@ msgstr ""
 msgid "merge failed due to unresolved conflicts"
 msgstr "ihopslagningen misslyckades på grund av olösta konflikter."
 
-#: uri.cc:44
-#, c-format
-msgid "IPv6 address in URI has no closing ']'"
-msgstr "IPv6-adressen i URIn har ingen ']'"
+#: uri.cc:40
+#, fuzzy, c-format
+msgid "unable to parse URI '%s'"
+msgstr "kunde inte tyda datumangivelsen '%s' med formatet '%s'"
 
-#: uri.cc:64
-#, c-format
-msgid "explicit port-number specification in URI has no digits"
-msgstr "explicit portnummer utan siffror i URIn"
+#: uri.cc:68
+#, fuzzy, c-format
+msgid "unable to parse host of URI '%s'"
+msgstr "kunde inte tyda datumangivelsen '%s' med formatet '%s'"
 
-#: uri.cc:67
-#, c-format
-msgid "explicit port-number specification in URI contains nondigits"
-msgstr "explcit portnummer i URIn har andra tecken än siffror"
-
-#: uri.cc:180 uri.cc:183 uri.cc:205 uri.cc:226
+#: uri.cc:150 uri.cc:153 uri.cc:175 uri.cc:196
 #, c-format
 msgid "Bad URLencoded string '%s'"
 msgstr "Strängen '%s' är inte korrekt URL-kodad"
@@ -7417,42 +7415,42 @@ msgstr "SHA-1-leverantör '%s': %s MiB/s"
 msgid "%s MiB/s"
 msgstr "%s MiB/s"
 
-#: pcrewrap.cc:209
+#: pcrewrap.cc:210
 #, c-format
 msgid "while compiling regex \"%s\": %s"
 msgstr "medans regexen \"%s\" kompilerades: %s"
 
-#: pcrewrap.cc:218
+#: pcrewrap.cc:219
 #, c-format
 msgid "error in regex \"%s\": %s"
 msgstr "fel i regexen \"%s\": %s"
 
-#: pcrewrap.cc:220
+#: pcrewrap.cc:221
 #, c-format
 msgid "error near char %d of regex \"%s\": %s"
 msgstr "fel nära tecken nummer %d i regexen \"%s\": %s"
 
-#: pcrewrap.cc:235
+#: pcrewrap.cc:236
 #, c-format
 msgid "while studying regex \"%s\": %s"
 msgstr "medans regexen \"%s\" studerades: %s"
 
-#: pcrewrap.cc:253
+#: pcrewrap.cc:254
 #, c-format
 msgid "backtrack limit exceeded in regular expression matching"
 msgstr "bakåtspårningsnivån har nått sin gräns under jämförelse av regex"
 
-#: pcrewrap.cc:257
+#: pcrewrap.cc:258
 #, c-format
 msgid "recursion limit exceeded in regular expression matching"
 msgstr "rekursionen har nått sin gräns under jämförelse av regex"
 
-#: pcrewrap.cc:262
+#: pcrewrap.cc:263
 #, c-format
 msgid "invalid UTF-8 sequence found during regular expression matching"
 msgstr "ogiltig UTF8-sekvens funnen under jämförelsen av regex"
 
-#: pcrewrap.cc:265
+#: pcrewrap.cc:266
 #, fuzzy, c-format
 msgid "pcre_exec returned %d"
 msgstr "pcre_exec gav tillbaka %d"
@@ -8479,6 +8477,15 @@ msgstr "Tryck på Enter"
 #: std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Tryck [Retur] när underprocessen är klar"
+
+#~ msgid "IPv6 address in URI has no closing ']'"
+#~ msgstr "IPv6-adressen i URIn har ingen ']'"
+
+#~ msgid "explicit port-number specification in URI has no digits"
+#~ msgstr "explicit portnummer utan siffror i URIn"
+
+#~ msgid "explicit port-number specification in URI contains nondigits"
+#~ msgstr "explcit portnummer i URIn har andra tecken än siffror"
 
 #~ msgid "no server given and no default server set"
 #~ msgstr "ingen server angiven och ingen standardserver är satt"
