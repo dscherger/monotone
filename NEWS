@@ -8,11 +8,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
           --dry-run option; no data is transferred, but the connection
           is made and a summary of what would be transferred is
           output.
-        
+
         - Automate sync, push, and pull now output information about
           each transferred revision, cert and key, in basic_io format.
-        
-        - Monotone now tracks file size information. Please execute 
+
+        - Monotone now tracks file size information. Please execute
           'mtn db migrate' to migrate the database scheme and refresh the
           file size cache.
 
@@ -41,8 +41,20 @@ Xxx Xxx 99 99:99:99 UTC 2010
           "mtn://host/?include=foo,exclude=bar", you would now give
           "mtn://host/?foo;-bar" instead.
 
-          Monotone's native protocol (mtn://) is still the default
-          protocol if nothing is specified.
+          The URI parser was made a bit more standards compliant and
+          treats the scheme and host in a case insensitive manner.
+          The path and query parts are now automatically URL-decoded.
+
+          We deviate from RFC 3986 however by recognizing the authority
+          part in scheme-less URLs, where the standard would force us
+          to recognize a path instead.  For example, the URL
+
+              "code.monotone.ca/monotone"
+
+          would parse "code.monotone.ca/monotone" as path, whereas our
+          implementation parses "code.monotone.ca" as authority and
+          "/monotone" as path.  Monotone's native scheme / protocol 'mtn'
+          is set as default in cases like this.
 
           The format for the server part of the 'default-server',
           'known-server', 'server-include' and 'server-exclude'
@@ -169,8 +181,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
           sync, pull, push, automate remote_stdio, automate remote
           automate pull, automate push, automate sync
             --no-set-default                undo previous --set-default
-	  sync, pull, push, automate pull, automate push, automate sync
-	    --dry-run 	    	     	    just report what would be sent/received
+      sync, pull, push, automate pull, automate push, automate sync
+        --dry-run 	    	     	    just report what would be sent/received
           automate inventory
             --corresponding-renames         undo previous --no-corresponding-renames
             --ignored                       undo previous --no-ignored
@@ -311,14 +323,11 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - 'mtn conflicts store' now gives a proper error message when
           run outside a workspace (fixes monotone bug #30473)
 
-        - monotone did not properly parse URIs with paths which missed a
-          scheme and / or contained a port specification. This has been 
-          fixed.  Additionally, if a scheme is specified now, we require 
-          that the scheme is followed by two slashes per RFC 1738, i.e. 
-          "file:path/to/db.mtn" is no longer considered valid, but must be
-          given as "file://path/to/db.mtn".
+        - monotone did not properly parse URIs which missed a scheme or
+          which did not mark the start of the authority with a double slash.
+          This has been fixed.
           (fixes monotone issue 94)
-          
+
 Thu Oct 21 23:45:45 UTC 2010
 
         0.48.1 bugfix release.
