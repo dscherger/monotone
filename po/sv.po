@@ -154,8 +154,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-10-26 18:23+0200\n"
-"PO-Revision-Date: 2010-10-26 18:26+0200\n"
+"POT-Creation-Date: 2010-10-27 16:42+0200\n"
+"PO-Revision-Date: 2010-10-27 16:44+0200\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -1290,9 +1290,9 @@ msgid "could not query default database locations"
 msgstr "ingen standardkatalog för databaser finns definierad"
 
 #: cmd_list.cc:671
-#, fuzzy, c-format
+#, c-format
 msgid "ignoring database '%s'"
-msgstr "initierar ny databas '%s'"
+msgstr "ignorerar databasen '%s'"
 
 #: cmd_list.cc:678
 #, c-format
@@ -2771,7 +2771,9 @@ msgstr "revisionen %s och %s har ingen gemensam historia, kan inte invertera"
 msgid ""
 "revisions share common history, but %s is not an ancestor of %s, cannot "
 "invert"
-msgstr "flera revisioner har gemensam historia, men %s är inte förfader till %s, kan inte invertera"
+msgstr ""
+"flera revisioner har gemensam historia, men %s är inte förfader till %s, kan "
+"inte invertera"
 
 #: cmd_ws_commit.cc:702 cmd_ws_commit.cc:1771
 #, c-format
@@ -3240,16 +3242,12 @@ msgid "Reports on the current status of the bisection search"
 msgstr "Berättar om den nuvarande uppdelningssökningens tillstånd"
 
 #: cmd_ws_commit.cc:2389
-#, fuzzy
 msgid ""
 "Lists the total number of revisions in the search set, the number of "
 "revisions that have been determined to be good or bad, the number of "
 "revisions that have been skipped and the number of revisions remaining to be "
 "tested."
-msgstr ""
-"Visar det totala antalet revisioner i sökmängden, antalet revisioner som "
-"anses vara bra eller dåliga, antalet revision som har hoppats över och "
-"antalet revisioner som fortfarande ska testas."
+msgstr "Visar det totala antalet revisioner i sökmängden, antalet revisioner som markerats som bra eller dåliga, antalet revision som har hoppats över och antalet revisioner kvar att testa."
 
 #: cmd_ws_commit.cc:2417
 #, c-format
@@ -7419,45 +7417,45 @@ msgstr "SHA-1-leverantör '%s': %s MiB/s"
 msgid "%s MiB/s"
 msgstr "%s MiB/s"
 
-#: pcrewrap.cc:163
+#: pcrewrap.cc:209
 #, c-format
 msgid "while compiling regex \"%s\": %s"
 msgstr "medans regexen \"%s\" kompilerades: %s"
 
-#: pcrewrap.cc:172
+#: pcrewrap.cc:218
 #, c-format
 msgid "error in regex \"%s\": %s"
 msgstr "fel i regexen \"%s\": %s"
 
-#: pcrewrap.cc:174
+#: pcrewrap.cc:220
 #, c-format
 msgid "error near char %d of regex \"%s\": %s"
 msgstr "fel nära tecken nummer %d i regexen \"%s\": %s"
 
-#: pcrewrap.cc:189
+#: pcrewrap.cc:235
 #, c-format
 msgid "while studying regex \"%s\": %s"
 msgstr "medans regexen \"%s\" studerades: %s"
 
-#: pcrewrap.cc:207
+#: pcrewrap.cc:253
 #, c-format
 msgid "backtrack limit exceeded in regular expression matching"
 msgstr "bakåtspårningsnivån har nått sin gräns under jämförelse av regex"
 
-#: pcrewrap.cc:211
+#: pcrewrap.cc:257
 #, c-format
 msgid "recursion limit exceeded in regular expression matching"
 msgstr "rekursionen har nått sin gräns under jämförelse av regex"
 
-#: pcrewrap.cc:216
+#: pcrewrap.cc:262
 #, c-format
 msgid "invalid UTF-8 sequence found during regular expression matching"
 msgstr "ogiltig UTF8-sekvens funnen under jämförelsen av regex"
 
-#: pcrewrap.cc:219
-#, c-format
-msgid "pcre_match returned %d"
-msgstr "pcre_match gav tillbaka %d"
+#: pcrewrap.cc:265
+#, fuzzy, c-format
+msgid "pcre_exec returned %d"
+msgstr "pcre_exec gav tillbaka %d"
 
 #: rev_output.cc:61
 msgid "Revision: "
