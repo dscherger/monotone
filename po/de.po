@@ -1186,9 +1186,9 @@ msgid "could not query default database locations"
 msgstr "konnte Standarddatenbankpfade nicht abfragen"
 
 #: cmd_list.cc:671
-#, fuzzy, c-format
+#, c-format
 msgid "ignoring database '%s'"
-msgstr "initialisiere neue Datenbank '%s'"
+msgstr "ignoriere Datenbank '%s'"
 
 #: cmd_list.cc:678
 #, c-format
@@ -3079,27 +3079,22 @@ msgid "import directory '%s' is a file"
 msgstr "Der Import-Pfad '%s' ist eine Datei und kein Verzeichnis."
 
 #: cmd_ws_commit.cc:1978
-#, fuzzy
 msgid "Exports a revision from the database into a directory"
-msgstr "Checkt eine Revision aus der Datenbank in ein Verzeichnis aus"
+msgstr "Exportiert eine Revision aus der Datenbank in ein Verzeichnis"
 
 #: cmd_ws_commit.cc:1979
-#, fuzzy
 msgid ""
 "If a revision is given, that's the one that will be exported.  Otherwise, it "
 "will be the head of the branch (given or implicit)."
 msgstr ""
-"Wenn eine Revision angegeben wird, ist diese die einzige, die ausgecheckt "
+"Wenn eine Revision angegeben wird, ist diese diejenige, die exportiert "
 "wird.  Andernfalls wird der Kopf des Zweiges (gegeben oder implizit) "
-"ausgecheckt.  Wenn kein Verzeichnis angegeben wird, wird der Zweigname als "
-"Verzeichnisname verwendet."
+"exportiert."
 
 #: cmd_ws_commit.cc:1991
-#, fuzzy, c-format
+#, c-format
 msgid "You can't export in the current directory"
-msgstr ""
-"Gibt das Wurzelverzeichnis des Arbeitsbereichs für das aktuelle Verzeichnis "
-"aus"
+msgstr "Sie können nicht das aktuelle Verzeichnis für den Export nutzen."
 
 #: cmd_ws_commit.cc:1999
 msgid "Migrates a workspace directory's metadata to the latest format"
@@ -3216,7 +3211,6 @@ msgid "Reports on the current status of the bisection search"
 msgstr "Berichtet den derzeitigen Status der Bisektionssuche"
 
 #: cmd_ws_commit.cc:2389
-#, fuzzy
 msgid ""
 "Lists the total number of revisions in the search set, the number of "
 "revisions that have been determined to be good or bad, the number of "
@@ -7449,14 +7443,14 @@ msgid "merge failed due to unresolved conflicts"
 msgstr "Vereinigung schlug wegen nicht aufgelösten Konflikten fehl"
 
 #: uri.cc:40
-#, fuzzy, c-format
+#, c-format
 msgid "unable to parse URI '%s'"
-msgstr "kann Datum '%s' nicht mit dem Format '%s' analysieren"
+msgstr "kann URI '%s' nicht analysieren"
 
 #: uri.cc:68
-#, fuzzy, c-format
+#, c-format
 msgid "unable to parse host of URI '%s'"
-msgstr "kann Datum '%s' nicht mit dem Format '%s' analysieren"
+msgstr "kann Host-Bestandteil der URI '%s' nicht analysieren"
 
 #: uri.cc:150 uri.cc:153 uri.cc:175 uri.cc:196
 #, c-format
@@ -7520,9 +7514,9 @@ msgstr ""
 "gefunden"
 
 #: pcrewrap.cc:266
-#, fuzzy, c-format
+#, c-format
 msgid "pcre_exec returned %d"
-msgstr "pcre_match gab %d zurück"
+msgstr "pcre_exec gab %d zurück"
 
 #: rev_output.cc:61
 msgid "Revision: "
