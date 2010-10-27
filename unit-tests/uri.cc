@@ -55,6 +55,8 @@ UNIT_TEST(basic)
                "file", "", "tmp", "", "/foo.mtn", "", "");
   test_one_uri("file:/tmp/foo.mtn",
                "file", "", "", "", "/tmp/foo.mtn", "", "");
+  test_one_uri("file:tmp/foo.mtn",
+               "file", "", "", "", "tmp/foo.mtn", "", "");
   test_one_uri("file:foo.mtn",
                "file", "", "", "", "foo.mtn", "", "");
   test_one_uri("/tmp/foo.mtn",
@@ -75,6 +77,8 @@ UNIT_TEST(bizarre)
                "", "", "venge.net", "4692", "", "", "");
   test_one_uri("venge.net/monotone",
                "", "", "venge.net", "", "/monotone", "", "");
+  test_one_uri("venge.net:4692/monotone",
+               "", "", "venge.net", "4692", "/monotone", "", "");
   test_one_uri("graydon@venge.net:22/tmp/foo.mtn",
                "", "graydon", "venge.net", "22", "/tmp/foo.mtn", "", "");
   test_one_uri("file:///graydon@venge.net:22/tmp/foo.mtn",
