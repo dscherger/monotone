@@ -62,6 +62,17 @@ attr_functions["test:test_attr"] =
     io.write(string.format("test:test_attr:%s:%s\n", filename, value))
   end
 
+-- Ensure that the mtn:execute attr is set the same for all platforms,
+-- since attrs are part of the manifest, and we need revids to be
+-- invariant across platforms
+if (attr_init_functions == nil) then
+  attr_init_functions = {}
+end
+attr_init_functions["mtn:execute"] =
+   function(filename)
+        return nil
+   end
+
 function get_mtn_command(host)
    return os.getenv("mtn")
 end
