@@ -128,6 +128,12 @@ building and installation process for monotone
            Other tools will be linked with the monotone MinGW
            executable, so we need the MinGW versions of those.
 
+           The tools listed here are sufficient to build the monotone
+           executable and html and info documentation. However, the
+           'distcheck' target also builds the documentation in
+           postscript format, which requires tools not (yet) available
+           for MinGW.
+           
            1. MinGW - run installer, accept defaults but add g++ on the package selection page (installs to c:/MinGW)
            2. MSYS - run installer, accept defaults (installs to c:/Msys/1.0)
            3. msysDTK - run installer, accept defaults (installs to c:/Msys/1.0)
@@ -208,7 +214,7 @@ building and installation process for monotone
                $ make install
 
            15. Depends.exe
-               If you have Visual Studio install, you should be able to skip this.
+               If you have Visual Studio installed, you should be able to skip this.
                If you don't, then download the appropriate depends*.zip and
                unpack it someplace in your %PATH%.
                This is only used by the testsuite, in particular the empty_environment test.
