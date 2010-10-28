@@ -154,8 +154,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-10-28 00:42+0200\n"
-"PO-Revision-Date: 2010-10-27 16:44+0200\n"
+"POT-Creation-Date: 2010-10-28 13:54+0200\n"
+"PO-Revision-Date: 2010-10-28 13:56+0200\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -1653,8 +1653,8 @@ msgstr ""
 "nästa ändring hamnar i grenen %s"
 
 #: cmd_merging.cc:209 cmd_merging.cc:824 cmd_ws_commit.cc:370
-#: cmd_ws_commit.cc:1358 cmd_ws_commit.cc:2062 cmd_ws_commit.cc:2290
-#: cmd_ws_commit.cc:2405 cmd_files.cc:307 cmd_files.cc:405 automate.cc:1035
+#: cmd_ws_commit.cc:1358 cmd_ws_commit.cc:2042 cmd_ws_commit.cc:2270
+#: cmd_ws_commit.cc:2385 cmd_files.cc:307 cmd_files.cc:405 automate.cc:1035
 #: automate.cc:1328
 #, c-format
 msgid "this command can only be used in a single-parent workspace"
@@ -2877,7 +2877,7 @@ msgid "checkout directory '%s' already exists"
 msgstr "arbetskatalogen '%s' finns redan"
 
 #: cmd_ws_commit.cc:1111 cmd_ws_commit.cc:1125 cmd_ws_commit.cc:1821
-#: cmd_ws_commit.cc:1998
+#: cmd_ws_commit.cc:1978
 msgid "[DIRECTORY]"
 msgstr "[KATALOG]"
 
@@ -3081,7 +3081,7 @@ msgstr "Använd nuvarande katalog om inget annat anges."
 msgid "need --branch argument for setup"
 msgstr "du måste ange en gren med --branch till kommandot \"setup\""
 
-#: cmd_ws_commit.cc:1868 cmd_ws_commit.cc:1977
+#: cmd_ws_commit.cc:1868
 msgid "DIRECTORY"
 msgstr "KATALOG"
 
@@ -3116,40 +3116,23 @@ msgstr "importkatalogen '%s' finns inte"
 msgid "import directory '%s' is a file"
 msgstr "importkatalogen '%s' är en fil"
 
-#: cmd_ws_commit.cc:1978
-msgid "Exports a revision from the database into a directory"
-msgstr "Exporterar en revision från databasen till en katalog"
-
 #: cmd_ws_commit.cc:1979
-msgid ""
-"If a revision is given, that's the one that will be exported.  Otherwise, it "
-"will be the head of the branch (given or implicit)."
-msgstr ""
-"Om en revision anges kommer den att exportera.  I annat fall kommer lövet i "
-"grenen (implicit eller angiven) att exporteras."
-
-#: cmd_ws_commit.cc:1991
-#, c-format
-msgid "You can't export in the current directory"
-msgstr "Du får inte exportera i nuvarande katalog"
-
-#: cmd_ws_commit.cc:1999
 msgid "Migrates a workspace directory's metadata to the latest format"
 msgstr "Migrerar en arbetskopias metadata till det senaste formatet"
 
-#: cmd_ws_commit.cc:2000
+#: cmd_ws_commit.cc:1980
 msgid "If no directory is given, defaults to the current workspace."
 msgstr "Nuvarande katalog avses om inget annat anges"
 
-#: cmd_ws_commit.cc:2024
+#: cmd_ws_commit.cc:2004
 msgid "Refreshes the inodeprint cache"
 msgstr "Uppdaterar inodeprint-cachen"
 
-#: cmd_ws_commit.cc:2035
+#: cmd_ws_commit.cc:2015
 msgid "Search revisions to find where a change first appeared"
 msgstr "Leta efter revision för att finna var en ändring uppstod"
 
-#: cmd_ws_commit.cc:2036
+#: cmd_ws_commit.cc:2016
 msgid ""
 "These commands subdivide a set of revisions into good, bad and untested "
 "subsets and successively narrow the untested set to find the first revision "
@@ -3159,11 +3142,11 @@ msgstr ""
 "otestad mängde, och smalnar successivt av den otestade mängden med målet att "
 "finna den revision som först introducerade en viss ändring."
 
-#: cmd_ws_commit.cc:2041
+#: cmd_ws_commit.cc:2021
 msgid "Reset the current bisection search"
 msgstr "Avbryt den pågående uppdelningssökningen"
 
-#: cmd_ws_commit.cc:2042
+#: cmd_ws_commit.cc:2022
 msgid ""
 "Update the workspace back to the revision from which the bisection was "
 "started and remove all current search information, allowing a new search to "
@@ -3172,24 +3155,24 @@ msgstr ""
 "Uppdatera arbetskopian tillbaka till revisionen där uppdelningen började och "
 "ta bort all sökningsinformation så att en ny sökning kan påbörjas."
 
-#: cmd_ws_commit.cc:2057 cmd_ws_commit.cc:2113
+#: cmd_ws_commit.cc:2037 cmd_ws_commit.cc:2093
 #, c-format
 msgid "no bisection in progress"
 msgstr "ingen uppdelning pågår"
 
-#: cmd_ws_commit.cc:2072 cmd_ws_commit.cc:2300
+#: cmd_ws_commit.cc:2052 cmd_ws_commit.cc:2280
 #, c-format
 msgid "this command can only be used in a workspace with no pending changes"
 msgstr ""
 "detta kommando kan enbart användas i en arbetskopia där alla gjorda "
 "ändringar har arkiverats"
 
-#: cmd_ws_commit.cc:2078
+#: cmd_ws_commit.cc:2058
 #, c-format
 msgid "reset back to %s"
 msgstr "återställ till %s"
 
-#: cmd_ws_commit.cc:2144
+#: cmd_ws_commit.cc:2124
 #, c-format
 msgid ""
 "bisecting revisions; %d good; %d bad; %d skipped; specify good revisions to "
@@ -3198,7 +3181,7 @@ msgstr ""
 "delar upp revisioner; %d bra; %d dåliga; %d hoppades över; var god ange bra "
 "revisioner för att påbörja sökningen"
 
-#: cmd_ws_commit.cc:2150
+#: cmd_ws_commit.cc:2130
 #, c-format
 msgid ""
 "bisecting revisions; %d good; %d bad; %d skipped; specify bad revisions to "
@@ -3207,41 +3190,41 @@ msgstr ""
 "delar upp revisioner; %d bra; %d dåliga; %d hoppades över; var god ange "
 "dåliga revisioner för att påbörja sökningen"
 
-#: cmd_ws_commit.cc:2213
+#: cmd_ws_commit.cc:2193
 #, c-format
 msgid "bisecting %d revisions; %d good; %d bad; %d skipped; %d remaining"
 msgstr "delar upp %d revisioner; %d bra; %d dåliga; %d hoppades över; %d kvar"
 
-#: cmd_ws_commit.cc:2231
+#: cmd_ws_commit.cc:2211
 #, c-format
 msgid "bisection finished at revision %s"
 msgstr "uppdelningen slutade på revision %s"
 
-#: cmd_ws_commit.cc:2324
+#: cmd_ws_commit.cc:2304
 #, c-format
 msgid "bisection started at revision %s"
 msgstr "uppdelningen började på revision %s"
 
-#: cmd_ws_commit.cc:2340
+#: cmd_ws_commit.cc:2320
 #, c-format
 msgid "ignored redundant bisect %s on revision %s"
 msgstr "ignorerade redundant uppdelning %s på revision %s"
 
-#: cmd_ws_commit.cc:2345
+#: cmd_ws_commit.cc:2325
 #, c-format
 msgid "conflicting bisect %s/%s on revision %s"
 msgstr "uppdelning %s och %s i konflikt med varandra i revision %s"
 
-#: cmd_ws_commit.cc:2363
+#: cmd_ws_commit.cc:2343
 #, c-format
 msgid "updating to %s"
 msgstr "uppdaterar till %s"
 
-#: cmd_ws_commit.cc:2388
+#: cmd_ws_commit.cc:2368
 msgid "Reports on the current status of the bisection search"
 msgstr "Berättar om den nuvarande uppdelningssökningens tillstånd"
 
-#: cmd_ws_commit.cc:2389
+#: cmd_ws_commit.cc:2369
 msgid ""
 "Lists the total number of revisions in the search set, the number of "
 "revisions that have been determined to be good or bad, the number of "
@@ -3252,26 +3235,26 @@ msgstr ""
 "markerats som bra eller dåliga, antalet revision som har hoppats över och "
 "antalet revisioner kvar att testa."
 
-#: cmd_ws_commit.cc:2417
+#: cmd_ws_commit.cc:2397
 #, c-format
 msgid "next revision for bisection testing is %s\n"
 msgstr "nästa revision att testa med uppdelning är %s\n"
 
-#: cmd_ws_commit.cc:2418
+#: cmd_ws_commit.cc:2398
 #, c-format
 msgid "however this workspace is currently at %s\n"
 msgstr "men denna arbetskopia är för närvarande på %s\n"
 
-#: cmd_ws_commit.cc:2419
+#: cmd_ws_commit.cc:2399
 #, c-format
 msgid "run 'bisect update' to update to this revision before testing"
 msgstr "kör 'bisect update' för att uppdatera till denna revision innan test"
 
-#: cmd_ws_commit.cc:2424
+#: cmd_ws_commit.cc:2404
 msgid "Updates the workspace to the next revision to be tested by bisection"
 msgstr "Uppdaterar arbetskopian till nästa revision att testa med uppdelning"
 
-#: cmd_ws_commit.cc:2425
+#: cmd_ws_commit.cc:2405
 msgid ""
 "This command can be used if updates by good, bad or skip commands fail due "
 "to blocked paths or other problems."
@@ -3279,11 +3262,11 @@ msgstr ""
 "Detta kommando kan användas om uppdatering med kommandona 'good', 'bad' och "
 "'skipped' misslyckades på grund av blockerade sökvägar eller andra problem."
 
-#: cmd_ws_commit.cc:2435
+#: cmd_ws_commit.cc:2415
 msgid "Excludes the current revision or specified revisions from the search"
 msgstr "Utestänger nuvarande revision eller angivna revisioner från sökningen"
 
-#: cmd_ws_commit.cc:2436
+#: cmd_ws_commit.cc:2416
 msgid ""
 "Skipped revisions are removed from the set being searched. Revisions that "
 "cannot be tested for some reason should be skipped."
@@ -3291,19 +3274,19 @@ msgstr ""
 "Revisioner som hoppas över tas bort från mängden som söks igenom. Revisioner "
 "som inte kan testas av någon anledning borde hoppas över."
 
-#: cmd_ws_commit.cc:2446
+#: cmd_ws_commit.cc:2426
 msgid "Marks the current revision or specified revisions as bad"
 msgstr "Markerar nuvarande revision eller angivna revisioner som dåliga"
 
-#: cmd_ws_commit.cc:2447
+#: cmd_ws_commit.cc:2427
 msgid "Known bad revisions are removed from the set being searched."
 msgstr "Kända dåliga revisioner tas bort från mängden att söka igenom."
 
-#: cmd_ws_commit.cc:2456
+#: cmd_ws_commit.cc:2436
 msgid "Marks the current revision or specified revisions as good"
 msgstr "Markerar nuvarande revision eller angivna revisioner som bra"
 
-#: cmd_ws_commit.cc:2457
+#: cmd_ws_commit.cc:2437
 msgid "Known good revisions are removed from the set being searched."
 msgstr "Kända bra revisioner tas bort från mängden att söka igenom."
 
@@ -7382,14 +7365,14 @@ msgid "merge failed due to unresolved conflicts"
 msgstr "ihopslagningen misslyckades på grund av olösta konflikter."
 
 #: uri.cc:40
-#, fuzzy, c-format
+#, c-format
 msgid "unable to parse URI '%s'"
-msgstr "kunde inte tyda datumangivelsen '%s' med formatet '%s'"
+msgstr "kunde inte tyda URIn '%s'"
 
 #: uri.cc:68
-#, fuzzy, c-format
+#, c-format
 msgid "unable to parse host of URI '%s'"
-msgstr "kunde inte tyda datumangivelsen '%s' med formatet '%s'"
+msgstr "kunde inte tyda värdnamnet i URIn '%s'"
 
 #: uri.cc:150 uri.cc:153 uri.cc:175 uri.cc:196
 #, c-format
@@ -7451,7 +7434,7 @@ msgid "invalid UTF-8 sequence found during regular expression matching"
 msgstr "ogiltig UTF8-sekvens funnen under jämförelsen av regex"
 
 #: pcrewrap.cc:266
-#, fuzzy, c-format
+#, c-format
 msgid "pcre_exec returned %d"
 msgstr "pcre_exec gav tillbaka %d"
 
@@ -8477,6 +8460,19 @@ msgstr "Tryck på Enter"
 #: std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Tryck [Retur] när underprocessen är klar"
+
+#~ msgid "Exports a revision from the database into a directory"
+#~ msgstr "Exporterar en revision från databasen till en katalog"
+
+#~ msgid ""
+#~ "If a revision is given, that's the one that will be exported.  Otherwise, "
+#~ "it will be the head of the branch (given or implicit)."
+#~ msgstr ""
+#~ "Om en revision anges kommer den att exportera.  I annat fall kommer lövet "
+#~ "i grenen (implicit eller angiven) att exporteras."
+
+#~ msgid "You can't export in the current directory"
+#~ msgstr "Du får inte exportera i nuvarande katalog"
 
 #~ msgid "IPv6 address in URI has no closing ']'"
 #~ msgstr "IPv6-adressen i URIn har ingen ']'"
