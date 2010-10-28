@@ -1,4 +1,4 @@
-Xxx Xxx 99 99:99:99 UTC 2010
+Thu Oct 28 21:07:18 UTC 2010
 
         0.99 release.
 
@@ -338,6 +338,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           which did not mark the start of the authority with a double slash.
           This has been fixed.
           (fixes monotone issue 94)
+
 
 Thu Oct 21 23:45:45 UTC 2010
 
