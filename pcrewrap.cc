@@ -159,6 +159,7 @@ namespace pcre
                    0, flags_to_internal(options), ovector, worksize);
 
     // since we dynamically set the work size, we should
+    // always get either a negative (error) or >= 1 match count
     I(rc != 0);
 
     if (rc == PCRE_ERROR_NOMATCH)

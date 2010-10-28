@@ -8569,7 +8569,7 @@ for a full explanation.
 
 @itemize
 @item
-FIXME -- add sent/received revision, cert, and key output; add --dry-run.
+13.0 -- add sent/received revision, cert, and key output; add --dry-run.
 
 @item
 12.0 -- added
@@ -8764,8 +8764,7 @@ the passphrase that will be used to encrypt the private half.
 @item Changes:
 @itemize
 @item
-FIXME: renamed from @command{genkey} to @command{generate_key}
-
+13.0 -- renamed from @command{genkey} to @command{generate_key}
 @item
 10.0 -- The separate hashes for the private half of a key really didn't
 make much sense; have one @code{hash [...]} line instead of separate
@@ -9166,9 +9165,9 @@ message to stderr and exits with status 1.
 The @var{revid} specifies the revision for which the extended manifest
 should be printed.
 
-@item Added in:
+@item Changes:
 
-13.0
+13.0 -- initial
 
 @item Purpose:
 
@@ -9570,9 +9569,9 @@ with status 1.
 The  @var{id} argument specifies the file hash of the file for which
 the size should be printed.
 
-@item Added in:
+@item Changes:
 
-13.0
+13.0 -- initial
 
 @item Purpose:
 
@@ -9748,9 +9747,9 @@ None.
 A data packet, @var{key-packet-data}, as produced by @command{mtn
 automate get_public_key @var{keyid}}.
 
-@item Added in:
+@item Changes:
 
-FIXME:
+13.0 -- initial
 
 @item Purpose:
 
@@ -9781,7 +9780,7 @@ An error will be produced if the argument is not a valid key packet.
 
 @itemize
 @item
-FIXME -- initial
+13.0 -- initial
 
 @end itemize
 
@@ -9819,7 +9818,7 @@ If the key does not exist, an error message is printed on the error stream.
 
 @itemize
 @item
-FIXME -- initial
+13.0 -- initial
 
 @end itemize
 
@@ -10807,9 +10806,9 @@ see @command{update} in @ref{Workspace}.
 
 Same as @command{mtn checkout}; directory to create workspace in.
 
-@item Added in:
+@item Changes:
 
-FIXME
+13.0 -- initial
 
 @item Purpose:
 

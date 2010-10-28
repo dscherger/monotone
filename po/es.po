@@ -84,14 +84,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Monotone\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-10-18 14:10+0200\n"
+"POT-Creation-Date: 2010-10-28 00:42+0200\n"
 "PO-Revision-Date: 2009-03-31 13:46-0500\n"
 "Last-Translator: Nicolas Ruiz <juan.ruiz at ula.ve>\n"
 "Language-Team:  <juan.ruiz at ula.ve>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: \n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: KBabel 1.11.4\n"
 
@@ -906,7 +906,7 @@ msgstr ""
 msgid "Executes COMMAND on a remote server"
 msgstr ""
 
-#: cmd_netsync.cc:219 cmd_list.cc:987 cmd_packet.cc:73 cmd_packet.cc:134
+#: cmd_netsync.cc:219 cmd_list.cc:988 cmd_packet.cc:73 cmd_packet.cc:134
 #: cmd_packet.cc:257 cmd_key_cert.cc:81 cmd_key_cert.cc:186 cmd_merging.cc:384
 #: cmd_merging.cc:1131 cmd_merging.cc:1202 cmd_ws_commit.cc:1134
 #: cmd_ws_commit.cc:1342 cmd_ws_commit.cc:1456 cmd_ws_commit.cc:1478
@@ -1103,7 +1103,7 @@ msgstr ""
 msgid "Lists certificates attached to an identifier"
 msgstr "Lista certificados asociados a un identificador"
 
-#: cmd_list.cc:128 cmd_list.cc:1016
+#: cmd_list.cc:128 cmd_list.cc:1017
 #, c-format
 msgid "no public key '%s' found in database"
 msgstr "no se encontró la llave pública '%s' en la base de datos"
@@ -1206,54 +1206,59 @@ msgstr "Lista variables en toda la base de datos o dominio"
 msgid "Lists managed databases and their known workspaces"
 msgstr ""
 
-#: cmd_list.cc:625 database.cc:4949
+#: cmd_list.cc:625 database.cc:4956
 #, c-format
 msgid "could not query default database locations"
 msgstr ""
 
-#: cmd_list.cc:677
+#: cmd_list.cc:671
+#, fuzzy, c-format
+msgid "ignoring database '%s'"
+msgstr "Inicializa una base de datos"
+
+#: cmd_list.cc:678
 #, c-format
 msgid ":%s (in %s):"
 msgstr ""
 
-#: cmd_list.cc:712
+#: cmd_list.cc:713
 #, fuzzy
 msgid "<no branch set>"
 msgstr "Rama actual: %s"
 
-#: cmd_list.cc:714
+#: cmd_list.cc:715
 #, fuzzy, c-format
 msgid "\t%s (in %s)"
 msgstr "%s (revisión base: %s)"
 
-#: cmd_list.cc:718
+#: cmd_list.cc:719
 #, fuzzy, c-format
 msgid "\tno known valid workspaces"
 msgstr "no busca un área de trabajo"
 
-#: cmd_list.cc:724
+#: cmd_list.cc:725
 msgid "Lists workspace files that belong to the current branch"
 msgstr "Lista archivos en el área de trabajo que pertenecen a la rama actual"
 
-#: cmd_list.cc:764
+#: cmd_list.cc:765
 msgid "Lists workspace files that do not belong to the current branch"
 msgstr ""
 "Lista archivos en el área de trabajo que no pertenecen a la rama actual"
 
-#: cmd_list.cc:795
+#: cmd_list.cc:796
 msgid "Lists files that belong to the branch but are not in the workspace"
 msgstr ""
 "Lista archivos que pertenecen a la rama pero no existen en el área de trabajo"
 
-#: cmd_list.cc:818
+#: cmd_list.cc:819
 msgid "Lists files that have changed with respect to the current revision"
 msgstr "Lista archivos que han cambiado con respecto a la revisión actual"
 
-#: cmd_list.cc:923
+#: cmd_list.cc:924
 msgid "Lists all keys in the keystore"
 msgstr "Lista todas las llaves en el llavero"
 
-#: cmd_list.cc:928 cmd_db.cc:50 cmd_db.cc:62 cmd_db.cc:74 cmd_db.cc:91
+#: cmd_list.cc:929 cmd_db.cc:50 cmd_db.cc:62 cmd_db.cc:74 cmd_db.cc:91
 #: cmd_db.cc:105 cmd_db.cc:119 cmd_db.cc:135 cmd_db.cc:325 cmd_db.cc:341
 #: cmd_db.cc:362 cmd_db.cc:380 cmd_automate.cc:112 cmd_automate.cc:234
 #: automate.cc:344 automate.cc:370 automate.cc:472 automate.cc:1320
@@ -1262,15 +1267,15 @@ msgstr "Lista todas las llaves en el llavero"
 msgid "no arguments needed"
 msgstr "no se requieren argumentos"
 
-#: cmd_list.cc:981 cmd_db.cc:610 automate.cc:394 automate.cc:425
+#: cmd_list.cc:982 cmd_db.cc:610 automate.cc:394 automate.cc:425
 msgid "REV"
 msgstr "REV"
 
-#: cmd_list.cc:982
+#: cmd_list.cc:983
 msgid "Prints all certificates attached to a revision"
 msgstr "Imprime todos los certificados adheridos a una revisión"
 
-#: cmd_list.cc:1000 cmd_db.cc:621 cmd_files.cc:269 automate.cc:132
+#: cmd_list.cc:1001 cmd_db.cc:621 cmd_files.cc:269 automate.cc:132
 #: automate.cc:185 automate.cc:235 automate.cc:265 automate.cc:307
 #: automate.cc:312 automate.cc:406 automate.cc:437 automate.cc:1602
 #: automate.cc:1634 automate.cc:1701 automate.cc:1703 automate.cc:2175
@@ -1576,8 +1581,8 @@ msgstr ""
 "el siguiente 'commit' utilizará la rama '%s'"
 
 #: cmd_merging.cc:209 cmd_merging.cc:824 cmd_ws_commit.cc:370
-#: cmd_ws_commit.cc:1358 cmd_ws_commit.cc:2042 cmd_ws_commit.cc:2270
-#: cmd_ws_commit.cc:2385 cmd_files.cc:307 cmd_files.cc:405 automate.cc:1035
+#: cmd_ws_commit.cc:1358 cmd_ws_commit.cc:2062 cmd_ws_commit.cc:2290
+#: cmd_ws_commit.cc:2405 cmd_files.cc:307 cmd_files.cc:405 automate.cc:1035
 #: automate.cc:1328
 #, c-format
 msgid "this command can only be used in a single-parent workspace"
@@ -2800,7 +2805,7 @@ msgid "checkout directory '%s' already exists"
 msgstr "directorio para el 'checkout' '%s' ya existe"
 
 #: cmd_ws_commit.cc:1111 cmd_ws_commit.cc:1125 cmd_ws_commit.cc:1821
-#: cmd_ws_commit.cc:1978
+#: cmd_ws_commit.cc:1998
 msgid "[DIRECTORY]"
 msgstr "[DIRECTORIO]"
 
@@ -3010,7 +3015,7 @@ msgstr "Si no se especifica un directorio, utiliza el directorio actual."
 msgid "need --branch argument for setup"
 msgstr "necesita el argumento '--branch' para 'setup'"
 
-#: cmd_ws_commit.cc:1868
+#: cmd_ws_commit.cc:1868 cmd_ws_commit.cc:1977
 msgid "DIRECTORY"
 msgstr "DIRECTORIO"
 
@@ -3045,163 +3050,183 @@ msgstr "directorio a importar '%s' no existe"
 msgid "import directory '%s' is a file"
 msgstr "directorio a importar '%s' es un archivo"
 
+#: cmd_ws_commit.cc:1978
+#, fuzzy
+msgid "Exports a revision from the database into a directory"
+msgstr "Bajar una revisión de la base de datos a un directorio"
+
 #: cmd_ws_commit.cc:1979
+#, fuzzy
+msgid ""
+"If a revision is given, that's the one that will be exported.  Otherwise, it "
+"will be the head of the branch (given or implicit)."
+msgstr ""
+"Si se especifica una revisión, esta será la extraida de la base de datos.  "
+"De lo contrario, será la cabeza de la rama (explícita o implícita).  Si no "
+"se especifica un directorio, el nombre de la rama se usará como directorio."
+
+#: cmd_ws_commit.cc:1991
+#, fuzzy, c-format
+msgid "You can't export in the current directory"
+msgstr "Imprime la raíz del área de trabajo del actual directorio"
+
+#: cmd_ws_commit.cc:1999
 msgid "Migrates a workspace directory's metadata to the latest format"
 msgstr ""
 "Migra la metadata del directorio del área de trabajo al formato más reciente"
 
-#: cmd_ws_commit.cc:1980
+#: cmd_ws_commit.cc:2000
 msgid "If no directory is given, defaults to the current workspace."
 msgstr ""
 "Si no se especifica un directorio, por omisión usa el área de trabajo actual."
 
-#: cmd_ws_commit.cc:2004
+#: cmd_ws_commit.cc:2024
 msgid "Refreshes the inodeprint cache"
 msgstr "Refresca el cache inodeprint"
 
-#: cmd_ws_commit.cc:2015
+#: cmd_ws_commit.cc:2035
 msgid "Search revisions to find where a change first appeared"
 msgstr ""
 
-#: cmd_ws_commit.cc:2016
+#: cmd_ws_commit.cc:2036
 msgid ""
 "These commands subdivide a set of revisions into good, bad and untested "
 "subsets and successively narrow the untested set to find the first revision "
 "that introduced some change."
 msgstr ""
 
-#: cmd_ws_commit.cc:2021
+#: cmd_ws_commit.cc:2041
 msgid "Reset the current bisection search"
 msgstr ""
 
-#: cmd_ws_commit.cc:2022
+#: cmd_ws_commit.cc:2042
 msgid ""
 "Update the workspace back to the revision from which the bisection was "
 "started and remove all current search information, allowing a new search to "
 "be started."
 msgstr ""
 
-#: cmd_ws_commit.cc:2037 cmd_ws_commit.cc:2093
+#: cmd_ws_commit.cc:2057 cmd_ws_commit.cc:2113
 #, c-format
 msgid "no bisection in progress"
 msgstr ""
 
-#: cmd_ws_commit.cc:2052 cmd_ws_commit.cc:2280
+#: cmd_ws_commit.cc:2072 cmd_ws_commit.cc:2300
 #, fuzzy, c-format
 msgid "this command can only be used in a workspace with no pending changes"
 msgstr ""
 "'%s' solo puede ser utilizado en un área de trabajo sin cambios pendientes"
 
-#: cmd_ws_commit.cc:2058
+#: cmd_ws_commit.cc:2078
 #, c-format
 msgid "reset back to %s"
 msgstr ""
 
-#: cmd_ws_commit.cc:2124
+#: cmd_ws_commit.cc:2144
 #, c-format
 msgid ""
 "bisecting revisions; %d good; %d bad; %d skipped; specify good revisions to "
 "start search"
 msgstr ""
 
-#: cmd_ws_commit.cc:2130
+#: cmd_ws_commit.cc:2150
 #, c-format
 msgid ""
 "bisecting revisions; %d good; %d bad; %d skipped; specify bad revisions to "
 "start search"
 msgstr ""
 
-#: cmd_ws_commit.cc:2193
+#: cmd_ws_commit.cc:2213
 #, c-format
 msgid "bisecting %d revisions; %d good; %d bad; %d skipped; %d remaining"
 msgstr ""
 
-#: cmd_ws_commit.cc:2211
+#: cmd_ws_commit.cc:2231
 #, fuzzy, c-format
 msgid "bisection finished at revision %s"
 msgstr "área de trabajo ya está en revisión %s"
 
-#: cmd_ws_commit.cc:2304
+#: cmd_ws_commit.cc:2324
 #, fuzzy, c-format
 msgid "bisection started at revision %s"
 msgstr "área de trabajo ya está en revisión %s"
 
-#: cmd_ws_commit.cc:2320
+#: cmd_ws_commit.cc:2340
 #, fuzzy, c-format
 msgid "ignored redundant bisect %s on revision %s"
 msgstr "no hay archivo '%s' en la revisión '%s'"
 
-#: cmd_ws_commit.cc:2325
+#: cmd_ws_commit.cc:2345
 #, fuzzy, c-format
 msgid "conflicting bisect %s/%s on revision %s"
 msgstr "conflicto: directorio '%s' quedó huérfano en la revisión %s"
 
-#: cmd_ws_commit.cc:2343
+#: cmd_ws_commit.cc:2363
 #, fuzzy, c-format
 msgid "updating to %s"
 msgstr "conectandose a %s"
 
-#: cmd_ws_commit.cc:2368
+#: cmd_ws_commit.cc:2388
 #, fuzzy
 msgid "Reports on the current status of the bisection search"
 msgstr "Importa los contenidos de un directorio a una rama"
 
-#: cmd_ws_commit.cc:2369
+#: cmd_ws_commit.cc:2389
 msgid ""
-"Lists the total number of revisions in the search set; the number of "
-"revisions that have been determined to be good or bad; the number of "
+"Lists the total number of revisions in the search set, the number of "
+"revisions that have been determined to be good or bad, the number of "
 "revisions that have been skipped and the number of revisions remaining to be "
 "tested."
 msgstr ""
 
-#: cmd_ws_commit.cc:2397
+#: cmd_ws_commit.cc:2417
 #, c-format
 msgid "next revision for bisection testing is %s\n"
 msgstr ""
 
-#: cmd_ws_commit.cc:2398
+#: cmd_ws_commit.cc:2418
 #, c-format
 msgid "however this workspace is currently at %s\n"
 msgstr ""
 
-#: cmd_ws_commit.cc:2399
+#: cmd_ws_commit.cc:2419
 #, c-format
 msgid "run 'bisect update' to update to this revision before testing"
 msgstr ""
 
-#: cmd_ws_commit.cc:2404
+#: cmd_ws_commit.cc:2424
 msgid "Updates the workspace to the next revision to be tested by bisection"
 msgstr ""
 
-#: cmd_ws_commit.cc:2405
+#: cmd_ws_commit.cc:2425
 msgid ""
 "This command can be used if updates by good, bad or skip commands fail due "
 "to blocked paths or other problems."
 msgstr ""
 
-#: cmd_ws_commit.cc:2415
+#: cmd_ws_commit.cc:2435
 msgid "Excludes the current revision or specified revisions from the search"
 msgstr ""
 
-#: cmd_ws_commit.cc:2416
+#: cmd_ws_commit.cc:2436
 msgid ""
 "Skipped revisions are removed from the set being searched. Revisions that "
 "cannot be tested for some reason should be skipped."
 msgstr ""
 
-#: cmd_ws_commit.cc:2426
+#: cmd_ws_commit.cc:2446
 msgid "Marks the current revision or specified revisions as bad"
 msgstr ""
 
-#: cmd_ws_commit.cc:2427
+#: cmd_ws_commit.cc:2447
 msgid "Known bad revisions are removed from the set being searched."
 msgstr ""
 
-#: cmd_ws_commit.cc:2436
+#: cmd_ws_commit.cc:2456
 msgid "Marks the current revision or specified revisions as good"
 msgstr ""
 
-#: cmd_ws_commit.cc:2437
+#: cmd_ws_commit.cc:2457
 msgid "Known good revisions are removed from the set being searched."
 msgstr ""
 
@@ -4233,7 +4258,7 @@ msgstr "no definido"
 msgid " (not a monotone database)"
 msgstr " (no es una  base de datos de monotone)"
 
-#: database.cc:1038 database.cc:1070 database.cc:1763 database.cc:1783
+#: database.cc:1038 database.cc:1070 database.cc:1770 database.cc:1790
 #, c-format
 msgid "%u"
 msgstr "%u"
@@ -4394,37 +4419,37 @@ msgstr "queria %d columnas y obtuvo %d en el query: %s"
 msgid "null result in query: %s"
 msgstr "resultado nulo en el query: %s"
 
-#: database.cc:1556
+#: database.cc:1563
 #, c-format
 msgid "wanted %d rows got %d in query: %s"
 msgstr "queria %d filas y obtuvo %d en el query: %s"
 
-#: database.cc:1890
+#: database.cc:1897
 #, c-format
 msgid "roster does not match hash"
 msgstr ""
 
-#: database.cc:1911
+#: database.cc:1918
 #, c-format
 msgid "roster_delta does not match hash"
 msgstr ""
 
-#: database.cc:2096
+#: database.cc:2103
 #, c-format
 msgid "delta-reconstructed '%s' item does not match hash"
 msgstr ""
 
-#: database.cc:2504
+#: database.cc:2511
 #, c-format
 msgid "file preimage '%s' missing in db"
 msgstr "preimagen de archivo '%s' faltante en la base de datos"
 
-#: database.cc:2505
+#: database.cc:2512
 #, c-format
 msgid "dropping delta '%s' -> '%s'"
 msgstr "descartando delta '%s' -> '%s'"
 
-#: database.cc:2521
+#: database.cc:2528
 #, c-format
 msgid ""
 "Unknown delta direction '%s'; assuming 'reverse'. Valid values are "
@@ -4433,64 +4458,64 @@ msgstr ""
 "Dirección del delta desconocido '%s'; asumiendo 'reverse'. Valores válidos "
 "son 'reverse', 'forward', 'both'."
 
-#: database.cc:2854
+#: database.cc:2861
 #, fuzzy, c-format
 msgid "revision does not match hash"
 msgstr ""
 "identificador de la revisión izquierda no concuerda con el archivo de "
 "conflictos"
 
-#: database.cc:2986
+#: database.cc:2993
 #, c-format
 msgid "missing prerequisite revision '%s'"
 msgstr "falta revisión prerequisito '%s'"
 
-#: database.cc:2988 database.cc:2999 database.cc:3015 database.cc:3023
+#: database.cc:2995 database.cc:3006 database.cc:3022 database.cc:3030
 #, c-format
 msgid "dropping revision '%s'"
 msgstr "descartando revisión '%s'"
 
-#: database.cc:2998
+#: database.cc:3005
 #, c-format
 msgid "missing prerequisite file '%s'"
 msgstr "falta archivo prerequisito '%s'"
 
-#: database.cc:3013
+#: database.cc:3020
 #, c-format
 msgid "missing prerequisite file pre-delta '%s'"
 msgstr "falta pre-delta del archivo prerequisito '%s'"
 
-#: database.cc:3021
+#: database.cc:3028
 #, c-format
 msgid "missing prerequisite file post-delta '%s'"
 msgstr "falta post-delta del archivo prerequisito '%s'"
 
-#: database.cc:3154
+#: database.cc:3161
 #, c-format
 msgid "revision contains incorrect manifest_id"
 msgstr "revisión contiene un manifest_id incorrecto"
 
-#: database.cc:3480
+#: database.cc:3487
 #, c-format
 msgid "Failed to get RSA verifying key for %s"
 msgstr "No pudo recibir la llave de verificación RSA para %s"
 
-#: database.cc:3619
+#: database.cc:3626
 #, c-format
 msgid "Your database contains multiple keys named %s"
 msgstr ""
 
-#: database.cc:3780
+#: database.cc:3787
 #, c-format
 msgid "cert revision '%s' does not exist in db"
 msgstr "el certificado de la revisión '%s' no existe en la base de datos"
 
-#: database.cc:3782
+#: database.cc:3789
 #, c-format
 msgid "dropping cert"
 msgstr "descartando certificado"
 
-#: database.cc:3792
+#: database.cc:3799
 #, c-format
 msgid ""
 "The branch name\n"
@@ -4504,34 +4529,34 @@ msgid ""
 "cert and re-add a valid one."
 msgstr ""
 
-#: database.cc:4109
+#: database.cc:4116
 #, c-format
 msgid "ignoring bad signature by '%s' on '%s'"
 msgstr "ignorando una firma inválida de '%s' en '%s'"
 
-#: database.cc:4114
+#: database.cc:4121
 #, c-format
 msgid "ignoring unknown signature by '%s' on '%s'"
 msgstr "ignorando una firma desconocida de '%s' en '%s'"
 
-#: database.cc:4116
+#: database.cc:4123
 #, c-format
 msgid "trust function disliked %d signers of %s cert on revision %s"
 msgstr ""
 "función de confianza no aceptó %d signatarios de %s certificados en la "
 "revisión %s"
 
-#: database.cc:4791
+#: database.cc:4798
 #, c-format
 msgid "no database specified"
 msgstr "no se especificó base de datos"
 
-#: database.cc:4804
+#: database.cc:4811
 #, c-format
 msgid "database %s does not exist"
 msgstr "base de datos %s inexistente"
 
-#: database.cc:4812
+#: database.cc:4819
 #, c-format
 msgid ""
 "%s is a workspace, not a database\n"
@@ -4540,48 +4565,48 @@ msgstr ""
 "%s es un área de trabajo, no una base de datos \n"
 "(quiso decir %s?)"
 
-#: database.cc:4816
+#: database.cc:4823
 #, c-format
 msgid "%s is a directory, not a database"
 msgstr "%s es un directorio, no una base de datos"
 
-#: database.cc:4824
+#: database.cc:4831
 #, c-format
 msgid "database %s already exists"
 msgstr "la base de datos %s ya existe"
 
-#: database.cc:4829
+#: database.cc:4836
 #, c-format
 msgid ""
-"existing (possibly stale) journal file '%s' has same stem as new database '%"
-"s'\n"
+"existing (possibly stale) journal file '%s' has same stem as new database "
+"'%s'\n"
 "cancelling database creation"
 msgstr ""
 "archivo journal existente (posiblemente obsoleto) '%s' tiene la misma\n"
 "raíz que la nueva base de datos '%s'\n"
 "cancelando la creación de la base de datos"
 
-#: database.cc:4984
+#: database.cc:4991
 #, fuzzy, c-format
 msgid "the database alias '%s' has multiple ambiguous expansions:"
 msgstr "selección '%s' tiene múltiple expansiones ambiguas:"
 
-#: database.cc:5007
+#: database.cc:5014
 #, c-format
 msgid "could not query default database alias"
 msgstr ""
 
-#: database.cc:5018
+#: database.cc:5025
 #, c-format
 msgid "invalid database alias '%s': does not start with a colon"
 msgstr ""
 
-#: database.cc:5022
+#: database.cc:5029
 #, c-format
 msgid "invalid database alias '%s': must not be empty"
 msgstr ""
 
-#: database.cc:5035
+#: database.cc:5042
 #, fuzzy, c-format
 msgid "invalid database alias '%s': does contain invalid characters"
 msgstr "patrón inválido '%s': clase de caracteres vacía"
@@ -4776,8 +4801,8 @@ msgstr ""
 #: ssh_agent.cc:376
 #, c-format
 msgid ""
-"ssh_agent: get_keys: not all or too many packet bytes consumed, location (%"
-"u), length (%i)"
+"ssh_agent: get_keys: not all or too many packet bytes consumed, location "
+"(%u), length (%i)"
 msgstr ""
 "ssh_agent: get_keys: muy pocos o demasiados bytes de paquetes consumidos, "
 "ubicación (%u), longitud (%i)"
@@ -4799,11 +4824,11 @@ msgstr ""
 #: ssh_agent.cc:472
 #, c-format
 msgid ""
-"ssh_agent: sign_data: not all or too many packet bytes consumed, location (%"
-"u), length (%i)"
+"ssh_agent: sign_data: not all or too many packet bytes consumed, location "
+"(%u), length (%i)"
 msgstr ""
-"ssh_agent: sign_data: muy pocos o demasiados bytes consumdos, ubicación (%"
-"u), longitud (%i)"
+"ssh_agent: sign_data: muy pocos o demasiados bytes consumdos, ubicación "
+"(%u), longitud (%i)"
 
 #: ssh_agent.cc:482
 #, c-format
@@ -7283,25 +7308,17 @@ msgstr ""
 msgid "merge failed due to unresolved conflicts"
 msgstr "'merge' falló debido a conflictos no resueltos"
 
-#: uri.cc:44
+#: uri.cc:40
 #, c-format
-msgid "IPv6 address in URI has no closing ']'"
-msgstr "Dirección IPv6 en el URI no tiene ']' cerrante"
-
-#: uri.cc:64
-#, c-format
-msgid "explicit port-number specification in URI has no digits"
+msgid "unable to parse URI '%s'"
 msgstr ""
-"especificación explícita de número de puerto en el URI no tiene ningún dígito"
 
-#: uri.cc:67
-#, c-format
-msgid "explicit port-number specification in URI contains nondigits"
-msgstr ""
-"especificación explícita de número de puerto en el URI contiene elementos "
-"que no son dígitos"
+#: uri.cc:68
+#, fuzzy, c-format
+msgid "unable to parse host of URI '%s'"
+msgstr "no se pudo abrir el archivo de registro '%s'"
 
-#: uri.cc:180 uri.cc:183 uri.cc:205 uri.cc:226
+#: uri.cc:150 uri.cc:153 uri.cc:175 uri.cc:196
 #, c-format
 msgid "Bad URLencoded string '%s'"
 msgstr "Cadena incorrectamente encodificada como URL: '%s'"
@@ -7325,48 +7342,48 @@ msgstr "proveedor de SHA-1 '%s': %s MiB/s"
 msgid "%s MiB/s"
 msgstr "%s MiB/s"
 
-#: pcrewrap.cc:163
+#: pcrewrap.cc:210
 #, c-format
 msgid "while compiling regex \"%s\": %s"
 msgstr "mientras compilaba regex \"%s\": %s"
 
-#: pcrewrap.cc:172
+#: pcrewrap.cc:219
 #, c-format
 msgid "error in regex \"%s\": %s"
 msgstr "error en regex \"%s\": %s"
 
-#: pcrewrap.cc:174
+#: pcrewrap.cc:221
 #, c-format
 msgid "error near char %d of regex \"%s\": %s"
 msgstr "error cerca del caracter '%d' de regex \"%s\": %s"
 
-#: pcrewrap.cc:189
+#: pcrewrap.cc:236
 #, c-format
 msgid "while studying regex \"%s\": %s"
 msgstr "mientras estudiaba regex \"%s\": %s"
 
-#: pcrewrap.cc:207
+#: pcrewrap.cc:254
 #, c-format
 msgid "backtrack limit exceeded in regular expression matching"
 msgstr ""
 "excedido el límite de retroceso al tratar de concordar la expresión regular"
 
-#: pcrewrap.cc:211
+#: pcrewrap.cc:258
 #, c-format
 msgid "recursion limit exceeded in regular expression matching"
 msgstr ""
 "excedido el límite de recursión al tratar de concordar la expresión regular"
 
-#: pcrewrap.cc:216
+#: pcrewrap.cc:263
 #, c-format
 msgid "invalid UTF-8 sequence found during regular expression matching"
 msgstr ""
 "encontrada secuencia UTF-8 inválida al tratar de concordar la expresión "
 "regular"
 
-#: pcrewrap.cc:219
-#, c-format
-msgid "pcre_match returned %d"
+#: pcrewrap.cc:266
+#, fuzzy, c-format
+msgid "pcre_exec returned %d"
 msgstr "pcre_match retornó '%d'"
 
 #: rev_output.cc:61
@@ -7588,17 +7605,17 @@ msgstr "argumento incorrecto '%s' para la opción '%s': %s"
 msgid "Invalid escape in --xargs file"
 msgstr "Escape inválido en archivo --xargs"
 
-#: option.cc:331
+#: option.cc:332
 #, fuzzy, c-format
 msgid "option '%s' has multiple ambiguous expansions:"
 msgstr "selección '%s' tiene múltiple expansiones ambiguas:"
 
-#: option.cc:346
+#: option.cc:347
 #, c-format
 msgid "negation of --%s"
 msgstr ""
 
-#: option.cc:507 option.cc:551
+#: option.cc:508 option.cc:552
 #, c-format
 msgid "deprecated option '%s' used: %s"
 msgstr ""
@@ -8398,6 +8415,19 @@ msgstr "Presione Entrar"
 #: std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Presione Entrar cuando el subproceso haya terminado"
+
+#~ msgid "IPv6 address in URI has no closing ']'"
+#~ msgstr "Dirección IPv6 en el URI no tiene ']' cerrante"
+
+#~ msgid "explicit port-number specification in URI has no digits"
+#~ msgstr ""
+#~ "especificación explícita de número de puerto en el URI no tiene ningún "
+#~ "dígito"
+
+#~ msgid "explicit port-number specification in URI contains nondigits"
+#~ msgstr ""
+#~ "especificación explícita de número de puerto en el URI contiene elementos "
+#~ "que no son dígitos"
 
 #~ msgid "no server given and no default server set"
 #~ msgstr ""
