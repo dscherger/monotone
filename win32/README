@@ -12,7 +12,7 @@ Install Inno Setup and Inno Setup preprocessor; see
 http://www.jrsoftware.org/isinfo.php, get the Quick Start Pack ispack-5.3.3.exe
 
 Get a copy of the monotone repository; see
-http://monotone.ca/wiki/SelfHostingInfo/
+http://wiki.monotone.ca/SelfHostingInfo/
 
 Check out the release version of monotone:
 mtn -d /path/to/monotone.db checkout -r t:monotone-<version> monotone-<version>
