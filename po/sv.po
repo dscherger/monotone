@@ -19,6 +19,8 @@
 # backup                          säkerhetskopia
 # bad                             felaktig
 # base (revision)                 grund(revision)
+# (to) bisect                     (att) dela upp
+# bisection                       uppdelning
 # bogus                           felaktig
 # bookkeeping directory           administrativ katalog
 # boolean                         boolesk
@@ -93,7 +95,8 @@
 # note:                           obs:
 # option                          flagga (i programanrop)
 # option                          inställning (i inställningsfiler)
-# (an) output                     utdata
+# output                          utmatning, utdata
+# (to) output                     (att) mata ut
 # (an) overflow                   överflöde
 # (to) overflow                   flöda över
 # override                        åsidosätta
@@ -128,7 +131,10 @@
 # service                         tjänst
 # (to) set                        sätta
 # sink                            mottagare
+# socket                          sockel
 # source                          källa
+# (to) specify                    (att) ange
+# specified                       angivna
 # stale                           trasig
 # state                           tillstånd
 # suspend                         avstängd / avstänga
@@ -148,8 +154,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-10-10 13:01+0200\n"
-"PO-Revision-Date: 2010-08-04 00:58+0200\n"
+"POT-Creation-Date: 2010-10-28 00:42+0200\n"
+"PO-Revision-Date: 2010-10-27 16:44+0200\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -163,7 +169,7 @@ msgstr ""
 msgid "fatal: formatter failed on %s:%d: %s"
 msgstr "allvarligt fel: formatering misslyckades vid %s:%d: %s"
 
-#: sanity.cc:351
+#: sanity.cc:351 cmd_list.cc:664
 msgid "misuse: "
 msgstr "missbruk: "
 
@@ -181,7 +187,7 @@ msgstr "%s:%d; index '%s' = %d blev större än vektorn '%s' med storlek %d"
 msgid "Current work set: %i items"
 msgstr "Nuvarande arbetsmängd: %i delar"
 
-#: sanity.hh:371 lua_hooks.cc:105
+#: sanity.hh:371 cmd_list.cc:670 lua_hooks.cc:105
 #, c-format
 msgid "%s"
 msgstr "%s"
@@ -637,12 +643,12 @@ msgstr "Felaktigt indata till automate stdio: nyckelordet '%c' förväntat"
 msgid "Bad input to automate stdio: command name is missing"
 msgstr "Felaktigt indata till automate stdio: saknar kommandonamn"
 
-#: commands.cc:498
+#: commands.cc:496
 #, c-format
 msgid "unknown command '%s'"
 msgstr "okänt kommando '%s'"
 
-#: commands.cc:508
+#: commands.cc:506
 #, c-format
 msgid "'%s' is ambiguous; possible completions are:"
 msgstr "'%s' är flertydigt; möjliga tolkningar är:"
@@ -655,7 +661,7 @@ msgstr "ignorerad administrativ sökväg '%s'"
 #: cmd.hh:170
 #, c-format
 msgid "all arguments given were bookkeeping paths; aborting"
-msgstr "alla givna argument är administrativa sökvägar; avbryter"
+msgstr "alla angivna argument är administrativa sökvägar; avbryter"
 
 #: cmd.cc:60
 msgid "Commands that aid in scripted execution"
@@ -809,48 +815,45 @@ msgstr "inga argument tillåtna"
 
 #: cmd.cc:537
 msgid "Check that a particular globish matches a particular string"
-msgstr ""
+msgstr "Kontrollera att ett givet mönster matchar en given textsträng"
 
 #: cmd.cc:545
-#, fuzzy, c-format
+#, c-format
 msgid "Globish <%s> does not match string <%s>"
-msgstr "%s %s använder inte flaggan %s"
+msgstr "Mönstret <%s> stämmer inte med textsträngen <%s>"
 
 #: cmd.cc:550
 msgid "Triggers the specified kind of crash"
 msgstr "Triggar en specifik sorts krash"
 
 #: cmd.cc:861
-#, fuzzy, c-format
+#, c-format
 msgid "command group '%s'"
-msgstr "Kommandon i gruppen '%s':"
+msgstr "kommandogrupp '%s'"
 
 #: cmd.cc:876
 msgid "Generate a manual page from monotone's command help"
-msgstr ""
+msgstr "Skapa en manualsida från monotone:s hjälptexter"
 
 #: cmd.cc:882
 msgid "Name"
-msgstr ""
+msgstr "Namn"
 
 #: cmd.cc:884
-#, fuzzy
 msgid "monotone - a distributed version control system"
-msgstr "Kommandon för att kommunicera med andra versionskontrollsystem"
+msgstr "monotone - ett distribuerat versionskontrollsystem"
 
 #: cmd.cc:885
 msgid "Synopsis"
-msgstr ""
+msgstr "Synopsis"
 
 #: cmd.cc:887
-#, fuzzy
 msgid "[options...] command [arguments...]"
-msgstr "för många givna argument"
+msgstr "[flaggor...] kommando [argument...]"
 
 #: cmd.cc:890
-#, fuzzy
 msgid "Description"
-msgstr "Beskrivning av '%s %s':"
+msgstr "Beskrivning"
 
 #: cmd.cc:891
 msgid ""
@@ -859,11 +862,17 @@ msgid ""
 "flexible trust setup. monotone has an easy-to-learn command set and comes "
 "with a rich interface for scripting purposes and thorough documentation."
 msgstr ""
+"monotone är ett högeligen pålitligt och mycket anpassningsbart distribuerat "
+"versionshanteringssystem som tillhandahåller lättviktiga grenar, "
+"ihopslagning av grenar som håller reda på tidigare ihopslagningar och ett "
+"flexibelt sätt att uttrycka vilka man litar på. monotone har en uppsättning "
+"kommandon som är enkla att lära sig, ger stora möjligheter till att skriva "
+"script med det, och är väl dokumenterat."
 
 #: cmd.cc:897
 #, c-format
 msgid "For more information on monotone, visit %s."
-msgstr ""
+msgstr "För att få mer information om monotone, gå till %s."
 
 #: cmd.cc:900
 #, c-format
@@ -871,29 +880,30 @@ msgid ""
 "The complete documentation, including a tutorial for a quick start with the "
 "system, can be found online on %s."
 msgstr ""
+"Fullständig dokumentation, med en handledning för att snabbt kunna komma "
+"igång med systemet finns på nätet, %s."
 
 #: cmd.cc:904
 msgid "Global Options"
-msgstr ""
+msgstr "Allmängiltiga flaggor"
 
 #: cmd.cc:907
-#, fuzzy
 msgid "Commands"
-msgstr "kommandogrupper:"
+msgstr "Kommandon"
 
 #: cmd.cc:910
 msgid "See Also"
-msgstr ""
+msgstr "Se även"
 
 #: cmd.cc:911
 #, c-format
 msgid "info %s and the documentation on %s"
-msgstr ""
+msgstr "info %s och dokumentationen på %s"
 
 #: cmd.cc:915
 #, c-format
 msgid "Please report bugs to %s."
-msgstr ""
+msgstr "Var god skicka buggrapporter till %s."
 
 #: cmd.cc:919
 msgid ""
@@ -901,12 +911,17 @@ msgid ""
 "and has since then received numerous contributions from many individuals. A "
 "complete list of authors can be found in AUTHORS."
 msgstr ""
+"monotone skrevs först av Graydon Hoare <graydon@pobox.com> år 2004 och har "
+"fått åtskilliga bidrag från många personer sen dess.  Man finner en komplett "
+"lista med författare i filen AUTHORS."
 
 #: cmd.cc:924
 msgid ""
 "Nowadays, monotone is maintained by a collective of enthusiastic "
 "programmers, known as the monotone development team."
 msgstr ""
+"Numera vidareutvecklas monotone av en samling entusiastiska programmerare, "
+"kända som `the monotone development team'."
 
 #: cmd.cc:928
 #, c-format
@@ -914,39 +929,42 @@ msgid ""
 "monotone and this man page is Copyright (c) 2004 - %s by the monotone "
 "development team."
 msgstr ""
+"För monotone och denna manualsida gäller Copyright (c) 2004 - %s, `the "
+"monotone development team'."
 
 #: cmd.cc:940
 #, c-format
 msgid "no man page formatter command configured"
-msgstr ""
+msgstr "Ingen formaterare för manualsidor har definierats"
 
 #: cmd.cc:944
-#, fuzzy, c-format
+#, c-format
 msgid "could not execute man page formatter command '%s': %s"
-msgstr "kunde inte skapa katalogen %s: %s"
+msgstr "kunde inte köra kommandot för formatering av manualsidor '%s': %s"
 
 #: cmd.cc:961
 #, c-format
 msgid "--message and --message-file are mutually exclusive"
 msgstr "--message och --message-file får inte anges samtidigt"
 
-#: cmd_netsync.cc:66 cmd_netsync.cc:467
+#: cmd_netsync.cc:68 cmd_netsync.cc:764
 #, c-format
 msgid "cannot use --exclude in URL mode"
-msgstr ""
+msgstr "kan inte använda --exclude när en URL används"
 
-#: cmd_netsync.cc:106
-#, fuzzy
+#: cmd_netsync.cc:108
 msgid ""
 "[URL]\n"
 "[ADDRESS[:PORTNUMBER]]"
-msgstr "[ADRESS[:PORTNUMMER]]"
+msgstr ""
+"[URL]\n"
+"[ADRESS[:PORTNUMMER]]"
 
-#: cmd_netsync.cc:107
+#: cmd_netsync.cc:109
 msgid "Opens an 'automate stdio' connection to a remote server"
 msgstr "Öppnar en koppling till en server, typ 'automate stdio'"
 
-#: cmd_netsync.cc:120 cmd_netsync.cc:220
+#: cmd_netsync.cc:122 cmd_netsync.cc:223
 #, c-format
 msgid ""
 "No database given; assuming '%s' database. This means that we can't\n"
@@ -956,15 +974,15 @@ msgstr ""
 "inte kan kolla servernyckeln, eftersom vi inte har någon uppgift om\n"
 "vad den borde vara."
 
-#: cmd_netsync.cc:207
+#: cmd_netsync.cc:210
 msgid "COMMAND [ARGS]"
 msgstr "KOMMANDO [ARGUMENT]"
 
-#: cmd_netsync.cc:208
+#: cmd_netsync.cc:211
 msgid "Executes COMMAND on a remote server"
 msgstr "Kör KOMMANDO på servern i andra änden"
 
-#: cmd_netsync.cc:216 cmd_list.cc:981 cmd_packet.cc:73 cmd_packet.cc:134
+#: cmd_netsync.cc:219 cmd_list.cc:988 cmd_packet.cc:73 cmd_packet.cc:134
 #: cmd_packet.cc:257 cmd_key_cert.cc:81 cmd_key_cert.cc:186 cmd_merging.cc:384
 #: cmd_merging.cc:1131 cmd_merging.cc:1202 cmd_ws_commit.cc:1134
 #: cmd_ws_commit.cc:1342 cmd_ws_commit.cc:1456 cmd_ws_commit.cc:1478
@@ -980,24 +998,53 @@ msgstr "Kör KOMMANDO på servern i andra änden"
 msgid "wrong argument count"
 msgstr "felaktigt antal givna argument"
 
-#: cmd_netsync.cc:272
+#: cmd_netsync.cc:276
 #, c-format
 msgid "received remote error code %d"
 msgstr "fick felkod %d från andra änden"
 
-#: cmd_netsync.cc:276 cmd_netsync.cc:296 cmd_netsync.cc:317 cmd_netsync.cc:344
-#: cmd_netsync.cc:364 cmd_netsync.cc:395
-#, fuzzy
+#: cmd_netsync.cc:289
+#, c-format
+msgid "would receive %d revisions, %d certs, and at least %d keys\n"
+msgstr ""
+"skulle ha tagit emot %d revisioner, %d certifikat och minst %d nycklar\n"
+
+#: cmd_netsync.cc:296
+#, c-format
+msgid "would receive %d revisions, %d certs, and %d keys\n"
+msgstr "skulle ha tagit emot %d revisioner, %d certifikat och %d nycklar\n"
+
+#: cmd_netsync.cc:304
+#, c-format
+msgid "would send %d certs and %d keys\n"
+msgstr "skulle ha skickat %d certifikat och %d nycklar\n"
+
+#: cmd_netsync.cc:308
+#, c-format
+msgid "would send %d revisions\n"
+msgid_plural "would send %d revisions:\n"
+msgstr[0] "skulle ha skickat %d revisioner\n"
+msgstr[1] "skulle ha skickat %d revisioner:\n"
+
+#: cmd_netsync.cc:327
+#, c-format
+msgid "%9d in branch %s\n"
+msgstr "%9d i grenen %s\n"
+
+#: cmd_netsync.cc:537 cmd_netsync.cc:560 cmd_netsync.cc:586 cmd_netsync.cc:621
+#: cmd_netsync.cc:647 cmd_netsync.cc:687
 msgid ""
 "[URL]\n"
 "[ADDRESS[:PORTNUMBER] [PATTERN ...]]"
-msgstr "[ADRESS[:PORTNUMMER] [MÖNSTER ...]]"
+msgstr ""
+"[URL]\n"
+"[ADRESS[:PORTNUMMER] [MÖNSTER ...]]"
 
-#: cmd_netsync.cc:277 cmd_netsync.cc:297
+#: cmd_netsync.cc:538 cmd_netsync.cc:561
 msgid "Pushes branches to a netsync server"
 msgstr "Skickar grenar till en netsync-server"
 
-#: cmd_netsync.cc:278
+#: cmd_netsync.cc:539
 msgid ""
 "This will push all branches that match the pattern given in PATTERN to the "
 "netsync server at the address ADDRESS."
@@ -1005,11 +1052,11 @@ msgstr ""
 "Det här kommer att skicka alla grenar som matchar MÖNSTER till netsync-"
 "server på adressen ADRESS"
 
-#: cmd_netsync.cc:318 cmd_netsync.cc:345
+#: cmd_netsync.cc:587 cmd_netsync.cc:622
 msgid "Pulls branches from a netsync server"
 msgstr "Hämtar grenar från netsync-server"
 
-#: cmd_netsync.cc:319
+#: cmd_netsync.cc:588
 msgid ""
 "This pulls all branches that match the pattern given in PATTERN from the "
 "netsync server at the address ADDRESS."
@@ -1017,16 +1064,16 @@ msgstr ""
 "Det här hämtar alla grenar som matchar MÖNSTER till netsync-server på "
 "adressen ADRESS"
 
-#: cmd_netsync.cc:336 cmd_netsync.cc:545
+#: cmd_netsync.cc:605 cmd_netsync.cc:842
 #, c-format
 msgid "doing anonymous pull; use -kKEYNAME if you need authentication"
 msgstr "hämtar anonymt; använd -kNYCKELNAMN om du behöver autentisera"
 
-#: cmd_netsync.cc:365 cmd_netsync.cc:396
+#: cmd_netsync.cc:648 cmd_netsync.cc:688
 msgid "Synchronizes branches with a netsync server"
 msgstr "Synkronisera grenar med en netsync-server"
 
-#: cmd_netsync.cc:366
+#: cmd_netsync.cc:649
 msgid ""
 "This synchronizes branches that match the pattern given in PATTERN with the "
 "netsync server at the address ADDRESS."
@@ -1034,18 +1081,19 @@ msgstr ""
 "Det här synkronisera grenar som matchar MÖNSTER med netsync-server på "
 "adressen ADRESS"
 
-#: cmd_netsync.cc:422
-#, fuzzy
+#: cmd_netsync.cc:719
 msgid ""
 "URL [DIRECTORY]\n"
 "HOST[:PORTNUMBER] BRANCH [DIRECTORY]"
-msgstr "ADRESS[:PORTNUMMER] GREN [KATALOG]"
+msgstr ""
+"URL [KATALOG]\n"
+"ADRESS[:PORTNUMMER] GREN [KATALOG]"
 
-#: cmd_netsync.cc:423
+#: cmd_netsync.cc:720
 msgid "Checks out a revision from a remote database into a directory"
 msgstr "Hämtar en revision från en databas på en annan dator till en katalog"
 
-#: cmd_netsync.cc:424
+#: cmd_netsync.cc:721
 msgid ""
 "If a revision is given, that's the one that will be checked out.  Otherwise, "
 "it will be the head of the branch supplied.  If no directory is given, the "
@@ -1055,63 +1103,63 @@ msgstr ""
 "kommer lövet i grenen (implicit eller angiven) att hämtas. Om ingen katalog "
 "anges kommer grenens namn att användas som katalognamn."
 
-#: cmd_netsync.cc:443
+#: cmd_netsync.cc:740
 #, c-format
 msgid "the --branch option is only valid with an URI to clone"
-msgstr ""
+msgstr "Flaggan --branch kan enbart användas tillsammans med en URL"
 
-#: cmd_netsync.cc:492
-#, fuzzy, c-format
+#: cmd_netsync.cc:789
+#, c-format
 msgid "you must specify an unambiguous branch to clone"
-msgstr "du måste ange en gren som ska klonas"
+msgstr "du måste ange en unik gren att klona"
 
-#: cmd_netsync.cc:524
+#: cmd_netsync.cc:821
 #, c-format
 msgid "clone destination directory '%s' already exists"
 msgstr "klonarbetskatalogen '%s' finns redan"
 
-#: cmd_netsync.cc:531 cmd_ws_commit.cc:1842 cmd_ws_commit.cc:1931
+#: cmd_netsync.cc:828 cmd_ws_commit.cc:1842 cmd_ws_commit.cc:1931
 #, c-format
 msgid "bookkeeping directory already exists in '%s'"
 msgstr "det finns redan en administrativ katalog i '%s'"
 
-#: cmd_netsync.cc:564 cmd_merging.cc:535 cmd_merging.cc:636 cmd_merging.cc:641
+#: cmd_netsync.cc:862 cmd_merging.cc:535 cmd_merging.cc:636 cmd_merging.cc:641
 #: cmd_merging.cc:1454 cmd_ws_commit.cc:1030
 #, c-format
 msgid "branch '%s' is empty"
 msgstr "grenen '%s' är tom"
 
-#: cmd_netsync.cc:567 cmd_ws_commit.cc:1033 cmd_ws_commit.cc:1910
+#: cmd_netsync.cc:865 cmd_ws_commit.cc:1033 cmd_ws_commit.cc:1910
 #, c-format
 msgid "branch %s has multiple heads:"
 msgstr "grenen %s har flera löv:"
 
-#: cmd_netsync.cc:571
-#, fuzzy, c-format
+#: cmd_netsync.cc:869
+#, c-format
 msgid "choose one with '%s clone -r<id> URL'"
-msgstr "välj ett med '%s update -r<id> SERVER GREN'"
+msgstr "välj ett med '%s clone -r<id> URL'"
 
-#: cmd_netsync.cc:572 cmd_ws_commit.cc:1039 cmd_ws_commit.cc:1916
+#: cmd_netsync.cc:870 cmd_ws_commit.cc:1039 cmd_ws_commit.cc:1916
 #, c-format
 msgid "branch %s has multiple heads"
 msgstr "grenen %s har flera löv"
 
-#: cmd_netsync.cc:583 cmd_ws_commit.cc:1054 cmd_ws_commit.cc:1896
+#: cmd_netsync.cc:881 cmd_ws_commit.cc:1054 cmd_ws_commit.cc:1896
 #, c-format
 msgid "revision %s is not a member of branch %s"
 msgstr "revisionen %s är inte med i grenen %s"
 
-#: cmd_netsync.cc:616
+#: cmd_netsync.cc:914
 #, c-format
 msgid "pid file '%s' already exists"
 msgstr "pid-filen '%s' finns redan"
 
-#: cmd_netsync.cc:618
+#: cmd_netsync.cc:916
 #, c-format
 msgid "failed to create pid file '%s'"
 msgstr "misslyckades med att skapa pid-filen %s"
 
-#: cmd_netsync.cc:641
+#: cmd_netsync.cc:939
 msgid "Serves the database to connecting clients"
 msgstr "Servera databasen till anslutande klienter"
 
@@ -1133,7 +1181,7 @@ msgstr ""
 msgid "Lists certificates attached to an identifier"
 msgstr "Visar certifikaten kopplade till en identitet"
 
-#: cmd_list.cc:128 cmd_list.cc:1010
+#: cmd_list.cc:128 cmd_list.cc:1017
 #, c-format
 msgid "no public key '%s' found in database"
 msgstr "den publika nyckeln '%s' finns inte i databasen"
@@ -1236,53 +1284,58 @@ msgstr "Visar alla databasvariabler eller bara de som tillhör en domän"
 msgid "Lists managed databases and their known workspaces"
 msgstr "Visa vilka databaser som hanteras och deras kända arbetskopior"
 
-#: cmd_list.cc:625 database.cc:4949
+#: cmd_list.cc:625 database.cc:4956
 #, c-format
 msgid "could not query default database locations"
-msgstr ""
+msgstr "ingen standardkatalog för databaser finns definierad"
 
 #: cmd_list.cc:671
+#, c-format
+msgid "ignoring database '%s'"
+msgstr "ignorerar databasen '%s'"
+
+#: cmd_list.cc:678
 #, c-format
 msgid ":%s (in %s):"
 msgstr ":%s (i %s):"
 
-#: cmd_list.cc:706
+#: cmd_list.cc:713
 msgid "<no branch set>"
 msgstr "<ingen gren angiven>"
 
-#: cmd_list.cc:708
+#: cmd_list.cc:715
 #, c-format
 msgid "\t%s (in %s)"
 msgstr "\t%s (i %s)"
 
-#: cmd_list.cc:712
+#: cmd_list.cc:719
 #, c-format
 msgid "\tno known valid workspaces"
 msgstr "\tfinner ingen giltig arbetsarea"
 
-#: cmd_list.cc:718
+#: cmd_list.cc:725
 msgid "Lists workspace files that belong to the current branch"
 msgstr "Visar de filer i arbetskopian som hör till nuvarande gren"
 
-#: cmd_list.cc:758
+#: cmd_list.cc:765
 msgid "Lists workspace files that do not belong to the current branch"
 msgstr "Visar de filer i arbetskopian som inte hör till nuvarande gren"
 
-#: cmd_list.cc:789
+#: cmd_list.cc:796
 msgid "Lists files that belong to the branch but are not in the workspace"
 msgstr ""
 "Visar alla filer som hör till den nuvarande grenen men inte finns i "
 "arbetskopia"
 
-#: cmd_list.cc:812
+#: cmd_list.cc:819
 msgid "Lists files that have changed with respect to the current revision"
 msgstr "Visar de filer som har ändrats med avseende på nuvarande revision"
 
-#: cmd_list.cc:917
+#: cmd_list.cc:924
 msgid "Lists all keys in the keystore"
 msgstr "Visar alla nycklar i nyckellagret"
 
-#: cmd_list.cc:922 cmd_db.cc:50 cmd_db.cc:62 cmd_db.cc:74 cmd_db.cc:91
+#: cmd_list.cc:929 cmd_db.cc:50 cmd_db.cc:62 cmd_db.cc:74 cmd_db.cc:91
 #: cmd_db.cc:105 cmd_db.cc:119 cmd_db.cc:135 cmd_db.cc:325 cmd_db.cc:341
 #: cmd_db.cc:362 cmd_db.cc:380 cmd_automate.cc:112 cmd_automate.cc:234
 #: automate.cc:344 automate.cc:370 automate.cc:472 automate.cc:1320
@@ -1291,15 +1344,15 @@ msgstr "Visar alla nycklar i nyckellagret"
 msgid "no arguments needed"
 msgstr "inga argument behövs"
 
-#: cmd_list.cc:975 cmd_db.cc:610 automate.cc:394 automate.cc:425
+#: cmd_list.cc:982 cmd_db.cc:610 automate.cc:394 automate.cc:425
 msgid "REV"
 msgstr "REV"
 
-#: cmd_list.cc:976
+#: cmd_list.cc:983
 msgid "Prints all certificates attached to a revision"
 msgstr "Skriver ut alla certifikat kopplade till en revision"
 
-#: cmd_list.cc:994 cmd_db.cc:621 cmd_files.cc:269 automate.cc:132
+#: cmd_list.cc:1001 cmd_db.cc:621 cmd_files.cc:269 automate.cc:132
 #: automate.cc:185 automate.cc:235 automate.cc:265 automate.cc:307
 #: automate.cc:312 automate.cc:406 automate.cc:437 automate.cc:1602
 #: automate.cc:1634 automate.cc:1701 automate.cc:1703 automate.cc:2175
@@ -1309,14 +1362,12 @@ msgid "no such revision '%s'"
 msgstr "det finns ingen revision med identiteten '%s'"
 
 #: cmd_packet.cc:67
-#, fuzzy
 msgid "KEY-PACKET-DATA"
-msgstr "PAKETDATA"
+msgstr "NYCKELPAKETDATA"
 
 #: cmd_packet.cc:68
-#, fuzzy
 msgid "Store the public key in the database"
-msgstr "Lagra en fil i databasen"
+msgstr "Lagra den publika nyckeln i databasen"
 
 #: cmd_packet.cc:111
 #, c-format
@@ -1350,9 +1401,8 @@ msgid "PACKET-DATA"
 msgstr "PAKETDATA"
 
 #: cmd_packet.cc:252
-#, fuzzy
 msgid "Load the given packets into the database"
-msgstr "Laddar in de givna paketen i databasen."
+msgstr "Ladda in de givna paketen i databasen"
 
 #: cmd_packet.cc:268
 msgid "Reads packets from files"
@@ -1434,9 +1484,8 @@ msgid "Drops a public and/or private key"
 msgstr "Slänger en publik och/eller privat nyckel"
 
 #: cmd_key_cert.cc:181
-#, fuzzy
 msgid "Drops a public key"
-msgstr "Slänger en publik och/eller privat nyckel"
+msgstr "Slänger en publik nyckel"
 
 #: cmd_key_cert.cc:193
 msgid "Changes the passphrase of a private RSA key"
@@ -1460,20 +1509,20 @@ msgid "Adds a private key to ssh-agent"
 msgstr "Lägger till en privat nyckel till ssh-agent"
 
 #: cmd_key_cert.cc:260
-#, fuzzy
 msgid "SELECTOR CERTNAME [CERTVAL]"
-msgstr "REVISION CERTNAMN [CERTVÄRDE]"
+msgstr "VÄLJARE CERTNAMN [CERTVÄRDE]"
 
 #: cmd_key_cert.cc:261
-#, fuzzy
 msgid "Creates a certificate for a revision or set of revisions"
-msgstr "Skapar ett cert för en revision"
+msgstr "Skapar ett cert för en revision eller en samling revisioner"
 
 #: cmd_key_cert.cc:262
 msgid ""
 "Creates a certificate with the given name and value on each revision that "
 "matches the given selector"
 msgstr ""
+"Skapar ett certifikat med givna namn och värde för verja revision som\n"
+"motsvarar den givna väljaren"
 
 #: cmd_key_cert.cc:300
 msgid "REVISION NAME VALUE SIGNER1 [SIGNER2 [...]]"
@@ -1604,8 +1653,8 @@ msgstr ""
 "nästa ändring hamnar i grenen %s"
 
 #: cmd_merging.cc:209 cmd_merging.cc:824 cmd_ws_commit.cc:370
-#: cmd_ws_commit.cc:1358 cmd_ws_commit.cc:2042 cmd_ws_commit.cc:2270
-#: cmd_ws_commit.cc:2385 cmd_files.cc:307 cmd_files.cc:405 automate.cc:1035
+#: cmd_ws_commit.cc:1358 cmd_ws_commit.cc:2062 cmd_ws_commit.cc:2290
+#: cmd_ws_commit.cc:2405 cmd_files.cc:307 cmd_files.cc:405 automate.cc:1035
 #: automate.cc:1328
 #, c-format
 msgid "this command can only be used in a single-parent workspace"
@@ -1913,9 +1962,8 @@ msgid "[LEFT_REVID RIGHT_REVID]"
 msgstr "[VÄNSTER_REVID HÖGER_REVID]"
 
 #: cmd_merging.cc:1152
-#, fuzzy
 msgid "Shows the conflicts between two revisions"
-msgstr "Visar konflikterna mellan två revisioner."
+msgstr "Visar konflikterna mellan två revisioner"
 
 #: cmd_merging.cc:1153
 msgid ""
@@ -1926,9 +1974,8 @@ msgstr ""
 "som kommandot 'merge' skulle ha valt."
 
 #: cmd_merging.cc:1167
-#, fuzzy
 msgid "Store the conflicts from merging two revisions"
-msgstr "Spara konflikterna från en hopslagning av två revisioner."
+msgstr "Spara konflikterna från en hopslagning av två revisioner"
 
 #: cmd_merging.cc:1168
 msgid ""
@@ -2081,6 +2128,12 @@ msgid ""
 "needed if you had such certs in your db when upgrading from 0.44 or earlier, "
 "or if you loaded such certs with 'mtn read'."
 msgstr ""
+"Äldre versioner av monotone kunde ibland associera certifikat med fel "
+"krypteringsnyckel.  Det här fixar sådana certifikat om man har rätt nyckel, "
+"och kan om så önskas slänga certifikat för vilka man inte har korrekt "
+"nyckel.  Detta borde bara behövas om man har sådana certifikat in sin "
+"databas när man uppgraderade från 0.44 eller tidigare version, eller om man "
+"läste in såna cert med 'mtn read'."
 
 #: cmd_db.cc:98
 msgid "Dumps the contents of the database"
@@ -2143,15 +2196,16 @@ msgid "Directly executes the given SQL command on the database"
 msgstr "Utför det givna SQL-kommando direkt på databasen"
 
 #: cmd_db.cc:172
-#, fuzzy
 msgid "Commands that delete items from the local database"
-msgstr "Kommandon för att manipulera databasen"
+msgstr "Kommandon som tar bort element ur den lokala databasen"
 
 #: cmd_db.cc:173
 msgid ""
 "Deletions cannot be propagated through netsync, so the deleted items will "
 "come back if you sync with a database that still has them."
 msgstr ""
+"Borttagningar kan inte spridas genom netsync, so borttagna element kommer "
+"tillbaka om man synkar med en databas som fortfarande har dem."
 
 #: cmd_db.cc:177
 msgid "Kills a revision from the local database"
@@ -2185,15 +2239,16 @@ msgid "applying changes from %s on the current workspace"
 msgstr "applicerar ändringar från %s i nuvarande arbetskopia"
 
 #: cmd_db.cc:250
-#, fuzzy
 msgid "Deletes the specified certs from the local database"
-msgstr "Tar bort gren-certifikat från den lokala databasen"
+msgstr "Tar bort angivna certifikat från den lokala databasen"
 
 #: cmd_db.cc:251
 msgid ""
 "Deletes all certs which are on the given revision(s) and have the given name "
 "and if a value is specified then also the given value."
 msgstr ""
+"Tar bort alla certifikat med givet namn och eventuellt givet värde\n"
+"från givna revisioner."
 
 #: cmd_db.cc:319
 msgid "Does some sanity checks on the database"
@@ -2287,9 +2342,8 @@ msgid "No workspace given"
 msgstr "Ingen arbetskopia angiven"
 
 #: cmd_db.cc:478
-#, fuzzy
 msgid "Unregisters an existing workspace for the current database"
-msgstr "Visar arbetskopians rot gentemot nuvarande katalog"
+msgstr "Avregistrerar en existerande arbetskopia från dn nuvarande databasen"
 
 #: cmd_db.cc:479
 msgid "This command removes WORKSPACE_PATH to the list of `known-workspaces'."
@@ -2354,7 +2408,7 @@ msgstr ""
 msgid "loading revisions"
 msgstr "laddar revisioner"
 
-#: cmd_db.cc:643 network/netsync_session.cc:1345 rcs_import.cc:1234
+#: cmd_db.cc:643 network/netsync_session.cc:1364 rcs_import.cc:1234
 #: database_check.cc:340
 msgid "revisions"
 msgstr "revisioner"
@@ -2525,9 +2579,8 @@ msgstr ""
 "SÖKVÄG är angiven."
 
 #: cmd_diff_log.cc:1000
-#, fuzzy
 msgid "list selected revision history"
-msgstr "arkiverade revisionen %s"
+msgstr "visa vald revisionshistoria"
 
 #: cmd_ws_commit.cc:179
 #, c-format
@@ -2536,18 +2589,26 @@ msgid ""
 "This file must be removed before commit will proceed.\n"
 "You may recover the previous message from this file if necessary."
 msgstr ""
+"En backup av en tidigare misslyckad arkivering finns i _MTN/commit.\n"
+"Innan man kan göra en ny arkivering måste denna fil tas bort.\n"
+"Man kan återfå det tidigare arkiveringsmeddelandet från denna fil om\n"
+"så önskas."
 
 #: cmd_ws_commit.cc:184
 msgid ""
 "-- Enter a description of this change above --\n"
 "-- You may edit the fields below            --\n"
 msgstr ""
+"-- Skriv in en beskrivning av denna ändring ovan     --\n"
+"-- Du kan ändra fälten nedan om så önskas            --\n"
 
 #: cmd_ws_commit.cc:188
 msgid ""
 "\n"
 "-- Modifications below this line are ignored --\n"
 msgstr ""
+"\n"
+"-- Ändringar nedanför denna rad kommer att ignoreras --\n"
 
 #: cmd_ws_commit.cc:190
 msgid "*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"
@@ -2566,9 +2627,9 @@ msgid "Date:     "
 msgstr "Datum:       "
 
 #: cmd_ws_commit.cc:215
-#, fuzzy, c-format
+#, c-format
 msgid "date format '%s' cannot be parsed; using default instead"
-msgstr "en databas i minnet '%s' kan inte användas i en arbetskopia"
+msgstr "datumformatet '%s' kan inte tolkas; använder standardformat istället"
 
 #: cmd_ws_commit.cc:237 cmd_ws_commit.cc:985
 msgid "*** THIS REVISION WILL CREATE A NEW BRANCH ***"
@@ -2599,37 +2660,37 @@ msgstr "Arkivering avbruten."
 #: cmd_ws_commit.cc:307
 #, c-format
 msgid "Commit failed. Instructions not found."
-msgstr ""
+msgstr "Arkivering misslyckades. Inga instruktioner funna."
 
 #: cmd_ws_commit.cc:312
 #, c-format
 msgid "Commit failed. Branch header not found."
-msgstr ""
+msgstr "Arkivering msslyckades. Headern 'Branch' saknas."
 
 #: cmd_ws_commit.cc:317
 #, c-format
 msgid "Commit failed. Branch value empty."
-msgstr ""
+msgstr "Arkivering misslyckades. Värdet till 'Branch' är tom."
 
 #: cmd_ws_commit.cc:324
 #, c-format
 msgid "Commit failed. Author header not found."
-msgstr ""
+msgstr "Arkivering misslyckades.  Headern 'Author' saknas."
 
 #: cmd_ws_commit.cc:329
 #, c-format
 msgid "Commit failed. Author value empty."
-msgstr ""
+msgstr "Arkivering misslyckades. Värdet till 'Author' är tom."
 
 #: cmd_ws_commit.cc:334
 #, c-format
 msgid "Commit failed. Date header not found."
-msgstr ""
+msgstr "Arkivering misslyckades.  Headern 'Date' saknas."
 
 #: cmd_ws_commit.cc:339
 #, c-format
 msgid "Commit failed. Date value empty."
-msgstr ""
+msgstr "Arkivering misslyckades. Värdet till 'Date' är tom."
 
 #: cmd_ws_commit.cc:362
 #, c-format
@@ -2667,33 +2728,33 @@ msgstr "Använda \".\" om hela arbetskopian ska återställas."
 
 #: cmd_ws_commit.cc:548
 msgid "Reverses a mistaken 'drop'"
-msgstr ""
+msgstr "Återställer en borttagning ('drop') som gjordes av misstag"
 
 #: cmd_ws_commit.cc:549
 msgid ""
 "If the file was deleted from the workspace, this is the same as 'revert'. "
 "Otherwise, it just removes the 'drop' from the manifest."
 msgstr ""
+"Om filen blev borttagen från arbetskopian gör detta samma sak so 'revert'. I "
+"annat fall tar det bara bort 'drop' från manifestet."
 
 #: cmd_ws_commit.cc:566 cmd_ws_commit.cc:575
-#, fuzzy, c-format
+#, c-format
 msgid "revision %s it not a child of %s, cannot invert"
-msgstr "revisionen '%s' har %d föräldrar, kan inte invertera"
+msgstr "revisionen %s är inte barn till %s, kan inte invertera"
 
 #: cmd_ws_commit.cc:571 cmd_ws_commit.cc:610 cmd_ws_commit.cc:650
-#, fuzzy, c-format
+#, c-format
 msgid "revision %s has %d parents, cannot invert"
-msgstr "revisionen '%s' har %d föräldrar, kan inte invertera"
+msgstr "revisionen %s har %d föräldrar, kan inte invertera"
 
 #: cmd_ws_commit.cc:583
-#, fuzzy
 msgid "[PARENT-REVISION] CHILD-REVISION"
-msgstr "VÄNSTERREVISION HÖGERREVISION MÅLGREN"
+msgstr "[FÖRÄLDRAREVISION] BARNREVISION"
 
 #: cmd_ws_commit.cc:584
-#, fuzzy
 msgid "Disapproves a particular revision or revision range"
-msgstr "Underkänner en specifik revision"
+msgstr "Underkänner angiven eller angivna revisioner"
 
 #: cmd_ws_commit.cc:615 cmd_ws_commit.cc:655
 #, c-format
@@ -2701,16 +2762,18 @@ msgid "need --branch argument for disapproval"
 msgstr "för underkännande behöver en gren anges med --branch"
 
 #: cmd_ws_commit.cc:638
-#, fuzzy, c-format
+#, c-format
 msgid "revisions %s and %s do not share common history, cannot invert"
-msgstr "revisionen '%s' har %d föräldrar, kan inte invertera"
+msgstr "revisionen %s och %s har ingen gemensam historia, kan inte invertera"
 
 #: cmd_ws_commit.cc:641
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "revisions share common history, but %s is not an ancestor of %s, cannot "
 "invert"
-msgstr "revisionen '%s' har %d föräldrar, kan inte invertera"
+msgstr ""
+"flera revisioner har gemensam historia, men %s är inte förfader till %s, kan "
+"inte invertera"
 
 #: cmd_ws_commit.cc:702 cmd_ws_commit.cc:1771
 #, c-format
@@ -2791,7 +2854,7 @@ msgstr "Visar statusinformation för arbetskopian"
 #: cmd_ws_commit.cc:929
 #, c-format
 msgid "bisection from revision %s in progress"
-msgstr ""
+msgstr "uppdelning från revision %s pågår"
 
 #: cmd_ws_commit.cc:1024
 #, c-format
@@ -2814,7 +2877,7 @@ msgid "checkout directory '%s' already exists"
 msgstr "arbetskatalogen '%s' finns redan"
 
 #: cmd_ws_commit.cc:1111 cmd_ws_commit.cc:1125 cmd_ws_commit.cc:1821
-#: cmd_ws_commit.cc:1978
+#: cmd_ws_commit.cc:1998
 msgid "[DIRECTORY]"
 msgstr "[KATALOG]"
 
@@ -2833,9 +2896,9 @@ msgstr ""
 "kommer grenens namn att användas som katalognamn."
 
 #: cmd_ws_commit.cc:1137
-#, fuzzy, c-format
+#, c-format
 msgid "wrong revision count"
-msgstr "felaktigt antal givna argument"
+msgstr "felaktigt antal revisioner"
 
 #: cmd_ws_commit.cc:1143
 msgid "Manages file attributes"
@@ -2951,9 +3014,9 @@ msgstr ""
 "var god ange en gren för denna arkivering med --branch."
 
 #: cmd_ws_commit.cc:1556
-#, fuzzy, c-format
+#, c-format
 msgid "changes rejected by hook: %s"
-msgstr "loggmeddelandet förkastas: %s"
+msgstr "ändringar förkastade av hook: %s"
 
 #: cmd_ws_commit.cc:1570
 #, c-format
@@ -3018,7 +3081,7 @@ msgstr "Använd nuvarande katalog om inget annat anges."
 msgid "need --branch argument for setup"
 msgstr "du måste ange en gren med --branch till kommandot \"setup\""
 
-#: cmd_ws_commit.cc:1868
+#: cmd_ws_commit.cc:1868 cmd_ws_commit.cc:1977
 msgid "DIRECTORY"
 msgstr "KATALOG"
 
@@ -3053,163 +3116,196 @@ msgstr "importkatalogen '%s' finns inte"
 msgid "import directory '%s' is a file"
 msgstr "importkatalogen '%s' är en fil"
 
+#: cmd_ws_commit.cc:1978
+msgid "Exports a revision from the database into a directory"
+msgstr "Exporterar en revision från databasen till en katalog"
+
 #: cmd_ws_commit.cc:1979
+msgid ""
+"If a revision is given, that's the one that will be exported.  Otherwise, it "
+"will be the head of the branch (given or implicit)."
+msgstr ""
+"Om en revision anges kommer den att exportera.  I annat fall kommer lövet i "
+"grenen (implicit eller angiven) att exporteras."
+
+#: cmd_ws_commit.cc:1991
+#, c-format
+msgid "You can't export in the current directory"
+msgstr "Du får inte exportera i nuvarande katalog"
+
+#: cmd_ws_commit.cc:1999
 msgid "Migrates a workspace directory's metadata to the latest format"
 msgstr "Migrerar en arbetskopias metadata till det senaste formatet"
 
-#: cmd_ws_commit.cc:1980
+#: cmd_ws_commit.cc:2000
 msgid "If no directory is given, defaults to the current workspace."
 msgstr "Nuvarande katalog avses om inget annat anges"
 
-#: cmd_ws_commit.cc:2004
+#: cmd_ws_commit.cc:2024
 msgid "Refreshes the inodeprint cache"
 msgstr "Uppdaterar inodeprint-cachen"
 
-#: cmd_ws_commit.cc:2015
+#: cmd_ws_commit.cc:2035
 msgid "Search revisions to find where a change first appeared"
 msgstr "Leta efter revision för att finna var en ändring uppstod"
 
-#: cmd_ws_commit.cc:2016
+#: cmd_ws_commit.cc:2036
 msgid ""
 "These commands subdivide a set of revisions into good, bad and untested "
 "subsets and successively narrow the untested set to find the first revision "
 "that introduced some change."
 msgstr ""
+"Dessa kommandon delar upp en samling revisioner i en bra, en dålig och en "
+"otestad mängde, och smalnar successivt av den otestade mängden med målet att "
+"finna den revision som först introducerade en viss ändring."
 
-#: cmd_ws_commit.cc:2021
+#: cmd_ws_commit.cc:2041
 msgid "Reset the current bisection search"
-msgstr ""
+msgstr "Avbryt den pågående uppdelningssökningen"
 
-#: cmd_ws_commit.cc:2022
+#: cmd_ws_commit.cc:2042
 msgid ""
 "Update the workspace back to the revision from which the bisection was "
 "started and remove all current search information, allowing a new search to "
 "be started."
 msgstr ""
+"Uppdatera arbetskopian tillbaka till revisionen där uppdelningen började och "
+"ta bort all sökningsinformation så att en ny sökning kan påbörjas."
 
-#: cmd_ws_commit.cc:2037 cmd_ws_commit.cc:2093
+#: cmd_ws_commit.cc:2057 cmd_ws_commit.cc:2113
 #, c-format
 msgid "no bisection in progress"
-msgstr ""
+msgstr "ingen uppdelning pågår"
 
-#: cmd_ws_commit.cc:2052 cmd_ws_commit.cc:2280
+#: cmd_ws_commit.cc:2072 cmd_ws_commit.cc:2300
 #, c-format
 msgid "this command can only be used in a workspace with no pending changes"
 msgstr ""
 "detta kommando kan enbart användas i en arbetskopia där alla gjorda "
 "ändringar har arkiverats"
 
-#: cmd_ws_commit.cc:2058
+#: cmd_ws_commit.cc:2078
 #, c-format
 msgid "reset back to %s"
-msgstr ""
+msgstr "återställ till %s"
 
-#: cmd_ws_commit.cc:2124
+#: cmd_ws_commit.cc:2144
 #, c-format
 msgid ""
 "bisecting revisions; %d good; %d bad; %d skipped; specify good revisions to "
 "start search"
 msgstr ""
+"delar upp revisioner; %d bra; %d dåliga; %d hoppades över; var god ange bra "
+"revisioner för att påbörja sökningen"
 
-#: cmd_ws_commit.cc:2130
+#: cmd_ws_commit.cc:2150
 #, c-format
 msgid ""
 "bisecting revisions; %d good; %d bad; %d skipped; specify bad revisions to "
 "start search"
 msgstr ""
+"delar upp revisioner; %d bra; %d dåliga; %d hoppades över; var god ange "
+"dåliga revisioner för att påbörja sökningen"
 
-#: cmd_ws_commit.cc:2193
+#: cmd_ws_commit.cc:2213
 #, c-format
 msgid "bisecting %d revisions; %d good; %d bad; %d skipped; %d remaining"
-msgstr ""
+msgstr "delar upp %d revisioner; %d bra; %d dåliga; %d hoppades över; %d kvar"
 
-#: cmd_ws_commit.cc:2211
+#: cmd_ws_commit.cc:2231
 #, c-format
 msgid "bisection finished at revision %s"
-msgstr ""
+msgstr "uppdelningen slutade på revision %s"
 
-#: cmd_ws_commit.cc:2304
+#: cmd_ws_commit.cc:2324
 #, c-format
 msgid "bisection started at revision %s"
-msgstr ""
+msgstr "uppdelningen började på revision %s"
 
-#: cmd_ws_commit.cc:2320
+#: cmd_ws_commit.cc:2340
 #, c-format
 msgid "ignored redundant bisect %s on revision %s"
-msgstr ""
+msgstr "ignorerade redundant uppdelning %s på revision %s"
 
-#: cmd_ws_commit.cc:2325
+#: cmd_ws_commit.cc:2345
 #, c-format
 msgid "conflicting bisect %s/%s on revision %s"
-msgstr ""
+msgstr "uppdelning %s och %s i konflikt med varandra i revision %s"
 
-#: cmd_ws_commit.cc:2343
+#: cmd_ws_commit.cc:2363
 #, c-format
 msgid "updating to %s"
 msgstr "uppdaterar till %s"
 
-#: cmd_ws_commit.cc:2368
+#: cmd_ws_commit.cc:2388
 msgid "Reports on the current status of the bisection search"
-msgstr ""
+msgstr "Berättar om den nuvarande uppdelningssökningens tillstånd"
 
-#: cmd_ws_commit.cc:2369
+#: cmd_ws_commit.cc:2389
 msgid ""
-"Lists the total number of revisions in the search set; the number of "
-"revisions that have been determined to be good or bad; the number of "
+"Lists the total number of revisions in the search set, the number of "
+"revisions that have been determined to be good or bad, the number of "
 "revisions that have been skipped and the number of revisions remaining to be "
 "tested."
 msgstr ""
+"Visar det totala antalet revisioner i sökmängden, antalet revisioner som "
+"markerats som bra eller dåliga, antalet revision som har hoppats över och "
+"antalet revisioner kvar att testa."
 
-#: cmd_ws_commit.cc:2397
+#: cmd_ws_commit.cc:2417
 #, c-format
 msgid "next revision for bisection testing is %s\n"
-msgstr ""
+msgstr "nästa revision att testa med uppdelning är %s\n"
 
-#: cmd_ws_commit.cc:2398
+#: cmd_ws_commit.cc:2418
 #, c-format
 msgid "however this workspace is currently at %s\n"
-msgstr ""
+msgstr "men denna arbetskopia är för närvarande på %s\n"
 
-#: cmd_ws_commit.cc:2399
+#: cmd_ws_commit.cc:2419
 #, c-format
 msgid "run 'bisect update' to update to this revision before testing"
-msgstr ""
+msgstr "kör 'bisect update' för att uppdatera till denna revision innan test"
 
-#: cmd_ws_commit.cc:2404
+#: cmd_ws_commit.cc:2424
 msgid "Updates the workspace to the next revision to be tested by bisection"
-msgstr ""
+msgstr "Uppdaterar arbetskopian till nästa revision att testa med uppdelning"
 
-#: cmd_ws_commit.cc:2405
+#: cmd_ws_commit.cc:2425
 msgid ""
 "This command can be used if updates by good, bad or skip commands fail due "
 "to blocked paths or other problems."
 msgstr ""
+"Detta kommando kan användas om uppdatering med kommandona 'good', 'bad' och "
+"'skipped' misslyckades på grund av blockerade sökvägar eller andra problem."
 
-#: cmd_ws_commit.cc:2415
+#: cmd_ws_commit.cc:2435
 msgid "Excludes the current revision or specified revisions from the search"
-msgstr ""
+msgstr "Utestänger nuvarande revision eller angivna revisioner från sökningen"
 
-#: cmd_ws_commit.cc:2416
+#: cmd_ws_commit.cc:2436
 msgid ""
 "Skipped revisions are removed from the set being searched. Revisions that "
 "cannot be tested for some reason should be skipped."
 msgstr ""
+"Revisioner som hoppas över tas bort från mängden som söks igenom. Revisioner "
+"som inte kan testas av någon anledning borde hoppas över."
 
-#: cmd_ws_commit.cc:2426
+#: cmd_ws_commit.cc:2446
 msgid "Marks the current revision or specified revisions as bad"
-msgstr ""
+msgstr "Markerar nuvarande revision eller angivna revisioner som dåliga"
 
-#: cmd_ws_commit.cc:2427
+#: cmd_ws_commit.cc:2447
 msgid "Known bad revisions are removed from the set being searched."
-msgstr ""
+msgstr "Kända dåliga revisioner tas bort från mängden att söka igenom."
 
-#: cmd_ws_commit.cc:2436
+#: cmd_ws_commit.cc:2456
 msgid "Marks the current revision or specified revisions as good"
-msgstr ""
+msgstr "Markerar nuvarande revision eller angivna revisioner som bra"
 
-#: cmd_ws_commit.cc:2437
+#: cmd_ws_commit.cc:2457
 msgid "Known good revisions are removed from the set being searched."
-msgstr ""
+msgstr "Kända bra revisioner tas bort från mängden att söka igenom."
 
 #: cmd_othervcs.cc:28
 msgid "RCSFILE..."
@@ -3282,6 +3378,8 @@ msgid ""
 "Emulates certain kinds of diagnostic / UI messages for debugging and testing "
 "purposes, such as stdio"
 msgstr ""
+"Efterliknar visa typer of fel- och användargränssnittsmeddelanden för "
+"felsökning, till exempel stdio"
 
 #: cmd_automate.cc:142
 #, c-format
@@ -3460,9 +3558,8 @@ msgid "Prints the contents of a file (given an identifier)"
 msgstr "Skriver ut innehållet på en fil (givet en filidentitet)"
 
 #: cmd_files.cc:354
-#, fuzzy
 msgid "Prints the size of a file (given an identifier)"
-msgstr "Skriver ut innehållet på en fil (givet en filidentitet)"
+msgstr "Skriver ut storleken på en fil (givet en filidentitet)"
 
 #: cmd_files.cc:388
 msgid "Prints the contents of a file (given a name)"
@@ -3925,14 +4022,14 @@ msgid "source file %s is not versioned"
 msgstr "källfilen %s är inte versionshanterad"
 
 #: work.cc:1975 work.cc:2041
-#, fuzzy, c-format
+#, c-format
 msgid "cannot move `%s' to a subdirectory of itself, `%s/%s'"
-msgstr "kan inte byta till katalog %s: %s"
+msgstr "kan inte flytta `%s' to en underkatalog av sig själv `%s/%s'"
 
 #: work.cc:1977
-#, fuzzy, c-format
+#, c-format
 msgid "`%s' and `%s' are the same file"
-msgstr "%s och %s är samma revision, avbryter"
+msgstr "`%s' och `%s' är samma fil"
 
 #: work.cc:1993
 #, c-format
@@ -4222,13 +4319,13 @@ msgstr "ej tilldelat "
 msgid " (not a monotone database)"
 msgstr " (är inte en monotonedatabas)"
 
-#: database.cc:1038 database.cc:1070 database.cc:1763 database.cc:1783
+#: database.cc:1038 database.cc:1070 database.cc:1770 database.cc:1790
 #, c-format
 msgid "%u"
 msgstr "%u"
 
 #: database.cc:1089
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "creator code      : %s\n"
 "schema version    : %s\n"
@@ -4264,6 +4361,7 @@ msgstr ""
 "  listdeltan          : %s\n"
 "  hela filer          : %s\n"
 "  fildeltan           : %s\n"
+"  filstorlekar        : %s\n"
 "  revisioner          : %s\n"
 "  föräldrabågar       : %s\n"
 "  cert                : %s\n"
@@ -4273,6 +4371,7 @@ msgstr ""
 "  listdeltan          : %s\n"
 "  hela filer          : %s\n"
 "  fildeltan           : %s\n"
+"  filstorlekar        : %s\n"
 "  revisioner          : %s\n"
 "  cachat föräldraskap : %s\n"
 "  cert                : %s\n"
@@ -4312,6 +4411,27 @@ msgid ""
 "  95th percentile : %s sec\n"
 "  99th percentile : %s sec\n"
 msgstr ""
+"korrekthet med tidsstämplar mellan revisioner:\n"
+"  korrekta datum   : %s bågar\n"
+"  likadana datum   : %s bågar\n"
+"  inkorrekta daumt : %s bågar\n"
+"  baserad på roten : %s bågar\n"
+"  datum saknas     : %s bågar\n"
+"\n"
+"skillnad i tidsstämplar mellan revisioner:\n"
+"  medel            : %d sec\n"
+"  min              : %d sec\n"
+"  max              : %d sec\n"
+"\n"
+"  1a percentilen   : %s sec\n"
+"  5e percentilen   : %s sec\n"
+"  10e percentilen  : %s sec\n"
+"  25e percentilen  : %s sec\n"
+"  50e percentilen  : %s sec\n"
+"  75e percentilen  : %s sec\n"
+"  90e percentilen  : %s sec\n"
+"  95e percentilen  : %s sec\n"
+"  99e percentilen  : %s sec\n"
 
 #: database.cc:1288
 #, c-format
@@ -4360,37 +4480,37 @@ msgstr "ville ha %d kolumner, fick %d i databasfråga: %s"
 msgid "null result in query: %s"
 msgstr "inget resultat med databasfråga: %s"
 
-#: database.cc:1556
+#: database.cc:1563
 #, c-format
 msgid "wanted %d rows got %d in query: %s"
 msgstr "ville ha %d rader, fick %d i databasfråga: %s"
 
-#: database.cc:1890
+#: database.cc:1897
 #, c-format
 msgid "roster does not match hash"
-msgstr ""
+msgstr "'roster' stämmer inte med checksumman"
 
-#: database.cc:1911
+#: database.cc:1918
 #, c-format
 msgid "roster_delta does not match hash"
-msgstr ""
+msgstr "'roster_delta' stämmer inte med checksumman"
 
-#: database.cc:2096
+#: database.cc:2103
 #, c-format
 msgid "delta-reconstructed '%s' item does not match hash"
-msgstr ""
+msgstr "delta-återskapat element '%s' stämmer inte med checksumman"
 
-#: database.cc:2504
+#: database.cc:2511
 #, c-format
 msgid "file preimage '%s' missing in db"
 msgstr "\"preimage\" för filen '%s' saknas i databasen"
 
-#: database.cc:2505
+#: database.cc:2512
 #, c-format
 msgid "dropping delta '%s' -> '%s'"
 msgstr "slänger deltat '%s' -> '%s'"
 
-#: database.cc:2521
+#: database.cc:2528
 #, c-format
 msgid ""
 "Unknown delta direction '%s'; assuming 'reverse'. Valid values are "
@@ -4399,62 +4519,62 @@ msgstr ""
 "Okänd riktning '%s' för deltan; 'reverse' antas. Giltiga värden är "
 "'reverse', 'forward', 'both'."
 
-#: database.cc:2854
+#: database.cc:2861
 #, c-format
 msgid "revision does not match hash"
 msgstr "revisionen stämmer inte med identiteten"
 
-#: database.cc:2986
+#: database.cc:2993
 #, c-format
 msgid "missing prerequisite revision '%s'"
 msgstr "saknar nödvändig revision '%s'"
 
-#: database.cc:2988 database.cc:2999 database.cc:3015 database.cc:3023
+#: database.cc:2995 database.cc:3006 database.cc:3022 database.cc:3030
 #, c-format
 msgid "dropping revision '%s'"
 msgstr "slänger revisionen '%s'"
 
-#: database.cc:2998
+#: database.cc:3005
 #, c-format
 msgid "missing prerequisite file '%s'"
 msgstr "saknar nödvändig fil '%s'"
 
-#: database.cc:3013
+#: database.cc:3020
 #, c-format
 msgid "missing prerequisite file pre-delta '%s'"
 msgstr "saknar nödvändigt predelta till fil '%s'"
 
-#: database.cc:3021
+#: database.cc:3028
 #, c-format
 msgid "missing prerequisite file post-delta '%s'"
 msgstr "saknar nödvändigt postdelta till fil '%s'"
 
-#: database.cc:3154
+#: database.cc:3161
 #, c-format
 msgid "revision contains incorrect manifest_id"
 msgstr "revisionen innehåller inkorrekt manifest_id"
 
-#: database.cc:3480
+#: database.cc:3487
 #, c-format
 msgid "Failed to get RSA verifying key for %s"
 msgstr "Misslyckades med att finna signerande RSA-nyckel för %s"
 
-#: database.cc:3619
+#: database.cc:3626
 #, c-format
 msgid "Your database contains multiple keys named %s"
 msgstr "Din databas innehåller flera nycklar som heter %s"
 
-#: database.cc:3780
+#: database.cc:3787
 #, c-format
 msgid "cert revision '%s' does not exist in db"
 msgstr "certrevision '%s' finns inte i databasen"
 
-#: database.cc:3782
+#: database.cc:3789
 #, c-format
 msgid "dropping cert"
 msgstr "slänger cert"
 
-#: database.cc:3792
+#: database.cc:3799
 #, c-format
 msgid ""
 "The branch name\n"
@@ -4467,33 +4587,42 @@ msgid ""
 "'%s local kill_certs' command to delete the particular branch\n"
 "cert and re-add a valid one."
 msgstr ""
+"Gren-namnet\n"
+"  '%s'\n"
+"innehåller metatecken (en eller fler av '?,;*%%+{}[]!^') eller\n"
+"börjar med ett bindestreck, vilket kan leda till felaktig funktion\n"
+"när den används med gran-mönster i netsync.\n"
+"\n"
+"Om du vill återställa från den här operationen, var god använd\n"
+"kommandot '%s local kill_certs för att ta bort detta särskilda\n"
+"gren-certifikat och lägga till en giltig."
 
-#: database.cc:4109
+#: database.cc:4116
 #, c-format
 msgid "ignoring bad signature by '%s' on '%s'"
 msgstr "ignorerar felaktig signatur på '%2$s', av '%1$s'"
 
-#: database.cc:4114
+#: database.cc:4121
 #, c-format
 msgid "ignoring unknown signature by '%s' on '%s'"
 msgstr "ignorerar okänd signatur på '%2$s', av '%1$s'"
 
-#: database.cc:4116
+#: database.cc:4123
 #, c-format
 msgid "trust function disliked %d signers of %s cert on revision %s"
 msgstr "tillitsfunktionen ogillar %d signerare av certet %s i revisionen %s"
 
-#: database.cc:4791
+#: database.cc:4798
 #, c-format
 msgid "no database specified"
 msgstr "ingen databas angiven"
 
-#: database.cc:4804
+#: database.cc:4811
 #, c-format
 msgid "database %s does not exist"
 msgstr "databasen %s finns inte"
 
-#: database.cc:4812
+#: database.cc:4819
 #, c-format
 msgid ""
 "%s is a workspace, not a database\n"
@@ -4502,17 +4631,17 @@ msgstr ""
 "%s är en katalog, inte en databas\n"
 "(menade du %s?)"
 
-#: database.cc:4816
+#: database.cc:4823
 #, c-format
 msgid "%s is a directory, not a database"
 msgstr "%s är en katalog, inte en databas"
 
-#: database.cc:4824
+#: database.cc:4831
 #, c-format
 msgid "database %s already exists"
 msgstr "databasen %s finns redan"
 
-#: database.cc:4829
+#: database.cc:4836
 #, c-format
 msgid ""
 "existing (possibly stale) journal file '%s' has same stem as new database "
@@ -4523,27 +4652,27 @@ msgstr ""
 "databasen '%s'\n"
 "avbryter skapandet av databasen"
 
-#: database.cc:4984
+#: database.cc:4991
 #, c-format
 msgid "the database alias '%s' has multiple ambiguous expansions:"
 msgstr "databasaliaset '%s' har flera motsägelsefulla uttydningar:"
 
-#: database.cc:5007
+#: database.cc:5014
 #, c-format
 msgid "could not query default database alias"
 msgstr "kunde inte fråga efter databasens standardalias"
 
-#: database.cc:5018
+#: database.cc:5025
 #, c-format
 msgid "invalid database alias '%s': does not start with a colon"
-msgstr ""
+msgstr "ogiltigt databasalias '%s': startar inte med ett kolon"
 
-#: database.cc:5022
+#: database.cc:5029
 #, c-format
 msgid "invalid database alias '%s': must not be empty"
-msgstr ""
+msgstr "ogiltigt databasalias '%s': får inte vara tomt"
 
-#: database.cc:5035
+#: database.cc:5042
 #, c-format
 msgid "invalid database alias '%s': does contain invalid characters"
 msgstr "ogiltigt databasalias '%s': innehåller ogiltiga tecken"
@@ -4576,14 +4705,16 @@ msgstr "ignorerar ogiltig nyckelfil ('%s') i nyckelarkivet"
 
 #: key_store.cc:422 key_store.cc:426 key_store.cc:429 key_store.cc:431
 #: key_store.cc:434
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid data in key file."
-msgstr "Otillåten \\ i filen given med --xargs"
+msgstr "Ogiltigt data i nyckelfil."
 
 #: key_store.cc:442
 #, c-format
 msgid "expected key with id '%s' in key file '%s', got key with id '%s'"
 msgstr ""
+"nyckel med identitet '%s' förväntades i filen '%s', istället fanns nyckel "
+"med identitet '%s'"
 
 #: key_store.cc:508
 #, c-format
@@ -4840,14 +4971,14 @@ msgid "malformed packet: invalid key name"
 msgstr "otydbart paket: ogiltigt nyckelnamn"
 
 #: packet.cc:168
-#, fuzzy, c-format
+#, c-format
 msgid "malformed packet: invalid public key data for '%s': %s"
-msgstr "otydbart paket: ogiltigt nyckelnamn"
+msgstr "otydbart paket: ogiltigt data i publik nyckel för '%s': %s"
 
 #: packet.cc:187
-#, fuzzy, c-format
+#, c-format
 msgid "malformed packet: invalid private key data for '%s': %s"
-msgstr "otydbart paket: ogiltigt nyckelnamn"
+msgstr "otydbart paket: ogiltigt data i privat nyckel för '%s': %s"
 
 #: packet.cc:199
 #, c-format
@@ -4865,34 +4996,34 @@ msgid "unknown packet type: '%s'"
 msgstr "okänd pakettyp: '%s'"
 
 #: key_packet.cc:91 key_packet.cc:97
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid base64 block"
-msgstr "otydbart paket: ogiltigt base64-block"
+msgstr "otydbart nyckelpaket: ogiltigt base64-block"
 
 #: key_packet.cc:104
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid key name"
-msgstr "otydbart paket: ogiltigt nyckelnamn"
+msgstr "otydbart nyckelpaket: ogiltigt nyckelnamn"
 
 #: key_packet.cc:118
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid public key data for '%s': %s"
-msgstr "otydbart paket: ogiltigt nyckelnamn"
+msgstr "otydbart nyckelpaket: ogiltigt publikt nyckeldata för '%s': %s"
 
 #: key_packet.cc:137
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid private key data for '%s': %s"
-msgstr "otydbart paket: ogiltigt nyckelnamn"
+msgstr "otydbart nyckelpaket: ogiltigt privat nyckeldata för '%s': %s"
 
 #: key_packet.cc:149
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: too many arguments in header"
-msgstr "otydbart paket: för många argument i headern"
+msgstr "otydbart nyckelpaket: för många argument i headern"
 
 #: key_packet.cc:213
-#, fuzzy, c-format
+#, c-format
 msgid "unknown key_packet type: '%s'"
-msgstr "okänd pakettyp: '%s'"
+msgstr "okänd typ av nyckelpaket: '%s'"
 
 #: rcs_file.cc:354
 #, c-format
@@ -5113,9 +5244,9 @@ msgid "rebuilding revision graph from manifest certs"
 msgstr "bygger om revisionsgrafen från manifestcert"
 
 #: migrate_ancestry.cc:990
-#, fuzzy, c-format
+#, c-format
 msgid "regenerating cached heights"
-msgstr "återskapar cachade grenar"
+msgstr "återskapar cachade höjder"
 
 #: migrate_ancestry.cc:1000 migrate_ancestry.cc:1031 migrate_ancestry.cc:1063
 #: migrate_ancestry.cc:1097
@@ -5123,19 +5254,19 @@ msgid "regenerated"
 msgstr "omgjorda"
 
 #: migrate_ancestry.cc:1015
-#, fuzzy, c-format
+#, c-format
 msgid "finished regenerating cached heights"
-msgstr "färdig med återskapandet av cachade grenar"
+msgstr "färdig med återskapandet av cachade höjder"
 
 #: migrate_ancestry.cc:1021
-#, fuzzy, c-format
+#, c-format
 msgid "regenerating cached rosters"
-msgstr "återskapar cachade grenar"
+msgstr "återskapar cachade listor"
 
 #: migrate_ancestry.cc:1046
-#, fuzzy, c-format
+#, c-format
 msgid "finished regenerating cached rosters"
-msgstr "färdig med återskapandet av cachade grenar"
+msgstr "färdig med återskapandet av cachade listor"
 
 #: migrate_ancestry.cc:1052
 #, c-format
@@ -5148,61 +5279,61 @@ msgid "finished regenerating cached branches"
 msgstr "färdig med återskapandet av cachade grenar"
 
 #: migrate_ancestry.cc:1087
-#, fuzzy, c-format
+#, c-format
 msgid "regenerating cached file sizes for revisions"
-msgstr "återskapar cachade listor och höjder"
+msgstr "återskapar cachade listor filstorlekar för revisioner"
 
 #: migrate_ancestry.cc:1112
-#, fuzzy, c-format
+#, c-format
 msgid "finished regenerating cached file sizes"
-msgstr "färdig med återskapandet av cachade grenar"
+msgstr "färdig med återskapandet av cachade filstorlekar"
 
-#: refiner.cc:371
+#: refiner.cc:400
 #, c-format
 msgid "underflow on query-in-flight counter"
 msgstr "räknaren query-in-flight blev för låg"
 
-#: netsync.cc:111 netsync.cc:215
+#: netsync.cc:112 netsync.cc:217
 #, c-format
 msgid "connecting to %s"
 msgstr "ansluter till %s"
 
-#: netsync.cc:159
+#: netsync.cc:161
 #, c-format
 msgid "processing failure while talking to peer %s, disconnecting"
 msgstr "tar hand om misslyckande i samtal med %s, kopplar ifrån"
 
-#: netsync.cc:167
+#: netsync.cc:169
 #, c-format
 msgid "timed out waiting for I/O with peer %s, disconnecting"
 msgstr "att vänta på I/O från %s tog för lång tid, kopplar ifrån"
 
-#: netsync.cc:184
+#: netsync.cc:186
 #, c-format
 msgid "successful exchange with %s"
 msgstr "lyckat utbyte med %s"
 
-#: netsync.cc:190
+#: netsync.cc:192
 #, c-format
 msgid "peer %s disconnected after we informed them of error"
 msgstr "%s kopplade ifrån efter att vi informerade den om ett fel"
 
-#: netsync.cc:196
+#: netsync.cc:198
 #, c-format
 msgid "I/O failure while talking to peer %s, disconnecting"
 msgstr "I/O-fel i samtal med %s, kopplar ifrån"
 
-#: netsync.cc:241
+#: netsync.cc:244
 #, c-format
 msgid "Network error: %s"
 msgstr "Nätverksfel: %s"
 
-#: netsync.cc:355
+#: netsync.cc:358
 #, c-format
 msgid "beginning service on %s"
 msgstr "startar tjänst på %s"
 
-#: netsync.cc:413 netsync.cc:417
+#: netsync.cc:417 netsync.cc:421
 #, c-format
 msgid "network error: %s"
 msgstr "nätverksfel: %s"
@@ -5210,7 +5341,7 @@ msgstr "nätverksfel: %s"
 #: network/automate_session.cc:72
 #, c-format
 msgid "server is too old for remote automate connections"
-msgstr ""
+msgstr "servern är för gammal för fjärr-automate-koppling"
 
 #: network/automate_session.cc:131
 #, c-format
@@ -5220,19 +5351,19 @@ msgstr "Ledsen, du får inte göra så."
 #: network/automate_session.cc:220
 #, c-format
 msgid "unexpected netcmd '%d' received on automate connection"
-msgstr ""
+msgstr "oväntat netcmd '%d' mottaget med automate-koppling"
 
-#: network/connection_info.cc:61
+#: network/connection_info.cc:90
 #, c-format
 msgid "ignoring invalid default server address '%s': %s"
-msgstr ""
+msgstr "ignorerar ogiltig standardadress till servern '%s': %s"
 
-#: network/connection_info.cc:88
-#, fuzzy, c-format
+#: network/connection_info.cc:117
+#, c-format
 msgid "ignoring invalid default include / exclude pattern: %s"
-msgstr "sätter standardmönstret för grenar att INTE ta med till '%s'"
+msgstr "ignorerar ogiltigt mönster för include / exclude: %s"
 
-#: network/connection_info.cc:200
+#: network/connection_info.cc:229
 #, c-format
 msgid ""
 "include branch pattern contains a quote character:\n"
@@ -5241,7 +5372,7 @@ msgstr ""
 "grenmönstret givet med --include innehåller ett citattecken:\n"
 "%s"
 
-#: network/connection_info.cc:216
+#: network/connection_info.cc:245
 #, c-format
 msgid ""
 "exclude branch pattern contains a quote character:\n"
@@ -5250,18 +5381,19 @@ msgstr ""
 "grenmönstret givet med --exclude innehåller ett citattecken:\n"
 "%s"
 
-#: network/connection_info.cc:313
+#: network/connection_info.cc:342
 #, c-format
 msgid "connection host / path is empty and no default value could be loaded"
 msgstr ""
+"uppkopplingens värdmaskin / väg är tom och inget standardvärde kunde laddas"
 
-#: network/connection_info.cc:316
-#, fuzzy, c-format
+#: network/connection_info.cc:345
+#, c-format
 msgid "branch pattern is empty and no default value could be loaded"
-msgstr "inget grenmönster angivet och inget standardmönster satt"
+msgstr "grenmönstret är tomt och inget standardmönster satt"
 
-#: network/connection_info.cc:388
-#, fuzzy, c-format
+#: network/connection_info.cc:422
+#, c-format
 msgid ""
 "include / exclude pattern was given both as part of the URL and as a "
 "separate argument."
@@ -5269,28 +5401,34 @@ msgstr ""
 "mönster för inkludering eller exkludering gavs både som del av URLen och som "
 "separata argument."
 
-#: network/connection_info.cc:436
+#: network/connection_info.cc:470
 #, c-format
 msgid ""
 "no branch pattern found in URI, will try to use suitable database defaults "
 "if available"
 msgstr ""
+"inget grenmönster funnet i URI, provar med passande standarder för databasen "
+"om sådan finns tillgänglig"
 
-#: network/connection_info.cc:458
+#: network/connection_info.cc:492
 #, c-format
 msgid ""
 "separate server and pattern arguments are deprecated, please consider using "
 "the URI calling syntax instead"
 msgstr ""
+"separata argument för server och grenmönster är föråldrat, var god överväg "
+"att använda en URI istället"
 
-#: network/connection_info.cc:466
+#: network/connection_info.cc:500
 #, c-format
 msgid ""
 "you can specify either a query string or separate include/exclude "
 "parameters, but not both"
 msgstr ""
+"man kan antingen ange en söksträng i URIn eller flaggorna --include och --"
+"exclude, men inte båda samtidigt"
 
-#: network/connection_info.cc:486
+#: network/connection_info.cc:520
 #, c-format
 msgid ""
 "need permission to store persistent passphrase (see hook persist_phrase_ok())"
@@ -5298,7 +5436,7 @@ msgstr ""
 "behöver tillstånd att använda ett permanent lösenord (se lua-"
 "rutinenpersist_phrase_ok())"
 
-#: network/connection_info.cc:500
+#: network/connection_info.cc:534
 #, c-format
 msgid ""
 "The --no-transport-auth option is usually only used in combination with --"
@@ -5331,77 +5469,79 @@ msgstr "<alla gränssnitt>"
 msgid "check of '%s' failed"
 msgstr "kontroll av '%s' misslyckades"
 
-#: network/netsync_session.cc:362
+#: network/netsync_session.cc:347
 msgid "bytes in"
 msgstr "byte in"
 
-#: network/netsync_session.cc:364
+#: network/netsync_session.cc:349
 msgid "bytes out"
 msgstr "byte ut"
 
-#: network/netsync_session.cc:368 network/netsync_session.cc:389
+#: network/netsync_session.cc:357 network/netsync_session.cc:378
 msgid "certs in"
 msgstr "cert in"
 
-#: network/netsync_session.cc:370 network/netsync_session.cc:383
+#: network/netsync_session.cc:359 network/netsync_session.cc:372
 msgid "revs in"
 msgstr "rev in"
 
-#: network/netsync_session.cc:375 network/netsync_session.cc:391
+#: network/netsync_session.cc:364 network/netsync_session.cc:380
 msgid "certs out"
 msgstr "cert ut"
 
-#: network/netsync_session.cc:377 network/netsync_session.cc:385
+#: network/netsync_session.cc:366 network/netsync_session.cc:374
 msgid "revs out"
 msgstr "rev ut"
 
-#: network/netsync_session.cc:499
+#: network/netsync_session.cc:513
 #, c-format
 msgid "underflow on count of %s items to receive"
 msgstr "underflöde vid räkning av %s enheter att ta emot"
 
-#: network/netsync_session.cc:737
+#: network/netsync_session.cc:756
 #, c-format
 msgid "Unexpected 'refine' command on non-refined item type"
 msgstr "Oväntat kommando \"refine\" på icke-raffinerad typ"
 
-#: network/netsync_session.cc:769
+#: network/netsync_session.cc:788
 #, c-format
 msgid "Unexpected 'done' command on non-refined item type"
 msgstr "Oväntat kommando \"done\" på icke-raffinerad typ"
 
-#: network/netsync_session.cc:837
+#: network/netsync_session.cc:856
 #, c-format
 msgid "%s with hash '%s' does not exist in our database"
 msgstr "%s med kontrollsumman '%s' finns inte i databasen"
 
-#: network/netsync_session.cc:959
+#: network/netsync_session.cc:978
 #, c-format
 msgid "Mismatched epoch on branch %s. Server has '%s', client has '%s'."
 msgstr ""
 "I grenen %s har servern epok '%s' medan klienten har '%s'; dessa stämmer "
 "inte överens."
 
-#: network/netsync_session.cc:978
+#: network/netsync_session.cc:997
 #, c-format
 msgid "hash check failed for public key '%s' (%s); wanted '%s' got '%s'"
 msgstr ""
 "kontrollsummering misslyckades för den publika nyckeln '%s' (%s); ville ha "
 "'%s' men fick '%s'"
 
-#: network/netsync_session.cc:987
+#: network/netsync_session.cc:1006
 #, c-format
 msgid "Received duplicate key %s"
 msgstr "Fick en till nyckel med identiteten %s"
 
-#: network/netsync_session.cc:1001
+#: network/netsync_session.cc:1020
 #, c-format
 msgid ""
 "Dropping incoming cert which claims to be signed by key\n"
 "'%s' (name '%s'), but has a bad signature"
 msgstr ""
+"Kastar inkommande certifikat som anges vara signerade med nyckeln '%s' (namn "
+"'%s'), men som har en ogiltig signatur"
 
-#: network/netsync_session.cc:1011
+#: network/netsync_session.cc:1030
 #, c-format
 msgid ""
 "dropping incoming cert which was signed by a key we don't have\n"
@@ -5409,33 +5549,38 @@ msgid ""
 "the name of the key involved is '%s', but note that there are multiple\n"
 "keys with this name and we don't know which one it is"
 msgstr ""
+"Kastar inkommande certifikat som är signerade med en nyckel vi inte har.\n"
+"Ni vill antagligen erhålla denna nycket from en bättre uppdaterad netsync-"
+"server.\n"
+"Namnet på nyckeln ifråga är '%s', men vad god notera att det finns flera\n"
+"nycklar med det namnet och vi vet inte vilket det är"
 
-#: network/netsync_session.cc:1026
+#: network/netsync_session.cc:1045
 #, c-format
 msgid "hash check failed for revision cert '%s'"
 msgstr "kontrollsummering misslyckades för revisionscertet '%s'"
 
-#: network/netsync_session.cc:1040
+#: network/netsync_session.cc:1059
 #, c-format
 msgid "hash check failed for revision %s"
 msgstr "kontrollsummering misslyckades för revisionen '%s'"
 
-#: network/netsync_session.cc:1055
+#: network/netsync_session.cc:1074
 #, c-format
 msgid "hash check failed for file %s"
 msgstr "kontrollsummering misslyckades för filen '%s'"
 
-#: network/netsync_session.cc:1208
+#: network/netsync_session.cc:1227
 #, c-format
 msgid "rejected attempt at anonymous connection for write"
 msgstr "nekade försök att ansluta anonymt för skrivning"
 
-#: network/netsync_session.cc:1227
+#: network/netsync_session.cc:1246
 #, c-format
 msgid "anonymous access to branch '%s' denied by server"
 msgstr "anonym åtkomst av grenen '%s' nekades av servern"
 
-#: network/netsync_session.cc:1234
+#: network/netsync_session.cc:1253
 #, c-format
 msgid ""
 "denied '%s' read permission for '%s' excluding '%s' because of branch '%s'"
@@ -5443,58 +5588,58 @@ msgstr ""
 "nekade läsning för '%s' av alla grenar som matchar '%s' och inte '%s' på "
 "grund av grenen '%s'"
 
-#: network/netsync_session.cc:1245
+#: network/netsync_session.cc:1264
 #, c-format
 msgid "allowed '%s' read permission for '%s' excluding '%s'"
 msgstr "tillät läsning för '%s' av alla grenar som matchar '%s' och inte '%s'"
 
-#: network/netsync_session.cc:1250
+#: network/netsync_session.cc:1269
 #, c-format
 msgid "allowed anonymous read permission for '%s' excluding '%s'"
 msgstr "tillät anonym läsning av alla grenar som matchar '%s' och inte '%s'"
 
-#: network/netsync_session.cc:1255
+#: network/netsync_session.cc:1274
 #, c-format
 msgid "allowed anonymous read/write permission for '%s' excluding '%s'"
 msgstr ""
 "tillät anonym läsning/skrivning av alla grenar som matchar '%s' och inte '%s'"
 
-#: network/netsync_session.cc:1264
+#: network/netsync_session.cc:1283
 #, c-format
 msgid "denied '%s' write permission for '%s' excluding '%s'"
 msgstr ""
 "nekade skrivning för '%s' av alla grenar som matchar '%s' och inte '%s'"
 
-#: network/netsync_session.cc:1269
+#: network/netsync_session.cc:1288
 #, c-format
 msgid "allowed '%s' write permission for '%s' excluding '%s'"
 msgstr ""
 "tillät skrivning för '%s' av alla grenar som matchar '%s' och inte '%s'"
 
-#: network/netsync_session.cc:1293 network/reactor.cc:53
+#: network/netsync_session.cc:1312 network/reactor.cc:53
 #, c-format
 msgid "protocol error while processing peer %s: '%s'"
 msgstr "protokollfel vid behandling av %s: '%s'"
 
-#: network/netsync_session.cc:1299 network/reactor.cc:59
+#: network/netsync_session.cc:1318 network/reactor.cc:59
 #, c-format
 msgid "recoverable '%s' error while processing peer %s: '%s'"
 msgstr "mindre protokollfel '%s' vid behandling av %s: '%s'"
 
-#: network/netsync_session.cc:1339
+#: network/netsync_session.cc:1358
 #, c-format
 msgid "finding items to synchronize:"
 msgstr "letar efter saker att synkronisera:"
 
-#: network/netsync_session.cc:1347
+#: network/netsync_session.cc:1366
 msgid "certificates"
 msgstr "certifikat"
 
-#: network/netsync_session.cc:1349 database_check.cc:469
+#: network/netsync_session.cc:1368 database_check.cc:469
 msgid "keys"
 msgstr "nycklar"
 
-#: network/netsync_session.cc:1448
+#: network/netsync_session.cc:1467
 #, c-format
 msgid "Cannot find key '%s'"
 msgstr "Kan inte hitta nyckeln '%s'"
@@ -5630,7 +5775,7 @@ msgstr ""
 msgid "Network error on peer %s, disconnecting"
 msgstr "Nätverksfel för %s, kopplar ifrån"
 
-#: netxx_pipe.cc:50 netxx_pipe.cc:182
+#: netxx_pipe.cc:50 netxx_pipe.cc:189
 #, c-format
 msgid "this transport not supported on native Win32; use Cygwin"
 msgstr "denna transport stöds för närvarande inte i Win32; använd Cygwin"
@@ -5640,47 +5785,47 @@ msgstr "denna transport stöds för närvarande inte i Win32; använd Cygwin"
 msgid "pipe handle is invalid"
 msgstr "programkopplingshandtaget är ogiltigt"
 
-#: netxx_pipe.cc:206
+#: netxx_pipe.cc:213
 #, c-format
 msgid "CreateNamedPipe(%s,...) call failed: %s"
 msgstr "Anrop till CreateNamedPipe(%s,...) misslyckades: %s"
 
-#: netxx_pipe.cc:223
+#: netxx_pipe.cc:230
 #, c-format
 msgid "CreateFile(%s,...) call failed: %s"
 msgstr "Anrop till CreateFile(%s,...) misslyckades: %s"
 
-#: netxx_pipe.cc:254
+#: netxx_pipe.cc:261
 #, c-format
 msgid "CreateProcess(%s,...) call failed: %s"
 msgstr "Anrop till CreateProcess(%s,...) misslyckades: %s"
 
-#: netxx_pipe.cc:270
+#: netxx_pipe.cc:277
 #, c-format
 msgid "pipe/fork failed: %s"
 msgstr "Programkopplingen misslyckades: %s"
 
-#: netxx_pipe.cc:316
+#: netxx_pipe.cc:323
 #, c-format
 msgid "WriteFile call failed: %s"
 msgstr "anrop till WriteFile misslyckades: %s"
 
-#: netxx_pipe.cc:408
+#: netxx_pipe.cc:415
 #, c-format
 msgid "ReadFile call failed: %s"
 msgstr "anrop till ReadFile misslyckades: %s"
 
-#: netxx_pipe.cc:443
+#: netxx_pipe.cc:450
 #, c-format
 msgid "WaitForMultipleObjects call failed: %s"
 msgstr "Anrop till WaitForMultipleObjects misslyckades: %s"
 
-#: netxx_pipe.cc:453
+#: netxx_pipe.cc:460
 #, c-format
 msgid "WaitForSingleObject call failed: %s"
 msgstr "Anrop till WaitForSingleObject misslyckades: %s"
 
-#: netxx_pipe.cc:473
+#: netxx_pipe.cc:480
 #, c-format
 msgid "GetOverlappedResult call failed: %s"
 msgstr "Anrop till GetOverlappedResult misslyckades: %s"
@@ -5781,7 +5926,7 @@ msgstr "ignorerar ogiltig mappning '%s'"
 #: git_export.cc:92
 #, c-format
 msgid "invalid git author '%s' mapped from monotone author '%s'"
-msgstr ""
+msgstr "ogiltig git-författare '%s' översatt från monotone-författare '%s'"
 
 #: git_export.cc:114
 #, c-format
@@ -5815,11 +5960,12 @@ msgstr "exporterar"
 #, c-format
 msgid "invalid git author '%s' from monotone author key '%s'"
 msgstr ""
+"ogiltig git-författare '%s' översatt från monotone-författare '%s':s nyckel"
 
 #: git_export.cc:329
 #, c-format
 msgid "invalid git author '%s' from monotone author value '%s'"
-msgstr ""
+msgstr "ogiltig git-författare '%s' översatt från monotone-författare '%s'"
 
 #: revision.cc:28
 #, c-format
@@ -6032,9 +6178,8 @@ msgid "Shows the manifest associated with a revision"
 msgstr "Visar manifestet kopplad till en revision"
 
 #: automate.cc:1551
-#, fuzzy
 msgid "Prints the extended manifest for the given identifier"
-msgstr "Skriver ut den givna revisionens anfäder"
+msgstr "Skriver ut den utökade manifestet för given identitet"
 
 #: automate.cc:1587
 msgid "Prints the revision data in packet format"
@@ -6247,7 +6392,7 @@ msgstr "det finns inga referenser till filen %s"
 #: database_check.cc:718
 #, c-format
 msgid "file %s has a missing or invalid file size"
-msgstr ""
+msgstr "filen %s saknar eller har ogiltig storlek"
 
 #: database_check.cc:736
 #, c-format
@@ -6397,9 +6542,9 @@ msgid "%d unreferenced files"
 msgstr "%d filer utan referenser"
 
 #: database_check.cc:1116
-#, fuzzy, c-format
+#, c-format
 msgid "%d missing or invalid file sizes"
-msgstr "%d filer saknas"
+msgstr "%d filestorlekar ogiltiga saknas"
 
 #: database_check.cc:1119
 #, c-format
@@ -6494,17 +6639,17 @@ msgstr "%d inkorrekta höjder"
 #: database_check.cc:1164
 #, c-format
 msgid "%d branches cached but not used"
-msgstr ""
+msgstr "%d grenar är cachade men används inte"
 
 #: database_check.cc:1166
 #, c-format
 msgid "%d branches with incorrect head count"
-msgstr ""
+msgstr "%d grenar är felaktig räkning av huvuden"
 
 #: database_check.cc:1168
 #, c-format
 msgid "%d branches missing from branch cache"
-msgstr ""
+msgstr "%d grenar saknas i gren-cachen"
 
 #: database_check.cc:1198
 #, c-format
@@ -6541,9 +6686,9 @@ msgid "selection '%s' has multiple ambiguous expansions:"
 msgstr "valet '%s' har mer än en möjlig betydelse:"
 
 #: selectors.cc:94
-#, fuzzy, c-format
+#, c-format
 msgid "the key selector k: must not be empty"
-msgstr "certifikat-väljaren c: får inte vara tom"
+msgstr "nyckel-väljaren k: får inte vara tom"
 
 #: selectors.cc:115
 #, c-format
@@ -6607,16 +6752,16 @@ msgid "the selector w: returns the base revision(s) of the workspace"
 msgstr "selektorn w: ger arbetskopians basrevision(er)"
 
 #: selectors.cc:496
-#, fuzzy, c-format
+#, c-format
 msgid "the '%s' function takes %d argument, not %d"
 msgid_plural "the '%s' function takes %d arguments, not %d"
-msgstr[0] "flaggam '%s' tar inga argument"
-msgstr[1] "flaggam '%s' tar inga argument"
+msgstr[0] "funktionen '%s' tar %d argument, inte %d"
+msgstr[1] "funktionen '%s' tar %d argument, inte %d"
 
 #: selectors.cc:619
-#, fuzzy, c-format
+#, c-format
 msgid "unknown selection function '%s'"
-msgstr "okänd flagga '%s'"
+msgstr "okänd väljarfunktion '%s'"
 
 #: selectors.cc:652
 #, c-format
@@ -6631,23 +6776,25 @@ msgstr "okänd väljartyp: %c"
 #: selectors.cc:726
 #, c-format
 msgid "selector '%s' is invalid, it ends with the escape character '\\'"
-msgstr ""
+msgstr "väljaren '%s' är ogiltig, den slutar med '\\'"
 
 #: selectors.cc:731
 #, c-format
 msgid "selector '%s' is invalid, it contains an unknown escape sequence '%s%s'"
-msgstr ""
+msgstr "väljaren '%s' är ogiltig, den innehåller en okänd escapesekvens '%s%s'"
 
 #: selectors.cc:770
-#, fuzzy, c-format
+#, c-format
 msgid "selector '%s' is invalid, unmatched ')'"
-msgstr "väljaren '%s' är inte en korrekt datumangivelse (%s)"
+msgstr "väljaren '%s' är ogiltig, ')' utan tillhörande '('"
 
 #: selectors.cc:787
 #, c-format
 msgid ""
 "selector '%s' is invalid, function argument doesn't look like an arg-list"
 msgstr ""
+"väljaren '%s' är ogiltig, funktionsargumentet ser inte ut som en "
+"argumentlista"
 
 #: selectors.cc:798
 #, c-format
@@ -6655,33 +6802,38 @@ msgid ""
 "selector '%s' is invalid, grouping parentheses contain something that "
 "doesn't look like an expr"
 msgstr ""
+"väljaren '%s' är ogiltig, parentesen innehåller något som inte liknar ett "
+"giltigt uttryck"
 
 #: selectors.cc:809
-#, fuzzy, c-format
+#, c-format
 msgid "selector '%s' is invalid, because it starts with a '/'"
-msgstr "väljaren '%s' är inte en korrekt datumangivelse (%s)"
+msgstr "väljaren '%s' är ogiltig då den börjar med '/'"
 
 #: selectors.cc:813
-#, fuzzy, c-format
+#, c-format
 msgid "selector '%s' is invalid, because it starts with a '|'"
-msgstr "väljaren '%s' är inte en korrekt datumangivelse (%s)"
+msgstr "väljaren '%s' är ogiltig då den börjar med '|'"
 
 #: selectors.cc:838
 #, c-format
 msgid ""
 "selector '%s is invalid, because there is a '%s' someplace it shouldn't be"
 msgstr ""
+"väljaren '%s' är ogiltig för det finns en '%s' någonstans där den inte borde "
+"vara"
 
 #: selectors.cc:843 selectors.cc:846
 #, c-format
 msgid ""
 "selector '%s' is invalid, don't mix '/' and '|' operators without parentheses"
 msgstr ""
+"väljaren '%s' är ogiltig, blanda in operatorerna '/' och '|' utan parenteser"
 
 #: selectors.cc:885
-#, fuzzy, c-format
+#, c-format
 msgid "selector '%s' is invalid, it doesn't look like an expr"
-msgstr "väljaren '%s' är inte en korrekt datumangivelse\n"
+msgstr "väljaren '%s' är ogiltig då den inte ser ut som ett uttryck"
 
 #: selectors.cc:908
 #, c-format
@@ -6701,22 +6853,22 @@ msgstr "expanderar till '%s'"
 #: annotate.cc:429
 #, c-format
 msgid "%s.. by %s %s: "
-msgstr ""
+msgstr "%s.. genom %s %s: "
 
 #: annotate.cc:431
 #, c-format
 msgid "%s.. by %s: "
-msgstr ""
+msgstr "%s.. genom %s: "
 
 #: annotate.cc:433
 #, c-format
 msgid "%s.. %s: "
-msgstr ""
+msgstr "%s.. %s: "
 
 #: annotate.cc:435
 #, c-format
 msgid "%s..: "
-msgstr ""
+msgstr "%s..: "
 
 #: restrictions.cc:79 restrictions.cc:159
 #, c-format
@@ -7094,7 +7246,7 @@ msgstr "extra tecken på slutet av konfliktdata"
 #: merge_conflict.cc:1701
 #, c-format
 msgid "expected orphaned_directory or orphaned_file, found %s"
-msgstr ""
+msgstr "väntade mig orphaned_directory eller orphaned_file, fann %s"
 
 #: merge_conflict.cc:2131
 #, c-format
@@ -7222,28 +7374,24 @@ msgstr[1] "%d innehållskonflikter, din hjälp behövs"
 #, c-format
 msgid "can't spawn external merger when non-interactive"
 msgstr ""
+"kan inte anropa extern ihopslagningsmekanism när jag inte är interaktiv"
 
 #: merge_content.cc:726
 #, c-format
 msgid "merge failed due to unresolved conflicts"
 msgstr "ihopslagningen misslyckades på grund av olösta konflikter."
 
-#: uri.cc:44
-#, c-format
-msgid "IPv6 address in URI has no closing ']'"
-msgstr "IPv6-adressen i URIn har ingen ']'"
+#: uri.cc:40
+#, fuzzy, c-format
+msgid "unable to parse URI '%s'"
+msgstr "kunde inte tyda datumangivelsen '%s' med formatet '%s'"
 
-#: uri.cc:64
-#, c-format
-msgid "explicit port-number specification in URI has no digits"
-msgstr "explicit portnummer utan siffror i URIn"
+#: uri.cc:68
+#, fuzzy, c-format
+msgid "unable to parse host of URI '%s'"
+msgstr "kunde inte tyda datumangivelsen '%s' med formatet '%s'"
 
-#: uri.cc:67
-#, c-format
-msgid "explicit port-number specification in URI contains nondigits"
-msgstr "explcit portnummer i URIn har andra tecken än siffror"
-
-#: uri.cc:186 uri.cc:189 uri.cc:211 uri.cc:232
+#: uri.cc:150 uri.cc:153 uri.cc:175 uri.cc:196
 #, c-format
 msgid "Bad URLencoded string '%s'"
 msgstr "Strängen '%s' är inte korrekt URL-kodad"
@@ -7260,52 +7408,52 @@ msgstr "Hastigetstestar Botans SHA-1"
 #: sha1.cc:61
 #, c-format
 msgid "SHA-1 provider '%s': %s MiB/s"
-msgstr ""
+msgstr "SHA-1-leverantör '%s': %s MiB/s"
 
 #: sha1.cc:73
 #, c-format
 msgid "%s MiB/s"
 msgstr "%s MiB/s"
 
-#: pcrewrap.cc:163
+#: pcrewrap.cc:210
 #, c-format
 msgid "while compiling regex \"%s\": %s"
 msgstr "medans regexen \"%s\" kompilerades: %s"
 
-#: pcrewrap.cc:172
+#: pcrewrap.cc:219
 #, c-format
 msgid "error in regex \"%s\": %s"
 msgstr "fel i regexen \"%s\": %s"
 
-#: pcrewrap.cc:174
+#: pcrewrap.cc:221
 #, c-format
 msgid "error near char %d of regex \"%s\": %s"
 msgstr "fel nära tecken nummer %d i regexen \"%s\": %s"
 
-#: pcrewrap.cc:189
+#: pcrewrap.cc:236
 #, c-format
 msgid "while studying regex \"%s\": %s"
 msgstr "medans regexen \"%s\" studerades: %s"
 
-#: pcrewrap.cc:207
+#: pcrewrap.cc:254
 #, c-format
 msgid "backtrack limit exceeded in regular expression matching"
 msgstr "bakåtspårningsnivån har nått sin gräns under jämförelse av regex"
 
-#: pcrewrap.cc:211
+#: pcrewrap.cc:258
 #, c-format
 msgid "recursion limit exceeded in regular expression matching"
 msgstr "rekursionen har nått sin gräns under jämförelse av regex"
 
-#: pcrewrap.cc:216
+#: pcrewrap.cc:263
 #, c-format
 msgid "invalid UTF-8 sequence found during regular expression matching"
 msgstr "ogiltig UTF8-sekvens funnen under jämförelsen av regex"
 
-#: pcrewrap.cc:219
-#, c-format
-msgid "pcre_match returned %d"
-msgstr "pcre_match gav tillbaka %d"
+#: pcrewrap.cc:266
+#, fuzzy, c-format
+msgid "pcre_exec returned %d"
+msgstr "pcre_exec gav tillbaka %d"
 
 #: rev_output.cc:61
 msgid "Revision: "
@@ -7313,7 +7461,7 @@ msgstr "Revision: "
 
 #: rev_output.cc:67
 msgid "Parent:   "
-msgstr ""
+msgstr "Förälder: "
 
 #: rev_output.cc:99
 msgid "Tag:      "
@@ -7395,7 +7543,7 @@ msgstr ""
 #: dates.cc:385 dates.cc:389
 #, c-format
 msgid "date '%s' is out of range and cannot be formatted"
-msgstr ""
+msgstr "datumet '%s' utanför det möjliga området, kan inte formateras korrekt"
 
 #: dates.cc:427
 #, c-format
@@ -7414,7 +7562,7 @@ msgstr ""
 #: dates.cc:494
 #, c-format
 msgid "date '%s' is out of range and cannot be parsed"
-msgstr ""
+msgstr "datumet '%s' utanför det möjliga området, kan inte läsas korrekt"
 
 #: dates.cc:535 dates.cc:549 dates.cc:564 dates.cc:572 dates.cc:579
 #: dates.cc:591 dates.cc:603 dates.cc:612 dates.cc:646
@@ -7510,7 +7658,7 @@ msgstr "saknar argument till flaggan '%s'"
 #: option.cc:36
 #, c-format
 msgid "option '%s' does not take an argument"
-msgstr "flaggam '%s' tar inga argument"
+msgstr "flaggan '%s' tar inga argument"
 
 #: option.cc:40
 #, c-format
@@ -7527,35 +7675,35 @@ msgstr "ogiltigt argument '%s' till flaggan '%s': %s"
 msgid "Invalid escape in --xargs file"
 msgstr "Otillåten \\ i filen given med --xargs"
 
-#: option.cc:331
-#, fuzzy, c-format
+#: option.cc:332
+#, c-format
 msgid "option '%s' has multiple ambiguous expansions:"
 msgstr "valet '%s' har mer än en möjlig betydelse:"
 
-#: option.cc:346
+#: option.cc:347
 #, c-format
 msgid "negation of --%s"
-msgstr ""
+msgstr "negation av --%s"
 
-#: option.cc:507 option.cc:551
+#: option.cc:508 option.cc:552
 #, c-format
 msgid "deprecated option '%s' used: %s"
-msgstr ""
+msgstr "föråldrad flagga '%s' använd: %s"
 
 #: options.hh:46
 #, c-format
 msgid "must not be less than %d"
-msgstr ""
+msgstr "får inte vara mindre än %d"
 
 #: options.hh:75
 #, c-format
 msgid "must be one of the following: %s"
-msgstr ""
+msgstr "måste vara en av följande: %s"
 
 #: options_list.hh:132
 #, c-format
 msgid "must be between 0 and 255"
-msgstr ""
+msgstr "måste vara mellan 0 och 255"
 
 #: options_list.hh:206
 msgid "insert command line arguments taken from the given file"
@@ -7574,6 +7722,8 @@ msgid ""
 "automatically update the workspace, if it is clean and the base revision is "
 "a head of an affected branch"
 msgstr ""
+"uppdaterar automatiskt arbetskopian om den är ren från ändringar och "
+"basrevisionen är ett huvud i den påverkade grenen"
 
 #: options_list.hh:225
 msgid "address:port to listen on (default :4691)"
@@ -7592,6 +7742,8 @@ msgid ""
 "cause monotone to lie about the maximum netsync protocol version that it "
 "supports, mostly for debugging"
 msgstr ""
+"får monotone att ljuga om den högsta versionen av netsync-protokollet den "
+"stöder, mest för felsökning"
 
 #: options_list.hh:239
 msgid ""
@@ -7599,10 +7751,15 @@ msgid ""
 "supports, useful for debugging or if you want to prevent use of older "
 "protocol versions"
 msgstr ""
+"får monotone att ljuga om den minsta versionen av netsync-protokollet den "
+"stöder, användbart för felsökning eller om du vill omöjliggöra användningen "
+"av äldre protokollversioner"
 
 #: options_list.hh:244
 msgid "sets the host (and optionally the port) for a remote netsync action"
 msgstr ""
+"ange värddatorn (och eventuellt porten) för att utföra en fjärran netsync-"
+"operation"
 
 #: options_list.hh:248
 msgid "select branch cert for operation"
@@ -7642,7 +7799,7 @@ msgstr "ange databasens filnamn"
 
 #: options_list.hh:315
 msgid "log roster cache statistic to the given file"
-msgstr ""
+msgstr "logga statistik för list-cachen till angiven fil"
 
 #: options_list.hh:318
 msgid "limit the number of levels of directories to descend"
@@ -7690,7 +7847,7 @@ msgstr "utför inte operationen, visa bara vad som skulle ha hänt"
 
 #: options_list.hh:368
 msgid "drop certs signed by keys we don't know about"
-msgstr ""
+msgstr "kasta certifikat signera med okända nycklar"
 
 #: options_list.hh:371
 msgid "file to dump debugging log to, on failure"
@@ -7738,9 +7895,8 @@ msgid "display help message"
 msgstr "skriv ut extra hjälptext"
 
 #: options_list.hh:403
-#, fuzzy
 msgid "show hidden commands and options"
-msgstr "visa gömda kommandon"
+msgstr "visa gömda kommandon och flaggor"
 
 #: options_list.hh:406
 msgid "do not ignore revisions marked as suspended"
@@ -7748,7 +7904,7 @@ msgstr "ignorera inte avstängda revisioner"
 
 #: options_list.hh:409
 msgid "do not prompt the user for input"
-msgstr ""
+msgstr "låt bli att be användaren om indata"
 
 #: options_list.hh:412
 msgid "sets the key for signatures, using either the key name or the key hash"
@@ -7810,10 +7966,11 @@ msgid "exclude merges when printing logs"
 msgstr "ta ej med ihopslagningar i loggen"
 
 #: options_list.hh:457
-#, fuzzy
 msgid ""
 "do not load %APPDATA%\\monotone\\monotonerc or _MTN\\monotonerc lua files"
-msgstr "använd inte ~/.monotone/monotonerc eller _MTN/monotonerc"
+msgstr ""
+"använd inte lua-filerna %APPDATA%\\monotone\\monotonerc eller _MTN"
+"\\monotonerc"
 
 #: options_list.hh:460
 msgid "do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"
@@ -7821,28 +7978,27 @@ msgstr "använd inte ~/.monotone/monotonerc eller _MTN/monotonerc"
 
 #: options_list.hh:467
 msgid "do not load the built-in lua file with the default hooks"
-msgstr ""
+msgstr "ladda inte in den inbyggda lua-filen med standard-hooks"
 
 #: options_list.hh:469
 msgid "please use --no-standard-rcfiles instead"
-msgstr ""
+msgstr "var god använd --no-standard-rcfiles istället"
 
 #: options_list.hh:471
 msgid "old version of --no-standard-rcfiles"
-msgstr ""
+msgstr "äldre version av --no-standard-rcfiles"
 
 #: options_list.hh:475
 msgid "please use --no-builtin-rcfile instead"
-msgstr ""
+msgstr "var god använd --no-builtin-rcfiles istället"
 
 #: options_list.hh:477
 msgid "old version of --no-builtin-rcfile"
-msgstr ""
+msgstr "äldre version av --no-builtin-rcfiles"
 
 #: options_list.hh:483
-#, fuzzy
 msgid "load extra lua file"
-msgstr "använd denna lua-fil"
+msgstr "använd extra lua-fil"
 
 #: options_list.hh:486
 msgid "record process id of server"
@@ -7853,14 +8009,19 @@ msgid ""
 "decrease verbosity (undo previous -v, then disable informational output, "
 "then disable warnings)"
 msgstr ""
+"minska detaljrikedomen (motsäger tidigare -v, eller slår av "
+"informationstexter, eller slår av varningstexter, vilket som applicerar "
+"först)"
 
 #: options_list.hh:502
 msgid "increase verbosity (undo previous -q, and then enable debug output)"
 msgstr ""
+"öka detaljrikedomen (motsäger tidigare -q, eller slår på felsökningstexter, "
+"vilket som applicerar först)"
 
 #: options_list.hh:512
 msgid "please us -v (or -v -v -v if there are previous -q options)"
-msgstr ""
+msgstr "var god använd -v (eller -v -v -v om där finns tidigare -q)"
 
 #: options_list.hh:515
 msgid "print debug log to stderr while running"
@@ -7868,7 +8029,7 @@ msgstr "skriv ut felsökningslogg till stderr under körning"
 
 #: options_list.hh:522
 msgid "please use -q -q"
-msgstr ""
+msgstr "var god använd -q -q"
 
 #: options_list.hh:524
 msgid "suppress warning, verbose, informational and progress messages"
@@ -7882,7 +8043,7 @@ msgstr "skriv ut detaljerad information"
 msgid ""
 "automatically run the output through nroff (default if the output is a "
 "terminal)"
-msgstr ""
+msgstr "kör utmatningen via nroff (standard om utmatningen går till terminal)"
 
 #: options_list.hh:539
 msgid "show timestamps in front of errors, warnings and progress messages"
@@ -7950,7 +8111,7 @@ msgstr "använd en fil för att lösa konflikter"
 
 #: options_list.hh:610
 msgid "specify conflict resolutions in a file, instead of interactively"
-msgstr ""
+msgstr "ange konfliktlösningar i en fil istället för interaktivt"
 
 #: options_list.hh:616
 msgid "file in which to store conflicts"
@@ -8129,47 +8290,48 @@ msgstr "okänd felkod %d"
 #: unix/ssh_agent_platform.cc:48
 #, c-format
 msgid "ssh_agent: failed to create a socket: %s"
-msgstr ""
+msgstr "ssh_agent: misslyckades med att skapa sockel: %s"
 
 #: unix/ssh_agent_platform.cc:55
 #, c-format
 msgid "ssh_agent: failed to set socket as close-on-exec: %s"
-msgstr ""
+msgstr "ssh_agent: misslyckades att ställa in sockeln med 'close-on-exec': %s"
 
 #: unix/ssh_agent_platform.cc:67
 #, c-format
 msgid "ssh_agent: failed to connect to agent: %s"
-msgstr ""
+msgstr "ssh_agent: misslyckades med att koppla in till agenten: %s"
 
 #: unix/ssh_agent_platform.cc:99
 #, c-format
 msgid "ssh_agent: error during send: %s"
-msgstr ""
+msgstr "ssh_agent: fel under sändning: %s"
 
 #: unix/ssh_agent_platform.cc:102
 #, c-format
 msgid "ssh_agent: giving up after %d ineffective sends to agent"
-msgstr ""
+msgstr "ssh_agent: ger upp efter %d sändningar till agenten som inte fungerade"
 
 #: unix/ssh_agent_platform.cc:109
 #, c-format
 msgid "ssh_agent: sent %u extra bytes to agent"
-msgstr ""
+msgstr "ssh_agent: sände %u extra bytes till agenten"
 
 #: unix/ssh_agent_platform.cc:129
 #, c-format
 msgid "ssh_agent: error during receive: %s"
-msgstr ""
+msgstr "ssh_agent: fel under mottagning: %s"
 
 #: unix/ssh_agent_platform.cc:132
 #, c-format
 msgid "ssh_agent: giving up after %d ineffective receives from agent"
 msgstr ""
+"ssh_agent: ger upp efter %d mottagningar från agenten som inte fungerade"
 
 #: unix/ssh_agent_platform.cc:138
 #, c-format
 msgid "ssh_agent: received %u extra bytes from agent"
-msgstr ""
+msgstr "ssh_agent: tog emot %u extra bytes från agenten"
 
 #: unix/parse_date.cc:21
 #, c-format
@@ -8209,12 +8371,13 @@ msgstr "fel när läste katalog: %s"
 #: win32/fs.cc:291
 #, c-format
 msgid "could not remove '%s' and contents: SHFileOperation error code 0x%x"
-msgstr ""
+msgstr "kunde inte ta bort '%s' och dess innehåll: SHFileOperation felkod 0x%x"
 
 #: win32/fs.cc:294
 #, c-format
 msgid "could not remove '%s' and contents: SHFileOperation partially aborted"
 msgstr ""
+"kunde inte ta bort '%s' och dess innehåll: SHFileOperation delvis avbrutet"
 
 #: win32/fs.cc:359
 #, c-format
@@ -8314,6 +8477,15 @@ msgstr "Tryck på Enter"
 #: std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Tryck [Retur] när underprocessen är klar"
+
+#~ msgid "IPv6 address in URI has no closing ']'"
+#~ msgstr "IPv6-adressen i URIn har ingen ']'"
+
+#~ msgid "explicit port-number specification in URI has no digits"
+#~ msgstr "explicit portnummer utan siffror i URIn"
+
+#~ msgid "explicit port-number specification in URI contains nondigits"
+#~ msgstr "explcit portnummer i URIn har andra tecken än siffror"
 
 #~ msgid "no server given and no default server set"
 #~ msgstr "ingen server angiven och ingen standardserver är satt"
@@ -8458,19 +8630,6 @@ msgstr "Tryck [Retur] när underprocessen är klar"
 
 #~ msgid "failed to remove magic line; commit cancelled"
 #~ msgstr "den magiska raden är inte borttagen; arkivering avbryts"
-
-#~ msgid "Exports a revision from the database into a directory"
-#~ msgstr "Exporterar en revision från databasen till en katalog"
-
-#~ msgid ""
-#~ "If a revision is given, that's the one that will be exported.  Otherwise, "
-#~ "it will be the head of the branch (given or implicit)."
-#~ msgstr ""
-#~ "Om en revision anges kommer den att exportera.  I annat fall kommer lövet "
-#~ "i grenen (implicit eller angiven) att exporteras."
-
-#~ msgid "You can't export in the current directory"
-#~ msgstr "Du får inte exportera i nuvarande katalog"
 
 #~ msgid "skipping invalid path '%s'"
 #~ msgstr "hoppar över ogiltig sökväg '%s'"
