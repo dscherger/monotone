@@ -57,7 +57,9 @@ check(not exists("id_monotone3"))
 -- * (E) export to path that's not writable
 -- we don't know how to do this on windows
 
-skip_if(ostype == "Windows")
+-- Cygwin doesn't do write permissions properly
+skip_if(string.sub(ostype, 1, 6)=="CYGWIN")
+skip_if(ostype == "Windows") -- chmod doesn't work
 skip_if(not existsonpath("chmod"))
 
 mkdir("unwritable")
