@@ -63,7 +63,7 @@ if not MI_debug then MI_debug = MI_default_debug end
 -------------------------------------------------------------------------------
 -- Local hack of the note_netsync_* functions
 -------------------------------------------------------------------------------
-push_netsync_notifier(
+push_hook_functions(
    {
       ["end"] =
 	 function (nonce, status,
@@ -85,5 +85,6 @@ push_netsync_notifier(
 	       local handle = io.open(MI_flagfile, "w+")
 	       io.close(handle)
 	    end
+	    return "continue",nil
 	 end
    })
