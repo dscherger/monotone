@@ -34,6 +34,6 @@ NOTE:
 Publish the binary on the monotone website with proper permissions:
 
 chmod a+r monotone-<version>/win32/monotone-<version>-setup.exe
-scp -p monotone-<version>/win32/monotone-<version>-setup.exe mtn-uploads@monotone.ca:downloads/<version>
+scp -p monotone-<version>/win32/monotone-<version>-setup.exe mtn-uploads@monotone.ca:~/<version>
 
 Download from the web and test!
