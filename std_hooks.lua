@@ -1317,8 +1317,11 @@ do
    --   startup			Corresponds to note_mtn_startup()
    --   start			Corresponds to note_netsync_start()
    --   revision_received	Corresponds to note_netsync_revision_received()
+   --   revision_sent		Corresponds to note_netsync_revision_sent()
    --   cert_received		Corresponds to note_netsync_cert_received()
+   --   cert_sent		Corresponds to note_netsync_cert_sent()
    --   pubkey_received		Corresponds to note_netsync_pubkey_received()
+   --   pubkey_sent		Corresponds to note_netsync_pubkey_sent()
    --   end			Corresponds to note_netsync_end()
    --
    -- Those functions take exactly the same arguments as the corresponding
