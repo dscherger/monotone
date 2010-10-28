@@ -13,7 +13,7 @@ do
    -- Configure with the path to the corresponding python script
    local exe = "/PATH/TO/ciabot_monotone_hookversion.py"
 
-   push_netsync_notifier({
+   push_hook_functions({
 			    revision_received =
 			       function (rid, rdat, certs)
 				  local branch, author, changelog
