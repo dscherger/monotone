@@ -70,94 +70,89 @@ end
 
 _emails_to_send = {}
 
-function note_netsync_start (session_id, my_role, sync_type, remote_host, remote_keyname, includes, excludes)
-    _emails_to_send[session_id] = {}
-end
+push_hook_functions(
+   {
+      start =
+	 function (session_id, my_role, sync_type, remote_host, remote_keyname, includes, excludes)
+	    _emails_to_send[session_id] = {}
+	    return "continue",nil
+	 end,
 
-function note_netsync_revision_received (new_id, revision, certs, session_id)
-    if _emails_to_send[session_id] == nil then
-        -- no session present
-        return
-    end
+      revision_received =
+	 function (new_id, revision, certs, session_id)
+	    if _emails_to_send[session_id] == nil then
+	       -- no session present
+	       return "continue",nil
+	    end
 
-    local rev_data = {["certs"] = {}, ["revision"] = new_id, ["manifest"] = revision}
-    for _,cert in ipairs(certs) do
-        if cert["name"] == "branch" then
-           rev_data["recipients"] = get_notify_recipients(cert["value"])
-        end
-        if cert["name"] ~= nil then
-           if nil == rev_data["certs"][cert["name"]] then
-              rev_data["certs"][cert["name"]] = {}
-           end
-           table.insert(rev_data["certs"][cert["name"]], cert["value"])
-        end
-    end
-    _emails_to_send[session_id][new_id] = rev_data
-end
+	    local rev_data = {["certs"] = {}, ["revision"] = new_id, ["manifest"] = revision}
+	    for _,cert in ipairs(certs) do
+	       if cert["name"] == "branch" then
+		  rev_data["recipients"] = get_notify_recipients(cert["value"])
+	       end
+	       if cert["name"] ~= nil then
+		  if nil == rev_data["certs"][cert["name"]] then
+		     rev_data["certs"][cert["name"]] = {}
+		  end
+		  table.insert(rev_data["certs"][cert["name"]], cert["value"])
+	       end
+	    end
+	    _emails_to_send[session_id][new_id] = rev_data
+	    return "continue",nil
+	 end,
 
-do
-   local saved_note_netsync_end = note_netsync_end
+      ["end"] =
+	 function (session_id, status, bytes_in, bytes_out, certs_in, certs_out, revs_in, revs_out, keys_in, keys_out, ...)
+	    if _emails_to_send[session_id] == nil then
+	       -- no session present
+	       return "continue", nil
+	    end
 
-   function note_netsync_end (session_id, status, bytes_in, bytes_out, certs_in, certs_out, revs_in, revs_out, keys_in, keys_out, ...)
-      if saved_note_netsync_end then
-         saved_note_netsync_end(session_id, status,
-                                bytes_in, bytes_out,
-                                certs_in, certs_out,
-                                revs_in, revs_out,
-                                keys_in, keys_out,
-                                ...)
-      end
+	    if status ~= 200 then
+	       -- some error occured, no further processing takes place
+	       return "continue", nil
+	    end
 
+	    if _emails_to_send[session_id] == "" then
+	       -- we got no interesting revisions
+	       return "continue", nil
+	    end
 
-      if _emails_to_send[session_id] == nil then
-         -- no session present
-         return
-      end
+	    for rev_id,rev_data in pairs(_emails_to_send[session_id]) do
+	       if # (rev_data["recipients"]) > 0 then
+		  local subject = make_subject_line(rev_data)
+		  local reply_to = ""
+		  for j,auth in pairs(rev_data["certs"]["author"]) do
+		     reply_to = reply_to .. auth
+		     if j < # (rev_data["certs"]["author"]) then reply_to = reply_to .. ", " end
+		  end
 
-      if status ~= 200 then
-         -- some error occured, no further processing takes place
-         return
-      end
+		  local now = os.time()
 
-      if _emails_to_send[session_id] == "" then
-         -- we got no interesting revisions
-         return
-      end
+		  local outputFileRev = io.open(_base .. rev_data["revision"] .. now .. ".rev.txt", "w+")
+		  local outputFileHdr = io.open(_base .. rev_data["revision"] .. now .. ".hdr.txt", "w+")
 
-      for rev_id,rev_data in pairs(_emails_to_send[session_id]) do
-         if # (rev_data["recipients"]) > 0 then
-            local subject = make_subject_line(rev_data)
-            local reply_to = ""
-            for j,auth in pairs(rev_data["certs"]["author"]) do
-               reply_to = reply_to .. auth
-               if j < # (rev_data["certs"]["author"]) then reply_to = reply_to .. ", " end
-            end
+		  local to = ""
+		  for j,addr in pairs(rev_data["recipients"]) do
+		     to = to .. addr
+		     if j < # (rev_data["recipients"]) then to = to .. ", " end
+		  end
 
-            local now = os.time()
+		  outputFileHdr:write("BCC: " .. to .. "\n")
+		  outputFileHdr:write("From: " .. _from .. "\n")
+		  outputFileHdr:write("Subject: " .. subject .. "\n")
+		  outputFileHdr:write("Reply-To: " .. reply_to .. "\n")
+		  outputFileHdr:close()
 
-            local outputFileRev = io.open(_base .. rev_data["revision"] .. now .. ".rev.txt", "w+")
-            local outputFileHdr = io.open(_base .. rev_data["revision"] .. now .. ".hdr.txt", "w+")
+		  outputFileRev:write(summarize_certs(rev_data))
+		  outputFileRev:close()
+	       end
+	    end
 
-            local to = ""
-            for j,addr in pairs(rev_data["recipients"]) do
-               to = to .. addr
-               if j < # (rev_data["recipients"]) then to = to .. ", " end
-            end
-
-            outputFileHdr:write("BCC: " .. to .. "\n")
-            outputFileHdr:write("From: " .. _from .. "\n")
-            outputFileHdr:write("Subject: " .. subject .. "\n")
-            outputFileHdr:write("Reply-To: " .. reply_to .. "\n")
-            outputFileHdr:close()
-
-            outputFileRev:write(summarize_certs(rev_data))
-            outputFileRev:close()
-         end
-      end
-
-      _emails_to_send[session_id] = nil
-   end
-end
+	    _emails_to_send[session_id] = nil
+	    return "continue",nil
+	 end
+   })
 
 function summarize_certs(t)
    local str = "revision:            " .. t["revision"] .. "\n"

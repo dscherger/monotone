@@ -74,24 +74,19 @@ MM_mirror_errlog = MM_mirror_dir .. "/mirror.err"
 -- Local hack of the note_netsync_end function
 -------------------------------------------------------------------------------
 do
-   local saved_note_netsync_end = note_netsync_end
-   function note_netsync_end(session_id, status,
-			     bytes_in, bytes_out,
-			     certs_in, certs_out,
-			     revs_in, revs_out,
-			     keys_in, keys_out,
-			     ...)
-      if saved_note_netsync_end then
-	 saved_note_netsync_end(session_id, status,
-				bytes_in, bytes_out,
-				certs_in, certs_out,
-				revs_in, revs_out,
-				keys_in, keys_out,
-				...)
-      end
-      if certs_in > 0 or revs_in > 0 or keys_in > 0 then
-	 spawn_redirected("/dev/null", MM_mirror_log, MM_mirror_errlog,
-			  MM_mirror_script,MM_mirror_database,MM_mirror_rcfile)
-      end
-   end
+   local notifier = {
+      ["end"] =
+	 function (session_id, status,
+		   bytes_in, bytes_out,
+		   certs_in, certs_out,
+		   revs_in, revs_out,
+		   keys_in, keys_out,
+		   ...)
+	    if certs_in > 0 or revs_in > 0 or keys_in > 0 then
+	       spawn_redirected("/dev/null", MM_mirror_log, MM_mirror_errlog,
+				MM_mirror_script,MM_mirror_database,MM_mirror_rcfile)
+	    end
+	    return "continue",nil
+	 end }
+   push_hook_functions(notifier)
 end
