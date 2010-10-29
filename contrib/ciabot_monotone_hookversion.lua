@@ -11,7 +11,9 @@
 
 do
    -- Configure with the path to the corresponding python script
-   local exe = "/PATH/TO/ciabot_monotone_hookversion.py"
+   if not ciabot_python_script then
+      error "Please configure by defining 'ciabot_python_script' with the path to the python script ciabot_monotone_hookversion.py"
+   end
 
    push_hook_functions({
 			    revision_received =
@@ -29,8 +31,10 @@ do
 					changelog = cert.value
 				     end
 				  end
-				  wait(spawn(exe, rid,
-					     branch, author, changelog, rdat))
+				  wait(spawn(ciabot_python_script,
+					     get_confdir(), rid,
+					     branch, author, changelog,
+					     rdat))
 				  return "continue",nil
 			       end
 			 })
