@@ -249,8 +249,8 @@ push_hook_functions(
 	       end
 	    end
 
-	    print("monotone-mail-notify.lua: Running script ", shellscript)
 	    if shellscript and shellscript ~= "" then
+	       print("monotone-mail-notify.lua: Running script ", shellscript)
 	       spawn_redirected("/dev/null",
 				_shellscript_log,
 				_shellscript_errlog,
