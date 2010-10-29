@@ -47,7 +47,7 @@ function processFile() {
     . $dat
 
     if [ -n "$key" ]; then key="--key=$key"; fi
-    local mtn_cmd="$MTN --reallyquiet --no-workspace --no-standard-rcfiles --keydir=$keydir $key automate remote --remote-stdio-host=$server --"
+    local mtn_cmd="$MTN -q -q --no-workspace --no-standard-rcfiles --keydir=$keydir $key automate remote --remote-stdio-host=$server --"
 
     local revision=$(cat $rev | grep '^revision:' | sed -e 's/^revision:[ ][ ]*//')
 
