@@ -58,14 +58,16 @@
 -------------------------------------------------------------------------------
 -- Variables
 -------------------------------------------------------------------------------
-MM_default_mirror_dir = "/var/lib/monotone/mirror"
-MM_default_mirror_rcfile = "/etc/monotone/mirror.rc"
+MM_default_mirror_dir = get_confdir()
+MM_default_mirror_rcfile = MM_default_mirror_dir.."/mirror.rc"
+MM_default_mirror_script_dir = MM_default_mirror_dir
 
 -- These should normally not be touched.
 -- If you have to, make damn sure you know what you do.
 if not MM_mirror_dir then MM_mirror_dir = MM_default_mirror_dir end
+if not MM_mirror_script_dir then MM_mirror_dir = MM_default_mirror_script_dir end
 if not MM_mirror_rcfile then MM_mirror_rcfile = MM_default_mirror_rcfile end
-MM_mirror_script = MM_mirror_dir .. "/monotone-mirror.sh"
+MM_mirror_script = MM_mirror_script_dir .. "/monotone-mirror.sh"
 MM_mirror_database = MM_mirror_dir .. "/mirror.mtn"
 MM_mirror_log = MM_mirror_dir .. "/mirror.log"
 MM_mirror_errlog = MM_mirror_dir .. "/mirror.err"
