@@ -33,7 +33,7 @@
 
 _from = "monotone@my.domain.please.change.me"
 _server = "localhost"
-_base = "/tmp/monotone-notify/"
+_base = "/var/spool/monotone/"
 _keydir = get_confdir() .. "/keys"
 _key = ""
 _shellscript = ""
