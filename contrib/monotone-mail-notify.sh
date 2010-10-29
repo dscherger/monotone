@@ -15,7 +15,7 @@
 MTN="/usr/local/bin/mtn"
 HIGHLIGHT="/usr/local/bin/source-highlight"
 MIMECONSTRUCT="/usr/local/bin/mime-construct"
-BASE="/tmp/monotone-notify"
+BASE="/var/spool/monotone"
 
 function processFile() {
     local fileBase=$1
