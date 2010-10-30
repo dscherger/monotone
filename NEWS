@@ -1,4 +1,18 @@
-Xxx Xxx 99 99:99:99 UTC 2010
+??? ??? ?? ??:??:?? UTC 2010
+
+        0.99.1 release.
+
+        Bugs fixed
+
+        - monotone crashed on x86_64 when a netsync action required
+          the parsing of an URL. This has been fixed.
+          (closes monotone issue 100)
+
+        - monotone's automation interface version was reported wrongly
+          as 12.1, where it should have been 13.0 
+
+
+Thu Oct 28 21:07:18 UTC 2010
 
         0.99 release.
 
@@ -338,6 +352,7 @@ Xxx Xxx 99 99:99:99 UTC 2010
           which did not mark the start of the authority with a double slash.
           This has been fixed.
           (fixes monotone issue 94)
+
 
 Thu Oct 21 23:45:45 UTC 2010
 

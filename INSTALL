@@ -133,7 +133,7 @@ building and installation process for monotone
            'distcheck' target also builds the documentation in
            postscript format, which requires tools not (yet) available
            for MinGW.
-           
+
            1. MinGW - run installer, accept defaults but add g++ on the package selection page (installs to c:/MinGW)
            2. MSYS - run installer, accept defaults (installs to c:/Msys/1.0)
            3. msysDTK - run installer, accept defaults (installs to c:/Msys/1.0)
@@ -390,11 +390,10 @@ building and installation process for monotone
 
     You might also like to try fetching monotone's sources from our
     monotone server. this process will transfer the complete development
-    history (about 70 megabytes) to your database, and you will then
-    be free to share it with others or make changes and submit them to
-    us:
+    history to your database, and you will then be free to share it with
+    others or make changes and submit them to us:
 
-        mtn clone monotone.ca net.venge.monotone
+        mtn clone 'mtn://code.monotone.ca/monotone?net.venge.monotone'
 
 5. upgrading
 

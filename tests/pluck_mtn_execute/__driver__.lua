@@ -2,6 +2,7 @@
 -- test setting/clearing of the the execute file attribute works
 --
 skip_if(ostype=="Windows")
+skip_if(string.sub(ostype, 1, 6)=="CYGWIN") -- test -x broken
 
 mtn_setup()
 
