@@ -1,4 +1,4 @@
-??? ??? ?? ??:??:?? UTC 2010
+Sun Oct 31 21:51:16 UTC 2010
 
         0.99.1 release.
 
@@ -9,7 +9,7 @@
           (closes monotone issue 100)
 
         - monotone's automation interface version was reported wrongly
-          as 12.1, where it should have been 13.0 
+          as 12.1, where it should have been 13.0.
 
 
 Thu Oct 28 21:07:18 UTC 2010
