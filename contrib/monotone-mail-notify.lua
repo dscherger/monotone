@@ -302,7 +302,7 @@ do
 		     outputFileDat:write("key='" .. key .. "'\n")
 		     outputFileDat:close()
 
-		     outputFileHdr:write("BCC: " .. to .. "\n")
+		     outputFileHdr:write("To: " .. to .. "\n")
 		     outputFileHdr:write("From: " .. from .. "\n")
 		     outputFileHdr:write("Subject: " .. subject .. "\n")
 		     outputFileHdr:write("Reply-To: " .. reply_to .. "\n")
