@@ -497,7 +497,7 @@ ISCC=@ISCC@
 
 win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe
 
-monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
+monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html info $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
 	$(ISCC) monotone.iss
 
 mtn-stripped.exe: mtn.exe

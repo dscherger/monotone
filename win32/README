@@ -20,20 +20,21 @@ mtn -d /path/to/monotone.db checkout -r t:monotone-<version> monotone-<version>
 Build the release. In an MSYS shell:
 cd monotone-<version>
 autoreconf -i
-./configure
+./configure sqlite3_LIBS=-lsqlite3
 make win32-installer
 
 That builds "monotone-<version>-setup.exe" in current folder.
 
 NOTE:
-  If ISCC (Inno setup compiler) is not in PATH, what is very probable, then you
-  need instruct makefile about it's location:
+
+  If ISCC (Inno setup compiler) is not in PATH, then you must specify
+  its location:
   
     make win32-installer ISCC=/d/progs/InnoSetup5/ISCC.exe
 
 Publish the binary on the monotone website with proper permissions:
 
-chmod a+r monotone-<version>/win32/monotone-<version>-setup.exe
-scp -p monotone-<version>/win32/monotone-<version>-setup.exe mtn-uploads@monotone.ca:~/<version>
+chmod a+r monotone-<version>-setup.exe
+scp -p monotone-<version>-setup.exe mtn-uploads@monotone.ca:~/<version>
 
-Download from the web and test!
+Download from the web and test, both the installed mtn and the documentation.
