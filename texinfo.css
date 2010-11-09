@@ -46,9 +46,9 @@ div.node p {
     font-size: 0px;
     line-height: auto;
     background: white;
-    -moz-border-radius: 8px 0px 0px 8px;
-    -webkit-border-radius: 8px 0px 0px 8px;
-    border-radius: 8px 0px 0px 8px;
+    -moz-border-radius: 10px 0px 0px 10px;
+    -webkit-border-radius: 10px 0px 0px 10px;
+    border-radius: 10px 0px 0px 10px;
 }
 
 div.node p a {
