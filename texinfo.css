@@ -38,25 +38,30 @@ div.node hr {
 div.node p {
     float: right;
     margin: 0;
-    margin-right: 40px;
+    margin-right: 20px;
+    padding-right: 20px;
+    padding-top: 1px;
     font-weight: bold;
     color: transparent;
     font-size: 0px;
     line-height: auto;
+    background: white;
+    -moz-border-radius: 8px 0px 0px 8px;
+    -webkit-border-radius: 8px 0px 0px 8px;
+    border-radius: 8px 0px 0px 8px;
 }
 
 div.node p a {
-    color: white;
+    color: #474747;
     margin-left: 20px;
     font-weight: normal;
     text-decoration: none;
-    border-bottom: 1px white dotted;
     padding-left: 21px;
-    font-size: 19px;
-    line-height: 27px;
+    font-size: 15px;
+    line-height: 26px;
     background-repeat: no-repeat;
     background-position: left center;
-    vertical-align: top;
+    vertical-align: bottom;
 }
 
 div.node p a[name],
@@ -74,6 +79,10 @@ div.node p a[rel=previous] {
 
 div.node p a[rel=up] {
     background-image: url(images/go-up.png);
+}
+
+div.node p a:first-child {
+    margin-left: 10px;
 }
 
 div.node + *,
