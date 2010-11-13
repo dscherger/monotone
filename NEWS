@@ -11,6 +11,10 @@ XXX XXX XX XX:XX:XX UTC 2010
         - add compatibility with Botan 1.9.9 and newer
           (fixes monotone issue 104)
 
+        - 'automate remote' and 'automate remote_stdio' now use
+          a given database given by an alias to read, store and validate
+          a remote server's key fingerprint (fixes monotone issue 95) 
+
         Internal
 
 
