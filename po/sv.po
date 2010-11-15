@@ -154,8 +154,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-10-28 13:54+0200\n"
-"PO-Revision-Date: 2010-10-28 13:56+0200\n"
+"POT-Creation-Date: 2010-11-15 23:55+0100\n"
+"PO-Revision-Date: 2010-11-15 23:57+0100\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -986,8 +986,8 @@ msgstr "Kör KOMMANDO på servern i andra änden"
 #: cmd_packet.cc:257 cmd_key_cert.cc:81 cmd_key_cert.cc:186 cmd_merging.cc:384
 #: cmd_merging.cc:1131 cmd_merging.cc:1202 cmd_ws_commit.cc:1134
 #: cmd_ws_commit.cc:1342 cmd_ws_commit.cc:1456 cmd_ws_commit.cc:1478
-#: cmd_automate.cc:137 cmd_files.cc:238 cmd_files.cc:335 cmd_files.cc:359
-#: cmd_files.cc:393 automate.cc:85 automate.cc:122 automate.cc:175
+#: cmd_automate.cc:137 cmd_files.cc:239 cmd_files.cc:336 cmd_files.cc:360
+#: cmd_files.cc:394 automate.cc:85 automate.cc:122 automate.cc:175
 #: automate.cc:298 automate.cc:400 automate.cc:431 automate.cc:520
 #: automate.cc:1246 automate.cc:1419 automate.cc:1556 automate.cc:1592
 #: automate.cc:1624 automate.cc:1658 automate.cc:1690 automate.cc:1730
@@ -1352,7 +1352,7 @@ msgstr "REV"
 msgid "Prints all certificates attached to a revision"
 msgstr "Skriver ut alla certifikat kopplade till en revision"
 
-#: cmd_list.cc:1001 cmd_db.cc:621 cmd_files.cc:269 automate.cc:132
+#: cmd_list.cc:1001 cmd_db.cc:621 cmd_files.cc:270 automate.cc:132
 #: automate.cc:185 automate.cc:235 automate.cc:265 automate.cc:307
 #: automate.cc:312 automate.cc:406 automate.cc:437 automate.cc:1602
 #: automate.cc:1634 automate.cc:1701 automate.cc:1703 automate.cc:2175
@@ -1654,7 +1654,7 @@ msgstr ""
 
 #: cmd_merging.cc:209 cmd_merging.cc:824 cmd_ws_commit.cc:370
 #: cmd_ws_commit.cc:1358 cmd_ws_commit.cc:2042 cmd_ws_commit.cc:2270
-#: cmd_ws_commit.cc:2385 cmd_files.cc:307 cmd_files.cc:405 automate.cc:1035
+#: cmd_ws_commit.cc:2385 cmd_files.cc:308 cmd_files.cc:406 automate.cc:1035
 #: automate.cc:1328
 #, c-format
 msgid "this command can only be used in a single-parent workspace"
@@ -2010,8 +2010,8 @@ msgid "internal line merger failed"
 msgstr "den interna ihopslagningsmekanismen misslyckades"
 
 #: cmd_merging.cc:1246
-msgid "[-r FROM] -r TO [PATH...]"
-msgstr "[-r FRÅN] -r TILL [SÖKVÄG...]"
+msgid "[PATH...]"
+msgstr "[SÖKVÄG ...]"
 
 #: cmd_merging.cc:1247
 msgid "Applies changes made at arbitrary places in history"
@@ -2973,7 +2973,7 @@ msgid ""
 "file mentioned in PATH."
 msgstr "Sätt attributet NYCKEL med värde VÄRDE på filen SÖKVÄG."
 
-#: cmd_ws_commit.cc:1336 cmd_files.cc:137 cmd_files.cc:232
+#: cmd_ws_commit.cc:1336 cmd_files.cc:138 cmd_files.cc:233
 msgid "PATH"
 msgstr "SÖKVÄG"
 
@@ -3407,63 +3407,63 @@ msgstr ""
 msgid "Loads a file's contents into the database"
 msgstr "Laddar in en fils innehåll till databasen"
 
-#: cmd_files.cc:57
-msgid "<parent> <left> <right>"
-msgstr "<förälder> <vänster> <höger>"
-
 #: cmd_files.cc:58
+msgid "PARENT_FILEID LEFT_FILEID RIGHT_FILEID"
+msgstr "FÖRÄLDERER_FILID VÄNSTER_FILID HÖGER_FILID"
+
+#: cmd_files.cc:59
 msgid "Merges 3 files and outputs the result"
 msgstr "Slår ihop 3 filer och skriver ut resultatet"
 
-#: cmd_files.cc:74
+#: cmd_files.cc:75
 #, c-format
 msgid "ancestor file id does not exist"
 msgstr "förälderns filidentitet finns inte"
 
-#: cmd_files.cc:77
+#: cmd_files.cc:78
 #, c-format
 msgid "left file id does not exist"
 msgstr "vänster fils identitet finns inte"
 
-#: cmd_files.cc:80
+#: cmd_files.cc:81
 #, c-format
 msgid "right file id does not exist"
 msgstr "höger fils identitet finns inte"
 
-#: cmd_files.cc:92
+#: cmd_files.cc:93
 #, c-format
 msgid "merge failed"
 msgstr "ihopslagningen misslyckades"
 
-#: cmd_files.cc:97
+#: cmd_files.cc:98
 msgid "SRCNAME DESTNAME SRCID DESTID"
 msgstr "KÄLLNAMN MÅLNAMN KÄLLID MÅLID"
 
-#: cmd_files.cc:98
+#: cmd_files.cc:99
 msgid "Differences 2 files and outputs the result"
 msgstr "Skriver ut skillnaden mellan 2 filer"
 
-#: cmd_files.cc:117
+#: cmd_files.cc:118
 #, c-format
 msgid "source file id does not exist"
 msgstr "källans filidentitet finns inte"
 
-#: cmd_files.cc:120
+#: cmd_files.cc:121
 #, c-format
 msgid "destination file id does not exist"
 msgstr "målets filidentitet finns inte"
 
-#: cmd_files.cc:138
+#: cmd_files.cc:139
 msgid "Prints an annotated copy of a file"
 msgstr "Skriver ut en annoterad kopia av en fil"
 
-#: cmd_files.cc:139
+#: cmd_files.cc:140
 msgid ""
 "Calculates and prints an annotated copy of the given file from the specified "
 "REVISION."
 msgstr "Skriver ut en annoterad kopia av en given fil från en given REVISION."
 
-#: cmd_files.cc:171
+#: cmd_files.cc:172
 #, c-format
 msgid ""
 "with no revision selected, this command can only be used in a single-parent "
@@ -3472,25 +3472,25 @@ msgstr ""
 "detta kommando kan bara användas för arbetskopior med en förälder när ingen "
 "specifik revision anges"
 
-#: cmd_files.cc:189
+#: cmd_files.cc:190
 #, c-format
 msgid "no such file '%s' in revision '%s'"
 msgstr "filen '%s' finns inte i revisionen '%s'"
 
-#: cmd_files.cc:193
+#: cmd_files.cc:194
 #, c-format
 msgid "'%s' in revision '%s' is not a file"
 msgstr "'%s' i revisionen '%s' är inte en fil"
 
-#: cmd_files.cc:201
+#: cmd_files.cc:202
 msgid "[PATH]"
 msgstr "[SÖKVÄG]"
 
-#: cmd_files.cc:202
+#: cmd_files.cc:203
 msgid "Calculates the identity of a file or stdin"
 msgstr "Räkna ut identiteten för SÖKVÄG eller stdin"
 
-#: cmd_files.cc:203
+#: cmd_files.cc:204
 msgid ""
 "If any PATH is given, calculates their identity; otherwise, the one from the "
 "standard input is calculated."
@@ -3498,53 +3498,53 @@ msgstr ""
 "Om någon SÖKVÄG är angiven räknas dess identitet ut; om ingen SÖKVÄG "
 "angivits räknas identiteten för data som kommer på stdin ut."
 
-#: cmd_files.cc:233
+#: cmd_files.cc:234
 msgid "Prints the file identifier of a file"
 msgstr "Skriver ut en fils identitet"
 
-#: cmd_files.cc:243
+#: cmd_files.cc:244
 #, c-format
 msgid "Cannot read from stdin"
 msgstr "Kan inte läsa från stdin"
 
-#: cmd_files.cc:257 cmd_files.cc:366 automate.cc:2070
+#: cmd_files.cc:258 cmd_files.cc:367 automate.cc:2070
 #, c-format
 msgid "no file version %s found in database"
 msgstr "filversionen %s finns inte i databasen"
 
-#: cmd_files.cc:279 cmd_files.cc:283
+#: cmd_files.cc:280 cmd_files.cc:284
 #, c-format
 msgid "no file '%s' found in revision '%s'"
 msgstr "filen '%s' finns inte i revisionen '%s'"
 
-#: cmd_files.cc:290 cmd_files.cc:387
+#: cmd_files.cc:291 cmd_files.cc:388
 msgid "FILENAME"
 msgstr "FILNAMN"
 
-#: cmd_files.cc:291
+#: cmd_files.cc:292
 msgid "Prints a file from the database"
 msgstr "Skriver ut angiven fil från databasen"
 
-#: cmd_files.cc:292
+#: cmd_files.cc:293
 msgid ""
 "Fetches the given file FILENAME from the database and prints it to the "
 "standard output."
 msgstr ""
 "Hämtar den angivna filen FILNAMN från database och skriver ut den på stdout."
 
-#: cmd_files.cc:329 cmd_files.cc:353 automate.cc:1652
+#: cmd_files.cc:330 cmd_files.cc:354 automate.cc:1652
 msgid "FILEID"
 msgstr "FILID"
 
-#: cmd_files.cc:330
+#: cmd_files.cc:331
 msgid "Prints the contents of a file (given an identifier)"
 msgstr "Skriver ut innehållet på en fil (givet en filidentitet)"
 
-#: cmd_files.cc:354
+#: cmd_files.cc:355
 msgid "Prints the size of a file (given an identifier)"
 msgstr "Skriver ut storleken på en fil (givet en filidentitet)"
 
-#: cmd_files.cc:388
+#: cmd_files.cc:389
 msgid "Prints the contents of a file (given a name)"
 msgstr "Skriver ut innehållet på en fil (givet ett filnamn)"
 
@@ -8460,6 +8460,12 @@ msgstr "Tryck på Enter"
 #: std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Tryck [Retur] när underprocessen är klar"
+
+#~ msgid "[-r FROM] -r TO [PATH...]"
+#~ msgstr "[-r FRÅN] -r TILL [SÖKVÄG...]"
+
+#~ msgid "<parent> <left> <right>"
+#~ msgstr "<förälder> <vänster> <höger>"
 
 #~ msgid "Exports a revision from the database into a directory"
 #~ msgstr "Exporterar en revision från databasen till en katalog"
