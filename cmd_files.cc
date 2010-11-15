@@ -54,7 +54,8 @@ CMD(fload, "fload", "", CMD_REF(debug), "",
   guard.commit();
 }
 
-CMD(fmerge, "fmerge", "", CMD_REF(debug), N_("<parent> <left> <right>"),
+CMD(fmerge, "fmerge", "", CMD_REF(debug),
+    N_("PARENT_FILEID LEFT_FILEID RIGHT_FILEID"),
     N_("Merges 3 files and outputs the result"),
     "",
     options::opts::none)

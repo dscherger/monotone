@@ -1243,7 +1243,7 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
   output << merge_data;
 }
 
-CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
+CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
     N_("Applies changes made at arbitrary places in history"),
     N_("This command takes changes made at any point in history, and "
        "edits your current workspace to include those changes.  The end result "
