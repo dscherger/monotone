@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: monotone 0.48dev\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-11-02 21:54+0100\n"
-"PO-Revision-Date: 2010-11-02 23:19+0100\n"
+"PO-Revision-Date: 2010-11-14 15:11+0100\n"
 "Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -7156,15 +7156,15 @@ msgstr "pcre_exec ha ritornato %d"
 
 #: rev_output.cc:61
 msgid "Revision: "
-msgstr "Revisione:"
+msgstr "Revisione: "
 
 #: rev_output.cc:67
 msgid "Parent:   "
-msgstr "Genitore: "
+msgstr "Genitore:  "
 
 #: rev_output.cc:99
 msgid "Tag:      "
-msgstr "Tag:      "
+msgstr "Tag:       "
 
 #: rev_output.cc:106
 msgid "Changelog: "
@@ -7172,7 +7172,7 @@ msgstr "Changelog: "
 
 #: rev_output.cc:114
 msgid "Comments: "
-msgstr "Commenti: "
+msgstr "Commenti:  "
 
 #: rev_output.cc:141
 msgid "Changes"

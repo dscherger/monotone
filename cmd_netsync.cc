@@ -117,7 +117,7 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
 
   app.opts.non_interactive = true;
 
-  if (app.opts.dbname.empty())
+  if (!app.opts.dbname_given)
     {
       W(F("No database given; assuming '%s' database. This means that we can't\n"
           "verify the server key, because we have no record of what it should be.")
@@ -218,7 +218,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
   E(args.size() >= 1, origin::user,
     F("wrong argument count"));
 
-  if (app.opts.dbname.empty())
+  if (!app.opts.dbname_given)
     {
       W(F("No database given; assuming '%s' database. This means that we can't\n"
           "verify the server key, because we have no record of what it should be.")
