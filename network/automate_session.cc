@@ -12,6 +12,8 @@
 
 #include "app_state.hh"
 #include "automate_reader.hh"
+#include "automate_stdio_helpers.hh"
+#include "simplestring_xform.hh"
 #include "ui.hh"
 #include "vocab_cast.hh"
 #include "work.hh"
@@ -26,7 +28,6 @@ using std::vector;
 using boost::shared_ptr;
 using boost::lexical_cast;
 
-CMD_FWD_DECL(automate);
 
 automate_session::automate_session(app_state & app,
                                    session * owner,
@@ -109,6 +110,36 @@ void automate_session::write_automate_packet_cmd(char stream,
   write_netcmd(net_cmd);
 }
 
+
+// lambda expressions would be really nice right about now
+// even the ability to use local classes as template arguments would help
+class remote_stdio_pre_fn {
+  app_state & app;
+  key_identity_info const & remote_identity;
+  vector<string> const & cmdline;
+  vector<pair<string,string> > const & params;
+public:
+  remote_stdio_pre_fn(app_state & app, key_identity_info const & ri,
+                      vector<string> const & c,
+                      vector<pair<string,string> > const & p)
+    : app(app), remote_identity(ri), cmdline(c), params(p)
+  { }
+  void operator()() {
+    E(app.lua.hook_get_remote_automate_permitted(remote_identity,
+                                                 cmdline, params),
+      origin::user,
+      F("Sorry, you aren't allowed to do that."));
+  }
+};
+class remote_stdio_log_fn {
+  string peer;
+public:
+  remote_stdio_log_fn(string const & p) : peer(p) { }
+  void operator()(commands::command_id const & id) {
+    L(FL("Executing %s for remote peer %s")
+      % join_words(id) % peer);
+  }
+};
 bool automate_session::do_work(transaction_guard & guard,
                                netcmd const * const cmd_in)
 {
@@ -139,149 +170,28 @@ bool automate_session::do_work(transaction_guard & guard,
       }
     case automate_command_cmd:
       {
-        // disable user prompts, f.e. for password decryption
-        app.opts.non_interactive = true;
-        options original_opts = app.opts;
-
-        vector<string> in_args;
-        vector<pair<string, string> > in_opts;
-        cmd_in->read_automate_command_cmd(in_args, in_opts);
+        vector<pair<string, string> > params;
+        vector<string> cmdline;
+        cmd_in->read_automate_command_cmd(cmdline, params);
         ++command_number;
 
         global_sanity.set_out_of_band_handler(&out_of_band_to_netcmd, this);
 
-        automate const * acmd = 0;
-        command_id id;
-        args_vector args;
-
         ostringstream oss;
-        int  errcode = 0;
 
-        // FIXME: what follows is largely duplicated
-        // in cmd_automate.cc::CMD(stdio)
-        //
-        // stdio decoding errors should be noted with errno 1,
-        // errno 2 is reserved for errors from the commands itself
-        try
-          {
-            E(app.lua.hook_get_remote_automate_permitted(remote_identity,
-                                                         in_args,
-                                                         in_opts),
-              origin::user,
-              F("Sorry, you aren't allowed to do that."));
-
-            for (vector<string>::iterator i = in_args.begin();
-                 i != in_args.end(); ++i)
-              {
-                args.push_back(arg_type(*i, origin::user));
-              }
-
-            options::options_type opts;
-            opts = options::opts::all_options() - options::opts::globals();
-            opts.instantiate(&app.opts).reset();
-
-            for (args_vector::const_iterator iter = args.begin();
-                 iter != args.end(); iter++)
-              id.push_back(typecast_vocab<utf8>(*iter));
-
-            set< command_id > matches =
-              CMD_REF(automate)->complete_command(id);
-
-            if (matches.empty())
-              {
-                E(false, origin::network,
-                  F("no completions for this command"));
-              }
-            else if (matches.size() > 1)
-              {
-                E(false, origin::network,
-                  F("multiple completions possible for this command"));
-              }
-
-            id = *matches.begin();
-
-            I(args.size() >= id.size());
-            string cmd_printable;
-            for (command_id::size_type i = 0; i < id.size(); i++)
-              {
-                if (!cmd_printable.empty())
-                  cmd_printable += " ";
-                cmd_printable += (*args.begin())();
-                args.erase(args.begin());
-              }
-
-            L(FL("Executing %s for remote peer %s")
-              % cmd_printable % get_peer());
-
-            command const * cmd = CMD_REF(automate)->find_command(id);
-            I(cmd != NULL);
-            acmd = dynamic_cast< automate const * >(cmd);
-            I(acmd != NULL);
-
-            E(acmd->can_run_from_stdio(), origin::network,
-              F("sorry, that can't be run remotely or over stdio"));
-
-            opts = options::opts::globals() | acmd->opts();
-
-            if (cmd->use_workspace_options())
-              {
-                // Re-read the ws options file, rather than just copying
-                // the options from the previous apts.opts object, because
-                // the file may have changed due to user activity.
-                workspace::check_format();
-                workspace::get_options(app.opts);
-              }
-
-            opts.instantiate(&app.opts).from_key_value_pairs(in_opts);
-
-            ui.set_tick_write_stdio();
-          }
-        // FIXME: we need to re-package and rethrow this special exception
-        // since it is not based on informative_failure
-        catch (option::option_error & e)
-          {
-            errcode = 1;
-            write_automate_packet_cmd('e', e.what());
-          }
-        catch (recoverable_failure & f)
-          {
-             errcode = 1;
-             write_automate_packet_cmd('e', f.what());
-          }
-
-        if (errcode == 0)
-          {
-            try
-              {
-                // as soon as a command requires a workspace, this is set to true
-                workspace::used = false;
-
-                acmd->exec_from_automate(app, id, args, oss);
-
-                // usually, if a command succeeds, any of its workspace-relevant
-                // options are saved back to _MTN/options, this shouldn't be
-                // any different here
-                workspace::maybe_set_options(app.opts);
-
-                // restore app.opts
-                app.opts = original_opts;
-              }
-            catch (recoverable_failure & f)
-              {
-                errcode = 2;
-                write_automate_packet_cmd('e', f.what());
-              }
-          }
-
+        pair<int, string> err = automate_stdio_helpers::
+          automate_stdio_shared_body(app, cmdline, params, oss,
+                                     remote_stdio_pre_fn(app, remote_identity, cmdline, params),
+                                     remote_stdio_log_fn(get_peer()));
+        if (err.first != 0)
+          write_automate_packet_cmd('e', err.second);
         if (!oss.str().empty())
           write_automate_packet_cmd('m', oss.str());
-
-        write_automate_packet_cmd('l', lexical_cast<string>(errcode));
+        write_automate_packet_cmd('l', lexical_cast<string>(err.first));
 
         global_sanity.set_out_of_band_handler();
 
         return true;
-
       }
     case automate_packet_cmd:
       {

@@ -38,6 +38,7 @@ namespace basic_io
           symbol const dir("dir");
           symbol const file("file");
           symbol const content("content");
+          symbol const size("size");
           symbol const attr("attr");
 
           symbol const content_mark("content_mark");

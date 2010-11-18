@@ -11,6 +11,7 @@
 #include "pcrewrap.hh"
 #include "sanity.hh"
 #include <cstring>
+#include <vector>
 
 // This dirty trick is necessary to prevent the 'pcre' typedef defined by
 // pcre.h from colliding with namespace pcre.
@@ -19,15 +20,16 @@
 #undef pcre
 
 using std::string;
+using std::vector;
 
 static NORETURN(void pcre_compile_error(int errcode, char const * err,
                                         int erroff, char const * pattern,
                                         origin::type caused_by));
 static NORETURN(void pcre_study_error(char const * err, char const * pattern,
                                       origin::type caused_by));
-static NORETURN(void pcre_match_error(int errcode,
-                                      origin::type regex_from,
-                                      origin::type subject_from));
+static NORETURN(void pcre_exec_error(int errcode,
+                                     origin::type regex_from,
+                                     origin::type subject_from));
 
 inline unsigned int
 flags_to_internal(pcre::flags f)
@@ -129,7 +131,52 @@ namespace pcre
     else if (rc == PCRE_ERROR_NOMATCH)
       return false;
     else
-      pcre_match_error(rc, made_from, subject_origin);
+      pcre_exec_error(rc, made_from, subject_origin);
+  }
+
+  bool
+  regex::match(string const & subject, origin::type subject_origin,
+               vector<string> & matches, flags options) const
+  {
+    matches.clear();
+
+    // retrieve the capture count of the pattern from pcre_fullinfo,
+    // because pcre_exec might not signal trailing unmatched subpatterns
+    // i.e. if "abc" matches "(abc)(de)?", the match count is two, not
+    // the expected three
+    size_t cap_count = 0;
+    int rc = pcre_fullinfo(basedat, extradat, PCRE_INFO_CAPTURECOUNT, &cap_count);
+    I(rc == 0);
+
+    // the complete regex is captured as well
+    cap_count += 1;
+
+    int worksize = cap_count * 3;
+    // yes, C99 only
+    int ovector[worksize];
+    rc = pcre_exec(basedat, extradat,
+                   subject.data(), subject.size(),
+                   0, flags_to_internal(options), ovector, worksize);
+
+    // since we dynamically set the work size, we should
+    // always get either a negative (error) or >= 1 match count
+    I(rc != 0);
+
+    if (rc == PCRE_ERROR_NOMATCH)
+      return false;
+    else if (rc < 0)
+      pcre_exec_error(rc, made_from, subject_origin); // throws
+
+    for (size_t i=0; i < cap_count; ++i)
+      {
+        string match;
+        // not an empty match
+        if (ovector[2*i] != -1 && ovector[2*i+1] != -1)
+          match.assign(subject, ovector[2*i], ovector[2*i+1] - ovector[2*i]);
+        matches.push_back(match);
+      }
+
+    return true;
   }
 } // namespace pcre
 
@@ -191,7 +238,7 @@ pcre_study_error(char const * err, char const * pattern,
 }
 
 static void
-pcre_match_error(int errcode, origin::type regex_from, origin::type subject_from)
+pcre_exec_error(int errcode, origin::type regex_from, origin::type subject_from)
 {
   // This interface provides error codes with symbolic constants for them!
   // But it doesn't provide string versions of them.  As most of them
@@ -216,7 +263,7 @@ pcre_match_error(int errcode, origin::type regex_from, origin::type subject_from
         F("invalid UTF-8 sequence found during regular expression matching"));
 
     default:
-      throw oops((F("pcre_match returned %d") % errcode)
+      throw oops((F("pcre_exec returned %d") % errcode)
                  .str().c_str());
     }
 }

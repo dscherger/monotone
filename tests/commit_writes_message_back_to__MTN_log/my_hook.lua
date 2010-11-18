@@ -1,3 +1,3 @@
-function edit_comment(basetext, user_log_message)
-  return "foobar\n"
+function edit_comment(user_log_file)
+  return "foobar\n" .. user_log_file
 end

@@ -11,17 +11,14 @@
 #define __APP_STATE_HH__
 
 #include <boost/shared_ptr.hpp>
-#include <botan/version.h>
 
 #include "options.hh"
+#include "option_reset_info.hh"
 #include "lua_hooks.hh"
 
 // This class holds any state that needs to be persistent across multiple
 // commands, or be accessible to the lua hooks (which includes anything
 // needed by mtn_automate()).
-
-struct database_cache;
-class lazy_rng;
 
 class app_state
 {
@@ -30,12 +27,9 @@ public:
   ~app_state();
 
   options opts;
+  option_reset_info reset_info;
   lua_hooks lua;
   bool mtn_automate_allowed;
-  boost::shared_ptr<database_cache> dbcache;
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  boost::shared_ptr<lazy_rng> rng;
-#endif
 };
 
 #endif // __APP_STATE_HH__

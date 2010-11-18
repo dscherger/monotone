@@ -75,6 +75,7 @@ netsync_session::netsync_session(session * owner,
                                  protocol_role role,
                                  globish const & our_include_pattern,
                                  globish const & our_exclude_pattern,
+                                 shared_conn_counts counts,
                                  bool initiated_by_server) :
   wrapped_session(owner),
   role(role),
@@ -99,9 +100,14 @@ netsync_session::netsync_session(session * owner,
   key_refiner(key_item, get_voice(), *this),
   cert_refiner(cert_item, get_voice(), *this),
   rev_refiner(revision_item, get_voice(), *this),
+  is_dry_run(opts.dryrun),
+  dry_run_keys_refined(false),
+  counts(counts),
   rev_enumerator(project, *this),
   initiated_by_server(initiated_by_server)
 {
+  I(counts);
+
   for (vector<external_key_name>::const_iterator i = opts.keys_to_push.begin();
        i != opts.keys_to_push.end(); ++i)
     {
@@ -134,40 +140,30 @@ void netsync_session::on_end(size_t ident)
             keys_in || keys_out))
     error_code = error_codes::partial_transfer;
 
-  vector<cert> unattached_written_certs;
-  map<revision_id, vector<cert> > rev_written_certs;
-  for (vector<revision_id>::iterator i = written_revisions.begin();
-       i != written_revisions.end(); ++i)
-    rev_written_certs.insert(make_pair(*i, vector<cert>()));
-  for (vector<cert>::iterator i = written_certs.begin();
-       i != written_certs.end(); ++i)
+  // Call Lua hooks
+  if (!counts->revs_in.items.empty()
+      || !counts->keys_in.items.empty()
+      || !counts->certs_in.items.empty())
     {
-      map<revision_id, vector<cert> >::iterator j;
-      j = rev_written_certs.find(revision_id(i->ident));
-      if (j == rev_written_certs.end())
-        unattached_written_certs.push_back(*i);
-      else
-        j->second.push_back(*i);
-    }
 
-  if (!written_keys.empty()
-      || !written_revisions.empty()
-      || !written_certs.empty())
-    {
+      vector<cert> unattached_written_certs;
+      map<revision_id, vector<cert> > rev_written_certs;
+      sort_rev_order (counts->revs_in, counts->certs_in,
+                      unattached_written_certs, rev_written_certs);
 
       //Keys
-      for (vector<key_id>::iterator i = written_keys.begin();
-           i != written_keys.end(); ++i)
+      for (vector<key_id>::const_iterator i = counts->keys_in.items.begin();
+           i != counts->keys_in.items.end(); ++i)
         {
           key_identity_info identity;
           identity.id = *i;
-          project.complete_key_identity(keys, lua, identity);
+          project.complete_key_identity_from_id(keys, lua, identity);
           lua.hook_note_netsync_pubkey_received(identity, ident);
         }
 
       //Revisions
-      for (vector<revision_id>::iterator i = written_revisions.begin();
-           i != written_revisions.end(); ++i)
+      for (vector<revision_id>::const_iterator i = counts->revs_in.items.begin();
+           i != counts->revs_in.items.end(); ++i)
         {
           vector<cert> & ctmp(rev_written_certs[*i]);
           set<pair<key_identity_info, pair<cert_name, cert_value> > > certs;
@@ -176,7 +172,7 @@ void netsync_session::on_end(size_t ident)
             {
               key_identity_info identity;
               identity.id = j->key;
-              project.complete_key_identity(keys, lua, identity);
+              project.complete_key_identity_from_id(keys, lua, identity);
               certs.insert(make_pair(identity, make_pair(j->name, j->value)));
             }
 
@@ -192,46 +188,35 @@ void netsync_session::on_end(size_t ident)
         {
           key_identity_info identity;
           identity.id = i->key;
-          project.complete_key_identity(keys, lua, identity);
+          project.complete_key_identity_from_id(keys, lua, identity);
           lua.hook_note_netsync_cert_received(revision_id(i->ident), identity,
                                               i->name, i->value, ident);
         }
     }
 
-  if (!sent_keys.empty()
-      || !sent_revisions.empty()
-      || !sent_certs.empty())
+  if (!counts->keys_out.items.empty()
+      || !counts->revs_out.items.empty()
+      || !counts->certs_out.items.empty())
     {
 
       vector<cert> unattached_sent_certs;
       map<revision_id, vector<cert> > rev_sent_certs;
-      for (vector<revision_id>::iterator i = sent_revisions.begin();
-           i != sent_revisions.end(); ++i)
-        rev_sent_certs.insert(make_pair(*i, vector<cert>()));
-      for (vector<cert>::iterator i = sent_certs.begin();
-           i != sent_certs.end(); ++i)
-        {
-          map<revision_id, vector<cert> >::iterator j;
-          j = rev_sent_certs.find(revision_id(i->ident));
-          if (j == rev_sent_certs.end())
-            unattached_sent_certs.push_back(*i);
-          else
-            j->second.push_back(*i);
-        }
+      sort_rev_order (counts->revs_out, counts->certs_out,
+                      unattached_sent_certs, rev_sent_certs);
 
       //Keys
-      for (vector<key_id>::iterator i = sent_keys.begin();
-           i != sent_keys.end(); ++i)
+      for (vector<key_id>::const_iterator i = counts->keys_out.items.begin();
+           i != counts->keys_out.items.end(); ++i)
         {
           key_identity_info identity;
           identity.id = *i;
-          project.complete_key_identity(keys, lua, identity);
+          project.complete_key_identity_from_id(keys, lua, identity);
           lua.hook_note_netsync_pubkey_sent(identity, ident);
         }
 
       //Revisions
-      for (vector<revision_id>::iterator i = sent_revisions.begin();
-           i != sent_revisions.end(); ++i)
+      for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
+           i != counts->revs_out.items.end(); ++i)
         {
           vector<cert> & ctmp(rev_sent_certs[*i]);
           set<pair<key_identity_info, pair<cert_name, cert_value> > > certs;
@@ -240,7 +225,7 @@ void netsync_session::on_end(size_t ident)
             {
               key_identity_info identity;
               identity.id = j->key;
-              project.complete_key_identity(keys, lua, identity);
+              project.complete_key_identity_from_id(keys, lua, identity);
               certs.insert(make_pair(identity, make_pair(j->name, j->value)));
             }
 
@@ -256,7 +241,7 @@ void netsync_session::on_end(size_t ident)
         {
           key_identity_info identity;
           identity.id = i->key;
-          project.complete_key_identity(keys, lua, identity);
+          project.complete_key_identity_from_id(keys, lua, identity);
           lua.hook_note_netsync_cert_sent(revision_id(i->ident), identity,
                                           i->name, i->value, ident);
         }
@@ -327,7 +312,7 @@ netsync_session::note_rev(revision_id const & rev)
   data tmp;
   write_revision(rs, tmp);
   queue_data_cmd(revision_item, rev.inner(), tmp());
-  sent_revisions.push_back(rev);
+  counts->revs_out.add_item(rev);
 }
 
 void
@@ -350,7 +335,7 @@ netsync_session::note_cert(id const & i)
       c.marshal_for_netio_v6(keyname, str);
     }
   queue_data_cmd(cert_item, i, str);
-  sent_certs.push_back(c);
+  counts->certs_out.add_item(c);
 }
 
 
@@ -362,6 +347,10 @@ netsync_session::setup_client_tickers()
   byte_in_ticker.reset(new ticker(N_("bytes in"), ">", 1024, true));
   // xgettext: please use short message and try to avoid multibytes chars
   byte_out_ticker.reset(new ticker(N_("bytes out"), "<", 1024, true));
+
+  if (is_dry_run)
+    return;
+
   if (role == sink_role)
     {
       // xgettext: please use short message and try to avoid multibytes chars
@@ -435,8 +424,33 @@ netsync_session::received_all_items() const
 }
 
 bool
+netsync_session::dry_run_finished() const
+{
+  bool all = rev_refiner.done
+    && cert_refiner.done
+    && dry_run_keys_refined;
+
+  if (all)
+    {
+      counts->revs_in.set_count(rev_refiner.items_to_receive, false);
+      counts->certs_in.set_count(cert_refiner.items_to_receive, false);
+      counts->keys_in.set_count(key_refiner.min_items_to_receive,
+                                key_refiner.may_receive_more_than_min);
+
+      counts->revs_out.set_items(rev_refiner.items_to_send);
+      counts->certs_out.set_count(cert_refiner.items_to_send.size(), false);
+      counts->keys_out.set_items(key_refiner.items_to_send);
+    }
+
+  return all;
+}
+
+bool
 netsync_session::finished_working() const
 {
+  if (dry_run_finished())
+    return true;
+
   bool all = done_all_refinements()
     && received_all_items()
     && queued_all_items()
@@ -607,6 +621,11 @@ netsync_session::queue_done_cmd(netcmd_item_type type,
 {
   string typestr;
   netcmd_item_type_to_string(type, typestr);
+  if (is_dry_run && type == key_item)
+    {
+      dry_run_keys_refined = true;
+      return;
+    }
   L(FL("queueing 'done' command for %s (%d items)")
     % typestr % n_items);
   netcmd cmd(get_version());
@@ -854,7 +873,7 @@ netsync_session::load_data(netcmd_item_type type,
         project.db.get_pubkey(key_id(item), keyid, pub);
         L(FL("public key '%s' is also called '%s'") % item % keyid);
         write_pubkey(keyid, pub, out);
-        sent_keys.push_back(key_id(item));
+        counts->keys_out.add_item(key_id(item));
       }
       break;
 
@@ -981,7 +1000,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
                                % tmp);
           }
         if (project.db.put_key(keyid, pub))
-          written_keys.push_back(key_id(item));
+          counts->keys_in.add_item(key_id(item));
         else
           error(error_codes::partial_transfer,
                 (F("Received duplicate key %s") % keyid).str());
@@ -1025,7 +1044,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
             if (! (tmp == item))
               throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
             if (project.db.put_revision_cert(c))
-              written_certs.push_back(c);
+              counts->certs_in.add_item(c);
           }
       }
       break;
@@ -1041,7 +1060,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
         revision_t rev;
         read_revision(d, rev);
         if (project.db.put_revision(revision_id(item), rev))
-          written_revisions.push_back(revision_id(item));
+          counts->revs_in.add_item(revision_id(item));
       }
       break;
 

@@ -12,6 +12,7 @@
 #include <sstream>
 #include <iterator>
 
+#include "basic_io.hh"
 #include "charset.hh"
 #include "cmd.hh"
 #include "app_state.hh"
@@ -20,6 +21,7 @@
 #include "project.hh"
 #include "keys.hh"
 #include "key_store.hh"
+#include "maybe_workspace_updater.hh"
 #include "transforms.hh"
 #include "vocab_cast.hh"
 
@@ -28,6 +30,17 @@ using std::ostream_iterator;
 using std::ostringstream;
 using std::set;
 using std::string;
+
+namespace
+{
+  namespace syms
+  {
+    symbol const name("name");
+    symbol const hash("hash");
+    symbol const public_location("public_location");
+    symbol const private_location("private_location");
+  }
+};
 
 CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
     N_("Generates an RSA key-pair"),
@@ -56,22 +69,71 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
   keys.create_key_pair(db, name);
 }
 
-CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
-    N_("Drops a public and/or private key"),
-    "",
-    options::opts::none)
+CMD_AUTOMATE(generate_key, N_("KEY_NAME PASSPHRASE"),
+             N_("Generates an RSA key-pair"),
+             "",
+             options::opts::force_duplicate_key)
+{
+  // not unified with CMD(genkey), because the call to create_key_pair is
+  // significantly different.
+
+  E(args.size() == 2, origin::user,
+    F("wrong argument count"));
+
+  database db(app);
+  key_store keys(app);
+
+  key_name name = typecast_vocab<key_name>(idx(args, 0));
+
+  if (!app.opts.force_duplicate_key)
+    {
+      E(!keys.key_pair_exists(name), origin::user,
+        F("you already have a key named '%s'") % name);
+      if (db.database_specified())
+        {
+          E(!db.public_key_exists(name), origin::user,
+            F("there is another key named '%s'") % name);
+        }
+    }
+
+  utf8 passphrase = idx(args, 1);
+
+  key_id hash;
+  keys.create_key_pair(db, name, key_store::create_quiet, &passphrase, &hash);
+
+  basic_io::printer prt;
+  basic_io::stanza stz;
+  vector<string> publocs, privlocs;
+  if (db.database_specified())
+    publocs.push_back("database");
+  publocs.push_back("keystore");
+  privlocs.push_back("keystore");
+
+  stz.push_str_pair(syms::name, name());
+  stz.push_binary_pair(syms::hash, hash.inner());
+  stz.push_str_multi(syms::public_location, publocs);
+  stz.push_str_multi(syms::private_location, privlocs);
+  prt.print_stanza(stz);
+
+  output.write(prt.buf.data(), prt.buf.size());
+
+}
+
+static void
+dropkey_common(app_state & app,
+               args_vector args,
+               bool drop_private)
 {
   database db(app);
   key_store keys(app);
   bool key_deleted = false;
   bool checked_db = false;
 
-  if (args.size() != 1)
-    throw usage(execid);
-
   key_identity_info identity;
   project_t project(db);
-  project.get_key_identity(keys, app.lua, idx(args, 0), identity);
+  project.get_key_identity(keys, app.lua,
+                           typecast_vocab<external_key_name>(idx(args, 0)),
+                           identity);
 
   if (db.database_specified())
     {
@@ -86,7 +148,7 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
       checked_db = true;
     }
 
-  if (keys.key_pair_exists(identity.id))
+  if (drop_private && keys.key_pair_exists(identity.id))
     {
       P(F("dropping key pair '%s' from keystore") % identity.id);
       keys.delete_key(identity.id);
@@ -103,6 +165,30 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
   E(key_deleted, origin::user, fmt % idx(args, 0)());
 }
 
+CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
+    N_("Drops a public and/or private key"),
+    "",
+    options::opts::none)
+{
+  if (args.size() != 1)
+    throw usage(execid);
+
+  dropkey_common(app, args,
+                 true); // drop_private
+}
+
+CMD_AUTOMATE(drop_public_key, N_("KEY_NAME_OR_HASH"),
+    N_("Drops a public key"),
+    "",
+    options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  dropkey_common(app, args,
+                 false); // drop_private
+}
+
 CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
     N_("Changes the passphrase of a private RSA key"),
     "",
@@ -116,7 +202,9 @@ CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
   project_t project(db);
   key_identity_info identity;
 
-  project.get_key_identity(keys, app.lua, idx(args, 0), identity);
+  project.get_key_identity(keys, app.lua,
+                           typecast_vocab<external_key_name>(idx(args, 0)),
+                           identity);
 
   keys.change_key_passphrase(identity.id);
   P(F("passphrase changed"));
@@ -169,9 +257,10 @@ CMD(ssh_agent_add, "ssh_agent_add", "", CMD_REF(key_and_cert), "",
 }
 
 CMD(cert, "cert", "", CMD_REF(key_and_cert),
-    N_("REVISION CERTNAME [CERTVAL]"),
-    N_("Creates a certificate for a revision"),
-    "",
+    N_("SELECTOR CERTNAME [CERTVAL]"),
+    N_("Creates a certificate for a revision or set of revisions"),
+    N_("Creates a certificate with the given name and value on each revision "
+       "that matches the given selector"),
     options::opts::none)
 {
   database db(app);
@@ -183,12 +272,12 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
 
   transaction_guard guard(db);
 
-  revision_id rid;
-  complete(app.opts, app.lua,  project, idx(args, 0)(), rid);
+  set<revision_id> revisions;
+  complete(app.opts, app.lua,  project, idx(args, 0)(), revisions);
 
   cert_name cname = typecast_vocab<cert_name>(idx(args, 1));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   cert_value val;
   if (args.size() == 3)
@@ -199,8 +288,11 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
       read_data_stdin(dat);
       val = typecast_vocab<cert_value>(dat);
     }
-
-  project.put_cert(keys, rid, cname, val);
+  for (set<revision_id>::const_iterator r = revisions.begin();
+       r != revisions.end(); ++r)
+    {
+      project.put_cert(keys, *r, cname, val);
+    }
   guard.commit();
 }
 
@@ -218,8 +310,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
     throw usage(execid);
 
   set<revision_id> rids;
-  expand_selector(app.opts, app.lua, project, idx(args, 0)(), rids);
-  diagnose_ambiguous_expansion(app.opts, app.lua, project, idx(args, 0)(), rids);
+  complete(app.opts, app.lua,  project, idx(args, 0)(), rids);
 
   revision_id ident;
   if (!rids.empty())
@@ -232,7 +323,9 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
   for (unsigned int i = 3; i != args.size(); ++i)
     {
       key_identity_info identity;
-      project.get_key_identity(keys, app.lua, idx(args, i), identity);
+      project.get_key_identity(keys, app.lua,
+                               typecast_vocab<external_key_name>(idx(args, i)),
+                               identity);
       signers.insert(identity);
     }
 
@@ -274,7 +367,7 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_tag(keys, r, idx(args, 1)());
 }
 
@@ -295,7 +388,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_revision_testresult(keys, r, idx(args, 1)());
 }
 
@@ -303,7 +396,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
 CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
     N_("Approves a particular revision"),
     "",
-    options::opts::branch)
+    options::opts::branch | options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -311,6 +404,8 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
 
   if (args.size() != 1)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
@@ -318,14 +413,16 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument for approval"));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_revision_in_branch(keys, r, app.opts.branch);
+
+  updater.maybe_do_update();
 }
 
 CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
     N_("Suspends a particular revision"),
     "",
-    options::opts::branch)
+    options::opts::branch | options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -334,14 +431,18 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   if (args.size() != 1)
     throw usage(execid);
 
+  maybe_workspace_updater updater(app, project);
+
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument to suspend"));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.suspend_revision_in_branch(keys, r, app.opts.branch);
+
+  updater.maybe_do_update();
 }
 
 CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
@@ -362,7 +463,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   else
     {
       external comment_external;
-      E(app.lua.hook_edit_comment(external(""), external(""), comment_external),
+      E(app.lua.hook_edit_comment(external(""), comment_external),
         origin::user,
         F("edit comment failed"));
       system_to_utf8(comment_external, comment);
@@ -375,7 +476,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   project.put_revision_comment(keys, r, comment);
 }
 

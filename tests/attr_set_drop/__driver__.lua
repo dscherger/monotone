@@ -1,6 +1,7 @@
 -- attr_drop mtn:execute does not clear execute bits
 
 skip_if(ostype=="Windows")
+skip_if(string.sub(ostype, 1, 6)=="CYGWIN")-- test -x broken
 
 mtn_setup()
 

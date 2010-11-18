@@ -11,7 +11,7 @@
 #ifndef __MAKE_SERVER_HH__
 #define __MAKE_SERVER_HH__
 
-#include <list>
+#include "vector.hh"
 
 #include <boost/shared_ptr.hpp>
 
@@ -20,7 +20,7 @@
 class utf8;
 
 boost::shared_ptr<Netxx::StreamServer>
-make_server(std::list<utf8> const & addresses,
+make_server(std::vector<utf8> const & addresses,
             Netxx::port_type default_port,
             Netxx::Timeout timeout,
             bool use_ipv6,

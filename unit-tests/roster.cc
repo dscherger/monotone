@@ -484,12 +484,6 @@ testing_node_id_source::next()
   return n;
 }
 
-template <> void
-dump(int const & i, string & out)
-{
-  out = lexical_cast<string>(i) + "\n";
-}
-
 UNIT_TEST(random_actions)
 {
   randomizer rng;

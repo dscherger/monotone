@@ -22,11 +22,8 @@ addfile("work/A/B/fileAB", "file in a deeper subdirectory")
 
 commit()
 
--- FIXME_RESTRICTIONS: the old code allows for --depth=N with no paths
--- and adds the "." path so that depth is interpreted against the current
--- included directory. this seems bad. how does --depth interact with --exclude?
---check(mtn("ls", "known", "--depth=0"), 0, true, false)
---check(not qgrep("fileX", "stdout"))
+check(mtn("ls", "known", "--depth=0"), 0, true, false)
+check(not qgrep("fileX", "stdout"))
 
 check(mtn("ls", "known", "--depth=1", ".") , 0, true, false)
 check(not qgrep("fileX", "stdout"))

@@ -2,30 +2,30 @@
 function make_graph()
   local revs = {}
   addfile("testfile", "A")
-  commit()
+  commit("testbranch", "revs.a")
   revs.a = base_revision()
 
   writefile("testfile", "B")
-  commit()
+  commit("testbranch", "revs.b")
   revs.b = base_revision()
 
   revert_to(revs.a)
 
   writefile("testfile", "C")
-  commit()
+  commit("testbranch", "revs.c")
   revs.c = base_revision()
 
   writefile("testfile", "D")
-  commit()
+  commit("testbranch", "revs.d")
   revs.d = base_revision()
 
   revert_to(revs.c)
 
   addfile("otherfile", "E")
-  commit()
+  commit("testbranch", "revs.e")
   revs.e = base_revision()
 
-  check(mtn("explicit_merge", revs.d, revs.e, "testbranch"), 0, false, false)
+  check(mtn("explicit_merge", revs.d, revs.e, "testbranch", "--message", "revs.f"), 0, false, false)
   check(mtn("update"), 0, false, false)
   revs.f = base_revision()
 

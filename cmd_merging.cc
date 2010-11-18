@@ -25,6 +25,7 @@
 #include "work.hh"
 #include "safe_map.hh"
 #include "app_state.hh"
+#include "maybe_workspace_updater.hh"
 #include "project.hh"
 #include "simplestring_xform.hh"
 #include "keys.hh"
@@ -135,10 +136,27 @@ pick_branch_for_update(options & opts, database & db,
   db.get_revision_certs(chosen_rid, branch_cert_name, certs);
   db.erase_bogus_certs(project, certs);
 
-  set< branch_name > branches;
+  set<branch_name> branches;
   for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); i++)
     branches.insert(typecast_vocab<branch_name>(i->value));
+
+  if (!opts.ignore_suspend_certs)
+    {
+      vector<cert> suspend_certs;
+      db.get_revision_certs(chosen_rid, suspend_cert_name, suspend_certs);
+
+      for (vector<cert>::const_iterator i = suspend_certs.begin();
+           i != suspend_certs.end(); i++)
+        {
+          branch_name susp_branch = typecast_vocab<branch_name>(i->value);
+          set<branch_name>::iterator pos = branches.find(susp_branch);
+          if (pos != branches.end())
+            {
+              branches.erase(pos);
+            }
+        }
+    }
 
   if (branches.find(opts.branch) != branches.end())
     {
@@ -166,7 +184,6 @@ pick_branch_for_update(options & opts, database & db,
         }
       else
         {
-          I(branches.empty());
           W(F("target revision not in any branch\n"
               "next commit will use branch %s")
             % opts.branch);
@@ -175,7 +192,8 @@ pick_branch_for_update(options & opts, database & db,
   return switched_branch;
 }
 
-static void
+// also used from maybe_workspace_updater.cc
+void
 update(app_state & app,
        args_vector const & args)
 {
@@ -199,7 +217,7 @@ update(app_state & app,
     F("cannot determine branch for update"));
 
   revision_id chosen_rid;
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       P(F("updating along branch '%s'") % app.opts.branch);
       set<revision_id> candidates;
@@ -226,7 +244,7 @@ update(app_state & app,
     }
   else
     {
-      complete(app.opts, app.lua, project, app.opts.revision_selectors[0](), chosen_rid);
+      complete(app.opts, app.lua, project, app.opts.revision[0](), chosen_rid);
     }
   I(!null_id(chosen_rid));
 
@@ -241,7 +259,7 @@ update(app_state & app,
       P(F("already up to date at %s") % old_rid);
       // do still switch the workspace branch, in case they have used
       // update to switch branches.
-      work.set_options(app.opts, true);
+      work.set_options(app.opts, app.lua, true);
       return;
     }
 
@@ -331,7 +349,7 @@ update(app_state & app,
   work.put_update_id(old_rid);
   work.put_work_rev(remaining);
   work.maybe_update_inodeprints(db);
-  work.set_options(app.opts, true);
+  work.set_options(app.opts, app.lua, true);
 
   if (switched_branch)
     P(F("switched branch; next commit will use branch %s") % app.opts.branch());
@@ -350,7 +368,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   if (!args.empty())
     throw usage(execid);
 
-  if (app.opts.revision_selectors.size() > 1)
+  if (app.opts.revision.size() > 1)
     throw usage(execid);
 
   update(app, args);
@@ -365,7 +383,7 @@ CMD_AUTOMATE(update, "",
   E(args.empty(), origin::user,
     F("wrong argument count"));
 
-  E(app.opts.revision_selectors.size() <= 1, origin::user,
+  E(app.opts.revision.size() <= 1, origin::user,
     F("at most one revision selector may be specified"));
 
   update(app, args);
@@ -494,11 +512,14 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     N_("Merges unmerged heads of a branch"),
     "",
     options::opts::branch | options::opts::date | options::opts::author |
-    options::opts::messages | options::opts::resolve_conflicts_opts)
+    options::opts::messages | options::opts::resolve_conflicts_opts |
+    options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
   project_t project(db);
+
+  maybe_workspace_updater updater(app, project);
 
   if (!args.empty())
     throw usage(execid);
@@ -522,11 +543,11 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
       % heads.size() % app.opts.branch);
 
   // avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   size_t pass = 1, todo = heads.size() - 1;
 
-  if (app.opts.resolve_conflicts_given || app.opts.resolve_conflicts_file_given)
+  if (app.opts.resolve_conflicts)
     {
       // conflicts and resolutions only apply to first merge, so only do that one.
       todo = 1;
@@ -563,21 +584,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   if (heads.size() > 1)
     P(F("note: branch '%s' still has %d heads; run merge again") % app.opts.branch % heads.size());
 
-  P(F("note: your workspaces have not been updated"));
-}
-
-CMD(propagate, "propagate", "", CMD_REF(tree),
-    N_("SOURCE-BRANCH DEST-BRANCH"),
-    N_("Merges from one branch to another asymmetrically"),
-    "",
-    options::opts::date | options::opts::author | options::opts::messages |
-    options::opts::resolve_conflicts_opts)
-{
-  if (args.size() != 2)
-    throw usage(execid);
-  args_vector a = args;
-  a.push_back(arg_type());
-  process(app, make_command_id("tree merge_into_dir"), a);
+  updater.maybe_do_update();
 }
 
 //   This is a special merge operator, but very useful for people
@@ -606,12 +613,9 @@ CMD(propagate, "propagate", "", CMD_REF(tree),
 //   If dir is not the empty string, rename the root of N1 to have the name
 //   'dir' in the merged tree. (ie, it has name "basename(dir)", and its
 //   parent node is "N2.get_node(dirname(dir))")
-CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
-    N_("SOURCE-BRANCH DEST-BRANCH DIR"),
-    N_("Merges one branch into a subdirectory in another branch"),
-    "",
-    options::opts::date | options::opts::author | options::opts::messages |
-    options::opts::resolve_conflicts_opts)
+void perform_merge_into_dir(app_state & app,
+                            commands::command_id const & execid,
+                            args_vector const & args)
 {
   database db(app);
   key_store keys(app);
@@ -620,6 +624,8 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
 
   if (args.size() != 3)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   project.get_branch_heads(typecast_vocab<branch_name>(idx(args, 0)), src_heads,
                            app.opts.ignore_suspend_certs);
@@ -647,7 +653,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
       return;
     }
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   P(F("propagating %s -> %s") % idx(args,0) % idx(args,1));
   P(F("[left]  %s") % *src_i);
@@ -756,6 +762,32 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
       guard.commit();
       P(F("[merged] %s") % merged);
     }
+
+  updater.maybe_do_update();
+}
+
+CMD(propagate, "propagate", "", CMD_REF(tree),
+    N_("SOURCE-BRANCH DEST-BRANCH"),
+    N_("Merges from one branch to another asymmetrically"),
+    "",
+    options::opts::date | options::opts::author | options::opts::messages |
+    options::opts::resolve_conflicts_opts)
+{
+  if (args.size() != 2)
+    throw usage(execid);
+  args_vector a = args;
+  a.push_back(arg_type());
+  perform_merge_into_dir(app, make_command_id("tree merge_into_dir"), a);
+}
+
+CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
+    N_("SOURCE-BRANCH DEST-BRANCH DIR"),
+    N_("Merges one branch into a subdirectory in another branch"),
+    "",
+    options::opts::date | options::opts::author | options::opts::messages |
+    options::opts::resolve_conflicts_opts | options::opts::auto_update)
+{
+  perform_merge_into_dir(app, execid, args);
 }
 
 CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
@@ -881,7 +913,8 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
     N_("The results of the merge are placed on the branch specified by "
        "DEST-BRANCH."),
     options::opts::date | options::opts::author |
-    options::opts::messages | options::opts::resolve_conflicts_opts)
+    options::opts::messages | options::opts::resolve_conflicts_opts |
+    options::opts::auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -891,6 +924,8 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
 
   if (args.size() != 3)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   complete(app.opts, app.lua, project, idx(args, 0)(), left);
   complete(app.opts, app.lua, project, idx(args, 1)(), right);
@@ -907,10 +942,12 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
     % right % left);
 
   // avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
   merge_two(app.opts, app.lua, project, keys,
             left, right, branch, string("explicit merge"),
             std::cout, false);
+
+  updater.maybe_do_update();
 }
 
 namespace
@@ -1112,7 +1149,7 @@ static void get_conflicts_rids(args_vector const & args,
 //   two heads, prints an error message to stderr and exits with status 1.
 //
 CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
-             N_("Shows the conflicts between two revisions."),
+             N_("Shows the conflicts between two revisions"),
              N_("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
                 "first two heads that would be chosen by the 'merge' command."),
              options::opts::branch | options::opts::ignore_suspend_certs)
@@ -1127,7 +1164,7 @@ CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
 
 CMD(store, "store", "", CMD_REF(conflicts),
     "[LEFT_REVID RIGHT_REVID]",
-    N_("Store the conflicts from merging two revisions."),
+    N_("Store the conflicts from merging two revisions"),
     N_("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
        "first two heads that would be chosen by the 'merge' command. If "
        "--conflicts-file is not given, '_MTN/conflicts' is used."),
@@ -1136,6 +1173,8 @@ CMD(store, "store", "", CMD_REF(conflicts),
   database    db(app);
   project_t   project(db);
   revision_id left_id, right_id;
+
+  workspace::require_workspace(F("conflicts file must be under _MTN"));
 
   get_conflicts_rids(args, db, project, app, left_id, right_id);
 
@@ -1204,7 +1243,7 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
   output << merge_data;
 }
 
-CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
+CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
     N_("Applies changes made at arbitrary places in history"),
     N_("This command takes changes made at any point in history, and "
        "edits your current workspace to include those changes.  The end result "
@@ -1224,9 +1263,9 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
 
   // Work out our arguments
   revision_id from_rid, to_rid;
-  if (app.opts.revision_selectors.size() == 1)
+  if (app.opts.revision.size() == 1)
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), to_rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), to_rid);
       std::set<revision_id> parents;
       db.get_revision_parents(to_rid, parents);
       E(parents.size() == 1, origin::user,
@@ -1238,10 +1277,10 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
         % to_rid);
       from_rid = *parents.begin();
     }
-  else if (app.opts.revision_selectors.size() == 2)
+  else if (app.opts.revision.size() == 2)
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), from_rid);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 1)(), to_rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), from_rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 1)(), to_rid);
     }
   else
     throw usage(execid);
@@ -1296,7 +1335,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
     roster_t to_true_roster;
     db.get_roster(to_rid, to_true_roster);
     node_restriction mask(args_to_paths(args),
-                          args_to_paths(app.opts.exclude_patterns),
+                          args_to_paths(app.opts.exclude),
                           app.opts.depth,
                           *from_roster, to_true_roster,
                           ignored_file(work));

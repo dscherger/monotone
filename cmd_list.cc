@@ -184,7 +184,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
       key_identity_info identity;
       identity.id = idx(certs, i).key;
-      project.complete_key_identity(keys, app.lua, identity);
+      project.complete_key_identity_from_id(keys, app.lua, identity);
 
       cout << string(guess_terminal_width(), '-') << '\n'
            << (i18n_format(str)
@@ -217,10 +217,10 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
   database db(app);
   project_t project(db);
 
-  E(app.opts.revision_selectors.size() <= 1, origin::user,
+  E(app.opts.revision.size() <= 1, origin::user,
     F("more than one revision given"));
 
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       workspace work(app);
       temp_node_id_source nis;
@@ -230,7 +230,7 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
   else
     {
       complete(app.opts, app.lua, project,
-               idx(app.opts.revision_selectors, 0)(), rev_id);
+               idx(app.opts.revision, 0)(), rev_id);
       E(db.revision_exists(rev_id), origin::user,
         F("no revision %s found in database") % rev_id);
       db.get_roster(rev_id, roster);
@@ -327,7 +327,7 @@ namespace {
             {
               key_identity_info identity;
               identity.id = *i;
-              project.complete_key_identity(lua, identity);
+              project.complete_key_identity_from_id(lua, identity);
               items[*i].identity = identity;
               items[*i].public_locations.push_back("database");
             }
@@ -341,7 +341,7 @@ namespace {
         {
           key_identity_info identity;
           identity.id = *i;
-          project.complete_key_identity(keys, lua, identity);
+          project.complete_key_identity_from_id(keys, lua, identity);
           items[*i].identity = identity;
           items[*i].public_locations.push_back("keystore");
           items[*i].private_locations.push_back("keystore");
@@ -485,7 +485,7 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
 
   database db(app);
   project_t project(db);
-  globish exc(app.opts.exclude_patterns);
+  globish exc(app.opts.exclude);
   set<branch_name> names;
   project.get_branch_list(inc, names, !app.opts.ignore_suspend_certs);
 
@@ -531,24 +531,53 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
     }
 }
 
-CMD(tags, "tags", "", CMD_REF(list), "",
+CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
     N_("Lists all tags in the database"),
     "",
-    options::opts::none)
+    options::opts::exclude)
 {
+  globish inc("*", origin::internal);
+  if (args.size() == 1)
+    inc = globish(idx(args,0)(), origin::user);
+  else if (args.size() > 1)
+    throw usage(execid);
+
   database db(app);
   set<tag_t> tags;
   project_t project(db);
+  cert_name branch = branch_cert_name;
+
   project.get_tags(tags);
 
   for (set<tag_t>::const_iterator i = tags.begin(); i != tags.end(); ++i)
     {
       key_identity_info identity;
       identity.id = i->key;
-      project.complete_key_identity(app.lua, identity);
-      cout << i->name << ' '
-           << i->ident << ' '
-           << format_key(identity)  << '\n';
+      project.complete_key_identity_from_id(app.lua, identity);
+
+      vector<cert> certs;
+      project.get_revision_certs(i->ident, certs);
+
+      globish exc(app.opts.exclude);
+
+      if (inc.matches(i->name()) && !exc.matches(i->name()))
+        {
+          hexenc<id> hexid;
+          encode_hexenc(i->ident.inner(), hexid);
+
+          cout << i->name << ' ' << hexid().substr(0,10) << "... ";
+
+          for (vector<cert>::const_iterator c = certs.begin();
+               c != certs.end(); ++c)
+            {
+              if (c->name == branch)
+                {
+                  cout << c->value << ' ';
+                }
+            }
+
+          cout << format_key(identity)  << '\n';
+        }
     }
 }
 
@@ -585,6 +614,113 @@ CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
     }
 }
 
+CMD(databases, "databases", "dbs", CMD_REF(list), "",
+    N_("Lists managed databases and their known workspaces"),
+    "",
+    options::opts::none)
+{
+  vector<system_path> search_paths, files, dirs;
+
+  E(app.lua.hook_get_default_database_locations(search_paths), origin::database,
+    F("could not query default database locations"));
+
+  database_path_helper helper(app.lua);
+
+  for (vector<system_path>::const_iterator i = search_paths.begin();
+       i != search_paths.end(); ++i)
+    {
+      system_path search_path(*i);
+
+      fill_path_vec<system_path> fill_files(search_path, files, false);
+      fill_path_vec<system_path> fill_dirs(search_path, dirs, true);
+      read_directory(search_path, fill_files, fill_dirs);
+
+      for (vector<system_path>::const_iterator j = files.begin();
+           j != files.end(); ++j)
+        {
+          system_path db_path(*j);
+
+          // a little optimization, so we don't scan and open every file
+          string p = db_path.as_internal();
+          if (p.size() < 4 || p.substr(p.size() - 4) != ".mtn")
+            {
+              L(FL("ignoring file '%s'") % db_path);
+              continue;
+            }
+
+          options opts;
+          opts.dbname_type = unmanaged_db;
+          opts.dbname = db_path;
+          opts.dbname_given = true;
+
+          database db(opts, app.lua);
+
+          try
+            {
+              db.ensure_open();
+            }
+          catch (recoverable_failure & f)
+            {
+              string prefix = _("misuse: ");
+              string failure = f.what();
+              for (size_t pos = failure.find(prefix);
+                   pos != string::npos; pos = failure.find(prefix))
+                 failure.replace(pos, prefix.size(), "");
+
+              W(F("%s") % failure);
+              W(F("ignoring database '%s'") % db_path);
+              continue;
+            }
+
+          string managed_path = db_path.as_internal().substr(
+              search_path.as_internal().size() + 1
+          );
+          cout << F(":%s (in %s):") % managed_path % search_path << '\n';
+
+          bool has_valid_workspaces = false;
+
+          vector<system_path> workspaces;
+          db.get_registered_workspaces(workspaces);
+
+          for (vector<system_path>::const_iterator k = workspaces.begin();
+               k != workspaces.end(); ++k)
+            {
+              system_path workspace_path(*k);
+              if (!directory_exists(workspace_path / bookkeeping_root_component))
+                {
+                  L(FL("ignoring missing workspace '%s'") % workspace_path);
+                  continue;
+                }
+
+              options workspace_opts;
+              workspace::get_options(workspace_path, workspace_opts);
+
+              system_path workspace_db_path;
+              helper.get_database_path(workspace_opts, workspace_db_path);
+
+              if (workspace_db_path != db_path)
+                {
+                  L(FL("ignoring workspace '%s', expected database %s, "
+                       "but has %s configured in _MTN/options")
+                      % workspace_path % db_path % workspace_db_path);
+                  continue;
+                }
+
+              has_valid_workspaces = true;
+
+              string workspace_branch = workspace_opts.branch();
+              if (!workspace_opts.branch_given)
+                workspace_branch = _("<no branch set>");
+
+              cout << F("\t%s (in %s)") % workspace_branch % workspace_path << '\n';
+            }
+
+            if (!has_valid_workspaces)
+              cout << F("\tno known valid workspaces") << '\n';
+        }
+    }
+}
+
 CMD(known, "known", "", CMD_REF(list), "",
     N_("Lists workspace files that belong to the current branch"),
     "",
@@ -598,7 +734,7 @@ CMD(known, "known", "", CMD_REF(list), "",
   work.get_current_roster_shape(db, nis, new_roster);
 
   node_restriction mask(args_to_paths(args),
-                        args_to_paths(app.opts.exclude_patterns),
+                        args_to_paths(app.opts.exclude),
                         app.opts.depth,
                         new_roster, ignored_file(work));
 
@@ -634,7 +770,7 @@ CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
   workspace work(app);
 
   vector<file_path> roots = args_to_paths(args);
-  path_restriction mask(roots, args_to_paths(app.opts.exclude_patterns),
+  path_restriction mask(roots, args_to_paths(app.opts.exclude),
                         app.opts.depth, ignored_file(work));
   set<file_path> unknown, ignored;
 
@@ -667,7 +803,7 @@ CMD(missing, "missing", "", CMD_REF(list), "",
   roster_t current_roster_shape;
   work.get_current_roster_shape(db, nis, current_roster_shape);
   node_restriction mask(args_to_paths(args),
-                        args_to_paths(app.opts.exclude_patterns),
+                        args_to_paths(app.opts.exclude),
                         app.opts.depth,
                         current_roster_shape, ignored_file(work));
 
@@ -696,7 +832,7 @@ CMD(changed, "changed", "", CMD_REF(list), "",
   work.get_parent_rosters(db, parents);
 
   node_restriction mask(args_to_paths(args),
-                        args_to_paths(app.opts.exclude_patterns),
+                        args_to_paths(app.opts.exclude),
                         app.opts.depth,
                         parents, new_roster, ignored_file(work));
 
@@ -900,7 +1036,7 @@ CMD_AUTOMATE(certs, N_("REV"),
 
       key_identity_info identity;
       identity.id = idx(certs, i).key;
-      project.complete_key_identity(app.lua, identity);
+      project.complete_key_identity_from_id(app.lua, identity);
       signers.insert(identity);
 
       bool trusted =

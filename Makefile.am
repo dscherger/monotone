@@ -41,6 +41,7 @@ MOST_SOURCES = 								\
 	automate_ostream.hh						\
 	automate_ostream_demuxed.hh					\
 	automate_reader.hh automate_reader.cc				\
+	automate_stdio_helpers.hh					\
 	botan_pipe_cache.hh						\
 	cache_logger.hh cache_logger.cc					\
 	commands.cc commands.hh $(CMD_SOURCES)				\
@@ -58,12 +59,13 @@ MOST_SOURCES = 								\
 	ssh_agent.cc ssh_agent.hh					\
 	keys.cc keys.hh							\
 	packet.cc packet.hh						\
+	key_packet.cc key_packet.hh					\
 	rcs_file.cc rcs_file.hh						\
 	xdelta.cc xdelta.hh						\
 	migration.hh migrate_schema.cc migrate_ancestry.cc		\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
-	netsync.cc            						\
+	netsync.hh netsync.cc            				\
 	network/automate_session.hh network/automate_session.cc		\
 	network/connection_info.hh network/connection_info.cc		\
 	network/listener_base.hh network/listener_base.cc		\
@@ -95,6 +97,7 @@ MOST_SOURCES = 								\
 	restrictions.cc	restrictions.hh					\
 	hmac.cc hmac.hh							\
 	string_queue.hh							\
+	maybe_workspace_updater.cc maybe_workspace_updater.hh		\
 	merge_roster.cc merge_conflict.cc merge_roster.hh		\
 	merge_content.cc merge_3way.cc merge_content.hh			\
 	legacy.cc legacy.hh uri.cc uri.hh				\
@@ -103,8 +106,9 @@ MOST_SOURCES = 								\
 	sha1.cc								\
 	pcrewrap.cc pcrewrap.hh						\
 	rev_height.cc rev_height.hh					\
+	rev_output.cc rev_output.hh					\
 	asciik.cc asciik.hh						\
-	dates.cc dates.hh						\
+	dates.cc dates.hh date_format.hh				\
 									\
 	lru_writeback_cache.hh hybrid_map.hh lazy_rng.hh		\
 									\
@@ -113,6 +117,8 @@ MOST_SOURCES = 								\
 	netio.hh gettext.h						\
 	package_revision.cc package_full_revision.cc			\
 	option.cc option.hh options.cc options.hh options_list.hh	\
+	options_applicator.hh options_applicator.cc			\
+	option_reset_info.hh						\
 	specialized_lexical_cast.cc lexical_cast.hh			\
 	parallel_iter.hh safe_map.hh pch.hh current_exception.hh
 
@@ -143,14 +149,14 @@ UNIX_PLATFORM_SOURCES =							\
 	unix/process.cc unix/terminal.cc unix/inodeprint.cc		\
 	unix/fs.cc unix/make_io_binary.cc unix/os_strerror.cc           \
 	unix/cputime.cc unix/ssh_agent_platform.cc			\
-	unix/ssh_agent_platform.hh
+	unix/ssh_agent_platform.hh unix/parse_date.cc
 
 WIN32_PLATFORM_SOURCES =						\
 	win32/read_password.cc win32/get_system_flavour.cc		\
 	win32/process.cc win32/terminal.cc win32/inodeprint.cc		\
 	win32/fs.cc win32/make_io_binary.cc win32/os_strerror.cc	\
 	win32/cputime.cc win32/ssh_agent_platform.cc			\
-	win32/ssh_agent_platform.hh
+	win32/ssh_agent_platform.hh win32/parse_date.cc
 
 # these files (part of the main program) contain code subject to unit testing
 
@@ -158,8 +164,8 @@ UNIT_TESTEES =								\
 	basic_io.cc charset.cc commands.cc cset.cc git_change.cc	\
 	globish.cc graph.cc merge_3way.cc merge_roster.cc mkstemp.cc	\
 	netcmd.cc netxx_pipe.cc option.cc outdated_indicator.cc		\
-	refiner.cc restrictions.cc revision.cc simplestring_xform.cc	\
-	transforms.cc uri.cc vocab.cc xdelta.cc
+	pcrewrap.cc refiner.cc restrictions.cc revision.cc 		\
+	simplestring_xform.cc transforms.cc uri.cc vocab.cc xdelta.cc
 
 # these files contain the actual unit tests
 # yes, we have to list them all explicitly, with directory prefix, or
@@ -172,9 +178,10 @@ UNIT_TESTERS =								\
 	unit-tests/merge_roster.cc unit-tests/mkstemp.cc		\
 	unit-tests/netcmd.cc unit-tests/netxx_pipe.cc			\
 	unit-tests/option.cc unit-tests/outdated_indicator.cc		\
-	unit-tests/refiner.cc unit-tests/restrictions.cc		\
-	unit-tests/revision.cc unit-tests/simplestring_xform.cc		\
-	unit-tests/transforms.cc unit-tests/uri.cc unit-tests/vocab.cc	\
+	unit-tests/pcrewrap.cc unit-tests/refiner.cc 			\
+	unit-tests/restrictions.cc unit-tests/revision.cc		\
+	unit-tests/simplestring_xform.cc unit-tests/transforms.cc	\
+	unit-tests/uri.cc unit-tests/vocab.cc				\
 	unit-tests/xdelta.cc unit-tests/numeric_vocab.cc		\
 	unit-tests/sha1.cc unit-tests/string_queue.cc unit_tester.cc
 
@@ -184,8 +191,8 @@ UNIT_TESTERS =								\
 # test is not part of UNIT_TESTEES.
 
 UNIT_TESTERS_PRIV =							\
-	unit-tests/dates.cc unit-tests/packet.cc unit-tests/paths.cc	\
-	unit-tests/rev_height.cc unit-tests/roster.cc
+	unit-tests/dates.cc unit-tests/key_packet.cc unit-tests/packet.cc \
+	unit-tests/paths.cc unit-tests/rev_height.cc unit-tests/roster.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # note that some are and some aren't part of the main program
@@ -209,7 +216,8 @@ unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
 	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
 
 tester_SOURCES = tester.cc transforms.cc gzip.cc \
-	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc
+	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc \
+	specialized_lexical_cast.cc
 nodist_tester_SOURCES = testlib.cc
 
 txt2c_SOURCES = txt2c.cc
@@ -322,13 +330,15 @@ PNG_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.pn
 EPS_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.eps)))
 TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
+man1_MANS = mtn.1
 info_TEXINFOS = monotone.texi
 EXTRA_DIST =								\
 	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
 	audit-includes do-editor-vars.sh doxygen.cfg			\
 	$(wildcard $(srcdir)/m4/*.m4) monotone.html images		\
 	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
-	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
+	win32/monotone.iss.in win32/modpath.iss win32/monotone.bmp	\
+	win32/dlls.sh                                                   \
 									\
 	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
 	figures/monotone-logo.svg figures/oo-figures.sxd		\
@@ -482,6 +492,30 @@ monotone-$(PACKAGE_VERSION).dmg: monotone-$(PACKAGE_VERSION).pkg
 		"$@" -format UDZO -scrub -imagekey zlib-level=9 \
 		-volname monotone-$(PACKAGE_VERSION)
 
+# build win32 installer using INNO setup
+ISCC=@ISCC@
+
+win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe
+
+monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html info $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
+	$(ISCC) monotone.iss
+
+mtn-stripped.exe: mtn.exe
+	strip $< -o $@
+
+dlls.iss: mtn-stripped.exe ${top_srcdir}/Makefile.am
+	rm -f $@
+	for DLL in $$( ${top_srcdir}/win32/dlls.sh mtn-stripped.exe | xargs cmd //c echo) ; do \
+	    echo "Source: \"$$DLL\"; DestDir: \"{app}\"" >> $@ ; \
+	done
+
+linguas.iss: ${top_srcdir}/Makefile.am
+	rm -rf $@
+	for LANG in $(INST_LINGUAS) ; do \
+		echo "Source: \"{#BUILDDIR}\\$${LANG}.gmo\"; DestDir: \"{app}\\locale\\$${LANG}\\LC_MESSAGES\"; DestName: \"monotone.mo\"; Flags: ignoreversion" >> $@ ; \
+	done
+
+
 # testsuite stuff (could this possibly be more ugly?)  To get
 # parallelism, we cannot use Automake's TESTS feature at all.  The
 # shell script embedded in the 'check-local' rule is partially
@@ -578,7 +612,8 @@ DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep	\
 CLEAN_SOURCES = std_hooks.cc testlib.cc schema.cc \
 	package_revision.cc package_full_revision.cc \
 	package_revision_raw.txt \
-	package_full_revision.txt package_full_revision_raw.txt
+	package_full_revision.txt package_full_revision_raw.txt \
+	mtn.1
 
 BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
@@ -734,6 +769,10 @@ html: monotone.texi version.texi std_hooks.lua texinfo.css
 		sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $$f.bak >$$f; \
 		rm -f $$f.bak; \
 	done
+
+mtn.1: mtn$(EXEEXT)
+	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
+	(cd $(srcdir) && $$REAL_BLDDIR/mtn manpage --norc) 2>/dev/null >$@ || rm -f $@
 
 # Verbosity goo.
 V_bcxx       = $(V_bcxx_$(V))

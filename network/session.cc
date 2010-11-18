@@ -14,6 +14,7 @@
 #include "key_store.hh"
 #include "database.hh"
 #include "keys.hh"
+#include "lazy_rng.hh"
 #include "lua_hooks.hh"
 #include "network/automate_session.hh"
 #include "network/netsync_session.hh"
@@ -40,7 +41,7 @@ session::session(app_state & app, project_t & project,
   version(app.opts.max_netsync_version),
   max_version(app.opts.max_netsync_version),
   min_version(app.opts.min_netsync_version),
-  use_transport_auth(app.opts.use_transport_auth),
+  use_transport_auth(!app.opts.no_transport_auth),
   signing_key(keys.signing_key),
   cmd_in(0),
   armed(false),
@@ -61,6 +62,13 @@ session::session(app_state & app, project_t & project,
   unnoted_bytes_in(0),
   unnoted_bytes_out(0)
 {
+  if (!app.opts.max_netsync_version_given)
+    {
+      max_version = constants::netcmd_current_protocol_version;
+      version = max_version;
+    }
+  if (!app.opts.min_netsync_version_given)
+    min_version = constants::netcmd_minimum_protocol_version;
 }
 
 session::~session()
@@ -81,8 +89,8 @@ session::mk_nonce()
   char buf[constants::merkle_hash_length_in_bytes];
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
-                           constants::merkle_hash_length_in_bytes);
+  lazy_rng::get().randomize(reinterpret_cast<Botan::byte *>(buf),
+                            constants::merkle_hash_length_in_bytes);
 #else
   Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
                                constants::merkle_hash_length_in_bytes);
@@ -415,7 +423,7 @@ session::request_netsync(protocol_role role,
   key_identity_info remote_key;
   remote_key.id = remote_peer_key_id;
   if (!remote_key.id.inner()().empty())
-    project.complete_key_identity(keys, app.lua, remote_key);
+    project.complete_key_identity_from_id(keys, app.lua, remote_key);
 
   wrapped->on_begin(session_id, remote_key);
 }
@@ -446,7 +454,7 @@ session::request_automate()
   key_identity_info remote_key;
   remote_key.id = remote_peer_key_id;
   if (!remote_key.id.inner()().empty())
-    project.complete_key_identity(keys, app.lua, remote_key);
+    project.complete_key_identity_from_id(keys, app.lua, remote_key);
 
   wrapped->on_begin(session_id, remote_key);
 }
@@ -652,7 +660,8 @@ bool session::handle_service_request()
                                         keys,
                                         corresponding_role(role),
                                         their_include,
-                                        their_exclude));
+                                        their_exclude,
+                                        connection_counts::create()));
       break;
     case is_automate:
       wrapped.reset(new automate_session(app, this, 0, 0));
@@ -664,7 +673,7 @@ bool session::handle_service_request()
     {
       client_identity.id = client_id;
       if (!client_identity.id.inner()().empty())
-        project.complete_key_identity(keys, app.lua, client_identity);
+        project.complete_key_identity_from_id(keys, app.lua, client_identity);
     }
 
   wrapped->on_begin(session_id, client_identity);

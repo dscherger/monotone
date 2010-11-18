@@ -11,7 +11,8 @@ mtn_setup()
 
 check(getstd("inventory_hooks.lua"))
 
-include ("common/test_utils_inventory.lua")
+include("common/basic_io.lua")
+include("common/test_utils_inventory.lua")
 
 ----------
 --  main process
@@ -147,6 +148,14 @@ parsed = parse_basic_io(readfile("stdout"))
 index = 1
 
 index = check_inventory (parsed, index,
+{    path = "",
+ old_type = "directory",
+ new_type = "directory",
+  fs_type = "directory",
+    birth = rev1,
+   status = {"known"}})
+
+index = check_inventory (parsed, index,
 {    path = "dir_a",
  old_type = "directory",
  new_type = "directory",
@@ -174,6 +183,14 @@ parsed = parse_basic_io(readfile("stdout"))
 index = 1
 
 index = check_inventory (parsed, index,
+{    path = "",
+ old_type = "directory",
+ new_type = "directory",
+  fs_type = "directory",
+    birth = rev1,
+   status = {"known"}})
+
+index = check_inventory (parsed, index,
 {    path = "dir_a",
  old_type = "directory",
  new_type = "directory",
@@ -194,6 +211,14 @@ checkexp ("checked all", #parsed, index-1)
 check(mtn("automate", "inventory", "dir_b"), 0, true, false)
 parsed = parse_basic_io(readfile("stdout"))
 index = 1
+
+index = check_inventory (parsed, index,
+{    path = "",
+ old_type = "directory",
+ new_type = "directory",
+  fs_type = "directory",
+    birth = rev1,
+   status = {"known"}})
 
 index = check_inventory (parsed, index,
 {    path = "dir_b",
@@ -231,6 +256,14 @@ parsed = parse_basic_io(readfile("stdout"))
 index = 1
 
 index = check_inventory (parsed, index,
+{    path = "",
+ old_type = "directory",
+ new_type = "directory",
+  fs_type = "directory",
+    birth = rev1,
+   status = {"known"}})
+
+index = check_inventory (parsed, index,
 {    path = "dir_a",
  old_type = "directory",
  new_type = "directory",
@@ -250,6 +283,14 @@ checkexp ("checked all", #parsed, index-1)
 check(mtn("automate", "inventory", "dir_b"), 0, true, false)
 parsed = parse_basic_io(readfile("stdout"))
 index = 1
+
+index = check_inventory (parsed, index,
+{    path = "",
+ old_type = "directory",
+ new_type = "directory",
+  fs_type = "directory",
+    birth = rev1,
+   status = {"known"}})
 
 index = check_inventory (parsed, index,
 {    path = "dir_b",
@@ -405,6 +446,14 @@ parsed = parse_basic_io(source_restricted)
 index = 1
 
 index = check_inventory (parsed, index,
+{    path = "",
+ old_type = "directory",
+ new_type = "directory",
+  fs_type = "directory",
+    birth = rev1,
+   status = {"known"}})
+
+index = check_inventory (parsed, index,
 {    path = "dir_a",
  old_type = "directory",
  new_path = "dir_c",
@@ -460,6 +509,14 @@ check(samefile("source_source_excluded", "target_target_excluded"))
 -- now check this output
 parsed = parse_basic_io(readfile("source_source_excluded"))
 index = 1
+
+index = check_inventory (parsed, index,
+{    path = "",
+ old_type = "directory",
+ new_type = "directory",
+  fs_type = "directory",
+    birth = rev1,
+   status = {"known"}})
 
 index = check_inventory (parsed, index,
 {    path = "dir_a",

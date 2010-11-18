@@ -1,20 +1,27 @@
 
 mtn_setup()
+check(get("hooks.lua"))
 
 function trusted(rev, name, value, ...) -- ... is signers
-  check(mtn("trusted", rev, name, value, ...), 0, true, false)
+  check(mtn("trusted", "--rcfile", "hooks.lua", rev, name, value, ...), 0, true, false)
   local t = qgrep(" trusted", "stdout")
   local u = qgrep(" untrusted", "stdout") or qgrep(" UNtrusted", "stdout")
   check(t ~= u)
   return t
 end
 
-good = string.rep("1", 40)
-bad = string.rep("0", 40)
+-- create two arbitrary revisions
+addfile("goodfile", "good")
+commit()
+good = base_revision()
 
-check(mtn("automate", "genkey", "foo@bar.com", "foo@bar.com"), 0, false, false)
-check(mtn("automate", "genkey", "alice@trusted.com", "alice@trusted.com"), 0, false, false)
-check(mtn("automate", "genkey", "mallory@evil.com", "mallory@evil.com"), 0, false, false)
+addfile("badfile", "bad")
+commit()
+bad = base_revision()
+
+check(mtn("automate", "generate_key", "foo@bar.com", "foo@bar.com"), 0, false, false)
+check(mtn("automate", "generate_key", "alice@trusted.com", "alice@trusted.com"), 0, false, false)
+check(mtn("automate", "generate_key", "mallory@evil.com", "mallory@evil.com"), 0, false, false)
 
 -- Idea here is to check a bunch of combinations, to make sure that
 -- trust hooks get all information correctly

@@ -22,16 +22,17 @@
 class lazy_rng
 {
   Botan::RandomNumberGenerator * rng;
-
-public:
-  lazy_rng() : rng(0) {}
+  lazy_rng() { rng = Botan::RandomNumberGenerator::make_rng(); }
   ~lazy_rng() { delete rng; }
 
-  Botan::RandomNumberGenerator & get() {
-    if (!rng)
-      rng = Botan::RandomNumberGenerator::make_rng();
+public:
 
-    return *rng;
+  static Botan::RandomNumberGenerator & get()
+  {
+    static lazy_rng * instance = 0;
+    if (!instance)
+      instance = new lazy_rng();
+    return *instance->rng;
   }
 };
 

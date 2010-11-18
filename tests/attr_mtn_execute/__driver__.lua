@@ -2,6 +2,7 @@
 -- test setting/clearing of the the execute file attribute works
 --
 skip_if(ostype=="Windows")
+skip_if(string.sub(ostype, 1, 6)=="CYGWIN") -- test -x broken
 
 mtn_setup()
 
@@ -28,7 +29,8 @@ check(indir("checkout", {"test", "-x","foo"}, 0, false, false))
 
 -- test clone with mtn:execute
 
-testURI="file:" .. test.root .. "/test.db"
+copy("test.db", "test-clone.db")
+testURI="file://" .. test.root .. "/test-clone.db?testbranch"
 
-check(nodb_mtn("clone", testURI, "testbranch", "clone"), 0, false, true)
+check(nodb_mtn("clone", testURI, "clone"), 0, false, true)
 check(indir("clone", {"test", "-x","foo"}, 0, false, false))

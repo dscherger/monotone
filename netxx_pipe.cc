@@ -14,6 +14,7 @@
 #include <netxx/streamserver.h>
 #include <cstring> // strerror
 #include <cstdlib> // exit
+#include <cassert> // assert
 
 #ifdef WIN32
 #include <windows.h>
@@ -112,7 +113,14 @@ pipe_and_fork(int fd1[2], int fd2[2])
 
   else if (!result)
     {
-      // fd1[1] for writing, fd2[0] for reading
+      // child process; replace our stdin, stdout with the child side of the
+      // pipes.
+      //
+      // fd1[1] for writing (stdout, file descriptor 1),
+      // fd2[0] for reading (stdin, file descriptor 0)
+      //
+      // Note that stderr is not affected; child writes to stderr go
+      // directly to parent stderr stream.
       close(fd1[0]);
       close(fd2[1]);
       if (dup2(fd2[0], 0) != 0 ||

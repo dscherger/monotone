@@ -9,11 +9,12 @@
 
 #include "base.hh"
 #include "unit_tests.hh"
+#include "transforms.hh"
 #include "vocab_cast.hh"
 #include "xdelta.hh"
 
 #include "../packet.cc"
-
+#include <iostream>
 using std::ostringstream;
 
 UNIT_TEST(validators)
@@ -54,6 +55,95 @@ UNIT_TEST(validators)
                          "0123456789-.@+_"));
   Y_THROW(f.validate_key(""));
   Y_THROW(f.validate_key("graydon at venge dot net"));
+
+  // validate_public_key_data
+  N_THROW(f.validate_public_key_data(
+    "test@lala.com",
+    "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDS8J8cI0a"
+    "Ab1Pd55UE0vlxHHBS9ZyDKGQXTf3dA+ywGeXfKYjBCAYgcZ"
+    "obRxVSziKZ17SfYFSOa0HvMAXykpHc+Uy3SHHnFSJb+wFYp"
+    "JdUrxecZMpzhySCR49lw8aFoGmpsZZmNiherpuP2CzLDCax"
+    "IK1dbTgilMd0dfoy277M9QIDAQAB"
+  ));
+  // this is a private key
+  Y_THROW(f.validate_public_key_data(
+    "invalid0",
+    "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUNkUUl"
+    "CQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQWw4d2dnSmJBZ0"
+    "VBQW9HQkFOTHdueHdqUm9CdlU5M24KbFFUUytYRWNjRkwxb"
+    "klNb1pCZE4vZDBEN0xBWjVkOHBpTUVJQmlCeG1odEhGVkxP"
+    "SXBuWHRKOWdWSTVyUWU4dwpCZktTa2R6NVRMZEljZWNWSWx"
+    "2N0FWaWtsMVN2RjV4a3luT0hKSUpIajJYRHhvV2dhYW14bG"
+    "1ZMktGNnVtNC9ZCkxNc01KckVnclYxdE9DS1V4M1IxK2pMY"
+    "nZzejFBZ01CQUFFQ2dZQUFsTlZyYm91SU15bm9IMTZURW43"
+    "NUlzeVkKd0U3K0tVRDN2VURpRGNRQytuYi9uak81bGZUYWc"
+    "3M3Yva1d1Tjc3YmpxZCtQQkpLUWNFTlV0ejMyaE45elBWSQ"
+    "p5SzFRa1E4MmRlNHRCYlY4dFlDbmdXSFB3VWwxOHRrcFpzU"
+    "HJpd3E1MUpWOC9SdTdUanpRZDNHLzExQVdxcnFpCm9mMGtI"
+    "bC9PODBKbDNRZWJ3UUpCQU9pcEc1RlkzY1hOY0QwTjRiWjl"
+    "YMjZ6WWpNQWlBTG5WbktGcGpGblFqTUkKcVhCRitraWI2SU"
+    "11ZnZaRm1nT09LWG9vdzlyY3EyY2RwRlJ3bFVWQXdoRUNRU"
+    "URvR2JZNXhDNFoxMEVuQjErVAp4dGx5SEZzQW9LMXY3eGtG"
+    "c3RZV3hacXJUZ1hNemVkdkxiU2dHZ1lzMFNrZnlyQVFtREQ"
+    "yNGpjL25SOW0yNG0zCnJqaWxBa0JFZDI5cmFIRnJBamZqWD"
+    "dCcW1aNTUzMFFvcWlGY2FXT2hNLzlpVG5iR3VlZlM2R1RzO"
+    "VNTSlppZHEKcGJUYkV2elZ2Q1ZXeE5XVDlMOGxNalJiT3VG"
+    "aEFrQUZJcHgvaHJHbWJMYktVRVZ6RlpFMkR4Nk1Vd0hEV2p"
+    "6cApmVjF6UDRmK2hrbG1rSit3UEFpbENpNWN5M3ZuY2lxWE"
+    "UyYng3MnRkZ3ZKdzZpYVA0OURwQWtCTFlWZ3NaNHErCkxkL"
+    "0VYWFJibTJGOEd6MjVCaTFNV0p5OWxQOXBoY2FPaDdpZlBh"
+    "bVZDeTRlUGx4aTU3Wi9aTFByaC8wL2pzb3YKbExSTFdGVE8"
+    "2aldLCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K"
+  ));
+  Y_THROW(f.validate_public_key_data("invalid1", "invalid"));
+  // the following are both valid base64
+  Y_THROW(f.validate_public_key_data("invalid2", "YmwK"));
+  Y_THROW(f.validate_public_key_data("invalid3", "Y m x h a A o = "));
+
+  // validate_private_key_data
+  N_THROW(f.validate_private_key_data(
+    "test@lala.com",
+    "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUNkUUl"
+    "CQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQWw4d2dnSmJBZ0"
+    "VBQW9HQkFOTHdueHdqUm9CdlU5M24KbFFUUytYRWNjRkwxb"
+    "klNb1pCZE4vZDBEN0xBWjVkOHBpTUVJQmlCeG1odEhGVkxP"
+    "SXBuWHRKOWdWSTVyUWU4dwpCZktTa2R6NVRMZEljZWNWSWx"
+    "2N0FWaWtsMVN2RjV4a3luT0hKSUpIajJYRHhvV2dhYW14bG"
+    "1ZMktGNnVtNC9ZCkxNc01KckVnclYxdE9DS1V4M1IxK2pMY"
+    "nZzejFBZ01CQUFFQ2dZQUFsTlZyYm91SU15bm9IMTZURW43"
+    "NUlzeVkKd0U3K0tVRDN2VURpRGNRQytuYi9uak81bGZUYWc"
+    "3M3Yva1d1Tjc3YmpxZCtQQkpLUWNFTlV0ejMyaE45elBWSQ"
+    "p5SzFRa1E4MmRlNHRCYlY4dFlDbmdXSFB3VWwxOHRrcFpzU"
+    "HJpd3E1MUpWOC9SdTdUanpRZDNHLzExQVdxcnFpCm9mMGtI"
+    "bC9PODBKbDNRZWJ3UUpCQU9pcEc1RlkzY1hOY0QwTjRiWjl"
+    "YMjZ6WWpNQWlBTG5WbktGcGpGblFqTUkKcVhCRitraWI2SU"
+    "11ZnZaRm1nT09LWG9vdzlyY3EyY2RwRlJ3bFVWQXdoRUNRU"
+    "URvR2JZNXhDNFoxMEVuQjErVAp4dGx5SEZzQW9LMXY3eGtG"
+    "c3RZV3hacXJUZ1hNemVkdkxiU2dHZ1lzMFNrZnlyQVFtREQ"
+    "yNGpjL25SOW0yNG0zCnJqaWxBa0JFZDI5cmFIRnJBamZqWD"
+    "dCcW1aNTUzMFFvcWlGY2FXT2hNLzlpVG5iR3VlZlM2R1RzO"
+    "VNTSlppZHEKcGJUYkV2elZ2Q1ZXeE5XVDlMOGxNalJiT3VG"
+    "aEFrQUZJcHgvaHJHbWJMYktVRVZ6RlpFMkR4Nk1Vd0hEV2p"
+    "6cApmVjF6UDRmK2hrbG1rSit3UEFpbENpNWN5M3ZuY2lxWE"
+    "UyYng3MnRkZ3ZKdzZpYVA0OURwQWtCTFlWZ3NaNHErCkxkL"
+    "0VYWFJibTJGOEd6MjVCaTFNV0p5OWxQOXBoY2FPaDdpZlBh"
+    "bVZDeTRlUGx4aTU3Wi9aTFByaC8wL2pzb3YKbExSTFdGVE8"
+    "2aldLCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K"
+  ));
+  // this is a public key
+  Y_THROW(f.validate_private_key_data(
+    "invalid0",
+    "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDS8J8cI0a"
+    "Ab1Pd55UE0vlxHHBS9ZyDKGQXTf3dA+ywGeXfKYjBCAYgcZ"
+    "obRxVSziKZ17SfYFSOa0HvMAXykpHc+Uy3SHHnFSJb+wFYp"
+    "JdUrxecZMpzhySCR49lw8aFoGmpsZZmNiherpuP2CzLDCax"
+    "IK1dbTgilMd0dfoy277M9QIDAQAB"
+  ));
+  Y_THROW(f.validate_private_key_data("invalid1", "invalid"));
+  // the following are both valid base64
+  Y_THROW(f.validate_private_key_data("invalid2", "YmwK"));
+  Y_THROW(f.validate_private_key_data("invalid3", "Y m x h a A o = "));
+
 
   // validate_certname
   N_THROW(f.validate_certname("graydon-at-venge-dot-net"));
@@ -134,16 +224,49 @@ UNIT_TEST(roundabout)
 
     keypair kp;
     // a public key packet
-    kp.pub = rsa_pub_key("this is not a real rsa key");
-    pw.consume_public_key(key_name("test@lala.com"), kp.pub);
+    kp.pub = rsa_pub_key(decode_base64_as<string>(
+      "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDS8J8cI0a"
+      "Ab1Pd55UE0vlxHHBS9ZyDKGQXTf3dA+ywGeXfKYjBCAYgcZ"
+      "obRxVSziKZ17SfYFSOa0HvMAXykpHc+Uy3SHHnFSJb+wFYp"
+      "JdUrxecZMpzhySCR49lw8aFoGmpsZZmNiherpuP2CzLDCax"
+      "IK1dbTgilMd0dfoy277M9QIDAQAB", origin::internal
+    ), origin::internal);
+    pw.consume_public_key(key_name("test1@lala.com"), kp.pub);
 
     // a keypair packet
-    kp.priv = rsa_priv_key("this is not a real rsa key either!");
-    pw.consume_key_pair(key_name("test@lala.com"), kp);
+    kp.priv = rsa_priv_key(decode_base64_as<string>(
+      "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUNkUUl"
+      "CQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQWw4d2dnSmJBZ0"
+      "VBQW9HQkFOTHdueHdqUm9CdlU5M24KbFFUUytYRWNjRkwxb"
+      "klNb1pCZE4vZDBEN0xBWjVkOHBpTUVJQmlCeG1odEhGVkxP"
+      "SXBuWHRKOWdWSTVyUWU4dwpCZktTa2R6NVRMZEljZWNWSWx"
+      "2N0FWaWtsMVN2RjV4a3luT0hKSUpIajJYRHhvV2dhYW14bG"
+      "1ZMktGNnVtNC9ZCkxNc01KckVnclYxdE9DS1V4M1IxK2pMY"
+      "nZzejFBZ01CQUFFQ2dZQUFsTlZyYm91SU15bm9IMTZURW43"
+      "NUlzeVkKd0U3K0tVRDN2VURpRGNRQytuYi9uak81bGZUYWc"
+      "3M3Yva1d1Tjc3YmpxZCtQQkpLUWNFTlV0ejMyaE45elBWSQ"
+      "p5SzFRa1E4MmRlNHRCYlY4dFlDbmdXSFB3VWwxOHRrcFpzU"
+      "HJpd3E1MUpWOC9SdTdUanpRZDNHLzExQVdxcnFpCm9mMGtI"
+      "bC9PODBKbDNRZWJ3UUpCQU9pcEc1RlkzY1hOY0QwTjRiWjl"
+      "YMjZ6WWpNQWlBTG5WbktGcGpGblFqTUkKcVhCRitraWI2SU"
+      "11ZnZaRm1nT09LWG9vdzlyY3EyY2RwRlJ3bFVWQXdoRUNRU"
+      "URvR2JZNXhDNFoxMEVuQjErVAp4dGx5SEZzQW9LMXY3eGtG"
+      "c3RZV3hacXJUZ1hNemVkdkxiU2dHZ1lzMFNrZnlyQVFtREQ"
+      "yNGpjL25SOW0yNG0zCnJqaWxBa0JFZDI5cmFIRnJBamZqWD"
+      "dCcW1aNTUzMFFvcWlGY2FXT2hNLzlpVG5iR3VlZlM2R1RzO"
+      "VNTSlppZHEKcGJUYkV2elZ2Q1ZXeE5XVDlMOGxNalJiT3VG"
+      "aEFrQUZJcHgvaHJHbWJMYktVRVZ6RlpFMkR4Nk1Vd0hEV2p"
+      "6cApmVjF6UDRmK2hrbG1rSit3UEFpbENpNWN5M3ZuY2lxWE"
+      "UyYng3MnRkZ3ZKdzZpYVA0OURwQWtCTFlWZ3NaNHErCkxkL"
+      "0VYWFJibTJGOEd6MjVCaTFNV0p5OWxQOXBoY2FPaDdpZlBh"
+      "bVZDeTRlUGx4aTU3Wi9aTFByaC8wL2pzb3YKbExSTFdGVE8"
+      "2aldLCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K", origin::internal
+    ), origin::internal);
+    pw.consume_key_pair(key_name("test2@lala.com"), kp);
 
     // an old privkey packet
     old_arc4_rsa_priv_key oldpriv("and neither is this!");
-    pw.consume_old_private_key(key_name("test@lala.com"), oldpriv);
+    pw.consume_old_private_key(key_name("test3@lala.com"), oldpriv);
 
     tmp = oss.str();
   }

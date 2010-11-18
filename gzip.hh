@@ -39,6 +39,7 @@ class Gzip_Compression : public Filter
       void write(const byte input[], u32bit length);
       void start_msg();
       void end_msg();
+      std::string name() const { return "Gzip_Compression"; }
 
       Gzip_Compression(u32bit = 1);
       ~Gzip_Compression();
@@ -62,6 +63,7 @@ class Gzip_Decompression : public Filter
       void write(const byte input[], u32bit length);
       void start_msg();
       void end_msg();
+      std::string name() const { return "Gzip_Decompression"; }
 
       Gzip_Decompression();
       ~Gzip_Decompression();

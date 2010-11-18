@@ -15,29 +15,6 @@ function get_passphrase(keyid)
 	return keyid.given_name
 end
 
--- Everything alice signs is trusted, nothing mallory signs is
--- trusted.  For certs signed by other people, everything is
--- trusted except for one particular cert...
--- For use of t_trusted.at.
-function get_revision_cert_trust(signers, id, name, val)
-   for k, v in pairs(signers) do
-      if v.given_name == "alice@trusted.com" then return true end
-      if v.given_name == "mallory@evil.com" then return false end
-   end
-   if (id == "0000000000000000000000000000000000000000"
-       and name == "bad-cert" and val == "bad-val")
-   then return false end
-   return true             
-end
-
-function get_manifest_cert_trust(signers, id, name, val)
-   return true
-end
-
-function get_file_cert_trust(signers, id, name, val)
-   return true
-end
-
 function accept_testresult_change(old_results, new_results)
    for test,res in pairs(old_results)
    do
@@ -85,6 +62,17 @@ attr_functions["test:test_attr"] =
     io.write(string.format("test:test_attr:%s:%s\n", filename, value))
   end
 
+-- Ensure that the mtn:execute attr is set the same for all platforms,
+-- since attrs are part of the manifest, and we need revids to be
+-- invariant across platforms
+if (attr_init_functions == nil) then
+  attr_init_functions = {}
+end
+attr_init_functions["mtn:execute"] =
+   function(filename)
+        return nil
+   end
+
 function get_mtn_command(host)
    return os.getenv("mtn")
 end
@@ -102,6 +90,11 @@ do
       if argv and argv[1] then
 	 table.insert(argv, "--confdir="..get_confdir())
 	 table.insert(argv, "--rcfile="..get_confdir().."/test_hooks.lua")
+	 local x = io.open("custom_test_hooks.lua", "rb")
+	 if (x ~= nil) then
+	    table.insert(argv, "--rcfile="..get_confdir().."/custom_test_hooks.lua")
+	    x:close()
+	 end
       end
 
       return argv;

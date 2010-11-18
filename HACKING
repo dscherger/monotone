@@ -247,8 +247,8 @@ bare capital letters scattered around.  Here's a quick guide.
       I(x != y):
          "invariant" -- if the condition is not true, then there
          is a bug in monotone.
-      E(x != y, F("x and y are not equal"), origin::user):
-         "error" -- a general error. The third argument is used to
+      E(x != y, origin::user, F("x and y are not equal")):
+         "error" -- a general error. The second argument is used to
          give the system a hint what kind of error that is. One of the
          origin types in origin_type.hh is possible.
 
@@ -360,9 +360,9 @@ Error conditions handle most other error cases, where monotone is unable to
 complete an operation due to an error, but that error is not caused by a bug
 in monotone,  e.g.
 
-    E(converted != NULL,
-        F("failed to convert string from %s to %s: '%s'")
-            % src_charset % dst_charset % src, origin::system);
+    E(converted != NULL, origin::system,
+      F("failed to convert string from %s to %s: '%s'") 
+        % src_charset % dst_charset % src);
 
 Each of these assertion macros are fatal and will cause an exception to be
 thrown that will ultimately cause the monotone process to exit.  Exceptions

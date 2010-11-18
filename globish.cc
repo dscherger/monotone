@@ -290,7 +290,7 @@ globish::globish(vector<arg_type>::const_iterator const & beg,
 // Debugging.
 
 static string
-decode(string::const_iterator p, string::const_iterator end)
+decode(string::const_iterator p, string::const_iterator end, bool escaped = true)
 {
   string s;
   for (; p != end; p++)
@@ -308,11 +308,12 @@ decode(string::const_iterator p, string::const_iterator end)
       case META_ALT_OR:     s.push_back(','); break;
 
         // Some of these are only special in certain contexts,
-        // but it does no harm to escape them always.
+        // so for these contexts we don't want to escape them
       case '[': case ']': case '-': case '!': case '^':
       case '{': case '}': case ',':
       case '*': case '?': case '\\':
-        s.push_back('\\');
+        if (escaped)
+          s.push_back('\\');
         // fall through
       default:
         s.push_back(*p);
@@ -324,6 +325,32 @@ string
 globish::operator()() const
 {
   return decode(compiled_pattern.begin(), compiled_pattern.end());
+}
+
+string
+globish::unescaped() const
+{
+  return decode(compiled_pattern.begin(), compiled_pattern.end(), false);
+}
+
+bool
+globish::contains_meta_chars() const
+{
+  string::const_iterator p = compiled_pattern.begin();
+  for (; p != compiled_pattern.end(); p++)
+    switch (*p)
+      {
+      case META_STAR:
+      case META_QUES:
+      case META_CC_BRA:
+      case META_CC_KET:
+      case META_CC_INV_BRA:
+      case META_ALT_BRA:
+      case META_ALT_KET:
+      case META_ALT_OR:
+          return true;
+      }
+  return false;
 }
 
 template <> void dump(globish const & g, string & s)
@@ -382,10 +409,13 @@ do_match(string::const_iterator sb, string::const_iterator se,
 
   while (p < pe)
     {
+      // pc will be the current pattern character
+      // p will point after pc
       pc = widen<unsigned int, char>(*p++);
+      // sc will be the current string character
+      // s will point to sc
       if(s < se) {
         sc = widen<unsigned int, char>(*s);
-        s++;
       } else {
         sc = 0;
       }
@@ -443,22 +473,22 @@ do_match(string::const_iterator sb, string::const_iterator se,
           // starting from places in s where that character appears.
           if (pc >= ' ')
             {
-              L(FL("after *: looking for '%c' in '%c%s'")
-                % (char)pc % (char)sc % string(s, se));
+              L(FL("after *: looking for '%c' in '%s'")
+                % (char)pc % string(s, se));
               p++;
               for (;;)
                 {
+                  ++s;
                   if (sc == pc && do_match(s, se, p, pe))
                     return true;
                   if (s >= se)
                     break;
-                  sc = widen<unsigned int, char>(*s++);
+                  sc = widen<unsigned int, char>(*s);
                 }
             }
           else
             {
               L(FL("metacharacter after *: doing it the slow way"));
-              s--;
               do
                 {
                   if (do_match(s, se, p, pe))
@@ -476,12 +506,13 @@ do_match(string::const_iterator sb, string::const_iterator se,
 
             prest = find_next_subpattern(p, pe, false);
             psub = p;
-            if(s > sb) {
-              s--;
-            }
+            // [ psub ... prest ) is the current bracket pair
+            // (including the *closing* braket, but not the opening braket)
             do
               {
                 pnext = find_next_subpattern(psub, pe, true);
+                // pnext points just after a comma or the closing braket
+                // [ psub ... pnext ) is one branch with trailing delimiter
                 srest = (prest == pe ? se : s);
                 for (; srest < se; srest++)
                   {
@@ -499,6 +530,10 @@ do_match(string::const_iterator sb, string::const_iterator se,
             while (pnext < prest);
             return false;
           }
+        }
+      if (s < se)
+        {
+          ++s;
         }
     }
   return s == se;

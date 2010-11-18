@@ -23,6 +23,10 @@ for a,b in pairs({revisions = "id", revision_certs = "revision_id", revision_anc
   local str = string.format("delete from %s where %s = x'%s'", a, b, del_rev)
   check(mtn("db", "execute", str), 0, false, false)
 end
+check(mtn("db", "execute",
+	  string.format("update branch_leaves set revision_id = x'%s' where revision_id = x'%s'",
+		  rev, del_rev)),
+      0, false, false)
 
 -- and also a few unused files shall float about
 check(mtn("fload"), 0, false, false, {"fileX"})

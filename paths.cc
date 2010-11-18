@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -621,6 +621,24 @@ file_path::dirname_basename(file_path & dir, path_component & base) const
     }
 }
 
+// returns true if this path is beneath other
+bool
+file_path::is_beneath_of(const file_path & other) const
+{
+  if (other.empty())
+    return true;
+
+  file_path basedir = dirname();
+  while (!basedir.empty())
+    {
+      L(FL("base: %s, other: %s") % basedir % other);
+      if (basedir == other)
+        return true;
+      basedir = basedir.dirname();
+    }
+  return false;
+}
+
 // count the number of /-separated components of the path.
 unsigned int
 file_path::depth() const
@@ -1048,11 +1066,28 @@ go_to_workspace(system_path const & new_workspace)
 }
 
 void
+get_current_workspace(system_path & workspace)
+{
+  workspace = working_root.get_but_unused();
+}
+
+void
 mark_std_paths_used(void)
 {
   working_root.get();
   initial_rel_path.get();
 }
+
+void
+reset_std_paths(void)
+{
+  // we don't reset initial_abs_path here, because it is only set in
+  // monotone.cc:cpp_main. initial_rel_path, working_root are reset for each
+  // command.
+  initial_rel_path.unset();
+  working_root.unset();
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
 // utility used by migrate_ancestry

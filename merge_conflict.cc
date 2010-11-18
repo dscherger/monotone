@@ -2230,7 +2230,7 @@ parse_resolve_conflicts_opts (options const & opts,
                               roster_merge_result & result,
                               bool & resolutions_given)
 {
-if (opts.resolve_conflicts_given || opts.resolve_conflicts_file_given)
+  if (opts.resolve_conflicts)
     {
       resolutions_given = true;
 
@@ -2261,6 +2261,8 @@ if (opts.resolve_conflicts_given || opts.resolve_conflicts_file_given)
           pars.sym();
           pars.hex(temp);
 
+          // if there is no ancestor revision, then left is an ancestor of
+          // right, or vice versa, and there can be no conflicts.
           read_conflict_file_core (pars, left_roster, right_roster, result, true);
         }
     }

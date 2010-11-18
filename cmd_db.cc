@@ -9,6 +9,7 @@
 
 #include "base.hh"
 #include <iostream>
+#include <set>
 #include <utility>
 
 #include "charset.hh"
@@ -137,13 +138,13 @@ CMD(db_migrate, "migrate", "", CMD_REF(db), "",
   {
     database db(app);
     db.migrate(keys, mstat);
-    app.dbcache.reset();
+    database::reset_cache();
   }
 
   if (mstat.need_regen())
     {
       database db(app);
-      regenerate_caches(db);
+      regenerate_caches(db, mstat.regen_type());
     }
 
   if (mstat.need_flag_day())
@@ -167,7 +168,12 @@ CMD(db_execute, "execute", "", CMD_REF(db), "",
   db.debug(idx(args, 0)(), cout);
 }
 
-CMD(db_kill_rev_locally, "kill_rev_locally", "", CMD_REF(db), "ID",
+CMD_GROUP(db_local, "local", "", CMD_REF(database),
+          N_("Commands that delete items from the local database"),
+          N_("Deletions cannot be propagated through netsync, so the deleted items "
+             "will come back if you sync with a database that still has them."));
+
+CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "ID",
     N_("Kills a revision from the local database"),
     "",
     options::opts::none)
@@ -239,29 +245,74 @@ CMD(db_kill_rev_locally, "kill_rev_locally", "", CMD_REF(db), "ID",
   db.delete_existing_rev_and_certs(revid);
 }
 
-CMD(db_kill_branch_certs_locally, "kill_branch_certs_locally", "", CMD_REF(db),
-    "BRANCH",
-    N_("Kills branch certificates from the local database"),
-    "",
-    options::opts::none)
+CMD(db_kill_certs_locally, "kill_certs", "", CMD_REF(db_local),
+    "SELECTOR CERTNAME [CERTVAL]",
+    N_("Deletes the specified certs from the local database"),
+    N_("Deletes all certs which are on the given revision(s) and "
+       "have the given name and if a value is specified then also "
+       "the given value."),
+    options::opts::revision)
 {
-  if (args.size() != 1)
+  if (args.size() < 2 || args.size() > 3)
     throw usage(execid);
 
-  database db(app);
-  db.delete_branch_named(typecast_vocab<cert_value>(idx(args, 0)));
-}
-
-CMD(db_kill_tag_locally, "kill_tag_locally", "", CMD_REF(db), "TAG",
-    N_("Kills a tag from the local database"),
-    "",
-    options::opts::none)
-{
-  if (args.size() != 1)
-    throw usage(execid);
+  string selector = idx(args,0)();
+  cert_name name = typecast_vocab<cert_name>(idx(args,1));
 
   database db(app);
-  db.delete_tag_named(typecast_vocab<cert_value>(idx(args, 0)));
+  project_t project(db);
+
+  set<revision_id> revisions;
+  complete(app.opts, app.lua, project, selector, revisions);
+
+
+  transaction_guard guard(db);
+  set<cert_value> branches;
+
+  if (args.size() == 2)
+    {
+      L(FL("deleting all certs named '%s' on %d revisions")
+        % name % revisions.size());
+      for (set<revision_id>::const_iterator r = revisions.begin();
+           r != revisions.end(); ++r)
+        {
+          if (name == branch_cert_name)
+            {
+              vector<cert> to_delete;
+              db.get_revision_certs(*r, name, to_delete);
+              for (vector<cert>::const_iterator i = to_delete.begin();
+                   i != to_delete.end(); ++i)
+                {
+                  branches.insert(i->value);
+                }
+            }
+          db.delete_certs_locally(*r, name);
+        }
+    }
+  else
+    {
+      cert_value value = typecast_vocab<cert_value>(idx(args,2));
+      L(FL("deleting all certs with name '%s' and value '%s' on %d revisions")
+        % name % value % revisions.size());
+      for (set<revision_id>::const_iterator r = revisions.begin();
+           r != revisions.end(); ++r)
+        {
+          db.delete_certs_locally(*r, name, value);
+        }
+      branches.insert(value);
+    }
+
+  for (set<cert_value>::const_iterator i = branches.begin();
+       i != branches.end(); ++i)
+    {
+      db.recalc_branch_leaves(*i);
+      set<revision_id> leaves;
+      db.get_branch_leaves(*i, leaves);
+      if (leaves.empty())
+        db.clear_epoch(typecast_vocab<branch_name>(*i));
+    }
+
+  guard.commit();
 }
 
 CMD(db_check, "check", "", CMD_REF(db), "",
@@ -293,7 +344,7 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
   db.check_is_not_rosterified();
 
   // early short-circuit to avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   build_changesets_from_manifest_ancestry(db, keys, project, set<string>());
 }
@@ -301,7 +352,7 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
 CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
     N_("Converts the database to the rosters format"),
     "",
-    options::opts::drop_attr)
+    options::opts::attrs_to_drop)
 {
   database db(app);
   key_store keys(app);
@@ -314,7 +365,7 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
   db.check_is_not_rosterified();
 
   // early short-circuit to avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  cache_user_key(app.opts, project, keys, app.lua);
 
   build_roster_style_revs_from_manifest_style_revs(db, keys, project,
                                                    app.opts.attrs_to_drop);
@@ -329,7 +380,7 @@ CMD(db_regenerate_caches, "regenerate_caches", "", CMD_REF(db), "",
     F("no arguments needed"));
 
   database db(app);
-  regenerate_caches(db);
+  regenerate_caches(db, regen_all);
 }
 
 CMD_HIDDEN(clear_epoch, "clear_epoch", "", CMD_REF(db), "BRANCH",
@@ -400,19 +451,106 @@ CMD(unset, "unset", "", CMD_REF(variables), N_("DOMAIN NAME"),
   db.clear_var(k);
 }
 
+CMD(register_workspace, "register_workspace",  "", CMD_REF(variables),
+    N_("[WORKSPACE_PATH]"),
+    N_("Registers a new workspace for the current database"),
+    N_("This command adds WORKSPACE_PATH to the list of `known-workspaces'."),
+    options::opts::none)
+{
+  if (args.size() > 1)
+    throw usage(execid);
+
+  E(args.size() == 1 || workspace::found, origin::user,
+    F("No workspace given"));
+
+  system_path workspace;
+  if (args.size() == 1)
+    workspace = system_path(idx(args, 0)(), origin::user);
+  else
+    get_current_workspace(workspace);
+
+  database db(app);
+  db.register_workspace(workspace);
+}
+
+CMD(unregister_workspace, "unregister_workspace", "", CMD_REF(variables),
+    N_("[WORKSPACE_PATH]"),
+    N_("Unregisters an existing workspace for the current database"),
+    N_("This command removes WORKSPACE_PATH to the list of `known-workspaces'."),
+    options::opts::none)
+{
+  if (args.size() > 1)
+    throw usage(execid);
+
+  E(args.size() == 1 || workspace::found, origin::user,
+    F("No workspace given"));
+
+  system_path workspace;
+  if (args.size() == 1)
+    workspace = system_path(idx(args, 0)(), origin::user);
+  else
+    get_current_workspace(workspace);
+
+  database db(app);
+  db.unregister_workspace(workspace);
+}
+
+CMD(cleanup_workspace_list, "cleanup_workspace_list", "", CMD_REF(variables), "",
+    N_("Removes all invalid, registered workspace paths for the current database"),
+    "",
+    options::opts::none)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+
+  vector<system_path> original_workspaces, valid_workspaces;
+
+  database db(app);
+  db.get_registered_workspaces(original_workspaces);
+
+  database_path_helper helper(app.lua);
+
+  for (vector<system_path>::const_iterator i = original_workspaces.begin();
+       i != original_workspaces.end(); ++i)
+    {
+      system_path workspace_path(*i);
+      if (!directory_exists(workspace_path / bookkeeping_root_component))
+        {
+          L(FL("ignoring missing workspace '%s'") % workspace_path);
+          continue;
+        }
+
+      options workspace_opts;
+      workspace::get_options(workspace_path, workspace_opts);
+
+      system_path workspace_db_path;
+      helper.get_database_path(workspace_opts, workspace_db_path);
+
+      if (workspace_db_path != db.get_filename())
+        {
+          L(FL("ignoring workspace '%s', expected database %s, "
+               "but has %s configured in _MTN/options")
+              % workspace_path % db.get_filename() % workspace_db_path);
+          continue;
+        }
+
+      valid_workspaces.push_back(workspace_path);
+    }
+
+  db.set_registered_workspaces(valid_workspaces);
+}
+
 CMD(complete, "complete", "", CMD_REF(informative),
     N_("(revision|file|key) PARTIAL-ID"),
     N_("Completes a partial identifier"),
     "",
-    options::opts::verbose)
+    options::opts::none)
 {
   if (args.size() != 2)
     throw usage(execid);
 
   database db(app);
   project_t project(db);
-
-  bool verbose = app.opts.verbose;
 
   E(idx(args, 1)().find_first_not_of("abcdef0123456789") == string::npos,
     origin::user,
@@ -425,7 +563,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
       for (set<revision_id>::const_iterator i = completions.begin();
            i != completions.end(); ++i)
         {
-          if (!verbose) cout << *i << '\n';
+          if (!app.opts.full) cout << *i << '\n';
           else cout << describe_revision(app.opts, app.lua, project, *i) << '\n';
         }
     }
@@ -446,7 +584,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
            i != completions.end(); ++i)
         {
           cout << i->first;
-          if (verbose) cout << ' ' << i->second();
+          if (app.opts.full) cout << ' ' << i->second();
           cout << '\n';
         }
     }

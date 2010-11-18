@@ -20,6 +20,7 @@
 #include "lexical_cast.hh"
 #include "constants.hh"
 #include "platform.hh"
+#include "file_io.hh" // make_dir_for
 #include "sanity.hh"
 #include "simplestring_xform.hh"
 
@@ -35,6 +36,7 @@ using std::string;
 using std::vector;
 
 using boost::format;
+using boost::lexical_cast;
 
 // set by sanity::initialize
 std::string const * prog_name_ptr;
@@ -65,9 +67,13 @@ origin::type_to_string(origin::type t)
 
 struct sanity::impl
 {
-  bool debug;
-  bool quiet;
-  bool reallyquiet;
+  int verbosity;
+  // logically this should be "verbosity >= 1", but debug messages aren't
+  // captured for automate output and doing so would probably be an
+  // information leak in the case of remote_automate. So track debug-ness
+  // separately so it can be unchanged when a subcommand changes the
+  // verbosity level.
+  bool is_debug;
   boost::circular_buffer<char> logbuf;
   std::string real_prog_name;
   std::string filename;
@@ -79,7 +85,7 @@ struct sanity::impl
   void *out_of_band_opaque;
 
   impl() :
-    debug(false), quiet(false), reallyquiet(false), logbuf(0xffff),
+    verbosity(0), is_debug(false), logbuf(0xffff),
     already_dumping(false), out_of_band_function(0), out_of_band_opaque(0)
   {}
 };
@@ -151,6 +157,19 @@ sanity::dump_buffer()
   if (!imp->filename.empty())
     {
       ofstream out(imp->filename.c_str());
+      if (!out)
+        {
+          try
+            {
+              make_dir_for(system_path(imp->filename, origin::internal));
+              out.open(imp->filename.c_str());
+            }
+          catch (...)
+            {
+              inform_message((FL("failed to create directory for %s")
+                              % imp->filename).str());
+            }
+        }
       if (out)
         {
           copy(imp->logbuf.begin(), imp->logbuf.end(),
@@ -170,41 +189,42 @@ sanity::dump_buffer()
                    "(maybe you want --debug or --dump?)");
 }
 
+int
+sanity::set_verbosity(int level, bool allow_debug_change)
+{
+  I(imp);
+  int ret = imp->verbosity;
+  imp->verbosity = level;
+
+  if (allow_debug_change)
+    {
+      imp->is_debug = (level >= 1);
+
+      if (imp->is_debug)
+        {
+          // it is possible that some pre-setting-of-debug data
+          // accumulated in the log buffer (during earlier option processing)
+          // so we will dump it now
+          ostringstream oss;
+          vector<string> lines;
+          copy(imp->logbuf.begin(), imp->logbuf.end(), ostream_iterator<char>(oss));
+          split_into_lines(oss.str(), lines);
+          for (vector<string>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+            inform_log((*i) + "\n");
+        }
+    }
+  return ret;
+}
 void
 sanity::set_debug()
 {
-  I(imp);
-  imp->quiet = false;
-  imp->reallyquiet = false;
-  imp->debug = true;
-
-  // it is possible that some pre-setting-of-debug data
-  // accumulated in the log buffer (during earlier option processing)
-  // so we will dump it now
-  ostringstream oss;
-  vector<string> lines;
-  copy(imp->logbuf.begin(), imp->logbuf.end(), ostream_iterator<char>(oss));
-  split_into_lines(oss.str(), lines);
-  for (vector<string>::const_iterator i = lines.begin(); i != lines.end(); ++i)
-    inform_log((*i) + "\n");
+  set_verbosity(1, true);
 }
-
-void
-sanity::set_quiet()
+int
+sanity::get_verbosity() const
 {
   I(imp);
-  imp->debug = false;
-  imp->quiet = true;
-  imp->reallyquiet = false;
-}
-
-void
-sanity::set_reallyquiet()
-{
-  I(imp);
-  imp->debug = false;
-  imp->quiet = true;
-  imp->reallyquiet = true;
+  return imp->verbosity;
 }
 
 void
@@ -241,25 +261,7 @@ sanity::debug_p()
   if (!imp)
     throw std::logic_error("sanity::debug_p called "
                             "before sanity::initialize");
-  return imp->debug;
-}
-
-bool
-sanity::quiet_p()
-{
-  if (!imp)
-    throw std::logic_error("sanity::quiet_p called "
-                            "before sanity::initialize");
-  return imp->quiet;
-}
-
-bool
-sanity::reallyquiet_p()
-{
-  if (!imp)
-    throw std::logic_error("sanity::reallyquiet_p called "
-                            "before sanity::initialize");
-  return imp->reallyquiet;
+  return imp->is_debug;
 }
 
 void
@@ -376,7 +378,7 @@ sanity::index_failure(char const * vec_expr,
   if (!imp)
     throw std::logic_error("sanity::index_failure occured "
                             "before sanity::initialize");
-  if (imp->debug)
+  if (debug_p())
     log(FL(pattern) % file % line % idx_expr % idx % vec_expr % sz,
         file, line);
   gasp();
@@ -445,7 +447,7 @@ sanity::gasp()
     }
   imp->gasp_dump = out.str();
   L(FL("finished saving work set"));
-  if (imp->debug)
+  if (debug_p())
     {
       inform_log("contents of work set:");
       inform_log(imp->gasp_dump);
@@ -484,6 +486,38 @@ dump(bool const & obj, string & out)
 {
   out = (obj ? "true" : "false");
 }
+template <> void
+dump(int const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+template <> void
+dump(unsigned int const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+template <> void
+dump(long const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+template <> void
+dump(unsigned long const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+#ifdef USING_LONG_LONG
+template <> void
+dump(long long const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+template <> void
+dump(unsigned long long const & val, string & out)
+{
+  out = lexical_cast<string>(val);
+}
+#endif
 
 void
 sanity::print_var(std::string const & value, char const * var,

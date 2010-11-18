@@ -57,11 +57,11 @@ check(mtn("conflicts", "resolve_first", "user", "foo"), 0, nil, nil)
 
 check(mtn("propagate", branch , branch .. "-propagate", "--resolve-conflicts"), 0, nil, true)
 merged = merged_revision()
-check(mtn("db", "kill_rev_locally", merged), 0, nil, true)
+check(mtn("local", "kill_revision", merged), 0, nil, true)
 
 check(mtn("explicit_merge", first, second, branch,"--resolve-conflicts"), 0, nil, true)
 merged = merged_revision()
-check(mtn("db", "kill_rev_locally", merged), 0, nil, true)
+check(mtn("local", "kill_revision", merged), 0, nil, true)
 
 -- create a second head on 'branch'
 writefile("foo", branch .. "-foo third revision")
@@ -70,6 +70,6 @@ check(mtn("conflicts", "store"), 0, nil, true)
 check(mtn("conflicts", "resolve_first", "user", "foo"), 0, nil, nil)
 check(mtn("merge", "--branch", branch, "--resolve-conflicts"), 0, nil, true)
 merged = merged_revision()
-check(mtn("db", "kill_rev_locally", merged), 0, nil, true)
+check(mtn("local", "kill_revision", merged), 0, nil, true)
 
 -- end of file

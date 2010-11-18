@@ -59,6 +59,8 @@ struct globish : origin_aware
           std::vector<arg_type>::const_iterator const & end);
 
   std::string operator()(void) const;
+  std::string unescaped() const;
+  bool contains_meta_chars() const;
   bool matches(std::string const & target) const;
 
 private:

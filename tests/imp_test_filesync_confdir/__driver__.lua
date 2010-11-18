@@ -18,7 +18,7 @@ if rcfile ~= nil then
    rcfile:close()
 end
 
-check(mtn("sync", "file:test2.db", "testbranch"), 0, true, false)
+check(mtn("sync", "file://" .. test.root .. "/test2.db?testbranch"), 0, true, false)
 
 n = 0
 

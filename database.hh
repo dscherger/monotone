@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -14,10 +15,12 @@
 #include <set>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
-#include <botan/version.h>
 
 #include "rev_types.hh"
 #include "cert.hh"
+#include "options.hh"
+
+using std::vector;
 
 class app_state;
 class lua_hooks;
@@ -76,25 +79,34 @@ typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 class database_impl;
 struct key_identity_info;
 
+typedef std::map<system_path, boost::shared_ptr<database_impl> > database_cache;
+
 class database
 {
   //
   // --== Opening the database and schema checking ==--
   //
 public:
-  explicit database(app_state &);
+  explicit database(app_state & app);
+  database(options const & o, lua_hooks & l);
   ~database();
 
   system_path get_filename();
   bool is_dbfile(any_path const & file);
   bool database_specified();
   void check_is_not_rosterified();
+  void create_if_not_exists();
 
   void ensure_open();
   void ensure_open_for_format_changes();
   void ensure_open_for_cache_reset();
+
+  // this is about resetting the database_impl cache
+  static void reset_cache();
+
 private:
   void ensure_open_for_maintenance();
+  void init();
 
   //
   // --== Transactions ==--
@@ -107,6 +119,7 @@ private:
   //
 public:
   bool file_version_exists(file_id const & ident);
+  bool file_size_exists(file_id const & ident);
   bool revision_exists(revision_id const & ident);
   bool roster_link_exists_for_revision(revision_id const & ident);
   bool roster_exists_for_revision(revision_id const & ident);
@@ -116,6 +129,14 @@ public:
   // from deltas (if they exist)
   void get_file_version(file_id const & ident,
                         file_data & dat);
+
+  // gets the (cached) size of the file if it exists
+  void get_file_size(file_id const & ident,
+                     file_size & size);
+
+  // gets a map of all file sizes of this particular roster
+  void get_file_sizes(roster_t const & roster,
+                      std::map<file_id, file_size> & file_sizes);
 
   // put file w/o predecessor into db
   void put_file(file_id const & new_id,
@@ -312,9 +333,10 @@ public:
   outdated_indicator get_branch_leaves(cert_value const & value,
                                        std::set<revision_id> & revisions);
 
-private:
-  void recalc_branch_leaves(cert_value const & value);
-public:
+  // used by check_db, regenerate_caches
+  void compute_branch_leaves(cert_value const & branch_name, std::set<revision_id> & revs);
+  void recalc_branch_leaves(cert_value const & branch_name);
+  void delete_existing_branch_leaves();
 
   // Used through project.cc
   outdated_indicator get_revision_certs(revision_id const & ident,
@@ -331,7 +353,7 @@ public:
                                cert_name const &,
                                cert_value const &)> cert_trust_checker;
   // this takes a project_t so it can translate key names for the trust hook
-  void erase_bogus_certs(project_t & project, std::vector<cert> & certs);
+  void erase_bogus_certs(project_t const & project, std::vector<cert> & certs);
   // permit alternative trust functions
   void erase_bogus_certs(std::vector<cert> & certs,
                          cert_trust_checker const & checker);
@@ -364,6 +386,14 @@ public:
 
   void clear_var(var_key const & key);
 
+  void register_workspace(system_path const & workspace);
+
+  void unregister_workspace(system_path const & workspace);
+
+  void get_registered_workspaces(vector<system_path> & workspaces);
+
+  void set_registered_workspaces(vector<system_path> const & workspaces);
+
   //
   // --== Completion ==--
   //
@@ -395,6 +425,7 @@ public:
                                    std::set<revision_id> & completions);
   void select_date(std::string const & date, std::string const & comparison,
                    std::set<revision_id> & completions);
+  void select_key(key_id const & id, std::set<revision_id> & completions);
 
   //
   // --== The 'db' family of top-level commands ==--
@@ -411,10 +442,12 @@ public:
   void fix_bad_certs(bool drop_not_fixable);
   // for kill_rev_locally:
   void delete_existing_rev_and_certs(revision_id const & rid);
-  // for kill_branch_certs_locally:
-  void delete_branch_named(cert_value const & branch);
-  // for kill_tag_locally:
-  void delete_tag_named(cert_value const & tag);
+  // for kill_certs_locally:
+  void delete_certs_locally(revision_id const & rev,
+                            cert_name const & name);
+  void delete_certs_locally(revision_id const & rev,
+                            cert_name const & name,
+                            cert_value const & value);
 
 public:
   // branches
@@ -456,12 +489,16 @@ public:
   void put_roster_for_revision(revision_id const & new_id,
                                revision_t const & rev);
 
+  // for regenerate_rosters
+  void delete_existing_file_sizes();
+  void put_file_sizes_for_revision(revision_t const & rev);
+
 private:
+  static database_cache dbcache;
+
   boost::shared_ptr<database_impl> imp;
+  options opts;
   lua_hooks & lua;
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  boost::shared_ptr<lazy_rng> rng;
-#endif
 };
 
 // not a member function, defined in database_check.cc
@@ -562,6 +599,20 @@ public:
   {
     acquire();
   }
+};
+
+class database_path_helper
+{
+  lua_hooks & lua;
+public:
+  database_path_helper(lua_hooks & l) : lua(l) {}
+
+  void get_database_path(options const & opts, system_path & path);
+
+  void maybe_set_default_alias(options & opts);
+
+private:
+  void validate_and_clean_alias(std::string const & alias, path_component & pc);
 };
 
 #endif // __DATABASE_HH__

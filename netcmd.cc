@@ -604,10 +604,18 @@ netcmd::write_automate_cmd(key_id const & client,
 {
   cmd_code = automate_cmd;
 
-  I(client.inner()().size() == constants::merkle_hash_length_in_bytes);
+  I(client.inner()().empty() ||
+    client.inner()().size() == constants::merkle_hash_length_in_bytes);
   I(nonce1().size() == constants::merkle_hash_length_in_bytes);
 
-  payload += client.inner()();
+  if (client.inner()().empty())
+    {
+      payload += string(constants::merkle_hash_length_in_bytes, 0);
+    }
+  else
+    {
+      payload += client.inner()();
+    }
   payload += nonce1();
 
   insert_variable_length_string(hmac_key_encrypted(), payload);

@@ -19,6 +19,7 @@
 #include <botan/botan.h>
 
 #include "app_state.hh"
+#include "database.hh"
 #include "botan_pipe_cache.hh"
 #include "commands.hh"
 #include "sanity.hh"
@@ -76,49 +77,6 @@ pipe_cache_cleanup * global_pipe_cleanup_object;
 Botan::Pipe * unfiltered_pipe;
 static unsigned char unfiltered_pipe_cleanup_mem[sizeof(cached_botan_pipe)];
 
-option::concrete_option_set
-read_global_options(options & opts, args_vector & args)
-{
-  option::concrete_option_set optset =
-    options::opts::all_options().instantiate(&opts);
-  optset.from_command_line(args);
-
-  return optset;
-}
-
-// read command-line options and return the command name
-commands::command_id read_options(options & opts, option::concrete_option_set & optset, args_vector & args)
-{
-  commands::command_id cmd;
-
-  if (!opts.args.empty())
-    {
-      // There are some arguments remaining in the command line.  Try first
-      // to see if they are a command.
-      cmd = commands::complete_command(opts.args);
-      I(!cmd.empty());
-
-      // Reparse options now that we know what command-specific options
-      // are allowed.
-      options::options_type cmdopts = commands::command_options(cmd);
-      optset.reset();
-      optset = (options::opts::globals() | cmdopts).instantiate(&opts);
-      optset.from_command_line(args, false);
-
-      // Remove the command name from the arguments.  Rember that the group
-      // is not taken into account.
-      I(opts.args.size() >= cmd.size() - 1);
-
-      for (args_vector::size_type i = 1; i < cmd.size(); i++)
-        {
-          I(cmd[i]().find(opts.args[0]()) == 0);
-          opts.args.erase(opts.args.begin());
-        }
-    }
-
-  return cmd;
-}
-
 void
 mtn_terminate_handler()
 {
@@ -159,6 +117,12 @@ cpp_main(int argc, char ** argv)
       pipe_cache_cleanup acquire_botan_pipe_caching;
       unfiltered_pipe = new Botan::Pipe;
       new (unfiltered_pipe_cleanup_mem) cached_botan_pipe(unfiltered_pipe);
+
+      class _DbCacheEmptier {
+      public:
+        _DbCacheEmptier() { }
+        ~_DbCacheEmptier() { database::reset_cache(); }
+      } db_cache_emptier;
 
       // Record where we are.  This has to happen before any use of
       // paths.hh objects.
@@ -218,9 +182,11 @@ cpp_main(int argc, char ** argv)
         {
           // read global options first
           // command specific options will be read below
-          args_vector opt_args(args);
-          option::concrete_option_set optset
-            = read_global_options(app.opts, opt_args);
+          app.reset_info.cmdline_args = args;
+
+          options::opts::all_options().instantiate(&app.opts)
+            .from_command_line(app.reset_info.cmdline_args,
+                               option::concrete_option_set::preparse);
 
           if (app.opts.version_given)
             {
@@ -245,17 +211,31 @@ cpp_main(int argc, char ** argv)
           // we'll pick up _MTN/monotonerc as well as the user's monotonerc.
           app.lua.load_rcfiles(app.opts);
 
-          // now grab any command specific options and parse the command
-          // this needs to happen after the monotonercs have been read
-          commands::command_id cmd = read_options(app.opts, optset, opt_args);
+          // figure out what command is being run
+          // this needs to be after the hooks are loaded, because new
+          // command names may have been added with the alias_command()
+          // lua extension function
+          commands::command_id cmd_id;
+          if (!app.opts.args.empty())
+            {
+              cmd_id = commands::complete_command(app.opts.args);
+            }
 
           // check if the user specified default arguments for this command
-          args_vector default_args;
-          if (!cmd.empty()
-              && app.lua.hook_get_default_command_options(cmd, default_args))
-            optset.from_command_line(default_args, false);
+          if (!cmd_id.empty())
+            app.lua.hook_get_default_command_options(cmd_id,
+                                                     app.reset_info.default_args);
 
-          if (workspace::found)
+          if (app.opts.log_given)
+            {
+              ui.redirect_log_to(app.opts.log);
+            }
+          global_sanity.set_verbosity(app.opts.verbosity, true);
+          if (app.opts.dump_given)
+            {
+              global_sanity.set_dump_path(app.opts.dump.as_external());
+            }
+          else if (workspace::found)
             {
               bookkeeping_path dump_path;
               workspace::get_local_dump_path(dump_path);
@@ -274,20 +254,20 @@ cpp_main(int argc, char ** argv)
 
           // stop here if they asked for help
           if (app.opts.help)
-            throw usage(cmd);
+            throw usage(cmd_id);
 
           // main options processed, now invoke the
           // sub-command w/ remaining args
-          if (cmd.empty())
+          if (cmd_id.empty())
             throw usage(commands::command_id());
 
 
           // as soon as a command requires a workspace, this is set to true
           workspace::used = false;
 
-          commands::process(app, cmd, app.opts.args);
+          commands::process(app, cmd_id, app.opts.args);
 
-          workspace::maybe_set_options(app.opts);
+          workspace::maybe_set_options(app.opts, app.lua);
 
           // The command will raise any problems itself through
           // exceptions.  If we reach this point, it is because it

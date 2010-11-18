@@ -1,3 +1,8 @@
+    path ""
+new_type "directory"
+ fs_type "directory"
+  status "added" "known"
+
     path "source"
 new_type "directory"
  fs_type "directory"

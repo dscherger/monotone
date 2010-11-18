@@ -277,7 +277,7 @@ function get_encloser_pattern(name)
    return "^[[:alnum:]$_]"
 end
 
-function edit_comment(basetext, user_log_message)
+function edit_comment(user_log_message)
    local exe = nil
 
    -- top priority is VISUAL, then EDITOR, then a series of hardcoded
@@ -299,12 +299,10 @@ function edit_comment(basetext, user_log_message)
 
    local tmp, tname = temp_file()
    if (tmp == nil) then return nil end
-   basetext = "MTN: " .. string.gsub(basetext, "\n", "\nMTN: ") .. "\n"
    tmp:write(user_log_message)
    if user_log_message == "" or string.sub(user_log_message, -1) ~= "\n" then
       tmp:write("\n")
    end
-   tmp:write(basetext)
    io.close(tmp)
 
    -- By historical convention, VISUAL and EDITOR can contain arguments
@@ -316,22 +314,22 @@ function edit_comment(basetext, user_log_message)
    if (not string.find(exe, "[^%w_.+-]")) then
       -- safe to call spawn directly
       if (execute(exe, tname) ~= 0) then
-     io.write(string.format(gettext("Error running editor '%s' "..
-                    "to enter log message\n"),
+         io.write(string.format(gettext("Error running editor '%s' "..
+                                        "to enter log message\n"),
                                 exe))
-     os.remove(tname)
-     return nil
+         os.remove(tname)
+         return nil
       end
    else
       -- must use shell
       local shell = os.getenv("SHELL")
       if (shell == nil) then shell = "sh" end
       if (not program_exists_in_path(shell)) then
-     io.write(string.format(gettext("Editor command '%s' needs a shell, "..
-                    "but '%s' is not to be found"),
-                    exe, shell))
-     os.remove(tname)
-     return nil
+         io.write(string.format(gettext("Editor command '%s' needs a shell, "..
+                                        "but '%s' is not to be found"),
+                                exe, shell))
+         os.remove(tname)
+         return nil
       end
 
       -- Single-quoted strings in both Bourne shell and csh can contain
@@ -339,24 +337,17 @@ function edit_comment(basetext, user_log_message)
       local safe_tname = " '" .. string.gsub(tname, "'", "'\\''") .. "'"
 
       if (execute(shell, "-c", editor .. safe_tname) ~= 0) then
-     io.write(string.format(gettext("Error running editor '%s' "..
-                    "to enter log message\n"),
+         io.write(string.format(gettext("Error running editor '%s' "..
+                                        "to enter log message\n"),
                                 exe))
-     os.remove(tname)
-     return nil
+         os.remove(tname)
+         return nil
       end
    end
 
    tmp = io.open(tname, "r")
    if (tmp == nil) then os.remove(tname); return nil end
-   local res = ""
-   local line = tmp:read()
-   while(line ~= nil) do
-      if (not string.find(line, "^MTN:")) then
-         res = res .. line .. "\n"
-      end
-      line = tmp:read()
-   end
+   local res = tmp:read("*a")
    io.close(tmp)
    os.remove(tname)
    return res
@@ -1018,21 +1009,21 @@ function expand_date(str)
    if str == "now"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%FT%T", t)
+      return os.date("%Y-%m-%dT%H:%M:%S", t)
    end
 
    -- today don't uses the time         # for xgettext's sake, an extra quote
    if str == "today"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%F", t)
+      return os.date("%Y-%m-%d", t)
    end
 
    -- "yesterday", the source of all hangovers
    if str == "yesterday"
    then
       local t = os.time(os.date('!*t'))
-      return os.date("%F", t - 86400)
+      return os.date("%Y-%m-%d", t - 86400)
    end
 
    -- "CVS style" relative dates such as "3 weeks ago"
@@ -1050,9 +1041,9 @@ function expand_date(str)
       local t = os.time(os.date('!*t'))
       if trans[type] <= 3600
       then
-        return os.date("%FT%T", t - (n * trans[type]))
+        return os.date("%Y-%m-%dT%H:%M:%S", t - (n * trans[type]))
       else
-        return os.date("%F", t - (n * trans[type]))
+        return os.date("%Y-%m-%d", t - (n * trans[type]))
       end
    end
 
@@ -1215,13 +1206,13 @@ function get_netsync_connect_command(uri, args)
                 table.insert(argv, "-")
                 table.insert(argv, "UNIX-CONNECT:" .. uri["path"])
         else
-            -- start remote monotone process
             if argv then
+                    -- start remote monotone process
 
                     table.insert(argv, get_mtn_command(uri["host"]))
 
                     if args["debug"] then
-                            table.insert(argv, "--debug")
+                            table.insert(argv, "--verbose")
                     else
                             table.insert(argv, "--quiet")
                     end
@@ -1232,6 +1223,8 @@ function get_netsync_connect_command(uri, args)
                     table.insert(argv, "--stdio")
                     table.insert(argv, "--no-transport-auth")
 
+            -- else scheme does not require starting a new remote
+            -- process (ie mtn:)
             end
         end
         return argv
@@ -1256,8 +1249,18 @@ function get_remote_unix_socket_command(host)
 end
 
 function get_default_command_options(command)
-   local default_args = {}
-   return default_args
+    local default_args = {}
+    return default_args
+end
+
+function get_default_database_alias()
+    return ":default.mtn"
+end
+
+function get_default_database_locations()
+    local paths = {}
+    table.insert(paths, get_confdir() .. "/databases")
+    return paths
 end
 
 hook_wrapper_dump                = {}
@@ -1314,8 +1317,11 @@ do
    --   startup			Corresponds to note_mtn_startup()
    --   start			Corresponds to note_netsync_start()
    --   revision_received	Corresponds to note_netsync_revision_received()
+   --   revision_sent		Corresponds to note_netsync_revision_sent()
    --   cert_received		Corresponds to note_netsync_cert_received()
+   --   cert_sent		Corresponds to note_netsync_cert_sent()
    --   pubkey_received		Corresponds to note_netsync_pubkey_received()
+   --   pubkey_sent		Corresponds to note_netsync_pubkey_sent()
    --   end			Corresponds to note_netsync_end()
    --
    -- Those functions take exactly the same arguments as the corresponding
@@ -1461,3 +1467,23 @@ function validate_git_author(author)
 
    return false
 end
+
+function get_man_page_formatter_command()
+   local term_width = guess_terminal_width() - 2
+   -- The string returned is run in a process created with 'popen'
+   -- (see cmd.cc manpage).
+   --
+   -- On Unix (and POSIX compliant systems), 'popen' runs 'sh' with
+   -- the inherited path.
+   --
+   -- On MinGW, 'popen' runs 'cmd.exe' with the inherited path. MinGW
+   -- does not (currently) provide nroff or equivalent. So we assume
+   -- sh, nroff and less are also installed, from Cygwin or some other
+   -- toolset.
+   if string.sub(get_ostype(), 1, 7) == "Windows" then
+      return string.format("sh -c 'nroff -man -rLL=%dn' | less -R", term_width)
+   else
+      return string.format("nroff -man -rLL=%dn | less -R", term_width)
+   end
+end
+

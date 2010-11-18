@@ -24,11 +24,13 @@
 #include "database.hh"
 #include "work.hh"
 #include "roster.hh"
+#include "lexical_cast.hh"
 
 using std::cout;
 using std::ostream_iterator;
 using std::string;
 using std::vector;
+using boost::lexical_cast;
 
 // fload, fmerge, and fdiff are simple commands for debugging the line
 // merger.
@@ -52,7 +54,8 @@ CMD(fload, "fload", "", CMD_REF(debug), "",
   guard.commit();
 }
 
-CMD(fmerge, "fmerge", "", CMD_REF(debug), N_("<parent> <left> <right>"),
+CMD(fmerge, "fmerge", "", CMD_REF(debug),
+    N_("PARENT_FILEID LEFT_FILEID RIGHT_FILEID"),
     N_("Merges 3 files and outputs the result"),
     "",
     options::opts::none)
@@ -142,7 +145,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
   database db(app);
   project_t project(db);
 
-  if ((args.size() != 1) || (app.opts.revision_selectors.size() > 1))
+  if ((args.size() != 1) || (app.opts.revision.size() > 1))
     throw usage(execid);
 
   file_path file = file_path_external(idx(args, 0));
@@ -150,7 +153,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
   L(FL("annotate file '%s'") % file);
 
   roster_t roster;
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       // What this _should_ do is calculate the current workspace roster
       // and/or revision and hand that to do_annotate.  This should just
@@ -178,7 +181,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
     }
   else
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), rid);
       db.get_roster(rid, roster);
     }
 
@@ -296,7 +299,7 @@ CMD(cat, "cat", "", CMD_REF(informative),
 
   database db(app);
   revision_id rid;
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       workspace work(app);
       parent_map parents;
@@ -308,7 +311,7 @@ CMD(cat, "cat", "", CMD_REF(informative),
   else
     {
       project_t project(db);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), rid);
     }
 
   dump_file(db, cout, rid, idx(args, 0));
@@ -338,6 +341,36 @@ CMD_AUTOMATE(get_file, N_("FILEID"),
   dump_file(db, output, ident);
 }
 
+// Name: get_file_size
+// Arguments:
+//   1: a file id
+// Added in: 13.0
+// Purpose: Prints the recorded size of the file in bytes
+//
+// Output format: A integer > 0
+//
+// Error conditions: If the file id specified is unknown or invalid prints
+// an error message to stderr and exits with status 1.
+CMD_AUTOMATE(get_file_size, N_("FILEID"),
+             N_("Prints the size of a file (given an identifier)"),
+             "",
+             options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  database db(app);
+  hexenc<id> hident(idx(args, 0)(), origin::user);
+  file_id ident(decode_hexenc_as<file_id>(hident(), hident.made_from));
+
+  E(db.file_version_exists(ident), origin::user,
+    F("no file version %s found in database") % ident);
+
+  file_size size;
+  db.get_file_size(ident, size);
+  output << lexical_cast<string>(size) << "\n";
+}
+
 // Name: get_file_of
 // Arguments:
 //   1: a filename
@@ -363,7 +396,7 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
   database db(app);
 
   revision_id rid;
-  if (app.opts.revision_selectors.empty())
+  if (app.opts.revision.empty())
     {
       workspace work(app);
 
@@ -376,7 +409,7 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
   else
     {
       project_t project(db);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), rid);
     }
 
   dump_file(db, output, rid, idx(args, 0));

@@ -1,14 +1,19 @@
 body {
-    margin: 20px;
+    margin: 0px;
     font-family: Helvetica, Arial, sans-serif;
     font-size: 0.625em;
+}
+
+body > * {
+    margin-left: 20px;
+    margin-right: 20px;
 }
 
 h1.settitle,
 div.node {
     position: fixed;
     top: 0;
-    margin: 0 -20px;
+    margin: 0;
     width: 100%;
     background: url(images/bg.png);
     padding: 20px;
@@ -33,25 +38,30 @@ div.node hr {
 div.node p {
     float: right;
     margin: 0;
-    margin-right: 40px;
+    margin-right: 20px;
+    padding-right: 20px;
+    padding-top: 2px;
     font-weight: bold;
     color: transparent;
     font-size: 0px;
     line-height: auto;
+    background: white;
+    -moz-border-radius: 10px 0px 0px 10px;
+    -webkit-border-radius: 10px 0px 0px 10px;
+    border-radius: 10px 0px 0px 10px;
 }
 
 div.node p a {
-    color: white;
+    color: black;
     margin-left: 20px;
     font-weight: normal;
     text-decoration: none;
-    border-bottom: 1px white dotted;
     padding-left: 21px;
-    font-size: 19px;
-    line-height: 27px;
+    font-size: 13px;
+    line-height: 25px;
     background-repeat: no-repeat;
     background-position: left center;
-    vertical-align: top;
+    vertical-align: bottom;
 }
 
 div.node p a[name],
@@ -69,6 +79,10 @@ div.node p a[rel=previous] {
 
 div.node p a[rel=up] {
     background-image: url(images/go-up.png);
+}
+
+div.node p a:first-child {
+    margin-left: 10px;
 }
 
 div.node + *,
@@ -214,6 +228,7 @@ dl dd ol {
 
 dl dd dl {
     font-size: 0.7692em;
+    margin-top: 1em;
 }
 
 dl dt + dd {

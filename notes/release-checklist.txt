@@ -29,7 +29,7 @@ How to release a new version of monotone
 
 4) Check the NEWS if any changes in the automation interface have happened.
 
-   Document changes in the wiki under http://monotone.ca/wiki/AutomateVersions/
+   Document changes in the wiki under http://wiki.monotone.ca/AutomateVersions/
    by adding new commands with an 'A' marker or set a 'B' (for _B_ackwards
    compatible change) or 'C' (for backwards in_C_ompatible change) markers for
    changed commands.
@@ -59,14 +59,8 @@ How to release a new version of monotone
 
 7) Update version numbers.  The following files need to be touched:
      configure.ac: change the call to AC_INIT
-     win32/monotone.iss: look out for "#define APPVERS"
      visualc/config.h: the version number is mentioned several times,
        don't miss any.
-     debian/changelog: rather than modifying this file directly, run
-       the command "debchange -v <NEW VERSION>-0.1".  (If you screw up
-       and need to roll a new unofficial package, use "debchange -i"
-       to increment this number.)
-
    Commit your changes.
 
 8) Okay, everything should be ready to go... double-check that:
@@ -102,12 +96,12 @@ How to release a new version of monotone
     #
     $ mkdir <NEW VERSION>
     $ mv SOMEDIR/monotone-<NEW VERSION>.tar.gz <NEW VERSION>/
-    $ scp -r <NEW VERSION> mtn-uploads@monotone.ca:downloads/
+    $ scp -r <NEW VERSION> mtn-uploads@monotone.ca:~/
 
     # The rest is done via monotone.
     #
-    $ mtn -d DATABASE co -b net.venge.monotone.web WEBDIR
-    $ cp monotone-<NEW VERSION>/{NEWS,INSTALL,UPGRADE,README,monotone.pdf,monotone.html} \
+    $ mtn -d DATABASE co -b net.venge.monotone.web.mainsite WEBDIR
+    $ cp monotone-<NEW VERSION>/{NEWS,INSTALL,UPGRADE,monotone.pdf,monotone.html} \
           WEBDIR/
     $ rm -rf WEBDIR/docs
     $ cp -r monotone-<NEW VERSION>/html WEBDIR/docs
@@ -123,29 +117,21 @@ How to release a new version of monotone
     $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
     $ mtn sync
 
-12) Update index.html on the website to state the latest version at the
-    top, and modify the list of download links to point to the new
-    version.
+12) Update index.php on the website to state the latest version in the left
+    column:
 
     $ cd WEBDIR
-    $ vi index.html
+    $ vi index.php
     $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
     $ mtn sync
 
-13) Update releases.xml on the website so the RSS feed contains information
-    for the newly released version. Don't forget to update the feed's
-    global pubDate date as well as the invididual item's pubDate
-    and ensure you use the correct datetime format. Add an <enclosure>
-    which links to the monotone source tarball and add the proper length
-    as attribute.
-    Finally you should just copy'n'paste the NEWS entry for the NEW VERSION
-    directly into the description inside a CDATA field and do a couple of
-    searches and replaces to add HTML formatting for a nicer display.
+13) Check if the releases newsfeed is properly updated, i.e. if the script
+    <http://www.monotone.ca/releases.xml.php> can parse the NEWS file as is
+    and links issues and URLs, while keeping the overall structure.
+    (If your NEWS entries match the previous ones, this shouldn't be a problem.)
 
-    $ cd WEBDIR
-    $ vi releases.xml
-    $ mtn ci -m "Updates RSS feed for monotone <NEW VERSION>"
-    $ mtn sync
+    If you encounter problems, either patch the NEWS file or adapt the code
+    in releases.xml.php and commit your changes accordingly.
 
 14) Once you're pretty sure things have gone well, tag the source:
 

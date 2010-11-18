@@ -162,14 +162,14 @@ pick_update_candidates(lua_hooks & lua,
   if (ignore_suspend_certs)
     return;
 
-   set<revision_id> active_candidates;
-   for (set<revision_id>::const_iterator i = candidates.begin();
-        i != candidates.end(); i++)
-     if (!project.revision_is_suspended_in_branch(*i, branch))
-       safe_insert(active_candidates, *i);
+  set<revision_id> active_candidates;
+  for (set<revision_id>::const_iterator i = candidates.begin();
+       i != candidates.end(); i++)
+    if (!project.revision_is_suspended_in_branch(*i, branch))
+      safe_insert(active_candidates, *i);
 
-   if (!active_candidates.empty())
-     candidates = active_candidates;
+  if (!active_candidates.empty())
+    candidates = active_candidates;
 }
 
 // Local Variables:

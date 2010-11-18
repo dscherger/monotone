@@ -123,6 +123,7 @@ if test "$mtn_s64_type" = unknown; then
  if test "$mtn_s64_type" = unknown
  then AC_MSG_ERROR([*** no signed 64-bit type found])
  fi
+ AC_DEFINE_UNQUOTED([USING_LONG_LONG], [1], [Whether we're using `long long' and need appropriate specializations.])
 fi
 
 AC_DEFINE_UNQUOTED([TYPE_S8],  [$mtn_s8_type],  [Type to use for `s8'.])

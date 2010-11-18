@@ -2,7 +2,7 @@
 --
 -- See automate_show_conflicts for all conflict cases
 
-include("common/test_utils_inventory.lua")
+include("common/basic_io.lua")
 include("common/automate_stdio.lua")
 
 mtn_setup()

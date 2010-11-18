@@ -18,7 +18,7 @@ class lua_hooks;
 
 // this function just encapsulates the (somewhat complex) logic
 // behind picking an update target. the actual updating takes
-// place in commands.cc, along with most other file-modifying
+// place in cmd_ws_commit.cc, along with most other file-modifying
 // actions.
 //
 // every equally revision that is tied for best update candidate will be

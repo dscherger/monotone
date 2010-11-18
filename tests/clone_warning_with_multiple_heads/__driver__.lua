@@ -15,14 +15,16 @@ addfile("otherfile", "splork")
 commit()
 REV3=base_revision()
 
-testURI="file:" .. test.root .. "/test.db"
+copy("test.db", "test-clone.db")
+testURI="file://" .. test.root .. "/test-clone.db?testbranch"
 
-check(nodb_mtn("clone", testURI, "testbranch", "test_dirA"),
+check(nodb_mtn("clone", testURI, "test_dirA"),
          1, false, true)
 check(qgrep(REV2, "stderr"))
 check(qgrep(REV3, "stderr"))
 
 on_windows=(ostype == "Windows")
+on_cygwin=(string.find(ostype, 'CYGWIN') ~= nil)
 on_solaris=(string.find(ostype, 'SunOS') ~= nil)
-bad_platform=(on_solaris or on_windows)
+bad_platform=(on_solaris or on_windows or on_cygwin)
 xfail_if(bad_platform, not exists("test_dirA"))

@@ -15,7 +15,7 @@ check(mtn("ci", "--message", "commit msg"), 0, false, false)
 check(mtn("--key", "n@n.com", "ssh_agent_export"), 1, false, false)
 
 -- * (ok) export key without -k
-check(raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
+check(raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--no-builtin-rcfiles",
               "--db=" .. test.root .. "/test.db",
               "--keydir", test.root .. "/keys",
               "ssh_agent_export"), 0, false, false)
@@ -57,7 +57,9 @@ check(not exists("id_monotone3"))
 -- * (E) export to path that's not writable
 -- we don't know how to do this on windows
 
-skip_if(ostype == "Windows")
+-- Cygwin doesn't do write permissions properly
+skip_if(string.sub(ostype, 1, 6)=="CYGWIN")
+skip_if(ostype == "Windows") -- chmod doesn't work
 skip_if(not existsonpath("chmod"))
 
 mkdir("unwritable")
@@ -265,14 +267,14 @@ check(mtn("genkey", "test2@tester.net"), 0, false, false)
 
 -- * (N)  try to export monotone key without -k
 remove("_MTN/options")
-check(raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
+check(raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--no-builtin-rcfiles",
               "--db=" .. test.root .. "/test.db",
               "--keydir", test.root .. "/keys",
               "ssh_agent_export"), 1, false, false)
 
 -- * (N)  try to add monotone key without -k
 remove("_MTN/options")
-check(raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
+check(raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--no-builtin-rcfiles",
               "--db=" .. test.root .. "/test.db",
               "--keydir", test.root .. "/keys",
               "ssh_agent_add"), 1, false, false)

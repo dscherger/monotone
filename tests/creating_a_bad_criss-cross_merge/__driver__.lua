@@ -31,12 +31,12 @@ check(get("alice.lua"))
 
 function bob (...)
   return raw_mtn("--rcfile=test_hooks.lua", "--rcfile=bob.lua",
-                 "--nostd", "--norc", "--db=test.db", "--key=bob",
+                 "--no-builtin-rcfile", "--no-standard-rcfiles", "--db=test.db", "--key=bob",
                  "--keydir=keys", ...)
 end
 function alice (...)
   return raw_mtn("--rcfile=test_hooks.lua", "--rcfile=alice.lua",
-                 "--nostd", "--norc", "--db=test.db", "--key=alice",
+                 "--no-builtin-rcfile", "--no-standard-rcfiles", "--db=test.db", "--key=alice",
                  "--keydir=keys", ...)
 end
 

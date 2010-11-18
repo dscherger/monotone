@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -15,6 +16,7 @@
 #include "app_state.hh"
 #include "database.hh"
 #include "key_store.hh"
+#include "key_packet.hh"
 #include "packet.hh"
 #include "project.hh"
 #include "vocab_cast.hh"
@@ -24,20 +26,73 @@ using std::cout;
 using std::istringstream;
 using std::vector;
 
-CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
-    N_("Prints a public key packet"),
-    "",
-    options::opts::none)
+namespace
 {
-  if (args.size() != 1)
-    throw usage(execid);
+  // this writer injects key packets it receives to the database and/or
+  // keystore.
 
+  struct key_packet_db_writer : public key_packet_consumer
+  {
+    database & db;
+    key_store & keys;
+
+  public:
+    key_packet_db_writer(database & db, key_store & keys)
+      : db(db), keys(keys)
+    {}
+    virtual ~key_packet_db_writer() {}
+    virtual void consume_public_key(key_name const & ident,
+                                    rsa_pub_key const & k)
+    {
+      transaction_guard guard(db);
+      db.put_key(ident, k);
+      guard.commit();
+    }
+
+    virtual void consume_key_pair(key_name const & ident,
+                                  keypair const & kp)
+    {
+      keys.put_key_pair(ident, kp);
+    }
+
+    virtual void consume_old_private_key(key_name const & ident,
+                                         old_arc4_rsa_priv_key const & k)
+    {
+      rsa_pub_key dummy;
+      keys.migrate_old_key_pair(ident, k, dummy);
+    }
+  };
+}
+
+CMD_AUTOMATE(put_public_key, N_("KEY-PACKET-DATA"),
+             N_("Store the public key in the database"),
+             "",
+             options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  database db(app);
+  key_store keys(app);
+  key_packet_db_writer dbw(db, keys);
+
+  istringstream ss(idx(args,0)());
+  read_key_packets(ss, dbw);
+}
+
+static void
+pubkey_common(app_state & app,
+              args_vector args,
+              std::ostream & output)
+{
   database db(app);
   key_store keys(app);
   project_t project(db);
 
   key_identity_info identity;
-  project.get_key_identity(keys, app.lua, idx(args, 0), identity);
+  project.get_key_identity(keys, app.lua,
+                           typecast_vocab<external_key_name>(idx(args, 0)),
+                           identity);
   bool exists(false);
   rsa_pub_key key;
   if (db.database_specified() && db.public_key_exists(identity.id))
@@ -55,8 +110,30 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
   E(exists, origin::user,
     F("public key '%s' does not exist") % idx(args, 0)());
 
-  packet_writer pw(cout);
+  packet_writer pw(output);
   pw.consume_public_key(identity.given_name, key);
+}
+
+CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("KEY_NAME_OR_HASH"),
+    N_("Prints a public key packet"),
+    "",
+    options::opts::none)
+{
+  if (args.size() != 1)
+    throw usage(execid);
+
+  pubkey_common(app, args, cout);
+}
+
+CMD_AUTOMATE(get_public_key, N_("KEY_NAME_OR_HASH"),
+    N_("Prints a public key packet"),
+    "",
+    options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  pubkey_common(app, args, output);
 }
 
 CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
@@ -73,7 +150,9 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
 
   key_name name = typecast_vocab<key_name>(idx(args, 0));
   key_identity_info identity;
-  project.get_key_identity(app.lua, idx(args, 0), identity);
+  project.get_key_identity(app.lua,
+                           typecast_vocab<external_key_name>(idx(args, 0)),
+                           identity);
   E(keys.key_pair_exists(identity.id), origin::user,
     F("public and private key '%s' do not exist in keystore")
     % idx(args, 0)());
@@ -170,7 +249,7 @@ namespace
 // Error conditions:
 //   Invalid input formatting.
 CMD_AUTOMATE(read_packets, N_("PACKET-DATA"),
-             N_("Load the given packets into the database."),
+             N_("Load the given packets into the database"),
              "",
              options::opts::none)
 {
