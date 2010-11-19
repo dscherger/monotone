@@ -50,6 +50,10 @@ check(samefilestd("conflicts-1", "_MTN/conflicts"))
 -- Find out what the first unresolved conflict is
 check(mtn("conflicts", "show_first"), 0, nil, true)
 
+-- invalid resolution identifier
+check(mtn("conflicts", "resolve_first_left", "foo"), 1, nil, true)
+check(qgrep("'foo' is not a supported conflict resolution for duplicate_name", "stderr"))
+
 -- Retrieve Abe's version of checkout.sh, and pretend we did a manual
 -- merge, using our favorite merge tool. We put the files in the
 -- bookkeeping area, so mtn doesn't see them.

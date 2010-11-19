@@ -37,6 +37,10 @@ check(
 "mtn: resolve_first drop\n" ..
 "mtn: resolve_first rename \"file_name\"\n" == readfile("stderr"))
 
+-- invalid resolution identifier
+check(mtn("conflicts", "resolve_first", "foo"), 1, nil, true)
+check(qgrep("'foo' is not a supported conflict resolution for orphaned_node", "stderr"))
+
 -- stuff/dir1 => dir1
 check(mtn("conflicts", "resolve_first", "rename", "dir1"), 0, nil, nil)
 

@@ -12,6 +12,9 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         Bugs fixed
 
+        - improve help, fix arg indexing in 'conflicts resolve_first'
+          (fixes monotone issue 101)
+        
         - add compatibility with Botan 1.9.9 and newer
           (fixes monotone issue 104)
 

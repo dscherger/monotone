@@ -197,7 +197,7 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
 } // show_conflicts
 
 enum side_t {left, right, neither};
-static char const * const conflict_resolution_not_supported_msg = N_("%s is not a supported conflict resolution for %s");
+static char const * const conflict_resolution_not_supported_msg = N_("'%s' is not a supported conflict resolution for %s");
 
 // Call Lua merge3 hook to merge left_fid, right_fid, store result in result_path
 static bool
@@ -280,7 +280,7 @@ set_duplicate_name_conflict(resolve_conflicts::file_resolution_t & resolution,
     }
   else
     E(false, origin::user,
-      F(conflict_resolution_not_supported_msg) % idx(args,1) % "duplicate_name");
+      F(conflict_resolution_not_supported_msg) % idx(args,0) % "duplicate_name");
 
 } //set_duplicate_name_conflict
 
@@ -349,7 +349,7 @@ set_first_conflict(database & db,
               else
                 {
                   E(false, origin::user,
-                    F(conflict_resolution_not_supported_msg) % idx(args,1) % "orphaned_node");
+                    F(conflict_resolution_not_supported_msg) % idx(args,0) % "orphaned_node");
                 }
               return;
             }
@@ -415,7 +415,7 @@ set_first_conflict(database & db,
                   // We don't allow the user to specify 'resolved_internal'; that
                   // is only done by automate show_conflicts.
                   E(false, origin::user,
-                    F(conflict_resolution_not_supported_msg) % idx(args,1) % "file_content");
+                    F(conflict_resolution_not_supported_msg) % idx(args,0) % "file_content");
                 }
               return;
             }
@@ -473,8 +473,8 @@ CMD(show_remaining, "show_remaining", "", CMD_REF(conflicts),
 
 CMD(resolve_first, "resolve_first", "", CMD_REF(conflicts),
     N_("RESOLUTION"),
-    N_("Set the resolution for the first unresolved single-file conflict"),
-    "",
+    N_("Set the resolution for the first unresolved single-file conflict."),
+    "Use 'mtn conflicts show_first' to see possible resolutions.",
     options::opts::conflicts_opts)
 {
   database db(app);

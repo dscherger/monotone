@@ -39,6 +39,10 @@ second = base_revision()
 check(indir("files", mtn("conflicts", "store", first, second)), 0, nil, nil)
 check(samefilestd("conflicts-1", "_MTN/conflicts"))
 
+-- invalid resolution identifier
+check(mtn("conflicts", "resolve_first", "foo"), 1, nil, true)
+check(samelines("stderr", { "mtn: misuse: 'foo' is not a supported conflict resolution for file_content"}))
+
 -- bar is the first conflict (alphabetical by file name); it is
 -- 'resolved_internal'. The rest are not resolved internal.
 --
