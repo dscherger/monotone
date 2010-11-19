@@ -5166,11 +5166,13 @@ convenient way to clean up.
 For single file conflicts, there are several possible resolutions:
 
 @ftable @command
-@item interactive @var{file}
+@item interactive @var{[file]}
 The Lua @code{merge3} hook is called to allow the user to manually
 merge the left and right files, leaving the result in the specified file.
 
-@var{file} must be a bookkeeping path; under @file{_MTN}.
+@var{file} must be a bookkeeping path; under @file{_MTN}. If not
+specified, @var{file} defaults to @file{_MTN/resolutions/<path>},
+where @file{<path>} is the path to the file that has the conflict.
 
 This inserts a @var{resolved_user_left file} conflict resolution in the
 conflicts file.

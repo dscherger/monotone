@@ -35,6 +35,6 @@ NOTE:
 Publish the binary on the monotone website with proper permissions:
 
 chmod a+r monotone-<version>-setup.exe
-scp -p monotone-<version>-setup.exe mtn-uploads@monotone.ca:~/<version>
+scp -p monotone-<version>-setup.exe mtn-uploads@monotone.ca:<version>
 
 Download from the web and test, both the installed mtn and the documentation.

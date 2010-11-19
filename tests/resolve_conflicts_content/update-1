@@ -1,7 +1,9 @@
 mtn: updating along branch 'testbranch'
-mtn: selected update target d18cecd65445fa5b10732c6ca8a8bbdac2a6610a
-mtn: [left]  e9d684d80d320d181793766e43a2feb525d254f8
-mtn: [right] d18cecd65445fa5b10732c6ca8a8bbdac2a6610a
+mtn: selected update target bd6a2c0363cab1cf19220bce150c77b84b1a5a32
+mtn: [left]  a047a11aae2e43f05171d8ffd8bbfde054f8a4f5
+mtn: [right] bd6a2c0363cab1cf19220bce150c77b84b1a5a32
 mtn: updating files/bar
 mtn: updating files/baz
-mtn: updated to base revision d18cecd65445fa5b10732c6ca8a8bbdac2a6610a
+mtn: updating files/inter1
+mtn: updating files/inter2
+mtn: updated to base revision bd6a2c0363cab1cf19220bce150c77b84b1a5a32

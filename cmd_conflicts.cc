@@ -1,4 +1,4 @@
-// Copyright (C) 2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008 - 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -365,19 +365,43 @@ set_first_conflict(database & db,
             {
               if ("interactive" == idx(args,0)())
                 {
-                  E(args.size() == 2, origin::user,
-                    F("wrong number of arguments"));
-                  E(bookkeeping_path::external_string_is_bookkeeping_path(idx(args,1)),
-                    origin::user,
-                    F("result path must be under _MTN"));
-                  bookkeeping_path const result_path(idx(args,1)(), origin::user);
+                  bookkeeping_path result_path;
+
+                  switch (args.size())
+                    {
+                    case 1:
+                      // use default path for resolution file
+                      {
+                        file_path left_path;
+                        conflicts.left_roster->get_name(conflict.nid, left_path);
+                        result_path = bookkeeping_path("_MTN/resolutions", origin::internal) / left_path;
+                      }
+                      break;
+
+                    case 2:
+                      // user path for resolution file
+                      {
+                        string normalized;
+                        normalize_external_path(idx(args,1)(),
+                                                normalized,
+                                                false); // to_workspace_root
+                        result_path = bookkeeping_path(normalized, origin::user);
+                      }
+                      break;
+
+                    default:
+                      E(false, origin::user, F("wrong number of arguments"));
+                    }
 
                   if (do_interactive_merge(db, lua, conflicts, conflict.nid,
                                            conflict.ancestor, conflict.left, conflict.right, result_path))
                     {
                       conflict.resolution.first  = resolve_conflicts::content_user;
                       conflict.resolution.second = boost::shared_ptr<any_path>(new bookkeeping_path(result_path));
+                      P(F("interactive merge result saved in '%s'") % result_path.as_internal());
                     }
+                  else
+                    P(F("interactive merge failed."));
                 }
               else if ("user" == idx(args,0)())
                 {

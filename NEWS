@@ -4,6 +4,10 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         Changes
 
+        - in 'mtn conflicts resolve_first interactive', the result
+          file name now defaults to _MTN/resolutions/<left_path>.
+          Fixes monotone issue 103.
+
         New Features
 
         Bugs fixed
