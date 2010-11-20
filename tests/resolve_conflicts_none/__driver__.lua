@@ -20,7 +20,9 @@ addfile("foobar", "foobar\nfirst\nrevision")
 commit("testbranch", "second")
 second = base_revision()
 
-check(mtn("conflicts", "store"), 0, nil, nil)
+check(mtn("conflicts", "store"), 0, nil, true)
+check(samelines("stderr", {"mtn: 0 conflicts",
+                           "mtn: stored in '_MTN/conflicts'"}))
 check(samefilestd("conflicts-1", "_MTN/conflicts"))
 
 check(mtn("conflicts", "show_first"), 0, nil, true)

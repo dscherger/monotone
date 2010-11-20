@@ -36,7 +36,10 @@ second = base_revision()
 
 -- We specify 'first second' so the left/right don't change as when we
 -- make small changes to the test (default order is alphabetical rev id).
-check(indir("files", mtn("conflicts", "store", first, second)), 0, nil, nil)
+check(indir("files", mtn("conflicts", "store", first, second)), 0, nil, true)
+check(samelines("stderr",
+{"mtn: 5 conflicts with supported resolutions.",
+ "mtn: stored in '_MTN/conflicts'"}))
 check(samefilestd("conflicts-1", "_MTN/conflicts"))
 
 -- invalid resolution identifier

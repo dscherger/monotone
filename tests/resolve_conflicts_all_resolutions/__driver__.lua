@@ -63,7 +63,9 @@ beth_1 = base_revision()
 
 -- Test non-default conflicts file name
 mkdir("resolutions")
-check (mtn("conflicts", "--conflicts-file=_MTN/conflicts-1", "store", abe_1, beth_1), 0, nil, nil)
+check (mtn("conflicts", "--conflicts-file=_MTN/conflicts-1", "store", abe_1, beth_1), 0, nil, true)
+check(samelines("stderr", {"mtn: 8 conflicts with supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts-1'"}))
 check(samefilestd("conflicts-1", "_MTN/conflicts-1"))
 
 check(mtn("conflicts", "--conflicts-file=_MTN/conflicts-1", "show_remaining"), 0, nil, true)
@@ -120,7 +122,7 @@ canonicalize("stderr")
 check(samefilestd("show_first-interactive", "stderr"))
 
 mkdir("_MTN/resolutions")
-check(mtn("--rcfile=merge3_hook.lua", "conflicts", "--conflicts-file=_MTN/conflicts-1", "resolve_first", "interactive", "_MTN/resolutions/interactive_file"), 0, true, true)
+check(mtn("--rcfile=merge3_hook.lua", "conflicts", "--conflicts-file=_MTN/conflicts-1", "resolve_first", "interactive", "_MTN/resolutions/interactive_file"), 0, nil, true)
 check(samelines("stderr", { "mtn: lua: running merge3 hook",
                             "mtn: interactive merge result saved in '_MTN/resolutions/interactive_file'"}))
 

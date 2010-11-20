@@ -966,7 +966,7 @@ show_conflicts_core (database & db,
                      revision_id const & l_id,
                      revision_id const & r_id,
                      bool const basic_io,
-                     bool warn_unsupported,
+                     bool automate,
                      std::ostream & output)
 {
   // Note that left and right are in the order specified on the command line.
@@ -1037,8 +1037,9 @@ show_conflicts_core (database & db,
           pr.print_stanza(st);
           output.write(pr.buf.data(), pr.buf.size());
         }
-      else
-        P(F("no conflicts detected"));
+
+      if (!automate)
+        P(F("0 conflicts"));
     }
   else
     {
@@ -1068,13 +1069,19 @@ show_conflicts_core (database & db,
       result.report_attribute_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_file_content_conflicts(lua, *l_roster, *r_roster, adaptor, basic_io, output);
 
-      if (warn_unsupported)
+      if (!automate)
         {
-          int const count = result.count_unsupported_resolution();
-          if (count > 0)
+          int const supported = result.count_supported_resolution();
+          int const unsupported = result.count_unsupported_resolution();
+
+          P(FP("%d conflict with supported resolutions.",
+               "%d conflicts with supported resolutions.",
+               supported) % supported);
+
+          if (unsupported > 0)
             P(FP("warning: %d conflict with no supported resolutions.",
                  "warning: %d conflicts with no supported resolutions.",
-                 count) % count);
+                 unsupported) % unsupported);
         }
     }
 }
@@ -1094,7 +1101,10 @@ CMD(show_conflicts, "show_conflicts", "", CMD_REF(informative), N_("REV REV"),
   complete(app.opts, app.lua, project, idx(args,0)(), l_id);
   complete(app.opts, app.lua, project, idx(args,1)(), r_id);
 
-  show_conflicts_core(db, app.lua, l_id, r_id, false, false, std::cout);
+  show_conflicts_core(db, app.lua, l_id, r_id,
+                      false, // basic_io
+                      false, // automate
+                      std::cout);
 }
 
 static void get_conflicts_rids(args_vector const & args,
@@ -1159,7 +1169,10 @@ CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
   revision_id l_id, r_id;
 
   get_conflicts_rids(args, db, project, app, l_id, r_id);
-  show_conflicts_core(db, app.lua, l_id, r_id, true, false, output);
+  show_conflicts_core(db, app.lua, l_id, r_id,
+                      true, // basic_io
+                      true, // automate
+                      output);
 }
 
 CMD(store, "store", "", CMD_REF(conflicts),
@@ -1179,10 +1192,14 @@ CMD(store, "store", "", CMD_REF(conflicts),
   get_conflicts_rids(args, db, project, app, left_id, right_id);
 
   std::ostringstream output;
-  show_conflicts_core(db, app.lua, left_id, right_id, true, true, output);
+  show_conflicts_core(db, app.lua, left_id, right_id,
+                      true, // basic_io
+                      false, // automate
+                      output);
 
   data dat(output.str(), origin::internal);
   write_data(app.opts.conflicts_file, dat);
+  P(F("stored in '%s'") % app.opts.conflicts_file);
 }
 
 CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME"),

@@ -10,6 +10,10 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         New Features
 
+        - 'mtn conflicts store' now outputs a count of the conflicts,
+          and the name of the conflicts file. Fixes monotone issue
+          108.
+        
         Bugs fixed
 
         - improve help, fix arg indexing in 'conflicts resolve_first'

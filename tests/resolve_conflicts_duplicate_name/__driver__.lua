@@ -44,7 +44,9 @@ check(mtn("merge"), 1, nil, false)
 -- For thermostat.c, she specifies a conflict resolution that renames
 -- both versions.
 
-check(mtn("conflicts", "store"), 0, true, nil)
+check(mtn("conflicts", "store"), 0, nil, true)
+check(samelines("stderr", {"mtn: 2 conflicts with supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts'"}))
 check(samefilestd("conflicts-1", "_MTN/conflicts"))
 
 -- Find out what the first unresolved conflict is
