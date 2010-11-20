@@ -21,12 +21,9 @@ dnl AM_INIT_AUTOMAKE only provides $(MKDIR_P) in 1.10 and later.
 dnl No, AC_PROG_MKDIR_P does not AC_SUBST its result variable, at least
 dnl not in 2.61.  Comments in programs.m4 suggest that it was meant to
 dnl but not properly implemented.
-if test x"$MKDIR_P" = x; then
-  if test x"$mkdir_p" != x; then
-    MKDIR_P="$mkdir_p"
-  else
-    AC_PROG_MKDIR_P
-  fi
+AC_PROG_MKDIR_P
+if test x"$MKDIR_P" = x && test x"$mkdir_p" != x; then
+  MKDIR_P="$mkdir_p"
 fi
 AC_SUBST([MKDIR_P])
 
