@@ -149,12 +149,10 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
     throw usage(execid);
 
   key_identity_info identity;
-  project.get_key_identity(app.lua,
+  project.get_key_identity(keys,
+                           app.lua,
                            typecast_vocab<external_key_name>(idx(args, 0)),
                            identity);
-  E(keys.key_pair_exists(identity.id), origin::user,
-    F("public and private key '%s' do not exist in keystore")
-    % idx(args, 0)());
 
   packet_writer pw(cout);
   keypair kp;

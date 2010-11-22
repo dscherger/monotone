@@ -6,19 +6,22 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         - in 'mtn conflicts resolve_first interactive', the result
           file name now defaults to _MTN/resolutions/<left_path>.
-          Fixes monotone issue 103.
+          (fixes monotone issue 103)
 
         New Features
 
         - 'mtn conflicts store' now outputs a count of the conflicts,
-          and the name of the conflicts file. Fixes monotone issue
-          108.
+          and the name of the conflicts file. 
+          (fixes monotone issue 108)
         
         Bugs fixed
 
         - improve help, fix arg indexing in 'conflicts resolve_first'
           (fixes monotone issue 101)
         
+        - 'mtn privkey' did not recognize private keys solely available
+          in the key store. this has been fixed.
+
         - add compatibility with Botan 1.9.9 and newer
           (fixes monotone issue 104)
 
