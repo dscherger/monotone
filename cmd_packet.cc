@@ -148,7 +148,6 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  key_name name = typecast_vocab<key_name>(idx(args, 0));
   key_identity_info identity;
   project.get_key_identity(app.lua,
                            typecast_vocab<external_key_name>(idx(args, 0)),
