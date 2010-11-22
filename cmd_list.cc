@@ -689,7 +689,14 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
             }
           catch (recoverable_failure & f)
             {
-              L(FL("could not open '%s': %s") % db_path % f.what());
+              string prefix = _("misuse: ");
+              string failure = f.what();
+              for (size_t pos = failure.find(prefix);
+                   pos != string::npos; pos = failure.find(prefix))
+                 failure.replace(pos, prefix.size(), "");
+
+              W(F("%s") % failure);
+              W(F("ignoring database '%s'") % db_path);
               continue;
             }
 

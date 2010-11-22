@@ -25,8 +25,8 @@ commit("testbranch", "right 1")
 right_1 = base_revision()
 
 check(mtn("conflicts", "store"), 0, nil, true)
-canonicalize("stderr")
-check("mtn: warning: 1 conflict with no supported resolutions.\n" == readfile("stderr"))
+check(samelines("stderr", {"mtn: 1 conflict with supported resolutions.",
+                           "mtn: warning: 1 conflict with no supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts'"}))
 
--- mtn("conflicts", "show_first")
 -- end of file

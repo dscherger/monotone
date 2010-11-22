@@ -15,8 +15,12 @@ function make_old(ver)
    else
       rcfile = "test_hooks.lua"
    end
+   local nostd = "--no-standard-rcfiles"
+   if ver < 8 then
+      nostd = "--nostd"
+   end
    local fn = function (...)
-                 return {exe, "--no-standard-rcfiles", "--root=.",
+                 return {exe, nostd, "--root=.",
                     "--confdir=.",
                     "--rcfile="..rcfile,
                     "--key=tester@test.net",
@@ -76,6 +80,22 @@ function do_commits(my_mtn, dat)
    check(my_mtn("commit", "--message=child commit"), 0, nil, false)
 end
 
+function check_same_revs(cmd1, cmd2)
+   check(cmd1, 0, true, false)
+   local data1 = {}
+   for l in io.lines("stdout") do table.insert(data1, l) end
+   check(cmd2, 0, true, false)
+   local data2 = {}
+   for l in io.lines("stdout") do table.insert(data2, l) end
+   L("Command 1 has ", table.getn(data1), " lines.")
+   L("Command 2 has ", table.getn(data2), " lines.")
+   check(table.getn(data1) == table.getn(data2))
+   for i = 1, table.getn(data1) do
+      local hash_len = 40
+      check(data1[i]:sub(1, hash_len) == data2[i]:sub(1, hash_len))
+   end
+end
+
 function check_pair(client, server)
    -- setup database contents
    client.reset()
@@ -96,8 +116,8 @@ function check_pair(client, server)
    -- check for correct/matching contents
    check_same_stdout(client.fn("automate", "select", "i:"),
                      server.fn("automate", "select", "i:"))
-   check_same_stdout(client.fn("heads", "--branch=testbranch"),
-                     server.fn("heads", "--branch=testbranch"))
+   check_same_revs(client.fn("heads", "--branch=testbranch"),
+		   server.fn("heads", "--branch=testbranch"))
    -- there should be 13 certs - 4 per rev, plus an extra date cert
    -- on the common base revision
    check(client.fn("db", "info"), 0, true)

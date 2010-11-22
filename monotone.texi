@@ -1553,8 +1553,8 @@ $ mtn diff
 #  content [ad88bbbb1b7507ddff26be67efd91d95e069afb6]
 #
 ============================================================
---- include/jb.h	f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
-+++ include/jb.h	f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
+--- include/jb.h        f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
++++ include/jb.h        f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
 @@ -0,0 +1,13 @@
 +/* Standard JuiceBot hw interface */
 +
@@ -1570,8 +1570,8 @@ $ mtn diff
 +void dispense_apple_juice ();
 +void dispense_banana_juice ();
 ============================================================
---- src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
-+++ src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
+--- src/apple.c 1ce885d2cc59842ff16785834391e864068fbc3c
++++ src/apple.c 1ce885d2cc59842ff16785834391e864068fbc3c
 @@ -0,0 +1,7 @@
 +#include "jb.h"
 +
@@ -1581,8 +1581,8 @@ $ mtn diff
 +  /* Fill this in please, Abe. */
 +@}
 ============================================================
---- src/banana.c	ad88bbbb1b7507ddff26be67efd91d95e069afb6
-+++ src/banana.c	ad88bbbb1b7507ddff26be67efd91d95e069afb6
+--- src/banana.c        ad88bbbb1b7507ddff26be67efd91d95e069afb6
++++ src/banana.c        ad88bbbb1b7507ddff26be67efd91d95e069afb6
 @@ -0,0 +1,7 @@
 +#include "jb.h"
 +
@@ -1881,8 +1881,8 @@ $ mtn diff
 #    to [e2c64f6bde75a192d48d2256385df3dd7a963349]
 #
 ============================================================
---- src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
-+++ src/apple.c	e2c64f6bde75a192d48d2256385df3dd7a963349
+--- src/apple.c 1ce885d2cc59842ff16785834391e864068fbc3c
++++ src/apple.c e2c64f6bde75a192d48d2256385df3dd7a963349
 @@ -3,5 +3,8 @@ dispense_apple_juice()
  void
  dispense_apple_juice()
@@ -1905,30 +1905,23 @@ $ mtn commit
 @end smallexample
 
 Abe neglected to provide a @option{--message} option specifying the
-change log on the command line and the file @file{_MTN/log} is empty
-because he did not document his changes there.  Monotone therefore
-invokes an external ``log message editor'' --- typically an editor
-like @command{vi} --- with an explanation of the changes being
-committed and the opportunity to enter a log message.
+change log on the command line.  Monotone therefore invokes an
+external ``log message editor'' --- typically an editor like
+@command{vi} --- with an explanation of the changes being committed
+and the opportunity to enter a log message.
 
 @smallexample
 @group
-Enter a description of this change following the Changelog line below.
-The values of Author, Date and Branch may be modified as required.
+
 
 *** REMOVE THIS LINE TO CANCEL THE COMMIT ***
-----------------------------------------------------------------------
-Revision: 42eae36587508faa664b111cefc291f0b85ef83a
-Parent:   493bda86628fd72c992eb56f73899db9ead3cf6f
-Author:   abe@@juicebot.co.jp
-Date:     2004-10-26T02:53:08
-Branch:   jp.co.juicebot.jb7
+-- Enter a description of this change above --
+-- Edit fields below to modify certificate values --
+Branch:    right
+Author:    tester@@test.net
+Date:      2010-09-11T12:03:15
 
-Changelog:
-
-polling implementation of src/apple.c
-
-----------------------------------------------------------------------
+-- Modifications below this line are ignored --
 Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
 
   patched  src/apple.c
@@ -1936,12 +1929,10 @@ Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
 @end group
 @end smallexample
 
-Abe enters a single line below the Changelog: header, saying ``polling
+Abe enters a single line at the top of the file, saying ``polling
 implementation of src/apple.c''. He then saves the file and quits the
-editor. Monotone confirms that no other lines have been changed and
-extracts the message to be stored in the associated ``changelog''
-cert, leaving only Abe's short message. Returning to the shell, Abe's
-commit completes:
+editor. Monotone extracts the message to be stored in the associated
+``changelog'' cert. Returning to the shell, Abe's commit completes:
 
 @smallexample
 @group
@@ -2127,8 +2118,8 @@ $ mtn diff
 #    to [dd979c3c880e6a7221fcecd7148bd4afcfb3e964]
 #
 ============================================================
---- src/banana.c	d7e28a01cf6fc0f9ac04c6901dcafd77c2d32fb8
-+++ src/banana.c	dd979c3c880e6a7221fcecd7148bd4afcfb3e964
+--- src/banana.c        d7e28a01cf6fc0f9ac04c6901dcafd77c2d32fb8
++++ src/banana.c        dd979c3c880e6a7221fcecd7148bd4afcfb3e964
 @@ -1,10 +1,15 @@
  #include "jb.h"
 
@@ -2326,6 +2317,9 @@ mtn: beginning commit on branch 'jp.co.juicebot.jb7.muffins'
 mtn: committed revision d33caefd61823ecbb605c39ffb84705dec449857
 @end group
 @end smallexample
+
+Alternately, she could not specify a message on the command line, and
+edit the ``Branch'' field in the changelog editor.
 
 That's all there is to it --- there is now a
 @code{jp.co.juicebot.jb7.muffins} branch, with her initial checkin on
@@ -5172,11 +5166,13 @@ convenient way to clean up.
 For single file conflicts, there are several possible resolutions:
 
 @ftable @command
-@item interactive @var{file}
+@item interactive @var{[file]}
 The Lua @code{merge3} hook is called to allow the user to manually
 merge the left and right files, leaving the result in the specified file.
 
-@var{file} must be a bookkeeping path; under @file{_MTN}.
+@var{file} must be a bookkeeping path; under @file{_MTN}. If not
+specified, @var{file} defaults to @file{_MTN/resolutions/<path>},
+where @file{<path>} is the path to the file that has the conflict.
 
 This inserts a @var{resolved_user_left file} conflict resolution in the
 conflicts file.
@@ -5398,11 +5394,58 @@ work to record the changes made to the workspace. When running the
 @command{commit} command without a @var{logmsg} supplied, the contents
 of the @file{_MTN/log} file will be read and passed to the Lua hook
 @code{edit_comment} as a parameter named @var{user_log_message}.  The
-log message passed to the user's editor will contain a line that the
-user may remove allowing them user to easily cancel a commit, without
-emptying the entire log message.  If the commit is successful, the
-@file{_MTN/log} file is cleared of all content making it ready for
-another edit/commit cycle.
+log message passed to the user's editor will contain additional text
+formatted as follows:
+
+@smallexample
+@group
+<contents of _MTN/log>
+
+*** REMOVE THIS LINE TO CANCEL THE COMMIT ***
+-- Enter a description of this change above --
+-- Edit fields below to modify certificate values --
+Branch:    <from _MTN/options or option>
+Author:    <from key or option>
+Date:      <from system clock>
+
+-- Modifications below this line are ignored --
+Changes against parent <from _MTN/revision>
+
+  <list of changes>
+
+@end group
+@end smallexample
+When the user quits the editor, the text is processed as follows:
+
+@itemize @bullet
+@item
+The final @var{logmsg} is all text up to the line ``*** REMOVE THIS LINE
+...'' (the @dfn{cancel} line).
+
+@item
+If the @var{logmsg} is empty, the commit is aborted.
+
+@item
+If the cancel line is deleted or modified, the edited @var{logmsg} is
+saved in @file{_MTN/log}, and the commit is aborted.
+
+@item
+The next two lines (instructions) are confirmed to be present. If not,
+the commit is aborted, and the entire file is saved in @file{_MTN/commit},
+so the user may recover.
+
+@item
+The @dfn{Branch}, @dfn{Author}, and @dfn{Date} fields are parsed, and
+the new values used for the commit. If the parsing fails, the commit
+is aborted, and the entire file is saved in @file{_MTN/commit},
+so the user may recover.
+
+@item
+The rest of the text is ignored.
+@end itemize
+
+If the commit is successful, the @file{_MTN/log} file is cleared of
+all content making it ready for another edit/commit cycle.
 
 If @option{--message-file=_MTN/log} is specified, the contents of
 @file{_MTN/log} will be used without confirmation.
@@ -5679,9 +5722,9 @@ current bisection information.
 
 @ftable @command
 @item mtn serve [--bind=[@var{address}][:@var{port}]]
-@itemx mtn pull [--[no-]set-default] [@var{uri}]
-@itemx mtn push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
-@itemx mtn sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn pull [--[no-]set-default] [--dry-run] [@var{uri}]
+@itemx mtn push [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn sync [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
 @itemx mtn pull [--[no-]set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
@@ -5713,14 +5756,19 @@ authentication and authorization facilities.
 The @var{uri-or-address} arguments given to @command{push},
 @command{pull}, and @command{sync} can be of two possible forms.
 
-If the argument is an URI, the Lua hook @code{get_netsync_connect_command}
-may transform it into a connection command, which is later executed as
-transport channel for netsync.  The URI itself consists of a connection
-scheme (defaults to @code{mtn}), an optional user (only used for
-@code{ssh}-related transports), a host with an optional port (which both
-might be optional as well, f.e. for the @code{file} scheme), a path and
-a query part, which denotes one or more branches and optionally also exclude
-patterns for the exchange:
+If @option{--dry-run} is given, the connection is made, but no data is
+transferred. Instead, a summary of what would be transferred is
+output; the number of revisions, certs and keys that would be sent and
+received. For sent revisions, the branch names are also output.
+
+If the argument is an URI, the Lua hook
+@code{get_netsync_connect_command} may transform it into a connection
+command, which is later executed as transport channel for netsync.
+The URI itself consists of a connection scheme, an optional user (only
+used for @code{ssh}-related transports), a host with an optional port
+(which both might be optional as well, f.e. for the @code{file}
+scheme), a path and a query part, which denotes one or more branches
+and optionally also exclude patterns for the exchange:
 
 @smallexample
 @group
@@ -6811,6 +6859,52 @@ used for scripting monotone.  All give output on @code{stdout}; they may
 also give useful chatter on @code{stderr}, including warnings and error
 messages.
 
+@subsection @code{basic_io} Format
+
+Many commands produce output in a format called basic_io. At the most basic
+level this is a stream of three token types, separated by whitespace; a
+@code{symbol} matches @code{/[a-z_]+/} (a word consisting of lowercase letters
+and underscores), a @code{string} matches @code{/"([^\\]|\\\\|\\")*"/} (a pair
+of double-quotes containing arbitrary characters, with only backslash and
+double-quote escaped with a backslash), and a @code{hex} matches
+@code{/\[[0-9a-f]@{40@}\]/} (40 lowercase hex digits enclosed by square
+brackets; this will necessarily change in some manner when we eventually move
+to a stronger hash than sha1). Each @code{symbol} is followed by zero or more
+@code{string}s and/or @code{hex}es.
+
+While the above is all that is strictly necessary to parse basic_io, there is
+some formatting of the stream which may be helpful when parsing and is required
+(but not always verified) when producing basic_io for consumption by monotone:
+@itemize
+@item
+Each @code{symbol} begins a new line.
+@item
+Tokens on the same line are separated by a single space.
+@item
+Lines are grouped into logical @code{stanza}s, separated by a single empty line.
+Each stanza then describes a particular item, with the different lines
+(@code{symbol}s followed by @code{string} and @code{hex} values) describing
+different aspects of that item.
+@item
+@code{symbol}s in a stanza are right-aligned with each other; each @code{symbol}
+other than the longest is preceeded by spaces. The longest @code{symbol} in a
+stanza is not preceeded by spaces, even if there are longer @code{symbol}s in
+other stanzas.
+@item
+Lines within stanzas have a consistent order, although some may be
+optional in some commands.
+@item
+Stanzas typically have no defined order, although some commands define
+a partial order to aid in parsing.
+
+For example, revisions have associated data; the structure is header
+stanzas followed by a list of changes vs. each parent revision, with
+each change represented by a separate stanza; reordering the stanzas
+could cause a particular change to be interpreted against the wrong
+parent.
+@end itemize
+
+@subsection Automation Commands
 
 @ftable @command
 @item mtn automate interface_version
@@ -8459,9 +8553,9 @@ therefor fail unless a @code{get_passphrase} hook is set up remotely.
 
 @end table
 
-@item mtn automate pull [--[no-]set-default] [@var{uri}]
-@itemx mtn automate push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
-@itemx mtn automate sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{uri}]
+@item mtn automate pull [--[no-]set-default] [--dry-run] [@var{uri}]
+@itemx mtn automate push [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn automate sync [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
 @itemx mtn automate pull [--[no-]set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn automate push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn automate sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
@@ -8469,30 +8563,114 @@ therefor fail unless a @code{get_passphrase} hook is set up remotely.
 @table @strong
 @item Arguments:
 
-The automate versions of pull, push and sync have the same set of arguments and
-options compared to the non-automate versions. Please check this manual in the
-appropriate section for a full explanation.
+The automate versions of pull, push and sync have the same set of
+arguments and options as the non-automate versions. See @ref{Network}
+for a full explanation.
 
-@item Added in:
+@item Changes:
 
-12.0
+@itemize
+@item
+13.0 -- add sent/received revision, cert, and key output; add --dry-run.
+
+@item
+12.0 -- added
+@end itemize
 
 @item Purpose:
 
 Pushes, pulls or syncs (push & pull) revisions, certificates and keys of
 the given database to, from or with the given netsync server.
 
-@item Sample output (stdio):
+@item Sample output (stdio, non-dry-run):
+Output consists of sent and received revisions, certs, and keys in the
+main stdio channel, progress messages, and ticker data for bytes,
+revisions, certs and keys.
 
-The following output shows an example of a pull which transferred two revisions
-and eight certs.
+The following is example main channel data:
+@verbatim
+receive_cert "test"
+       value "value"
+         key [05c26b6cb109ca39bc48bbbdce83564c97796155]
+    revision [114f6aa58c7707bf83516d4080ca6268c36640ad]
+
+receive_revision [114f6aa58c7707bf83516d4080ca6268c36640ad]
+
+ receive_cert "branch"
+        value "foo"
+          key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+     revision [114f6aa58c7707bf83516d4080ca6268c36640ad]
+
+ receive_cert "changelog"
+        value "R1
+"
+          key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+     revision [114f6aa58c7707bf83516d4080ca6268c36640ad]
+
+ receive_cert "date"
+        value "2010-09-01T12:00:00"
+          key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+     revision [114f6aa58c7707bf83516d4080ca6268c36640ad]
+
+ receive_cert "author"
+        value "tester@test.net"
+          key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+     revision [114f6aa58c7707bf83516d4080ca6268c36640ad]
+
+receive_key [111808abc306fd7423b564f2a8ef5c09745b87d2]
+
+send_cert "test"
+    value "value"
+      key [05c26b6cb109ca39bc48bbbdce83564c97796155]
+ revision [114f6aa58c7707bf83516d4080ca6268c36640ad]
+
+send_revision [2a46f4b909071fae756b4911a247ce3ff1c3c4ce]
+
+send_cert "branch"
+    value "foo2"
+      key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+ revision [2a46f4b909071fae756b4911a247ce3ff1c3c4ce]
+
+send_cert "changelog"
+    value "R2
+"
+      key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+ revision [2a46f4b909071fae756b4911a247ce3ff1c3c4ce]
+
+send_cert "date"
+    value "2010-09-01T12:00:00"
+      key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+ revision [2a46f4b909071fae756b4911a247ce3ff1c3c4ce]
+
+send_cert "author"
+    value "tester@test.net"
+      key [46ec58576f9e4f34a9eede521422aa5fd299dc50]
+ revision [2a46f4b909071fae756b4911a247ce3ff1c3c4ce]
+
+send_key [05c26b6cb109ca39bc48bbbdce83564c97796155]
+@end verbatim
+
+The following is example dry-run main channel data:
+@verbatim
+        estimate
+receive_revision "0"
+    receive_cert "0"
+     receive_key "0"
+   send_revision "1"
+       send_cert "5"
+        send_key "0"
+     send_branch "foo2" "1"
+@end verbatim
+
+The following shows the progress and ticker data for a pull
+which transferred two revisions and eight certs.
 
 @emph{Note:} The linebreaks are not part of the actual format, but have been
 added for better readability.
 
 @verbatim
 0:p:62:doing anonymous pull; use -kKEYNAME if you need authentication
-0:p:31:connecting to mtn://monotone.ca0:0:p:29:finding items to synchronize:
+0:p:46:connecting to mtn://code.monotone.ca/monotone0:0:p:29:finding items to synchronize:
 0:t:34:c:certificates;k:keys;r:revisions;
 0:t:12:c=0;k=0;r=0;
 0:t:13:c#0;k#0;r#64;
@@ -8510,14 +8688,33 @@ added for better readability.
 0:t:24:>#20839;<#14882;c#6;r#2;
 0:t:24:>#20863;<#14930;c#8;r#2;
 0:t:8:<;>;c;r;
-0:p:36:successful exchange with mtn://monotone.ca
+0:p:36:successful exchange with mtn://code.monotone.ca/monotone
 0:l:1:0
 @end verbatim
 
 @item Output format:
 
-If ran outside of @command{automate stdio}, the output of these commands is
-equal to the normal netsync command output.
+For non-dry-run, all stanzas are optional; they are only output if the
+data they describe is transferred.
+
+A partial order is imposed, that the parser can use in deciding how to
+store the data. First all certs associated with revisions that are not
+transferred in this sync are output, then revisions with associated
+certs, then keys. All received data is output before all sent data.
+
+For each cert not associated with a transmitted revision,
+there is a stanza giving the cert name, value, key, and revision.
+
+For each revision, there is a stanza containing the revision
+id, followed by a stanza containing the cert name, value, key, and
+revision id for each cert associated with the revision.
+
+For each key, there is one stanza containing one line giving the key
+id.
+
+If run outside of @command{automate stdio}, the progress and ticker
+output of these commands is equal to the normal netsync command
+progress and ticker output.
 
 If these commands are run over stdio, the stdio ticker format is used
 (for a description of this format, check @command{automate stdio}).
@@ -8542,6 +8739,15 @@ ticker stanzas in this phase are the following:
 @item @code{R}: The number of outgoing revisions  (only push and sync)
 @end itemize
 
+For dry-run, one stanza is output, with optional lines giving the
+revision, cert, and key counts for send and receive. Under some
+circumstances, the number of keys that would be received is only an
+estimate; in that case, the symbol @code{estimate} is output. For
+send, the branch names of sent revisions are also output. Note that in
+the branch list, revisions that have multiple branch certs are listed
+twice, so the sum of the revision counts in the branch list may be
+greater than the number of revisions transferred.
+
 @item Error conditions:
 
 If a netsync error occurs, the command outputs an error and exits with status 1.
@@ -8560,8 +8766,7 @@ the passphrase that will be used to encrypt the private half.
 @item Changes:
 @itemize
 @item
-FIXME: renamed from @command{genkey} to @command{generate_key}
-
+13.0 -- renamed from @command{genkey} to @command{generate_key}
 @item
 10.0 -- The separate hashes for the private half of a key really didn't
 make much sense; have one @code{hash [...]} line instead of separate
@@ -8826,7 +9031,7 @@ as meaning ``give me the manifest of THIS''.)
 
 @item Purpose:
 
-Prints the contents of the manifest associated with the given roster.
+Prints the contents of the manifest associated with the given revision.
 
 @item Sample output:
 
@@ -8946,6 +9151,122 @@ information, with one line describing each attr.  These lines take the
 form ('attr', attr name, attr value).
 
 Stanzas are sorted by the path string.
+
+@item Error conditions:
+
+If the revision ID specified is unknown or invalid prints an error
+message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_extended_manifest_of @var{revid}
+
+@table @strong
+@item Arguments:
+
+The @var{revid} specifies the revision for which the extended manifest
+should be printed.
+
+@item Changes:
+
+13.0 -- initial
+
+@item Purpose:
+
+Prints the contents of the extended manifest associated with the given revision.
+
+@item Sample output:
+
+@verbatim
+      dir ""
+    birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+
+         dir "dir"
+dormant_attr "dirprop"
+       birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+   path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+   attr_mark "dirprop" [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
+
+        file "file"
+     content [d3395867d05cc4c27f013d6e6f48d644e96d8241]
+        size "8"
+        attr "fileprop" "value"
+       birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+   path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+content_mark [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
+   attr_mark "fileprop" [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
+@end verbatim
+
+@item Output format:
+
+There is one basic_io stanza for each file or directory in the
+extended manifest.
+
+All stanzas are formatted by basic_io. Stanzas are separated
+by a blank line. Values will be escaped, '\' to '\\' and
+'"' to '\"'.
+
+The 'dir' and 'file' lines are the first in every stanza and
+specify its type as follows:
+
+@verbatim
+'dir':
+      Represents a directory.  The path "" (the empty string) is used
+      to represent the root of the tree.
+      format: ('dir', pathname)
+      occurs: one or more times
+'file':
+      Represents a file.
+      format: ('file', pathname)
+      occurs: zero or more times
+@end verbatim
+
+In addition, both 'dir' and 'file' stanzas include more information
+on the particular node:
+
+@verbatim
+'birth':
+      The revision id in which the node was added ("born").
+      format: ('birth', revision id)
+      occurs: once per node
+'path_mark':
+      The revision id in which the node was last renamed.
+      format: ('path_mark', revision id)
+      occurs: once per node
+'content':
+      The id of the file node, i.e. the hash of its contents.
+      format: ('content', file id)
+      occurs: once per file node
+'content_mark':
+      The revision id in which the node's content was changed at last.
+      format: ('content_mark', revision id)
+      occurs: once per file node
+'size':
+      The recorded file size, in bytes.
+      format: ('size', size in bytes)
+      occurs: once per file node
+@end verbatim
+
+Finally, attributes are also part of the format:
+
+@verbatim
+'attr':
+      The name and the value of a specific attribute.
+      format: ('attr', attribute name, attribute value)
+      occurs: zero or more times per node
+'dormant_attr':
+      The name of a previously deleted attribute.
+      format: ('dormant_attr', attribute name)
+      occurs: zero or more times per node
+'attr_mark':
+      The revision id in which a particular attribute's value was
+      changed at last.
+      format: ('attr_mark', attribute name, revision id)
+      occurs: zero or more times per node
+@end verbatim
+
+All stanzas are sorted by the path string.
 
 @item Error conditions:
 
@@ -9242,6 +9563,43 @@ with status 1.
 
 @end table
 
+@item mtn automate get_file_size @var{id}
+
+@table @strong
+@item Arguments:
+
+The  @var{id} argument specifies the file hash of the file for which
+the size should be printed.
+
+@item Changes:
+
+13.0 -- initial
+
+@item Purpose:
+
+Prints the recorded file size of the specified file.
+
+If you need to know the file sizes of multiple files of the same revision,
+its usually faster to use the @command{automate get_extended_manifest_of}
+command.
+
+@item Sample output:
+
+@verbatim
+1241
+@end verbatim
+
+@item Output format:
+
+The size of the file in bytes followed by a linefeed character ('\n').
+
+@item Error conditions:
+
+If the file id specified is unknown or invalid prints an error message
+to stderr and exits with status 1.
+
+@end table
+
 @item mtn automate file_merge @var{left-rid} @var{left-path} @var{right-rid} @var{right-path}
 
 @table @strong
@@ -9391,9 +9749,9 @@ None.
 A data packet, @var{key-packet-data}, as produced by @command{mtn
 automate get_public_key @var{keyid}}.
 
-@item Added in:
+@item Changes:
 
-FIXME:
+13.0 -- initial
 
 @item Purpose:
 
@@ -9424,7 +9782,7 @@ An error will be produced if the argument is not a valid key packet.
 
 @itemize
 @item
-FIXME -- initial
+13.0 -- initial
 
 @end itemize
 
@@ -9462,7 +9820,7 @@ If the key does not exist, an error message is printed on the error stream.
 
 @itemize
 @item
-FIXME -- initial
+13.0 -- initial
 
 @end itemize
 
@@ -9805,12 +10163,10 @@ see @ref{Vars}.
 domain "database"
  entry "default-exclude-pattern" ""
  entry "default-include-pattern" "net.venge.monotone*"
- entry "default-server" "monotone.ca"
+ entry "default-server" "mtn://code.monotone.ca/monotone"
 
 domain "known-servers"
- entry "monotone.ca" "3e6f5225bc2fffacbc20c9de37ff2dae1e20892e"
- entry "monotone.mtn-host.prjek.net" "a52f85615cb2445989f525bf17a603250381a751"
- entry "venge.net" "70a0f283898a18815a83df37c902e5f1492e9aa2"
+ entry "mtn://code.monotone.ca/monotone" "2c88403f0ed546df96ccec57ab3072aa73a05e71"
 @end verbatim
 
 @item Output format:
@@ -10452,9 +10808,9 @@ see @command{update} in @ref{Workspace}.
 
 Same as @command{mtn checkout}; directory to create workspace in.
 
-@item Added in:
+@item Changes:
 
-FIXME
+13.0 -- initial
 
 @item Purpose:
 

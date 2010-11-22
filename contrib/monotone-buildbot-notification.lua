@@ -56,6 +56,11 @@ function note_commit (new_id, revision, certs)
     notify_buildbot(new_id, revision, certs)
 end
 
-function note_netsync_revision_received(new_id, revision, certs, session_id)
-    notify_buildbot(new_id, revision, certs)
-end
+push_hook_functions(
+   {
+      revision_received =
+	 function (new_id, revision, certs, session_id)
+	    notify_buildbot(new_id, revision, certs)
+	    return "continue",nil
+	 end
+   })

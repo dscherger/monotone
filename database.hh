@@ -119,6 +119,7 @@ private:
   //
 public:
   bool file_version_exists(file_id const & ident);
+  bool file_size_exists(file_id const & ident);
   bool revision_exists(revision_id const & ident);
   bool roster_link_exists_for_revision(revision_id const & ident);
   bool roster_exists_for_revision(revision_id const & ident);
@@ -128,6 +129,14 @@ public:
   // from deltas (if they exist)
   void get_file_version(file_id const & ident,
                         file_data & dat);
+
+  // gets the (cached) size of the file if it exists
+  void get_file_size(file_id const & ident,
+                     file_size & size);
+
+  // gets a map of all file sizes of this particular roster
+  void get_file_sizes(roster_t const & roster,
+                      std::map<file_id, file_size> & file_sizes);
 
   // put file w/o predecessor into db
   void put_file(file_id const & new_id,
@@ -479,6 +488,10 @@ public:
   void delete_existing_rosters();
   void put_roster_for_revision(revision_id const & new_id,
                                revision_t const & rev);
+
+  // for regenerate_rosters
+  void delete_existing_file_sizes();
+  void put_file_sizes_for_revision(revision_t const & rev);
 private:
   static database_cache dbcache;
 

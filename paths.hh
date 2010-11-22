@@ -354,6 +354,8 @@ private:
 // for migration
 #define old_bookkeeping_root_component (path_component("MT"))
 
+void normalize_external_path(std::string const & path, std::string & normalized, bool to_workspace_root);
+
 // this will always be an absolute path
 class system_path : public any_path
 {

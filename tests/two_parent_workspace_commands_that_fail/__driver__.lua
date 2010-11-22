@@ -1,6 +1,6 @@
 -- Create a simple two-parent workspace and then run a bunch of
 -- commands all of which should give errors (but not I()s).
--- see http://monotone.ca/wiki/MultiParentWorkspaceFallout/
+-- see http://wiki.monotone.ca/MultiParentWorkspaceFallout/
 -- for rationales for failures
 
 mtn_setup()

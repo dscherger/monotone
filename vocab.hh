@@ -90,6 +90,8 @@ typedef   roster< delta >    roster_delta;
 typedef manifest< delta >  manifest_delta;
 typedef     file< delta >      file_delta;
 
+typedef u64 file_size;
+
 // diff type; this is here and not diff_patch.hh, because options_list.hh
 // needs to refer to it
 enum diff_type

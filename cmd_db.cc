@@ -144,7 +144,7 @@ CMD(db_migrate, "migrate", "", CMD_REF(db), "",
   if (mstat.need_regen())
     {
       database db(app);
-      regenerate_caches(db);
+      regenerate_caches(db, mstat.regen_type());
     }
 
   if (mstat.need_flag_day())
@@ -386,7 +386,7 @@ CMD(db_regenerate_caches, "regenerate_caches", "", CMD_REF(db), "",
     F("no arguments needed"));
 
   database db(app);
-  regenerate_caches(db);
+  regenerate_caches(db, regen_all);
 }
 
 CMD_HIDDEN(clear_epoch, "clear_epoch", "", CMD_REF(db), "BRANCH",

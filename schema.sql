@@ -37,6 +37,12 @@ CREATE TABLE file_deltas
 	unique(id, base)
 	);
 
+CREATE TABLE file_sizes
+	(
+	id primary key,     -- joins with files.id or file_deltas.id
+	size not null       -- the size of the file in byte
+	);
+
 CREATE TABLE revisions
 	(
 	id primary key,      -- SHA1(text of revision)

@@ -10,7 +10,6 @@
 
 #include "base.hh"
 #include <algorithm>
-#include <stack>
 #include <set>
 #include "vector.hh"
 #include <sstream>
@@ -432,127 +431,115 @@ roster_t::operator=(roster_t const & other)
 }
 
 
-struct
-dfs_iter
+dfs_iter::dfs_iter(const_dir_t r, bool t = false)
+  : root(r), return_root(root), track_path(t)
 {
-  const_dir_t root;
-  string curr_path;
-  bool return_root;
-  bool track_path;
-  stack< pair<const_dir_t, dir_map::const_iterator> > stk;
+  if (root && !root->children.empty())
+    stk.push(make_pair(root, root->children.begin()));
+}
 
+bool
+dfs_iter::finished() const
+{
+  return (!return_root) && stk.empty();
+}
 
-  dfs_iter(const_dir_t r, bool t = false)
-    : root(r), return_root(root), track_path(t)
-  {
-    if (root && !root->children.empty())
-      stk.push(make_pair(root, root->children.begin()));
-  }
+string const &
+dfs_iter::path() const
+{
+  I(track_path);
+  return curr_path;
+}
 
+const_node_t
+dfs_iter::operator*() const
+{
+  I(!finished());
+  if (return_root)
+    return root;
+  else
+    {
+      I(!stk.empty());
+      return stk.top().second->second;
+    }
+}
 
-  bool finished() const
-  {
-    return (!return_root) && stk.empty();
-  }
+void
+dfs_iter::advance_top()
+{
+  int prevsize = 0;
+  int nextsize = 0;
+  pair<const_dir_t, dir_map::const_iterator> & stack_top(stk.top());
+  if (track_path)
+    {
+      prevsize = stack_top.second->first().size();
+    }
 
+  ++stack_top.second;
 
-  string const & path() const
-  {
-    I(track_path);
-    return curr_path;
-  }
+  if (track_path)
+    {
+      if (stack_top.second != stack_top.first->children.end())
+        nextsize = stack_top.second->first().size();
 
+      int tmpsize = curr_path.size()-prevsize;
+      I(tmpsize >= 0);
+      curr_path.resize(tmpsize);
+      if (nextsize != 0)
+        curr_path.insert(curr_path.end(),
+                         stack_top.second->first().begin(),
+                         stack_top.second->first().end());
+    }
+}
 
-  const_node_t operator*() const
-  {
-    I(!finished());
-    if (return_root)
-      return root;
-    else
-      {
-        I(!stk.empty());
-        return stk.top().second->second;
-      }
-  }
+void
+dfs_iter::operator++()
+{
+  I(!finished());
 
-private:
-  void advance_top()
-  {
-    int prevsize = 0;
-    int nextsize = 0;
-    pair<const_dir_t, dir_map::const_iterator> & stack_top(stk.top());
-    if (track_path)
-      {
-        prevsize = stack_top.second->first().size();
-      }
+  if (return_root)
+    {
+      return_root = false;
+      if (!stk.empty())
+        curr_path = stk.top().second->first();
+      return;
+    }
 
-    ++stack_top.second;
+  // we're not finished, so we need to set up so operator* will return the
+  // right thing.
+  node_t ntmp = stk.top().second->second;
+  if (is_dir_t(ntmp))
+    {
+      dir_t dtmp = downcast_to_dir_t(ntmp);
+      stk.push(make_pair(dtmp, dtmp->children.begin()));
 
-    if (track_path)
-      {
-        if (stack_top.second != stack_top.first->children.end())
-          nextsize = stack_top.second->first().size();
+      if (track_path)
+        {
+          if (!curr_path.empty())
+            curr_path += "/";
+          if (!dtmp->children.empty())
+            curr_path += dtmp->children.begin()->first();
+        }
+    }
+  else
+    {
+      advance_top();
+    }
 
-        int tmpsize = curr_path.size()-prevsize;
-        I(tmpsize >= 0);
-        curr_path.resize(tmpsize);
-        if (nextsize != 0)
-          curr_path.insert(curr_path.end(),
-                           stack_top.second->first().begin(),
-                           stack_top.second->first().end());
-      }
-  }
-public:
-
-  void operator++()
-  {
-    I(!finished());
-
-    if (return_root)
-      {
-        return_root = false;
-        if (!stk.empty())
-          curr_path = stk.top().second->first();
-        return;
-      }
-
-    // we're not finished, so we need to set up so operator* will return the
-    // right thing.
-    node_t ntmp = stk.top().second->second;
-    if (is_dir_t(ntmp))
-      {
-        dir_t dtmp = downcast_to_dir_t(ntmp);
-        stk.push(make_pair(dtmp, dtmp->children.begin()));
-
-        if (track_path)
-          {
-            if (!curr_path.empty())
-              curr_path += "/";
-            if (!dtmp->children.empty())
-              curr_path += dtmp->children.begin()->first();
-          }
-      }
-    else
-      {
-        advance_top();
-      }
-
-    while (!stk.empty()
-           && stk.top().second == stk.top().first->children.end())
-      {
-        stk.pop();
-        if (!stk.empty())
-          {
-            if (track_path)
-              {
-                curr_path.resize(curr_path.size()-1);
-              }
-            advance_top();
-          }
-      }
-  }
-};
-
+  while (!stk.empty()
+         && stk.top().second == stk.top().first->children.end())
+    {
+      stk.pop();
+      if (!stk.empty())
+        {
+          if (track_path)
+            {
+              curr_path.resize(curr_path.size()-1);
+            }
+          advance_top();
+        }
+    }
+}
 
 bool
 roster_t::has_root() const
@@ -1850,7 +1837,7 @@ namespace
     if (mm.size() > ros.all_nodes().size())
       {
         std::set<node_id> to_drop;
-        
+
         marking_map::const_iterator mi = mm.begin(), me = mm.end();
         node_map::const_iterator ri = ros.all_nodes().begin(), re = ros.all_nodes().end();
 

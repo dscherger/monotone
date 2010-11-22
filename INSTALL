@@ -33,10 +33,11 @@ building and installation process for monotone
 
            install the following packages:
              autoconf automake gettext g++ libboost-dev libz-dev
-             libbotan-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
+             libbotan1.7-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
              libidn11-dev libgmp3-dev libbz2-dev texinfo
 
-           (On etch, you may need to use libbotan1.7 from lenny.)
+           (monotone works with older and newer Botan versions as well, 
+            so libbotan1.6-dev or libbotan1.8-dev are also good to go.)
 
         on FreeBSD:
 
@@ -128,6 +129,12 @@ building and installation process for monotone
            Other tools will be linked with the monotone MinGW
            executable, so we need the MinGW versions of those.
 
+           The tools listed here are sufficient to build the monotone
+           executable and html and info documentation. However, the
+           'distcheck' target also builds the documentation in
+           postscript format, which requires tools not (yet) available
+           for MinGW.
+
            1. MinGW - run installer, accept defaults but add g++ on the package selection page (installs to c:/MinGW)
            2. MSYS - run installer, accept defaults (installs to c:/Msys/1.0)
            3. msysDTK - run installer, accept defaults (installs to c:/Msys/1.0)
@@ -208,7 +215,7 @@ building and installation process for monotone
                $ make install
 
            15. Depends.exe
-               If you have Visual Studio install, you should be able to skip this.
+               If you have Visual Studio installed, you should be able to skip this.
                If you don't, then download the appropriate depends*.zip and
                unpack it someplace in your %PATH%.
                This is only used by the testsuite, in particular the empty_environment test.
@@ -384,11 +391,10 @@ building and installation process for monotone
 
     You might also like to try fetching monotone's sources from our
     monotone server. this process will transfer the complete development
-    history (about 70 megabytes) to your database, and you will then
-    be free to share it with others or make changes and submit them to
-    us:
+    history to your database, and you will then be free to share it with
+    others or make changes and submit them to us:
 
-        mtn clone monotone.ca net.venge.monotone
+        mtn clone 'mtn://code.monotone.ca/monotone?net.venge.monotone'
 
 5. upgrading
 
