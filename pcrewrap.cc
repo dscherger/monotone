@@ -152,8 +152,17 @@ namespace pcre
     cap_count += 1;
 
     int worksize = cap_count * 3;
-    // yes, C99 only
-    int ovector[worksize];
+
+    // "int ovector[worksize]" is C99 only (not valid C++, but allowed by gcc/clang)
+    // boost::shared_array is I think not plannned to be part of C++0x
+    class xyzzy {
+      int *data;
+    public:
+      xyzzy(int len) : data(new int[len]) {}
+      ~xyzzy() { delete[] data; }
+      operator int*() { return data; }
+    } ovector(worksize);
+
     rc = pcre_exec(basedat, extradat,
                    subject.data(), subject.size(),
                    0, flags_to_internal(options), ovector, worksize);
