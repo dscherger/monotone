@@ -66,205 +66,173 @@ if not MCP_rcfile then MCP_rcfile = MCP_default_rcfile end
 -------------------------------------------------------------------------------
 do
    local debug = false
+   local quiet_startup = true
 
    local branches = {}
 
-   local saved_note_netsync_start = note_netsync_start
-   function note_netsync_start(nonce, ...)
-      if saved_note_netsync_start then
-	 saved_note_netsync_start(nonce, ...)
-      end
-      if debug then
-	 io.stderr:write("note_netsync_start: initialise branches\n")
-      end
-      branches[nonce] = {}
-   end
-
-   local saved_note_netsync_cert_received = note_netsync_cert_received
-   function note_netsync_cert_received(rev_id, key, name, value, nonce, ...)
-      if saved_note_netsync_cert_received then
-	 saved_note_netsync_cert_received(rev_id, key, name, value, nonce, ...)
-      end
-      if debug then
-	 io.stderr:write("note_netsync_cert_received: cert ", name,
-			 " with value ", value, " received\n")
-      end
-      if name == "branch" then
+   -- returns false if the rcfile wasn't parseable, otherwise true.
+   -- if it was parseable, run the callback with each item as argument
+   local process_rcfile =
+      function (_hook_name, _rcfile, _callback)
 	 if debug then
-	    io.stderr:write("note_netsync_cert_received: branch ", value,
-			    " identified\n")
+	    io.stderr:write(_hook_name, ": reading ", _rcfile,
+			    "\n")
 	 end
-	 branches[nonce][value] = true
-      end
-   end
-
-   local saved_note_netsync_revision_received = note_netsync_revision_received
-   function note_netsync_revision_received(new_id, revision, certs, nonce, ...)
-      if saved_note_netsync_revision_received then
-	 saved_note_netsync_revision_received(new_id, revision, certs, nonce, ...)
-      end
-      for _, item in pairs(certs)
-      do
-	 if debug then
-	    io.stderr:write("note_netsync_revision_received: cert ", item.name,
-			    " with value ", item.value, " received\n")
-	 end
-	 if item.name == "branch" then
-	    if debug then
-	       io.stderr:write("note_netsync_revision_received: branch ",
-			       item.value, " identified\n")
-	    end
-	    branches[nonce][item.value] = true
-	 end
-      end
-   end
-
-   local saved_note_netsync_end = note_netsync_end
-   function note_netsync_end(nonce, status,
-			     bytes_in, bytes_out,
-			     certs_in, certs_out,
-			     revs_in, revs_out,
-			     keys_in, keys_out,
-			     ...)
-      if saved_note_netsync_end then
-	 saved_note_netsync_end(nonce, status,
-				bytes_in, bytes_out,
-				certs_in, certs_out,
-				revs_in, revs_out,
-				keys_in, keys_out,
-				...)
-      end
-      if debug then
-	 io.stderr:write("note_netsync_end: ",
-			 string.format("%d certs, %d revs, %d keys",
-				       certs_in, revs_in, keys_in),
-			 "\n")
-      end
-      if certs_in > 0 or revs_in > 0 or keys_in > 0 then
-	 if debug then
-	    io.stderr:write("note_netsync_end: reading ", MCP_rcfile, "\n")
-	 end
-	 local rcfile = io.open(MCP_rcfile, "r")
+	 local rcfile = io.open(_rcfile, "r")
 	 if (rcfile == nil) then
-	    io.stderr:write("file ", MCP_rcfile, " cannot be opened\n")
-	    return false
+	    io.stderr:write("file ", _rcfile, " cannot be opened\n")
+	    return nil
 	 end
 	 local dat = rcfile:read("*a")
 	 io.close(rcfile)
 	 if debug then
-	    io.stderr:write("note_netsync_end: got this:\n", dat, "\n")
-	 end	 
+	    io.stderr:write(_hook_name, ": got this:\n", dat, "\n")
+	 end
 	 local res = parse_basic_io(dat)
 	 if res == nil then
-	    io.stderr:write("file ", MCP_rcfile, " cannot be parsed\n")
-	    return false
+	    io.stderr:write("file ", _rcfile, " cannot be parsed\n")
+	    return nil
 	 end
 
-	 local matches = false
+	 local pattern_servers = {}
 	 local patterns = {}
 	 local previous_name = ""
 	 for i, item in pairs(res) do
 	    if item.name == "pattern" then
 	       if debug then
-		  io.stderr:write("note_netsync_end: found ", item.name,
-				  " = \"", item.values[1], "\"\n")
+		  io.stderr:write(_hook_name, ": found ",
+				  item.name, " = \"", item.values[1],
+				  "\"\n")
 	       end
 	       if previous_name ~= "pattern" then
 		  if debug then
-		     io.stderr:write("note_netsync_end: clearing matches and patterns because previous_name = \"", previous_name, "\"\n")
+		     io.stderr:write(_hook_name, ": clearing patterns because previous_name = \"", previous_name, "\"\n")
 		  end
-		  matches = false
 		  patterns = {}
 	       end
-	       local pattern = item.values[1]
-	       for branch, b in pairs(branches[nonce]) do
-		  if debug then
-		     io.stderr:write("note_netsync_end: trying to match branch ",
-				     branch, "\n")
-		  end
-		  if globish_match(pattern, branch) then
-		     if debug then
-			io.stderr:write("note_netsync_end: it matches branch ",
-					branch, "\n")
-		     end
-		     matches = true
-		     patterns[pattern] = true
-		  end
+	       patterns[item.values[1]] = true
+	    elseif item.name == "server" then
+	       if debug then
+		  io.stderr:write(_hook_name, ": found ", item.name, " = \"",
+				  item.values[1], "\"\n")
 	       end
-	    elseif matches then
-	       if item.name == "server" then
-		  if debug then
-		     io.stderr:write("note_netsync_end: found ", item.name,
-				     " = \"", item.values[1], "\"\n")
-		  end
-		  local server = item.values[1]
-		  for pattern, b in pairs(patterns) do
-		     io.stderr:write("pushing pattern \"", pattern,
-				     "\" to server ", server, "\n")
-		     server_request_sync("push", server, pattern, "")
+	       local server = item.values[1]
+	       for pattern, b in pairs(patterns) do
+		  if b then
+		     if not pattern_servers[pattern] then
+			pattern_servers[pattern] = {}
+		     end
+		     table.insert(pattern_servers[pattern], server)
 		  end
 	       end
 	    end
 	    previous_name = item.name
 	 end
+	 return pattern_servers
       end
-   end
+
+   local notifier = {
+      startup =
+	 function(...)
+	    local pattern_branches =
+	       process_rcfile("note_mtn_startup", MCP_rcfile, nil)
+	    if pattern_branches then
+	       for pattern, servers in pairs(pattern_branches) do
+		  for _,server in pairs(servers) do
+		     if not quiet_startup then
+			io.stderr:write("note_mtn_startup: pushing pattern \"",
+					pattern, "\" to server ", server, "\n")
+		     end
+		     server_request_sync("push", server, pattern, "")
+		  end
+	       end
+	    end
+	    return "continue",nil
+	 end,
+
+      start =
+	 function (nonce, ...)
+	    if debug then
+	       io.stderr:write("note_netsync_start: initialise branches\n")
+	    end
+	    branches[nonce] = {}
+	    return "continue",nil
+	 end,
+
+      cert_received =
+	 function (rev_id, key, name, value, nonce, ...)
+	    if debug then
+	       io.stderr:write("note_netsync_cert_received: cert ", name,
+			       " with value ", value, " received\n")
+	    end
+	    if name == "branch" then
+	       if debug then
+		  io.stderr:write("note_netsync_cert_received: branch ",
+				  value, " identified\n")
+	       end
+	       branches[nonce][value] = true
+	    end
+	    return "continue",nil
+	 end,
+
+      revision_received =
+	 function (new_id, revision, certs, nonce, ...)
+	    for _, item in pairs(certs)
+	    do
+	       if debug then
+		  io.stderr:write("note_netsync_revision_received: cert ",
+				  item.name, " with value ",
+				  item.value, " received\n")
+	       end
+	       if item.name == "branch" then
+		  if debug then
+		     io.stderr:write("note_netsync_revision_received: branch ",
+				     item.value, " identified\n")
+		  end
+		  branches[nonce][item.value] = true
+	       end
+	    end
+	    return "continue",nil
+	 end,
+
+      ["end"] =
+	 function (nonce, status,
+		   bytes_in, bytes_out,
+		   certs_in, certs_out,
+		   revs_in, revs_out,
+		   keys_in, keys_out,
+		   ...)
+	    if debug then
+	       io.stderr:write("note_netsync_end: ",
+			       string.format("%d certs, %d revs, %d keys",
+					     certs_in, revs_in, keys_in),
+			       "\n")
+	    end
+	    if certs_in > 0 or revs_in > 0 or keys_in > 0 then
+	       local pattern_branches =
+		  process_rcfile("not_netsync_end", MCP_rcfile, nil)
+	       if pattern_branches then
+		  for pattern, servers in pairs(pattern_branches) do
+		     if globish_match(pattern, branch) then
+			if debug then
+			   io.stderr:write("note_netsync_end: it matches branch ",
+					   branch, "\n")
+			end
+			for _,server in pairs(servers) do
+			   io.stderr:write("note_netsync_end: ",
+					   "pushing pattern \"", pattern,
+					   "\" to server ", server, "\n")
+			   server_request_sync("push", server, pattern, "")
+			end
+		     end
+		  end
+	       end
+	    end
+	    return "continue",nil
+	 end
+   }
 
    local saved_note_mtn_startup = note_mtn_startup
-   function note_mtn_startup(...)
-      if saved_note_mtn_startup then
-	 saved_note_mtn_startup(...)
-      end
 
-      if debug then
-	 io.stderr:write("note_mtn_startup: reading ", MCP_rcfile,
-			 "\n")
-      end
-      local rcfile = io.open(MCP_rcfile, "r")
-      if (rcfile == nil) then
-	 io.stderr:write("file ", MCP_rcfile, " cannot be opened\n")
-	 return false
-      end
-      local dat = rcfile:read("*a")
-      io.close(rcfile)
-      if debug then
-	 io.stderr:write("note_mtn_startup: got this:\n", dat, "\n")
-      end	 
-      local res = parse_basic_io(dat)
-      if res == nil then
-	 io.stderr:write("file ", MCP_rcfile, " cannot be parsed\n")
-	 return false
-      end
-
-      local patterns = {}
-      local previous_name = ""
-      for i, item in pairs(res) do
-	 if item.name == "pattern" then
-	    if debug then
-	       io.stderr:write("note_mtn_startup: found ", item.name, " = \"",
-			       item.values[1], "\"\n")
-	    end
-	    if previous_name ~= "pattern" then
-	       if debug then
-		     io.stderr:write("note_mtn_startup: clearing patterns because previous_name = \"", previous_name, "\"\n")
-	       end
-	       patterns = {}
-	    end
-	    patterns[item.values[1]] = true
-	 elseif item.name == "server" then
-	    if debug then
-	       io.stderr:write("note_mtn_startup: found ", item.name, " = \"",
-			       item.values[1], "\"\n")
-	    end
-	    local server = item.values[1]
-	    for pattern, b in pairs(patterns) do
-	       io.stderr:write("pushing pattern \"", pattern, "\" to server ",
-			       server, "\n")
-	       server_request_sync("push", server, pattern, "")
-	    end
-	 end
-	 previous_name = item.name
-      end
-      return nil
-   end
+   push_netsync_notifier(notifier)
 end

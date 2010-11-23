@@ -2366,8 +2366,8 @@ bisect_update(app_state & app, bisect::type type)
 
 CMD(bisect_status, "status", "", CMD_REF(bisect), "",
     N_("Reports on the current status of the bisection search"),
-    N_("Lists the total number of revisions in the search set; "
-       "the number of revisions that have been determined to be good or bad; "
+    N_("Lists the total number of revisions in the search set, "
+       "the number of revisions that have been determined to be good or bad, "
        "the number of revisions that have been skipped "
        "and the number of revisions remaining to be tested."),
     options::opts::none)

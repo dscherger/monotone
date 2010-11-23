@@ -1,0 +1,53 @@
+    left [fe616087506ae4e770e4a51e091e4c338b2f176d]
+   right [eccae629399090f99632cf9e9cc7156af2d238fb]
+ancestor [19451bb6dc1137d540500c63d399bac8babcbe78]
+
+         conflict content
+        node_type "file"
+    ancestor_name "files/bar"
+ ancestor_file_id [fc8a40f0b775e86503c7522399f309f6ac298348]
+        left_name "files/bar"
+     left_file_id [bf227d19bccee7740bb58219910ff0930b6200c1]
+       right_name "files/bar"
+    right_file_id [5fd4e3cf64e24e969cfcd2380cf244aee9e52d5d]
+resolved_internal 
+
+          conflict content
+         node_type "file"
+     ancestor_name "files/baz"
+  ancestor_file_id [ae708173915e11248629c18d16c96c3a34f87d16]
+         left_name "files/baz"
+      left_file_id [c438704db55b0d6f819e7e79c1622e5d757b926b]
+        right_name "files/baz"
+     right_file_id [b87f48c43f61d258cc0b12d07bd53a7ddde357a9]
+resolved_user_left "_MTN/result/baz"
+
+          conflict content
+         node_type "file"
+     ancestor_name "files/foo"
+  ancestor_file_id [0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33]
+         left_name "files/foo"
+      left_file_id [841e3d2ada1a56123f9efe9db0d0c045ff9e6d8f]
+        right_name "files/foo"
+     right_file_id [3506995775abf41d3cdeb1e0417bdd3bcf059395]
+resolved_user_left "files/foo"
+
+          conflict content
+         node_type "file"
+     ancestor_name "files/inter1"
+  ancestor_file_id [bad8d100ec34a19496dc4f18277334cd7f3ad647]
+         left_name "files/inter1"
+      left_file_id [28347eacdbd7d870349c9954a1b6d49d9f1acd8e]
+        right_name "files/inter1"
+     right_file_id [d261697ad5379583618ed62a582d513bba79c1fd]
+resolved_user_left "_MTN/resolutions/files/inter1"
+
+          conflict content
+         node_type "file"
+     ancestor_name "files/inter2"
+  ancestor_file_id [a6c0b6bcbb1a10a30372e499126c14c1b170535c]
+         left_name "files/inter2"
+      left_file_id [ad2d9c733b3aaea250e88b4869db63baa8a00e8e]
+        right_name "files/inter2"
+     right_file_id [8f6b7ea0a3f2dd75a23294069b03268f41974edb]
+resolved_user_left "_MTN/resolutions/inter_merged"

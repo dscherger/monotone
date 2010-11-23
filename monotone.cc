@@ -219,7 +219,6 @@ cpp_main(int argc, char ** argv)
           if (!app.opts.args.empty())
             {
               cmd_id = commands::complete_command(app.opts.args);
-              I(!cmd_id.empty());
             }
 
           // check if the user specified default arguments for this command

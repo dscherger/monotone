@@ -11,6 +11,7 @@
 #define _PCREWRAP_HH
 
 #include "sanity.hh"
+#include <vector>
 
 // This is a sensible C++ wrapper interface around the bare C API exported
 // by pcre.h.  Note that pcre.h is a very "noisy" header in terms of macro
@@ -76,6 +77,9 @@ namespace pcre
 
     bool match(std::string const & subject, origin::type subject_origin,
                pcre::flags options = DEFAULT) const;
+
+    bool match(std::string const & subject, origin::type subject_origin,
+               std::vector<std::string> & matches, pcre::flags options = DEFAULT) const;
   };
 } // namespace pcre
 

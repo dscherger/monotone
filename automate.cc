@@ -1030,7 +1030,7 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
   work.get_parent_rosters(db, parents);
   // for now, until we've figured out what the format could look like
   // and what conceptional model we can implement
-  // see: http://monotone.ca/wiki/MultiParentWorkspaceFallout/
+  // see: http://wiki.monotone.ca/MultiParentWorkspaceFallout/
   E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 

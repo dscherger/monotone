@@ -22,6 +22,7 @@
 #include "refiner.hh"
 #include "ui.hh"
 
+#include "network/connection_info.hh"
 #include "network/wrapped_session.hh"
 
 struct cert;
@@ -54,16 +55,6 @@ netsync_session:
   size_t revs_in, revs_out;
   size_t keys_in, keys_out;
 
-  // These are read from the server, written to the local database
-  std::vector<revision_id> written_revisions;
-  std::vector<key_id> written_keys;
-  std::vector<cert> written_certs;
-
-  // These are sent to the server
-  std::vector<revision_id> sent_revisions;
-  std::vector<key_id> sent_keys;
-  std::vector<cert> sent_certs;
-
   mutable bool set_totals;
 
   // Interface to refinement.
@@ -71,6 +62,12 @@ netsync_session:
   refiner key_refiner;
   refiner cert_refiner;
   refiner rev_refiner;
+
+  // dry-run & automate info
+  bool is_dry_run;
+  bool dry_run_keys_refined;
+  shared_conn_counts counts;
+  bool dry_run_finished() const;
 
   // Interface to ancestry grovelling.
   revision_enumerator rev_enumerator;
@@ -94,6 +91,7 @@ public:
                   protocol_role role,
                   globish const & our_include_pattern,
                   globish const & our_exclude_pattern,
+                  shared_conn_counts counts,
                   bool initiated_by_server = false);
 
   virtual ~netsync_session();

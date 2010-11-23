@@ -1,12 +1,61 @@
-Xxx Xxx 99 99:99:99 UTC 2010
+XXX XXX XX XX:XX:XX UTC 2010
+
+        1.0 release.
+
+        Changes
+
+        - in 'mtn conflicts resolve_first interactive', the result
+          file name now defaults to _MTN/resolutions/<left_path>.
+          Fixes monotone issue 103.
+
+        New Features
+
+        - 'mtn conflicts store' now outputs a count of the conflicts,
+          and the name of the conflicts file. Fixes monotone issue
+          108.
+        
+        Bugs fixed
+
+        - improve help, fix arg indexing in 'conflicts resolve_first'
+          (fixes monotone issue 101)
+        
+        - add compatibility with Botan 1.9.9 and newer
+          (fixes monotone issue 104)
+
+        - 'automate remote' and 'automate remote_stdio' now use
+          a given database given by an alias to read, store and validate
+          a remote server's key fingerprint (fixes monotone issue 95) 
+
+        Internal
+
+
+Sun Oct 31 21:51:16 UTC 2010
+
+        0.99.1 release.
+
+        Bugs fixed
+
+        - monotone crashed on x86_64 when a netsync action required
+          the parsing of an URL. This has been fixed.
+          (closes monotone issue 100)
+
+        - monotone's automation interface version was reported wrongly
+          as 12.1, where it should have been 13.0.
+
+
+Thu Oct 28 21:07:18 UTC 2010
 
         0.99 release.
 
         Changes
 
-        - Monotone now tracks file size information. Please execute 
-          'mtn db migrate' to migrate the database scheme and refresh the
-          file size cache.
+        - The database scheme was changed; please execute 'mtn db mgirate'
+          on all your local and remote databases.
+
+        - Normal and automate sync, push, and pull now take a
+          --dry-run option; no data is transferred, but the connection
+          is made and a summary of what would be transferred is
+          output.
 
         - The changelog editor format was simplified; user entered text
           is back at the top of file and the instructions have been reduced.
@@ -30,11 +79,25 @@ Xxx Xxx 99 99:99:99 UTC 2010
           in the query string has been removed. Patterns are separated
           by ';' and will be treated as include patterns unless prefixed
           with '-'. Where you could previously specify
-          "mtn://host/?include=foo,exclude=bar", you would now give
-          "mtn://host/?foo;-bar" instead.
+          'mtn://host/?include=foo,exclude=bar', you would now give
+          'mtn://host/?foo;-bar' instead.
 
-          Monotone's native protocol (mtn://) is still the default
-          protocol if nothing is specified.
+          The URI parser was made a bit more standards compliant and
+          treats the scheme and host in a case insensitive manner.
+          The path and query parts are now automatically URL-decoded.
+
+          We deviate from RFC 3986 however by recognizing the authority
+          part in scheme-less URLs, where the standard would force us
+          to recognize a path instead.  For example, for the URL
+
+              'code.monotone.ca/monotone'
+
+          we'd normally parse 'code.monotone.ca/monotone' as path, but our
+          implementation parses 'code.monotone.ca' as authority and
+          '/monotone' as path, so you are not forced to type 'mtn://' on
+          command line, just as you are not forced to type 'http://' in
+          your browser.  Monotone's native scheme / protocol 'mtn' is by
+          the way set as default in cases like this.
 
           The format for the server part of the 'default-server',
           'known-server', 'server-include' and 'server-exclude'
@@ -90,23 +153,26 @@ Xxx Xxx 99 99:99:99 UTC 2010
           to what our documentation states, when it says that import
           is basically "setup with a twist".
 
-        - The 'automate genkey' command has been renamed to
-          'automate generate_key'
-
         - On Win32 native, the option '--no-format-dates' which disables
           the localized date format, is now the default for 'commit', since
           dates are not parseable on Win32 native.
+
+        - The automate commands sync, push, and pull now output information
+          about each transferred revision, cert and key, in basic_io format.
 
         - monotone no longer passes syntactically correct, but non-existent
           revision ids through the selector machinery.  The most visible
           place for this change is 'automate select', which no longer
           echoes every possible 40 hex-byte string.
 
+        - The 'automate genkey' command has been renamed to
+          'automate generate_key'
+
         New features
 
         - Options can now be overridden; you can specify '--no-unknown
           --unknown' on the command line and effectively get back the original
-          state in the application. Similarly, you can specify '--no-unknown'
+          state in the application.  Similarly, you can specify '--no-unknown'
           in the 'get_default_command_options' hook and then override that
           with '--unknown' on the command line.
 
@@ -161,6 +227,8 @@ Xxx Xxx 99 99:99:99 UTC 2010
           sync, pull, push, automate remote_stdio, automate remote
           automate pull, automate push, automate sync
             --no-set-default                undo previous --set-default
+          sync, pull, push, automate pull, automate push, automate sync
+            --dry-run                       just report what would be sent/received
           automate inventory
             --corresponding-renames         undo previous --no-corresponding-renames
             --ignored                       undo previous --no-ignored
@@ -190,24 +258,15 @@ Xxx Xxx 99 99:99:99 UTC 2010
           be expanded; if the expansion leads to multiple possibilities,
           all matches and an accompanying short description of the
           particular expansion are displayed.
+
           Two types of expansions are available: simple prefix matching
           and word abbreviation matching. Single-word options like '--update'
           are easier to expand from prefixes, as they're unique after a few
           characters, in this example '--up' already matches.
+
           Multi-word options like for example '--ignore-suspend-certs' might
           collide however with single-worded ones and are best expanded from
           abbreviations, in this case '--isc'.
-
-        - New automate command 'checkout' which works just as its
-          non-automate counterpart.
-
-        - New automate commands 'get_extended_manifest_of', which prints
-          a beefed-up manifest format with file size other change information,
-          as well as 'get_file_size', which prints the recorded file size
-          of a specific file.
-
-        - New automate commands 'put_public_key', 'get_public_key' and
-          'drop_public_key'. (closes monotone bug #30345)
 
         - The 'disapprove' command now accepts a revision range in
           addition to a single revision.
@@ -225,9 +284,28 @@ Xxx Xxx 99 99:99:99 UTC 2010
         - New 'k:' selector type to query revisions where at least one
           certificate was signed with the given key.
 
-        - New automation command 'log' which behaves identical to the
+        - New automate command 'log' which behaves identical to the
           normal 'log' command, except that it only outputs the
           revision ids.
+
+        - New automate command 'checkout' which works just as its
+          non-automate counterpart.
+
+        - Monotone now tracks file size information (hence the previously
+          mentioned schema change).
+          File sizes are currently only queryable via the automation
+          interface, directly for specific files via 'get_file_size' or
+          as part of the extended manifest (see below), but these
+          information may become visible as part of the user UI later on
+          as well.
+
+        - New automate command 'get_extended_manifest_of', which prints
+          a beefed-up manifest format with file size and extensive marking
+          information.  This can be used to easily determine when specific
+          nodes have been changed or moved at last.
+
+        - New automate commands 'put_public_key', 'get_public_key' and
+          'drop_public_key'. (closes monotone bug #30345)
 
         Bugs fixed
 
@@ -300,6 +378,43 @@ Xxx Xxx 99 99:99:99 UTC 2010
 
         - 'mtn conflicts store' now gives a proper error message when
           run outside a workspace (fixes monotone bug #30473)
+
+        - monotone did not properly parse URIs which missed a scheme or
+          which did not mark the start of the authority with a double slash.
+          This has been fixed.
+          (fixes monotone issue 94)
+
+
+Thu Oct 21 23:45:45 UTC 2010
+
+        0.48.1 bugfix release.
+
+        Security related changes:
+
+        - Running "mtn ''" or "mtn ls ''" doesn't cause an internal
+          error anymore. In monotone 0.48 and earlier this behavior
+          could be used to crash a server remotely (but only if it was
+          configured to allow execution of remote commands).
+
+          Therefore everyone running such a server should update as
+          soon as possible.
+
+        Other changes:
+
+        - The --no-format-dates option is now set per default on Win32
+          for the commit command, because there's no date parsing
+          method in the Win32 API. In the changelog editor dates are
+          thus showed and (expected to be entered) in monotone's
+          internal datetime format (YYYY-MM-DDTHH:MM:SS).
+
+        - Using mtn:// style URIs for netsync operations didn't work
+          with 0.48 on systems which only have a 'monotone' entry in
+          /etc/services. Failing to find a corresponding entry for the
+          schema in a given URI isn't considered fatal now, instead
+          mtn falls back to its default port.
+
+        - Compilation issues on Win32 have been fixed.
+
 
 Sun Jun 13 22:13:53 UTC 2010
 

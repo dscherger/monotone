@@ -1,4 +1,4 @@
-// Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
+// Copyright (C) 2005, 2010 Nathaniel Smith <njs@pobox.com>
 //               2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -187,6 +187,7 @@ struct roster_merge_result
   bool is_clean() const;
   bool has_content_conflicts() const;
   bool has_non_content_conflicts() const;
+  int  count_supported_resolution() const;
   int  count_unsupported_resolution() const;
   void log_conflicts() const;
 

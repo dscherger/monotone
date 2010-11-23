@@ -1,6 +1,6 @@
-    left [36cfb5960784df07636cc9d119617326fe87c3f6]
-   right [be155249f011e658f913c109bafd743b1bfea0fe]
-ancestor [574e08409c35c5c0eb6e929bf1e3abf49a8bacd4]
+    left [fe616087506ae4e770e4a51e091e4c338b2f176d]
+   right [eccae629399090f99632cf9e9cc7156af2d238fb]
+ancestor [19451bb6dc1137d540500c63d399bac8babcbe78]
 
          conflict content
         node_type "file"
@@ -31,3 +31,21 @@ resolved_user_left "_MTN/result/baz"
         right_name "files/foo"
      right_file_id [3506995775abf41d3cdeb1e0417bdd3bcf059395]
 resolved_user_left "files/foo"
+
+        conflict content
+       node_type "file"
+   ancestor_name "files/inter1"
+ancestor_file_id [bad8d100ec34a19496dc4f18277334cd7f3ad647]
+       left_name "files/inter1"
+    left_file_id [28347eacdbd7d870349c9954a1b6d49d9f1acd8e]
+      right_name "files/inter1"
+   right_file_id [d261697ad5379583618ed62a582d513bba79c1fd]
+
+        conflict content
+       node_type "file"
+   ancestor_name "files/inter2"
+ancestor_file_id [a6c0b6bcbb1a10a30372e499126c14c1b170535c]
+       left_name "files/inter2"
+    left_file_id [ad2d9c733b3aaea250e88b4869db63baa8a00e8e]
+      right_name "files/inter2"
+   right_file_id [8f6b7ea0a3f2dd75a23294069b03268f41974edb]

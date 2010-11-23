@@ -44,11 +44,17 @@ check(mtn("merge"), 1, nil, false)
 -- For thermostat.c, she specifies a conflict resolution that renames
 -- both versions.
 
-check(mtn("conflicts", "store"), 0, true, nil)
+check(mtn("conflicts", "store"), 0, nil, true)
+check(samelines("stderr", {"mtn: 2 conflicts with supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts'"}))
 check(samefilestd("conflicts-1", "_MTN/conflicts"))
 
 -- Find out what the first unresolved conflict is
 check(mtn("conflicts", "show_first"), 0, nil, true)
+
+-- invalid resolution identifier
+check(mtn("conflicts", "resolve_first_left", "foo"), 1, nil, true)
+check(qgrep("'foo' is not a supported conflict resolution for duplicate_name", "stderr"))
 
 -- Retrieve Abe's version of checkout.sh, and pretend we did a manual
 -- merge, using our favorite merge tool. We put the files in the

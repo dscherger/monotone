@@ -1,4 +1,5 @@
-
+-- Cygwin doesn't do write permissions properly
+skip_if(string.sub(ostype, 1, 6)=="CYGWIN")
 skip_if(not existsonpath("chmod"))
 mtn_setup()
 

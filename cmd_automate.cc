@@ -88,7 +88,7 @@ namespace commands {
 // This number is only raised once, during the process of releasing a new
 // version of monotone, by the release manager. For more details, see
 // point (4) in notes/release-checklist.txt
-static string const interface_version = "12.1";
+static string const interface_version = "13.0";
 
 // This number determines the format version of the stdio packet format.
 // The original format which came without a version notification was "1".

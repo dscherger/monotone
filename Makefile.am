@@ -164,8 +164,8 @@ UNIT_TESTEES =								\
 	basic_io.cc charset.cc commands.cc cset.cc git_change.cc	\
 	globish.cc graph.cc merge_3way.cc merge_roster.cc mkstemp.cc	\
 	netcmd.cc netxx_pipe.cc option.cc outdated_indicator.cc		\
-	refiner.cc restrictions.cc revision.cc simplestring_xform.cc	\
-	transforms.cc uri.cc vocab.cc xdelta.cc
+	pcrewrap.cc refiner.cc restrictions.cc revision.cc 		\
+	simplestring_xform.cc transforms.cc uri.cc vocab.cc xdelta.cc
 
 # these files contain the actual unit tests
 # yes, we have to list them all explicitly, with directory prefix, or
@@ -178,9 +178,10 @@ UNIT_TESTERS =								\
 	unit-tests/merge_roster.cc unit-tests/mkstemp.cc		\
 	unit-tests/netcmd.cc unit-tests/netxx_pipe.cc			\
 	unit-tests/option.cc unit-tests/outdated_indicator.cc		\
-	unit-tests/refiner.cc unit-tests/restrictions.cc		\
-	unit-tests/revision.cc unit-tests/simplestring_xform.cc		\
-	unit-tests/transforms.cc unit-tests/uri.cc unit-tests/vocab.cc	\
+	unit-tests/pcrewrap.cc unit-tests/refiner.cc 			\
+	unit-tests/restrictions.cc unit-tests/revision.cc		\
+	unit-tests/simplestring_xform.cc unit-tests/transforms.cc	\
+	unit-tests/uri.cc unit-tests/vocab.cc				\
 	unit-tests/xdelta.cc unit-tests/numeric_vocab.cc		\
 	unit-tests/sha1.cc unit-tests/string_queue.cc unit_tester.cc
 
@@ -198,7 +199,7 @@ UNIT_TESTERS_PRIV =							\
 UNIT_TEST_SUPPORT =							\
 	constants.cc file_io.cc gzip.cc hmac.cc lcs.cc merkle_tree.cc   \
 	randomizer.cc randomizer.hh roster_delta.cc roster_tests.hh	\
-	sanity.cc specialized_lexical_cast.cc pcrewrap.cc
+	sanity.cc specialized_lexical_cast.cc
 
 # primaries
 
@@ -496,7 +497,7 @@ ISCC=@ISCC@
 
 win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe
 
-monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
+monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html info $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
 	$(ISCC) monotone.iss
 
 mtn-stripped.exe: mtn.exe
