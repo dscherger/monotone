@@ -1,0 +1,22 @@
+#!/bin/sh
+
+NAME=monotone
+EXECNAME=mtn
+DAEMON=/usr/bin/$EXECNAME
+MAINLOG=/var/log/$NAME/$EXECNAME.log
+
+ADDRESS=0.0.0.0
+MTN_HOME=/var/lib/monotone
+MTN_CONFDIR=/etc/monotone
+MTN_KEYDIR=$MTN_HOME/keys
+MTN_DB=$MTN_HOME/default.mtn
+
+cd /var/lib/monotone
+exec >> $MAINLOG 2>&1
+exec \
+  softlimit -d192000000 \
+  setuidgid monotone \
+  /usr/bin/monotone \
+    --confdir=$MTN_CONFDIR --keydir=$MTN_KEYDIR --db=$MTN_DB \
+    --no-standard-rcfiles --rcfile=$MTN_CONFDIR/hooks.lua \
+    --timestamps --quiet --bind=$ADDRESS serve
