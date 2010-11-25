@@ -45,6 +45,11 @@ UNIT_TEST(basic)
                "ssh", "", "venge.net", "22", "/tmp/foo.mtn", "", "");
   test_one_uri("ssh://venge.net/tmp/foo.mtn",
                "ssh", "", "venge.net", "", "/tmp/foo.mtn", "", "");
+  // the parser does not know the inner characteristics of the 'ssh' scheme,
+  // i.e. that a tilde isn't expanded when its inside a path, so we treat this
+  // as correct in this place. the leading slash is then however stripped off
+  // in get_netsync_connect_command in std_hooks.lua so that ssh will handle
+  // it properly
   test_one_uri("ssh://graydon@venge.net/~/foo.mtn",
                "ssh", "graydon", "venge.net", "",   "/~/foo.mtn", "", "");
   test_one_uri("ssh://[fe:00:01::04:21]/tmp/foo.mtn",
