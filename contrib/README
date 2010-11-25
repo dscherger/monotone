@@ -98,3 +98,9 @@ See individual files for licenses.
      configuration directory called "passphrases".  This is useful for
      automated startup of servers.
 
+  -- authorize_remote_automate.lua: This is a server hook to authenticate
+     remote automate operations, either by matching a key identity with
+     patterns in the file remote-automate-permissions, or matching the
+     command with a configured list of safe remote automate commands
+     (configured through the variable ARA_safe_commands, which can be set
+     up anywhere before this hook is loaded).
