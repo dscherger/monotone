@@ -279,7 +279,7 @@ netsync_connection_info::Client::set_raw_uri(string const & raw_uri)
   if (uri.scheme.empty())
     uri.scheme = "mtn";
  
-  E(uri.scheme == "mtn" && !uri.host.empty(), origin::user,
+  E(uri.scheme != "mtn" || !uri.host.empty(), origin::user,
     F("a non-empty hostname is expected for the 'mtn' uri scheme"));
 
   var_key server_include(var_domain("server-include"),
