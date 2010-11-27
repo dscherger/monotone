@@ -33,6 +33,12 @@ XXX XXX XX XX:XX:XX UTC 2010
           with the 'mtn' scheme misses the required host part
           (fixes monotone issue 110)
 
+        - whenever a binary file was removed and one would try to get
+          a diff using mtn diff, it would report that "/dev/null is
+          binary".  This has been changed to it reports the actual
+          name of the removed file instead.
+          (fixes monotone issue 106)
+
         Internal
 
 
