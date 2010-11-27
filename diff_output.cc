@@ -475,7 +475,12 @@ make_diff(string const & filename1,
 {
   if (guess_binary(data1()) || guess_binary(data2()))
     {
-      ost << "# " << filename2 << " is binary\n";
+      // If a file has been removed, filename2 will be "/dev/null".
+      // It doesn't make sense to output that.
+      if (filename2 == "/dev/null")
+        ost << "# " << filename1 << " is binary\n";
+      else
+        ost << "# " << filename2 << " is binary\n";
       return;
     }
 
