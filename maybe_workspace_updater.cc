@@ -59,7 +59,7 @@ void maybe_workspace_updater::maybe_do_update()
     {
       update(app, args_vector());
     }
-  else
+  else if (app.opts.auto_update)
     {
       P(F("note: your workspace has not been updated"));
     }
