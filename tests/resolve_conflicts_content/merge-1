@@ -6,4 +6,3 @@ mtn: replacing content of files/foo, files/foo with files/foo
 mtn: replacing content of files/inter1, files/inter1 with _MTN/resolutions/files/inter1
 mtn: replacing content of files/inter2, files/inter2 with _MTN/resolutions/inter_merged
 mtn: [merged] bd6a2c0363cab1cf19220bce150c77b84b1a5a32
-mtn: note: your workspace has not been updated
