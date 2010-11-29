@@ -107,7 +107,8 @@ CREATE TABLE revision_certs
 	unique(name, value, revision_id, keypair_id, signature)
 	);
 
-CREATE INDEX revision_certs__revision_id ON revision_certs (revision_id);
+CREATE INDEX revision_certs__revnameval ON revision_certs (revision_id,
+       name, value, keypair_id, signature);
 
 CREATE TABLE branch_epochs
 	(
