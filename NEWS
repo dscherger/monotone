@@ -46,6 +46,12 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         Internal
 
+        Other
+
+        - Added the mtn-cleanup Perl script that returns a workspace to its
+          pristine state with the minimum amount of change. This script is
+          under the contrib directory.
+
 
 Sun Oct 31 21:51:16 UTC 2010
 
