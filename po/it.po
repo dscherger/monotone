@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: monotone 0.48dev\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-10-18 14:10+0200\n"
-"PO-Revision-Date: 2010-10-24 17:31+0100\n"
+"PO-Revision-Date: 2010-12-05 17:53+0100\n"
 "Last-Translator: Roberta Lazzeri <ripley@lapo.it>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -689,12 +689,12 @@ msgstr "non è permesso nessun argomento"
 
 # cosa è globish?
 msgid "Check that a particular globish matches a particular string"
-msgstr ""
+msgstr "Controlla che un certo globish corrisponda a una certa stringa"
 
 #: cmd.cc:545
 #, c-format
 msgid "Globish <%s> does not match string <%s>"
-msgstr ""
+msgstr "Globish <%s> non corrisponde alla stringa <%s>"
 
 # TODO: innesca
 #: cmd.cc:550
@@ -2408,7 +2408,7 @@ msgstr "Questo comando stampa lo storico in ordine diretto o inverso, filtrato d
 
 #: cmd_diff_log.cc:1000
 msgid "list selected revision history"
-msgstr ""
+msgstr "elenca la storia della revisione selezionata"
 
 #: cmd_ws_commit.cc:179
 #, c-format
@@ -2958,7 +2958,7 @@ msgstr "Cerca revisioni per trovare dove un cambiamentoè apparso per la prima v
 
 #: cmd_ws_commit.cc:2016
 msgid "These commands subdivide a set of revisions into good, bad and untested subsets and successively narrow the untested set to find the first revision that introduced some change."
-msgstr ""
+msgstr "Questi comandi suddividono una serie di revisioni in cattive , buone e in sottoserie non-testate e successivamente restringe la serie non-testate per trovare la prima revisione che introduce qualche cambiamento"
 
 # TODO: "ricerca con bisezione"? o forse "bisezione" e basta?
 #: cmd_ws_commit.cc:2021
@@ -2990,17 +2990,17 @@ msgstr "riportato a %s"
 #: cmd_ws_commit.cc:2124
 #, c-format
 msgid "bisecting revisions; %d good; %d bad; %d skipped; specify good revisions to start search"
-msgstr ""
+msgstr "revisioni divaricanti; %d buone; %d cattive; %d saltate; specificare le revisioni buone e iniziare la ricerca"
 
 #: cmd_ws_commit.cc:2130
 #, c-format
 msgid "bisecting revisions; %d good; %d bad; %d skipped; specify bad revisions to start search"
-msgstr ""
+msgstr "revisioni divaricanti; %d buone; %d cattive; %d saltate; specificare le revisioni cattive e iniziare la ricerca"
 
 #: cmd_ws_commit.cc:2193
 #, c-format
 msgid "bisecting %d revisions; %d good; %d bad; %d skipped; %d remaining"
-msgstr ""
+msgstr "revisioni divaricanti; %d buone; %d cattive; %d saltate; %d restanti"
 
 #: cmd_ws_commit.cc:2211
 #, c-format
@@ -3029,11 +3029,11 @@ msgstr "aggiorno a ‘%s’"
 
 #: cmd_ws_commit.cc:2368
 msgid "Reports on the current status of the bisection search"
-msgstr ""
+msgstr "Segnala lo stato corrente della ricerca di bisezione"
 
 #: cmd_ws_commit.cc:2369
 msgid "Lists the total number of revisions in the search set; the number of revisions that have been determined to be good or bad; the number of revisions that have been skipped and the number of revisions remaining to be tested."
-msgstr ""
+msgstr "Elenca il numero totale di revisioni nella serie ricerca; il numero di revisioni che sono state definite buone o cattive; il numero di revisioni che sono state saltate e il numero di revisioni che devono ancora essere testate"
 
 #: cmd_ws_commit.cc:2397
 #, c-format
@@ -3064,7 +3064,7 @@ msgstr "Esclude dalla ricerca la revisione attuale o revisioni speficate"
 
 #: cmd_ws_commit.cc:2416
 msgid "Skipped revisions are removed from the set being searched. Revisions that cannot be tested for some reason should be skipped."
-msgstr ""
+msgstr "Le revisioni saltate vengono remosse dalla serie ricercata. Le revisioni che non possono essere testate per qualsiasi ragione devono essere saltate."
 
 #: cmd_ws_commit.cc:2426
 msgid "Marks the current revision or specified revisions as bad"
@@ -3129,12 +3129,12 @@ msgstr ""
 #: cmd_othervcs.cc:106
 #, c-format
 msgid "importing revision marks from '%s'"
-msgstr ""
+msgstr "importa segni di revisione da %s"
 
 #: cmd_othervcs.cc:143
 #, c-format
 msgid "exporting revision marks to '%s'"
-msgstr ""
+msgstr "esporta segni di revisione in %s"
 
 # TODO: automatizzata?
 #: cmd_automate.cc:41
@@ -3401,7 +3401,7 @@ msgstr ""
 #: cmd_conflicts.cc:138
 #, c-format
 msgid "content %s"
-msgstr ""
+msgstr "contenuto %s"
 
 #: cmd_conflicts.cc:144
 #, c-format
@@ -3431,11 +3431,12 @@ msgstr "‘%s’ non è una risoluzione di conflitti supportata per ‘%s’"
 msgid "too many arguments"
 msgstr "troppi parametri"
 
+# non sono sicura
 #: cmd_conflicts.cc:260
 #: cmd_conflicts.cc:276
 #, c-format
 msgid "other resolution must be 'drop' or 'rename'"
-msgstr ""
+msgstr "l'altra soluzione deve essere ‘omessa’ o ‘rinominata’"
 
 #: cmd_conflicts.cc:265
 #: cmd_conflicts.cc:271
@@ -3452,7 +3453,7 @@ msgstr "numero errato di parametri"
 #: cmd_conflicts.cc:372
 #, c-format
 msgid "result path must be under _MTN"
-msgstr ""
+msgstr "il percorso risultato deve essere sotto _MTN"
 
 #: cmd_conflicts.cc:404
 #, c-format
@@ -3587,7 +3588,7 @@ msgstr "la revisione base %s non esiste all'interno database"
 #: work.cc:313
 #, c-format
 msgid "parent revision %s does not exist, did you specify the wrong database?"
-msgstr ""
+msgstr "revisione genitore %s non esiste, hai specificato il database snagliato?"
 
 #: work.cc:472
 #, c-format
@@ -3598,7 +3599,7 @@ msgstr "Impossibile leggere il file di opzioni ‘%s’: %s"
 #: work.cc:535
 #, c-format
 msgid "a memory database '%s' cannot be used in a workspace"
-msgstr ""
+msgstr "un darabase memoria ‘%s’ non può essere usato nello spazio di lavoro"
 
 # non riconosciuta o che?
 #: work.cc:521
@@ -3805,7 +3806,7 @@ msgstr "il file sorgente ‘%s’ non è sotto controllo di versione"
 #: work.cc:2041
 #, c-format
 msgid "cannot move `%s' to a subdirectory of itself, `%s/%s'"
-msgstr ""
+msgstr "non puoi spostare ‘%s’ in una suttodirectory di se stesso, ‘%s/%s’"
 
 #: work.cc:1977
 #, c-format
@@ -3884,7 +3885,7 @@ msgstr ""
 #: work.cc:2200
 #, c-format
 msgid "re-run this command with --move-conflicting-paths to move conflicting paths out of the way."
-msgstr ""
+msgstr "esegui di nuovo il comando con --move-conflicting-paths per spostare i percorsi conflittuali fuori dal percorso."
 
 #: work.cc:2232
 #, c-format
@@ -3974,7 +3975,7 @@ msgstr "l'hash calcolato sul certificato è ‘%s’, non corrisponde a ‘%s’
 #: project.cc:477
 #, c-format
 msgid "could not interpret test result string '%s'; valid strings are: 1, 0, yes, no, true, false, pass, fail"
-msgstr ""
+msgstr "non posso interpretare la striga test risultato _MTN; stringhe valide sono: 1, 0, sì, no, vero, falso, passato, fallito"
 
 #: project.cc:542
 #: project.cc:558
@@ -4154,7 +4155,7 @@ msgstr ""
 #: database.cc:1155
 #, c-format
 msgid "invalid date '%s' for revision %s; skipped"
-msgstr ""
+msgstr "dato invalido ‘%s’ per la revisione %s; saltato"
 
 #: database.cc:1237
 #, c-format
@@ -4267,7 +4268,7 @@ msgstr ""
 #: database.cc:2854
 #, c-format
 msgid "revision does not match hash"
-msgstr ""
+msgstr "la revisione non corrisponde a hash"
 
 #: database.cc:2986
 #, c-format
@@ -4453,7 +4454,7 @@ msgstr ""
 #: key_store.cc:434
 #, c-format
 msgid "Invalid data in key file."
-msgstr ""
+msgstr "Dati non validi nel file chiave."
 
 #: key_store.cc:442
 #, c-format
@@ -7382,17 +7383,17 @@ msgstr ""
 #: options.hh:46
 #, c-format
 msgid "must not be less than %d"
-msgstr ""
+msgstr "non deve essere meno di %d"
 
 #: options.hh:75
 #, c-format
 msgid "must be one of the following: %s"
-msgstr ""
+msgstr "deve essere uno dei seguenti: %s"
 
 #: options_list.hh:132
 #, c-format
 msgid "must be between 0 and 255"
-msgstr ""
+msgstr "deve essere tra 0 e 255"
 
 #: options_list.hh:206
 msgid "insert command line arguments taken from the given file"
@@ -7521,7 +7522,7 @@ msgstr "non esegue l'operazione, mostra solamente cosa sarebbe successo"
 
 #: options_list.hh:368
 msgid "drop certs signed by keys we don't know about"
-msgstr ""
+msgstr "elimina certificati firmati con chiavi che non conosciamo"
 
 #: options_list.hh:371
 msgid "file to dump debugging log to, on failure"
@@ -7638,11 +7639,11 @@ msgstr ""
 
 #: options_list.hh:469
 msgid "please use --no-standard-rcfiles instead"
-msgstr ""
+msgstr "per favore invece usa --no-standard-rcfiles "
 
 #: options_list.hh:471
 msgid "old version of --no-standard-rcfiles"
-msgstr ""
+msgstr "vecchia versione di --no-standard-rcfiles "
 
 #: options_list.hh:475
 msgid "please use --no-builtin-rcfile instead"
@@ -7793,11 +7794,11 @@ msgstr "include valori certificato standard nei commit logs"
 
 #: options_list.hh:647
 msgid "load the internal marks table before exporting revisions"
-msgstr ""
+msgstr "carica la tavola segni interni prima di esportare revisioni"
 
 #: options_list.hh:650
 msgid "save the internal marks table after exporting revisions"
-msgstr ""
+msgstr "salva la tavola segni interni dopo l'esportazione di revisioni"
 
 #: safe_map.hh:25
 #, c-format
@@ -7997,7 +7998,7 @@ msgstr "impossibile analizzare data ‘%s’ con formato‘%s’"
 #: unix/parse_date.cc:24
 #, c-format
 msgid "invalid date '%s' not matched by format '%s'"
-msgstr ""
+msgstr "dato invalido %s’ non corrisponde al formato %s’"
 
 #: win32/get_system_flavour.cc:161
 #, c-format
