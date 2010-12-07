@@ -8,6 +8,11 @@ XXX XXX XX XX:XX:XX UTC 2010
           file name now defaults to _MTN/resolutions/<left_path>.
           (fixes monotone issue 103)
 
+        - the French monotone translation has been updated and is
+          now part of the main distribution again. many thanks to
+          Steve Petruzzello <dlist@bluewin.ch> for the outstanding
+          work!
+
         New Features
 
         - 'mtn conflicts store' now outputs a count of the conflicts,
