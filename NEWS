@@ -1,3 +1,18 @@
+xxx xxx xx xx:xx:xx UTC XXXX
+
+        0.48.2
+
+        Changes:
+
+        - the French monotone translation has been updated and is
+          now part of the main distribution again. many thanks to
+          Steve Petruzzello <dlist@bluewin.ch> for the outstanding
+          work!
+
+        - improved compatibility with SQLite 3.7
+          (backport of fix for monotone issue 96)
+
+
 Thu Oct 21 23:45:45 UTC 2010
 
         0.48.1 bugfix release.
