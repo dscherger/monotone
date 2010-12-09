@@ -634,7 +634,11 @@ UNIT_TEST(system)
 #else
   UNIT_TEST_CHECK(tilde_expanded[0] == '/');
 #endif
-  UNIT_TEST_CHECK(tilde_expanded.find('~') == string::npos);
+  // This test should not be performed, tildes are allowed in the middle
+  // of paths, and we have already shown in the previous test that what
+  // we expected happened (or didn't).
+  //UNIT_TEST_CHECK(tilde_expanded.find('~') == string::npos);
+
   // on Windows, ~name is not expanded
 #ifdef WIN32
   UNIT_TEST_CHECK(system_path("~this_user_does_not_exist_anywhere")

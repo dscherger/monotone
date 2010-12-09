@@ -8,4 +8,3 @@ mtn: replacing content of checkout.sh with _MTN/resolutions/checkout.sh
 mtn: renaming thermostat.c to thermostat-westinghouse.c
 mtn: renaming thermostat.c to thermostat-honeywell.c
 mtn: [merged] 14964233a7361ada1ba962f7863d4fee12f30df7
-mtn: note: your workspace has not been updated

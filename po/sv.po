@@ -154,8 +154,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-10-28 13:54+0200\n"
-"PO-Revision-Date: 2010-10-28 13:56+0200\n"
+"POT-Creation-Date: 2010-11-27 16:55+0100\n"
+"PO-Revision-Date: 2010-11-28 06:39+0100\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -983,11 +983,11 @@ msgid "Executes COMMAND on a remote server"
 msgstr "Kör KOMMANDO på servern i andra änden"
 
 #: cmd_netsync.cc:219 cmd_list.cc:988 cmd_packet.cc:73 cmd_packet.cc:134
-#: cmd_packet.cc:257 cmd_key_cert.cc:81 cmd_key_cert.cc:186 cmd_merging.cc:384
-#: cmd_merging.cc:1131 cmd_merging.cc:1202 cmd_ws_commit.cc:1134
+#: cmd_packet.cc:254 cmd_key_cert.cc:81 cmd_key_cert.cc:186 cmd_merging.cc:384
+#: cmd_merging.cc:1141 cmd_merging.cc:1219 cmd_ws_commit.cc:1134
 #: cmd_ws_commit.cc:1342 cmd_ws_commit.cc:1456 cmd_ws_commit.cc:1478
-#: cmd_automate.cc:137 cmd_files.cc:238 cmd_files.cc:335 cmd_files.cc:359
-#: cmd_files.cc:393 automate.cc:85 automate.cc:122 automate.cc:175
+#: cmd_automate.cc:137 cmd_files.cc:239 cmd_files.cc:336 cmd_files.cc:360
+#: cmd_files.cc:394 automate.cc:85 automate.cc:122 automate.cc:175
 #: automate.cc:298 automate.cc:400 automate.cc:431 automate.cc:520
 #: automate.cc:1246 automate.cc:1419 automate.cc:1556 automate.cc:1592
 #: automate.cc:1624 automate.cc:1658 automate.cc:1690 automate.cc:1730
@@ -1124,7 +1124,7 @@ msgid "bookkeeping directory already exists in '%s'"
 msgstr "det finns redan en administrativ katalog i '%s'"
 
 #: cmd_netsync.cc:862 cmd_merging.cc:535 cmd_merging.cc:636 cmd_merging.cc:641
-#: cmd_merging.cc:1454 cmd_ws_commit.cc:1030
+#: cmd_merging.cc:1471 cmd_ws_commit.cc:1030
 #, c-format
 msgid "branch '%s' is empty"
 msgstr "grenen '%s' är tom"
@@ -1352,7 +1352,7 @@ msgstr "REV"
 msgid "Prints all certificates attached to a revision"
 msgstr "Skriver ut alla certifikat kopplade till en revision"
 
-#: cmd_list.cc:1001 cmd_db.cc:621 cmd_files.cc:269 automate.cc:132
+#: cmd_list.cc:1001 cmd_db.cc:621 cmd_files.cc:270 automate.cc:132
 #: automate.cc:185 automate.cc:235 automate.cc:265 automate.cc:307
 #: automate.cc:312 automate.cc:406 automate.cc:437 automate.cc:1602
 #: automate.cc:1634 automate.cc:1701 automate.cc:1703 automate.cc:2175
@@ -1391,40 +1391,35 @@ msgstr "ID"
 msgid "Prints a private key packet"
 msgstr "Skriver ut datapaket för privat nyckel till stdout"
 
-#: cmd_packet.cc:157
-#, c-format
-msgid "public and private key '%s' do not exist in keystore"
-msgstr "den publika och privata nyckeln '%s' finns inte i nyckellagret"
-
-#: cmd_packet.cc:251
+#: cmd_packet.cc:248
 msgid "PACKET-DATA"
 msgstr "PAKETDATA"
 
-#: cmd_packet.cc:252
+#: cmd_packet.cc:249
 msgid "Load the given packets into the database"
 msgstr "Ladda in de givna paketen i databasen"
 
-#: cmd_packet.cc:268
+#: cmd_packet.cc:265
 msgid "Reads packets from files"
 msgstr "Läser paket från filer eller stdin"
 
-#: cmd_packet.cc:269
+#: cmd_packet.cc:266
 msgid "If no files are provided, the standard input is used."
 msgstr "Om ingen fil angivits används stdin."
 
-#: cmd_packet.cc:279
+#: cmd_packet.cc:276
 #, c-format
 msgid "no packets found on stdin"
 msgstr "inga paket hittade i stdin"
 
-#: cmd_packet.cc:292
+#: cmd_packet.cc:289
 #, c-format
 msgid "no packets found in given file"
 msgid_plural "no packets found in given files"
 msgstr[0] "inga paket funna i den angivna filen"
 msgstr[1] "inga paket funna i de angivna filerna"
 
-#: cmd_packet.cc:296
+#: cmd_packet.cc:293
 #, c-format
 msgid "read %d packet"
 msgid_plural "read %d packets"
@@ -1654,7 +1649,7 @@ msgstr ""
 
 #: cmd_merging.cc:209 cmd_merging.cc:824 cmd_ws_commit.cc:370
 #: cmd_ws_commit.cc:1358 cmd_ws_commit.cc:2042 cmd_ws_commit.cc:2270
-#: cmd_ws_commit.cc:2385 cmd_files.cc:307 cmd_files.cc:405 automate.cc:1035
+#: cmd_ws_commit.cc:2385 cmd_files.cc:308 cmd_files.cc:406 automate.cc:1035
 #: automate.cc:1328
 #, c-format
 msgid "this command can only be used in a single-parent workspace"
@@ -1756,7 +1751,7 @@ msgstr "[ihopslagen] %s"
 msgid "Merges unmerged heads of a branch"
 msgstr "Slår ihop ej ihopslagna löv i grenen"
 
-#: cmd_merging.cc:528 cmd_merging.cc:1111 cmd_merging.cc:1445
+#: cmd_merging.cc:528 cmd_merging.cc:1121 cmd_merging.cc:1462
 #, c-format
 msgid "please specify a branch, with --branch=BRANCH"
 msgstr "var god ange en gren med --branch=GREN"
@@ -1923,49 +1918,56 @@ msgstr "%s är redan förfader till %s"
 msgid "%s is an ancestor of %s; no merge is needed."
 msgstr "%s är en förfader till %s; någon ihopslagning behövs inte."
 
-#: cmd_merging.cc:1041
+#: cmd_merging.cc:1042
 #, c-format
-msgid "no conflicts detected"
-msgstr "inga konflikter funna"
+msgid "0 conflicts"
+msgstr "0 konflikter"
 
-#: cmd_merging.cc:1075 cmd_conflicts.cc:160 cmd_conflicts.cc:173
+#: cmd_merging.cc:1077
+#, c-format
+msgid "%d conflict with supported resolutions."
+msgid_plural "%d conflicts with supported resolutions."
+msgstr[0] "varning: %d konflikt med lösningsstöd."
+msgstr[1] "varning: %d konflikter med lösningsstöd."
+
+#: cmd_merging.cc:1082 cmd_conflicts.cc:160 cmd_conflicts.cc:173
 #, c-format
 msgid "warning: %d conflict with no supported resolutions."
 msgid_plural "warning: %d conflicts with no supported resolutions."
-msgstr[0] "varning: %d konflikt utan lösning."
-msgstr[1] "varning: %d konflikter utan lösning."
+msgstr[0] "varning: %d konflikt utan lösningsstöd."
+msgstr[1] "varning: %d konflikter utan lösningsstöd."
 
-#: cmd_merging.cc:1082
+#: cmd_merging.cc:1089
 msgid "REV REV"
 msgstr "REV REV"
 
-#: cmd_merging.cc:1083
+#: cmd_merging.cc:1090
 msgid "Shows what conflicts need resolution between two revisions"
 msgstr ""
 "Visar de konflikter som behöver lösas om de givna revisionerna slås ihop."
 
-#: cmd_merging.cc:1084
+#: cmd_merging.cc:1091
 msgid ""
 "The conflicts are calculated based on the two revisions given in the REV "
 "parameters."
 msgstr "Konflikten beräknas på bas av de två angivna revisionerna REV."
 
-#: cmd_merging.cc:1118
+#: cmd_merging.cc:1128
 #, c-format
 msgid "branch '%s' has only 1 head; must be at least 2 for conflicts"
 msgstr ""
 "grenen '%s' har bara 1 löv; det måste vara minst 2 stycken för "
 "'show_conflicts'"
 
-#: cmd_merging.cc:1151
+#: cmd_merging.cc:1161
 msgid "[LEFT_REVID RIGHT_REVID]"
 msgstr "[VÄNSTER_REVID HÖGER_REVID]"
 
-#: cmd_merging.cc:1152
+#: cmd_merging.cc:1162
 msgid "Shows the conflicts between two revisions"
 msgstr "Visar konflikterna mellan två revisioner"
 
-#: cmd_merging.cc:1153
+#: cmd_merging.cc:1163
 msgid ""
 "If no arguments are given, LEFT_REVID and RIGHT_REVID default to the first "
 "two heads that would be chosen by the 'merge' command."
@@ -1973,11 +1975,11 @@ msgstr ""
 "Utan givna argument blir VÄNSTER_REVID och HÖGER_REVID de två första löven "
 "som kommandot 'merge' skulle ha valt."
 
-#: cmd_merging.cc:1167
+#: cmd_merging.cc:1180
 msgid "Store the conflicts from merging two revisions"
 msgstr "Spara konflikterna från en hopslagning av två revisioner"
 
-#: cmd_merging.cc:1168
+#: cmd_merging.cc:1181
 msgid ""
 "If no arguments are given, LEFT_REVID and RIGHT_REVID default to the first "
 "two heads that would be chosen by the 'merge' command. If --conflicts-file "
@@ -1987,16 +1989,21 @@ msgstr ""
 "som kommandot 'merge' skulle ha valt.  Om --conflicts-file inte är angiven "
 "används '_MTN/conflicts'."
 
-#: cmd_merging.cc:1177 options_list.hh:602 options_list.hh:623
+#: cmd_merging.cc:1190 options_list.hh:602 options_list.hh:623
 #, c-format
 msgid "conflicts file must be under _MTN"
 msgstr "konfliktfilen måste ligga under _MTN"
 
-#: cmd_merging.cc:1188
+#: cmd_merging.cc:1202
+#, c-format
+msgid "stored in '%s'"
+msgstr "sparat i '%s'"
+
+#: cmd_merging.cc:1205
 msgid "LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME"
 msgstr "VÄNSTER_REVID VÄNSTER_FILNAMN HÖGER_REVID HÖGER_FILNAMN"
 
-#: cmd_merging.cc:1189
+#: cmd_merging.cc:1206
 msgid ""
 "Prints the results of the internal line merger, given two child revisions "
 "and file names"
@@ -2004,20 +2011,20 @@ msgstr ""
 "Visa resultatet från den interna ihopslagningsmekanismen, utgående från två "
 "revisioner och filnamn"
 
-#: cmd_merging.cc:1241
+#: cmd_merging.cc:1258
 #, c-format
 msgid "internal line merger failed"
 msgstr "den interna ihopslagningsmekanismen misslyckades"
 
-#: cmd_merging.cc:1246
-msgid "[-r FROM] -r TO [PATH...]"
-msgstr "[-r FRÅN] -r TILL [SÖKVÄG...]"
+#: cmd_merging.cc:1263
+msgid "[PATH...]"
+msgstr "[SÖKVÄG ...]"
 
-#: cmd_merging.cc:1247
+#: cmd_merging.cc:1264
 msgid "Applies changes made at arbitrary places in history"
 msgstr "Applicerar ändringar som gjorts på godtyckliga platser i historien"
 
-#: cmd_merging.cc:1248
+#: cmd_merging.cc:1265
 msgid ""
 "This command takes changes made at any point in history, and edits your "
 "current workspace to include those changes.  The end result is identical to "
@@ -2039,7 +2046,7 @@ msgstr ""
 "Om två revisioner har givits utförs alla ändringar som gjorts för att komma "
 "från den första till den andra."
 
-#: cmd_merging.cc:1272
+#: cmd_merging.cc:1289
 #, c-format
 msgid ""
 "revision %s is a merge\n"
@@ -2050,49 +2057,49 @@ msgstr ""
 "för att utföra ändringarna relativt en av dess föräldrar, gör så här:\n"
 "  %s pluck -r FÖRÄLDER -r %s"
 
-#: cmd_merging.cc:1288
+#: cmd_merging.cc:1305
 #, c-format
 msgid "no changes to apply"
 msgstr "inga ändringar att utföra"
 
-#: cmd_merging.cc:1350
+#: cmd_merging.cc:1367
 #, c-format
 msgid "no changes to be applied"
 msgstr "inga ändringar att utföra"
 
-#: cmd_merging.cc:1400
+#: cmd_merging.cc:1417
 #, c-format
 msgid "no changes were applied"
 msgstr "inga ändringar blev utförda"
 
-#: cmd_merging.cc:1404
+#: cmd_merging.cc:1421
 #, c-format
 msgid "applied changes to workspace"
 msgstr "utförde ändringarna i arbetskopian"
 
-#: cmd_merging.cc:1436
+#: cmd_merging.cc:1453
 msgid "Shows unmerged head revisions of a branch"
 msgstr "Visar ej ihopslagna lövrevisioner i grenen"
 
-#: cmd_merging.cc:1456
+#: cmd_merging.cc:1473
 #, c-format
 msgid "branch '%s' is currently merged:"
 msgstr "grenen '%s' har för tillfället ett löv:"
 
-#: cmd_merging.cc:1458
+#: cmd_merging.cc:1475
 #, c-format
 msgid "branch '%s' is currently unmerged:"
 msgstr "grenen '%s' har för tillfället mer än ett löv:"
 
-#: cmd_merging.cc:1465 automate.cc:1411
+#: cmd_merging.cc:1482 automate.cc:1411
 msgid "[REVID]"
 msgstr "[REVID]"
 
-#: cmd_merging.cc:1466
+#: cmd_merging.cc:1483
 msgid "Dumps the roster associated with a given identifier"
 msgstr "Skriver ut den lista som hör ihop med angiven identifierare"
 
-#: cmd_merging.cc:1467
+#: cmd_merging.cc:1484
 msgid "If no REVID is given, the workspace is used."
 msgstr "Om ingen REVID angivits används arbetskopian."
 
@@ -2973,7 +2980,7 @@ msgid ""
 "file mentioned in PATH."
 msgstr "Sätt attributet NYCKEL med värde VÄRDE på filen SÖKVÄG."
 
-#: cmd_ws_commit.cc:1336 cmd_files.cc:137 cmd_files.cc:232
+#: cmd_ws_commit.cc:1336 cmd_files.cc:138 cmd_files.cc:233
 msgid "PATH"
 msgstr "SÖKVÄG"
 
@@ -3407,63 +3414,63 @@ msgstr ""
 msgid "Loads a file's contents into the database"
 msgstr "Laddar in en fils innehåll till databasen"
 
-#: cmd_files.cc:57
-msgid "<parent> <left> <right>"
-msgstr "<förälder> <vänster> <höger>"
-
 #: cmd_files.cc:58
+msgid "PARENT_FILEID LEFT_FILEID RIGHT_FILEID"
+msgstr "FÖRÄLDERER_FILID VÄNSTER_FILID HÖGER_FILID"
+
+#: cmd_files.cc:59
 msgid "Merges 3 files and outputs the result"
 msgstr "Slår ihop 3 filer och skriver ut resultatet"
 
-#: cmd_files.cc:74
+#: cmd_files.cc:75
 #, c-format
 msgid "ancestor file id does not exist"
 msgstr "förälderns filidentitet finns inte"
 
-#: cmd_files.cc:77
+#: cmd_files.cc:78
 #, c-format
 msgid "left file id does not exist"
 msgstr "vänster fils identitet finns inte"
 
-#: cmd_files.cc:80
+#: cmd_files.cc:81
 #, c-format
 msgid "right file id does not exist"
 msgstr "höger fils identitet finns inte"
 
-#: cmd_files.cc:92
+#: cmd_files.cc:93
 #, c-format
 msgid "merge failed"
 msgstr "ihopslagningen misslyckades"
 
-#: cmd_files.cc:97
+#: cmd_files.cc:98
 msgid "SRCNAME DESTNAME SRCID DESTID"
 msgstr "KÄLLNAMN MÅLNAMN KÄLLID MÅLID"
 
-#: cmd_files.cc:98
+#: cmd_files.cc:99
 msgid "Differences 2 files and outputs the result"
 msgstr "Skriver ut skillnaden mellan 2 filer"
 
-#: cmd_files.cc:117
+#: cmd_files.cc:118
 #, c-format
 msgid "source file id does not exist"
 msgstr "källans filidentitet finns inte"
 
-#: cmd_files.cc:120
+#: cmd_files.cc:121
 #, c-format
 msgid "destination file id does not exist"
 msgstr "målets filidentitet finns inte"
 
-#: cmd_files.cc:138
+#: cmd_files.cc:139
 msgid "Prints an annotated copy of a file"
 msgstr "Skriver ut en annoterad kopia av en fil"
 
-#: cmd_files.cc:139
+#: cmd_files.cc:140
 msgid ""
 "Calculates and prints an annotated copy of the given file from the specified "
 "REVISION."
 msgstr "Skriver ut en annoterad kopia av en given fil från en given REVISION."
 
-#: cmd_files.cc:171
+#: cmd_files.cc:172
 #, c-format
 msgid ""
 "with no revision selected, this command can only be used in a single-parent "
@@ -3472,25 +3479,25 @@ msgstr ""
 "detta kommando kan bara användas för arbetskopior med en förälder när ingen "
 "specifik revision anges"
 
-#: cmd_files.cc:189
+#: cmd_files.cc:190
 #, c-format
 msgid "no such file '%s' in revision '%s'"
 msgstr "filen '%s' finns inte i revisionen '%s'"
 
-#: cmd_files.cc:193
+#: cmd_files.cc:194
 #, c-format
 msgid "'%s' in revision '%s' is not a file"
 msgstr "'%s' i revisionen '%s' är inte en fil"
 
-#: cmd_files.cc:201
+#: cmd_files.cc:202
 msgid "[PATH]"
 msgstr "[SÖKVÄG]"
 
-#: cmd_files.cc:202
+#: cmd_files.cc:203
 msgid "Calculates the identity of a file or stdin"
 msgstr "Räkna ut identiteten för SÖKVÄG eller stdin"
 
-#: cmd_files.cc:203
+#: cmd_files.cc:204
 msgid ""
 "If any PATH is given, calculates their identity; otherwise, the one from the "
 "standard input is calculated."
@@ -3498,53 +3505,53 @@ msgstr ""
 "Om någon SÖKVÄG är angiven räknas dess identitet ut; om ingen SÖKVÄG "
 "angivits räknas identiteten för data som kommer på stdin ut."
 
-#: cmd_files.cc:233
+#: cmd_files.cc:234
 msgid "Prints the file identifier of a file"
 msgstr "Skriver ut en fils identitet"
 
-#: cmd_files.cc:243
+#: cmd_files.cc:244
 #, c-format
 msgid "Cannot read from stdin"
 msgstr "Kan inte läsa från stdin"
 
-#: cmd_files.cc:257 cmd_files.cc:366 automate.cc:2070
+#: cmd_files.cc:258 cmd_files.cc:367 automate.cc:2070
 #, c-format
 msgid "no file version %s found in database"
 msgstr "filversionen %s finns inte i databasen"
 
-#: cmd_files.cc:279 cmd_files.cc:283
+#: cmd_files.cc:280 cmd_files.cc:284
 #, c-format
 msgid "no file '%s' found in revision '%s'"
 msgstr "filen '%s' finns inte i revisionen '%s'"
 
-#: cmd_files.cc:290 cmd_files.cc:387
+#: cmd_files.cc:291 cmd_files.cc:388
 msgid "FILENAME"
 msgstr "FILNAMN"
 
-#: cmd_files.cc:291
+#: cmd_files.cc:292
 msgid "Prints a file from the database"
 msgstr "Skriver ut angiven fil från databasen"
 
-#: cmd_files.cc:292
+#: cmd_files.cc:293
 msgid ""
 "Fetches the given file FILENAME from the database and prints it to the "
 "standard output."
 msgstr ""
 "Hämtar den angivna filen FILNAMN från database och skriver ut den på stdout."
 
-#: cmd_files.cc:329 cmd_files.cc:353 automate.cc:1652
+#: cmd_files.cc:330 cmd_files.cc:354 automate.cc:1652
 msgid "FILEID"
 msgstr "FILID"
 
-#: cmd_files.cc:330
+#: cmd_files.cc:331
 msgid "Prints the contents of a file (given an identifier)"
 msgstr "Skriver ut innehållet på en fil (givet en filidentitet)"
 
-#: cmd_files.cc:354
+#: cmd_files.cc:355
 msgid "Prints the size of a file (given an identifier)"
 msgstr "Skriver ut storleken på en fil (givet en filidentitet)"
 
-#: cmd_files.cc:388
+#: cmd_files.cc:389
 msgid "Prints the contents of a file (given a name)"
 msgstr "Skriver ut innehållet på en fil (givet ett filnamn)"
 
@@ -3637,10 +3644,10 @@ msgstr "resolve_first user \"filnamn\""
 msgid "all conflicts resolved"
 msgstr "alla konflikter lösta"
 
-#: cmd_conflicts.cc:200 merge_conflict.cc:1484
+#: cmd_conflicts.cc:200
 #, c-format
-msgid "%s is not a supported conflict resolution for %s"
-msgstr "%s stöds inte som konfliktlösning för %s"
+msgid "'%s' is not a supported conflict resolution for %s"
+msgstr "'%s' stöds inte som konfliktlösning för %s"
 
 #: cmd_conflicts.cc:250 cmd_conflicts.cc:255
 #, c-format
@@ -3653,60 +3660,65 @@ msgid "other resolution must be 'drop' or 'rename'"
 msgstr "andra lösningen måste vara 'drop' eller 'rename'"
 
 #: cmd_conflicts.cc:265 cmd_conflicts.cc:271 cmd_conflicts.cc:338
-#: cmd_conflicts.cc:344 cmd_conflicts.cc:369 cmd_conflicts.cc:384
-#: cmd_conflicts.cc:433 cmd_conflicts.cc:446
+#: cmd_conflicts.cc:344 cmd_conflicts.cc:393 cmd_conflicts.cc:408
+#: cmd_conflicts.cc:457 cmd_conflicts.cc:470
 #, c-format
 msgid "wrong number of arguments"
 msgstr "felaktigt antal givna argument"
 
-#: cmd_conflicts.cc:372
+#: cmd_conflicts.cc:401
 #, c-format
-msgid "result path must be under _MTN"
-msgstr "resultatfilen måste ligga under _MTN"
+msgid "interactive merge result saved in '%s'"
+msgstr "den interaktiva ihopslagningens resultat sparades i '%s'"
 
 #: cmd_conflicts.cc:404
+#, c-format
+msgid "interactive merge failed."
+msgstr "den interna ihopslagningsmekanismen misslyckades."
+
+#: cmd_conflicts.cc:428
 #, c-format
 msgid "no resolvable yet unresolved left side conflicts"
 msgstr "inga lösningar på ännu olösta konflikter på vänstersidan"
 
-#: cmd_conflicts.cc:408
+#: cmd_conflicts.cc:432
 #, c-format
 msgid "no resolvable yet unresolved right side conflicts"
 msgstr "inga lösningar på ännu olösta konflikter på högersidan"
 
-#: cmd_conflicts.cc:412
+#: cmd_conflicts.cc:436
 #, c-format
 msgid "no resolvable yet unresolved single-file conflicts"
 msgstr "inga lösningar på ännu olösta enfilskonflikter"
 
-#: cmd_conflicts.cc:426
+#: cmd_conflicts.cc:450
 msgid ""
 "Show the first unresolved conflict in the conflicts file, and possible "
 "resolutions"
 msgstr ""
 "Visa den första olösta konflikten i konfliktfilen och möjliga lösningar"
 
-#: cmd_conflicts.cc:439
+#: cmd_conflicts.cc:463
 msgid "Show the remaining unresolved conflicts in the conflicts file"
 msgstr "Visa kvarvarande olösta konflikter i konfliktfilen"
 
-#: cmd_conflicts.cc:451 cmd_conflicts.cc:465 cmd_conflicts.cc:479
+#: cmd_conflicts.cc:475 cmd_conflicts.cc:489 cmd_conflicts.cc:503
 msgid "RESOLUTION"
 msgstr "LÖSNING"
 
-#: cmd_conflicts.cc:452
-msgid "Set the resolution for the first unresolved single-file conflict"
-msgstr "Sätt lösningen till den första olösta enkelfilskonflikten"
+#: cmd_conflicts.cc:476
+msgid "Set the resolution for the first unresolved single-file conflict."
+msgstr "Sätt lösningen till den första olösta enkelfilskonflikten."
 
-#: cmd_conflicts.cc:466
+#: cmd_conflicts.cc:490
 msgid "Set the left resolution for the first unresolved two-file conflict"
 msgstr "Sätt den vänstra lösningen på den första tvåfilskonflikten"
 
-#: cmd_conflicts.cc:480
+#: cmd_conflicts.cc:504
 msgid "Set the right resolution for the first unresolved two-file conflict"
 msgstr "Sätt den högra lösningen på den första tvåfilskonflikten"
 
-#: cmd_conflicts.cc:494
+#: cmd_conflicts.cc:518
 msgid "Delete any bookkeeping files related to conflict resolution"
 msgstr "Ta bort alla administrativa filer som hör ihop med konfliktlösning"
 
@@ -5364,18 +5376,23 @@ msgstr ""
 "grenmönstret givet med --exclude innehåller ett citattecken:\n"
 "%s"
 
-#: network/connection_info.cc:342
+#: network/connection_info.cc:283
+#, c-format
+msgid "a non-empty hostname is expected for the 'mtn' uri scheme"
+msgstr "i uri-schemat 'mtn' förväntas det ett givet hostnamn"
+
+#: network/connection_info.cc:345
 #, c-format
 msgid "connection host / path is empty and no default value could be loaded"
 msgstr ""
 "uppkopplingens värdmaskin / väg är tom och inget standardvärde kunde laddas"
 
-#: network/connection_info.cc:345
+#: network/connection_info.cc:348
 #, c-format
 msgid "branch pattern is empty and no default value could be loaded"
 msgstr "grenmönstret är tomt och inget standardmönster satt"
 
-#: network/connection_info.cc:422
+#: network/connection_info.cc:425
 #, c-format
 msgid ""
 "include / exclude pattern was given both as part of the URL and as a "
@@ -5384,7 +5401,7 @@ msgstr ""
 "mönster för inkludering eller exkludering gavs både som del av URLen och som "
 "separata argument."
 
-#: network/connection_info.cc:470
+#: network/connection_info.cc:473
 #, c-format
 msgid ""
 "no branch pattern found in URI, will try to use suitable database defaults "
@@ -5393,7 +5410,7 @@ msgstr ""
 "inget grenmönster funnet i URI, provar med passande standarder för databasen "
 "om sådan finns tillgänglig"
 
-#: network/connection_info.cc:492
+#: network/connection_info.cc:495
 #, c-format
 msgid ""
 "separate server and pattern arguments are deprecated, please consider using "
@@ -5402,7 +5419,7 @@ msgstr ""
 "separata argument för server och grenmönster är föråldrat, var god överväg "
 "att använda en URI istället"
 
-#: network/connection_info.cc:500
+#: network/connection_info.cc:503
 #, c-format
 msgid ""
 "you can specify either a query string or separate include/exclude "
@@ -5411,7 +5428,7 @@ msgstr ""
 "man kan antingen ange en söksträng i URIn eller flaggorna --include och --"
 "exclude, men inte båda samtidigt"
 
-#: network/connection_info.cc:520
+#: network/connection_info.cc:523
 #, c-format
 msgid ""
 "need permission to store persistent passphrase (see hook persist_phrase_ok())"
@@ -5419,7 +5436,7 @@ msgstr ""
 "behöver tillstånd att använda ett permanent lösenord (se lua-"
 "rutinenpersist_phrase_ok())"
 
-#: network/connection_info.cc:534
+#: network/connection_info.cc:537
 #, c-format
 msgid ""
 "The --no-transport-auth option is usually only used in combination with --"
@@ -6885,7 +6902,7 @@ msgstr[1] "%d okända sökvägar"
 msgid "note: your workspace has not been updated"
 msgstr "obs: din arbetskopia har inte uppdaterats"
 
-#: merge_roster.cc:333
+#: merge_roster.cc:341
 #, c-format
 msgid ""
 "Content changes to the file '%s'\n"
@@ -6896,7 +6913,7 @@ msgstr ""
 "kommer att ignoreras i den här ihopslagningen eftersom filen har tagits\n"
 "bort på ena sidan av ihopslagningen.  Följande revisioner är påverkade:"
 
-#: merge_roster.cc:338
+#: merge_roster.cc:346
 #, c-format
 msgid "Revision: %s"
 msgstr "Revision: %s"
@@ -7222,6 +7239,11 @@ msgstr "innehållets kontrollsumma är %s på högersidan för filen '%s'"
 msgid "conflicts file does not match current conflicts"
 msgstr "konfliktfilen stämmer inte med nuvarande konflikter"
 
+#: merge_conflict.cc:1484
+#, c-format
+msgid "%s is not a supported conflict resolution for %s"
+msgstr "%s stöds inte som konfliktlösning för %s"
+
 #: merge_conflict.cc:1485
 msgid "extra chars at end of conflict"
 msgstr "extra tecken på slutet av konfliktdata"
@@ -7398,42 +7420,42 @@ msgstr "SHA-1-leverantör '%s': %s MiB/s"
 msgid "%s MiB/s"
 msgstr "%s MiB/s"
 
-#: pcrewrap.cc:210
+#: pcrewrap.cc:219
 #, c-format
 msgid "while compiling regex \"%s\": %s"
 msgstr "medans regexen \"%s\" kompilerades: %s"
 
-#: pcrewrap.cc:219
+#: pcrewrap.cc:228
 #, c-format
 msgid "error in regex \"%s\": %s"
 msgstr "fel i regexen \"%s\": %s"
 
-#: pcrewrap.cc:221
+#: pcrewrap.cc:230
 #, c-format
 msgid "error near char %d of regex \"%s\": %s"
 msgstr "fel nära tecken nummer %d i regexen \"%s\": %s"
 
-#: pcrewrap.cc:236
+#: pcrewrap.cc:245
 #, c-format
 msgid "while studying regex \"%s\": %s"
 msgstr "medans regexen \"%s\" studerades: %s"
 
-#: pcrewrap.cc:254
+#: pcrewrap.cc:263
 #, c-format
 msgid "backtrack limit exceeded in regular expression matching"
 msgstr "bakåtspårningsnivån har nått sin gräns under jämförelse av regex"
 
-#: pcrewrap.cc:258
+#: pcrewrap.cc:267
 #, c-format
 msgid "recursion limit exceeded in regular expression matching"
 msgstr "rekursionen har nått sin gräns under jämförelse av regex"
 
-#: pcrewrap.cc:263
+#: pcrewrap.cc:272
 #, c-format
 msgid "invalid UTF-8 sequence found during regular expression matching"
 msgstr "ogiltig UTF8-sekvens funnen under jämförelsen av regex"
 
-#: pcrewrap.cc:266
+#: pcrewrap.cc:275
 #, c-format
 msgid "pcre_exec returned %d"
 msgstr "pcre_exec gav tillbaka %d"
@@ -8460,6 +8482,18 @@ msgstr "Tryck på Enter"
 #: std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Tryck [Retur] när underprocessen är klar"
+
+#~ msgid "public and private key '%s' do not exist in keystore"
+#~ msgstr "den publika och privata nyckeln '%s' finns inte i nyckellagret"
+
+#~ msgid "result path must be under _MTN"
+#~ msgstr "resultatfilen måste ligga under _MTN"
+
+#~ msgid "[-r FROM] -r TO [PATH...]"
+#~ msgstr "[-r FRÅN] -r TILL [SÖKVÄG...]"
+
+#~ msgid "<parent> <left> <right>"
+#~ msgstr "<förälder> <vänster> <höger>"
 
 #~ msgid "Exports a revision from the database into a directory"
 #~ msgstr "Exporterar en revision från databasen till en katalog"

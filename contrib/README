@@ -25,6 +25,10 @@ See individual files for licenses.
      For a manual, do `perl Notify.pl --man'.
      To get a help text, do `perl Notify.pl --help'.
 
+  -- mtn-cleanup: A Perl script for returning a workspace to its pristine state
+     with the minimum of change (i.e. missing files are restored, changed files
+     are reverted and new files are removed).
+
   -- Monotone.pm: A Perl module to access a 'mtn automate stdio' subprocess.
 
   -- monoprof.sh: A simple monotone profiling script.
@@ -98,3 +102,9 @@ See individual files for licenses.
      configuration directory called "passphrases".  This is useful for
      automated startup of servers.
 
+  -- authorize_remote_automate.lua: This is a server hook to authenticate
+     remote automate operations, either by matching a key identity with
+     patterns in the file remote-automate-permissions, or matching the
+     command with a configured list of safe remote automate commands
+     (configured through the variable ARA_safe_commands, which can be set
+     up anywhere before this hook is loaded).

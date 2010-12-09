@@ -345,7 +345,7 @@ normalize_path(string const & in)
   return leader;
 }
 
-static void
+void
 normalize_external_path(string const & path, string & normalized, bool to_workspace_root)
 {
   if (!initial_rel_path.initialized)

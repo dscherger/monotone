@@ -767,6 +767,11 @@ char const migrate_certs_to_key_hash[] =
   "DROP TABLE revision_certs_tmp;"
   ;
 
+char const migrate_better_cert_indexing[] =
+  "DROP INDEX revision_certs__revision_id;\n"
+  "CREATE INDEX revision_certs__revnameval ON revision_certs (revision_id,\n"
+  "       name, value, keypair_id, signature);";
+
 namespace {
   struct branch_leaf_finder_info
   {
@@ -962,9 +967,12 @@ const migration_event migration_events[] = {
   { "0c956abae3e52522e4e0b7c5cbe7868f5047153e",
     migrate_add_file_sizes, 0, upgrade_regen_caches, regen_file_sizes },
 
+  { "1f60cec1b0f6c8c095dc6d0ffeff2bd0af971ce1",
+    migrate_better_cert_indexing, 0, upgrade_none, regen_none },
+
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "1f60cec1b0f6c8c095dc6d0ffeff2bd0af971ce1", 0, 0, upgrade_none, regen_none }
+  { "c3a13c60edc432f9a7739f8a260565d77112c86e", 0, 0, upgrade_none, regen_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);
