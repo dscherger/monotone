@@ -2451,7 +2451,7 @@ msgstr ""
 
 #: cmd_ws_commit.cc:190
 msgid "*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"
-msgstr "*** RIMUOVERE QUESTA LINEA PER CANCELAREL IL COMMIT ***\n"
+msgstr "*** RIMUOVERE QUESTA LINEA PER CANCELLARE IL COMMIT ***\n"
 
 #: cmd_ws_commit.cc:192
 #: rev_output.cc:95
