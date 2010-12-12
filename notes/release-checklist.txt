@@ -158,7 +158,14 @@ How to release a new version of monotone
 
 17) Submit a release announcement to freshmeat.net.
 
-18) Note any mistakes you made and update this file accordingly for
+18) Append ".90" to the released version number in configure.ac to
+    mark the beginning of the development of the next version of
+    monotone.  For more information, read up the paragraph
+    "Version numbering scheme" on <http://wiki.monotone.ca/RoadMap>
+   
+    Commit and sync your changes.
+
+19) Note any mistakes you made and update this file accordingly for
     next time.
 
-19) Party!
+20) Party!
