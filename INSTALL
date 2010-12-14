@@ -43,7 +43,7 @@ building and installation process for monotone
 
            install the following packages from the ports collection:
              databases/sqlite3 devel/automake1.9 devel/boost devel/gettext
-             devel/gmake devel/pcre lang/lua security/botan
+             devel/gmake devel/pcre lang/lua security/botan dns/libidn
 
         on Gentoo:
 
