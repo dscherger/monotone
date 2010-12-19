@@ -78,7 +78,7 @@ Thu Oct 28 21:07:18 UTC 2010
 
         Changes
 
-        - The database scheme was changed; please execute 'mtn db mgirate'
+        - The database scheme was changed; please execute 'mtn db migrate'
           on all your local and remote databases.
 
         - Normal and automate sync, push, and pull now take a
