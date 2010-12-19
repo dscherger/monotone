@@ -2,53 +2,46 @@ See INSTALL for general notes, such as running 'make' and 'make check'
 
 on Windows (using MinGW):
 
-Many tools and packages are available on the SourceForge MinGW
-download site:
+Many tools and packages are available on SourceForge:
 
-https://sourceforge.net/projects/mingw/files/
+https://sourceforge.net/projects/<project>/files/
 
 That site is organized into several hierarchical lists of files. We
 give the hierarchy names here, rather than a complete download URL, to
-make it easy to check for new versions. The versions given here were
-used to build the current release of monontone.
+make it easy to check for new versions.
 
-Trying a new version of Boost can be dangerous.
+The versions given here may not be exactly the same versions as used to
+build the current release of monontone.
 
 These instructions work on a new computer, with only
 Windows XP installed.
 
-Package  | Version | location
+Package       | Version | location
 --------------------------
-MingGW   | 5.1.4   | Automated MinGW Installer | MinGW 5.1.4 | MinGW-5.1.4.exe
-MSYS     | 1.0.11  | MSYS Base System | msys-1.0.11 | MSYS-1.0.11.exe
-msysDTK  | 1.0.1   | MSYS Supplementary Tools | msysDTK-1.0.1 | msysDTK-1.0.1.exe
-libiconv | 1.13    | MinGW libiconv | Release 1.13 |
-        |         |  libiconv-1.13-mingw32-bin.tar.gz
-        |         |  libiconv-1.13-mingw32-dev.tar.gz
-        |         |  libiconv-1.13-mingw32-dll-2.tar.gz
-autoconf | 2.63    | MSYS autoconf | autoconf-2.63-1 | autoconf-2.63-1-msys-1.0.11-bin.tar.lzma
-automake | 1.11    | MSYS automake | automake-1.11-1 | automake-1.11-1-msys-1.0.11-bin.tar.lzma
-zlib     | 1.2.3   | zlib-1.2.3-1-mingw32 |
-        |         | libz-1.2.3-1-mingw32-dev.tar.gz
-        |         | libz-1.2.3-1-mingw32-dll-1.tar.gz
-gcc dll  |         | GCC Version 4 | Current Release_gcc-4.4.0 | gcc-core-4.4.0-mingw32-dll.tar.gz
-gettext  | 0.17    | MinGW gettext | gettext-0.17-1 |
-        |         | gettext-0.17-1-mingw32-bin.tar.lzma
-        |         | gettext-0.17-1-mingw32-dev.tar.lzma
-        |         | libgettextpo-0.17-1-mingw32-dll-0.tar.lzma
-        |         | libintl-0.17-1-mingw32-dll-8.tar.lzma
-boost    | 1.34.1  | http://prdownloads.sf.net/boost/boost_1_34_1.tar.bz2?download
-Lua      | 5.1.4   | http://www.lua.org/ | lua-5.1.4.tar.gz
-pcre     | 7.8     | http://www.pcre.org/ | pcre-7.8.tar.bz2
-botan    | 1.8.4   | http://botan.randombit.net/download.html | Botan-1.8.4.tbz
-sqlite3  | 3.6.16  | http://www.sqlite.org/download.html | sqlite-amalgamation-3.6.16.tar.gz, with makefile
-libidn   | 1.9     | ftp://ftp.gnu.org/gnu/libidn | libidn-1.9.tar.gz
-Depends.exe|       | http://www.dependencywalker.com/ ; also comes with Visual Studio
+Python        | 2.7.1   | http://www.python.org/
+                        | "Windows Installer" under "Quick Links (2.7.1)"
+mingw-get-inst| latest  | http://sourceforge.net/projects/mingw/files/
+                        | -> Automated MinGW Installer
+                        | -> mingw-get-inst
+                        | -> mingw-get-inst-20101030
+                        | -> mingw-get-inst-20101030.exe
+boost         | 1.45.1  | http://sourceforge.net/projects/boots/files/
+                        | -> boost -> 1.54.0 -> boost_1_45_0.tar.gz
+Lua           | 5.1.4   | http://www.lua.org/
+                        | -> download
+                        | -> "...current release is >Lua 5.1.4<" under "Source"
+                        | lua-5.1.4.tar.gz
+pcre          | 8.11    | http://www.pcre.org/
+                        | -> ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/
+                        | -> pcre-8.11.tar.gz
+botan         | 1.8.11  | http://botan.randombit.net/download.html
+                        | "Source: >tar/gzip<" under "Current Stable Release"
+sqlite3       | 3.7.4   | http://www.sqlite.org/download.html
+                        | -> sqlite-autoconf-3070400.tar.gz
+libidn        | 1.19    | ftp://ftp.gnu.org/gnu/libidn/
+                        | -> libidn-1.19.tar.gz
+Depends.exe   |         | http://www.dependencywalker.com/ ; also comes with Visual Studio
 
-msysDTK installs autoconf, automake, Perl, CVS, crypt, and
-other tools needed by the autoconf tools.
-
-However, monotone requires a newer autoconf and automake.
 In general, there are two versions of most tools on the
 MinGW site; mingw and msys. MinGW versions are intended to
 be run from a DOS shell, msys versions from an Msys shell.
@@ -64,98 +57,97 @@ executable and html and info documentation. However, the
 postscript format, which requires tools not (yet) available
 for MinGW.
 
-1. MinGW - run installer, accept defaults but add g++ on the package selection page (installs to c:/MinGW)
-2. MSYS - run installer, accept defaults (installs to c:/Msys/1.0)
-3. msysDTK - run installer, accept defaults (installs to c:/Msys/1.0)
+The commands below assume you download files to C:\MinGW\Msys\1.0\ , which
+maps to both / and /usr/ under the MinGW shell.
 
-4. libiconv
-  start the Msys shell.
-  $ cd /mingw
-  $ tar zxf libiconv-1.13-mingw32-bin.tar.gz
-  $ tar zxf libiconv-1.13-mingw32-dev.tar.gz
-  $ tar zxf libiconv-1.13-mingw32-dll-2.tar.gz
+01. Python (needed for the Botan configure script)
+  01.1 Run the installer, accept all defaults.
+  01.2 Add python to your PATH
+    Right-click on "My Computer", select "Properties"
+    Go to the "Advanced" tab, and click on "Environment Variables"
+    To add Python to everyone's path:
+      Select "Path" (case-insensitive) in the "System variables" at the botton.
+      Click "Edit".
+      Add ";C:\Python27" (without the quotes) to the end of the value.
+    To add Python to only your path:
+      If there is a "Path" entry in the "User variables for ..." section,
+      edit it as above.
+      If there is not a "Path" entry, click on "New" in the User variables section,
+      and enter "PATH" as the variable name and "C:\Python27" as the value.
+    To verify your new PATH, you can go to Start->Run and enter "cmd", then in the
+    command window run "echo %PATH%" and look for the Python directory in the output.
 
-5. autoconf
-  $ cd /
-  $ tar --lzma -xf autoconf-2.63-1-msys-1.0.11-bin.tar.lzma
+02. MinGW
+  Run mingw-get-inst (graphical installer for mingw-get and the MinGW base system).
+  At the "Select Components" screen, add "C++ compiler" and "MinGW Developer Toolkit".
+    Other than this, accept all defaults.
+  Open the MinGW shell (Start->All Programs->MinGW->MinGW Shell)
+  Run the following:
+  $ mingw-get install msys-autoconf msys-automake mingw32-libiconv
+  $ mingw-get install mingw32-zlib mingw32-libz-dev mingw32-gettext
 
-6. automake
-  $ cd /
-  $ tar --lzma -xf automake-1.11-1-msys-1.0.11-bin.tar.lzma
-
-7. zlib
-  $ cd /mingw
-  $ tar zxf libz-1.2.3-1-mingw32-dev.tar.gz
-  $ tar zxf libz-1.2.3-1-mingw32-dll-1.tar.gz
-  $ cp bin/libz-1.dll bin/zlib1.dll
-
-8. gettext
-  $ cd /mingw
-  $ tar --lzma -xf gettext-0.17-1-mingw32-bin.tar.lzma
-  $ tar --lzma -xf gettext-0.17-1-mingw32-dev.tar.lzma
-  $ tar --lzma -xf libgettextpo-0.17-1-mingw32-dll-0.tar.lzma
-  $ tar --lzma -xf libintl-0.17-1-mingw32-dll-8.tar.lzma
-  $ tar zxf gcc-core-4.4.0-mingw32-dll.tar.gz
-
-9. boost; only need headers
+03. boost; only need headers
   $ cd /usr
   $ mkdir src
   $ cd src
-  $ tar jxf boost_1_34_1.tar.bz2
-  $ cd boost_1_34_1
+  $ tar -zxf ../boost_1_45_1.tar.gz
+  This may give errors about gid_t out of range, and then say
+  "Exiting with failure status due to previous errors"; you can
+  ignore this.
+  $ cd boost_1_45_1
   $ cp -a boost /mingw/include
 
-10. Lua
+04. Lua
    $ cd /usr/src
-   $ tar zxf lua-5.1.4.tar.gz
+   $ tar -zxf ../lua-5.1.4.tar.gz
    $ cd lua-5.1.4
    $ make mingw INSTALL_TOP=/mingw
    $ make install INSTALL_TOP=/mingw
 
-11. pcre
+05. pcre
    $ cd /usr/src
-   $ tar jxf pcre-7.8.tar.bz2
-   $ cd pcre-7.8
+   $ tar -zxf ../pcre-8.11.tar.gz
+   $ cd pcre-8.11
    $ ./configure --prefix=/mingw
    $ make install
 
-12. botan
-   12.1 unpack, configure:
-        $ cd /usr/src
-        $ tar jxf Botan-1.8.4.tbz
-        $ cd Botan-1.8.4
-        $ ./configure.pl --with-tr1=none
-   12.2 edit Makefile, delete -ansi from LANG_FLAGS
-   12.3 install:
-        $ make install
-
-13. sqlite3
+06. botan
    $ cd /usr/src
-   $ tar zxf sqlite-amalgamation-3.6.16.tar.gz
-   $ cd sqlite-3.6.16
+   $ tar -zxf ../Botan-1.8.11.tgz
+   $ cd Botan-1.8.11
+   $ ./configure.py --cc=gcc --os=mingw
+   The Botan configure script generates paths with Python's
+   os.path.join(...), which in the case of the Windows Python
+   we installed uses '\' as the path separator. There are a
+   couple of places in the Makefile where this causes problems.
+   $ sed -i 's#\\\(.\)#/\1#g' Makefile
+   $ make install
+
+07. sqlite3
+   $ cd /usr/src
+   $ tar -zxf ../sqlite-autoconf-3070400.tar.gz
+   $ cd sqlite-autoconf-3070400
    $ ./configure --prefix=/mingw
    $ make install
 
-14. libidn
+08. libidn
    $ cd /usr/src
-   $ tar zxf libidn-1.9.tar.gz
-   $ cd libidn-1.9
+   $ tar -zxf ../libidn-1.19.tar.gz
+   $ cd libidn-1.19
    $ ./configure --prefix=/mingw
    $ make install
 
-15. Depends.exe
+09. Depends.exe
    If you have Visual Studio installed, you should be able to skip this.
    If you don't, then download the appropriate depends*.zip and
-   unpack it someplace in your %PATH%.
+   unpack it someplace in your %PATH% (for example, C:\MinGW\bin\).
    This is only used by the testsuite, in particular the empty_environment test.
    If you just want to build monotone for your own use, you can skip this and
    just ignore that that test fails.
 
-16. build monotone
+10. build monotone
    $ cd /c/.../monotone
-   $ export PATH=/bin:/mingw/bin
-   $ autoreconf -i
-   $ touch config.h.in
-   $ ./configure sqlite3_LIBS=-lsqlite3
+   $ autoreconf -i # not needed if you use the distributed tarball
+   $ ./configure
    $ make
 
