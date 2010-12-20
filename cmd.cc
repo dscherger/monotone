@@ -30,6 +30,8 @@
 #ifdef _MSC_VER
 #define popen(a, b) _popen(a, b)
 #define pclose(a) _pclose(a)
+#define isatty(a) _isatty(a)
+#define STDOUT_FILENO 1
 #endif
 #endif
 
@@ -874,7 +876,7 @@ get_command_groups(options & opts)
 
 CMD_PRESET_OPTIONS(manpage)
 {
-    opts.formatted = have_smart_terminal();
+    opts.formatted = isatty(STDOUT_FILENO);
 }
 CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
     N_("Generate a manual page from monotone's command help"),
