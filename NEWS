@@ -4,6 +4,9 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         Changes
 
+        - The database scheme was changed; please execute 'mtn db migrate'
+          on all your local and remote databases.
+
         - in 'mtn conflicts resolve_first interactive', the result
           file name now defaults to _MTN/resolutions/<left_path>.
           (fixes monotone issue 103)
