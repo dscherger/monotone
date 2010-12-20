@@ -27,6 +27,10 @@
 #include <errno.h>
 #else
 #include <io.h>
+#ifdef _MSC_VER
+#define popen(a, b) _popen(a, b)
+#define pclose(a) _pclose(a)
+#endif
 #endif
 
 #include <iostream>
@@ -870,7 +874,7 @@ get_command_groups(options & opts)
 
 CMD_PRESET_OPTIONS(manpage)
 {
-    opts.formatted = isatty(STDOUT_FILENO);
+    opts.formatted = have_smart_terminal();
 }
 CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
     N_("Generate a manual page from monotone's command help"),

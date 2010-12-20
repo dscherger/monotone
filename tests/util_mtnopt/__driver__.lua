@@ -1,3 +1,4 @@
+skip_if(not existsonpath("sh"))
 mtn_setup()
 
 -- Make sure we test the monotone source for mtnopt, not whatever the
