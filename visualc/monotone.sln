@@ -19,6 +19,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit_tester", "unit_tester.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libplatform", "libplatform.vcxproj", "{309B9A4E-2572-4A68-876D-E02639F84510}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "check_net", "check_net.vcxproj", "{7341FD73-D19D-4FBA-BA2D-26781C4A4C41}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -49,6 +51,10 @@ Global
 		{309B9A4E-2572-4A68-876D-E02639F84510}.Debug|Win32.Build.0 = Debug|Win32
 		{309B9A4E-2572-4A68-876D-E02639F84510}.Release|Win32.ActiveCfg = Release|Win32
 		{309B9A4E-2572-4A68-876D-E02639F84510}.Release|Win32.Build.0 = Release|Win32
+		{7341FD73-D19D-4FBA-BA2D-26781C4A4C41}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7341FD73-D19D-4FBA-BA2D-26781C4A4C41}.Debug|Win32.Build.0 = Debug|Win32
+		{7341FD73-D19D-4FBA-BA2D-26781C4A4C41}.Release|Win32.ActiveCfg = Release|Win32
+		{7341FD73-D19D-4FBA-BA2D-26781C4A4C41}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
