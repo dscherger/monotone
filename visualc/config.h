@@ -17,9 +17,6 @@ typedef unsigned int os_err_t;
 #define LOCALEDIR ""
 #endif
 
-/* Define if using bundled pcre */
-//#define PCRE_STATIC 1
-
 /* Type to use for `s16'. */
 #define TYPE_S16 short
 

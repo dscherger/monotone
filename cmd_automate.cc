@@ -12,7 +12,6 @@
 #include <iostream>
 #include <sstream>
 #include <map>
-//#include <unistd.h>
 
 #include "cmd.hh"
 #include "app_state.hh"
