@@ -11,10 +11,6 @@
 #include <boost/config.hpp>
 #include <boost/cstdlib.hpp>
 #include <boost/dynamic_bitset.hpp>
-#include <boost/filesystem/convenience.hpp>
-#include <boost/filesystem/exception.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 // We have a local version of this to work around a bug in the MSVC debug checking.
 #include <boost/function.hpp>
 #include "lexical_cast.hh"

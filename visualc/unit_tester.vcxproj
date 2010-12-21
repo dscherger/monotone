@@ -1,0 +1,260 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{8F951705-66C4-4B67-A585-C8CF75EA2644}</ProjectGuid>
+    <RootNamespace>monotone</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(ProjectName)$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(ProjectName)$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_CONSOLE;BOOST_MSVC_STD_ITERATOR;_CRT_SECURE_NO_DEPRECATE;min=min;max=max;BUILD_UNIT_TESTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.hh</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DisableSpecificWarnings>4231;4800;4267;4996;4355;4661;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ForcedIncludeFiles>pch.hh;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/NODEFAULTLIB:LIBCMTD.lib /VERBOSE:lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>botan.lib;netxx.lib;libidn.lib;pcre.lib;ws2_32.lib;shell32.lib;advapi32.lib;zlib.lib;libplatform.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)unit_tester.exe</OutputFile>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <Manifest>
+      <OutputManifestFile>$(IntDir)$(TargetFileName).embed.manifest</OutputManifestFile>
+      <AdditionalOptions>/outputresource:".\Debug\unit_tester.exe%3b#1" %(AdditionalOptions)</AdditionalOptions>
+      <VerboseOutput>false</VerboseOutput>
+    </Manifest>
+    <ManifestResourceCompile>
+      <ResourceOutputFileName>$(IntDir)$(TargetFileName).embed.manifest.res</ResourceOutputFileName>
+    </ManifestResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\lua;$(ProjectDir)\..\pcre;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_MBCS;_CONSOLE;BOOST_MSVC_STD_ITERATOR;_CRT_SECURE_NO_DEPRECATE;min=min;max=max;BUILD_UNIT_TESTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>true</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.hh</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4231;4800;4267;4996;4355;4661;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ForcedIncludeFiles>pch.hh;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/NODEFAULTLIB:LIBCMT.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>botan.lib;netxx.lib;libidn.lib;pcre.lib;ws2_32.lib;shell32.lib;advapi32.lib;zlib.lib;libplatform.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)unit_tester.exe</OutputFile>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateMapFile>false</GenerateMapFile>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\basic_io.cc" />
+    <ClCompile Include="..\charset.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\commands.cc" />
+    <ClCompile Include="..\constants.cc" />
+    <ClCompile Include="..\cset.cc" />
+    <ClCompile Include="..\file_io.cc" />
+    <ClCompile Include="..\git_change.cc" />
+    <ClCompile Include="..\globish.cc" />
+    <ClCompile Include="..\graph.cc" />
+    <ClCompile Include="..\gzip.cc" />
+    <ClCompile Include="..\hmac.cc" />
+    <ClCompile Include="..\lcs.cc" />
+    <ClCompile Include="..\merge_3way.cc" />
+    <ClCompile Include="..\merge_roster.cc" />
+    <ClCompile Include="..\merkle_tree.cc" />
+    <ClCompile Include="..\mkstemp.cc" />
+    <ClCompile Include="..\netcmd.cc" />
+    <ClCompile Include="..\netxx_pipe.cc" />
+    <ClCompile Include="..\option.cc" />
+    <ClCompile Include="..\outdated_indicator.cc" />
+    <ClCompile Include="..\pcrewrap.cc" />
+    <ClCompile Include="..\randomizer.cc" />
+    <ClCompile Include="..\refiner.cc" />
+    <ClCompile Include="..\restrictions.cc" />
+    <ClCompile Include="..\revision.cc" />
+    <ClCompile Include="..\roster_delta.cc" />
+    <ClCompile Include="..\sanity.cc" />
+    <ClCompile Include="..\simplestring_xform.cc" />
+    <ClCompile Include="..\specialized_lexical_cast.cc" />
+    <ClCompile Include="..\transforms.cc" />
+    <ClCompile Include="..\unit-tests\basic_io.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_basic_io.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_basic_io.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\charset.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_charset.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_charset.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\commands.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_commands.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_commands.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\cset.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_cset.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_cset.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\dates.cc" />
+    <ClCompile Include="..\unit-tests\git_change.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_git_change.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_git_change.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\globish.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_globish.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_globish.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\graph.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_graph.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_graph.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\merge_3way.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_merge_3way.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_merge_3way.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\merge_roster.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_merge_roster.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_merge_roster.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\mkstemp.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_mkstemp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\netcmd.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_netcmd.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_netcmd.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\netxx_pipe.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_netxx_pipe.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_netxx_pipe.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\numeric_vocab.cc" />
+    <ClCompile Include="..\unit-tests\option.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_option.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_option.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\outdated_indicator.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_oudated_indicator.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_oudated_indicator.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\packet.cc" />
+    <ClCompile Include="..\unit-tests\paths.cc" />
+    <ClCompile Include="..\unit-tests\refiner.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_refiner.cc</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_refiner.cc</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\restrictions.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_restrictions.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_restrictions.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\revision.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_revision.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_revision.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\rev_height.cc" />
+    <ClCompile Include="..\unit-tests\roster.cc" />
+    <ClCompile Include="..\unit-tests\sha1.cc" />
+    <ClCompile Include="..\unit-tests\simplestring_xform.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_simplestring_xform.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_simplestring_xform.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\string_queue.cc" />
+    <ClCompile Include="..\unit-tests\transforms.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_transforms.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_transforms.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\uri.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_uri.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_uri.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\vocab.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_vocab.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_vocab.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit-tests\xdelta.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)unit_xdelta.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)unit_xdelta.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\unit_tester.cc" />
+    <ClCompile Include="..\uri.cc" />
+    <ClCompile Include="..\vocab.cc" />
+    <ClCompile Include="..\xdelta.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="libplatform.vcxproj">
+      <Project>{309b9a4e-2572-4a68-876d-e02639f84510}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

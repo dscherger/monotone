@@ -27,6 +27,12 @@
 #include <errno.h>
 #else
 #include <io.h>
+#ifdef _MSC_VER
+#define popen(a, b) _popen(a, b)
+#define pclose(a) _pclose(a)
+#define isatty(a) _isatty(a)
+#define STDOUT_FILENO 1
+#endif
 #endif
 
 #include <iostream>

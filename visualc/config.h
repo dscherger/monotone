@@ -8,14 +8,17 @@
 #define VERSION "1.0dev"
 
 #ifdef _MSC_VER
-typedef unsigned long pid_t;
+// If this is unsigned, then we can't use -1 for invalid.
+// Because, when that's passed to Lua it's turned into a double and
+// (double)(ulong)(-1) is not equal to (double)(-1).
+typedef /*unsigned*/ long pid_t;
 typedef unsigned int os_err_t;
 // #define HAVE_EXTERN_TEMPLATE
 #define LOCALEDIR ""
 #endif
 
 /* Define if using bundled pcre */
-#define PCRE_STATIC 1
+//#define PCRE_STATIC 1
 
 /* Type to use for `s16'. */
 #define TYPE_S16 short
@@ -79,5 +82,11 @@ typedef unsigned int os_err_t;
  */
 #pragma warning( disable : 4250 )
 
+/*
+ * Disable MS specific warning C4275
+ *    non dll-interface class '<...>' used as base for dll-interface struct '<...>'
+ * This happens every time botan subclasses std::exception.
+ */
+#pragma warning( disable : 4275 )
 
 #endif /* CONFIG_H */
