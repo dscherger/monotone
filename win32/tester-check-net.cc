@@ -53,22 +53,28 @@ int main(void)
   if (use_ip6)
   {
       my_addr_6.sin6_family = AF_INET6;
-      my_addr_6.sin6_port = 0x5555;
-      for (int i = 0; i < 15; ++i)
-        my_addr_6.sin6_addr.u.Byte[i] = 0;
-      my_addr_6.sin6_addr.u.Byte[15] = 1;
 
       my_addr = (struct sockaddr *) &my_addr_6;
       my_addr_size = sizeof(my_addr_6);
+      
+      if (WSAStringToAddressA("[::1]:21845", AF_INET6, 0, my_addr, &my_addr_size) != 0)
+      {
+          fprintf(stderr, "%s: could not parse PIv6 address: %d\n", myname, WSAGetLastError());
+          ExitProcess(1);
+      }
   }
   else
   {
       my_addr_4.sin_family = AF_INET;
-      my_addr_4.sin_port = 0x5555;
-      WSAHtonl(listen_sock, 0x7f000001, &my_addr_4.sin_addr.S_un.S_addr);
 
       my_addr = (struct sockaddr *) &my_addr_4;
       my_addr_size = sizeof(my_addr_4);
+      
+      if (WSAStringToAddressA("127.0.0.1:21845", AF_INET, 0, my_addr, &my_addr_size) != 0)
+      {
+          fprintf(stderr, "%s: could not parse PIv4 address: %d\n", myname, WSAGetLastError());
+          ExitProcess(1);
+      }
   }
 
   if (bind(listen_sock, my_addr, my_addr_size) != 0)
