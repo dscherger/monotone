@@ -13,193 +13,205 @@ AUTOMAKE_OPTIONS = subdir-objects -Wno-portability
 ACLOCAL_AMFLAGS  = -I m4
 
 CMD_SOURCES =								\
-	cmd.hh cmd.cc cmd_netsync.cc cmd_list.cc cmd_packet.cc		\
-	cmd_key_cert.cc cmd_merging.cc cmd_db.cc cmd_diff_log.cc	\
-	cmd_ws_commit.cc cmd_othervcs.cc cmd_automate.cc cmd_files.cc	\
-	cmd_conflicts.cc
+	src/cmd.hh src/cmd.cc src/cmd_netsync.cc src/cmd_list.cc 	\
+	src/cmd_packet.cc src/cmd_key_cert.cc src/cmd_merging.cc 	\
+	src/cmd_db.cc src/cmd_diff_log.cc src/cmd_ws_commit.cc 		\
+	src/cmd_othervcs.cc src/cmd_automate.cc src/cmd_files.cc	\
+	src/cmd_conflicts.cc
 
 SANITY_CORE_SOURCES =							\
-	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
-	simplestring_xform.cc simplestring_xform.hh 			\
-	constants.cc constants.hh numeric_vocab.hh 			\
-	platform.hh origin_type.hh
+	src/sanity.cc src/sanity.hh src/quick_alloc.hh src/vector.hh 	\
+	src/base.hh src/simplestring_xform.cc src/simplestring_xform.hh	\
+	src/constants.cc src/constants.hh src/numeric_vocab.hh		\
+	src/platform.hh src/origin_type.hh
 
 LUAEXT_SOURCES = 							\
-	vocab.hh vocab.cc vocab_terms.hh vocab_macros.hh vocab_cast.hh  \
-	charset.cc charset.hh paths.cc paths.hh				\
-	interner.hh hash_map.hh	vocab_hash.hh				\
-	luaext_mkstemp.cc luaext_parse_basic_io.cc			\
-	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
-	lua.cc lua.hh mkstemp.cc file_io.cc file_io.hh			\
-	globish.cc globish.hh basic_io.cc basic_io.hh			\
-	char_classifiers.hh
+	src/vocab.hh src/vocab.cc src/vocab_terms.hh			\
+	src/vocab_macros.hh src/vocab_cast.hh src/charset.cc		\
+	src/charset.hh src/paths.cc src/paths.hh src/interner.hh	\
+	src/hash_map.hh src/vocab_hash.hh src/luaext_mkstemp.cc		\
+	src/luaext_parse_basic_io.cc src/luaext_guess_binary.cc		\
+	src/luaext_platform.cc src/luaext_globish.cc src/lua.cc		\
+	src/lua.hh src/mkstemp.cc src/file_io.cc src/file_io.hh		\
+	src/globish.cc src/globish.hh src/basic_io.cc src/basic_io.hh	\
+	src/char_classifiers.hh
 
 MOST_SOURCES = 								\
-	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) platform-wrapped.hh	\
-	rev_types.hh mtn-sanity.cc mtn-sanity.hh ui.cc ui.hh		\
-	app_state.cc app_state.hh					\
-	automate_ostream.hh						\
-	automate_ostream_demuxed.hh					\
-	automate_reader.hh automate_reader.cc				\
-	automate_stdio_helpers.hh					\
-	botan_pipe_cache.hh						\
-	cache_logger.hh cache_logger.cc					\
-	commands.cc commands.hh $(CMD_SOURCES)				\
-	diff_output.cc diff_output.hh					\
-	lua_hooks.cc lua_hooks.hh 					\
-	transforms.cc transforms.hh					\
-	update.cc update.hh						\
-	work.cc migrate_work.cc work.hh					\
-	cert.cc cert.hh							\
-	cow_trie.hh							\
-	project.cc project.hh						\
-	outdated_indicator.cc outdated_indicator.hh			\
-	database.cc database.hh						\
-	key_store.cc key_store.hh					\
-	ssh_agent.cc ssh_agent.hh					\
-	keys.cc keys.hh							\
-	packet.cc packet.hh						\
-	key_packet.cc key_packet.hh					\
-	rcs_file.cc rcs_file.hh						\
-	xdelta.cc xdelta.hh						\
-	migration.hh migrate_schema.cc migrate_ancestry.cc		\
-	refiner.cc refiner.hh						\
-	enumerator.cc enumerator.hh					\
-	netsync.hh netsync.cc            				\
-	network/automate_session.hh network/automate_session.cc		\
-	network/connection_info.hh network/connection_info.cc		\
-	network/listener_base.hh network/listener_base.cc		\
-	network/listener.hh network/listener.cc				\
-	network/make_server.hh network/make_server.cc			\
-	network/netsync_session.hh network/netsync_session.cc		\
-	network/reactable.hh network/reactable.cc			\
-	network/reactor.hh network/reactor.cc				\
-	network/session.hh network/session.cc				\
-	network/session_base.hh network/session_base.cc			\
-	network/wrapped_session.hh network/wrapped_session.cc		\
-	netxx_pipe.cc netxx_pipe.hh					\
-	netcmd.cc netcmd.hh						\
-	merkle_tree.cc merkle_tree.hh 					\
-	lcs.cc lcs.hh							\
-	rcs_import.cc rcs_import.hh 					\
-	git_change.cc git_change.hh git_export.cc git_export.hh		\
-	revision.cc ancestry.cc revision.hh				\
-	cset.cc cset.hh							\
-	roster.cc roster.hh 						\
-	mt_version.cc mt_version.hh					\
-	automate.cc							\
-	database_check.cc						\
-	epoch.cc epoch.hh						\
-	gzip.cc gzip.hh							\
-	inodeprint.cc inodeprint.hh					\
-	selectors.cc selectors.hh					\
-	annotate.cc annotate.hh						\
-	restrictions.cc	restrictions.hh					\
-	hmac.cc hmac.hh							\
-	string_queue.hh							\
-	maybe_workspace_updater.cc maybe_workspace_updater.hh		\
-	merge_roster.cc merge_conflict.cc merge_roster.hh		\
-	merge_content.cc merge_3way.cc merge_content.hh			\
-	legacy.cc legacy.hh uri.cc uri.hh				\
-	graph.cc graph.hh						\
-	roster_delta.cc roster_delta.hh					\
-	sha1.cc								\
-	pcrewrap.cc pcrewrap.hh						\
-	rev_height.cc rev_height.hh					\
-	rev_output.cc rev_output.hh					\
-	asciik.cc asciik.hh						\
-	dates.cc dates.hh date_format.hh				\
+	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES)			\
+	src/platform-wrapped.hh src/rev_types.hh src/mtn-sanity.cc	\
+	src/mtn-sanity.hh src/ui.cc src/ui.hh src/app_state.cc		\
+	src/app_state.hh src/automate_ostream.hh			\
+	src/automate_ostream_demuxed.hh	src/automate_reader.hh		\
+	src/automate_reader.cc src/automate_stdio_helpers.hh		\
+	src/botan_pipe_cache.hh	src/cache_logger.hh src/cache_logger.cc	\
+	src/commands.cc src/commands.hh $(CMD_SOURCES)			\
+	src/diff_output.cc src/diff_output.hh				\
+	src/lua_hooks.cc src/lua_hooks.hh 				\
+	src/transforms.cc src/transforms.hh				\
+	src/update.cc src/update.hh					\
+	src/work.cc src/migrate_work.cc src/work.hh			\
+	src/cert.cc src/cert.hh						\
+	src/cow_trie.hh							\
+	src/project.cc src/project.hh					\
+	src/outdated_indicator.cc src/outdated_indicator.hh		\
+	src/database.cc src/database.hh					\
+	src/key_store.cc src/key_store.hh				\
+	src/ssh_agent.cc src/ssh_agent.hh				\
+	src/keys.cc src/keys.hh						\
+	src/packet.cc src/packet.hh					\
+	src/key_packet.cc src/key_packet.hh				\
+	src/rcs_file.cc src/rcs_file.hh					\
+	src/xdelta.cc src/xdelta.hh					\
+	src/migration.hh src/migrate_schema.cc src/migrate_ancestry.cc	\
+	src/refiner.cc src/refiner.hh					\
+	src/enumerator.cc src/enumerator.hh				\
+	src/netsync.hh src/netsync.cc            			\
+	src/network/automate_session.hh src/network/automate_session.cc	\
+	src/network/connection_info.hh src/network/connection_info.cc	\
+	src/network/listener_base.hh src/network/listener_base.cc	\
+	src/network/listener.hh src/network/listener.cc			\
+	src/network/make_server.hh src/network/make_server.cc		\
+	src/network/netsync_session.hh src/network/netsync_session.cc	\
+	src/network/reactable.hh src/network/reactable.cc		\
+	src/network/reactor.hh src/network/reactor.cc			\
+	src/network/session.hh src/network/session.cc			\
+	src/network/session_base.hh src/network/session_base.cc		\
+	src/network/wrapped_session.hh src/network/wrapped_session.cc	\
+	src/netxx_pipe.cc src/netxx_pipe.hh				\
+	src/netcmd.cc src/netcmd.hh					\
+	src/merkle_tree.cc src/merkle_tree.hh 				\
+	src/lcs.cc src/lcs.hh						\
+	src/rcs_import.cc src/rcs_import.hh				\
+	src/git_change.cc src/git_change.hh src/git_export.cc		\
+	src/git_export.hh						\
+	src/revision.cc src/ancestry.cc src/revision.hh			\
+	src/cset.cc src/cset.hh						\
+	src/roster.cc src/roster.hh 					\
+	src/mt_version.cc src/mt_version.hh				\
+	src/automate.cc							\
+	src/database_check.cc						\
+	src/epoch.cc src/epoch.hh					\
+	src/gzip.cc src/gzip.hh						\
+	src/inodeprint.cc src/inodeprint.hh				\
+	src/selectors.cc src/selectors.hh				\
+	src/annotate.cc src/annotate.hh					\
+	src/restrictions.cc src/restrictions.hh				\
+	src/hmac.cc src/hmac.hh						\
+	src/string_queue.hh						\
+	src/maybe_workspace_updater.cc src/maybe_workspace_updater.hh	\
+	src/merge_roster.cc src/merge_conflict.cc src/merge_roster.hh	\
+	src/merge_content.cc src/merge_3way.cc src/merge_content.hh	\
+	src/legacy.cc src/legacy.hh src/uri.cc src/uri.hh		\
+	src/graph.cc src/graph.hh					\
+	src/roster_delta.cc src/roster_delta.hh				\
+	src/sha1.cc							\
+	src/pcrewrap.cc src/pcrewrap.hh					\
+	src/rev_height.cc src/rev_height.hh				\
+	src/rev_output.cc src/rev_output.hh				\
+	src/asciik.cc src/asciik.hh					\
+	src/dates.cc src/dates.hh src/date_format.hh			\
 									\
-	lru_writeback_cache.hh hybrid_map.hh lazy_rng.hh		\
+	src/lru_writeback_cache.hh src/hybrid_map.hh src/lazy_rng.hh	\
 									\
-	cleanup.hh unit_tests.hh					\
-	cycle_detector.hh randomfile.hh adler32.hh			\
-	netio.hh gettext.h						\
-	package_revision.cc package_full_revision.cc			\
-	option.cc option.hh options.cc options.hh options_list.hh	\
-	options_applicator.hh options_applicator.cc			\
-	option_reset_info.hh						\
-	specialized_lexical_cast.cc lexical_cast.hh			\
-	parallel_iter.hh safe_map.hh pch.hh current_exception.hh
+	src/cleanup.hh src/cycle_detector.hh src/adler32.hh		\
+	src/netio.hh src/gettext.h					\
+	src/package_revision.cc src/package_full_revision.cc		\
+	src/option.cc src/option.hh src/options.cc src/options.hh	\
+	src/options_list.hh src/options_applicator.hh			\
+	src/options_applicator.cc src/option_reset_info.hh		\
+	src/specialized_lexical_cast.cc src/lexical_cast.hh		\
+	src/parallel_iter.hh src/safe_map.hh src/pch.hh			\
+	src/current_exception.hh
 
 NETXX_SOURCES =								\
-	netxx/accept.cxx netxx/accept.h netxx/address.cxx		\
-	netxx/common.h netxx/compat.h netxx/datagram.cxx		\
-	netxx/datagramserver.cxx netxx/osutil.cxx netxx/osutil.h	\
-	netxx/peer.cxx netxx/probe.cxx netxx/probe_impl.h		\
-	netxx/probe_select.cxx netxx/recvfrom.cxx netxx/recvfrom.h	\
-	netxx/resolve.h netxx/serverbase.cxx netxx/serverbase.h		\
-	netxx/sockaddr.cxx netxx/sockaddr.h netxx/socket.cxx 		\
-	netxx/socket.h netxx/sockopt.cxx netxx/stream.cxx		\
-	netxx/streambase.cxx netxx/streamserver.cxx			\
-	netxx/address.h netxx/datagram.h netxx/datagramserver.h		\
-	netxx/netbuf.h netxx/netxx.h netxx/peer.h netxx/probe.h 	\
-	netxx/probeinfo.h netxx/sockopt.h netxx/stream.h		\
-	netxx/streambase.h netxx/streamserver.h netxx/timeout.h		\
-	netxx/types.h
+	src/netxx/accept.cxx src/netxx/accept.h src/netxx/address.cxx	\
+	src/netxx/common.h src/netxx/compat.h src/netxx/datagram.cxx	\
+	src/netxx/datagramserver.cxx src/netxx/osutil.cxx		\
+	src/netxx/osutil.h src/netxx/peer.cxx src/netxx/probe.cxx 	\
+	src/netxx/probe_impl.h src/netxx/probe_select.cxx 		\
+	src/netxx/recvfrom.cxx src/netxx/recvfrom.h src/netxx/resolve.h	\
+	src/netxx/serverbase.cxx src/netxx/serverbase.h			\
+	src/netxx/sockaddr.cxx src/netxx/sockaddr.h			\
+	src/netxx/socket.cxx src/netxx/socket.h src/netxx/sockopt.cxx 	\
+	src/netxx/stream.cxx src/netxx/streambase.cxx 			\
+	src/netxx/streamserver.cxx src/netxx/address.h 			\
+	src/netxx/datagram.h src/netxx/datagramserver.h 		\
+	src/netxx/netbuf.h src/netxx/netxx.h src/netxx/peer.h 		\
+	src/netxx/probe.h src/netxx/probeinfo.h src/netxx/sockopt.h 	\
+	src/netxx/stream.h src/netxx/streambase.h 			\
+	src/netxx/streamserver.h src/netxx/timeout.h src/netxx/types.h
 
 BOOST_SANDBOX_SOURCES =							\
-	boost/circular_buffer_adaptor.hpp				\
-	boost/circular_buffer_base.hpp					\
-	boost/circular_buffer_fwd.hpp					\
-	boost/circular_buffer.hpp
+	src/boost/circular_buffer_adaptor.hpp				\
+	src/boost/circular_buffer_base.hpp				\
+	src/boost/circular_buffer_fwd.hpp				\
+	src/boost/circular_buffer.hpp
 
 UNIX_PLATFORM_SOURCES =							\
-	unix/read_password.cc unix/get_system_flavour.cc		\
-	unix/process.cc unix/terminal.cc unix/inodeprint.cc		\
-	unix/fs.cc unix/make_io_binary.cc unix/os_strerror.cc           \
-	unix/cputime.cc unix/ssh_agent_platform.cc			\
-	unix/ssh_agent_platform.hh unix/parse_date.cc
+	src/unix/read_password.cc src/unix/get_system_flavour.cc	\
+	src/unix/process.cc src/unix/terminal.cc src/unix/inodeprint.cc	\
+	src/unix/fs.cc src/unix/make_io_binary.cc			\
+	src/unix/os_strerror.cc src/unix/cputime.cc 			\
+	src/unix/ssh_agent_platform.cc src/unix/ssh_agent_platform.hh	\
+	src/unix/parse_date.cc
 
 WIN32_PLATFORM_SOURCES =						\
-	win32/read_password.cc win32/get_system_flavour.cc		\
-	win32/process.cc win32/terminal.cc win32/inodeprint.cc		\
-	win32/fs.cc win32/make_io_binary.cc win32/os_strerror.cc	\
-	win32/cputime.cc win32/ssh_agent_platform.cc			\
-	win32/ssh_agent_platform.hh win32/parse_date.cc
+	src/win32/read_password.cc src/win32/get_system_flavour.cc	\
+	src/win32/process.cc src/win32/terminal.cc			\
+	src/win32/inodeprint.cc	src/win32/fs.cc 			\
+	src/win32/make_io_binary.cc src/win32/os_strerror.cc		\
+	src/win32/cputime.cc src/win32/ssh_agent_platform.cc		\
+	src/win32/ssh_agent_platform.hh src/win32/parse_date.cc
 
 # these files (part of the main program) contain code subject to unit testing
 
 UNIT_TESTEES =								\
-	basic_io.cc charset.cc commands.cc cset.cc git_change.cc	\
-	globish.cc graph.cc merge_3way.cc merge_roster.cc mkstemp.cc	\
-	netcmd.cc netxx_pipe.cc option.cc outdated_indicator.cc		\
-	pcrewrap.cc refiner.cc restrictions.cc revision.cc 		\
-	simplestring_xform.cc transforms.cc uri.cc vocab.cc xdelta.cc
+	src/basic_io.cc src/charset.cc src/commands.cc src/cset.cc 	\
+	src/git_change.cc src/globish.cc src/graph.cc src/merge_3way.cc	\
+	src/merge_roster.cc src/mkstemp.cc src/netcmd.cc 		\
+	src/netxx_pipe.cc src/option.cc src/outdated_indicator.cc	\
+	src/pcrewrap.cc src/refiner.cc src/restrictions.cc		\
+	src/revision.cc src/simplestring_xform.cc src/transforms.cc 	\
+	src/uri.cc src/vocab.cc src/xdelta.cc
 
 # these files contain the actual unit tests
 # yes, we have to list them all explicitly, with directory prefix, or
 # automake gets very confused
-UNIT_TESTERS =								\
-	unit-tests/basic_io.cc unit-tests/charset.cc			\
-	unit-tests/commands.cc unit-tests/cset.cc			\
-	unit-tests/git_change.cc unit-tests/globish.cc			\
-	unit-tests/graph.cc unit-tests/merge_3way.cc			\
-	unit-tests/merge_roster.cc unit-tests/mkstemp.cc		\
-	unit-tests/netcmd.cc unit-tests/netxx_pipe.cc			\
-	unit-tests/option.cc unit-tests/outdated_indicator.cc		\
-	unit-tests/pcrewrap.cc unit-tests/refiner.cc 			\
-	unit-tests/restrictions.cc unit-tests/revision.cc		\
-	unit-tests/simplestring_xform.cc unit-tests/transforms.cc	\
-	unit-tests/uri.cc unit-tests/vocab.cc				\
-	unit-tests/xdelta.cc unit-tests/numeric_vocab.cc		\
-	unit-tests/sha1.cc unit-tests/string_queue.cc unit_tester.cc
+UNIT_TESTERS =									\
+	test/unit/tests/basic_io.cc test/unit/tests/charset.cc			\
+	test/unit/tests/commands.cc test/unit/tests/cset.cc			\
+	test/unit/tests/git_change.cc test/unit/tests/globish.cc		\
+	test/unit/tests/graph.cc test/unit/tests/merge_3way.cc			\
+	test/unit/tests/merge_roster.cc test/unit/tests/mkstemp.cc		\
+	test/unit/tests/netcmd.cc test/unit/tests/netxx_pipe.cc			\
+	test/unit/tests/option.cc test/unit/tests/outdated_indicator.cc		\
+	test/unit/tests/pcrewrap.cc test/unit/tests/refiner.cc 			\
+	test/unit/tests/restrictions.cc test/unit/tests/revision.cc		\
+	test/unit/tests/simplestring_xform.cc test/unit/tests/transforms.cc	\
+	test/unit/tests/uri.cc test/unit/tests/vocab.cc				\
+	test/unit/tests/xdelta.cc test/unit/tests/numeric_vocab.cc		\
+	test/unit/tests/sha1.cc test/unit/tests/string_queue.cc			\
+	test/unit/unit_tester.cc
 
 # these files contain unit tests that need access to private interfaces
 # of the code under test, so they #include the code under test.  thus,
 # to avoid multiple-definition errors, for these files the code under
 # test is not part of UNIT_TESTEES.
 
-UNIT_TESTERS_PRIV =							\
-	unit-tests/dates.cc unit-tests/key_packet.cc unit-tests/packet.cc \
-	unit-tests/paths.cc unit-tests/rev_height.cc unit-tests/roster.cc
+UNIT_TESTERS_PRIV =						\
+	test/unit/tests/dates.cc test/unit/tests/key_packet.cc 	\
+	test/unit/tests/packet.cc test/unit/tests/paths.cc 	\
+	test/unit/tests/rev_height.cc test/unit/tests/roster.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # note that some are and some aren't part of the main program
-UNIT_TEST_SUPPORT =							\
-	constants.cc file_io.cc gzip.cc hmac.cc lcs.cc merkle_tree.cc   \
-	randomizer.cc randomizer.hh roster_delta.cc roster_tests.hh	\
-	sanity.cc specialized_lexical_cast.cc
+UNIT_TEST_SUPPORT =						\
+	src/constants.cc src/file_io.cc src/gzip.cc src/hmac.cc \
+	src/lcs.cc src/merkle_tree.cc src/roster_delta.cc 	\
+	src/sanity.cc src/specialized_lexical_cast.cc		\
+	test/unit/randomfile.hh test/unit/unit_tests.hh		\
+	test/unit/randomizer.hh test/unit/randomizer.cc		\
+	test/unit/roster_tests.hh
 
 # primaries
 
@@ -209,21 +221,21 @@ EXTRA_PROGRAMS =
 
 bin_SCRIPTS = mtnopt
 
-mtn_SOURCES = $(MOST_SOURCES) monotone.cc
-nodist_mtn_SOURCES = std_hooks.cc schema.cc
+mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
+nodist_mtn_SOURCES = src/std_hooks.cc src/schema.cc
 
 unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
 	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
 
-tester_SOURCES = tester.cc transforms.cc gzip.cc \
-	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc \
-	specialized_lexical_cast.cc
-nodist_tester_SOURCES = testlib.cc
+tester_SOURCES = test/src/tester.cc src/transforms.cc src/gzip.cc \
+	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) src/pcrewrap.cc \
+	src/specialized_lexical_cast.cc
+nodist_tester_SOURCES = test/src/testlib.cc
 
-txt2c_SOURCES = txt2c.cc
+txt2c_SOURCES = util/txt2c.cc
 
 noinst_LIBRARIES = libplatform.a lib3rdparty.a
-libplatform_a_SOURCES = platform.hh tester-plaf.hh
+libplatform_a_SOURCES = src/platform.hh test/src/tester-plaf.hh
 lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(NETXX_SOURCES)
 
@@ -241,7 +253,7 @@ htmlimage_DATA = $(wildcard images/*.png)
 # sets DEFS for just this object (autoconf's -DHAVE_CONFIG_H is useless)
 # the variable prevents this from overriding automake's unix/fs.o rule
 DEFS =
-UNIX=unix/
+UNIX=src/unix/
 $(UNIX)fs.$(OBJEXT) : DEFS += -DLOCALEDIR="\"$(localedir)\""
 
 if BUILD_PCH
@@ -280,32 +292,32 @@ LDADD = libplatform.a lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
-  mtn_SOURCES += win32/main.cc
-  tester_SOURCES += win32/tester-plaf.cc
-  check_net_SOURCES = win32/tester-check-net.cc
+  mtn_SOURCES += src/win32/main.cc
+  tester_SOURCES += test/src/win32/tester-plaf.cc
+  check_net_SOURCES = test/src/win32/tester-check-net.cc
   AM_CPPFLAGS += -DWIN32
   LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
-  mtn_SOURCES += unix/main.cc
-  tester_SOURCES += unix/tester-plaf.cc
-  check_net_SOURCES = unix/tester-check-net.cc
+  mtn_SOURCES += src/unix/main.cc
+  tester_SOURCES += test/src/unix/tester-plaf.cc
+  check_net_SOURCES = test/src/unix/tester-check-net.cc
 endif
 
 if MISSING_INET_PTON
-  lib3rdparty_a_SOURCES += netxx/inet_pton.cxx netxx/inet_pton.h
+  lib3rdparty_a_SOURCES += src/netxx/inet_pton.cxx src/netxx/inet_pton.h
   AM_CPPFLAGS += -DNETXX_NO_PTON
 endif
 
 if MISSING_INET_NTOP
-  lib3rdparty_a_SOURCES += netxx/inet_ntop.cxx netxx/inet_ntop.h
+  lib3rdparty_a_SOURCES += src/netxx/inet_ntop.cxx src/netxx/inet_ntop.h
   AM_CPPFLAGS += -DNETXX_NO_NTOP
 endif
 
 if MISSING_GETADDRINFO
-  lib3rdparty_a_SOURCES += netxx/resolve_gethostbyname.cxx netxx/resolve_getservbyname.cxx
+  lib3rdparty_a_SOURCES += src/netxx/resolve_gethostbyname.cxx src/netxx/resolve_getservbyname.cxx
 else
-  lib3rdparty_a_SOURCES += netxx/resolve_getaddrinfo.cxx
+  lib3rdparty_a_SOURCES += src/netxx/resolve_getaddrinfo.cxx
 endif
 
 if MISSING_INET6
@@ -333,32 +345,35 @@ TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 man1_MANS = mtn.1
 info_TEXINFOS = monotone.texi
 EXTRA_DIST =								\
-	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
-	audit-includes do-editor-vars.sh doxygen.cfg			\
+	HACKING INSTALL README.visualc8 UPGRADE				\
+	util/audit-includes util/do-editor-vars.sh			\
 	$(wildcard $(srcdir)/m4/*.m4) monotone.html images		\
-	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
-	win32/monotone.iss.in win32/modpath.iss win32/monotone.bmp	\
-	win32/dlls.sh                                                   \
+	texinfo.css src/schema.sql src/unix/README util/mtnopt.in 	\
+	src/win32/README src/win32/monotone.iss.in			\
+	src/win32/modpath.iss src/win32/monotone.bmp src/win32/dlls.sh	\
 									\
 	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
 	figures/monotone-logo.svg figures/oo-figures.sxd		\
 	figures/pdfcrop.pl figures/README				\
 									\
-	std_hooks.lua testlib.lua lua-testsuite.lua tests		\
-	tester-testsuite.lua tester-tests unit-testsuite.lua		\
+	src/std_hooks.lua						\
+	test/func test/func-testsuite.lua				\
+	test/tester test/tester-testsuite.lua				\
+	test/unit test/unit-testsuite.lua				\
+	test/src/testlib.lua						\
 									\
-	package_revision.txt package_full_revision_dist.txt		\
+	src/package_revision.txt src/package_full_revision_dist.txt	\
 									\
 	contrib cygwin examples mac notes visualc
 
 MAKEINFOFLAGS=-I $(top_builddir)
 
-monotone.info: monotone.texi version.texi std_hooks.lua $(TEXI_FRAGMENTS)
+monotone.info: monotone.texi version.texi src/std_hooks.lua $(TEXI_FRAGMENTS)
 
-monotone.pdf: monotone.texi version.texi std_hooks.lua $(TEXI_FRAGMENTS) \
+monotone.pdf: monotone.texi version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
               $(PDF_FIGURES)
 
-monotone.dvi: monotone.texi version.texi std_hooks.lua $(TEXI_FRAGMENTS) \
+monotone.dvi: monotone.texi version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
               $(EPS_FIGURES)
 
 #%.eps: %.epsi
@@ -432,7 +447,7 @@ update-po: $(UPDATEPOFILES)
 # for the template file
 POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
 	$(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
-	monotone.cc std_hooks.lua
+	src/monotone.cc src/std_hooks.lua
 
 $(PACKAGE).pot: $(POTFILES)
 	$(V_xgettext)$(XGETTEXT) -o$@ -D$(top_srcdir) -cTRANSLATORS: \
@@ -505,7 +520,7 @@ mtn-stripped.exe: mtn.exe
 
 dlls.iss: mtn-stripped.exe ${top_srcdir}/Makefile.am
 	rm -f $@
-	for DLL in $$( ${top_srcdir}/win32/dlls.sh mtn-stripped.exe | xargs cmd //c echo) ; do \
+	for DLL in $$( ${top_srcdir}/src/win32/dlls.sh mtn-stripped.exe | xargs cmd //c echo) ; do \
 	    echo "Source: \"$$DLL\"; DestDir: \"{app}\"" >> $@ ; \
 	done
 
@@ -521,7 +536,7 @@ linguas.iss: ${top_srcdir}/Makefile.am
 # shell script embedded in the 'check-local' rule is partially
 # borrowed from automake 1.9's check.am
 
-check-local: tester_tests.status unit_tests.status lua_tests.status
+check-local: tester_tests.status unit_tests.status func_tests.status
 	@all=0; failed=0; error=0;					       \
 	for f in $^; do							       \
 	  all=`expr $$all + 1`;						       \
@@ -567,21 +582,21 @@ check-local: tester_tests.status unit_tests.status lua_tests.status
 	exit $$exit
 
 run_%_tests: Makefile
-	$(AM_V_GEN){ echo '#!/bin/sh';					  \
-	  echo 'export LANG=C';						  \
-	  echo 'PATH=$(top_builddir):$$PATH';				  \
-	  echo '$(top_builddir)/tester $(srcdir)/$*-testsuite.lua "$$@"'; \
-	  echo 'echo $$? > $*_tests.status';				  \
+	$(AM_V_GEN){ echo '#!/bin/sh';						  \
+	  echo 'export LANG=C';							  \
+	  echo 'PATH=$(top_builddir):$$PATH';					  \
+	  echo '$(top_builddir)/tester $(srcdir)/test/$*-testsuite.lua "$$@"';	  \
+	  echo 'echo $$? > $*_tests.status';				  	  \
 	  echo 'exit 0'; } > $@ && \
 	chmod 755 $@
 
 # The leading + causes Make to treat this as a recursive invocation,
 # allowing it to participate in the jobserver protocol.
-%_tests.status: run_%_tests %-testsuite.lua tester$(EXEEXT) FORCE
+%_tests.status: run_%_tests test/%-testsuite.lua tester$(EXEEXT) FORCE
 	+$(AM_V_at)./run_$*_tests
 
 unit_tests.status : unit_tester$(EXEEXT)
-lua_tests.status : mtn$(EXEEXT) check_net$(EXEEXT)
+func_tests.status : mtn$(EXEEXT) check_net$(EXEEXT)
 check_PROGRAMS = unit_tester tester check_net
 
 # We want the tests re-run even if the .status files already exist.
@@ -589,18 +604,18 @@ check_PROGRAMS = unit_tester tester check_net
 # but the FORCE hack does.
 .PHONY: check-local FORCE
 FORCE:
-.PRECIOUS: run_tester_tests run_unit_tests run_lua_tests
+.PRECIOUS: run_tester_tests run_unit_tests run_func_tests
 
 mostlyclean-local:
-	rm -rf tester_dir html
-	set -ex; for d in unit-tests/*/__driver__.lua; do \
+	rm -rf test/tester_dir html
+	set -ex; for d in test/unit/*/__driver__.lua; do \
 	  rm -f $$d; \
 	  rmdir $${d%/*} || :; \
 	done
 
-DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep	\
-	run_tester_tests run_unit_tests run_lua_tests		\
-	tester_tests.status unit_tests.status lua_tests.status
+DISTCLEANFILES = src/mt-stdint.h src/xgettext.opts src/pch-build.hh.gch.dep	\
+	run_tester_tests run_unit_tests run_func_tests				\
+	tester_tests.status unit_tests.status func_tests.status
 
 # we generate some source files to copy data into the executable
 # note that the only things that should go in BUILT_SOURCES are things
@@ -609,10 +624,10 @@ DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep	\
 
 # package_revision.txt and package_full_revision_dist.txt are shipped
 # in the distribution, so don't delete them here
-CLEAN_SOURCES = std_hooks.cc testlib.cc schema.cc \
-	package_revision.cc package_full_revision.cc \
-	package_revision_raw.txt \
-	package_full_revision.txt package_full_revision_raw.txt \
+CLEAN_SOURCES = src/std_hooks.cc unit/src/testlib.cc src/schema.cc \
+	src/package_revision.cc src/package_full_revision.cc \
+	src/package_revision_raw.txt \
+	src/package_full_revision.txt src/package_full_revision_raw.txt \
 	mtn.1
 
 BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
@@ -624,25 +639,24 @@ CLEANFILES = $(bin_SCRIPTS) $(BUILT_SOURCES) $(CLEAN_SOURCES) \
 # on the build machine, so we need our own rule.  almost all the
 # standard flags variables are inappropriate.
 
-txt2c$(EXEEXT): txt2c.cc
+util/txt2c$(EXEEXT): util/txt2c.cc
 	$(V_bcxx)$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $^
 
 # files generated using txt2c
-std_hooks.cc: std_hooks.lua txt2c$(EXEEXT)
-	$(V_txt2c)./txt2c std_hooks $< $@
+src/std_hooks.cc: src/std_hooks.lua util/txt2c$(EXEEXT)
+	$(V_txt2c)./util/txt2c std_hooks $< $@
 
-testlib.cc: testlib.lua txt2c$(EXEEXT)
-	$(V_txt2c)./txt2c testlib $< $@
+src/schema.cc: src/schema.sql util/txt2c$(EXEEXT)
+	$(V_txt2c)./util/txt2c schema $< $@
 
-schema.cc: schema.sql txt2c$(EXEEXT)
-	$(V_txt2c)./txt2c schema $< $@
+src/package_revision.cc: src/package_revision.txt util/txt2c$(EXEEXT)
+	$(V_txt2c)./util/txt2c --strip-trailing package_revision $< $@
 
-package_revision.cc: package_revision.txt txt2c$(EXEEXT)
-	$(V_txt2c)./txt2c --strip-trailing package_revision $< $@
+src/package_full_revision.cc: src/package_full_revision.txt util/txt2c$(EXEEXT)
+	$(V_txt2c)./util/txt2c package_full_revision $< $@
 
-package_full_revision.cc: package_full_revision.txt txt2c$(EXEEXT)
-	$(V_txt2c)./txt2c package_full_revision $< $@
-
+test/src/testlib.cc: test/src/testlib.lua util/txt2c$(EXEEXT)
+	$(V_txt2c)./util/txt2c testlib $< $@
 
 # Support for scripts
 do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),'
@@ -653,16 +667,16 @@ do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),'
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its
 # target does not exist.
-.PHONY: package_revision_raw.txt
+.PHONY: src/package_revision_raw.txt
 # if both attempts fail, then we need to remove the empty file that >
 # creates, and also make sure that the shell command exits
 # successfully; the rm -f ensures both
-package_revision_raw.txt:
+src/package_revision_raw.txt:
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
 	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_base_revision_id) 2>/dev/null >$@ \
 	|| (cd $(srcdir) && mtn --root=. automate get_base_revision_id) 2>/dev/null >$@ \
 	|| rm -f $@
-package_revision.txt: package_revision_raw.txt
+src/package_revision.txt: src/package_revision_raw.txt
 	$(AM_V_GEN)set -e; if [ -f $< ]; then \
 	  cp $< $@; \
 	fi; \
@@ -681,8 +695,8 @@ package_revision.txt: package_revision_raw.txt
 #          package_full_revision.txt
 
 # See above comment.
-.PHONY: package_full_revision_raw.txt
-package_full_revision_raw.txt:
+.PHONY: src/package_full_revision_raw.txt
+src/package_full_revision_raw.txt:
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
 	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
 	|| (cd $(srcdir) && mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
@@ -694,7 +708,7 @@ package_full_revision_raw.txt:
 #      -- if the dist file exists, then we leave it alone
 #      -- if the dist file does not exist, then we say "unknown"
 #   -- if the raw file does exist, then we regenerate the dist file
-package_full_revision_dist.txt: package_full_revision_raw.txt
+src/package_full_revision_dist.txt: src/package_full_revision_raw.txt
 	$(AM_V_GEN)set -e; if [ -f $< ]; then \
 	  cp -f $< $@ \
 	  && (echo ''; \
@@ -707,7 +721,7 @@ package_full_revision_dist.txt: package_full_revision_raw.txt
 	[ -f $@ ] || echo "unknown" > $@
 # The raw file may not exist, but the dist file definitely does; we
 # just take the first dependency that exists.
-package_full_revision.txt: package_full_revision_raw.txt package_full_revision_dist.txt
+src/package_full_revision.txt: src/package_full_revision_raw.txt src/package_full_revision_dist.txt
 	$(AM_V_GEN)rm -f $@; \
 	for SRC in $^; do \
 	    ([ -f $$SRC -a ! -f $@ ] && cp -f $$SRC $@) || true; \
@@ -733,18 +747,14 @@ distcheck-hook:
 	cd $(srcdir) && $(SHELL) audit-includes \
 		$(sort $(mtn_SOURCES) $(unit_tester_SOURCES) $(tester_SOURCES) \
                        $(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
-                       win32/main.cc unix/main.cc)
+                       src/win32/main.cc src/unix/main.cc)
 
 # automake doesn't build html docs
 
 CHECK_SRCDIR_EQ_BUILDDIR=[ "`cd \"$(srcdir)\"; pwd`" = "`pwd`" -a -f ./monotone.texi ]
 
-.PHONY: apidocs
-apidocs:
-	doxygen doxygen.cfg
-
 monotone.html: monotone.texi version.texi $(TEXI_FRAGMENTS) \
-	       std_hooks.lua texinfo.css
+	       src/std_hooks.lua texinfo.css
 	$(V_makeinfo)set -e; if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
 		cp -r $(srcdir)/figures .; \
 		cp -r $(srcdir)/images .; \
@@ -755,7 +765,7 @@ monotone.html: monotone.texi version.texi $(TEXI_FRAGMENTS) \
 	sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $@.bak >$@; \
 	rm -f $@.bak
 
-html: monotone.texi version.texi std_hooks.lua texinfo.css
+html: monotone.texi version.texi src/std_hooks.lua texinfo.css
 	$(V_makeinfo)set -e; if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
 		cp -r $(srcdir)/figures .; \
 	fi; \
