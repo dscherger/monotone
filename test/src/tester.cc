@@ -968,7 +968,7 @@ parse_command_line(int argc, char const * const * argv,
   E(!run_one || (!want_help && !debugging && !list_only
                  && tests_to_run.size() == 3 && jobs == 0),
     origin::user,
-    F("incorrect self-invocation; -r <abs path to lua-testsuite.lua> <abs path to tester_dir> <test>"));
+    F("incorrect self-invocation; -r <abs path to testsuite.lua> <abs path to work_dir> <test>"));
 
   if (tests_to_run.empty())
     {
@@ -1056,7 +1056,7 @@ int main(int argc, char **argv)
       else
         {
           firstdir = get_current_working_dir();
-          run_dir = firstdir + "/tester_dir";
+          run_dir = firstdir + "/test/work";
           testfile = tests_to_run.front();
 
 #if defined(WIN32)
