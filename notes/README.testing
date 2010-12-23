@@ -3,7 +3,7 @@ HOWTO handle external (blackbox) tests
 
 Quick and dirty howto on how we do "blackbox" tests, the kind of tests
 that are run against the mtn executable as a whole, and live in the
-tests/ directory.  Very early draft.  Feel free to improve.
+test/func/ directory.  Very early draft.  Feel free to improve.
 
 See also the "tester.txt" and "testsuite.txt" files, which
 respectively describe the basic testing framework's API, and the
@@ -13,29 +13,28 @@ Running tests:
 --------------
 -  Starting in the monotone main dir. After having './configure'd monotone you 
    can do 'make tester' to create 'tester', the program that runs the tests.
-   Running './testsuite.lua' (or './tester testsuite.lua') will run all tests.
--  'testsuite.lua -l' lists the names and numbers of all available tests
--  'testsuite.lua <n>' runs only test number n, negative n counts from the end
--  'testsuite.lua foobar' runs tests with "foobar" in the name
+-  Running './tester test/<name>-testsuite.lua' will run the specific test suite.
+   Available test suites are 'func' (functional tests), 'unit' (C++ unit tests)
+   and 'tester' (tests for the test framework itself)
+-  './tester test/<name>-testsuite.lua -l' lists the names and numbers of all 
+   available tests in the specific suite
+-  './tester test/<name>-testsuite.lua <n>' runs only test number n from the
+   specific suite, negative n counts from the end
+-  './tester test/<name>-testsuite.lua foobar' runs tests with "foobar" in the name
    (it's actually a regex)
 -  option -d will keep the tester_dir files for post-test debugging
 -  option -h is your friend :)
--  summary of test logs in tester_dir/tester.log
--  details of test logs in tester_dir/<testname>/tester.log
-
-- './run_tester_tests --help' describes how to run the tester progam's tests
-- './run_unit_tests   --help' describes how to run the c++ unit tests 
-- './run_lua_tests    --help' describes how to run the lua test suite
+-  summary of test logs in test/work/<name>.log
+-  details of test logs in test/work/<name>/<testname>/tester.log
 
 Creating tests:
 ---------------
 -  Copy and paste is your friend :)
--  Make a new directory tests/<testname>
--  Add a line for <testname> at the end of testsuite.lua
--  TODO: need more here...
+-  Make a new directory test/func/<testname>
+-  Create a new file __driver__.lua inside this directory
 -  Sometimes you need to canonicalize things
 
-Template for a test (name tests/<testname>/__driver__.lua:
+Template for a test (name test/func/<testname>/__driver__.lua:
 ------------------------------------------------
 
 -- Initialize our workspace
