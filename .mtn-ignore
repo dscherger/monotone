@@ -46,7 +46,7 @@
 ^po/insert-header\.sin$
 ^po/monotone\.pot$
 ^po/quot\.sed$
-^run_lua_tests$
+^run_func_tests$
 ^run_tester_tests$
 ^run_unit_tests$
 ^src/package_(full_)?revision(\.cc|\.txt|_(dist|raw)\.txt)$
@@ -55,7 +55,7 @@
 ^stamp-h1$
 ^stamp-vti$
 ^test/src/testlib\.cc$
-^test/tester_dir$
+^test/work$
 ^test_hooks\.cc$
 ^tester$
 ^tester_tests\.status$
