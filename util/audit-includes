@@ -32,15 +32,16 @@ egrep -H "$(printf '^[ \t]*#[ \t]*include\\>')" "$@" |
 	  (*.hh|*.h) found_base_hh=skip ;;
 	  (*)        found_base_hh=f ;;
 	esac
-      fi	
+      fi
 
+      basename=$(basename $file)
       case "$header" in
         # The rules for base.hh are:
 	# No header file should include base.hh.
 	# All source files should include base.hh, as their very first
 	# inclusion.
         
-        (base.hh)
+        (*/base.hh|base.hh)
 	  case "$file" in
 	    (*.hh|*.h) shouldnt_base_hh="$shouldnt_base_hh $file" ;;
 	    ($current) late_base_hh="$late_base_hh $file"
@@ -51,20 +52,20 @@ egrep -H "$(printf '^[ \t]*#[ \t]*include\\>')" "$@" |
 
 	# The rules for these are simple: nobody should include them
 	# (except base.hh itself).
-	(config.h)
-	  if [ "$file" != "base.hh" ]
+	(*/config.h|config.h)
+	  if [ "$basename" != "base.hh" ]
 	  then shouldnt_config_h="$shouldnt_config_h $file"
 	  fi;;
-	(gettext.h)
-	  if [ "$file" != "base.hh" ]
+	(*/gettext.h|gettext.h)
+	  if [ "$basename" != "base.hh" ]
 	  then shouldnt_gettext_h="$shouldnt_gettext_h $file"
 	  fi;;
 	(string)
-	  if [ "$file" != "base.hh" ]
+	  if [ "$basename" != "base.hh" ]
 	  then shouldnt_string="$shouldnt_string $file"
 	  fi;;
 	(iosfwd)
-	  if [ "$file" != "base.hh" ]
+	  if [ "$basename" != "base.hh" ]
 	  then shouldnt_iosfwd="$shouldnt_iosfwd $file"
 	  fi;;
       esac
