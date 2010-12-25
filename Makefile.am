@@ -348,7 +348,7 @@ EXTRA_DIST =								\
 	HACKING INSTALL README.visualc8 UPGRADE				\
 	util/audit-includes util/do-editor-vars.sh			\
 	$(wildcard $(srcdir)/m4/*.m4) monotone.html images		\
-	texinfo.css src/schema.sql src/unix/README util/mtnopt.in 	\
+	texinfo.css src/schema.sql src/unix/README src/util/mtnopt.in 	\
 	src/win32/README src/win32/monotone.iss.in			\
 	src/win32/modpath.iss src/win32/monotone.bmp src/win32/dlls.sh	\
 									\
@@ -661,7 +661,7 @@ test/src/testlib.cc: test/src/testlib.lua util/txt2c$(EXEEXT)
 # Support for scripts
 do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),'
 
-%: util/%.in
+%: src/util/%.in
 	$(V_subst)$(do_subst) < $< > $@ && chmod +x $@
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
