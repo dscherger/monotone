@@ -359,7 +359,10 @@ EXTRA_DIST =								\
 	src/std_hooks.lua						\
 	test/func test/func-testsuite.lua				\
 	test/tester test/tester-testsuite.lua				\
-	test/unit test/unit-testsuite.lua				\
+	$(wildcard $(srcdir)/test/unit/*.cc)				\
+	$(wildcard $(srcdir)/test/unit/*.hh)				\
+	$(wildcard $(srcdir)/test/unit/tests/*.cc)			\
+	test/unit-testsuite.lua						\
 	test/src/testlib.lua						\
 									\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
