@@ -450,7 +450,7 @@ POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
 	src/monotone.cc src/std_hooks.lua
 
 $(PACKAGE).pot: $(POTFILES)
-	$(V_xgettext)$(XGETTEXT) -o$@ -D$(top_srcdir) -cTRANSLATORS: \
+	$(V_xgettext)$(XGETTEXT) -o$@ -D. -D$(top_srcdir) -cTRANSLATORS: \
 	  --copyright-holder='$(COPYRIGHT_HOLDER)' \
 	  --msgid-bugs-address='$(MSGID_BUGS_ADDRESS)' \
 	  $(XGETTEXT_PKG_OPTS) $(XGETTEXT_OPTS) \
