@@ -224,13 +224,13 @@ bin_SCRIPTS = mtnopt
 mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
 nodist_mtn_SOURCES = src/std_hooks.cc src/schema.cc
 
-unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
+test_bin_unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
 	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
 
-tester_SOURCES = test/src/tester.cc src/transforms.cc src/gzip.cc \
+test_bin_tester_SOURCES = test/src/tester.cc src/transforms.cc src/gzip.cc \
 	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) src/pcrewrap.cc \
 	src/specialized_lexical_cast.cc
-nodist_tester_SOURCES = test/src/testlib.cc
+nodist_test_bin_tester_SOURCES = test/src/testlib.cc
 
 txt2c_SOURCES = util/txt2c.cc
 
@@ -293,15 +293,15 @@ LDADD = libplatform.a lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_SOURCES += src/win32/main.cc
-  tester_SOURCES += test/src/win32/tester-plaf.cc
-  check_net_SOURCES = test/src/win32/tester-check-net.cc
+  test_bin_tester_SOURCES += test/src/win32/tester-plaf.cc
+  test_bin_check_net_SOURCES = test/src/win32/tester-check-net.cc
   AM_CPPFLAGS += -DWIN32
   LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += src/unix/main.cc
-  tester_SOURCES += test/src/unix/tester-plaf.cc
-  check_net_SOURCES = test/src/unix/tester-check-net.cc
+  test_bin_tester_SOURCES += test/src/unix/tester-plaf.cc
+  test_bin_check_net_SOURCES = test/src/unix/tester-check-net.cc
 endif
 
 if MISSING_INET_PTON
@@ -364,7 +364,7 @@ EXTRA_DIST =								\
 									\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
 									\
-	contrib cygwin examples mac notes visualc
+	contrib examples mac notes visualc
 
 MAKEINFOFLAGS=-I $(top_builddir)
 
@@ -536,7 +536,7 @@ linguas.iss: ${top_srcdir}/Makefile.am
 # shell script embedded in the 'check-local' rule is partially
 # borrowed from automake 1.9's check.am
 
-check-local: tester_tests.status unit_tests.status func_tests.status
+check-local: test/tester.status test/unit.status test/func.status
 	@all=0; failed=0; error=0;					       \
 	for f in $^; do							       \
 	  all=`expr $$all + 1`;						       \
@@ -582,22 +582,27 @@ check-local: tester_tests.status unit_tests.status func_tests.status
 	exit $$exit
 
 run_%_tests: Makefile
-	$(AM_V_GEN){ echo '#!/bin/sh';						  \
-	  echo 'export LANG=C';							  \
-	  echo 'PATH=$(top_builddir):$$PATH';					  \
-	  echo '$(top_builddir)/tester $(srcdir)/test/$*-testsuite.lua "$$@"';	  \
-	  echo 'echo $$? > $*_tests.status';				  	  \
+	$(AM_V_GEN){ echo '#!/bin/sh';						  	\
+	  echo 'export LANG=C';							  	\
+	  echo 'PATH=$(top_builddir):$(top_builddir)/test/bin:$$PATH';		  	\
+	  echo '$(top_builddir)/test/bin/tester $(srcdir)/test/$*-testsuite.lua "$$@"';	\
+	  echo 'echo $$? > $(top_builddir)/test/$*.status';		  	  	\
 	  echo 'exit 0'; } > $@ && \
 	chmod 755 $@
 
 # The leading + causes Make to treat this as a recursive invocation,
 # allowing it to participate in the jobserver protocol.
-%_tests.status: run_%_tests test/%-testsuite.lua tester$(EXEEXT) FORCE
+test/%.status: run_%_tests test/%-testsuite.lua test/bin/tester$(EXEEXT) FORCE
 	+$(AM_V_at)./run_$*_tests
+test/unit.status : test/bin/unit_tester$(EXEEXT)
+test/func.status : mtn$(EXEEXT) test/bin/check_net$(EXEEXT)
 
-unit_tests.status : unit_tester$(EXEEXT)
-func_tests.status : mtn$(EXEEXT) check_net$(EXEEXT)
-check_PROGRAMS = unit_tester tester check_net
+# Creates the needed artifacts for manual test execution
+.PHONY: testers
+testers: mtn$(EXEEXT) test/bin/tester$(EXEEXT) test/bin/unit_tester$(EXEEXT) \
+	test/bin/check_net$(EXEEXT) run_tester_tests run_func_tests run_unit_tests
+
+check_PROGRAMS = test/bin/unit_tester test/bin/tester test/bin/check_net
 
 # We want the tests re-run even if the .status files already exist.
 # .PHONY does not work for that (bad interaction with pattern rules),
@@ -606,16 +611,21 @@ check_PROGRAMS = unit_tester tester check_net
 FORCE:
 .PRECIOUS: run_tester_tests run_unit_tests run_func_tests
 
+# FIXME: if it annoys anybody, we could clean dvi, pdf and info files
+#        only in a separate maintainer-clean target as suggested by
+#	 automake's man page
 mostlyclean-local:
-	rm -rf test/tester_dir html
-	set -ex; for d in test/unit/*/__driver__.lua; do \
+	rm -rf html test/bin test/work
+	rm -f monotone.{dvi,pdf,html} monotone.info{,-*} \
+	  run_*_tests test/*.status test/src/testlib.cc util/txt2c
+	set -ex; for d in test/unit/tests/*/__driver__.lua; do \
 	  rm -f $$d; \
 	  rmdir $${d%/*} || :; \
 	done
 
 DISTCLEANFILES = src/mt-stdint.h src/xgettext.opts src/pch-build.hh.gch.dep	\
 	run_tester_tests run_unit_tests run_func_tests				\
-	tester_tests.status unit_tests.status func_tests.status
+	test/tester.status test/unit.status test/func.status
 
 # we generate some source files to copy data into the executable
 # note that the only things that should go in BUILT_SOURCES are things
@@ -744,8 +754,8 @@ distcleancheck_listfiles = find . -type f -a ! -name package_revision.txt -a ! -
 
 # the distcheck-hook checks for errors in the use of base.hh
 distcheck-hook:
-	cd $(srcdir) && $(SHELL) audit-includes \
-		$(sort $(mtn_SOURCES) $(unit_tester_SOURCES) $(tester_SOURCES) \
+	cd $(srcdir) && $(SHELL) util/audit-includes \
+		$(sort $(mtn_SOURCES) $(test_unit_tester_SOURCES) $(test_bin_tester_SOURCES) \
                        $(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
                        src/win32/main.cc src/unix/main.cc)
 

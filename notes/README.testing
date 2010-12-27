@@ -9,33 +9,39 @@ See also the "tester.txt" and "testsuite.txt" files, which
 respectively describe the basic testing framework's API, and the
 monotone-specific addons.
 
+
 Running tests:
 --------------
--  Starting in the monotone main dir. After having './configure'd monotone you 
-   can do 'make tester' to create 'tester', the program that runs the tests.
--  Running './tester test/<name>-testsuite.lua' will run the specific test suite.
-   Available test suites are 'func' (functional tests), 'unit' (C++ unit tests)
-   and 'tester' (tests for the test framework itself)
--  './tester test/<name>-testsuite.lua -l' lists the names and numbers of all 
-   available tests in the specific suite
--  './tester test/<name>-testsuite.lua <n>' runs only test number n from the
-   specific suite, negative n counts from the end
--  './tester test/<name>-testsuite.lua foobar' runs tests with "foobar" in the name
-   (it's actually a regex)
--  option -d will keep the tester_dir files for post-test debugging
--  option -h is your friend :)
--  summary of test logs in test/work/<name>.log
--  details of test logs in test/work/<name>/<testname>/tester.log
 
-Creating tests:
----------------
+-  Starting in the monotone main dir. After having './configure'd monotone you 
+   can do 'make testers' to create the needed test infrastructure, such as
+   the 'tester' program that runs the tests, the 'unit_tester' binary for the
+   unit tests and some auxiliary scripts.
+
+-  Execute './run_func_tests' to run the functional tests, './run_unit_tests'
+   for the C++ unit tests and './run_tester_tests' for tests of the test framework
+   itself. Each script accepts the following options and arguments:
+
+    '-l'    : lists the names and numbers of all available tests in the suite
+    '<n>'   : runs only test number n from the suite, negative n counts from the end
+    'foobar': runs tests with "foobar" in the name (it's actually a regex)
+    '-d'    : keeps the work files for post-test debugging in test/work;
+              summary of test logs are saved under test/work/{func,unit,tester}.log,
+              detailed test logs are available under
+              test/work/{func,unit,tester}/<testname>/tester.log
+
+
+Creating new functional tests:
+------------------------------
+
 -  Copy and paste is your friend :)
 -  Make a new directory test/func/<testname>
 -  Create a new file __driver__.lua inside this directory
 -  Sometimes you need to canonicalize things
 
-Template for a test (name test/func/<testname>/__driver__.lua:
-------------------------------------------------
+
+Template for a functional test:
+-------------------------------
 
 -- Initialize our workspace
 mtn_setup()
@@ -49,6 +55,7 @@ check(mtn("ls", "unknown"), 0, true, false)
 -- we want "mtn foobar" to work, but since we know it doesn't
 -- we tell the test program that this is expected to fail
 xfail_if(true, mtn("foobar"), 0)
+
 
 Debugging
 ---------

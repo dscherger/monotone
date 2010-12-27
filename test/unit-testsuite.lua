@@ -8,13 +8,13 @@
 -- PURPOSE.
 
 -- This test suite is special; it synthesizes all its __driver__.lua
--- files on the fly.  Each one runs the 'unit_tests' binary over just
+-- files on the fly.  Each one runs the 'unit_tester' binary over just
 -- one of the test cases it can run.
 
-testdir = initial_dir .. "/unit-tests"
+testdir = srcdir.."/unit/tests"
 
 function prepare_to_enumerate_tests (P)
-   local unit_test_path = getpathof("unit_tester")
+   local unit_test_path = getpathof("test/bin/unit_tester")
    if unit_test_path == nil then return 1 end
 
    writefile_q("in", nil)
