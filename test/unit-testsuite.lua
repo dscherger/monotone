@@ -11,7 +11,7 @@
 -- files on the fly.  Each one runs the 'unit_tester' binary over just
 -- one of the test cases it can run.
 
-testdir = srcdir.."/unit/tests"
+testdir = initial_dir.."/test/unit/tests"
 
 function prepare_to_enumerate_tests (P)
    local unit_test_path = getpathof("test/bin/unit_tester")
