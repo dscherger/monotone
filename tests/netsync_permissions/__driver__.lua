@@ -116,13 +116,13 @@ check(mtn("automate", "get_revision", revs.unknown), 1, true, true)
 check(get("closed"))
 
 -- setup by-hash line in permissions files
-writeperm = readfile("closed/write-permissions")
-writeperm = writeperm .. byhash_hash .. "\n"
-writefile("closed/write-permissions", writeperm)
+writefile("closed/write-permissions.d/tester-by-hash", byhash_hash.."\n")
 
-readperm = readfile("closed/read-permissions")
-readperm = readperm .. 'allow "' .. byhash_hash .. '"\n'
-writefile("closed/read-permissions", readperm)
+readperm = readfile("closed/read-permissions.d/tester")
+readperm = readperm .. 'continue "yes"\n'
+writefile("closed/read-permissions.d/tester", readperm)
+writefile("closed/read-permissions.d/tester-by-hash",
+       'pattern "*"\nallow "' .. byhash_hash .. '"\n')
 
 -- general setup
 clean()
