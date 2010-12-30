@@ -215,14 +215,14 @@ UNIT_TEST_SUPPORT =						\
 
 # primaries
 
-bin_PROGRAMS = src/mtn
-noinst_PROGRAMS = util/txt2c
+bin_PROGRAMS = mtn
+noinst_PROGRAMS = txt2c
 EXTRA_PROGRAMS =
 
-bin_SCRIPTS = src/util/mtnopt
+bin_SCRIPTS = mtnopt
 
-src_mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
-nodist_src_mtn_SOURCES = src/std_hooks.cc src/schema.cc
+mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
+nodist_mtn_SOURCES = src/std_hooks.cc src/schema.cc
 
 test_bin_unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
 	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
@@ -232,7 +232,7 @@ test_bin_tester_SOURCES = test/src/tester.cc src/transforms.cc src/gzip.cc \
 	src/specialized_lexical_cast.cc
 nodist_test_bin_tester_SOURCES = test/src/testlib.cc
 
-util_txt2c_SOURCES = util/txt2c.cc
+txt2c_SOURCES = util/txt2c.cc
 
 noinst_LIBRARIES = src/libplatform.a src/lib3rdparty.a
 src_libplatform_a_SOURCES = src/platform.hh
@@ -292,14 +292,14 @@ LDADD = src/libplatform.a src/lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
 
 if WIN32_PLATFORM
   src_libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
-  src_mtn_SOURCES += src/win32/main.cc
+  mtn_SOURCES += src/win32/main.cc
   test_bin_tester_SOURCES += test/src/win32/tester-plaf.cc
   test_bin_check_net_SOURCES = test/src/win32/tester-check-net.cc
   AM_CPPFLAGS += -DWIN32
   LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
 else
   src_libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
-  src_mtn_SOURCES += src/unix/main.cc
+  mtn_SOURCES += src/unix/main.cc
   test_bin_tester_SOURCES += test/src/unix/tester-plaf.cc
   test_bin_check_net_SOURCES = test/src/unix/tester-check-net.cc
 endif
@@ -515,17 +515,17 @@ monotone-$(PACKAGE_VERSION).dmg: monotone-$(PACKAGE_VERSION).pkg
 # build win32 installer using INNO setup
 ISCC=@ISCC@
 
-win32-installer: monotone-$(PACKAGE_VERSION)-setup$(EXEEXT)
+win32-installer: monotone-$(PACKAGE_VERSION)-setup.exe
 
-monotone-$(PACKAGE_VERSION)-setup$(EXEEXT): src/mtn-stripped$(EXEEXT) html info $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
+monotone-$(PACKAGE_VERSION)-setup.exe: mtn-stripped.exe html info $(ALL_GMOFILES) linguas.iss dlls.iss monotone.iss
 	$(ISCC) monotone.iss
 
-src/mtn-stripped$(EXEEXT): src/mtn$(EXEEXT)
+mtn-stripped.exe: mtn.exe
 	strip $< -o $@
 
-dlls.iss: src/mtn-stripped$(EXEEXT) ${top_srcdir}/Makefile.am
+dlls.iss: mtn-stripped.exe ${top_srcdir}/Makefile.am
 	rm -f $@
-	for DLL in $$( ${top_srcdir}/src/win32/dlls.sh src/mtn-stripped$(EXEEXT) | xargs cmd //c echo) ; do \
+	for DLL in $$( ${top_srcdir}/src/win32/dlls.sh mtn-stripped.exe | xargs cmd //c echo) ; do \
 	    echo "Source: \"$$DLL\"; DestDir: \"{app}\"" >> $@ ; \
 	done
 
@@ -604,7 +604,7 @@ test/func.status : mtn$(EXEEXT) test/bin/check_net$(EXEEXT)
 
 # Creates the needed artifacts for manual test execution
 .PHONY: testers
-testers: src/mtn$(EXEEXT) test/bin/tester$(EXEEXT) test/bin/unit_tester$(EXEEXT) \
+testers: mtn$(EXEEXT) test/bin/tester$(EXEEXT) test/bin/unit_tester$(EXEEXT) \
 	test/bin/check_net$(EXEEXT) run_tester_tests run_func_tests run_unit_tests
 
 check_PROGRAMS = test/bin/unit_tester test/bin/tester test/bin/check_net
@@ -676,7 +676,7 @@ test/src/testlib.cc: test/src/testlib.lua util/txt2c$(EXEEXT)
 # Support for scripts
 do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),'
 
-src/util/%: src/util/%.in
+%: src/util/%.in
 	$(V_subst)$(do_subst) < $< > $@ && chmod +x $@
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
@@ -688,8 +688,8 @@ src/util/%: src/util/%.in
 # successfully; the rm -f ensures both
 src/package_revision_raw.txt:
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
-	(cd $(srcdir) && $$REAL_BLDDIR/src/mtn --root=. automate get_base_revision_id) 2>/dev/null >$@ \
-	|| (cd $(srcdir) && src/mtn --root=. automate get_base_revision_id) 2>/dev/null >$@ \
+	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_base_revision_id) 2>/dev/null >$@ \
+	|| (cd $(srcdir) && mtn --root=. automate get_base_revision_id) 2>/dev/null >$@ \
 	|| rm -f $@
 src/package_revision.txt: src/package_revision_raw.txt
 	$(AM_V_GEN)set -e; if [ -f $< ]; then \
@@ -713,8 +713,8 @@ src/package_revision.txt: src/package_revision_raw.txt
 .PHONY: src/package_full_revision_raw.txt
 src/package_full_revision_raw.txt:
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
-	(cd $(srcdir) && $$REAL_BLDDIR/src/mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
-	|| (cd $(srcdir) && src/mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
+	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
+	|| (cd $(srcdir) && mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
 	|| rm -f $@
 # See above comment -- the file this depends on may or may not exist.
 # This file, however, must always exist, so that 'make dist' can
@@ -795,9 +795,9 @@ html: monotone.texi version.texi src/std_hooks.lua texinfo.css
 		rm -f $$f.bak; \
 	done
 
-mtn.1: src/mtn$(EXEEXT)
+mtn.1: mtn$(EXEEXT)
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
-	(cd $(srcdir) && $$REAL_BLDDIR/src/mtn manpage --norc) 2>/dev/null >$@ || rm -f $@
+	(cd $(srcdir) && $$REAL_BLDDIR/mtn manpage --norc) 2>/dev/null >$@ || rm -f $@
 
 # Verbosity goo.
 V_bcxx       = $(V_bcxx_$(V))
