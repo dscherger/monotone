@@ -405,15 +405,16 @@ $(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
 include $(srcdir)/po/Makevars
 ALL_POFILES := $(wildcard $(srcdir)/po/*.po)
 ALL_LINGUAS := $(basename $(notdir $(ALL_POFILES)))
-ALL_GMOFILES := $(addsuffix .gmo, $(ALL_LINGUAS))
-CLEAN_POFILES := $(ALL_GMOFILES) $(addsuffix .merged.po, $(ALL_LINGUAS)) \
-		 $(PACKAGE).pot
+ALL_GMOFILES := $(addprefix po/,$(addsuffix .gmo, $(ALL_LINGUAS)))
+CLEAN_POFILES := $(ALL_GMOFILES) \
+		 $(addprefix po/,$(addsuffix .merged.po, $(ALL_LINGUAS))) \
+		 po/$(PACKAGE).pot
 
 EXTRA_DIST += $(ALL_POFILES) po/LINGUAS po/README
 
 if USE_NLS
 # for installation
-GMOFILES := $(addsuffix .gmo, $(INST_LINGUAS))
+GMOFILES := $(addprefix po/,$(addsuffix .gmo, $(INST_LINGUAS)))
 
 all-local: $(GMOFILES)
 
@@ -421,7 +422,7 @@ install-data-local: all-local
 	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
 	  dir=$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES; \
 	  $(MKDIR_P) $$dir; \
-	  $(INSTALL_DATA) $$lang.gmo $$dir/$(PACKAGE).mo; \
+	  $(INSTALL_DATA) po/$$lang.gmo $$dir/$(PACKAGE).mo; \
 	done
 
 uninstall-local:
@@ -433,16 +434,16 @@ uninstall-local:
 endif
 
 if REBUILD_NLS
-%.gmo: %.merged.po
+po/%.gmo: po/%.merged.po
 	$(V_msgfmt)$(MSGFMT) -c --statistics -o $@ $<
 
-%.merged.po: $(srcdir)/po/%.po $(PACKAGE).pot
+po/%.merged.po: $(srcdir)/po/%.po po/$(PACKAGE).pot
 	$(V_msgmerge)$(MSGMERGE) $^ -q -o $@
 
 # for translators' use
-UPDATEPOFILES = $(addsuffix .po-update, $(ALL_LINGUAS))
+UPDATEPOFILES = $(addprefix po/,$(addsuffix .po-update, $(ALL_LINGUAS)))
 
-%.po-update: $(srcdir)/po/%.po $(PACKAGE).pot
+po/%.po-update: $(srcdir)/po/%.po po/$(PACKAGE).pot
 	$(MSGMERGE) --update $^
 
 update-po: $(UPDATEPOFILES)
@@ -452,7 +453,7 @@ POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
 	$(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
 	src/monotone.cc src/std_hooks.lua
 
-$(PACKAGE).pot: $(POTFILES)
+po/$(PACKAGE).pot: $(POTFILES)
 	$(V_xgettext)$(XGETTEXT) -o$@ -D. -D$(top_srcdir) -cTRANSLATORS: \
 	  --copyright-holder='$(COPYRIGHT_HOLDER)' \
 	  --msgid-bugs-address='$(MSGID_BUGS_ADDRESS)' \
@@ -469,7 +470,7 @@ dist-hook: $(ALL_GMOFILES)
 
 else
 
-%.gmo: $(srcdir)/po/%.gmo
+po/%.gmo: $(srcdir)/po/%.gmo
 	cp $< $@
 
 dist-hook:

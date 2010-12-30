@@ -34,28 +34,18 @@ Now the step-by-step HOWTO:
    Portugal Portuguese (pt_PT).  (Note: the pt_BR translation has not
    been updated for some time, so it is not included in po/LINGUAS.)
 
-2) Add a line for the compiled translation file to win32/monotone.iss
-   so that it is included in future Win32 installer packages.  The
-   line needs to look like this:
-
-Source: "..\po\CODE.gmo"; DestDir: "{app}\locale\CODE\LC_MESSAGES"; DestName: "monotone.mo"; Flags: ignoreversion
-
-   Everything on this line should be copied into monotone.iss exactly
-   as it appears except the word CODE, which you should replace with
-   the code you added to po/LINGUAS.
-
-3) Create a template file:
+2) Create a template file:
   
    $ cd <your source directory>
    $ autoreconf --install
    $ ./configure
-   $ make monotone.pot
+   $ make po/monotone.pot
 
-   This will create the file monotone.pot, which lists every message
+   This will create the file po/monotone.pot, which lists every message
    that you need to translate.  Copy this file to po/CODE.po (again,
    replace CODE with the code you added to po/LINGUAS).
    
-4) Fill out the header of your new .po file.  This mailing list post
+3) Fill out the header of your new .po file.  This mailing list post
    gives excellent advice on how to do so:
 
      http://mail.gnome.org/archives/gnome-i18n/2004-July/msg00073.html
@@ -87,9 +77,9 @@ Source: "..\po\CODE.gmo"; DestDir: "{app}\locale\CODE\LC_MESSAGES"; DestName: "m
       doesn't list a plural form in the template file, please tell us
       about it on monotone-dev.)
 
-5) Start translating the entries.  When finished, commit the new .po
+4) Start translating the entries.  When finished, commit the new .po
    file and push your changes to monotone.ca.  Don't forget to commit
-   po/LINGUAS and win32/monotone.iss as well.
+   po/LINGUAS as well.
 
    If you're looking for a nice GUI to edit language files, we
    recommend KBabel, which comes with the kdesdk module of KDE, or
@@ -98,17 +88,17 @@ Source: "..\po\CODE.gmo"; DestDir: "{app}\locale\CODE\LC_MESSAGES"; DestName: "m
      http://kbabel.kde.org/
      http://www.poedit.net/
 
-6) To update your template when the sources change, you can use this
+5) To update your template when the sources change, you can use this
    command:
 
-   $ make CODE.po-update
+   $ make po/CODE.po-update
 
    This will update monotone.pot from the sources and then use the
    "msgmerge" utility to update your translation.  It updates
    po/CODE.po in place.  If you prefer for this not to happen, you can
    instead do
 
-   $ make CODE.merged.po
+   $ make po/CODE.merged.po
 
    which will drop the new .po file, with a ".merged.po" extension, in
    the directory where you ran "make".  You can then edit that file
@@ -116,4 +106,5 @@ Source: "..\po\CODE.gmo"; DestDir: "{app}\locale\CODE\LC_MESSAGES"; DestName: "m
 
    To check if new or fuzzy strings have arrived, use msgfmt:
 
-   $ msgfmt -cv po/CODE.po  # or CODE.merged.po
+   $ msgfmt -cv po/CODE.po  # or po/CODE.merged.po
+

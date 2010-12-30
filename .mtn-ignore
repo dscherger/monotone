@@ -32,7 +32,6 @@
 ^mkinstalldirs$
 ^monotone\.(cps?|fn|ky|pg|tp|vr|toc|pdf|ps|dvi|log|info(-[0-9]+)?)$
 ^monotone\.html$
-^monotone\.pot$
 ^mtn$
 ^mtn.1$
 ^mtn.dSYM$
@@ -40,10 +39,13 @@
 ^po/Makefile(\.in)*$
 ^po/POTFILES$
 ^po/Rules-quot$
+^po/[^.]+.gmo$
+^po/[^.]+.merged.po$
 ^po/boldquot\.sed$
 ^po/en@boldquot\.header$
 ^po/en@quot\.header$
 ^po/insert-header\.sin$
+^po/monotone\.pot$
 ^po/quot\.sed$
 ^run_(func|tester|unit)_tests$
 ^src/package_(full_)?revision(\.cc|\.txt|_(dist|raw)\.txt)$
