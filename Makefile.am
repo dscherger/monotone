@@ -234,10 +234,10 @@ nodist_test_bin_tester_SOURCES = test/src/testlib.cc
 
 txt2c_SOURCES = util/txt2c.cc
 
-noinst_LIBRARIES = libplatform.a lib3rdparty.a
-libplatform_a_SOURCES = src/platform.hh test/src/tester-plaf.hh
-lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
-			$(NETXX_SOURCES)
+noinst_LIBRARIES = src/libplatform.a src/lib3rdparty.a
+src_libplatform_a_SOURCES = src/platform.hh
+src_lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
+			    $(NETXX_SOURCES)
 
 htmldir = $(datadir)/doc/monotone
 html_DATA = monotone.html texinfo.css
@@ -287,37 +287,38 @@ SUFFIXES = .gch .merged.po .gmo
 AM_CPPFLAGS = $(intl_CFLAGS) $(pcre_CFLAGS) $(botan_CFLAGS)	\
 	      $(lua_CFLAGS) $(sqlite3_CFLAGS) $(idn_CFLAGS)
 
-LDADD = libplatform.a lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
+LDADD = src/libplatform.a src/lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
 	$(botan_LIBS) $(lua_LIBS) $(sqlite3_LIBS) $(idn_LIBS)
 
 if WIN32_PLATFORM
-  libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
+  src_libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_SOURCES += src/win32/main.cc
   test_bin_tester_SOURCES += test/src/win32/tester-plaf.cc
   test_bin_check_net_SOURCES = test/src/win32/tester-check-net.cc
   AM_CPPFLAGS += -DWIN32
   LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
 else
-  libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
+  src_libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += src/unix/main.cc
   test_bin_tester_SOURCES += test/src/unix/tester-plaf.cc
   test_bin_check_net_SOURCES = test/src/unix/tester-check-net.cc
 endif
 
 if MISSING_INET_PTON
-  lib3rdparty_a_SOURCES += src/netxx/inet_pton.cxx src/netxx/inet_pton.h
+  src_lib3rdparty_a_SOURCES += src/netxx/inet_pton.cxx src/netxx/inet_pton.h
   AM_CPPFLAGS += -DNETXX_NO_PTON
 endif
 
 if MISSING_INET_NTOP
-  lib3rdparty_a_SOURCES += src/netxx/inet_ntop.cxx src/netxx/inet_ntop.h
+  src_lib3rdparty_a_SOURCES += src/netxx/inet_ntop.cxx src/netxx/inet_ntop.h
   AM_CPPFLAGS += -DNETXX_NO_NTOP
 endif
 
 if MISSING_GETADDRINFO
-  lib3rdparty_a_SOURCES += src/netxx/resolve_gethostbyname.cxx src/netxx/resolve_getservbyname.cxx
+  src_lib3rdparty_a_SOURCES += src/netxx/resolve_gethostbyname.cxx \
+			       src/netxx/resolve_getservbyname.cxx
 else
-  lib3rdparty_a_SOURCES += src/netxx/resolve_getaddrinfo.cxx
+  src_lib3rdparty_a_SOURCES += src/netxx/resolve_getaddrinfo.cxx
 endif
 
 if MISSING_INET6
