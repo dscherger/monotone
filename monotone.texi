@@ -6859,50 +6859,8 @@ used for scripting monotone.  All give output on @code{stdout}; they may
 also give useful chatter on @code{stderr}, including warnings and error
 messages.
 
-@subsection @code{basic_io} Format
-
-Many commands produce output in a format called basic_io. At the most basic
-level this is a stream of three token types, separated by whitespace; a
-@code{symbol} matches @code{/[a-z_]+/} (a word consisting of lowercase letters
-and underscores), a @code{string} matches @code{/"([^\\]|\\\\|\\")*"/} (a pair
-of double-quotes containing arbitrary characters, with only backslash and
-double-quote escaped with a backslash), and a @code{hex} matches
-@code{/\[[0-9a-f]@{40@}\]/} (40 lowercase hex digits enclosed by square
-brackets; this will necessarily change in some manner when we eventually move
-to a stronger hash than sha1). Each @code{symbol} is followed by zero or more
-@code{string}s and/or @code{hex}es.
-
-While the above is all that is strictly necessary to parse basic_io, there is
-some formatting of the stream which may be helpful when parsing and is required
-(but not always verified) when producing basic_io for consumption by monotone:
-@itemize
-@item
-Each @code{symbol} begins a new line.
-@item
-Tokens on the same line are separated by a single space.
-@item
-Lines are grouped into logical @code{stanza}s, separated by a single empty line.
-Each stanza then describes a particular item, with the different lines
-(@code{symbol}s followed by @code{string} and @code{hex} values) describing
-different aspects of that item.
-@item
-@code{symbol}s in a stanza are right-aligned with each other; each @code{symbol}
-other than the longest is preceeded by spaces. The longest @code{symbol} in a
-stanza is not preceeded by spaces, even if there are longer @code{symbol}s in
-other stanzas.
-@item
-Lines within stanzas have a consistent order, although some may be
-optional in some commands.
-@item
-Stanzas typically have no defined order, although some commands define
-a partial order to aid in parsing.
-
-For example, revisions have associated data; the structure is header
-stanzas followed by a list of changes vs. each parent revision, with
-each change represented by a separate stanza; reordering the stanzas
-could cause a particular change to be interpreted against the wrong
-parent.
-@end itemize
+Many commands produce output in a format called basic_io, for more
+information, @pxref{Formats}.
 
 @subsection Automation Commands
 
@@ -8223,7 +8181,7 @@ or invalid prints an error message to stderr and exits with status 1.
 
 @end table
 
-@item mtn automate stdio
+@anchor{mtn-au-stdio}@item mtn automate stdio
 
 @table @strong
 @item Arguments:
@@ -11090,7 +11048,88 @@ cause considerable clutter in tools like gitk.
 @end ftable
 
 
-@node    Lua Reference, Special Topics, Command Reference, Top
+@node    Formats, Lua Reference, Command Reference, Top
+@chapter Formats
+
+Monotone uses two well defined formats to output or to accept input of
+data (mostly structured), @code{basic_io} and @code{stdio}.
+@code{basic_io} is often used to represent data or for configuration,
+while @code{stdio} is used for communication with @code{automate stdio}.
+
+The @code{stdio} format is not described here.  For information on it,
+please @pxref{mtn-au-stdio,,@code{mtn automate stdio}}.
+
+@section @code{basic_io} Format
+
+@code{basic_io} is a very simple format, yet expressive, and can be
+described with the following ABNF (see RFC 2234) specification:
+
+@display
+@verbatim
+basic_io = *( item )
+
+    item = *sp symbol *sp *( string / hexid ) *sp
+           ; a symbol followed by zero or more strings and/or hexes.
+
+  symbol = 1*( lcalpha / "_" )
+           ; One or more letters or underscores.
+  string = DQUOTE *( charnqnb / "\" "\" / "\" DQUOTE ) DQUOTE
+           ; A series of any character, enclosed with double quotes
+           ; To include a double quote or a backslash in the string,
+           ; escape it with a backslash.
+   hexid = "[" 40HEXDIG "]"
+           ; 40 hexadecimal characters enclosed in brackets.
+           ; Note: the amount might change as we move away from sha1.
+
+      sp = ( WSP CR LF )
+charnqnb = %x01-21 / %x23-5B / %x5D-FF
+           ; All characters except NUL (%x00) , " (%x22) and \ (%x5C).
+ lcalpha = %x61-7A
+           ; Lower case a-z.
+@end verbatim
+@end display
+
+In essence, it's a stream of items, where each item is a @code{symbol}
+followed by zero or more @code{string}s and @code{hex}es.
+
+There is an idea of stanzas, which is a group of items that logically
+belongs together.  However, stanzas aren't defined in the
+@code{basic_io} syntax, and are instead defined in terms of order and
+sequence for what symbols may be part of the stream, how they may
+appear, and how many and what arguments should follow them.  This is
+defined by each command or program using this format.
+
+For example, revisions have associated data; the structure is header
+stanzas followed by a list of changes vs. each parent revision, with
+each change represented by a separate stanza; reordering the stanzas
+could cause a particular change to be interpreted against the wrong
+parent.
+
+Another example is the @file{read-permissions} file that's read by the
+default definition of the @code{get_netsync_read_permitted} lua hook.
+
+Monotone will format its output in @code{basic_io} as follows:
+@itemize
+@item
+Each @code{symbol} begins a new line.
+@item
+Tokens on the same line are separated by a single space.
+@item
+Lines are grouped into logical @code{stanza}s, separated by a single empty line.
+Each stanza then describes a particular item, with the different lines
+(@code{symbol}s followed by @code{string} and @code{hex} values) describing
+different aspects of that item.
+@item
+@code{symbol}s in a stanza are right-aligned with each other; each @code{symbol}
+other than the longest is preceeded by spaces. The longest @code{symbol} in a
+stanza is not preceeded by spaces, even if there are longer @code{symbol}s in
+other stanzas.
+@item
+Lines within stanzas have a consistent order, although some may be
+optional in some commands.
+@end itemize
+
+@node    Lua Reference, Special Topics, Formats, Top
 @chapter Lua Reference
 
 Monotone makes use of the @uref{http://www.lua.org, Lua} programming
