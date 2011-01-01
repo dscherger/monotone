@@ -18,8 +18,8 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         - get_netsync_(read|write)_permitted have been extended to not
           only read the files read-permissions and write-permissions,
-          but also the files in the subdirectories read_permissions.d
-          and write_permissions.d.
+          but also the files in the subdirectories read-permissions.d
+          and write-permissions.d.
 
         New Features
 
