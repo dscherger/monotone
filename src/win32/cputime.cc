@@ -12,7 +12,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include "numeric_vocab.hh"
+#include "../numeric_vocab.hh"
 
 u64 to_ticks(FILETIME const & ft)
 {

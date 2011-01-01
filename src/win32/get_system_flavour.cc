@@ -7,8 +7,8 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "base.hh"
-#include "sanity.hh"
+#include "../base.hh"
+#include "../sanity.hh"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
