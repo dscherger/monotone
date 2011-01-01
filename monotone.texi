@@ -11625,8 +11625,11 @@ changed.
 Returns @code{true} if a peer authenticated as key @var{key_identity}
 should be allowed to read from your database certs, revisions,
 manifests, and files associated with @var{branch}; otherwise @code{false}.
-The default definition of this hook reads a file @file{read-permissions} in
-the configuration directory. This file looks like
+The default definition of this hook reads a file @file{read-permissions}
+and all files in the subdirectory @file{read-permissions.d} in the
+configuration directory. All the files are treated as if they were one
+file, with @file{read-permissions} first followed by the files in
+@file{read-permissions.d} in alphanumerical order. The files look like
 @smallexample
 @group
 pattern "net.example.project.@{private,security@}*"
@@ -11663,11 +11666,13 @@ If a client connects anonymously, this hook will be called with a
 
 @item get_netsync_write_permitted (@var{key_identity})
 
-Returns @code{true} if a peer authenticated as key @var{key_identity} should
-be allowed to write into your database certs, revisions, manifests, and
-files; otherwise @code{false}. The default definition of this hook reads a file
-@file{write-permissions} in the configuration directory which contains a list
-of key hashes or local key names, one per line, which are allowed write access.
+Returns @code{true} if a peer authenticated as key @var{key_identity}
+should be allowed to write into your database certs, revisions,
+manifests, and files; otherwise @code{false}. The default definition of
+this hook reads a file @file{write-permissions} and all files in the
+subdirectory @file{write-permissions.d} in the configuration directory
+which contains a list of key hashes or local key names, one per line,
+which are allowed write access.
 The special value
 @code{*} means to allow access to anyone whose public key we already have.
 
