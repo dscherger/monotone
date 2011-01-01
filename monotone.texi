@@ -79,6 +79,7 @@ version control tools.
 * Advanced Uses::               Going beyond the basics
 * CVS Phrasebook::              Transitional guide for CVS users
 * Command Reference::           Details of each monotone command
+* Formats::                     Formats used by monotone and scripts
 * Lua Reference::               How Lua is integrated in monotone
 * Special Topics::              Extra explanations and details
 * Default hooks::               The standard hook definitions
@@ -4854,7 +4855,7 @@ and does not need to be in any special location, or readable by other
 users.
 
 
-@node    Command Reference, Lua Reference, CVS Phrasebook, Top
+@node    Command Reference, Formats, CVS Phrasebook, Top
 @chapter Command Reference
 
 Monotone has a large number of commands. To help navigate through them
