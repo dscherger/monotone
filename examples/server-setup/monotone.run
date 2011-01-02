@@ -16,7 +16,7 @@ exec >> $MAINLOG 2>&1
 exec \
   softlimit -d192000000 \
   setuidgid monotone \
-  /usr/bin/monotone \
+  $DAEMON \
     --confdir=$MTN_CONFDIR --keydir=$MTN_KEYDIR --db=$MTN_DB \
     --no-standard-rcfiles --rcfile=$MTN_CONFDIR/hooks.lua \
     --timestamps --quiet --bind=$ADDRESS serve
