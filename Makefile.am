@@ -455,6 +455,7 @@ POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
 	src/monotone.cc src/std_hooks.lua
 
 po/$(PACKAGE).pot: $(POTFILES)
+	[ -d po ] || mkdir -p po
 	$(V_xgettext)$(XGETTEXT) -o$@ -D. -D$(top_srcdir) -cTRANSLATORS: \
 	  --copyright-holder='$(COPYRIGHT_HOLDER)' \
 	  --msgid-bugs-address='$(MSGID_BUGS_ADDRESS)' \

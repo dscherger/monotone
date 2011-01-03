@@ -10,7 +10,7 @@
 #ifndef __SSH_AGENT_PLATFORM_HH__
 #define __SSH_AGENT_PLATFORM_HH__
 
-#include "numeric_vocab.hh"
+#include "../numeric_vocab.hh"
 #define WIN32_LEAN_AND_MEAN // no gui definitions
 #include <windows.h>
 
