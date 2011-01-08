@@ -39,7 +39,7 @@ Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
 Copyright @copyright{} 2006 - 2010 Thomas Keller @*
-Copyright @copyright{} 2007 - 2010 Stephen Leake @*
+Copyright @copyright{} 2007 - 2011 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
 greater.  See the accompanying file COPYING for details.
@@ -4439,7 +4439,7 @@ And that's it! The revisions were successfully transferred.
 
 
 @page
-@node    Bisecting, , Using packets, Advanced Uses
+@node    Bisecting,  , Using packets, Advanced Uses
 @section Bisecting
 
 Bisecting is an efficient means of finding the earliest revision that
@@ -4859,7 +4859,8 @@ users.
 @chapter Command Reference
 
 Monotone has a large number of commands. To help navigate through them
-all, commands are grouped into logical categories.
+all, commands are grouped into logical categories. In addition, there
+are global options that apply to all commands.
 
 Many command options come in pairs that affect the same value. For example,
 @command{mtn log} takes a @var{brief} option; this can be reversed by
@@ -4880,6 +4881,7 @@ options, see the online help (@command{mtn help cmd}), or the manpage.
 
 
 @menu
+* Global Options::              Options that affect all commands
 * Tree::                        Operations on tree states in your database
 * Workspace::                   Operations on your workspace
 * Network::                     Communication with the network
@@ -4895,7 +4897,141 @@ options, see the online help (@command{mtn help cmd}), or the manpage.
 
 
 @page
-@node    Tree, Workspace, Command Reference, Command Reference
+@node    Global Options, Tree, Command Reference, Command Reference
+@section Global Options
+@ftable @command
+@item --confdir <arg>
+Set the location of the configuration directory (default
+@file{~/.monotone} on Unix and Cygwin, @file{%APPDATA%\monotone%} on
+Windows MinGW). This is where monotone finds:
+
+@itemize
+@item keys, in @file{conf_dir/keys}; @ref{Certificates},
+@ref{Generating Keys}. The location of the keys directory can be
+overridden separately with the @command{--keydir} option.
+
+@item rcfiles, which are per-user configuration files containing Lua code
+(@ref{Lua Reference}) that are run each time monotone starts up.
+
+@item default database
+See option @command{--db} below.
+
+@end itemize
+
+In addition, monotone writes a dump file to the configuration
+directory when it fails.
+
+@item --date-format <arg>
+strftime(3) format specification for printing dates. The default
+format is @code{%x} for dates, @code{%X} for times, @code{%x %X} for
+both. This can also be overridden by the @code{get_date_format_spec}
+hook; @ref{Hooks}.
+
+@item --db <arg>
+Set the database to use; defaults to the database specified in the
+current workspace (stored in @file{_MTN/options}; @ref{Storage and
+workflow}), or to nothing if not in a workspace.
+
+An argument of @code{:memory:} specifies a memory-only database; any
+changes are not saved to a file. @c what is this useful for?
+
+@item --dump <arg>
+File to dump debugging log to, on failure; default
+@file{confdir/dump} if not in a workspace, @file{_MTN/debug} if in a
+workspace.
+
+@item --help
+Display help information. This is the same as the @command{mtn help}
+command.
+
+@item --ignore-suspend-certs
+@itemx --no-ignore-suspend-certs
+Do not ignore revisions marked as suspended; see the @command{mtn
+suspend} command.
+
+@item --key <arg>
+@itemx --use-default-key
+Set the key for signatures, using either the key name or the key hash
+(@ref{Generating Keys}).  If there is only one key in the keydir, then
+that is the default key. Otherwise there is no default key.
+
+@item --keydir <arg>
+Set the key directory (where the ``key store'' is located); default is
+@file{confir/keys}.
+
+@item --log <arg>
+Specifiy a file to which the log (consisting of all debug,
+informational, and warning messages) is written; default is the
+@code{stderr} process output.
+
+@item --no-builtin-rcfile
+@itemx --builtin-rcfile
+Do not load the built-in rcfile with the default hooks. This means
+all hooks will have null definitions (unless overridden by other
+rcfiles). @ref{Hooks}.
+
+@item --no-default-confdir
+@itemx --allow-default-confdir
+Don't use a default confdir; @command{--confdir} must be specified if
+a configuration file is needed.
+
+@item --no-format-dates
+Print date certs exactly as stored in the database.
+
+@item --no-standard-rcfiles
+@itemx --standard-rcfiles
+Do not load the standard rcfiles, which are
+@file{~/.monotone/monotonerc} on Unix or
+@file{%APPDATA%\monotone\monotonerc} on Windows, and
+@file{_MTN/monotonerc} in the current workspace.
+
+@item --no-workspace
+@itemx --allow-workspace
+Don't look for a workspace; this means options that normally get their
+default values from the workspace will not have those default values.
+
+@item --non-interactive
+@itemx --interactive
+Do not prompt the user for input; fail instead. For example, don't
+prompt for a key passphrase, or when doing a merge, do not start the
+external merger to resolve a conflict.
+
+@item --quiet
+@itemx --verbose
+Decrease or increase verbosity. There are four levels of verbosity;
+debug, information, warning, and none. The default is information.
+
+@item --rcfile <arg>
+Specify an extra rcfile to load.
+
+@itemx --clear-rcfiles
+Cancel all previous @command{rcfile} options (standard rcfiles are
+still loaded).
+
+@itemx --root <arg>
+Limit the search for a workspace to the specified root directory
+
+@item --ssh-sign <arg>
+Controls use of ssh-agent. Valid arguments are: 'yes' to use ssh-agent
+to make signatures if possible, 'no' to force use of monotone's
+internal code, 'only' to force use of ssh-agent, 'check' to sign with
+both and compare.
+
+@item --ticker <arg>
+Set ticker style; one of 'count', 'dot', or 'none'
+
+@item --timestamps
+Show timestamps in front of error, warning, and progress messages.
+
+@item --version
+Print version number, then exit; same as @command{mtn version}.
+
+@item --xargs <arg>
+@itemx -@@ <arg>
+Insert command line arguments taken from the given file.
+@end ftable
+
+@node    Tree, Workspace, Global Options, Command Reference
 @section Tree
 
 @ftable @command
