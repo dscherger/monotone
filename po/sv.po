@@ -155,7 +155,7 @@ msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-11-27 16:55+0100\n"
-"PO-Revision-Date: 2010-11-28 06:39+0100\n"
+"PO-Revision-Date: 2010-12-03 09:16+0100\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -1461,9 +1461,7 @@ msgstr "tar bort nyckelparet '%s' från nyckellagret"
 #: cmd_key_cert.cc:160
 #, c-format
 msgid "public or private key '%s' does not exist in keystore or database"
-msgstr ""
-"den publika eller privata nyckeln '%s' finns inte i nyckellager eller\n"
-"databas"
+msgstr "den publika eller privata nyckeln '%s' finns inte i nyckellager eller databas"
 
 #: cmd_key_cert.cc:163
 #, c-format
@@ -1515,9 +1513,7 @@ msgstr "Skapar ett cert för en revision eller en samling revisioner"
 msgid ""
 "Creates a certificate with the given name and value on each revision that "
 "matches the given selector"
-msgstr ""
-"Skapar ett certifikat med givna namn och värde för verja revision som\n"
-"motsvarar den givna väljaren"
+msgstr "Skapar ett certifikat med givna namn och värde för verja revision som motsvarar den givna väljaren"
 
 #: cmd_key_cert.cc:300
 msgid "REVISION NAME VALUE SIGNER1 [SIGNER2 [...]]"
@@ -2253,9 +2249,7 @@ msgstr "Tar bort angivna certifikat från den lokala databasen"
 msgid ""
 "Deletes all certs which are on the given revision(s) and have the given name "
 "and if a value is specified then also the given value."
-msgstr ""
-"Tar bort alla certifikat med givet namn och eventuellt givet värde\n"
-"från givna revisioner."
+msgstr "Tar bort alla certifikat med givet namn och eventuellt givet värde från givna revisioner."
 
 #: cmd_db.cc:319
 msgid "Does some sanity checks on the database"

@@ -46,8 +46,8 @@ do
 	 if not globish_match("#*", line) then
 	    local _, _, ln = string.find(line, "%s*([^%s]*)%s*")
 	    if ln == "*" then matches = true end
-	    if ln == ident.id then matches = true end
-	    if globish_match(ln, ident.name) then matches = true end
+	    if ln == key_identity.id then matches = true end
+	    if globish_match(ln, key_identity.name) then matches = true end
 	    line = permfile:read()
 	 end
       end

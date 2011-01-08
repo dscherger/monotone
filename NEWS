@@ -16,6 +16,11 @@ XXX XXX XX XX:XX:XX UTC 2010
           Steve Petruzzello <dlist@bluewin.ch> for the outstanding
           work!
 
+        - get_netsync_(read|write)_permitted have been extended to not
+          only read the files read-permissions and write-permissions,
+          but also the files in the subdirectories read-permissions.d
+          and write-permissions.d.
+
         New Features
 
         - 'mtn conflicts store' now outputs a count of the conflicts,

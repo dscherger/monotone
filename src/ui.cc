@@ -767,12 +767,22 @@ user_interface::output_prefix()
 
   if (timestamps_enabled) {
     try {
-      // FIXME: with no app pointer around we have no access to
-      // app.lua.get_date_format_spec() here, so we use the same format
-      // which f.e. also Apache uses for its log output
-      prefix = "[" +
-        date_t::now().as_formatted_localtime("%a %b %d %H:%M:%S %Y") +
-        "] ";
+      // To prevent possible infinite loops from a spurious log being
+      // made down the line from the call to .as_formatted_localtime,
+      // we temporarly turn off timestamping.  Not by fiddling with
+      // timestamp_enabled, though, since that one might be looked at
+      // by some other code.
+      static int do_timestamp = 0;
+
+      if (++do_timestamp == 1) {
+        // FIXME: with no app pointer around we have no access to
+        // app.lua.get_date_format_spec() here, so we use the same format
+        // which f.e. also Apache uses for its log output
+        prefix = "[" +
+          date_t::now().as_formatted_localtime("%a %b %d %H:%M:%S %Y") +
+          "] ";
+      }
+      --do_timestamp;
     }
     // ensure that we do not throw an exception because we could not
     // create the timestamp prefix above
