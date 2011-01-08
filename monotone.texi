@@ -4192,7 +4192,7 @@ the @emph{value} of the author cert as the git author and the
 there are multiple author certs the git exporter arbitrarily choses
 one of them. The full list of monotone certs may be exported in the
 git commit message using the @option{--log-certs} option described in
-@ref{GIT}.
+@ref{VCS}.
 
 Monotone author names often look like raw email addresses such as
 @code{"user@@example.com"}. These are not considered valid by git
@@ -4210,7 +4210,7 @@ author cert as the author and the key used to sign this cert as
 the committer.
 @item
 both author and committer will be looked up in the file specified by
-the @option{--authors-file} option described in @ref{GIT} and
+the @option{--authors-file} option described in @ref{VCS} and
 translated to the specified value if found.
 @item
 any author or committer value not found in the authors file will be
@@ -4224,7 +4224,7 @@ rejected by the validation hook.
 
 Branch names used by monotone are allowed to contain characters that
 are not considered valid by git. These may be mapped to other names
-using the @option{--branches-file} option described in @ref{GIT}
+using the @option{--branches-file} option described in @ref{VCS}
 
 A monotone revision may have multiple @code{changelog} certs and
 multiple @code{comment} certs. The git exporter deals with these by
@@ -4886,15 +4886,17 @@ options, see the online help (@command{mtn help cmd}), or the manpage.
 * Workspace::                   Operations on your workspace
 * Network::                     Communication with the network
 * Informative::                 Production of descriptive reports
-* Key and Cert Trust::          Keys and Trust Evaluations based on them
-* Certificate::                 Creation of certificates
+* Review::                      Reviewing revisions
+* Variables::                   Managing persistent variables
+* Key and Cert::                Keys, Certificates, and Trust Evaluations based on them
 * Packet I/O::                  Production or consumption of packets
 * Database::                    Manipulation of your database as a whole
 * Automation::                  Running monotone from other programs
-* RCS::                         Importing legacy version control files
-* GIT::                         Exporting a monotone repository to git
+* VCS::                         Importing and exporting to other version control systems
 @end menu
-
+@c the 'debug' commands don't have a section; you have to know what
+@c you are doing to use them, so it's not worth maintaining them in
+@c this manual.
 
 @page
 @node    Global Options, Tree, Command Reference, Command Reference
@@ -5035,18 +5037,6 @@ Insert command line arguments taken from the given file.
 @section Tree
 
 @ftable @command
-@itemx mtn cat @var{path}
-@itemx mtn cat --revision=@var{id} @var{path}
-
-Write the contents of a specific file @var{path} to standard output.
-
-Without a @option{--revision} argument, the command outputs the
-contents of @var{path} as found in the current revision. This requires
-the command be executed from within a workspace.
-
-With an explicit @option{--revision} argument, the command outputs
-contents of @var{path} at that revision.
-
 @item mtn checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
 @itemx mtn co [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
 @itemx mtn [--[no-]move-conflicting-paths] --branch=@var{branchname} checkout @var{directory}
@@ -5094,42 +5084,8 @@ If no @var{id} is provided, as in the latter two commands, you
 @emph{must} provide a @var{branchname}; monotone will attempt to infer
 @var{id} as the unique head of @var{branchname} if it exists.
 
-@item mtn clone @var{uri} [--branch=@var{branchname}] [@var{directory}]
-@item mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}]
-
-The clone command is a helper command that performs the roles of a
-number of other commands all at once.  Firstly, it constructs a new
-database. If no database is given, the configured default
-database is created or re-used (see the hook @code{get_default_database_alias}
-in the @ref{Lua Reference} for more details). Then it populates this database
-by @command{pull}ing any data which match the branch pattern in the @var{uri}
-or the given @var{branchname} argument from the remote database.
-Finally, it copies the files out of the newly created database into a
-local directory, just as @command{checkout} would.  If no @var{directory}
-is given, the @var{branchname} is used as directory.
-
-@strong{Important notice:} The @var{address}[:@var{port}] @var{branchname}
-call syntax is deprecated and subject of removal in future versions of monotone!
-
-@item mtn disapprove [@var{parent}] @var{child}
-
-This command records a disapproval of the changes between @var{parent}'s
-ancestor and @var{child}.  If @var{parent} is omitted, only @var{child}
-is disapproved.  The command does the disapproval by committing
-the @i{inverse} changes as a new revision descending from @var{child}.
-The new revision will show up as a new head and thus a subsequent
-@command{merge} will incorporate the inverse of the disapproved changes
-in the other head(s).
-
-Conceptually, @command{disapprove}s contract is that disapprove(A) gives a
-revision B such that whenever B is merged with a descendant D of A the merge
-will result in what D ``would have looked like'' if A had never happened.
-
-Note that as a consequence of this contract the @command{disapprove} command
-only works if all changesets from @var{parent} to @var{child} have exactly
-one ancestor, since it hasn't been worked out how to generate such
-a descendant in the multi-ancestor case.
-
+@item mtn conflicts
+@ref{Conflicts}
 
 @item mtn heads --branch=@var{branchname}
 This command lists the ``heads'' of @var{branchname}.
@@ -5140,7 +5096,6 @@ generally the ``newest'' revisions committed by you or your
 colleagues, at least in terms of ancestry. The heads of a branch may
 not be the newest revisions, in terms of time, but synchronization of
 computer clocks is not reliable, so monotone usually ignores time.
-
 
 @item mtn merge [--branch=@var{branchname}]
 This command merges the ``heads'' of @var{branchname}, if there are
@@ -5230,6 +5185,30 @@ $ mtn commit
 The twist with the @command{mtn setup} part is that it sets the parent
 to be the given revision or the head of the given branch instead of the
 null revision.
+
+@item mtn refresh_inodeprints
+This command puts the current workspace into @ref{Inodeprints} mode,
+if it was not already, and forces a full inodeprints cache refresh.
+After running this command, you are guaranteed that your workspace is
+in inodeprints mode, and that the inodeprints cache is accurate and up
+to date.
+
+@item mtn setup -b @var{branchname} [-d @var{database}] [@var{directory}]
+This command prepares @var{directory} as a monotone workspace,
+by creating and populating the @file{_MTN} directory with basic
+information.  This information must include at least the branch
+to be used.  If no database is given, the configured default
+database is created or re-used (see the hook
+@code{get_default_database_alias} in the @ref{Lua Reference} for
+more details).
+Both settings, branch and database name, will be placed in the
+@file{_MTN/options} file.
+
+This can be used with an empty directory to start a new blank project,
+or within an existing directory full of files, prior to using
+@command{mtn commit}. If no directory is specified, the current
+directory is used.
+
 @end ftable
 
 @page
@@ -5380,22 +5359,6 @@ shared ancestor, so @code{merge3} is not applicable.
 @section Workspace
 
 @ftable @command
-@item mtn setup -b @var{branchname} [-d @var{database}] [@var{directory}]
-This command prepares @var{directory} as a monotone workspace,
-by creating and populating the @file{_MTN} directory with basic
-information.  This information must include at least the branch
-to be used.  If no database is given, the configured default
-database is created or re-used (see the hook
-@code{get_default_database_alias} in the @ref{Lua Reference} for
-more details).
-Both settings, branch and database name, will be placed in the
-@file{_MTN/options} file.
-
-This can be used with an empty directory to start a new blank project,
-or within an existing directory full of files, prior to using
-@command{mtn commit}. If no directory is specified, the current
-directory is used.
-
 @item mtn add [--[no-]recursive | -R] [--[no-]respect-ignore] @var{pathname...}
 @item mtn add [--[no-]recursive | -R] [--[no-]respect-ignore] --[no-]unknown [@var{pathname...}]
 This command places ``add'' entries for the paths specified in
@@ -5420,14 +5383,15 @@ made recursive using the @option{--recursive} option.  When adding a
 directory non-recursively, monotone will warn if the directory has
 any files that would be added by a recursive add.
 
-@item mtn [--[no-]respect-ignore] mkdir @var{directory...}
+@item mtn mkdir [--[no-]respect-ignore] @var{directory...}
 This command creates a directory in the filesystem relative to your
 current location and adds it to your workspace's ``work list''.  The
 changes are not reflected in your database until such time as you
 perform a commit.  If you use the @option{--no-respect-ignore} flag,
 entries in @file{.mtn-ignore} will not be honored.
+@c FIXME: what does it mean to honor .mtn-ignore here?
 
-@item mtn [--bookkeep-only] drop @var{pathname...}
+@item mtn drop [--bookkeep-only] @var{pathname...}
 @itemx mtn drop --missing
 This command places ``drop'' entries for the paths specified in
 @var{pathname...} in the workspace's ``work list'' and deletes
@@ -5458,10 +5422,10 @@ Undoes a previous ``drop''; useful when you make a mistake. If the
 file was deleted from the workspace, this reverts it. If it was not
 deleted (because it was changed), it just removes the pending drop.
 
-@item mtn [--bookkeep-only] rename @var{src} @var{dst}
-@itemx mtn [--bookkeep-only] mv @var{src} @var{dst}
-@itemx mtn [--bookkeep-only] rename @var{src1} @var{...} @var{dst/}
-@itemx mtn [--bookkeep-only] mv @var{src1} @var{...} @var{dst/}
+@item mtn rename [--bookkeep-only] @var{src} @var{dst}
+@itemx mtn mv [--bookkeep-only] @var{src} @var{dst}
+@itemx mtn rename [--bookkeep-only] @var{src1} @var{...} @var{dst/}
+@itemx mtn mv [--bookkeep-only] @var{src1} @var{...} @var{dst/}
 This command places ``rename'' entries for the paths specified in
 @var{src} and @var{dst} in the workspace's ``work list''. The second form
 renames a number of source paths to the given destination. The work
@@ -5660,7 +5624,6 @@ commit needs to be cancelled the line following the leading
 instructions should be removed. Any pending text in @file{MTN/log}
 will be left untouched if the commit is cancelled.
 
-
 @item mtn revert @var{pathname...}
 @itemx mtn revert --missing @var{pathname...}
 This command changes your workspace, so that changes you have made
@@ -5755,13 +5718,6 @@ reduce your need for @command{pluck}ing.
 When running @command{pluck}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
-@item mtn refresh_inodeprints
-This command puts the current workspace into @ref{Inodeprints} mode,
-if it was not already, and forces a full inodeprints cache refresh.
-After running this command, you are guaranteed that your workspace is
-in inodeprints mode, and that the inodeprints cache is accurate and up
-to date.
-
 @item mtn pivot_root [--bookkeep-only] [--[no-]move-conflicting-paths] pivot_root @var{new_root} @var{put_old}
 Most users will never need this command.  It is primarily useful in
 certain tricky cases where one wishes to combine several projects
@@ -5794,62 +5750,6 @@ records, but not in the filesystem itself.
 
 When running @command{pivot_root}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
-
-@item mtn bisect good [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
-Mark the specified revisions as ``good'' for the current bisection
-operation. If no bisection operation is in progress a new bisection is
-initialized. If a bisection operation is in progress the next update
-target is selected and the workspace is updated to the selected
-revision.
-
-If the update is blocked by conflicting unversioned paths existing in
-the workspace this command may be re-issued with the
-@option{--move-conflicting-paths} option. Alternatively, the
-@command{bisect update} command can be used with this option to update
-the workspace and move the conflicting paths out of the way.
-
-@item mtn bisect bad [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
-Mark the specified revisions as ``bad'' for the current bisection
-operation. If no bisection operation is in progress a new bisection is
-initialized. If a bisection operation is in progress the next update
-target is selected and the workspace is updated to the selected
-revision.
-
-If the update is blocked by conflicting unversioned paths existing in
-the workspace this command may be re-issued with the
-@option{--move-conflicting-paths} option. Alternatively, the
-@command{bisect update} command can be used with this option to update
-the workspace and move the conflicting paths out of the way.
-
-@item mtn bisect skip [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
-Mark the specified revisions as ``skipped'' for the current bisection
-operation. If no bisection operation is in progress a new bisection is
-initialized. If a bisection operation is in progress the next update
-target is selected and the workspace is updated to the selected
-revision.
-
-If the update is blocked by conflicting unversioned paths existing in
-the workspace this command may be re-issued with the
-@option{--move-conflicting-paths} option. Alternatively, the
-@command{bisect update} command can be used with this option to update
-the workspace and move the conflicting paths out of the way.
-
-@item mtn bisect update [--[no-]move-conflicting-paths]
-Update the workspace to the next revision selected by the previous
-bisect operation. This command can be useful when the previous bisect
-operation fails to update the workspace because of conflicting
-unversioned paths existing in the workspace.
-
-@item mtn bisect status
-Report the status of the current bisection operation including the
-number of revisions that remain to be tested, the number of revisions
-that have been tested and the next revision that will selected for
-testing.
-
-@item mtn bisect reset
-Reset the current bisection operation by updating the workspace back
-to the revision from which the bisection was started and clearing the
-current bisection information.
 
 @end ftable
 
@@ -5999,15 +5899,98 @@ any character, to match exactly that character --- this might be useful
 in case someone, for some odd reason, decides to put a ``*'' into their
 branch name.
 
+@item mtn clone @var{uri} [--branch=@var{branchname}] [@var{directory}]
+@item mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}]
+
+The clone command is a helper command that performs the roles of a
+number of other commands all at once.  Firstly, it constructs a new
+database. If no database is given, the configured default
+database is created or re-used (see the hook @code{get_default_database_alias}
+in the @ref{Lua Reference} for more details). Then it populates this database
+by @command{pull}ing any data which match the branch pattern in the @var{uri}
+or the given @var{branchname} argument from the remote database.
+Finally, it copies the files out of the newly created database into a
+local directory, just as @command{checkout} would.  If no @var{directory}
+is given, the @var{branchname} is used as directory.
+
+@strong{Important notice:} The @var{address}[:@var{port}] @var{branchname}
+call syntax is deprecated and subject of removal in future versions of monotone!
+
 @end ftable
 
-
-
 @page
-@node    Informative, Key and Cert Trust, Network, Command Reference
+@node    Informative, Review, Network, Command Reference
 @section Informative
 
 @ftable @command
+@item mtn bisect good [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
+Mark the specified revisions as ``good'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect bad [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
+Mark the specified revisions as ``bad'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect skip [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
+Mark the specified revisions as ``skipped'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect update [--[no-]move-conflicting-paths]
+Update the workspace to the next revision selected by the previous
+bisect operation. This command can be useful when the previous bisect
+operation fails to update the workspace because of conflicting
+unversioned paths existing in the workspace.
+
+@item mtn bisect status
+Report the status of the current bisection operation including the
+number of revisions that remain to be tested, the number of revisions
+that have been tested and the next revision that will selected for
+testing.
+
+@item mtn bisect reset
+Reset the current bisection operation by updating the workspace back
+to the revision from which the bisection was started and clearing the
+current bisection information.
+
+@itemx mtn cat @var{path}
+@itemx mtn cat --revision=@var{id} @var{path}
+
+Write the contents of a specific file @var{path} to standard output.
+
+Without a @option{--revision} argument, the command outputs the
+contents of @var{path} as found in the current revision. This requires
+the command be executed from within a workspace.
+
+With an explicit @option{--revision} argument, the command outputs
+contents of @var{path} at that revision.
+
 @item mtn status
 @itemx mtn status @var{pathname...}
 
@@ -6169,11 +6152,13 @@ $ mtn complete revision 01f
 @itemx mtn diff --revision=@var{id} @var{pathname...}
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2}
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2} @var{pathname...}
-
+@itemx mtn di
 These commands print out GNU ``unified diff format'' textual difference
 listings between various manifest versions. With no @option{--revision}
 options, @command{diff} will print the difference from the
 base revision to the current revision in the workspace.
+
+@command{di} is an alias for @command{diff}.
 
 With one @option{--revision} option, @command{diff} will print the
 difference from the revision @var{id} to the current revision in the
@@ -6455,10 +6440,110 @@ The option @option{--hidden} additionally enables the output of hidden
 commands and options, which is deactivated by default.
 @end ftable
 
+@node    Review, Variables, Informative, Command Reference
+@section Review
+
+@ftable @command
+@item mtn approve @var{id}
+
+This command is a synonym for @command{mtn cert @var{id} branch
+@var{branchname}} where @var{branchname} is the current branch name
+(either deduced from the workspace or from the @option{--branch}
+option).
+
+@item mtn comment @var{id}
+@itemx mtn comment @var{id} @var{comment}
+
+These commands are synonyms for @command{mtn cert @var{id}
+comment @var{comment}}. If @var{comment} is not provided, it is read
+from @code{stdin}.
+
+@item mtn disapprove [@var{parent}] @var{child}
+
+This command records a disapproval of the changes between @var{parent}'s
+ancestor and @var{child}.  If @var{parent} is omitted, only @var{child}
+is disapproved.  The command does the disapproval by committing
+the @i{inverse} changes as a new revision descending from @var{child}.
+The new revision will show up as a new head and thus a subsequent
+@command{merge} will incorporate the inverse of the disapproved changes
+in the other head(s).
+
+Conceptually, @command{disapprove}s contract is that disapprove(A) gives a
+revision B such that whenever B is merged with a descendant D of A the merge
+will result in what D ``would have looked like'' if A had never happened.
+
+Note that as a consequence of this contract the @command{disapprove} command
+only works if all changesets from @var{parent} to @var{child} have exactly
+one ancestor, since it hasn't been worked out how to generate such
+a descendant in the multi-ancestor case.
+
+@item mtn suspend @var{id}
+
+This command is a synonym for @command{mtn cert @var{id} suspend
+@var{branchname}} where @var{branchname} is the current branch name
+(either deduced from the workspace or from the @option{--branch}
+option).
+
+@item mtn tag @var{id} @var{tagname}
+
+This command associates the symbolic name @var{tagname} with the
+revision @var{id}, so that symbolic name can later be used in
+@ref{Selectors} for specifying revisions for commands like
+@command{update} or @command{diff}.
+
+This command is a synonym for @command{mtn cert @var{id} tag
+@var{tagname}}.
+
+@item mtn testresult @var{id} 0
+@itemx mtn testresult @var{id} 1
+
+These commands are synonyms for @command{mtn cert @var{id}
+testresult 0} or @command{mtn cert @var{id} testresult 1}.
+
+@end ftable
+
+@node    Variables, Key and Cert, Review, Command Reference
+@section Variables
+@ftable @command
+@item mtn cleanup_workspace_list
+
+Removes all invalid workspaces from the list of registered workspaces
+of the current database.  A workspace is considered invalid if its path
+does either not contain an _MTN directory anymore or if the configured
+database for this workspace is a different one.
+
+@item mtn register_workspace [@var{workspace_path}]
+
+Registers the given workspace from the current database, so that it
+will show up in the output of @command{list databases} (the database
+has to be in a managed location for this to work).
+
+If no @var{workspace_path} is given, this command defaults to the
+current workspace.
+
+@item mtn set @var{domain} @var{name} @var{value}
+
+Associates the value @var{value} to @var{name} in domain @var{domain}.
+See @ref{Vars} for more information.
+
+@item mtn unregister_workspace [@var{workspace_path}]
+
+Unregisters the given workspace from the current database, so that it
+will no longer show up in the output of @command{list databases}.
+
+If no @var{workspace_path} is given, this command defaults to the
+current workspace.
+
+@item mtn unset @var{domain} @var{name}
+
+Deletes any value associated with @var{name} in @var{domain}.  See
+@ref{Vars} for more information.
+
+@end ftable
 
 @page
-@node    Key and Cert Trust, Certificate, Informative, Command Reference
-@section Key and Cert Trust
+@node    Key and Cert, Packet I/O, Variables, Command Reference
+@section Key and Cert
 
 @ftable @command
 @item mtn genkey @var{keyid}
@@ -6581,16 +6666,6 @@ it) and monotone's internal signing code, then compare the results. @emph{check}
 will be removed at some future time as it is meant only for testing and will not
 work with all signing algorithms.
 
-
-@end ftable
-
-
-
-@page
-@node    Certificate, Packet I/O, Key and Cert Trust, Command Reference
-@section Certificate
-
-@ftable @command
 @item mtn cert @var{selector} @var{certname}
 @itemx mtn cert @var{selector} @var{certname} @var{certval}
 
@@ -6601,50 +6676,10 @@ use certs already on the revision, such as @code{h:@var{branchname}}.
 If @var{certval} is provided, it is the value of the certificate.
 Otherwise the certificate value is read from @code{stdin}.
 
-@item mtn approve @var{id}
-
-This command is a synonym for @command{mtn cert @var{id} branch
-@var{branchname}} where @var{branchname} is the current branch name
-(either deduced from the workspace or from the @option{--branch}
-option).
-
-
-@item mtn comment @var{id}
-@itemx mtn comment @var{id} @var{comment}
-
-These commands are synonyms for @command{mtn cert @var{id}
-comment @var{comment}}. If @var{comment} is not provided, it is read
-from @code{stdin}.
-
-@item mtn suspend @var{id}
-
-This command is a synonym for @command{mtn cert @var{id} suspend
-@var{branchname}} where @var{branchname} is the current branch name
-(either deduced from the workspace or from the @option{--branch}
-option).
-
-@item mtn tag @var{id} @var{tagname}
-
-This command associates the symbolic name @var{tagname} with the
-revision @var{id}, so that symbolic name can later be used in
-@ref{Selectors} for specifying revisions for commands like
-@command{update} or @command{diff}.
-
-This command is a synonym for @command{mtn cert @var{id} tag
-@var{tagname}}.
-
-@item mtn testresult @var{id} 0
-@itemx mtn testresult @var{id} 1
-
-These commands are synonyms for @command{mtn cert @var{id}
-testresult 0} or @command{mtn cert @var{id} testresult 1}.
-
 @end ftable
 
-
-
 @page
-@node    Packet I/O, Database, Certificate, Command Reference
+@node    Packet I/O, Database, Key and Cert, Command Reference
 @section Packet I/O
 
 Monotone can produce and consume data in a convenient, portable form
@@ -6693,7 +6728,6 @@ These commands print out an @code{keypair} or @code{pubkey} packet for
 the @sc{rsa} key @var{keyid}. These can be used to transport public or
 private keys safely between monotone databases.
 
-
 @item mtn read
 @item mtn read @var{file1} @var{file2...}
 
@@ -6702,46 +6736,11 @@ in your database.
 
 @end ftable
 
-
 @page
 @node    Database, Automation, Packet I/O, Command Reference
 @section Database
 
 @ftable @command
-@item mtn set @var{domain} @var{name} @var{value}
-
-Associates the value @var{value} to @var{name} in domain @var{domain}.
-See @ref{Vars} for more information.
-
-@item mtn unset @var{domain} @var{name}
-
-Deletes any value associated with @var{name} in @var{domain}.  See
-@ref{Vars} for more information.
-
-@item mtn register_workspace [@var{workspace_path}]
-
-Registers the given workspace from the current database, so that it
-will show up in the output of @command{list databases} (the database
-has to be in a managed location for this to work).
-
-If no @var{workspace_path} is given, this command defaults to the
-current workspace.
-
-@item mtn unregister_workspace [@var{workspace_path}]
-
-Unregisters the given workspace from the current database, so that it
-will no longer show up in the output of @command{list databases}.
-
-If no @var{workspace_path} is given, this command defaults to the
-current workspace.
-
-@item mtn cleanup_workspace_list
-
-Removes all invalid workspaces from the list of registered workspaces
-of the current database.  A workspace is considered invalid if its path
-does either not contain an _MTN directory anymore or if the configured
-database for this workspace is a different one.
-
 @item mtn db init --db=@var{dbfile}
 
 This command initializes a new monotone database at @var{dbfile}.
@@ -6988,7 +6987,7 @@ help diagnose failures.
 
 
 @page
-@node    Automation, RCS, Database, Command Reference
+@node    Automation, VCS, Database, Command Reference
 @section Automation
 
 This section contains subcommands of the @command{mtn automate} command,
@@ -6996,10 +6995,8 @@ used for scripting monotone.  All give output on @code{stdout}; they may
 also give useful chatter on @code{stderr}, including warnings and error
 messages.
 
-Many commands produce output in a format called basic_io, for more
+Many commands produce output in a format called basic_io; for more
 information, @pxref{Formats}.
-
-@subsection Automation Commands
 
 @ftable @command
 @item mtn automate interface_version
@@ -11028,18 +11025,10 @@ function could not be called for another reason.
 @end ftable
 
 @page
-@node    RCS, GIT, Automation, Command Reference
-@section RCS
+@node    VCS,  , Automation, Command Reference
+@section VCS
 
 @ftable @command
-@item mtn rcs_import @var{filename...}
-
-This command imports all the file versions in each RCS file listed in
-@var{filename...}.  These files should be raw RCS files, ending in
-@code{,v}. Monotone parses them directly and inserts them into your
-database.  Note that this does not do any revision reconstruction, and
-is only useful for debugging.
-
 @item mtn cvs_import @var{pathname}
 
 This command imports all the file versions in each RCS file found in the
@@ -11055,14 +11044,6 @@ possible to point it at a directory within a module as well.  Whatever
 directory you point it at will become the root of monotone's version of
 the tree.
 
-@end ftable
-
-
-@page
-@node    GIT,  , RCS, Command Reference
-@section GIT
-
-@ftable @command
 @item mtn git_export [--authors-file=@var{authors-file}] [--branches-file=@var{branches-file}]
 @itemx mtn git_export [--import-marks=@var{marks-file}] [--export-marks=@var{marks-file}]
 @itemx mtn git_export [--log-revids] [--log-certs] [--use-one-changelog]
@@ -11183,7 +11164,6 @@ maintained after the exported repository has been verified as they
 cause considerable clutter in tools like gitk.
 
 @end ftable
-
 
 @node    Formats, Lua Reference, Command Reference, Top
 @chapter Formats
@@ -12673,7 +12653,7 @@ The exit code is meaningful only if the result value is 0.
 
 
 @page
-@node   Implementation Differences, ,Additional Lua Functions, Lua Reference
+@node   Implementation Differences,  , Additional Lua Functions, Lua Reference
 @section Implementation Differences
 
 This section documents disabled and overwritten functions from the standard
