@@ -5845,6 +5845,12 @@ do want to change your defaults, simply pass the @option{--set-default}
 option when connecting to the server and branch pattern that you want to
 make the new default.
 
+The @command{serve} command doesn't care about workspaces, so even if
+you stand in one, you will have to give it the database to server, the
+server key to use and the key directory explicitely, or otherwise, it
+will take the defaults it would use when you don't stand in a
+workspace.
+
 In the server, different permissions can be applied to each branch; see
 the hooks @code{get_netsync_read_permitted} and
 @code{get_netsync_write_permitted} (see @ref{Lua Reference}).
