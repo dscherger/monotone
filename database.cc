@@ -5013,6 +5013,7 @@ database_path_helper::maybe_set_default_alias(options & opts)
   E(lua.hook_get_default_database_alias(alias) && !alias.empty(),
     origin::user, F("could not query default database alias"));
 
+  P(F("using default database '%s'") % alias);
   opts.dbname_given = true;
   opts.dbname_alias = alias;
   opts.dbname_type = managed_db;
