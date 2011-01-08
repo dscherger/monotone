@@ -13125,7 +13125,7 @@ that is built in to the monotone executable, and read before any user
 hooks files (unless @option{--no-builtin-rcfiles} is passed).  It contains the
 default values for all hooks.
 
-@verbatiminclude std_hooks.lua
+@verbatiminclude src/std_hooks.lua
 
 @node General Index,  , Default hooks, Top
 @unnumbered General Index
