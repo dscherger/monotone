@@ -52,6 +52,13 @@ XXX XXX XX XX:XX:XX UTC 2010
           name of the removed file instead.
           (fixes monotone issue 111)
 
+        - monotone no longer wrongly falls back on a :memory: database
+          when no database option is given. It also prints out an
+          informational message for commands like 'setup' and 'clone'
+          that fall back on the configured default database, again,
+          if no database is specified for these commands.
+          (fixes monotone issue 113)
+
         - mtn pull and mtn sync would always say that your workspace
           has not been updated.  Now, it only does that when you used
           the --update option and there were no updates.

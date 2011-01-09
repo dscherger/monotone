@@ -587,10 +587,10 @@ workspace::get_options(options & opts)
       // one would expect that we should set the key_dir_given flag here, but
       // we do not because of the interaction between --confdir and --keydir.
       // If --keydir is not given and --confdir is, then --keydir will default
-      // to the "keys" subdirectory of the given confdir. This works by the 
-      // --confdir option body looking at key_dir_given; if reading the keydir 
-      // from _MTN/options set that, then --confdir would stop setting the 
-      // default keydir when in a workspace. 
+      // to the "keys" subdirectory of the given confdir. This works by the
+      // --confdir option body looking at key_dir_given; if reading the keydir
+      // from _MTN/options set that, then --confdir would stop setting the
+      // default keydir when in a workspace.
       //opts.key_dir_given = true;
     }
 
@@ -635,20 +635,21 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
   bookkeeping_path o_path;
   get_options_path(o_path);
 
+  database_path_helper helper(lua);
+  system_path old_db_path, new_db_path;
+
+  helper.get_database_path(opts, new_db_path);
+
   // If any of the incoming options was empty, we want to leave that option
   // as is in _MTN/options, not write out an empty option.
   options cur_opts;
   if (file_exists(o_path))
+  {
     read_options_file(o_path, cur_opts);
+    helper.get_database_path(cur_opts, old_db_path);
+  }
 
   bool options_changed = false;
-
-  database_path_helper helper(lua);
-  system_path old_db_path, new_db_path;
-
-  helper.get_database_path(cur_opts, old_db_path);
-  helper.get_database_path(opts, new_db_path);
-
   if (old_db_path != new_db_path && file_exists(new_db_path))
     {
       // remove the currently registered workspace from the old

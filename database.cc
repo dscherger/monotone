@@ -4927,10 +4927,10 @@ database_path_helper::get_database_path(options const & opts, system_path & path
 {
   if (!opts.dbname_given ||
       (opts.dbname.as_internal().empty() &&
-       opts.dbname_alias.empty()))
+       opts.dbname_alias.empty() &&
+       opts.dbname_type != memory_db))
     {
-      L(FL("no database option given or options empty"));
-      return;
+      E(false, origin::user, F("no database specified"));
     }
 
   if (opts.dbname_type == unmanaged_db)
