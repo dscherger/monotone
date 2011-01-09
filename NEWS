@@ -7,11 +7,11 @@ XXX XXX XX XX:XX:XX UTC 2010
         - The database scheme was changed; please execute 'mtn db migrate'
           on all your local and remote databases.
 
-        - in 'mtn conflicts resolve_first interactive', the result
+        - In 'mtn conflicts resolve_first interactive', the result
           file name now defaults to _MTN/resolutions/<left_path>.
           (fixes monotone issue 103)
 
-        - the French monotone translation has been updated and is
+        - The French monotone translation has been updated and is
           now part of the main distribution again. many thanks to
           Steve Petruzzello <dlist@bluewin.ch> for the outstanding
           work!
@@ -29,14 +29,19 @@ XXX XXX XX XX:XX:XX UTC 2010
         
         Bugs fixed
 
-        - improve help, fix arg indexing in 'conflicts resolve_first'
+        - Improve help, fix arg indexing in 'conflicts resolve_first'
           (fixes monotone issue 101)
         
         - 'mtn privkey' did not recognize private keys solely available
           in the key store. this has been fixed.
 
-        - add compatibility with Botan 1.9.9 and newer
+        - Add compatibility with Botan 1.9.9 and newer
           (fixes monotone issue 104)
+
+        - mtn pull and mtn sync would always say that your workspace
+          has not been updated.  Now, it only does that when you used
+          the --update option and there were no updates.
+          (fixes monotone issue 106)
 
         - 'automate remote' and 'automate remote_stdio' now use
           a given database given by an alias to read, store and validate
@@ -46,7 +51,7 @@ XXX XXX XX XX:XX:XX UTC 2010
           with the 'mtn' scheme misses the required host part
           (fixes monotone issue 110)
 
-        - whenever a binary file was removed and one would try to get
+        - Whenever a binary file was removed and one would try to get
           a diff using mtn diff, it would report that "/dev/null is
           binary".  This has been changed to it reports the actual
           name of the removed file instead.
@@ -58,11 +63,6 @@ XXX XXX XX XX:XX:XX UTC 2010
           that fall back on the configured default database, again,
           if no database is specified for these commands.
           (fixes monotone issue 113)
-
-        - mtn pull and mtn sync would always say that your workspace
-          has not been updated.  Now, it only does that when you used
-          the --update option and there were no updates.
-          (fixes monotone issue 106)
 
         Internal
 
