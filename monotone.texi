@@ -1203,11 +1203,12 @@ $ mtn db init --db=~/abe.mtn
 @end group
 @end smallexample
 
-Beth decides to use monotone's built-in database management functionality.
-monotone then expects to find managed database files in a couple of predefined
-places (like f.e. @file{~/.monotone/databases} on Unix and
-@file{%APPDATA%\monotone\databases} on Windows, this is customizable) and acts
-upon those by knowing only their file or basename from anywhere.
+Beth decides to use monotone's built-in database management
+functionality.  monotone then expects to find managed database files
+in a list of directories (default @file{$HOME/.monotone/databases} on
+Unix and @file{%APPDATA%\monotone\databases} on Windows, see
+@ref{Managed Databases} for more info) and acts upon those by knowing
+only their file or basename.
 
 To create a new managed database, Beth issues the @command{mtn db init} command
 like this:
@@ -1218,12 +1219,12 @@ $ mtn db init --db=:beth
 @end group
 @end smallexample
 
-Beth can distinguish a managed database name from an unmanaged one by the
-leading colon in its name.  This special alias can now be used interchangeably
-in every monotone invocation.
-If Beth wants to see where monotone actually created the database and what
-other databases monotone knows of, she uses the @command{mtn list databases}
-command (or @command{mtn ls dbs}) for that.  We'll come back to this in a bit.
+Beth can distinguish a managed database name from an unmanaged one by
+the leading colon in its name.  This special alias can now be used
+interchangeably in every monotone invocation.  If Beth wants to see
+where monotone actually created the database and what other databases
+monotone knows of, she uses the @ref{mtn list databases} command
+(or @command{mtn ls dbs}) for that.  We'll come back to this in a bit.
 
 @page
 @node    Generating Keys, Starting a New Project, Creating a Database, Tutorial
@@ -2680,6 +2681,7 @@ familiarize yourself with its operation.
 * Workspace Collisions::        Workspace files that collide with new versioned files.
 * Quality Assurance::           Integrating testing and review with development.
 * Vars::                        Simple per-database configuration information.
+* Managed Databases::           Default databases and database directories.
 * Reserved Files::              File names with special meanings.
 * Reserved Certs::              Certificate names with special meanings.
 * Naming Conventions::          Choosing appropriate names for keys and branches.
@@ -3674,7 +3676,7 @@ deemed ``acceptable'' does monotone actually select an update target
 to merge into your workspace.
 
 @page
-@node    Vars, Reserved Files, Quality Assurance, Advanced Uses
+@node    Vars, Managed Databases, Quality Assurance, Advanced Uses
 @section Vars
 
 Every monotone database has a set of @emph{vars} associated with it.
@@ -3761,8 +3763,26 @@ are also automatically set on the first connection or when the option
 
 @end table
 
+@node Managed Databases, Reserved Files, Vars, Advanced Uses
+@section Managed Databases
+In monotone commands, a database name (provided to a @command{--db}
+option) starting with ``:'' is a ``database alias''. The rest of the
+database name is a file name; the file extension @file{.mtn} is added
+if the file name has no extension. The file is searched for in the
+list of directories returned by the Lua hook
+@ref{get_default_database_locations} (which defaults to a single
+directory; @file{$HOME/.monotone/databases} on Unix and
+@file{%APPDATA%\monotone\databases} on Windows).
+
+A database that is named by an alias is called a ``managed database'';
+the directories returned by @code{get_default_database_locations} are
+called ``managed locations''.
+
+All managed databases can be shown by the command @ref{mtn list
+databases}, which also shows the workspaces registered in that database.
+
 @page
-@node    Reserved Files, Reserved Certs, Vars, Advanced Uses
+@node    Reserved Files, Reserved Certs, Managed Databases, Advanced Uses
 @section Reserved Files
 
 A monotone workspace consists of control files and non-control
@@ -4909,26 +4929,31 @@ help for those.
 @ftable @command
 @item --confdir <arg>
 Set the location of the configuration directory (default
-@file{~/.monotone} on Unix and Cygwin, @file{%APPDATA%\monotone%} on
-Windows MinGW). This is where monotone finds:
+@file{$HOME/.monotone} on Unix and Cygwin, @file{%APPDATA%\monotone%} on
+Windows MinGW). In this manual, references to these specific directories are
+actually references to the directory specified by
+@command{--confdir}.
+
+The configuration directory is where monotone finds:
 
 @table @code
 @item keys
-in @file{conf_dir/keys}; see @ref{Certificates}, @ref{Generating
+in @file{confdir/keys}; see @ref{Certificates}, @ref{Generating
 Keys}. The location of the keys directory can be overridden separately
 with the @command{--keydir} option.
 
-@item rcfiles
-which are per-user configuration files containing Lua code
-(see @ref{rcfiles}) that are run each time monotone starts up.
+@item monotonerc
+which is a per-user configuration file containing Lua code
+(see @ref{rcfiles}) that is run each time monotone starts up.
 
 @item default database
-See option @command{--db} below.
+In file @file{confdir/databases/default.mtn}; see @ref{Managed Databases}.
 
 @end table
 
-In addition, monotone writes a dump file to the configuration
-directory when it fails.
+In addition, monotone may write a dump file to the configuration
+directory when it fails (if it can't write to @file{_MTN} in a
+workspace).
 
 @item --date-format <arg>
 strftime(3) format specification for printing dates. The default
@@ -4940,8 +4965,8 @@ hook.
 Set the database to use; defaults to the database specified in the
 current workspace (stored in @file{_MTN/options}; see @ref{Storage and
 workflow}), or to nothing if not in a workspace. However, some
-commands default this differently; that is specified in those
-commands.
+commands default to a @ref{Managed Databases}; that is specified in
+those commands.
 
 An argument of @code{:memory:} specifies a memory-only database; any
 changes are not saved to a file. One use for this is on the client
@@ -4995,7 +5020,7 @@ Print date certs exactly as stored in the database.
 @item --no-standard-rcfiles
 @itemx --standard-rcfiles
 Do not load the standard rcfiles, which are
-@file{~/.monotone/monotonerc} on Unix or
+@file{$HOME/.monotone/monotonerc} on Unix or
 @file{%APPDATA%\monotone\monotonerc} on Windows, and
 @file{_MTN/monotonerc} in the current workspace. See @ref{rcfiles}.
 
@@ -6272,6 +6297,11 @@ changed} command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for known
 files to the current subdirectory of the workspace.
 
+@anchor{mtn list databases}@item mtn list databases
+@itemx mtn list dbs
+Show all @ref{Managed Databases} and the workspaces registered in
+them. See @ref{register_database}.
+
 @item mtn list duplicates [--revision=@var{id}]
 @itemx mtn ls
 
@@ -6567,17 +6597,17 @@ testresult 0} or @command{mtn cert @var{id} testresult 1}.
 @ftable @command
 @item mtn cleanup_workspace_list
 Removes all invalid workspaces from the list of registered workspaces
-of the current database.  A workspace is considered invalid if its path
-does either not contain an _MTN directory anymore or if the configured
-database for this workspace is a different one.
+of the current database.  A workspace is considered invalid if its
+path does either not contain an @file{_MTN} directory anymore or if
+the configured database for the workspace is a different from the
+current database.
 
-@item mtn register_workspace [@var{workspace_path}]
-Registers the given workspace from the current database, so that it
-will show up in the output of @command{list databases} (the database
-has to be in a managed location for this to work).
+@anchor{register_workspace}@item mtn register_workspace [@var{workspace_path}]
 
-If no @var{workspace_path} is given, this command defaults to the
-current workspace.
+Registers the given workspace (default the current workspace) in the
+current database, so that it will show up in the output of @ref{mtn
+list databases} (the database has to be in a managed location for
+@command{list databases} to work; see @ref{Managed Databases}).
 
 @item mtn set @var{domain} @var{name} @var{value}
 Associates the value @var{value} to @var{name} in domain @var{domain}.
@@ -6585,7 +6615,7 @@ See @ref{Vars} for more information.
 
 @item mtn unregister_workspace [@var{workspace_path}]
 Unregisters the given workspace from the current database, so that it
-will no longer show up in the output of @command{list databases}.
+will no longer show up in the output of @ref{mtn list databases}.
 
 If no @var{workspace_path} is given, this command defaults to the
 current workspace.
@@ -6641,7 +6671,7 @@ copying the private key.
 The location of the keystore is specified by the @option{--keydir}
 option; it defaults to the value stored in @file{_MTN/options} for
 commands executed in a workspace, or to
-the system default (@file{~/.monotone/keys} on Unix and Cygwin,
+the system default (@file{$HOME/.monotone/keys} on Unix and Cygwin,
 @file{%APPDATA%/monotone/keys} on native Win32).
 
 @item mtn passphrase @var{keyid}
@@ -11313,7 +11343,7 @@ read every time monotone runs. @file{rcfiles} consist of:
 
 @itemize
 @item
-@file{~/.monotone/monotonerc} on Unix or
+@file{$HOME/.monotone/monotonerc} on Unix or
 @file{%APPDATA%\monotone\monotonerc} on Windows
 
 @item
@@ -11704,10 +11734,10 @@ end
 @end group
 @end smallexample
 
-@item get_default_database_locations ()
+@anchor{get_default_database_locations}@item get_default_database_locations ()
 
 Returns a table of paths where monotone should look for managable
-databases.  The command @command{list databases} searches all these
+databases.  The command @ref{mtn list databases} searches all these
 paths for valid monotone databases and outputs details on each one.
 
 The default implementation returns a table with a single entry,
