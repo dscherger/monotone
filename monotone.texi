@@ -4906,18 +4906,20 @@ Set the location of the configuration directory (default
 @file{~/.monotone} on Unix and Cygwin, @file{%APPDATA%\monotone%} on
 Windows MinGW). This is where monotone finds:
 
-@itemize
-@item keys, in @file{conf_dir/keys}; see @ref{Certificates},
-@ref{Generating Keys}. The location of the keys directory can be
-overridden separately with the @command{--keydir} option.
+@table @code
+@item keys
+in @file{conf_dir/keys}; see @ref{Certificates}, @ref{Generating
+Keys}. The location of the keys directory can be overridden separately
+with the @command{--keydir} option.
 
-@item rcfiles, which are per-user configuration files containing Lua code
-(see @ref{Lua Reference}) that are run each time monotone starts up.
+@item rcfiles
+which are per-user configuration files containing Lua code
+(see @ref{rcfiles}) that are run each time monotone starts up.
 
 @item default database
 See option @command{--db} below.
 
-@end itemize
+@end table
 
 In addition, monotone writes a dump file to the configuration
 directory when it fails.
@@ -4974,7 +4976,7 @@ informational, and warning messages) is written; default is the
 @itemx --builtin-rcfile
 Do not load the built-in rcfile with the default hooks. This means
 all hooks will have null definitions (unless overridden by other
-rcfiles). See @ref{Hooks}.
+@ref{rcfiles}).
 
 @item --no-default-confdir
 @itemx --allow-default-confdir
@@ -4989,7 +4991,7 @@ Print date certs exactly as stored in the database.
 Do not load the standard rcfiles, which are
 @file{~/.monotone/monotonerc} on Unix or
 @file{%APPDATA%\monotone\monotonerc} on Windows, and
-@file{_MTN/monotonerc} in the current workspace.
+@file{_MTN/monotonerc} in the current workspace. See @ref{rcfiles}.
 
 @item --no-workspace
 @itemx --allow-workspace
@@ -5008,11 +5010,11 @@ Decrease or increase verbosity. There are four levels of verbosity;
 debug, information, warning, and none. The default is information.
 
 @item --rcfile <arg>
-Specify an extra rcfile to load.
+Specify an extra rcfile to load. See @ref{rcfiles}.
 
 @itemx --clear-rcfiles
-Cancel all previous @command{rcfile} options (standard rcfiles are
-still loaded).
+Cancel all previous @command{--rcfile} options (standard rcfiles are
+still loaded). See @ref{rcfiles}.
 
 @itemx --root <arg>
 Limit the search for a workspace to the specified root directory
@@ -11282,16 +11284,28 @@ language to customize and extend its behaviour.  By writing
 help monotone to make a particular decision, set a suitable default or
 preference or perform a certain action.
 
-You can put Lua functions in a file @file{$HOME/.monotone/monotonerc},
-or in your workspace in @file{_MTN/monotonerc}, both of which will be
-read every time monotone runs. Definitions in @file{_MTN/monotonerc}
-shadow (override) definitions made in your
-@file{$HOME/.monotone/monotonerc}. You can also tell monotone to
-interpret extra hook functions from any other @var{file} using the
-@option{--rcfile=@var{file}} option; hooks defined in files specified
-on the command-line will shadow hooks from the other predefined
-locations.  By specifying @option{--rcfile=@var{directory}} you can
-automatically load all the files contained in @var{directory}.
+@anchor{rcfiles}You can put Lua functions in ``rcfiles'' which will be
+read every time monotone runs. @file{rcfiles} consist of:
+
+@itemize
+@item
+@file{~/.monotone/monotonerc} on Unix or
+@file{%APPDATA%\monotone\monotonerc} on Windows
+
+@item
+@file{_MTN/monotonerc} in the current workspace
+
+@item
+Files given in the @option{--rcfile=@var{file}} option on the command line.
+
+@item
+All files in a directory given by @option{--rcfile=@var{directory}} on
+the command line.
+@end itemize
+
+The files are loaded in the order @file{.monotone/monotonerc},
+@file{_MTN/monotonerc}, @option{--rcfile} in the command line order.
+Definitions loaded later shadow (override) earlier definitions.
 
 There are two uses for Lua functions; hooks and user-defined
 commands. This section documents hooks; see @ref{register_command} for
@@ -13271,7 +13285,7 @@ expected by the Perl-Compatible Regular Expression library (PCRE).
 This section contains the entire source code of the standard hook file,
 that is built in to the monotone executable, and read before any user
 hooks files (unless @option{--no-builtin-rcfiles} is passed).  It contains the
-default values for all hooks.
+default values for all hooks. See @ref{rcfiles}.
 
 @verbatiminclude std_hooks.lua
 
