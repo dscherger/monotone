@@ -6300,7 +6300,7 @@ files to the current subdirectory of the workspace.
 @anchor{mtn list databases}@item mtn list databases
 @itemx mtn list dbs
 Show all @ref{Managed Databases} and the workspaces registered in
-them. See @ref{register_database}.
+them. See @ref{register_workspace}.
 
 @item mtn list duplicates [--revision=@var{id}]
 @itemx mtn ls
