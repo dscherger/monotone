@@ -697,10 +697,13 @@ look for this @file{_MTN} directory.
 Aside from the special @file{_MTN} directory, a workspace is just a
 normal tree of files. You can directly edit the files in a workspace
 using a plain text editor or other program; monotone will
-automatically notice when you make any changes. If you wish to add
-files, remove files, or move files within your workspace, you must
-tell monotone explicitly what you are doing, as these actions cannot
-be deduced.
+automatically notice when you make this kind of change, and include
+them in the next commit.
+
+@anchor{_MTN/revision}If you add files, remove files, or move files
+within your workspace, you must tell monotone explicitly what you are
+doing, as these actions cannot be deduced. Monotone stores these
+changes in @file{_MTN/revision}; they will be part of the next commit.
 
 If you do not yet have a workspace, you can @dfn{check out} a
 workspace from a database, or construct one from scratch and
@@ -2497,14 +2500,14 @@ mtn: read 3 packets
 
 For the team members, he sets up the permissions files on the server
 much like before --- except that of course he needs to also grant his
-@code{jim@@juicebot.co.jp} key permission to access the new server.  For
-the beta-testers, Jim wants to allow them read-only access just to the
-main JuiceBot 7 development line, but not to any of the sub-branches
-where other experimental development is going on. He adds some lines at
-the top of the @file{~/.monotone/read-permissions} on the server, above
-the broader permissions given to team-members. See the @ref{Lua
-Reference} for @code{get_netsync_read_permitted} for more details; the
-resulting file looks like this:
+@code{jim@@juicebot.co.jp} key permission to access the new server.
+For the beta-testers, Jim wants to allow them read-only access just to
+the main JuiceBot 7 development line, but not to any of the
+sub-branches where other experimental development is going on. He adds
+some lines at the top of the @file{~/.monotone/read-permissions} on
+the server, above the broader permissions given to team-members. See
+@ref{get_netsync_read_permitted} for more details; the resulting file
+looks like this:
 
 @smallexample
 @group
@@ -2567,12 +2570,12 @@ history currently on his laptop. While Jim has been busy setting up the
 server, Abe and Beth have kept working; the server will catch up with
 their latest changes when they next sync, too.
 
-All of the team members now want to sync with the new monotone server by
-default.  Previously, they had been syncing with Jim's laptop by
+All of the team members now want to sync with the new monotone server
+by default.  Previously, they had been syncing with Jim's laptop by
 default, even if they occasionally specified another team-member's
 server on the command line when Jim was away, because monotone had
-remembered the first server and branch patterns used in database
-@ref{Vars}.  These vars can be seen as follows:
+remembered the first server and branch patterns used in database vars
+(see @ref{Vars}).  These vars can be seen as follows:
 
 @smallexample
 @group
@@ -2959,7 +2962,7 @@ will always choose a single head, and not fail if there is more than one.
 @heading Selector expansion
 
 Before selectors are passed to the database, they are expanded using a
-Lua hook: @code{expand_selector}. The default definition of this hook
+Lua hook: @ref{expand_selector}. The default definition of this hook
 attempts to guess a number of common forms for selection, allowing you
 to omit selector types in many cases. For example, the hook guesses
 that the typeless selector @code{jrh@@example.org} is an author
@@ -2967,13 +2970,13 @@ selector, due to its syntactic form, so modifies it to read
 @code{a:jrh@@example.org}. This hook will generally assign a selector
 type to values which ``look like'' partial hex strings, email
 addresses, branch names, or date specifications. For the complete
-source code of the hook, see @ref{Lua Reference}.
+source code of the hook, see @ref{Default hooks}.
 
 @heading Expanding dates
 
 All date-related selectors (@code{d}, @code{e}, @code{l}) support an
 English-like syntax similar to CVS.  This syntax is expanded to the
-numeric format by a Lua hook: @code{expand_date}.
+numeric format by the Lua hook @ref{expand_date}.
 The allowed date formats are:
 @table @asis
 
@@ -2997,8 +3000,6 @@ optional. If missing, @code{e} and @code{l} selectors assume the first
 day of month and time 00:00:00.
 The time component, if supplied, must be complete to the second.
 @end table
-
-For the complete source code of the hook, see @ref{Lua Reference}.
 
 @heading Typeless selection
 
@@ -3656,8 +3657,8 @@ test, or testsuite.
 @end itemize
 
 The evaluation of trust is done on a cert-by-cert basis by calling a
-set of Lua hooks: @code{get_revision_cert_trust},
-@code{get_manifest_cert_trust} and @code{get_file_cert_trust}. These
+set of Lua hooks: @ref{get_revision_cert_trust},
+@ref{get_manifest_cert_trust}, and @ref{get_file_cert_trust}.  These
 hooks are only called when a cert has at least one good signature from
 a known key, and are passed @emph{all} the keys which have signed the
 cert, as well as the cert's ID, name and value. The hook can then
@@ -3671,8 +3672,6 @@ the @code{testresult} certs present on the source and proposed
 destination of an update. Only if the change in test results are
 deemed ``acceptable'' does monotone actually select an update target
 to merge into your workspace.
-
-For details on these hooks, see the @ref{Lua Reference}.
 
 @page
 @node    Vars, Reserved Files, Quality Assurance, Advanced Uses
@@ -4018,15 +4017,15 @@ be set.  However, monotone will still know that the attr is set, and
 Windows users can view and modify the attr like anyone else.)
 
 Attrs in the current workspace can be seen and modified using the
-@command{mtn attr} command; see @ref{Workspace}.  Attrs can also be found
-by examining any manifest directly.
+@ref{mtn attr} command.  Attrs can also be found by examining any
+manifest directly.
 
 You can tell monotone to automatically take actions based on these
-attributes by defining hooks; see the @code{attr_functions} entry in
-@ref{Lua Reference}.  Every time your workspace is written to,
-monotone will run the corresponding hooks registered for each attr in
-your workspace.  This way, you can extend the vocabulary of attrs
-understood by monotone simply by writing new hooks.
+attributes by defining hooks; see @ref{attr_functions}.  Every time
+your workspace is written to, monotone will run the corresponding
+hooks registered for each attr in your workspace.  This way, you can
+extend the vocabulary of attrs understood by monotone simply by
+writing new hooks.
 
 You can make up your own attrs for anything you find useful; the
 mechanism is fully general.  (If you make up some particularly useful
@@ -4907,18 +4906,20 @@ Set the location of the configuration directory (default
 @file{~/.monotone} on Unix and Cygwin, @file{%APPDATA%\monotone%} on
 Windows MinGW). This is where monotone finds:
 
-@itemize
-@item keys, in @file{conf_dir/keys}; @ref{Certificates},
-@ref{Generating Keys}. The location of the keys directory can be
-overridden separately with the @command{--keydir} option.
+@table @code
+@item keys
+in @file{conf_dir/keys}; see @ref{Certificates}, @ref{Generating
+Keys}. The location of the keys directory can be overridden separately
+with the @command{--keydir} option.
 
-@item rcfiles, which are per-user configuration files containing Lua code
-(@ref{Lua Reference}) that are run each time monotone starts up.
+@item rcfiles
+which are per-user configuration files containing Lua code
+(see @ref{rcfiles}) that are run each time monotone starts up.
 
 @item default database
 See option @command{--db} below.
 
-@end itemize
+@end table
 
 In addition, monotone writes a dump file to the configuration
 directory when it fails.
@@ -4926,12 +4927,12 @@ directory when it fails.
 @item --date-format <arg>
 strftime(3) format specification for printing dates. The default
 format is @code{%x} for dates, @code{%X} for times, @code{%x %X} for
-both. This can also be overridden by the @code{get_date_format_spec}
-hook; @ref{Hooks}.
+both. This can also be overridden by the @ref{get_date_format_spec}
+hook.
 
 @item --db <arg>
 Set the database to use; defaults to the database specified in the
-current workspace (stored in @file{_MTN/options}; @ref{Storage and
+current workspace (stored in @file{_MTN/options}; see @ref{Storage and
 workflow}), or to nothing if not in a workspace. However, some
 commands default this differently; that is specified in those
 commands.
@@ -4959,7 +4960,7 @@ suspend} command.
 @item --key <arg>
 @itemx --use-default-key
 Set the key for signatures, using either the key name or the key hash
-(@ref{Generating Keys}).  If there is only one key in the keydir, then
+(see @ref{Generating Keys}).  If there is only one key in the keydir, then
 that is the default key. Otherwise there is no default key.
 
 @item --keydir <arg>
@@ -4975,7 +4976,7 @@ informational, and warning messages) is written; default is the
 @itemx --builtin-rcfile
 Do not load the built-in rcfile with the default hooks. This means
 all hooks will have null definitions (unless overridden by other
-rcfiles). @ref{Hooks}.
+@ref{rcfiles}).
 
 @item --no-default-confdir
 @itemx --allow-default-confdir
@@ -4990,7 +4991,7 @@ Print date certs exactly as stored in the database.
 Do not load the standard rcfiles, which are
 @file{~/.monotone/monotonerc} on Unix or
 @file{%APPDATA%\monotone\monotonerc} on Windows, and
-@file{_MTN/monotonerc} in the current workspace.
+@file{_MTN/monotonerc} in the current workspace. See @ref{rcfiles}.
 
 @item --no-workspace
 @itemx --allow-workspace
@@ -5009,11 +5010,11 @@ Decrease or increase verbosity. There are four levels of verbosity;
 debug, information, warning, and none. The default is information.
 
 @item --rcfile <arg>
-Specify an extra rcfile to load.
+Specify an extra rcfile to load. See @ref{rcfiles}.
 
 @itemx --clear-rcfiles
-Cancel all previous @command{rcfile} options (standard rcfiles are
-still loaded).
+Cancel all previous @command{--rcfile} options (standard rcfiles are
+still loaded). See @ref{rcfiles}.
 
 @itemx --root <arg>
 Limit the search for a workspace to the specified root directory
@@ -5042,7 +5043,7 @@ Insert command line arguments taken from the given file.
 @section Tree
 
 @ftable @command
-@item mtn checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
+@anchor{mtn checkout}@item mtn checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
 @itemx mtn checkout [--[no-]move-conflicting-paths] --branch=@var{branchname} @var{directory}
 @itemx mtn co
 These commands copy a revision @var{id} out of your database,
@@ -5092,7 +5093,7 @@ If no @var{id} is provided, as in the latter two commands, you
 @var{id} as the unique head of @var{branchname} if it exists.
 
 @item mtn conflicts
-@ref{Conflicts}
+See @ref{Conflicts}
 
 @item mtn explicit_merge @var{id} @var{id} @var{destbranch}
 This command merges exactly the two @var{id}s you give it, and places
@@ -5174,8 +5175,23 @@ both projects nested as in @var{destbranch} instead of only the project
 originally in @var{sourcebranch}, which is almost certainly not what would be
 intended.
 
-@c need merge_into_workspace
-@c need migrate_workspace
+@item mtn merge_into_workspace @var{revision}
+Merges @var{revision} into the current workspace; the result is not
+committed to the database. There can be no pending changes in the
+current workspace. The workspace's selected branch is not
+changed.
+
+When a later commit is done, both @var{revision} and the workspace's
+base revision will be recorded as parents.
+
+Merge conflicts can occur.
+
+@item mtn migrate_workspace @var{[directory]}
+Migrates a workspace directory's metadata to the latest format.
+
+If no directory is given, defaults to the current workspace.
+
+This may be needed when upgrading to a new version of monotone.
 
 @item mtn propagate @var{sourcebranch} @var{destbranch}
 This command takes a unique head from @var{sourcebranch} and merges it
@@ -5204,15 +5220,13 @@ in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
 @item mtn setup -b @var{branchname} [-d @var{database}] [@var{directory}]
-This command prepares @var{directory} as a monotone workspace,
-by creating and populating the @file{_MTN} directory with basic
-information.  This information must include at least the branch
-to be used.  If no database is given, the configured default
-database is created or re-used (see the hook
-@code{get_default_database_alias} in the @ref{Lua Reference} for
-more details).
-Both settings, branch and database name, will be placed in the
-@file{_MTN/options} file.
+This command prepares @var{directory} as a monotone workspace, by
+creating and populating the @file{_MTN} directory with basic
+information.  This information must include at least the branch to be
+used.  If no database is given, the configured default database is
+created or re-used (see @ref{get_default_database_alias} for more
+details).  Both settings, branch and database name, will be placed in
+the @file{_MTN/options} file.
 
 This can be used with an empty directory to start a new blank project,
 or within an existing directory full of files, prior to using
@@ -5373,22 +5387,15 @@ shared ancestor, so @code{merge3} is not applicable.
 
 @ftable @command
 @item mtn add [--[no-]recursive | -R] [--[no-]respect-ignore] @var{pathname...}
-@item mtn add [--[no-]recursive | -R] [--[no-]respect-ignore] --[no-]unknown [@var{pathname...}]
+@itemx mtn add [--[no-]recursive | -R] [--[no-]respect-ignore] --[no-]unknown [@var{pathname...}]
 This command places ``add'' entries for the paths specified in
-@var{pathname...} in the workspace's ``work list''. The work list of
-your workspace is stored in @file{_MTN/revision}, and is a list of
-explicit pathname changes you wish to commit at some future time, such
-as addition, removal or renaming of files.
+@var{pathname...} in @ref{_MTN/revision}; they will be part of the
+next @command{commit}. See @ref{Storage and workflow} for
+more information on @command{add} and @command{commit}.
 
-As a convenience, the @option{--unknown} option can be used; this
-option will cause all of the files listed by @command{mtn list
-unknown} to be added. @c FIXME: what happens for '--unknown pathname'?
-
-While this command places an ``add'' entry on your work list, it does
-not immediately affect your database. When you @command{commit} your
-workspace, monotone will use the work list to build a new revision,
-which it will then commit to the database. The new revision will have
-any added entries inserted in its manifest.
+As a convenience, the @command{--unknown @var{pathname...}} option can be used;
+this option will cause all of the files listed by @command{mtn list
+unknown @var{pathname...}} to be added.
 
 Adding directories, whether explicitly or using the @option{--unknown}
 option, is non-recursive by default.  The @command{add} command can be
@@ -5396,7 +5403,25 @@ made recursive using the @option{--recursive} option.  When adding a
 directory non-recursively, monotone will warn if the directory has
 any files that would be added by a recursive add.
 
-@c need 'attr'
+@anchor{mtn attr}@item mtn attr
+Manage file attributes.
+
+In @command{drop} and @command{get}, if no attribute is specified, the
+command applies to all attributes attached to the file given in
+@var{path}.  Otherwise it applies only to the attribute specified in
+@var{attr}.
+
+    @table @command
+    @item mtn attr drop @var{path} @var{[attr]}
+    Remove attributes.
+
+    @item mtn attr get @var{path} @var{[attr]}
+    Output the attributes.
+
+    @item mtn attr set @var{path} @var{attr} @var{value}
+    Sets @var{attr} on @var{path} to @var{value}.
+
+   @end table
 
 @item mtn commit
 @itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...]
@@ -5412,7 +5437,7 @@ changed, and saves the changes to your database.
 @command{ci} is an alias for @command{commit}.
 
 @command{commit} works by loading the revision named in
-@file{_MTN/revision}, locating the base manifest for your workspace,
+@ref{_MTN/revision}, locating the base manifest for your workspace,
 applying any pathname changes described in @file{_MTN/revision}, and
 then comparing the updated base manifest to the files it finds in your
 workspace, to determine which files have been edited.
@@ -5583,25 +5608,17 @@ will be left untouched if the commit is cancelled.
 @item mtn drop [--bookkeep-only] @var{pathname...}
 @itemx mtn drop --missing
 This command places ``drop'' entries for the paths specified in
-@var{pathname...} in the workspace's ``work list'' and deletes
-the file from the workspace.
+@var{pathname...} in @ref{_MTN/revision} and deletes the file from
+the workspace. This will be part of the next @command{commit}.
 
 @command{rm} is an alias for @command{drop}.
 
-The work list of your workspace is stored in @file{_MTN/revision}, and
-is a list of explicit pathname changes you wish to commit at some
-future time, such as addition, removal, or renaming of files.  This
-command also removes any attributes on @var{pathname}; see @ref{File
-Attributes} for more details.  If you use the @option{--missing} flag
-it will add drop entries for any paths that monotone is tracking for
-which you have already removed the files from the filesystem, in
-addition to all those specified in @var{pathname...}.
-
-While this command places a ``drop'' entry on your work list, it does
-not immediately affect your database. When you @command{commit} your
-workspace, monotone will use the work list to build a new revision,
-which it will then commit to the database. The new revision will have
-any dropped entries removed from its manifest.
+This command also removes any attributes on @var{pathname}; see
+@ref{File Attributes} for more details.  If you use the
+@option{--missing} flag it will add drop entries for any paths that
+monotone is tracking for which you have already removed the files from
+the filesystem, in addition to all those specified in
+@var{pathname...}.
 
 There are situations in which @command{drop} will tell monotone
 to remove the file from the revision at commit time, but where it will
@@ -5612,12 +5629,14 @@ if a file has un-committed changes or if a directory is not empty.
 See the @command{undrop} command for undoing a @command{drop} before commit.
 
 @item mtn mkdir [--[no-]respect-ignore] @var{directory...}
-This command creates a directory in the filesystem relative to your
-current location and adds it to your workspace's ``work list''.  The
-changes are not reflected in your database until such time as you
-perform a commit.  If you use the @option{--no-respect-ignore} flag,
-entries in @file{.mtn-ignore} will not be honored.
-@c FIXME: what does it mean to honor .mtn-ignore here?
+This command creates directories in the filesystem relative to your
+current location and adds them to @ref{_MTN/revision}.  This will be
+part of the next @command{commit}.
+
+Normally, if any of @var{directory...} are in @file{.mtn-ignore}, this
+command will fail. You can use @option{--no-respect-ignore} to
+override this check. But it would be better to remove @var{directory}
+from @file{.mtn-ignore}.
 
 @item mtn pivot_root [--bookkeep-only] [--[no-]move-conflicting-paths] @var{new_root} @var{put_old}
 Most users will never need this command.  It is primarily useful in
@@ -5693,16 +5712,14 @@ When running @command{pluck}, it is sometimes possible for
 @itemx mtn rename [--bookkeep-only] @var{src1} @var{...} @var{dst/}
 @itemx mtn mv
 This command places ``rename'' entries for the paths specified in
-@var{src} and @var{dst} in the workspace's ``work list'', and
-optionally renames the paths on the disk. The second form
-renames a number of source paths to the given destination.
+@var{src} and @var{dst} in @ref{_MTN/revision}, and optionally renames
+the paths on the disk. The second form renames a number of source
+paths to the given destination. This will be part of the next
+@command{commit}.
 
 @command{mv} is an alias for @command{rename}.
 
-The work list of your workspace is stored in @file{_MTN/revision}, and
-is a list of explicit pathname changes you wish to commit at some
-future time, such as addition, removal, or renaming of files.  This
-command also moves any attributes on @var{src} to @var{dst}; see
+This command also moves any attributes on @var{src} to @var{dst}; see
 @ref{File Attributes} for more details, and, unless the
 @option{--bookkeep-only} option is supplied, it will rename the files
 immediately in the filesystem.  In the case where @var{dst} must be a
@@ -5731,7 +5748,7 @@ the file was deleted from the workspace, this reverts it. If it was
 not deleted (because it was changed), it just removes the pending
 drop.
 
-@item mtn update [--[no-]move-conflicting-paths]
+@anchor{mtn update}@item mtn update [--[no-]move-conflicting-paths]
 @itemx mtn update [--[no-]move-conflicting-paths] --revision=@var{revision}
 Without a @option{--revision} argument, this command incorporates
 ``recent'' changes found in your database into your workspace. It
@@ -5910,9 +5927,9 @@ server key to use and the key directory explicitely, or otherwise, it
 will take the defaults it would use when you don't stand in a
 workspace.
 
-In the server, different permissions can be applied to each branch; see
-the hooks @code{get_netsync_read_permitted} and
-@code{get_netsync_write_permitted} (see @ref{Lua Reference}).
+In the server, different permissions can be applied to each branch;
+see @ref{get_netsync_read_permitted} and
+@ref{get_netsync_write_permitted}.
 
 If a @option{--pid-file} option is specified, the command
 @command{serve} will create the specified file and record the process
@@ -5932,14 +5949,14 @@ branch name.
 @item mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}]
 @command{clone} is a helper command that performs the roles of a
 number of other commands all at once.  Firstly, it constructs a new
-database. If no database is given, the configured default
-database is created or re-used (see the hook @code{get_default_database_alias}
-in the @ref{Lua Reference} for more details). Then it populates this database
-by @command{pull}ing any data which match the branch pattern in the @var{uri}
-or the given @var{branchname} argument from the remote database.
-Finally, it copies the files out of the newly created database into a
-local directory, just as @command{checkout} would.  If no @var{directory}
-is given, the @var{branchname} is used as directory.
+database. If no database is given, the configured default database is
+created or re-used (see @ref{get_default_database_alias} for more
+details). Then it populates this database by @command{pull}ing any
+data which match the branch pattern in the @var{uri} or the given
+@var{branchname} argument from the remote database.  Finally, it
+copies the files out of the newly created database into a local
+directory, just as @command{checkout} would.  If no @var{directory} is
+given, the @var{branchname} is used as directory.
 
 @strong{Important notice:} The @var{address}[:@var{port}] @var{branchname}
 call syntax is deprecated and subject of removal in future versions of monotone!
@@ -6121,17 +6138,17 @@ which you request by specifying @option{--context}.  The short options
 that @command{diff} accepts for these modes, @option{-u} and
 @option{-c}, also work.
 
-In either of these modes, monotone prints the name of the top-level code
-construct that encloses each ``hunk'' of changes, unless suppressed with
-the @option{--no-show-encloser}.  The options that
+In either of these modes, monotone prints the name of the top-level
+code construct that encloses each ``hunk'' of changes, unless
+suppressed with the @option{--no-show-encloser}.  The options that
 @command{diff} accepts for this mode, @option{-p} and
 @option{--show-c-function}, also work.  Monotone finds the enclosing
 construct by scanning backward from the first changed line in each
 hunk for a line that matches a regular expression.  The default
 regular expression is correct for many programming languages.  You can
 adjust the expression used with the Lua hook
-@code{get_encloser_pattern}; @ref{Hooks}.  For the regular expression
-syntax, @xref{Regexps}.
+@ref{get_encloser_pattern}.  For the regular expression syntax, see
+@ref{Regexps}.
 
 @option{--unified} requests the ``unified diff'' format, the default.
 @option{--context} requests the ``context diff'' format (analogous to
@@ -6139,15 +6156,16 @@ running the program @command{diff @option{-c}}).  Both of these formats are
 generated directly by monotone, using its built-in diff algorithm.
 
 Sometimes, you may want more flexibility in output formats; for these
-cases, you can use @option{--external}, which causes monotone to invoke
-an external program to generate the actual output.  By default, the
-external program is @code{diff}, and you can use the option
+cases, you can use @option{--external}, which causes monotone to
+invoke an external program to generate the actual output.  By default,
+the external program is @code{diff}, and you can use the option
 @option{--diff-args} to pass additional arguments controlling
-formatting.  The actual invocation of @command{diff}, default arguments
-passed to it, and so on, are controlled by the hook
-@code{external_diff}; see @ref{Hooks} for more details.
+formatting.  The actual invocation of @command{diff}, default
+arguments passed to it, and so on, are controlled by the hook
+@ref{external_diff} for more details.
 
-@c FIXME: need help
+@item mtn help [--[no]-hidden] @var{command...}
+Displays help about commands and options.
 
 @item mtn list branches [@var{pattern}] [--exclude=@var{pattern}]
 @itemx mtn ls
@@ -6324,7 +6342,7 @@ unknown} command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for unknown
 files to the current subdirectory of the workspace.
 
-@item mtn log
+@anchor{mtn log}@item mtn log
 @itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--clear-from] [--to=@var{id} [...]] [--clear-to] [--revision=@var{id} [...]] [--[no-]brief] [--[no-]merges] [--[no-]files] [--[no-]graph] [--[no-]diffs] [@var{pathname...}]
 
 This command prints out a log, in forward ancestry order by default
@@ -6450,7 +6468,17 @@ will, by default, include @emph{all changes} in the workspace.
 Specifying only the pathname "." will restrict @command{status} to files
 changed within the current subdirectory of the workspace.
 
-@c FIXME: need version
+@item mtn version [--full | --concise]
+Shows the program version.
+
+The concise version is one line, for example:
+@example
+monotone 1.0dev (base revision: c91edf22b20f5a8b750a8a02af763412d6b936e8)
+@end example
+
+The full version gives more information, including a changelist of the
+monotone source tree from the base revision at the time the executable
+was compiled.
 
 @end ftable
 
@@ -6529,7 +6557,7 @@ current workspace.
 
 @item mtn set @var{domain} @var{name} @var{value}
 Associates the value @var{value} to @var{name} in domain @var{domain}.
-@ref{Vars} for more information.
+See @ref{Vars} for more information.
 
 @item mtn unregister_workspace [@var{workspace_path}]
 Unregisters the given workspace from the current database, so that it
@@ -6665,9 +6693,9 @@ work with all signing algorithms.
 
 @item mtn trusted @var{id} @var{certname} @var{certval} @var{signers}
 This command lets you test your revision trust hook
-@code{get_revision_cert_trust} (see @ref{Lua Reference}).  You pass it
-a revision ID, a certificate name, a certificate value, and one or more
-key IDs or key names, and it will tell you whether, under your current settings,
+@ref{get_revision_cert_trust}.  You pass it a revision ID, a
+certificate name, a certificate value, and one or more key IDs or key
+names, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
 those keys.
 
@@ -6712,7 +6740,12 @@ in your database.
 @section Database
 
 @ftable @command
-@c FIXME: need changesetify
+@item mtn db changesetify
+Converts the database to the changeset format.
+
+This is only needed when upgrading very old monotone databases,
+created with monotone versions less than 0.15.
+
 @item mtn db check --db=@var{dbfile}
 
 Monotone always works hard to verify the data it creates and accesses.
@@ -6866,11 +6899,20 @@ your database, and prints any results of the expression in a tabular
 form.  It can be used to investigate the state of your database, or
 help diagnose failures.
 
-@c FIXME: need mtn db fix_certs
+@item mtn db fix_certs [--drop-bad-certs]
+Attempt to fix bad certs.
+
+Older monotone versions could sometimes associate certs with the wrong
+key. This fixes such certs if you have the correct key, and if
+@command{--drop-bad-certs} is given, drops any certs that you don't
+have the correct key for. This should only be needed if you had such
+certs in your db when upgrading from monotone 0.44 or earlier, or if
+you loaded such certs with 'mtn read'.
 
 @item mtn db info --db=@var{dbfile}
-This command prints information about the monotone database @var{dbfile},
-including its schema version and various table size statistics.
+This command prints information about the monotone database
+@var{dbfile}, including its schema version and various table size
+statistics.
 
 @item mtn db init --db=@var{dbfile}
 This command initializes a new monotone database at @var{dbfile}.
@@ -6894,9 +6936,20 @@ If you have important information in your database, you should back up
 a copy of it before migrating, in case there is an untrapped error
 during migration.
 
-@c FIXME: need mtn db regenerate_caches
-@c FIXME: need mtn db rosterify
-@c FIXME: need mtn db set_epoch
+@item mtn db regenerate_caches
+Regenerates the caches stored in the database.
+
+This is only needed to recover from a newly discovered bug in
+monotone, or if your database becomes corrupted for some other reason.
+
+@item mtn db rosterify
+Converts the database to the rosters format.
+
+This is only needed when upgrading very old monotone databases,
+created with monotone versions less than 0.15.
+
+@item mtn db set_epoch @var{branch} @var{epoch}
+Sets the branch's epoch. See @ref{Rebuilding ancestry} for discussion of epochs.
 
 @item mtn db version --db=@var{dbfile}
 This command prints out just the schema version of the monotone
@@ -7222,7 +7275,7 @@ Same as @command{mtn checkout}; directory to create workspace in.
 @item Purpose:
 
 Create a new workspace containing the given revision; see
-@command{checkout} in @ref{Workspace}.
+@ref{mtn checkout}.
 
 @item Sample output:
 
@@ -7234,7 +7287,7 @@ None.
 
 @item Error conditions:
 
-see @command{checkout} in @ref{Workspace}.
+see @ref{mtn checkout}.
 
 @end table
 
@@ -7473,7 +7526,7 @@ variables in the @var{domain} are dropped.
 
 @item Purpose:
 
-Drops one or more database variables, see also @ref{Vars}.
+Drops one or more database variables; see @ref{Vars}.
 
 @item Sample usage:
 
@@ -9380,7 +9433,7 @@ None.
 [--[no-]merges] [@var{pathname...}]
 
 Same as @command{mtn log}, but without the output control options; see
-@ref{Informative}.
+@ref{mtn log}.
 
 @item Added in:
 
@@ -9406,7 +9459,7 @@ One revision per line.
 
 @item Error conditions:
 
-see @command{mtn log} in @ref{Informative}.
+See @ref{mtn log}.
 
 @end table
 
@@ -10281,7 +10334,7 @@ which is changed to @var{value}.
 
 @item Purpose:
 
-Change a database variable, see also @ref{Vars}.
+Change a database variable; see @ref{Vars}.
 
 @item Sample usage:
 
@@ -10339,7 +10392,7 @@ command, which also allows specifying user conflict resolutions. The
 file syntax for the resolutions is given here, so an external tool can
 set them directly.
 
-For more information on conflicts, @ref{Merge Conflicts}.
+For more information on conflicts, see @ref{Merge Conflicts}.
 
 Note that this cannot be used to show conflicts that would occur in an
 @command{update}, since in that case one revision is the workspace.
@@ -10971,7 +11024,7 @@ Same as @command{mtn update}; no arguments, options
 @item Purpose:
 
 Update the current workspace to the latest or given revision; see
-@command{update} in @ref{Workspace}.
+@ref{mtn update}.
 
 @item Sample output:
 
@@ -10993,7 +11046,7 @@ Free form, prefixed by ``mtn:''.
 
 @item Error conditions:
 
-see @command{update} in @ref{Workspace}.
+see @ref{mtn update}.
 
 @end table
 
@@ -11198,7 +11251,8 @@ could cause a particular change to be interpreted against the wrong
 parent.
 
 Another example is the @file{read-permissions} file that's read by the
-default definition of the @code{get_netsync_read_permitted} lua hook.
+default definition of the @code{get_netsync_read_permitted} Lua hook;
+see @ref{Default hooks}.
 
 Monotone will format its output in @code{basic_io} as follows:
 @itemize
@@ -11230,22 +11284,33 @@ language to customize and extend its behaviour.  By writing
 help monotone to make a particular decision, set a suitable default or
 preference or perform a certain action.
 
-You can put Lua functions in a file @file{$HOME/.monotone/monotonerc},
-or in your workspace in @file{_MTN/monotonerc}, both of which will be
-read every time monotone runs. Definitions in @file{_MTN/monotonerc}
-shadow (override) definitions made in your
-@file{$HOME/.monotone/monotonerc}. You can also tell monotone to
-interpret extra hook functions from any other @var{file} using the
-@option{--rcfile=@var{file}} option; hooks defined in files specified
-on the command-line will shadow hooks from the other predefined
-locations.  By specifying @option{--rcfile=@var{directory}} you can
-automatically load all the files contained in @var{directory}.
+@anchor{rcfiles}You can put Lua functions in ``rcfiles'' which will be
+read every time monotone runs. @file{rcfiles} consist of:
+
+@itemize
+@item
+@file{~/.monotone/monotonerc} on Unix or
+@file{%APPDATA%\monotone\monotonerc} on Windows
+
+@item
+@file{_MTN/monotonerc} in the current workspace
+
+@item
+Files given in the @option{--rcfile=@var{file}} option on the command line.
+
+@item
+All files in a directory given by @option{--rcfile=@var{directory}} on
+the command line.
+@end itemize
+
+The files are loaded in the order @file{.monotone/monotonerc},
+@file{_MTN/monotonerc}, @option{--rcfile} in the command line order.
+Definitions loaded later shadow (override) earlier definitions.
 
 There are two uses for Lua functions; hooks and user-defined
-commands. This section documents hooks; see @command{register_command}
-in @ref{Additional Lua Functions} for user-defined commands. The source
-distribution contains some example user commands in the
-@file{contrib/command} directory.
+commands. This section documents hooks; see @ref{register_command} for
+user-defined commands. The source distribution contains some example
+user commands in the @file{contrib/command} directory.
 
 Hooks are Lua functions that are called from monotone code in many
 places. Monotone provides default definitions for some hooks; see
@@ -11625,7 +11690,7 @@ The default implementation returns a table with a single entry,
 @file{$HOME/.monotone/databases} on Unix and
 @file{%APPDATA%\monotone\databases} on Windows.
 
-@item get_default_database_alias ()
+@anchor{get_default_database_alias}@item get_default_database_alias ()
 
 Returns the alias of the managed database which should be used as default
 for commands like @command{clone} or @command{setup} if these are missing
@@ -11707,7 +11772,7 @@ Returns @code{true} if @var{branchname} should be ignored while listing
 branches. Otherwise returns @code{false}. This hook has no default
 definition, therefore the default behavior is to list all branches.
 
-@item get_date_format_spec (@var{wanted})
+@anchor{get_date_format_spec}@item get_date_format_spec (@var{wanted})
 
 Returns a @code{strftime} format specification, which @command{mtn
 log} and similar commands will use to format dates, unless instructed
@@ -11751,7 +11816,7 @@ order to reload the hook definitions if the @file{montonerc} file is
 changed.
 
 @ftable @code
-@item get_netsync_read_permitted (@var{branch}, @var{key_identity})
+@anchor{get_netsync_read_permitted}@item get_netsync_read_permitted (@var{branch}, @var{key_identity})
 
 Returns @code{true} if a peer authenticated as key @var{key_identity}
 should be allowed to read from your database certs, revisions,
@@ -11795,7 +11860,7 @@ has not been given access will be denied access even if it doesn't match any
 If a client connects anonymously, this hook will be called with a
 @var{key_identity} of @code{nil}.
 
-@item get_netsync_write_permitted (@var{key_identity})
+@anchor{get_netsync_write_permitted}@item get_netsync_write_permitted (@var{key_identity})
 
 Returns @code{true} if a peer authenticated as key @var{key_identity}
 should be allowed to write into your database certs, revisions,
@@ -11989,8 +12054,10 @@ Each user, or even each workspace, can have their own
 implementation of these hooks, and thus a different filtered view of
 valid revisions, according to their own preferences and purposes.
 
+See @ref{Quality Assurance}.
+
 @ftable @code
-@item get_revision_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
+@anchor{get_revision_cert_trust}@item get_revision_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
 
 Returns whether or not you @emph{trust} the assertion
 @var{name}=@var{value} on a given revision @var{id}, given a valid
@@ -12040,6 +12107,12 @@ by at least one of three ``trusted'' keys, unless it is an
 @emph{two} or more trusted keys. This is one way of requiring that
 the revision has been approved by an extra ``reviewer'' who used the
 @command{approve} command.
+
+@anchor{get_file_cert_trust}@item get_file_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
+Similar to @ref{get_revision_cert_trust}, for certs on files.
+
+@anchor{get_manifest_cert_trust}@item get_manifest_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
+Similar to @ref{get_revision_cert_trust}, for certs on manifests.
 
 @item accept_testresult_change (@var{old_results}, @var{new_results})
 
@@ -12092,7 +12165,7 @@ according to user preference and file type. These hooks allow
 customisation of the way file differences are shown.
 
 @ftable @code
-@item get_encloser_pattern (@var{file_path})
+@anchor{get_encloser_pattern}@item get_encloser_pattern (@var{file_path})
 
 Called for each file unless @command{diff} is given the
 @option{--no-show-encloser} option (or the
@@ -12109,7 +12182,7 @@ hook; and if you send it to the monotone developers, we will likely
 make it the default for that language.  @xref{Regexps}, for the
 regular expression syntax.
 
-@item external_diff (@var{file_path}, @var{old_data}, @var{new_data}, @var{is_binary}, @var{diff_args}, @var{old_rev}, @var{new_rev})
+@anchor{external_diff}@item external_diff (@var{file_path}, @var{old_data}, @var{new_data}, @var{is_binary}, @var{diff_args}, @var{old_rev}, @var{new_rev})
 
 Called for each file when @command{diff} is given the
 @option{--external} option.  @var{file_path} is the pathname of the
@@ -12168,9 +12241,7 @@ of @ref{get_preferred_merge3_command} checks to see if the
 and if not, then simply searches for whatever is installed on the
 local system.  For details, see the code in @ref{Default hooks}.
 
-
-@anchor{get_preferred_merge3_command}
-@item get_preferred_merge3_command(@var{tbl})
+@anchor{get_preferred_merge3_command}@item get_preferred_merge3_command(@var{tbl})
 
 Returns the results of running an external merge on three strings.
 @var{tbl} wraps up the various arguments for each merge command and
@@ -12191,7 +12262,7 @@ expand them to their full form.
 For more detail on the use of selectors, see @ref{Selectors}.
 
 @ftable @code
-@item expand_selector (@var{str})
+@anchor{expand_selector}@item expand_selector (@var{str})
 
 Attempts to expand @var{str} as a selector. Expansion generally means
 providing a type prefix for the selector, such as @code{a:} for authors
@@ -12200,7 +12271,7 @@ combined selector string (between @code{/} separators) prior to
 evaluation of the selector. For the default definition of this hook, see
 @ref{Default hooks}.
 
-@item expand_date (@var{str})
+@anchor{expand_date}@item expand_date (@var{str})
 
 Attempts to expand @var{str} as a date expression. Expansion means
 recognizing and interpreting special words such as @code{yesterday} or
@@ -12225,7 +12296,7 @@ they're added, and for custom triggers to be invoked on each file
 according to its attributes when the workspace is changed.
 
 @ftable @code
-@item attr_functions [@var{attribute}] (@var{filename}, @var{value})
+@anchor{attr_functions}@item attr_functions [@var{attribute}] (@var{filename}, @var{value})
 
 This is not a hook function, but a @emph{table} of hook
 functions. Each entry in the table @code{attr_functions}, at table
@@ -12523,7 +12594,7 @@ call is a pair consisting of a boolean return code, indicating whether
 the call was successful or not, and a string being the @code{stdout}
 output from the @command{automate} command. This function is not for use
 in ordinary Lua hooks, but rather for Lua based commands as defined by
-the Lua function @code{register_command}.
+the Lua function @ref{register_command}.
 
 Note that keyboard interaction is disabled, just as if @option{--non-interactive}
 is specified. Actions which require operations on password-encrypted private
@@ -12565,7 +12636,7 @@ The output table will be:
 Returns true if a match for @var{regexp} is found in @var{str}, return
 false otherwise.  @xref{Regexps}, for the syntax of @var{regexp}.
 
-@item register_command(@var{name}, @var{params}, @var{abstract}, @var{description}, @var{function})
+@anchor{register_command}@item register_command(@var{name}, @var{params}, @var{abstract}, @var{description}, @var{function})
 
 Add a command named @var{name} to the @var{user} command group in monotone.  This function is
 normally called directly from a @file{monotonerc} file rather than a hook.  When the user issues the
@@ -12803,7 +12874,7 @@ for platform name semantics, for example changing the Windows
 processing is performed by boost::filesystem.
 
 @item
-FIXME: Monotone does not properly handle case insensitivity on Windows.
+Monotone does not properly handle case insensitivity on Windows.
 
 @item
 A filename (in normal form) is constrained to be a nonempty sequence
@@ -13214,7 +13285,7 @@ expected by the Perl-Compatible Regular Expression library (PCRE).
 This section contains the entire source code of the standard hook file,
 that is built in to the monotone executable, and read before any user
 hooks files (unless @option{--no-builtin-rcfiles} is passed).  It contains the
-default values for all hooks.
+default values for all hooks. See @ref{rcfiles}.
 
 @verbatiminclude std_hooks.lua
 
