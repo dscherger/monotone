@@ -31,7 +31,7 @@
 This manual is for the ``monotone'' distributed version control system.
 This edition documents version @value{VERSION}.
 
-Copyright @copyright{} 2003, 2004 Graydon Hoare @*
+Copyright @copyright{} 2003, 2004, 2011 Graydon Hoare @*
 Copyright @copyright{} 2004, 2005, 2006 Nathaniel Smith @*
 Copyright @copyright{} 2005 - 2010 Derek Scherger @*
 Copyright @copyright{} 2005, 2006 Daniel Carosone @*
@@ -4932,10 +4932,15 @@ hook; @ref{Hooks}.
 @item --db <arg>
 Set the database to use; defaults to the database specified in the
 current workspace (stored in @file{_MTN/options}; @ref{Storage and
-workflow}), or to nothing if not in a workspace.
+workflow}), or to nothing if not in a workspace. However, some
+commands default this differently; that is specified in those
+commands.
 
 An argument of @code{:memory:} specifies a memory-only database; any
-changes are not saved to a file. @c what is this useful for?
+changes are not saved to a file. One use for this is on the client
+side of a remote automate connection to the server, if you are
+executing commands that don't actually need a local database but the
+automate command requires one.
 
 @item --dump <arg>
 File to dump debugging log to, on failure; default
@@ -5925,8 +5930,7 @@ branch name.
 
 @item mtn clone @var{uri} [--branch=@var{branchname}] [@var{directory}]
 @item mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}]
-
-The clone command is a helper command that performs the roles of a
+@command{clone} is a helper command that performs the roles of a
 number of other commands all at once.  Firstly, it constructs a new
 database. If no database is given, the configured default
 database is created or re-used (see the hook @code{get_default_database_alias}
@@ -6965,78 +6969,6 @@ Many commands produce output in a format called basic_io; for more
 information, @pxref{Formats}.
 
 @ftable @command
-@item mtn automate interface_version
-
-@table @strong
-@item Arguments:
-
-None.
-
-@item Added in:
-
-0.0
-
-@item Purpose:
-
-Prints version of the automation interface.  Major number increments
-whenever a backwards incompatible change is made to the @command{automate}
-command; minor number increments whenever any change is made (but is
-reset when major number increments).
-
-@item Sample output:
-
-@verbatim
-1.2
-@end verbatim
-
-@item Output format:
-
-A decimal number, followed by ``.'' (full stop/period), followed by a
-decimal number, followed by a newline, followed by end-of-file.  The
-first decimal number is the major version, the second is the minor version.
-
-@item Error conditions:
-
-None.
-
-@end table
-
-
-@item mtn automate heads [@var{branch}]
-
-@table @strong
-@item Arguments:
-
-One branch name,  @var{branch}. If none is given, the current default branch is used.
-
-@item Added in:
-
-0.0
-
-@item Purpose:
-
-Prints the heads of branch @var{branch}.
-
-@item Sample output:
-
-@verbatim
-28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
-75156724e0e2e3245838f356ec373c50fa469f1f
-@end verbatim
-
-@item Output format:
-
-Zero or more lines, each giving the ID of one head of the given branch.
-Each line consists of a revision ID, in hexadecimal, followed by a
-newline.  The lines are printed in alphabetically sorted order.
-
-@item Error conditions:
-
-If the given branch contains no members or does not exist, then no lines are printed.
-
-@end table
-
-
 @item mtn automate ancestors @var{rev1} [@var{rev2} [...]]
 
 @table @strong
@@ -7069,291 +7001,6 @@ order.
 The output does not include @var{rev1}, @var{rev2}, etc., except if
 @var{rev2} is itself an ancestor of @var{rev1}, then @var{rev2} will be
 included in the output.
-
-@item Error conditions:
-
-If any of the revisions do not exist, prints nothing to stdout, prints
-an error message to stderr, and exits with status 1.
-
-@end table
-
-
-@item mtn automate common_ancestors @var{rev1} [@var{rev2} [...]]
-
-@table @strong
-@item Arguments:
-
-One or more revision IDs, @var{rev1}, @var{rev2}, etc.
-
-@item Added in:
-
-2.1
-
-@item Purpose:
-
-Prints all revisions which are ancestors of all of the revisions given as
-arguments.
-
-@item Sample output:
-
-@verbatim
-28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
-75156724e0e2e3245838f356ec373c50fa469f1f
-@end verbatim
-
-@item Output format:
-
-Zero or more lines, each giving the ID of one common ancestor of all the given
-revisions.  Each line consists of a revision ID, in hexadecimal,
-followed by a newline.  The lines are printed in alphabetically sorted
-order.
-
-The output will include one of the argument revisions only if that revision is
-an ancestor of all other revisions given as arguments.
-
-@item Error conditions:
-
-If any of the revisions do not exist, prints nothing to stdout, prints
-an error message to stderr, and exits with status 1.
-
-@end table
-
-
-@item mtn automate parents @var{rev}
-
-@table @strong
-@item Arguments:
-
-One revision ID, @var{rev}.
-
-@item Added in:
-
-0.2
-
-@item Purpose:
-
-Prints the immediate parents of a revision.  This is like a
-non-recursive version of @command{automate ancestors}.
-
-@item Sample output:
-
-@verbatim
-28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
-75156724e0e2e3245838f356ec373c50fa469f1f
-@end verbatim
-
-@item Output format:
-
-Zero or more lines, each giving the ID of one parent of the given
-revision.  Each line consists of a revision ID, in hexadecimal,
-followed by a newline.  The lines are printed in alphabetically sorted
-order.
-
-@item Error conditions:
-
-If the given revision @var{rev} does not exist, prints nothing to
-stdout, prints an error message to stderr, and exits with status 1.
-
-@end table
-
-
-@item mtn automate descendents @var{rev1} [@var{rev2} [...]]
-
-@table @strong
-@item Arguments:
-
-One or more revision IDs, @var{rev1}, @var{rev2}, etc.
-
-@item Added in:
-
-0.1
-
-@item Purpose:
-
-Prints the descendants of one or more revisions.
-
-@item Sample output:
-
-@verbatim
-28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
-75156724e0e2e3245838f356ec373c50fa469f1f
-@end verbatim
-
-@item Output format:
-
-Zero or more lines, each giving the ID of one descendant of the given
-revisions.  Each line consists of a revision ID, in hexadecimal,
-followed by a newline.  The lines are printed in alphabetically sorted
-order.
-
-The output does not include @var{rev1}, @var{rev2}, etc., except that if
-@var{rev2} is itself a descendant of @var{rev1}, then @var{rev2} will be
-included in the output.
-
-@item Error conditions:
-
-If any of the revisions do not exist, prints nothing to stdout, prints
-an error message to stderr, and exits with status 1.
-
-@end table
-
-
-@item mtn automate children @var{rev}
-
-@table @strong
-@item Arguments:
-
-One revision ID, @var{rev}.
-
-@item Added in:
-
-0.2
-
-@item Purpose:
-
-Prints the immediate children of a revision.  This is like a
-non-recursive version of @command{automate descendents}.
-
-@item Sample output:
-
-@verbatim
-28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
-75156724e0e2e3245838f356ec373c50fa469f1f
-@end verbatim
-
-@item Output format:
-
-Zero or more lines, each giving the ID of one child of the given
-revision.  Each line consists of a revision ID, in hexadecimal,
-followed by a newline.  The lines are printed in alphabetically sorted
-order.
-
-@item Error conditions:
-
-If the given revision @var{rev} does not exist, prints nothing to
-stdout, prints an error message to stderr, and exits with status 1.
-
-@end table
-
-
-@item mtn automate graph
-
-@table @strong
-@item Arguments:
-
-None.
-
-@item Added in:
-
-0.2
-
-@item Purpose:
-
-Prints out the complete ancestry graph of this database.
-
-@item Sample output:
-
-@verbatim
-0c05e8ec9c6af4224672c7cc4c9ef05ae8bdb794
-27ebcae50e1814e35274cb89b5031a423c29f95a 5830984dec5c41d994bcadfeab4bf1bf67747b89
-4e284617c80bec7da03925062a84f715c1b042bd 27ebcae50e1814e35274cb89b5031a423c29f95a 657c756d24fb65213d59f4ae07e117d830dcc95b
-@end verbatim
-
-@item Output format:
-
-Zero or more lines, each giving ancestry information for one revision.
-Each line begins with a revision ID.  Following this are zero or more
-space-prefixed revision IDs.  Each revision ID after the first is a
-parent (in the sense of @command{automate parents}) of the first.  For
-instance, in the above sample output,
-0c05e8ec9c6af4224672c7cc4c9ef05ae8bdb794 is a root node,
-27ebcae50e1814e35274cb89b5031a423c29f95a has one parent, and
-4e284617c80bec7da03925062a84f715c1b042bd has two parents, i.e., is a
-merge node.
-
-The output as a whole is alphabetically sorted by line; additionally,
-the parents within each line are alphabetically sorted.
-
-@item Error conditions:
-
-None.
-
-@end table
-
-
-@item mtn automate erase_ancestors [@var{rev1} [@var{rev2} [...]]]
-
-@table @strong
-@item Arguments:
-
-One or more revision IDs, @var{rev1}, @var{rev2}, etc.
-
-@item Added in:
-
-0.1
-
-@item Purpose:
-
-Prints all arguments, except those that are an ancestor of some other
-argument.  One way to think about this is that it prints the minimal
-elements of the given set, under the ordering imposed by the ``child
-of'' relation.  Another way to think of it is if the arguments formed a
-branch, then we would print the heads of that branch.  If there
-are no arguments, prints nothing.
-
-@item Sample output:
-
-@verbatim
-28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
-75156724e0e2e3245838f356ec373c50fa469f1f
-@end verbatim
-
-@item Output format:
-
-Zero or more lines, each giving the ID of one descendant of the given
-revisions.  Each line consists of a revision ID, in hexadecimal,
-followed by a newline.  The lines are printed in alphabetically sorted
-order.
-
-@item Error conditions:
-
-If any of the revisions do not exist, prints nothing to stdout, prints
-an error message to stderr, and exits with status 1.
-
-@end table
-
-
-@item mtn automate toposort [@var{rev1} [@var{rev2} [...]]]
-
-@table @strong
-@item Arguments:
-
-One or more revision IDs, @var{rev1}, @var{rev2}, etc.
-
-@item Added in:
-
-0.1
-
-@item Purpose:
-
-Prints all arguments, topologically sorted.  I.e., if @var{rev1} is an
-ancestor of @var{rev2}, then @var{rev1} will appear before @var{rev2} in
-the output; if @var{rev2} is an ancestor of @var{rev1}, then @var{rev2}
-will appear before @var{rev1} in the output; and if neither is an
-ancestor of the other, then they may appear in either order.  If there
-are no arguments, prints nothing.
-
-@item Sample output:
-
-@verbatim
-28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
-75156724e0e2e3245838f356ec373c50fa469f1f
-@end verbatim
-
-@item Output format:
-
-A list of revision IDs, in hexadecimal, each followed by a newline.
-Revisions are printed in topologically sorted order.
 
 @item Error conditions:
 
@@ -7408,81 +7055,6 @@ an error message to stderr, and exits with status 1.
 @end table
 
 
-@item mtn automate leaves
-
-@table @strong
-@item Arguments:
-
-None.
-
-@item Added in:
-
-0.1
-
-@item Purpose:
-
-Prints the leaves of the revision graph, i.e. all revision that have no
-children.  This is similar, but not identical to the functionality of
-@command{heads}, which prints every revision in a branch, that has no
-descendants in that branch.  If every revision in the database was in
-the same branch, then they would be identical.  Generally, every leaf is
-the head of some branch, but not every branch head is a leaf.
-
-@item Sample output:
-
-@verbatim
-28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
-75156724e0e2e3245838f356ec373c50fa469f1f
-@end verbatim
-
-@item Output format:
-
-Zero or more lines, each a leaf of the revision graph.  Each line
-consists of a revision ID, in hexadecimal, followed by a newline.  The
-lines are printed in alphabetically sorted order.
-
-@item Error conditions:
-
-None.
-
-@end table
-
-
-@item mtn automate roots
-
-@table @strong
-@item Arguments:
-
-None.
-
-@item Added in:
-
-4.3
-
-@item Purpose:
-
-Prints the roots of the revision graph, i.e. all revisions that have
-no parents.
-
-@item Sample output:
-
-@verbatim
-276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f
-@end verbatim
-
-@item Output format:
-
-Zero or more lines, each a root of the revision graph.  Each line
-consists of a revision ID, in hexadecimal, followed by a newline.  The
-lines are printed in alphabetically sorted order.
-
-@item Error conditions:
-
-None.
-
-@end table
-
-
 @item mtn automate branches
 
 @table @strong
@@ -7518,97 +7090,160 @@ None.
 @end table
 
 
-@item mtn automate tags [@var{branch_pattern}]
+@item mtn automate cert @var{revision} @var{name} @var{value}
 
 @table @strong
 @item Arguments:
 
-A branch pattern (optional).
+@var{revision} is an existing revision, @var{name} is the certificate name
+and @var{value} its value.
 
-@item Changes:
+@item Added in:
 
-@itemize
-@item
-11.0 -- @var{signer} now prints the hash of the signing key, no longer the name.
-        Also, the @var{format_version} stanza has been removed in favour of the
-        global @var{interface_version}.
-@item
-2.2 -- added
-@end itemize
+4.1
 
 @item Purpose:
 
-If a branch pattern is given, prints all tags that are attached to
-revisions on branches matched by the pattern; otherwise prints all
-tags of the revision graph.
+@command{automate stdio} capable variant of @command{mtn cert}. To sign the
+cert with a specific private key, use @option{--key}.
 
-If a branch name is ignored by means of the Lua hook
-@code{ignore_branch}, it is neither printed, nor can it be matched by
-a pattern.
-
-@item Sample output:
+@item Sample usage:
 
 @verbatim
-     tag "monotree-0.1"
-revision [8a121346ce2920b6f85df68b3b620de96bd14a8d]
-  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
-branches "net.venge.monotone.contrib" "net.venge.monotone.contrib.monotree"
-
-     tag "monotree-0.2"
-revision [5d288b39b49613b0d9dca8ece6b9a42c3773f35b]
-  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
-branches "net.venge.monotone.contrib.monotree"
-
-     tag "monotree-0.3"
-revision [35cff8e8ba14155f5f7ddf7965073f514fd60f61]
-  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
-branches "net.venge.monotone.contrib.monotree"
-
-     tag "monotree-0.4"
-revision [f1afc520474f83c58262896ede027ef77226046e]
-  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
-branches "net.venge.monotone.contrib.monotree"
+mtn automate cert 4c2c1d846fa561601254200918fba1fd71e6795d author tester@test.net
 @end verbatim
 
 @item Output format:
 
-There is one basic_io stanza for each tag.
-
-All stanzas are formatted by basic_io. Stanzas are separated by a
-blank line. Values will be escaped, '\' to '\\' and '"' to '\"'.
-
-Each stanza has exactly the following four entries:
-
-@table @option
-@item 'tag'
-the value of the tag cert, i.e. the name of the tag
-
-@item 'revision'
-the hexadecimal id of the revision the tag is attached to
-
-@item 'signer'
-the name of the key used to sign the tag cert
-
-@item 'branches'
-a (possibly empty) list of all branches the tagged revision is on
-@end table
-
-Stanzas are printed in arbitrary order.
+No output.
 
 @item Error conditions:
 
-A run-time exception occurs if an illegal branch pattern is
-specified.
+If the revision is invalid prints an error message to stderr and
+exits with status 1.
 
 @end table
 
-
-@item mtn automate select @var{selector}
+@item mtn automate certs @var{id}
 
 @table @strong
 @item Arguments:
 
-One selector (or combined selector).
+A revision ID @var{id}, for which any certificates will be printed.
+
+@item Changes:
+@itemize
+@item
+11.0 -- Keys are now listed by hash instead of name.
+@item
+1.0 -- Added.
+@end itemize
+
+@item Purpose:
+
+Prints all certificates associated with the given revision ID.
+Each certificate is contained in a basic IO stanza. For each certificate,
+the following values are provided:
+@verbatim
+'key'
+      the hex-encoded hash of the key used to sign this certificate.
+'signature'
+      a string indicating the status of the signature. Possible
+      values of this string are:
+            'ok'        : the signature is correct
+            'bad'       : the signature is invalid
+            'unknown'   : signature was made with an unknown key
+'name'
+      the name of this certificate
+'value'
+      the value of this certificate
+'trust'
+      is this certificate trusted by the defined trust metric?
+      Possible values of this string are:
+            'trusted'   : this certificate is trusted
+            'untrusted' : this certificate is not trusted
+@end verbatim
+
+@item Sample output:
+
+@verbatim
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
+signature "ok"
+     name "author"
+    value "emile@alumni.reed.edu"
+    trust "trusted"
+
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
+signature "ok"
+     name "branch"
+    value "net.venge.monotone"
+    trust "trusted"
+
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
+signature "ok"
+     name "changelog"
+    value "propagate from branch 'net.venge.monotone.annotate' (head 76a886ef7c8ae12a4bba5fc2bd252557bf863aff)
+            to branch 'net.venge.monotone' (head 2490479a4e4e99243fead6d627d78291fde592f0)
+"
+    trust "trusted"
+
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
+signature "ok"
+     name "date"
+    value "2005-05-20T20:19:25"
+    trust "trusted"
+@end verbatim
+
+@item Output format:
+
+All stanzas are formatted by basic_io. Stanzas are separated
+by a blank line. Values will be escaped, '\' to '\\' and
+'"' to '\"'.
+
+@item Error conditions:
+
+If a certificate is signed with an unknown public key, a
+warning message is printed to stderr. If the revision specified is unknown
+or invalid prints an error message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
+
+@table @strong
+@item Arguments:
+
+Same as @command{mtn checkout}; directory to create workspace in.
+
+@item Changes:
+
+13.0 -- initial
+
+@item Purpose:
+
+Create a new workspace containing the given revision; see
+@command{checkout} in @ref{Workspace}.
+
+@item Sample output:
+
+None.
+
+@item Output format:
+
+None.
+
+@item Error conditions:
+
+see @command{checkout} in @ref{Workspace}.
+
+@end table
+
+@item mtn automate children @var{rev}
+
+@table @strong
+@item Arguments:
+
+One revision ID, @var{rev}.
 
 @item Added in:
 
@@ -7616,7 +7251,8 @@ One selector (or combined selector).
 
 @item Purpose:
 
-Print all revisions that match the given selector.
+Prints the immediate children of a revision.  This is like a
+non-recursive version of @command{automate descendents}.
 
 @item Sample output:
 
@@ -7627,16 +7263,1411 @@ Print all revisions that match the given selector.
 
 @item Output format:
 
-Zero or more lines, each giving the ID of one revision that matches the
-given selector.  Each line consists of a revision ID, in hexadecimal,
-followed by a newline.  Revision ids are printed in alphabetically
-sorted order.
+Zero or more lines, each giving the ID of one child of the given
+revision.  Each line consists of a revision ID, in hexadecimal,
+followed by a newline.  The lines are printed in alphabetically sorted
+order.
+
+@item Error conditions:
+
+If the given revision @var{rev} does not exist, prints nothing to
+stdout, prints an error message to stderr, and exits with status 1.
+
+@end table
+
+
+@item mtn automate common_ancestors @var{rev1} [@var{rev2} [...]]
+
+@table @strong
+@item Arguments:
+
+One or more revision IDs, @var{rev1}, @var{rev2}, etc.
+
+@item Added in:
+
+2.1
+
+@item Purpose:
+
+Prints all revisions which are ancestors of all of the revisions given as
+arguments.
+
+@item Sample output:
+
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+75156724e0e2e3245838f356ec373c50fa469f1f
+@end verbatim
+
+@item Output format:
+
+Zero or more lines, each giving the ID of one common ancestor of all the given
+revisions.  Each line consists of a revision ID, in hexadecimal,
+followed by a newline.  The lines are printed in alphabetically sorted
+order.
+
+The output will include one of the argument revisions only if that revision is
+an ancestor of all other revisions given as arguments.
+
+@item Error conditions:
+
+If any of the revisions do not exist, prints nothing to stdout, prints
+an error message to stderr, and exits with status 1.
+
+@end table
+
+
+@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [--reverse] [@var{files} ...]
+
+@table @strong
+@item Arguments:
+
+One or more @var{file} arguments restrict the diff output to these files,
+otherwise all changed files in the given revision(s) and/or current workspace
+are considered.
+
+If zero or more revisions are given, the command behaves as follows:
+
+@itemize
+@item
+no revision: the diff is done from the parent (base) revision of this
+workspace to the workspace revision.
+@item
+one revision: the diff is done from the given revision @option{id1} to
+the workspace revision. If @option{--reverse} is given, the order is
+reversed.
+@item
+two revisions: the diff is done from @option{id1} to @option{id2}; no
+workspace is needed in this case.
+@end itemize
+
+@item Changes:
+
+@itemize
+@item
+9.0 -- added @option{--with-header} option
+@item
+4.0 -- initial
+@end itemize
+
+@item Purpose:
+
+Prints the content changes between two revisions or a revision and the current
+workspace. This command differs from @command{mtn diff} in that way that it only
+outputs content changes and keeps quiet on renames or drops by default, as the
+header of @command{mtn diff} is omitted unless @option{--with-header} is given
+and is omitted regardless if there are no changes.
+
+@item Sample output:
+
+@verbatim
+============================================================
+--- guitone/res/i18n/guitone_de.ts      9857927823e1d6a0339b531c120dcaadd22d25e9
++++ guitone/res/i18n/guitone_de.ts      0b4715dc296b1955b0707923d45d79ca7769dd3f
+@@ -1,6 +1,14 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <!DOCTYPE TS><TS version="1.1">
+ <context>
++    <name>AncestryGraph</name>
++    <message>
+[...]
+@end verbatim
+
+@item Output format:
+
+The GNU unified diff format. If there have been no content changes, the output
+is empty.
+
+@item Error conditions:
+
+If more than two revisions are given or a workspace is required, but
+not found, prints to stderr and exits with status 1. If one or more file
+restrictions can't be applied, the command prints to stderr and exits as well.
+
+@end table
+
+@item mtn automate descendents @var{rev1} [@var{rev2} [...]]
+
+@table @strong
+@item Arguments:
+
+One or more revision IDs, @var{rev1}, @var{rev2}, etc.
+
+@item Added in:
+
+0.1
+
+@item Purpose:
+
+Prints the descendants of one or more revisions.
+
+@item Sample output:
+
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+75156724e0e2e3245838f356ec373c50fa469f1f
+@end verbatim
+
+@item Output format:
+
+Zero or more lines, each giving the ID of one descendant of the given
+revisions.  Each line consists of a revision ID, in hexadecimal,
+followed by a newline.  The lines are printed in alphabetically sorted
+order.
+
+The output does not include @var{rev1}, @var{rev2}, etc., except that if
+@var{rev2} is itself a descendant of @var{rev1}, then @var{rev2} will be
+included in the output.
+
+@item Error conditions:
+
+If any of the revisions do not exist, prints nothing to stdout, prints
+an error message to stderr, and exits with status 1.
+
+@end table
+
+
+@item mtn automate drop_attribute @var{path} [@var{key}]
+
+@table @strong
+@item Arguments:
+
+A path and an attribute key (optional).
+
+@item Added in:
+
+5.0
+
+@item Purpose:
+
+Removes an attribute from the current workspace revision for the specified path.
+If no attribute key is given, all attributes of this path are removed. Note that
+this change is not committed and therefor behaves exactly like
+@command{mtn attr drop @var{path} [@var{key}]}.
+
+@item Output format:
+
+This command does not print out anything if successful.
+
+@item Error conditions:
+
+If the path specified is unknown in the new workspace revision or the attribute
+key is not found for this path, prints an error message to stderr and exits with
+status 1.
+
+@end table
+
+
+@item mtn automate drop_db_variables @var{domain} [@var{name}]
+
+@table @strong
+@item Arguments:
+
+The @var{domain} and @var{name} specify the database variable
+which should be dropped. If @var{name} is ommitted, all database
+variables in the @var{domain} are dropped.
+
+@item Added in:
+
+7.0
+
+@item Purpose:
+
+Drops one or more database variables, see also @ref{Vars}.
+
+@item Sample usage:
+
+@verbatim
+mtn automate drop_db_variables known-servers
+@end verbatim
+
+@item Output format:
+
+No output.
+
+@item Error conditions:
+
+If the specific variable or any variables in the given domain are not found,
+prints to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate drop_public_key @var{keyid}
+
+@table @strong
+@item Arguments:
+
+@var{keyid} identifies the key to drop, by name or hash.
+
+@item Changes:
+
+@itemize
+@item
+13.0 -- initial
+
+@end itemize
+
+@item Purpose:
+
+Drop a public key from the database (@emph{not} the private key from
+the keystore). Signatures made with the key can no longer be verified.
+
+This command should be used with caution as changes are irreversible
+without a backup of the key(s) that were dropped. You may wish to use
+the @command{k:} selector to check if the key is used in a signature.
+
+Note that public keys that are used to sign a revision may be
+restored to the database by a future sync.
+
+Keys in the keystore are not dropped because that is very dangerous on
+a server. The only way to drop private keys on a server is via the
+command @command{mtn dropkey}.
+
+@item Sample output:
+
+None.
+
+@item Output format:
+
+None on the main stream; progress message on the progress stream.
+
+@item Error conditions:
+
+If the key does not exist, an error message is printed on the error stream.
+
+@end table
+
+@item mtn automate erase_ancestors [@var{rev1} [@var{rev2} [...]]]
+
+@table @strong
+@item Arguments:
+
+One or more revision IDs, @var{rev1}, @var{rev2}, etc.
+
+@item Added in:
+
+0.1
+
+@item Purpose:
+
+Prints all arguments, except those that are an ancestor of some other
+argument.  One way to think about this is that it prints the minimal
+elements of the given set, under the ordering imposed by the ``child
+of'' relation.  Another way to think of it is if the arguments formed a
+branch, then we would print the heads of that branch.  If there
+are no arguments, prints nothing.
+
+@item Sample output:
+
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+75156724e0e2e3245838f356ec373c50fa469f1f
+@end verbatim
+
+@item Output format:
+
+Zero or more lines, each giving the ID of one descendant of the given
+revisions.  Each line consists of a revision ID, in hexadecimal,
+followed by a newline.  The lines are printed in alphabetically sorted
+order.
+
+@item Error conditions:
+
+If any of the revisions do not exist, prints nothing to stdout, prints
+an error message to stderr, and exits with status 1.
+
+@end table
+
+
+@item mtn automate file_merge @var{left-rid} @var{left-path} @var{right-rid} @var{right-path}
+
+@table @strong
+@item Arguments:
+
+@var{left-rid}, @var{left-fid}, @var{right-rid}, @var{right-fid}
+specify two files to merge, by revision and file path.
+
+@item Added in:
+
+9.0
+
+@item Purpose:
+
+Prints the result of the internal line merge on the contents of the
+specified files.
+
+This command does not just take two file ids, because the revision ids
+and paths are needed to check for manual merge and file encoding
+attributes.
+
+@item Sample output:
+
+@verbatim
+If you've downloaded a release, see INSTALL for installation
+instructions.  If you've checked this out, the generated files are not
+included, and you must use "autoreconf --install" to create them.
+
+"make html" for docs, or read the .info file and / or man page.
+@end verbatim
+
+@item Output format:
+
+The file merge results are output without modification.
+
+@item Error conditions:
+
+If either file id is unknown or invalid, or if the internal line
+merger fails, prints an error message to stderr and exits with status
+1.
+
+@end table
+
+@item mtn automate generate_key @var{name} @var{passphrase}
+
+@table @strong
+@item Aguments
+
+@var{name} is the name to associate with the new key, and @var{passphrase} is
+the passphrase that will be used to encrypt the private half.
+
+@item Changes:
+@itemize
+@item
+13.0 -- renamed from @command{genkey} to @command{generate_key}
+@item
+10.0 -- The separate hashes for the private half of a key really didn't
+make much sense; have one @code{hash [...]} line instead of separate
+@code{public_hash [...]} and @code{private_hash [...]} lines.
+@item
+3.1 -- initial
+@end itemize
+
+@item Purpose:
+
+Generate a key with the given name and passphrase.
+
+@item Sample output:
+
+@verbatim
+            name "tbrownaw@gmail.com"
+            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+ public_location "database" "keystore"
+private_location "keystore"
+
+@end verbatim
+
+@item Output format:
+
+A basic_io stanza. The public_location and private_location items may have
+multiple values as shown above for public_location, one value for each place
+that the key is stored.
+
+@item Error conditions:
+
+Error conditions: If the passphrase is empty or the key already exists,
+prints an error message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_attributes @var{path}
+
+@table @strong
+@item Arguments:
+
+The argument @var{path} determines which path's attributes should be printed.
+
+@item Added in:
+
+@itemize
+@item
+11.0 -- removed the @command{format_version} stanza
+@item
+5.0 -- renamed from @command{attributes} to @command{get_attributes}
+@item
+3.0 -- initial
+@end itemize
+
+@item Purpose:
+
+Prints all attributes of the given file and the attribute states.
+
+@item Sample output:
+
+@verbatim
+ attr "foo" "bar"
+state "added"
+
+ attr "baz" "bat"
+state "dropped"
+
+ attr "foobar" "foobat"
+state "unchanged"
+@end verbatim
+
+@item Output format:
+
+There is one basic_io stanza for each attribute of the given file.
+
+All stanzas are formatted by basic_io. Stanzas are separated
+by a blank line and ordered by attribute name. Values will be
+escaped, '\' to '\\' and '"' to '\"'.
+
+Each attribute stanza also contains another entry which tells the status
+of attribute. This entry can have one of the following four values:
+
+@itemize
+@item
+'added': the attribute has just been added to the file
+@item
+'dropped': the attribute has just been dropped from the file
+@item
+'unchanged': the attribute has not been changed since the last revision
+@item
+'changed': the attribute has been changed since the last revision
+@end itemize
+
+The status 'changed' can come up if an attribute foo has been dropped and
+added afterwards with another value, like
+
+@verbatim
+$ mtn attr drop file.txt foo ; mtn attr set file.txt foo baz
+@end verbatim
+
+If an attribute has been dropped, the output will still return the previously
+set value of the dropped attribute for convenience (obviously this is no longer
+recorded in the current workspace).
+
+The complete format:
+
+@verbatim
+'attr':
+      represents an attribute.
+      format: ('attr', key, value), ('state', [unchanged|changed|added|dropped])
+      occurs: zero or more times
+@end verbatim
+
+@item Error conditions:
+
+If the path specified is unknown in the new workspace revision, prints an error
+message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_base_revision_id
+
+@table @strong
+@item Arguments:
+
+None.
+
+@item Added in:
+
+2.0
+
+@item Purpose:
+
+Prints the revision id the current workspace is based on. This is the
+``old_revision'' value stored in @file{_MTN/revision}.
+
+@item Sample output:
+
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+@end verbatim
+
+@item Output format:
+
+One line containing the base revision ID of the current workspace.
+
+@item Error conditions:
+
+If no workspace book keeping _MTN directory is found, prints an error
+message to stderr, and exits with status 1.
+
+@end table
+
+
+@item mtn automate get_content_changed @var{id} @var{file}
+
+@table @strong
+@item Arguments:
+
+The @var{id} specifies a revision ID, from which content change calculations will be based.
+and @var{file} specifies the file for which to calculate revisions in which it was last changed.
+
+@item Added in:
+
+4.0
+
+@item Purpose:
+
+Returns a list of revision IDs in which the content  was most recently changed,
+relative to the revision ID specified as @var{id}. This equates to a content mark
+following the *-merge algorithm.
+
+@item Sample output:
+
+@verbatim
+  content_mark [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
+@end verbatim
+
+@item Output format:
+
+Zero or more basic_io stanzas, each specifying a revision ID in which a content
+mark is set:
+
+@itemize
+@item
+No content mark is returned if @var{file} is a directory.
+@item
+One content mark is returned if @var{file} is a file and has recently been
+changed exclusively in one revision (be it by a commit or merge).
+@item
+Multiple content marks are returned if @var{file} is a file and has recently
+been part of a clean merge case.
+A clean merge happens when the same change to @var{file} is made on both sides
+of the particular merge, together with other unrelated changes, which make the
+resulting revisions not collapse into one revision.
+@end itemize
+
+The complete format:
+@verbatim
+'content_mark'
+         the hexadecimal id of the revision the content mark is attached to
+@end verbatim
+
+@item Error conditions:
+
+If @var{id} or @var{file} is unknown or invalid prints an error
+message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_corresponding_path @var{source_id} @var{file} @var{target_id}
+
+@table @strong
+@item Arguments:
+
+The @var{source_id} specifies a revision ID in which @var{file} is current extant.
+and @var{file} specifies the file whose name in @var{target_id} is to be determined;
+@var{target_id} specifies a revision ID.
+
+@item Added in:
+
+4.0
+
+@item Purpose:
+
+Given a the file name @var{file} in the source revision @var{source_id}, a filename
+will if possible be returned naming the file in the target revision @var{target_id}.
+This allows the same file to be matched between revisions, accounting
+for renames and other changes.
+
+@item Sample output:
+
+@verbatim
+file "foo"
+@end verbatim
+
+@item Output format:
+
+Zero or one basic_io stanzas. Zero stanzas will be output if the file does not exist within the target revision; this is not considered an error. If the file does exist in the target revision, a single stanza with the  following details is output.
+
+The complete format:
+@verbatim
+   'file'
+         the file name corresponding to "file name" (arg 2) in the target revision
+@end verbatim
+
+@item Error conditions:
+
+If the revision IDs @var{source_id} or @var{target_id} are unknown or invalid prints an error
+message to stderr and exits with status 1. If the file path @var{file} does not exist in the
+revision @var{source_id} or is invalid, prints an error message to stderr and exits with status
+1. Note that @var{file} not existing in the revision @var{target_id} is not an error.
+
+@end table
+
+@item mtn automate get_current_revision [--exclude @var{excl}] [--depth=@var{depth}] [@var{path} ...]
+
+@table @strong
+@item Arguments:
+
+One or more @var{path} arguments restrict the revision to these paths,
+otherwise all changes in workspace are taken into account.
+
+Options @var{excl} and @var{depth} work just like in @var{mtn commit}.
+
+@item Added in:
+
+7.0
+
+@item Purpose:
+
+Prints change information for the current workspace, optionally restricted by
+one or more paths.
+
+@item Sample output:
+
+See @var{automate get_revision}
+
+@item Output format:
+
+See @var{automate get_revision}
+
+@item Error conditions:
+
+If the command is executed outside of a workspace, or the restriction is
+invalid, prints an error message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_current_revision_id
+
+@table @strong
+@item Arguments:
+
+None.
+
+@item Added in:
+
+2.0
+
+@item Purpose:
+
+Prints the revision id of the current workspace. This is the id
+of the revision that would be committed by an unrestricted commit
+in the workspace.
+
+@item Sample output:
+
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+@end verbatim
+
+@item Output format:
+
+One line containing the current revision id ID of the current workspace.
+
+@item Error conditions:
+
+If no workspace book keeping _MTN directory is found, prints an error
+message to stderr, and exits with status 1.
+
+
+@end table
+
+
+@item mtn automate get_db_variables [@var{domain}]
+
+@table @strong
+@item Arguments:
+
+The optional @var{domain} restricts the output to variables only within
+this domain.
+
+@item Changes:
+
+@itemize
+@item
+7.0 -- converted output to basic_io, renamed to 'get_db_variables'
+@item
+4.1 -- added as 'db_get'
+@end itemize
+
+@item Purpose:
+
+Reads and outputs database variables. For more information about variables,
+see @ref{Vars}.
+
+@item Sample output:
+
+@verbatim
+domain "database"
+ entry "default-exclude-pattern" ""
+ entry "default-include-pattern" "net.venge.monotone*"
+ entry "default-server" "mtn://code.monotone.ca/monotone"
+
+domain "known-servers"
+ entry "mtn://code.monotone.ca/monotone" "2c88403f0ed546df96ccec57ab3072aa73a05e71"
+@end verbatim
+
+@item Output format:
+
+basic_io-formatted stanzas. Each stanza starts with a 'domain', followed by one
+or more 'entry' lines. Each 'entry' contains the @var{name} and the @var{value}
+of the respective database variable.
+
+@item Error conditions:
+
+If the domain is unknown or no variables where found, prints an error message
+to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_extended_manifest_of @var{revid}
+
+@table @strong
+@item Arguments:
+
+The @var{revid} specifies the revision for which the extended manifest
+should be printed.
+
+@item Changes:
+
+13.0 -- initial
+
+@item Purpose:
+
+Prints the contents of the extended manifest associated with the given revision.
+
+@item Sample output:
+
+@verbatim
+      dir ""
+    birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+
+         dir "dir"
+dormant_attr "dirprop"
+       birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+   path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+   attr_mark "dirprop" [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
+
+        file "file"
+     content [d3395867d05cc4c27f013d6e6f48d644e96d8241]
+        size "8"
+        attr "fileprop" "value"
+       birth [0cd607d6dda3a2df18f777112947f3c70811581e]
+   path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
+content_mark [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
+   attr_mark "fileprop" [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
+@end verbatim
+
+@item Output format:
+
+There is one basic_io stanza for each file or directory in the
+extended manifest.
+
+All stanzas are formatted by basic_io. Stanzas are separated
+by a blank line. Values will be escaped, '\' to '\\' and
+'"' to '\"'.
+
+The 'dir' and 'file' lines are the first in every stanza and
+specify its type as follows:
+
+@verbatim
+'dir':
+      Represents a directory.  The path "" (the empty string) is used
+      to represent the root of the tree.
+      format: ('dir', pathname)
+      occurs: one or more times
+'file':
+      Represents a file.
+      format: ('file', pathname)
+      occurs: zero or more times
+@end verbatim
+
+In addition, both 'dir' and 'file' stanzas include more information
+on the particular node:
+
+@verbatim
+'birth':
+      The revision id in which the node was added ("born").
+      format: ('birth', revision id)
+      occurs: once per node
+'path_mark':
+      The revision id in which the node was last renamed.
+      format: ('path_mark', revision id)
+      occurs: once per node
+'content':
+      The id of the file node, i.e. the hash of its contents.
+      format: ('content', file id)
+      occurs: once per file node
+'content_mark':
+      The revision id in which the node's content was changed at last.
+      format: ('content_mark', revision id)
+      occurs: once per file node
+'size':
+      The recorded file size, in bytes.
+      format: ('size', size in bytes)
+      occurs: once per file node
+@end verbatim
+
+Finally, attributes are also part of the format:
+
+@verbatim
+'attr':
+      The name and the value of a specific attribute.
+      format: ('attr', attribute name, attribute value)
+      occurs: zero or more times per node
+'dormant_attr':
+      The name of a previously deleted attribute.
+      format: ('dormant_attr', attribute name)
+      occurs: zero or more times per node
+'attr_mark':
+      The revision id in which a particular attribute's value was
+      changed at last.
+      format: ('attr_mark', attribute name, revision id)
+      occurs: zero or more times per node
+@end verbatim
+
+All stanzas are sorted by the path string.
+
+@item Error conditions:
+
+If the revision ID specified is unknown or invalid prints an error
+message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_file @var{id}
+
+@table @strong
+@item Arguments:
+
+The  @var{id} argument specifies the file hash of the file to be output.
+
+@item Added in:
+
+1.0
+
+@item Purpose:
+
+Prints the contents of the specified file.
+
+@item Sample output:
+
+@verbatim
+If you've downloaded a release, see INSTALL for installation
+instructions.  If you've checked this out, the generated files are not
+included, and you must use "autoreconf --install" to create them.
+
+"make html" for docs, or read the .info file and / or man page.
+@end verbatim
+
+@item Output format:
+
+The file contents are output without modification.
+
+@item Error conditions:
+
+If the file id specified is unknown or invalid prints an error message
+to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_file_of @var{filename} [--revision=@var{id}]
+
+@table @strong
+@item Arguments:
+
+The  @var{filename} argument specifies the filename of the file to be output.
+
+If a revision @var{id} is given, the file's contents in that specific revision
+are printed. If no revision is given, the workspace's revision is used.
+
+@item Added in:
+
+4.0
+
+@item Purpose:
+
+Prints the contents of the specified file.
+
+@item Sample output:
+
+@verbatim
+If you've downloaded a release, see INSTALL for installation
+instructions.  If you've checked this out, the generated files are not
+included, and you must use "autoreconf --install" to create them.
+
+"make html" for docs, or read the .info file and / or man page.
+@end verbatim
+
+@item Output format:
+
+The file contents are output without modification.
+
+@item Error conditions:
+
+If the filename specified is unknown in the given revision or invalid, or
+if the given revision is unknown, prints an error message to stderr and exits
+with status 1.
+
+@end table
+
+@item mtn automate get_file_size @var{id}
+
+@table @strong
+@item Arguments:
+
+The  @var{id} argument specifies the file hash of the file for which
+the size should be printed.
+
+@item Changes:
+
+13.0 -- initial
+
+@item Purpose:
+
+Prints the recorded file size of the specified file.
+
+If you need to know the file sizes of multiple files of the same revision,
+its usually faster to use the @command{automate get_extended_manifest_of}
+command.
+
+@item Sample output:
+
+@verbatim
+1241
+@end verbatim
+
+@item Output format:
+
+The size of the file in bytes followed by a linefeed character ('\n').
+
+@item Error conditions:
+
+If the file id specified is unknown or invalid prints an error message
+to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_manifest_of
+@item mtn automate get_manifest_of @var{revid}
+
+@table @strong
+@item Arguments:
+
+Specifying the optional @var{revid} argument outputs the manifest for the
+revision with the specified ID. Otherwise, outputs the manifest for the
+current workspace.  (You can think of leaving the argument blank
+as meaning ``give me the manifest of THIS''.)
+
+@item Added in:
+
+2.0
+
+@item Purpose:
+
+Prints the contents of the manifest associated with the given revision.
+
+@item Sample output:
+
+@verbatim
+format_version "1"
+
+dir ""
+
+   file ".htaccess"
+content [e3915658cb464d05f21332e03d30dca5d94fe776]
+
+   file "AUTHORS"
+content [80d8f3f75c9b517ec462233e155f7dfb93379f67]
+
+   file "ChangeLog"
+content [fc74a48c7f73eedcbe1ea709755fbe819b29736c]
+
+   file "LICENSE"
+content [dfac199a7539a404407098a2541b9482279f690d]
+
+   file "README"
+content [440eec971e7bb61ccbb61634deb2729bb25931cd]
+
+   file "TODO"
+content [e0ea26c666b37c5f98ccf80cb933d021ee55c593]
+
+   file "branch.psp"
+content [b28ece354969314ce996f3030569215d685973d6]
+
+   file "common.py"
+content [1fdb62e05fb2a9338d2c72ddc58de3ab2b3976fe]
+
+   file "config.py.example"
+content [64cb5898e3a026b4782c343ca4386585e0c3c275]
+
+   file "error.psp"
+content [7152c3ff110418aca5d23c374ea9fb92a0e98379]
+
+   file "fileinbranch.psp"
+content [5d8536100fdf51d505b6f20bc9c16aa78d4e86a8]
+
+   file "headofbranch.psp"
+content [981df124a0b5655a9f78c42504cfa8c6f02b267a]
+
+   file "help.psp"
+content [a43d0588a69e622b2afc681678c2a5c3b3b1f342]
+
+   file "html.py"
+content [18a8bffc8729d7bfd71d2e0cb35a1aed1854fa74]
+
+   file "index.psp"
+content [c621827db187839e1a7c6e51d5f1a7f6e0aa560c]
+
+   file "monotone.py"
+content [708b61436dce59f47bd07397ce96a1cfabe81970]
+
+   file "revision.psp"
+content [a02b1c161006840ea8685e461fd07f0e9bb145a3]
+
+   file "rss_feed.gif"
+content [027515fd4558abf317d54c437b83ec6bc76e3dd8]
+
+   file "tags.psp"
+content [638140d6823eee5844de37d985773be75707fa25]
+
+   file "tarofbranch.psp"
+content [be83f459a152ffd49d89d69555f870291bc85311]
+
+   file "test.py"
+content [e65aace9237833ec775253cfde97f59a0af5bc3d]
+   attr "mtn:execute" "true"
+
+   file "utility.py"
+content [fb51955563d64e628e0e67e4acca1a1abc4cd989]
+
+   file "viewmtn.css"
+content [8d04b3fc352a860b0e3240dcb539c1193705398f]
+
+   file "viewmtn.py"
+content [7cb5c6b1b1710bf2c0fa41e9631ae43b03424a35]
+
+   file "wrapper.py"
+content [530290467a99ca65f87b74f653bf462b28c6cda9]
+@end verbatim
+
+@item Output format:
+
+There is one basic_io stanza for each file or directory in the
+manifest.
+
+All stanzas are formatted by basic_io. Stanzas are separated
+by a blank line. Values will be escaped, '\' to '\\' and
+'"' to '\"'.
+
+Possible values of this first value are along with an ordered list of
+basic_io formatted stanzas that will be provided are:
+
+@verbatim
+'format_version'
+      used in case this format ever needs to change.
+      format: ('format_version', the string "1")
+      occurs: exactly once
+'dir':
+      represents a directory.  The path "" (the empty string) is used
+      to represent the root of the tree.
+      format: ('dir', pathname)
+      occurs: one or more times
+'file':
+      represents a file.
+      format: ('file', pathname), ('content', file id)
+      occurs: zero or more times
+@end verbatim
+
+In addition, 'dir' and 'file' stanzas may have attr information
+included.  These are appended to the stanza below the basic dir/file
+information, with one line describing each attr.  These lines take the
+form ('attr', attr name, attr value).
+
+Stanzas are sorted by the path string.
+
+@item Error conditions:
+
+If the revision ID specified is unknown or invalid prints an error
+message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_option @var{option}
+
+@table @strong
+@item Arguments:
+
+The @var{option} argument specifies the option name of the option to be output.
+
+@item Added in:
+
+3.1
+
+@item Purpose:
+
+Prints an option from _MTN/option of the current workspace.
+
+@item Sample output:
+
+@verbatim
+net.venge.monotone
+@end verbatim
+
+@item Output format:
+
+The option value is written out without modification.
+
+@item Error conditions:
+
+If the option is unknown, prints an error message to stderr and exits
+with status 1.
+
+@end table
+
+
+@item mtn automate get_public_key @var{keyid}
+
+@table @strong
+@item Arguments:
+
+@var{keyid} identifies the key to display, by name or hash.
+
+@item Changes:
+
+@itemize
+@item
+13.0 -- initial
+
+@end itemize
+
+@item Purpose:
+
+Same as @command{pubkey}; print the key in packet format, suitable for
+reading by @command{automate put_public_key}.
+
+@item Sample output:
+
+@verbatim
+[pubkey foo@bar.com]
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQs4OEcqULwepphO5Rsb/aSLpiEryGtEkQRNQPNFxvcu1rwVnNKRxep1KCDrwV3se9f4hUQ8zz73NQggS82guSI/YuyXZDZHrw+v3YgAMV/mKGnAjgYnyRNUL1xCywV7fnqTduBBqkDEVSCqphWlii/gFB/PVo4sbJ4Hk7O6ujWwIDAQAB
+[end]
+@end verbatim
+
+@item Output format:
+
+See example.
+
+@item Error conditions:
+
+If the key does not exist, an error message is printed on the error stream.
+
+@end table
+
+@item mtn automate get_revision @var{id}
+
+@table @strong
+@item Arguments:
+
+The argument @var{id} specifies the revision id for which the changeset
+information should be printed.
+
+@item Changes:
+
+@itemize
+@item
+7.0 -- @var{id} is now mandatory
+@item
+1.0 -- initial
+@end itemize
+
+@item Purpose:
+
+Prints change information for the specified revision id.
+
+@item Sample output:
+
+@verbatim
+format_version "1"
+
+new_manifest [bfe2df785c07bebeb369e537116ab9bb7a4b5e19]
+
+old_revision [429fea55e9e819a046843f618d90674486695745]
+
+patch "ChangeLog"
+ from [7dc21d3a46c6ecd94685ab21e67b131b32002f12]
+   to [234513e3838d423b24d5d6c98f70ce995c8bab6e]
+
+patch "std_hooks.lua"
+ from [0408707bb6b97eae7f8da61af7b35364dbd5a189]
+   to [d7bd0756c48ace573926197709e53eb24dae5f5f]
+@end verbatim
+
+@item Output format:
+
+There are several changes that are described; each of these is described by
+a different basic_io stanza. The first string pair of each stanza indicates the
+type of change represented.
+
+All stanzas are formatted by basic_io. Stanzas are separated
+by a blank line. Values will be escaped, '\' to '\\' and
+'"' to '\"'.
+
+Possible values of this first value are along with an ordered list of
+basic_io formatted stanzas that will be provided are:
+
+@verbatim
+'format_version'
+      used in case this format ever needs to change.
+      format: ('format_version', the string "1")
+      occurs: exactly once
+'new_manifest'
+      represents the new manifest associated with the revision.
+      format: ('new_manifest', manifest id)
+      occurs: exactly one
+'old_revision'
+      represents a parent revision.
+      format: ('old_revision', revision id)
+      occurs: either one or two times
+'delete
+      represents a file or directory that was deleted.
+      format: ('delete', path)
+      occurs: zero or more times
+'rename'
+      represents a file or directory that was renamed.
+      format: ('rename, old filename), ('to', new filename)
+      occurs: zero or more times
+'add_dir'
+      represents a directory that was added.
+      format: ('add_dir, path)
+      occurs: zero or more times
+'add_file'
+      represents a file that was added.
+      format: ('add_file', path), ('content', file id)
+      occurs: zero or more times
+'patch'
+      represents a file that was modified.
+      format: ('patch', filename), ('from', file id), ('to', file id)
+      occurs: zero or more times
+'clear'
+      represents an attr that was removed.
+      format: ('clear', filename), ('attr', attr name)
+      occurs: zero or more times
+'set'
+      represents an attr whose value was changed.
+      format: ('set', filename), ('attr', attr name), ('value', attr value)
+      occurs: zero or more times
+@end verbatim
+
+These stanzas will always occur in the order listed here; stanzas of
+the same type will be sorted by the filename they refer to. The 'delete'
+and following stanzas will be grouped under the corresponding 'old_revision'
+one.
+
+@item Error conditions:
+
+If the revision specified is unknown or invalid prints an error message
+to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate get_workspace_root
+
+@table @strong
+@item Arguments:
+
+None.
+
+@item Added in:
+
+8.0
+
+@item Purpose:
+
+To show the path of the workspace root for the current directory.
+
+@item Sample output:
+
+@verbatim
+/home/jim/juice
+@end verbatim
+
+@item Output format:
+
+A path.
+
+@item Error conditions:
+
+If the current directory isn't part of a workspace, prints an error to
+stderr and exits with status 1.
+
+@end table
+
+@item mtn automate graph
+
+@table @strong
+@item Arguments:
+
+None.
+
+@item Added in:
+
+0.2
+
+@item Purpose:
+
+Prints out the complete ancestry graph of this database.
+
+@item Sample output:
+
+@verbatim
+0c05e8ec9c6af4224672c7cc4c9ef05ae8bdb794
+27ebcae50e1814e35274cb89b5031a423c29f95a 5830984dec5c41d994bcadfeab4bf1bf67747b89
+4e284617c80bec7da03925062a84f715c1b042bd 27ebcae50e1814e35274cb89b5031a423c29f95a 657c756d24fb65213d59f4ae07e117d830dcc95b
+@end verbatim
+
+@item Output format:
+
+Zero or more lines, each giving ancestry information for one revision.
+Each line begins with a revision ID.  Following this are zero or more
+space-prefixed revision IDs.  Each revision ID after the first is a
+parent (in the sense of @command{automate parents}) of the first.  For
+instance, in the above sample output,
+0c05e8ec9c6af4224672c7cc4c9ef05ae8bdb794 is a root node,
+27ebcae50e1814e35274cb89b5031a423c29f95a has one parent, and
+4e284617c80bec7da03925062a84f715c1b042bd has two parents, i.e., is a
+merge node.
+
+The output as a whole is alphabetically sorted by line; additionally,
+the parents within each line are alphabetically sorted.
 
 @item Error conditions:
 
 None.
 
 @end table
+
+
+@item mtn automate heads [@var{branch}]
+
+@table @strong
+@item Arguments:
+
+One branch name,  @var{branch}. If none is given, the current default branch is used.
+
+@item Added in:
+
+0.0
+
+@item Purpose:
+
+Prints the heads of branch @var{branch}.
+
+@item Sample output:
+
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+75156724e0e2e3245838f356ec373c50fa469f1f
+@end verbatim
+
+@item Output format:
+
+Zero or more lines, each giving the ID of one head of the given branch.
+Each line consists of a revision ID, in hexadecimal, followed by a
+newline.  The lines are printed in alphabetically sorted order.
+
+@item Error conditions:
+
+If the given branch contains no members or does not exist, then no lines are printed.
+
+@end table
+
 
 @item mtn automate identify @var{path}
 
@@ -7671,6 +8702,43 @@ consisting of "-" is disallowed since it collides with the UNIX stdin
 marker.
 
 @end table
+
+@item mtn automate interface_version
+
+@table @strong
+@item Arguments:
+
+None.
+
+@item Added in:
+
+0.0
+
+@item Purpose:
+
+Prints version of the automation interface.  Major number increments
+whenever a backwards incompatible change is made to the @command{automate}
+command; minor number increments whenever any change is made (but is
+reset when major number increments).
+
+@item Sample output:
+
+@verbatim
+1.2
+@end verbatim
+
+@item Output format:
+
+A decimal number, followed by ``.'' (full stop/period), followed by a
+decimal number, followed by a newline, followed by end-of-file.  The
+first decimal number is the major version, the second is the minor version.
+
+@item Error conditions:
+
+None.
+
+@end table
+
 
 @item mtn automate inventory [@option{options...}] [@var{files...}]
 
@@ -8197,419 +9265,441 @@ message to stderr, and exits with status 1.
 
 @end table
 
-@item mtn automate certs @var{id}
+@item mtn automate keys
 
 @table @strong
 @item Arguments:
 
-A revision ID @var{id}, for which any certificates will be printed.
-
-@item Changes:
-@itemize
-@item
-11.0 -- Keys are now listed by hash instead of name.
-@item
-1.0 -- Added.
-@end itemize
-
-@item Purpose:
-
-Prints all certificates associated with the given revision ID.
-Each certificate is contained in a basic IO stanza. For each certificate,
-the following values are provided:
-@verbatim
-'key'
-      the hex-encoded hash of the key used to sign this certificate.
-'signature'
-      a string indicating the status of the signature. Possible
-      values of this string are:
-            'ok'        : the signature is correct
-            'bad'       : the signature is invalid
-            'unknown'   : signature was made with an unknown key
-'name'
-      the name of this certificate
-'value'
-      the value of this certificate
-'trust'
-      is this certificate trusted by the defined trust metric?
-      Possible values of this string are:
-            'trusted'   : this certificate is trusted
-            'untrusted' : this certificate is not trusted
-@end verbatim
-
-@item Sample output:
-
-@verbatim
-      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
-signature "ok"
-     name "author"
-    value "emile@alumni.reed.edu"
-    trust "trusted"
-
-      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
-signature "ok"
-     name "branch"
-    value "net.venge.monotone"
-    trust "trusted"
-
-      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
-signature "ok"
-     name "changelog"
-    value "propagate from branch 'net.venge.monotone.annotate' (head 76a886ef7c8ae12a4bba5fc2bd252557bf863aff)
-            to branch 'net.venge.monotone' (head 2490479a4e4e99243fead6d627d78291fde592f0)
-"
-    trust "trusted"
-
-      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
-signature "ok"
-     name "date"
-    value "2005-05-20T20:19:25"
-    trust "trusted"
-@end verbatim
-
-@item Output format:
-
-All stanzas are formatted by basic_io. Stanzas are separated
-by a blank line. Values will be escaped, '\' to '\\' and
-'"' to '\"'.
-
-@item Error conditions:
-
-If a certificate is signed with an unknown public key, a
-warning message is printed to stderr. If the revision specified is unknown
-or invalid prints an error message to stderr and exits with status 1.
-
-@end table
-
-@anchor{mtn-au-stdio}@item mtn automate stdio
-
-@table @strong
-@item Arguments:
-
-none
+None.
 
 @item Changes:
 
 @itemize
 @item
-12.0 -- Introduced out of band streams ('e', 'p', 't', 'w'); the main output
-    of a command now only happens in the 'm' stream; the 'l' stream now marks
-    the end of all streams of a command; introduced the concept of "headers"
-    which are output before the first command is issued; specific error codes
-    to distinguish command from interface errors have also been introduced.
+11.0 -- Instead of having a "name" item, there are
+"given_name" and "local_name" items.
 @item
-3.1 -- Added the 'o' item to the recognized input. This change should not
-break anything.
+10.0 -- The separate hashes for the private half of a key really didn't
+make much sense; have one @code{hash [...]} line instead of separate
+@code{public_hash [...]} and @code{private_hash [...]} lines.
 @item
-1.0 -- Initial version.
+1.1 -- initial
+
 @end itemize
 
 @item Purpose:
 
-Allow multiple automate commands to be run from one instance of monotone.
-
-@item Sample input:
-
-@verbatim
-l6:leavese
-l7:parents40:0e3171212f34839c2e3263e7282cdeea22fc5378e
-o3:key11:foo@bar.come l4:cert40:0e3171212f34839c2e3263e7282cdeea22fc53783:foo3:bare
-@end verbatim
-
-@item Input format:
-
-@verbatim
-[ 'o' <string> <string> [ <string> <string> [ ... ] ] 'e' ]
-'l' <string> [ <string> [ ... ] ] 'e'
-@end verbatim
-
-The input is a series of commands. The command name plus arguments are
-provided as 'l' <string> [<string> ...] 'e', where <string> = <size> colon
-<data> . This may optionally be preceded by a set of key=value pairs
-(command options) as 'o' <string> <string> [<string> <string> ...] 'e', where
-strings come in pairs, key followed by value. For flag options that
-don't take values, specify the second string as zero length; @code{0:}.
-
-The space between the ending 'e' of one group of strings and the beginning
-'l' or 'o' of the next is reserved. Any characters other than whitespace
-will cause an error.
+Print all keys in basic_io format.
 
 @item Sample output:
 
 @verbatim
-format-version: 2
+            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+      given_name "tbrownaw@gmail.com"
+      local_name "tbrownaw@gmail.com"
+ public_location "database" "keystore"
+private_location "keystore"
 
-0:m:41:7706a422ccad41621c958affa999b1a1dd644e79
-0:l:1:0
-...
-1:e:38:misuse: key 'test@test' already exists
-1:l:1:2
-...
-2:w:39:skipping file '\' with unsupported name
-2:m:144:    path ""
-old_type "directory"
-new_type "directory"
- fs_type "directory"
-   birth [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
-  status "known"
-...
-3:t:34:c:certificates;k:keys;r:revisions;
-3:t:12:c=0;k=0;r=0;
-3:t:13:c#0;k#0;r#64;
-3:t:14:c#0;k#0;r#128;
-3:t:6:c;k;r;
-...
+           hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
+      given_name "tomfa@debian.org"
+      local_name "tomfa@debian.org"
+public_location "database"
+
+            hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
+      given_name "underwater@fishtank.net"
+      local_name "underwater@fishtank.net"
+ public_location "keystore"
+private_location "keystore"
+
 @end verbatim
 
 @item Output format:
 
-Right after a stdio session has been set up, header information is
-issued; to date the only header defined is @code{format-version},
-which denotes the version of the stdio format used throughout the
-session. The original format had no such version output, so our
-numbering starts with "2" here.
+For each key, a basic_io stanza is printed. The public_location and
+private_location items may have multiple values as shown above for public_location,
+one value for each place that the key is stored. If the
+private key does not exist, then the private_hash and private_location
+items will be absent. given_name is the name provided when the key was created,
+and local_name is the name returned by the @code{get_local_key_name} hook.
 
-Headers are separated from each other by single newline character @code{'\n'}
-and the last is separated from the following output by a pair of newline
-characters.
-
-After a command has been issued, one or more packets are returned for it.
-A packet looks like:
-
-@verbatim
-<command number>:<stream>:<size>:<output>
-@end verbatim
-
-@code{<command number>} is a decimal number specifying which command this output
-is from. It is 0 for the first command, and increases by one each time.
-
-@code{<stream>} is an identifier for which output stream this packet represents,
-allowing multiple streams to be multiplexed over the channel.  The following
-streams are presently defined; more streams may be added later.
-
-@itemize
-@item
- @code{m}: this stream represents the normal ("main") stdout automate output of
- the command, formatted as described in the description for that command.
-@item
- @code{e}: this stream represents any (unstructured) error message data.
-
- Internally, this maps to calls to the @code{E()} print macros that would
- normally be written by the command to the program's stderr stream, if the
- automate sub-command had been called directly rather than via '''stdio'''.
-@item
- @code{w}: this stream represents any (unstructured) warning message data.
-
- Internally, this maps to calls to the @code{W()} print macro that would
- normally be written by the command to the program's stderr stream, if the
- automate sub-command had been called directly rather than via '''stdio'''.
-@item
- @code{p}: this stream represents any (unstructured) progress message data.
-
- Internally, this maps to calls to the @code{P()} print macro that would
- normally be written by the command to the program's stderr stream, if the
- automate sub-command had been called directly rather than via '''stdio'''.
-@item
- @code{t}: this stream represents ticker updates, which may be used
- by a user interface to display the progress of a command.
-
- The output for this channel can be described as follows:
-
- @itemize
- @item
- @code{<output>       ::= <definition><payload><end>}
- @item
- @code{<definition>   ::= <shortname> ':' <longname> <eol>}
- @item
- @code{<payload>      ::= <total_count><advance>+}
- @item
- @code{<end>          ::= <shortname> <eol>}
- @item
- @code{<total_count>  ::= <shortname> '=' <count> <eol>}
- @item
- @code{<advance>      ::= <shortname> '#' <count> <eol>}
- @item
- @code{<shortname>    ::= "\w+"}
- @item
- @code{<longname>     ::= "[^;]+"}
- @item
- @code{<count>        ::= ['0'-'9']+}
- @item
- @code{<eol>          ::= ';'}
- @end itemize
-
- The definition tells the implementor the short name and long name of
-any upcoming ticker event. The names and meanings are command-specific
-and are therefore explained in the sections for the particular
-commands which support ticker output.
-
- The @code{total_count} might be 0 right at the start and can later be changed
- to a different number if the command later on knows a more exact value. If
- this is the case, this stanza is output again with this new value. A
- constant @code{total_count} of 0 means that the command may continue to run
- for a undefined amount of time until the end stanza appears.
-
- The advance tells the implementor how much work has been done so far.
-
- Finally, the end stanza is printed just before the ticker ends
- (i.e. the work has been done).
-
- All counts output absolute, raw values; no modulation takes place. It
-is usually the case that definition, @code{total_count}, advance and
-end are output in separate stanzas. It is also possible that two or
-more parallel tickers output their stanzas at the same time, in this
-case it's ensured that the output does not get intermixed; first
-all definitions are output, afterwards all total_counts, and so on.
-
- @emph{Note:} The ticker format used for stdio is fixed and cannot be selected
- explicitely via the global @option{--ticker} option. However, if you run an
- automate command outside of stdio you can set a different ticker type, f.e.
- @var{count}, @var{dot} or @var{none}.
-@item
- @code{l}: this stream marks the termination of a command and all of
- its streams and carries the return code of the command in the payload.
-
- A return code "0" stands for success, "1" for an error which occurred within
- the stdio interface (f.e. syntax errors or missing privileges) before the
- command is run and finally "2" for any other command-specific error.
-@end itemize
-
-@code{<size>} is the number of bytes in the output.
-
-@code{<output>} is a piece of the output of the command.
+The keys are ordered by hash value.
 
 @item Error conditions:
 
-Errors in the commands run through this interface do not affect the exit
-status of this command. Instead, if a badly formatted or invalid command
-is received, or a command is given with invalid arguments or options,
-an error message to the error stream is printed and and the particular
-sub-command exits with return code "1". Other command-specific errors are
-returned as code "2".
-
-Trying to run the @code{automate stdio} or @code{automate remote_stdio}
-sub-commands will exit the particular command with return code "1".
-
-@item Notes:
-
-Keyboard interaction is disabled, just as if @option{--non-interactive} is
-specified. Actions which require operations on password-encrypted private keys
-will therefor fail unless the @code{get_passphrase} hook is set up locally.
-
-@item Multiple streams
-
-The multiple stream encoding allows the output of errors and warnings to be
-associated with the command that generated them, allows the communication
-path to always stay in sync, and offers the opportunity to add other stream
-types for other useful purposes in the future as needs arise.
+None.
 
 @end table
 
-@item mtn automate remote_stdio [@var{hostname}]
+@item mtn automate leaves
 
 @table @strong
-@item Arguments
+@item Arguments:
 
-@var{hostname} is the host (and optionally port) of the monotone server
-process to connect to. If not given, the default server is used.
+None.
 
-@item Added in
+@item Added in:
 
-12.0
+0.1
 
-@item Purpose
+@item Purpose:
 
-Permit @code{automate} commands to be run against a database that is
-being used to serve netsync connections.
+Prints the leaves of the revision graph, i.e. all revision that have no
+children.  This is similar, but not identical to the functionality of
+@command{heads}, which prints every revision in a branch, that has no
+descendants in that branch.  If every revision in the database was in
+the same branch, then they would be identical.  Generally, every leaf is
+the head of some branch, but not every branch head is a leaf.
 
-@item Input/Output format
+@item Sample output:
 
-This command takes input and produces output in exactly the
-same format as @code{automate stdio}. Note that the commands run with
-@code{automate remote_stdio} may conform to a different @var{interface_version},
-because they are handled by a remote instance of monotone.
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+75156724e0e2e3245838f356ec373c50fa469f1f
+@end verbatim
 
-There will be some extra chatter on stderr unless @option{--quiet} is given.
+@item Output format:
 
-@item Error Conditions
+Zero or more lines, each a leaf of the revision graph.  Each line
+consists of a revision ID, in hexadecimal, followed by a newline.  The
+lines are printed in alphabetically sorted order.
 
-If left idle for too long or there are network problems, the connection to the
-server may be dropped. This will not be detected while monotone is waiting for
-input. Instead, when a complete command has been entered and monotone tries to
-send it to the remote server it will print a message to stderr and exit with
-code 1.
+@item Error conditions:
 
-@item Notes
-
-On the server side the @code{get_remote_automate_permitted} hook has to be
-configured to include every command which should be executable over this
-interface.
-
-For both, the client and the server, keyboard interaction is disabled,
-just as if @option{--non-interactive} is specified. Actions which require
-operations on password-encrypted private keys will therefor fail unless the
-@code{get_passphrase} hook is set up locally and / or remotely.
+None.
 
 @end table
 
-@item mtn automate remote @option{--remote-stdio-host=host} @var{command} @var{args-and-opts}
+
+@item mtn automate log
 
 @table @strong
-@item Arguments
+@item Arguments:
 
-A command and its arguments, to execute on the remote server specified
-by the @option{--remote-stdio-host} option. If no host is given, the default
-server is used. If options are to be passed to the command, they must be
-preceded by @option{--} to prevent them from being interpreted as local options.
+[--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]]
+[--clear-from] [--to=@var{id} [...]] [--clear-to]
+[--[no-]merges] [@var{pathname...}]
 
-Remote options @strong{must} be given as a single token, ie
-@option{--branch=foo} or @option{-bfoo}. This is because the local and remote
-monotones may not understand exactly the same options (so the local monotone
-cannot know if an option given as @option{--branch} or @option{-b} should be
-followed by an argument), and because the server sees this as an
-@code{automate remote_stdio} connection (so it expects the options to already
-be parsed).
+Same as @command{mtn log}, but without the output control options; see
+@ref{Informative}.
 
-@item Added in
+@item Added in:
 
-12.0
+12.2
 
-@item Purpose
+@item Purpose:
 
-Permit a single @code{automate} command to be run against a database that is
-being used to serve netsync connections, without having its input and output
-encoded as by @code{automate stdio}.
+Print the selected revisions on stdout, in topological order. The user
+can then use other automate commands to retrieve additional
+information about each revision.
 
-@item Input/Output Format
+@item Sample output:
 
-This command does not accept input.
+@verbatim
+233afb8c4832bf33d5f5734225164de5f5a6278c
+4a368a6b217c40b2ff3b12bb7cfa00987e0f191c
+233afb8c4832bf33d5f5734225164de5f5a6278c
+@end verbatim
 
-The output will be whatever output the remote command generates.
+@item Output format:
 
-Remote diagnostic messages are written to standard error, prefixed either
-with @code{mtn: remote error:}, @code{mtn: remote warning:} or
-@code{mtn: remote message:} to make them distinguishable from local
-diagnostics. Tickers are not supported over this interface. If you need
-remote ticker support, please use @command{automate remote_stdio}.
+One revision per line.
 
-@item Error Conditions
+@item Error conditions:
 
-If the remote command returns a nonzero error code, will exit with code 1 and
-print "received remote error code N" to standard error, with "N" being
-the remote error code.
-
-@item Notes
-
-On the server side the @code{get_remote_automate_permitted} hook has to be
-configured to include every command which should be executable over this
-interface.
-
-Keyboard interaction is disabled on the server, just as if
-@option{--non-interactive} would have been specified on server startup.
-Actions which require operations on password-encrypted private keys will
-therefor fail unless a @code{get_passphrase} hook is set up remotely.
+see @command{mtn log} in @ref{Informative}.
 
 @end table
+
+@item mtn automate lua @var{function_name} [@var{function_args...}]
+
+@table @strong
+@item Arguments:
+
+A valid Lua function name and zero or more function arguments. Note that string
+arguments need to be wrapped in another pair of quotes, i.e. @code{"foo"} or
+@code{'foo'} will not work, but @code{"'foo'"} or @code{'"foo"'} will.
+
+Complex types are also supported, anything which can be evaluated as valid
+Lua expression can be given as input, including nested tables and functions,
+like f.e. @code{@{1,true,@{['func'] = function(...) return ... end @}@}}
+
+@item Added in:
+
+9.0
+
+@item Purpose:
+
+Call Lua functions, like monotone hooks, in the monotone context, f.e. to
+retrieve user defaults like keys, passwords, ignorable files and more.
+
+@item Output format:
+
+A string dump of the return value of the function, in Lua code. The Lua types
+@code{function}, @code{thread}, @code{userdata} and @code{lightuserdata} are not
+serialized, but set to @code{nil} in the dump.
+
+Please note that @code{nil} values in tables are not printed since Lua does not
+distinguish between unset and not existing entries in a table like other
+programming languages do.
+
+@item Sample output:
+
+A single string return value:
+
+@verbatim
+[1] = "Output";
+@end verbatim
+
+Two numeric return values:
+
+@verbatim
+[1] = 3;
+[2] = 4.4;
+@end verbatim
+
+A nested table:
+
+@verbatim
+[1] = {
+    ["bar"] = {
+        [1] = 1;
+        [2] = 2;
+        [3] = 3;
+    };
+};
+@end verbatim
+
+A callback function:
+
+@verbatim
+[1] = nil --[[function]];
+@end verbatim
+
+@item Error conditions:
+
+This command prints an error message and exists with status 1 if the function
+does not exist, one or more function arguments could not be evaluated or the
+function could not be called for another reason.
+
+@end table
+
+@item mtn automate packet_for_fdata @var{id}
+
+@table @strong
+@item Arguments:
+
+The @var{id} specifies the file to output an fdata packet for.
+
+@item Added in:
+
+2.0
+
+@item Purpose:
+
+Prints the file data in packet format
+
+@item Sample output:
+
+@verbatim
+[fdata 229c7f621b65f7e4970ae5aaec993812b9daa1d4]
+H4sIAAAAAAAA/z2OO27DMBBEe51ioMaNrJzBpQAjTXKBBTW0CJPcgFw6yO1DCkG62Q/em83j
+R9vlRez6naPKzh2CwkipXFBJbO8fn7f7HV4LQq4mMYoFzdMYSnMj1xXY/lnuoHt2kB2hQpst
+PREPZhaxvvchskIKkdU6xsXWvQsk76MOUquGVolZmmmh0+xxvf7JZ5jCFXbU4KZ1muYkT+Kw
+FOez5q6uLuh9+9eoQawhez3Fp+VtHJNkfMmDHfALzWYfcAgBAAA=
+[end]
+@end verbatim
+
+@item Output format:
+
+File data in @command{monotone read} compatible packet format.
+
+@item Error conditions:
+
+If @var{id} is unknown or invalid prints an error message to stderr
+and exits with status 1.
+
+@end table
+
+@item mtn automate packet_for_fdelta @var{from-id} @var{to-id}
+
+@table @strong
+@item Arguments:
+
+The @var{from-id} specifies the file to use as the base of the delta,
+and @var{to-id} specifies the file to use as the target of the delta.
+
+@item Added in:
+
+2.0
+
+@item Purpose:
+
+Prints the file delta in packet format
+
+@item Sample output:
+
+@verbatim
+[fdelta 597049a62d0a2e6af7df0b19f4945ec7d6458727
+        229c7f621b65f7e4970ae5aaec993812b9daa1d4]
+H4sIAAAAAAAA/0WOy0oEMRBF9/mKS2/c9LQg4t5lw+BGf6BIKtNhkpSkKop/b9II7m49OOfu
+eHp5dnvEj/SHL0aQ75qFAgcQGmcm5RXKjP3t/eP1ekWUhlTVKGeyJNXNoXU/s27AP8sf7O8D
+ZEdSSLd1JMaNKzeysY8ps4Iao4oNjM99eFdQDbMOSldDV8ZC3aSxlxpxufzJF5jANx6oyS2b
+c0uhO+OwkpezZhCvK0bf8TVrMLZUo5zi0/I4j4UqPunGA+B+AfHvKEIPAQAA
+[end]
+@end verbatim
+
+@item Output format:
+
+File delta data in @command{monotone read} compatible packet format.
+
+@item Error conditions:
+
+If @var{from-id} or @var{to-id} is unknown or invalid prints an error
+message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate packet_for_rdata @var{id}
+
+@table @strong
+@item Arguments:
+
+The @var{id} specifies the revision to output an rdata packet for.
+
+@item Added in:
+
+2.0
+
+@item Purpose:
+
+Prints the revision data in packet format
+
+@item Sample output:
+
+@verbatim
+[rdata bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed]
+H4sIAAAAAAAA/0XQS27DMAwE0L1PIfgArb4kte62NzACg5SoJEBsF7aRurev0UVzgJl5mLas
+E+/jU9ftvsymd33Xzfo9Tjzfm267GSgGwVarz6Valx0KtFYwii9VqUFCqJQ5X7puedRx1ef9
+r2rwHlSbi+BUSrF4xn1p0RInkmxTbmwREp/BL97LzfQfN56v+rlc+860dZnMED01jhILkURJ
+Ul0KPpGN1ueUwDHyiXF66Ywx+2IGD+0Uqg8aCzikAEzZNRXPmJKlkhMxSHuNzrofx/uq2/J4
+6njV/bZsu/zMPOlbOY4XJSD5KOrwXGdwpDGdfotZayQHKTAi5fRPqUWKcAMMIQfAjOK0nkfm
+6tFacjYgBPV46X4BtlpiNYUBAAA=
+[end]
+@end verbatim
+
+@item Output format:
+
+Revision data in @command{monotone read} compatible packet format.
+
+@item Error conditions:
+
+If @var{id} is unknown or invalid prints an error message to stderr
+and exits with status 1.
+
+@end table
+
+@item mtn automate packets_for_certs @var{id}
+
+@table @strong
+@item Arguments:
+
+The @var{id} specifies the revision to output cert packets for.
+
+@item Added in:
+
+2.0
+
+@item Purpose:
+
+Prints the certs associated with a revision in packet format
+
+@item Sample output:
+
+@verbatim
+[rcert bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed
+       branch
+       njs@pobox.com
+       bmV0LnZlbmdlLm1vbm90b25l]
+K90i1XHHmaMEMuwbPifFweLThJl0m7jigh2Qq6Z7TBwNJ6IMOjXWCizv73cacZ1CtzxFDVwQ
+SlqhNWiPQWxdcMp+Uuo+V8IFMKmvxVSTuVDukLMuNAQqpGL5S+a+tEj68NMq+KLKuL8kAAPc
+RoFD7GQlTS35S3RHWA4cnvqn+8U=
+[end]
+[rcert bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed
+       date
+       njs@pobox.com
+       MjAwNi0wNC0wOFQxMTo1MDowMA==]
+araz9A8x6AlK6m6UhwnhUhk7cdyxeE2nvzj2gwaDvkaBxOq4SN23/wnaPqUXx1Ddn8smzyRY
+HN08xloYc0yNChp3wjbqx20REcsTg3XE4rN/sgCbqqw5hVT22a5ZhqkfkDeoeJvan0R0UBax
+ngKYo9eLuABNlmFX2onca75JW1E=
+[end]
+[rcert bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed
+       author
+       njs@pobox.com
+       bmpzQHBvYm94LmNvbQ==]
+BLPOYhgLsAN+w7CwOsv9GfXnG3u7RNF1DTrWdn0AnYE1e+ptgTeMVWUI18H4OGL0B7wm08rv
+Pxk/hvsb8fBn1Kf5HDDO2pbjJ0xVzI9+p+TR0y5jJNZlVSTj+nvtPgvK9NzsdooYWnwlWmJv
+bOkAzQcZb8NMh8pbQkdHbR5uzMo=
+[end]
+[rcert bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed
+       changelog
+       njs@pobox.com
+       MjAwNi0wNC0wOCAgTmF0aGFuaWVsIFNtaXRoICA8bmpzQHBvYm94LmNvbT4KCgkqIG5ldHh4
+L3Jlc29sdmVfZ2V0aG9zdGJ5bmFtZS5jeHggKHJlc29sdmVfaG9zdG5hbWUpOiAjaWZkZWYg
+b3V0CglXaW4zMi1pbmNvbXBhdGlibGUgZXJyb3IgcmVwb3J0aW5nIGNhbGwuCg==]
+Ncl4L/oEPctzVQixTKA6FrLceeHnLiXfeyeFDNmtUFYg9BMUcjWkeyKmaWknLvOcHortxjto
+K6pQ9E8S7zI+TpzFAhssg5a///rFL0+2GJU3t6pcHs6LC0Q4tbqzwKd/5+8GwT1gphbM1wm7
+KuzKthwqD3pp49GbgTrp8iWMTr0=
+[end]
+@end verbatim
+
+@item Output format:
+
+Cert data in @command{monotone read} compatible packet format.
+
+@item Error conditions:
+
+If @var{id} is unknown or invalid prints an error message to stderr
+and exits with status 1.
+
+@end table
+
+@item mtn automate parents @var{rev}
+
+@table @strong
+@item Arguments:
+
+One revision ID, @var{rev}.
+
+@item Added in:
+
+0.2
+
+@item Purpose:
+
+Prints the immediate parents of a revision.  This is like a
+non-recursive version of @command{automate ancestors}.
+
+@item Sample output:
+
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+75156724e0e2e3245838f356ec373c50fa469f1f
+@end verbatim
+
+@item Output format:
+
+Zero or more lines, each giving the ID of one parent of the given
+revision.  Each line consists of a revision ID, in hexadecimal,
+followed by a newline.  The lines are printed in alphabetically sorted
+order.
+
+@item Error conditions:
+
+If the given revision @var{rev} does not exist, prints nothing to
+stdout, prints an error message to stderr, and exits with status 1.
+
+@end table
+
 
 @item mtn automate pull [--[no-]set-default] [--dry-run] [@var{uri}]
 @itemx mtn automate push [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
@@ -8813,1504 +9903,6 @@ If a netsync error occurs, the command outputs an error and exits with status 1.
 @end table
 
 
-@item mtn automate generate_key @var{name} @var{passphrase}
-
-@table @strong
-@item Aguments
-
-@var{name} is the name to associate with the new key, and @var{passphrase} is
-the passphrase that will be used to encrypt the private half.
-
-@item Changes:
-@itemize
-@item
-13.0 -- renamed from @command{genkey} to @command{generate_key}
-@item
-10.0 -- The separate hashes for the private half of a key really didn't
-make much sense; have one @code{hash [...]} line instead of separate
-@code{public_hash [...]} and @code{private_hash [...]} lines.
-@item
-3.1 -- initial
-@end itemize
-
-@item Purpose:
-
-Generate a key with the given name and passphrase.
-
-@item Sample output:
-
-@verbatim
-            name "tbrownaw@gmail.com"
-            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
- public_location "database" "keystore"
-private_location "keystore"
-
-@end verbatim
-
-@item Output format:
-
-A basic_io stanza. The public_location and private_location items may have
-multiple values as shown above for public_location, one value for each place
-that the key is stored.
-
-@item Error conditions:
-
-Error conditions: If the passphrase is empty or the key already exists,
-prints an error message to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate get_revision @var{id}
-
-@table @strong
-@item Arguments:
-
-The argument @var{id} specifies the revision id for which the changeset
-information should be printed.
-
-@item Changes:
-
-@itemize
-@item
-7.0 -- @var{id} is now mandatory
-@item
-1.0 -- initial
-@end itemize
-
-@item Purpose:
-
-Prints change information for the specified revision id.
-
-@item Sample output:
-
-@verbatim
-format_version "1"
-
-new_manifest [bfe2df785c07bebeb369e537116ab9bb7a4b5e19]
-
-old_revision [429fea55e9e819a046843f618d90674486695745]
-
-patch "ChangeLog"
- from [7dc21d3a46c6ecd94685ab21e67b131b32002f12]
-   to [234513e3838d423b24d5d6c98f70ce995c8bab6e]
-
-patch "std_hooks.lua"
- from [0408707bb6b97eae7f8da61af7b35364dbd5a189]
-   to [d7bd0756c48ace573926197709e53eb24dae5f5f]
-@end verbatim
-
-@item Output format:
-
-There are several changes that are described; each of these is described by
-a different basic_io stanza. The first string pair of each stanza indicates the
-type of change represented.
-
-All stanzas are formatted by basic_io. Stanzas are separated
-by a blank line. Values will be escaped, '\' to '\\' and
-'"' to '\"'.
-
-Possible values of this first value are along with an ordered list of
-basic_io formatted stanzas that will be provided are:
-
-@verbatim
-'format_version'
-      used in case this format ever needs to change.
-      format: ('format_version', the string "1")
-      occurs: exactly once
-'new_manifest'
-      represents the new manifest associated with the revision.
-      format: ('new_manifest', manifest id)
-      occurs: exactly one
-'old_revision'
-      represents a parent revision.
-      format: ('old_revision', revision id)
-      occurs: either one or two times
-'delete
-      represents a file or directory that was deleted.
-      format: ('delete', path)
-      occurs: zero or more times
-'rename'
-      represents a file or directory that was renamed.
-      format: ('rename, old filename), ('to', new filename)
-      occurs: zero or more times
-'add_dir'
-      represents a directory that was added.
-      format: ('add_dir, path)
-      occurs: zero or more times
-'add_file'
-      represents a file that was added.
-      format: ('add_file', path), ('content', file id)
-      occurs: zero or more times
-'patch'
-      represents a file that was modified.
-      format: ('patch', filename), ('from', file id), ('to', file id)
-      occurs: zero or more times
-'clear'
-      represents an attr that was removed.
-      format: ('clear', filename), ('attr', attr name)
-      occurs: zero or more times
-'set'
-      represents an attr whose value was changed.
-      format: ('set', filename), ('attr', attr name), ('value', attr value)
-      occurs: zero or more times
-@end verbatim
-
-These stanzas will always occur in the order listed here; stanzas of
-the same type will be sorted by the filename they refer to. The 'delete'
-and following stanzas will be grouped under the corresponding 'old_revision'
-one.
-
-@item Error conditions:
-
-If the revision specified is unknown or invalid prints an error message
-to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate get_current_revision [--exclude @var{excl}] [--depth=@var{depth}] [@var{path} ...]
-
-@table @strong
-@item Arguments:
-
-One or more @var{path} arguments restrict the revision to these paths,
-otherwise all changes in workspace are taken into account.
-
-Options @var{excl} and @var{depth} work just like in @var{mtn commit}.
-
-@item Added in:
-
-7.0
-
-@item Purpose:
-
-Prints change information for the current workspace, optionally restricted by
-one or more paths.
-
-@item Sample output:
-
-See @var{automate get_revision}
-
-@item Output format:
-
-See @var{automate get_revision}
-
-@item Error conditions:
-
-If the command is executed outside of a workspace, or the restriction is
-invalid, prints an error message to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate get_base_revision_id
-
-@table @strong
-@item Arguments:
-
-None.
-
-@item Added in:
-
-2.0
-
-@item Purpose:
-
-Prints the revision id the current workspace is based on. This is the
-``old_revision'' value stored in @file{_MTN/revision}.
-
-@item Sample output:
-
-@verbatim
-28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
-@end verbatim
-
-@item Output format:
-
-One line containing the base revision ID of the current workspace.
-
-@item Error conditions:
-
-If no workspace book keeping _MTN directory is found, prints an error
-message to stderr, and exits with status 1.
-
-@end table
-
-
-
-@item mtn automate get_current_revision_id
-
-@table @strong
-@item Arguments:
-
-None.
-
-@item Added in:
-
-2.0
-
-@item Purpose:
-
-Prints the revision id of the current workspace. This is the id
-of the revision that would be committed by an unrestricted commit
-in the workspace.
-
-@item Sample output:
-
-@verbatim
-28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
-@end verbatim
-
-@item Output format:
-
-One line containing the current revision id ID of the current workspace.
-
-@item Error conditions:
-
-If no workspace book keeping _MTN directory is found, prints an error
-message to stderr, and exits with status 1.
-
-
-@end table
-
-
-@item mtn automate get_manifest_of
-@item mtn automate get_manifest_of @var{revid}
-
-@table @strong
-@item Arguments:
-
-Specifying the optional @var{revid} argument outputs the manifest for the
-revision with the specified ID. Otherwise, outputs the manifest for the
-current workspace.  (You can think of leaving the argument blank
-as meaning ``give me the manifest of THIS''.)
-
-@item Added in:
-
-2.0
-
-@item Purpose:
-
-Prints the contents of the manifest associated with the given revision.
-
-@item Sample output:
-
-@verbatim
-format_version "1"
-
-dir ""
-
-   file ".htaccess"
-content [e3915658cb464d05f21332e03d30dca5d94fe776]
-
-   file "AUTHORS"
-content [80d8f3f75c9b517ec462233e155f7dfb93379f67]
-
-   file "ChangeLog"
-content [fc74a48c7f73eedcbe1ea709755fbe819b29736c]
-
-   file "LICENSE"
-content [dfac199a7539a404407098a2541b9482279f690d]
-
-   file "README"
-content [440eec971e7bb61ccbb61634deb2729bb25931cd]
-
-   file "TODO"
-content [e0ea26c666b37c5f98ccf80cb933d021ee55c593]
-
-   file "branch.psp"
-content [b28ece354969314ce996f3030569215d685973d6]
-
-   file "common.py"
-content [1fdb62e05fb2a9338d2c72ddc58de3ab2b3976fe]
-
-   file "config.py.example"
-content [64cb5898e3a026b4782c343ca4386585e0c3c275]
-
-   file "error.psp"
-content [7152c3ff110418aca5d23c374ea9fb92a0e98379]
-
-   file "fileinbranch.psp"
-content [5d8536100fdf51d505b6f20bc9c16aa78d4e86a8]
-
-   file "headofbranch.psp"
-content [981df124a0b5655a9f78c42504cfa8c6f02b267a]
-
-   file "help.psp"
-content [a43d0588a69e622b2afc681678c2a5c3b3b1f342]
-
-   file "html.py"
-content [18a8bffc8729d7bfd71d2e0cb35a1aed1854fa74]
-
-   file "index.psp"
-content [c621827db187839e1a7c6e51d5f1a7f6e0aa560c]
-
-   file "monotone.py"
-content [708b61436dce59f47bd07397ce96a1cfabe81970]
-
-   file "revision.psp"
-content [a02b1c161006840ea8685e461fd07f0e9bb145a3]
-
-   file "rss_feed.gif"
-content [027515fd4558abf317d54c437b83ec6bc76e3dd8]
-
-   file "tags.psp"
-content [638140d6823eee5844de37d985773be75707fa25]
-
-   file "tarofbranch.psp"
-content [be83f459a152ffd49d89d69555f870291bc85311]
-
-   file "test.py"
-content [e65aace9237833ec775253cfde97f59a0af5bc3d]
-   attr "mtn:execute" "true"
-
-   file "utility.py"
-content [fb51955563d64e628e0e67e4acca1a1abc4cd989]
-
-   file "viewmtn.css"
-content [8d04b3fc352a860b0e3240dcb539c1193705398f]
-
-   file "viewmtn.py"
-content [7cb5c6b1b1710bf2c0fa41e9631ae43b03424a35]
-
-   file "wrapper.py"
-content [530290467a99ca65f87b74f653bf462b28c6cda9]
-@end verbatim
-
-@item Output format:
-
-There is one basic_io stanza for each file or directory in the
-manifest.
-
-All stanzas are formatted by basic_io. Stanzas are separated
-by a blank line. Values will be escaped, '\' to '\\' and
-'"' to '\"'.
-
-Possible values of this first value are along with an ordered list of
-basic_io formatted stanzas that will be provided are:
-
-@verbatim
-'format_version'
-      used in case this format ever needs to change.
-      format: ('format_version', the string "1")
-      occurs: exactly once
-'dir':
-      represents a directory.  The path "" (the empty string) is used
-      to represent the root of the tree.
-      format: ('dir', pathname)
-      occurs: one or more times
-'file':
-      represents a file.
-      format: ('file', pathname), ('content', file id)
-      occurs: zero or more times
-@end verbatim
-
-In addition, 'dir' and 'file' stanzas may have attr information
-included.  These are appended to the stanza below the basic dir/file
-information, with one line describing each attr.  These lines take the
-form ('attr', attr name, attr value).
-
-Stanzas are sorted by the path string.
-
-@item Error conditions:
-
-If the revision ID specified is unknown or invalid prints an error
-message to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate get_extended_manifest_of @var{revid}
-
-@table @strong
-@item Arguments:
-
-The @var{revid} specifies the revision for which the extended manifest
-should be printed.
-
-@item Changes:
-
-13.0 -- initial
-
-@item Purpose:
-
-Prints the contents of the extended manifest associated with the given revision.
-
-@item Sample output:
-
-@verbatim
-      dir ""
-    birth [0cd607d6dda3a2df18f777112947f3c70811581e]
-path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
-
-         dir "dir"
-dormant_attr "dirprop"
-       birth [0cd607d6dda3a2df18f777112947f3c70811581e]
-   path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
-   attr_mark "dirprop" [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
-
-        file "file"
-     content [d3395867d05cc4c27f013d6e6f48d644e96d8241]
-        size "8"
-        attr "fileprop" "value"
-       birth [0cd607d6dda3a2df18f777112947f3c70811581e]
-   path_mark [0cd607d6dda3a2df18f777112947f3c70811581e]
-content_mark [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
-   attr_mark "fileprop" [a7a71d7cc0d526165e7362b8a87393d8609f40c2]
-@end verbatim
-
-@item Output format:
-
-There is one basic_io stanza for each file or directory in the
-extended manifest.
-
-All stanzas are formatted by basic_io. Stanzas are separated
-by a blank line. Values will be escaped, '\' to '\\' and
-'"' to '\"'.
-
-The 'dir' and 'file' lines are the first in every stanza and
-specify its type as follows:
-
-@verbatim
-'dir':
-      Represents a directory.  The path "" (the empty string) is used
-      to represent the root of the tree.
-      format: ('dir', pathname)
-      occurs: one or more times
-'file':
-      Represents a file.
-      format: ('file', pathname)
-      occurs: zero or more times
-@end verbatim
-
-In addition, both 'dir' and 'file' stanzas include more information
-on the particular node:
-
-@verbatim
-'birth':
-      The revision id in which the node was added ("born").
-      format: ('birth', revision id)
-      occurs: once per node
-'path_mark':
-      The revision id in which the node was last renamed.
-      format: ('path_mark', revision id)
-      occurs: once per node
-'content':
-      The id of the file node, i.e. the hash of its contents.
-      format: ('content', file id)
-      occurs: once per file node
-'content_mark':
-      The revision id in which the node's content was changed at last.
-      format: ('content_mark', revision id)
-      occurs: once per file node
-'size':
-      The recorded file size, in bytes.
-      format: ('size', size in bytes)
-      occurs: once per file node
-@end verbatim
-
-Finally, attributes are also part of the format:
-
-@verbatim
-'attr':
-      The name and the value of a specific attribute.
-      format: ('attr', attribute name, attribute value)
-      occurs: zero or more times per node
-'dormant_attr':
-      The name of a previously deleted attribute.
-      format: ('dormant_attr', attribute name)
-      occurs: zero or more times per node
-'attr_mark':
-      The revision id in which a particular attribute's value was
-      changed at last.
-      format: ('attr_mark', attribute name, revision id)
-      occurs: zero or more times per node
-@end verbatim
-
-All stanzas are sorted by the path string.
-
-@item Error conditions:
-
-If the revision ID specified is unknown or invalid prints an error
-message to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate get_attributes @var{path}
-
-@table @strong
-@item Arguments:
-
-The argument @var{path} determines which path's attributes should be printed.
-
-@item Added in:
-
-@itemize
-@item
-11.0 -- removed the @command{format_version} stanza
-@item
-5.0 -- renamed from @command{attributes} to @command{get_attributes}
-@item
-3.0 -- initial
-@end itemize
-
-@item Purpose:
-
-Prints all attributes of the given file and the attribute states.
-
-@item Sample output:
-
-@verbatim
- attr "foo" "bar"
-state "added"
-
- attr "baz" "bat"
-state "dropped"
-
- attr "foobar" "foobat"
-state "unchanged"
-@end verbatim
-
-@item Output format:
-
-There is one basic_io stanza for each attribute of the given file.
-
-All stanzas are formatted by basic_io. Stanzas are separated
-by a blank line and ordered by attribute name. Values will be
-escaped, '\' to '\\' and '"' to '\"'.
-
-Each attribute stanza also contains another entry which tells the status
-of attribute. This entry can have one of the following four values:
-
-@itemize
-@item
-'added': the attribute has just been added to the file
-@item
-'dropped': the attribute has just been dropped from the file
-@item
-'unchanged': the attribute has not been changed since the last revision
-@item
-'changed': the attribute has been changed since the last revision
-@end itemize
-
-The status 'changed' can come up if an attribute foo has been dropped and
-added afterwards with another value, like
-
-@verbatim
-$ mtn attr drop file.txt foo ; mtn attr set file.txt foo baz
-@end verbatim
-
-If an attribute has been dropped, the output will still return the previously
-set value of the dropped attribute for convenience (obviously this is no longer
-recorded in the current workspace).
-
-The complete format:
-
-@verbatim
-'attr':
-      represents an attribute.
-      format: ('attr', key, value), ('state', [unchanged|changed|added|dropped])
-      occurs: zero or more times
-@end verbatim
-
-@item Error conditions:
-
-If the path specified is unknown in the new workspace revision, prints an error
-message to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate set_attribute @var{path} @var{key} @var{value}
-
-@table @strong
-@item Arguments:
-
-A path, an attribute key and an attribute value.
-
-@item Added in:
-
-5.0
-
-@item Purpose:
-
-Edits the current workspace revision and inserts the given attribute key and
-value for the specified path. Note that this change is not committed and
-therefor behaves exactly like @command{mtn attr set @var{key} @var{value}}.
-
-@item Output format:
-
-This command does not print out anything if successful.
-
-@item Error conditions:
-
-If the path specified is unknown in the new workspace revision, prints an error
-message to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate drop_attribute @var{path} [@var{key}]
-
-@table @strong
-@item Arguments:
-
-A path and an attribute key (optional).
-
-@item Added in:
-
-5.0
-
-@item Purpose:
-
-Removes an attribute from the current workspace revision for the specified path.
-If no attribute key is given, all attributes of this path are removed. Note that
-this change is not committed and therefor behaves exactly like
-@command{mtn attr drop @var{path} [@var{key}]}.
-
-@item Output format:
-
-This command does not print out anything if successful.
-
-@item Error conditions:
-
-If the path specified is unknown in the new workspace revision or the attribute
-key is not found for this path, prints an error message to stderr and exits with
-status 1.
-
-@end table
-
-
-@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [--reverse] [@var{files} ...]
-
-@table @strong
-@item Arguments:
-
-One or more @var{file} arguments restrict the diff output to these files,
-otherwise all changed files in the given revision(s) and/or current workspace
-are considered.
-
-If zero or more revisions are given, the command behaves as follows:
-
-@itemize
-@item
-no revision: the diff is done from the parent (base) revision of this
-workspace to the workspace revision.
-@item
-one revision: the diff is done from the given revision @option{id1} to
-the workspace revision. If @option{--reverse} is given, the order is
-reversed.
-@item
-two revisions: the diff is done from @option{id1} to @option{id2}; no
-workspace is needed in this case.
-@end itemize
-
-@item Changes:
-
-@itemize
-@item
-9.0 -- added @option{--with-header} option
-@item
-4.0 -- initial
-@end itemize
-
-@item Purpose:
-
-Prints the content changes between two revisions or a revision and the current
-workspace. This command differs from @command{mtn diff} in that way that it only
-outputs content changes and keeps quiet on renames or drops by default, as the
-header of @command{mtn diff} is omitted unless @option{--with-header} is given
-and is omitted regardless if there are no changes.
-
-@item Sample output:
-
-@verbatim
-============================================================
---- guitone/res/i18n/guitone_de.ts      9857927823e1d6a0339b531c120dcaadd22d25e9
-+++ guitone/res/i18n/guitone_de.ts      0b4715dc296b1955b0707923d45d79ca7769dd3f
-@@ -1,6 +1,14 @@
- <?xml version="1.0" encoding="utf-8"?>
- <!DOCTYPE TS><TS version="1.1">
- <context>
-+    <name>AncestryGraph</name>
-+    <message>
-[...]
-@end verbatim
-
-@item Output format:
-
-The GNU unified diff format. If there have been no content changes, the output
-is empty.
-
-@item Error conditions:
-
-If more than two revisions are given or a workspace is required, but
-not found, prints to stderr and exits with status 1. If one or more file
-restrictions can't be applied, the command prints to stderr and exits as well.
-
-@end table
-
-@item mtn automate get_file @var{id}
-
-@table @strong
-@item Arguments:
-
-The  @var{id} argument specifies the file hash of the file to be output.
-
-@item Added in:
-
-1.0
-
-@item Purpose:
-
-Prints the contents of the specified file.
-
-@item Sample output:
-
-@verbatim
-If you've downloaded a release, see INSTALL for installation
-instructions.  If you've checked this out, the generated files are not
-included, and you must use "autoreconf --install" to create them.
-
-"make html" for docs, or read the .info file and / or man page.
-@end verbatim
-
-@item Output format:
-
-The file contents are output without modification.
-
-@item Error conditions:
-
-If the file id specified is unknown or invalid prints an error message
-to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate get_file_of @var{filename} [--revision=@var{id}]
-
-@table @strong
-@item Arguments:
-
-The  @var{filename} argument specifies the filename of the file to be output.
-
-If a revision @var{id} is given, the file's contents in that specific revision
-are printed. If no revision is given, the workspace's revision is used.
-
-@item Added in:
-
-4.0
-
-@item Purpose:
-
-Prints the contents of the specified file.
-
-@item Sample output:
-
-@verbatim
-If you've downloaded a release, see INSTALL for installation
-instructions.  If you've checked this out, the generated files are not
-included, and you must use "autoreconf --install" to create them.
-
-"make html" for docs, or read the .info file and / or man page.
-@end verbatim
-
-@item Output format:
-
-The file contents are output without modification.
-
-@item Error conditions:
-
-If the filename specified is unknown in the given revision or invalid, or
-if the given revision is unknown, prints an error message to stderr and exits
-with status 1.
-
-@end table
-
-@item mtn automate get_file_size @var{id}
-
-@table @strong
-@item Arguments:
-
-The  @var{id} argument specifies the file hash of the file for which
-the size should be printed.
-
-@item Changes:
-
-13.0 -- initial
-
-@item Purpose:
-
-Prints the recorded file size of the specified file.
-
-If you need to know the file sizes of multiple files of the same revision,
-its usually faster to use the @command{automate get_extended_manifest_of}
-command.
-
-@item Sample output:
-
-@verbatim
-1241
-@end verbatim
-
-@item Output format:
-
-The size of the file in bytes followed by a linefeed character ('\n').
-
-@item Error conditions:
-
-If the file id specified is unknown or invalid prints an error message
-to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate file_merge @var{left-rid} @var{left-path} @var{right-rid} @var{right-path}
-
-@table @strong
-@item Arguments:
-
-@var{left-rid}, @var{left-fid}, @var{right-rid}, @var{right-fid}
-specify two files to merge, by revision and file path.
-
-@item Added in:
-
-9.0
-
-@item Purpose:
-
-Prints the result of the internal line merge on the contents of the
-specified files.
-
-This command does not just take two file ids, because the revision ids
-and paths are needed to check for manual merge and file encoding
-attributes.
-
-@item Sample output:
-
-@verbatim
-If you've downloaded a release, see INSTALL for installation
-instructions.  If you've checked this out, the generated files are not
-included, and you must use "autoreconf --install" to create them.
-
-"make html" for docs, or read the .info file and / or man page.
-@end verbatim
-
-@item Output format:
-
-The file merge results are output without modification.
-
-@item Error conditions:
-
-If either file id is unknown or invalid, or if the internal line
-merger fails, prints an error message to stderr and exits with status
-1.
-
-@end table
-
-@item mtn automate get_option @var{option}
-
-@table @strong
-@item Arguments:
-
-The @var{option} argument specifies the option name of the option to be output.
-
-@item Added in:
-
-3.1
-
-@item Purpose:
-
-Prints an option from _MTN/option of the current workspace.
-
-@item Sample output:
-
-@verbatim
-net.venge.monotone
-@end verbatim
-
-@item Output format:
-
-The option value is written out without modification.
-
-@item Error conditions:
-
-If the option is unknown, prints an error message to stderr and exits
-with status 1.
-
-@end table
-
-
-@item mtn automate keys
-
-@table @strong
-@item Arguments:
-
-None.
-
-@item Changes:
-
-@itemize
-@item
-11.0 -- Instead of having a "name" item, there are
-"given_name" and "local_name" items.
-@item
-10.0 -- The separate hashes for the private half of a key really didn't
-make much sense; have one @code{hash [...]} line instead of separate
-@code{public_hash [...]} and @code{private_hash [...]} lines.
-@item
-1.1 -- initial
-
-@end itemize
-
-@item Purpose:
-
-Print all keys in basic_io format.
-
-@item Sample output:
-
-@verbatim
-            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-      given_name "tbrownaw@gmail.com"
-      local_name "tbrownaw@gmail.com"
- public_location "database" "keystore"
-private_location "keystore"
-
-           hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
-      given_name "tomfa@debian.org"
-      local_name "tomfa@debian.org"
-public_location "database"
-
-            hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
-      given_name "underwater@fishtank.net"
-      local_name "underwater@fishtank.net"
- public_location "keystore"
-private_location "keystore"
-
-@end verbatim
-
-@item Output format:
-
-For each key, a basic_io stanza is printed. The public_location and
-private_location items may have multiple values as shown above for public_location,
-one value for each place that the key is stored. If the
-private key does not exist, then the private_hash and private_location
-items will be absent. given_name is the name provided when the key was created,
-and local_name is the name returned by the @code{get_local_key_name} hook.
-
-The keys are ordered by hash value.
-
-@item Error conditions:
-
-None.
-
-@end table
-
-@item mtn automate put_public_key @var{key-packet-data}
-
-@table @strong
-@item Arguments:
-
-A data packet, @var{key-packet-data}, as produced by @command{mtn
-automate get_public_key @var{keyid}}.
-
-@item Changes:
-
-13.0 -- initial
-
-@item Purpose:
-
-Store public keys into the database.
-
-Note that this duplicates part of @command{automate read_packets}; the
-intent is to deprecate @command{automate read_packets}, and only keep
-facilities for key packets.
-
-@item Output format:
-
-No output.
-
-@item Error conditions:
-
-An error will be produced if the argument is not a valid key packet.
-
-@end table
-
-@item mtn automate get_public_key @var{keyid}
-
-@table @strong
-@item Arguments:
-
-@var{keyid} identifies the key to display, by name or hash.
-
-@item Changes:
-
-@itemize
-@item
-13.0 -- initial
-
-@end itemize
-
-@item Purpose:
-
-Same as @command{pubkey}; print the key in packet format, suitable for
-reading by @command{automate put_public_key}.
-
-@item Sample output:
-
-@verbatim
-[pubkey foo@bar.com]
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQs4OEcqULwepphO5Rsb/aSLpiEryGtEkQRNQPNFxvcu1rwVnNKRxep1KCDrwV3se9f4hUQ8zz73NQggS82guSI/YuyXZDZHrw+v3YgAMV/mKGnAjgYnyRNUL1xCywV7fnqTduBBqkDEVSCqphWlii/gFB/PVo4sbJ4Hk7O6ujWwIDAQAB
-[end]
-@end verbatim
-
-@item Output format:
-
-See example.
-
-@item Error conditions:
-
-If the key does not exist, an error message is printed on the error stream.
-
-@end table
-
-@item mtn automate drop_public_key @var{keyid}
-
-@table @strong
-@item Arguments:
-
-@var{keyid} identifies the key to drop, by name or hash.
-
-@item Changes:
-
-@itemize
-@item
-13.0 -- initial
-
-@end itemize
-
-@item Purpose:
-
-Drop a public key from the database (@emph{not} the private key from
-the keystore). Signatures made with the key can no longer be verified.
-
-This command should be used with caution as changes are irreversible
-without a backup of the key(s) that were dropped. You may wish to use
-the @command{k:} selector to check if the key is used in a signature.
-
-Note that public keys that are used to sign a revision may be
-restored to the database by a future sync.
-
-Keys in the keystore are not dropped because that is very dangerous on
-a server. The only way to drop private keys on a server is via the
-command @command{mtn dropkey}.
-
-@item Sample output:
-
-None.
-
-@item Output format:
-
-None on the main stream; progress message on the progress stream.
-
-@item Error conditions:
-
-If the key does not exist, an error message is printed on the error stream.
-
-@end table
-
-@item mtn automate packet_for_rdata @var{id}
-
-@table @strong
-@item Arguments:
-
-The @var{id} specifies the revision to output an rdata packet for.
-
-@item Added in:
-
-2.0
-
-@item Purpose:
-
-Prints the revision data in packet format
-
-@item Sample output:
-
-@verbatim
-[rdata bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed]
-H4sIAAAAAAAA/0XQS27DMAwE0L1PIfgArb4kte62NzACg5SoJEBsF7aRurev0UVzgJl5mLas
-E+/jU9ftvsymd33Xzfo9Tjzfm267GSgGwVarz6Valx0KtFYwii9VqUFCqJQ5X7puedRx1ef9
-r2rwHlSbi+BUSrF4xn1p0RInkmxTbmwREp/BL97LzfQfN56v+rlc+860dZnMED01jhILkURJ
-Ul0KPpGN1ueUwDHyiXF66Ywx+2IGD+0Uqg8aCzikAEzZNRXPmJKlkhMxSHuNzrofx/uq2/J4
-6njV/bZsu/zMPOlbOY4XJSD5KOrwXGdwpDGdfotZayQHKTAi5fRPqUWKcAMMIQfAjOK0nkfm
-6tFacjYgBPV46X4BtlpiNYUBAAA=
-[end]
-@end verbatim
-
-@item Output format:
-
-Revision data in @command{monotone read} compatible packet format.
-
-@item Error conditions:
-
-If @var{id} is unknown or invalid prints an error message to stderr
-and exits with status 1.
-
-@end table
-
-@item mtn automate packet_for_certs @var{id}
-
-@table @strong
-@item Arguments:
-
-The @var{id} specifies the revision to output cert packets for.
-
-@item Added in:
-
-2.0
-
-@item Purpose:
-
-Prints the certs associated with a revision in packet format
-
-@item Sample output:
-
-@verbatim
-[rcert bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed
-       branch
-       njs@pobox.com
-       bmV0LnZlbmdlLm1vbm90b25l]
-K90i1XHHmaMEMuwbPifFweLThJl0m7jigh2Qq6Z7TBwNJ6IMOjXWCizv73cacZ1CtzxFDVwQ
-SlqhNWiPQWxdcMp+Uuo+V8IFMKmvxVSTuVDukLMuNAQqpGL5S+a+tEj68NMq+KLKuL8kAAPc
-RoFD7GQlTS35S3RHWA4cnvqn+8U=
-[end]
-[rcert bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed
-       date
-       njs@pobox.com
-       MjAwNi0wNC0wOFQxMTo1MDowMA==]
-araz9A8x6AlK6m6UhwnhUhk7cdyxeE2nvzj2gwaDvkaBxOq4SN23/wnaPqUXx1Ddn8smzyRY
-HN08xloYc0yNChp3wjbqx20REcsTg3XE4rN/sgCbqqw5hVT22a5ZhqkfkDeoeJvan0R0UBax
-ngKYo9eLuABNlmFX2onca75JW1E=
-[end]
-[rcert bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed
-       author
-       njs@pobox.com
-       bmpzQHBvYm94LmNvbQ==]
-BLPOYhgLsAN+w7CwOsv9GfXnG3u7RNF1DTrWdn0AnYE1e+ptgTeMVWUI18H4OGL0B7wm08rv
-Pxk/hvsb8fBn1Kf5HDDO2pbjJ0xVzI9+p+TR0y5jJNZlVSTj+nvtPgvK9NzsdooYWnwlWmJv
-bOkAzQcZb8NMh8pbQkdHbR5uzMo=
-[end]
-[rcert bdf3b10b5df0f17cc6c1b4b3351d84701bda59ed
-       changelog
-       njs@pobox.com
-       MjAwNi0wNC0wOCAgTmF0aGFuaWVsIFNtaXRoICA8bmpzQHBvYm94LmNvbT4KCgkqIG5ldHh4
-L3Jlc29sdmVfZ2V0aG9zdGJ5bmFtZS5jeHggKHJlc29sdmVfaG9zdG5hbWUpOiAjaWZkZWYg
-b3V0CglXaW4zMi1pbmNvbXBhdGlibGUgZXJyb3IgcmVwb3J0aW5nIGNhbGwuCg==]
-Ncl4L/oEPctzVQixTKA6FrLceeHnLiXfeyeFDNmtUFYg9BMUcjWkeyKmaWknLvOcHortxjto
-K6pQ9E8S7zI+TpzFAhssg5a///rFL0+2GJU3t6pcHs6LC0Q4tbqzwKd/5+8GwT1gphbM1wm7
-KuzKthwqD3pp49GbgTrp8iWMTr0=
-[end]
-@end verbatim
-
-@item Output format:
-
-Cert data in @command{monotone read} compatible packet format.
-
-@item Error conditions:
-
-If @var{id} is unknown or invalid prints an error message to stderr
-and exits with status 1.
-
-@end table
-
-@item mtn automate packet_for_fdata @var{id}
-
-@table @strong
-@item Arguments:
-
-The @var{id} specifies the file to output an fdata packet for.
-
-@item Added in:
-
-2.0
-
-@item Purpose:
-
-Prints the file data in packet format
-
-@item Sample output:
-
-@verbatim
-[fdata 229c7f621b65f7e4970ae5aaec993812b9daa1d4]
-H4sIAAAAAAAA/z2OO27DMBBEe51ioMaNrJzBpQAjTXKBBTW0CJPcgFw6yO1DCkG62Q/em83j
-R9vlRez6naPKzh2CwkipXFBJbO8fn7f7HV4LQq4mMYoFzdMYSnMj1xXY/lnuoHt2kB2hQpst
-PREPZhaxvvchskIKkdU6xsXWvQsk76MOUquGVolZmmmh0+xxvf7JZ5jCFXbU4KZ1muYkT+Kw
-FOez5q6uLuh9+9eoQawhez3Fp+VtHJNkfMmDHfALzWYfcAgBAAA=
-[end]
-@end verbatim
-
-@item Output format:
-
-File data in @command{monotone read} compatible packet format.
-
-@item Error conditions:
-
-If @var{id} is unknown or invalid prints an error message to stderr
-and exits with status 1.
-
-@end table
-
-@item mtn automate packet_for_fdelta @var{from-id} @var{to-id}
-
-@table @strong
-@item Arguments:
-
-The @var{from-id} specifies the file to use as the base of the delta,
-and @var{to-id} specifies the file to use as the target of the delta.
-
-@item Added in:
-
-2.0
-
-@item Purpose:
-
-Prints the file delta in packet format
-
-@item Sample output:
-
-@verbatim
-[fdelta 597049a62d0a2e6af7df0b19f4945ec7d6458727
-        229c7f621b65f7e4970ae5aaec993812b9daa1d4]
-H4sIAAAAAAAA/0WOy0oEMRBF9/mKS2/c9LQg4t5lw+BGf6BIKtNhkpSkKop/b9II7m49OOfu
-eHp5dnvEj/SHL0aQ75qFAgcQGmcm5RXKjP3t/eP1ekWUhlTVKGeyJNXNoXU/s27AP8sf7O8D
-ZEdSSLd1JMaNKzeysY8ps4Iao4oNjM99eFdQDbMOSldDV8ZC3aSxlxpxufzJF5jANx6oyS2b
-c0uhO+OwkpezZhCvK0bf8TVrMLZUo5zi0/I4j4UqPunGA+B+AfHvKEIPAQAA
-[end]
-@end verbatim
-
-@item Output format:
-
-File delta data in @command{monotone read} compatible packet format.
-
-@item Error conditions:
-
-If @var{from-id} or @var{to-id} is unknown or invalid prints an error
-message to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate get_content_changed @var{id} @var{file}
-
-@table @strong
-@item Arguments:
-
-The @var{id} specifies a revision ID, from which content change calculations will be based.
-and @var{file} specifies the file for which to calculate revisions in which it was last changed.
-
-@item Added in:
-
-4.0
-
-@item Purpose:
-
-Returns a list of revision IDs in which the content  was most recently changed,
-relative to the revision ID specified as @var{id}. This equates to a content mark
-following the *-merge algorithm.
-
-@item Sample output:
-
-@verbatim
-  content_mark [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
-@end verbatim
-
-@item Output format:
-
-Zero or more basic_io stanzas, each specifying a revision ID in which a content
-mark is set:
-
-@itemize
-@item
-No content mark is returned if @var{file} is a directory.
-@item
-One content mark is returned if @var{file} is a file and has recently been
-changed exclusively in one revision (be it by a commit or merge).
-@item
-Multiple content marks are returned if @var{file} is a file and has recently
-been part of a clean merge case.
-A clean merge happens when the same change to @var{file} is made on both sides
-of the particular merge, together with other unrelated changes, which make the
-resulting revisions not collapse into one revision.
-@end itemize
-
-The complete format:
-@verbatim
-'content_mark'
-         the hexadecimal id of the revision the content mark is attached to
-@end verbatim
-
-@item Error conditions:
-
-If @var{id} or @var{file} is unknown or invalid prints an error
-message to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate get_corresponding_path @var{source_id} @var{file} @var{target_id}
-
-@table @strong
-@item Arguments:
-
-The @var{source_id} specifies a revision ID in which @var{file} is current extant.
-and @var{file} specifies the file whose name in @var{target_id} is to be determined;
-@var{target_id} specifies a revision ID.
-
-@item Added in:
-
-4.0
-
-@item Purpose:
-
-Given a the file name @var{file} in the source revision @var{source_id}, a filename
-will if possible be returned naming the file in the target revision @var{target_id}.
-This allows the same file to be matched between revisions, accounting
-for renames and other changes.
-
-@item Sample output:
-
-@verbatim
-file "foo"
-@end verbatim
-
-@item Output format:
-
-Zero or one basic_io stanzas. Zero stanzas will be output if the file does not exist within the target revision; this is not considered an error. If the file does exist in the target revision, a single stanza with the  following details is output.
-
-The complete format:
-@verbatim
-   'file'
-         the file name corresponding to "file name" (arg 2) in the target revision
-@end verbatim
-
-@item Error conditions:
-
-If the revision IDs @var{source_id} or @var{target_id} are unknown or invalid prints an error
-message to stderr and exits with status 1. If the file path @var{file} does not exist in the
-revision @var{source_id} or is invalid, prints an error message to stderr and exits with status
-1. Note that @var{file} not existing in the revision @var{target_id} is not an error.
-
-@end table
-
-@item mtn automate get_db_variables [@var{domain}]
-
-@table @strong
-@item Arguments:
-
-The optional @var{domain} restricts the output to variables only within
-this domain.
-
-@item Changes:
-
-@itemize
-@item
-7.0 -- converted output to basic_io, renamed to 'get_db_variables'
-@item
-4.1 -- added as 'db_get'
-@end itemize
-
-@item Purpose:
-
-Reads and outputs database variables. For more information about variables,
-see @ref{Vars}.
-
-@item Sample output:
-
-@verbatim
-domain "database"
- entry "default-exclude-pattern" ""
- entry "default-include-pattern" "net.venge.monotone*"
- entry "default-server" "mtn://code.monotone.ca/monotone"
-
-domain "known-servers"
- entry "mtn://code.monotone.ca/monotone" "2c88403f0ed546df96ccec57ab3072aa73a05e71"
-@end verbatim
-
-@item Output format:
-
-basic_io-formatted stanzas. Each stanza starts with a 'domain', followed by one
-or more 'entry' lines. Each 'entry' contains the @var{name} and the @var{value}
-of the respective database variable.
-
-@item Error conditions:
-
-If the domain is unknown or no variables where found, prints an error message
-to stderr and exits with status 1.
-
-@end table
-
-@item mtn automate set_db_variable @var{domain} @var{name} @var{value}
-
-@table @strong
-@item Arguments:
-
-The @var{domain} and @var{name} specify the database variable
-which is changed to @var{value}.
-
-@item Changes:
-
-@itemize
-@item
-7.0 -- renamed to 'set_db_variable'
-@item
-4.1 -- added as 'db_set'
-@end itemize
-
-@item Purpose:
-
-Change a database variable, see also @ref{Vars}.
-
-@item Sample usage:
-
-@verbatim
-mtn automate set_db_variable database default-server off.net
-@end verbatim
-
-@item Output format:
-
-No output.
-
-@item Error conditions:
-
-None.
-
-@end table
-
-@item mtn automate drop_db_variables @var{domain} [@var{name}]
-
-@table @strong
-@item Arguments:
-
-The @var{domain} and @var{name} specify the database variable
-which should be dropped. If @var{name} is ommitted, all database
-variables in the @var{domain} are dropped.
-
-@item Added in:
-
-7.0
-
-@item Purpose:
-
-Drops one or more database variables, see also @ref{Vars}.
-
-@item Sample usage:
-
-@verbatim
-mtn automate drop_db_variables known-servers
-@end verbatim
-
-@item Output format:
-
-No output.
-
-@item Error conditions:
-
-If the specific variable or any variables in the given domain are not found,
-prints to stderr and exits with status 1.
-
-@end table
-
 @item mtn automate put_file [@var{base-id}] @var{contents}
 
 @table @strong
@@ -10344,6 +9936,36 @@ The sha1 sum of the contents, hex encoded.
 
 If the optional base id is unknown prints an error message to stderr and
 exits with status 1.
+
+@end table
+
+@item mtn automate put_public_key @var{key-packet-data}
+
+@table @strong
+@item Arguments:
+
+A data packet, @var{key-packet-data}, as produced by @command{mtn
+automate get_public_key @var{keyid}}.
+
+@item Changes:
+
+13.0 -- initial
+
+@item Purpose:
+
+Store public keys into the database.
+
+Note that this duplicates part of @command{automate read_packets}; the
+intent is to deprecate @command{automate read_packets}, and only keep
+facilities for key packets.
+
+@item Output format:
+
+No output.
+
+@item Error conditions:
+
+An error will be produced if the argument is not a valid key packet.
 
 @end table
 
@@ -10406,27 +10028,265 @@ this fact, but otherwise works as normal.
 
 @end table
 
-@item mtn automate cert @var{revision} @var{name} @var{value}
+@item mtn automate read_packets @var{packet-data}
 
 @table @strong
 @item Arguments:
 
-@var{revision} is an existing revision, @var{name} is the certificate name
-and @var{value} its value.
+A data packet, @var{packet-data}, as produced by @command{mtn pubkey @var{keyid}}.
 
 @item Added in:
 
-4.1
+9.0
 
 @item Purpose:
 
-@command{automate stdio} capable variant of @command{mtn cert}. To sign the
-cert with a specific private key, use @option{--key}.
+Store public keys (and incidentally anything else that can be represented as
+a packet) into the database.
+
+@item Output format:
+
+No output.
+
+@item Error conditions:
+
+An error will be produced if the argument is not a valid packet.
+
+@end table
+
+@item mtn automate remote @option{--remote-stdio-host=host} @var{command} @var{args-and-opts}
+
+@table @strong
+@item Arguments
+
+A command and its arguments, to execute on the remote server specified
+by the @option{--remote-stdio-host} option. If no host is given, the default
+server is used. If options are to be passed to the command, they must be
+preceded by @option{--} to prevent them from being interpreted as local options.
+
+Remote options @strong{must} be given as a single token, ie
+@option{--branch=foo} or @option{-bfoo}. This is because the local and remote
+monotones may not understand exactly the same options (so the local monotone
+cannot know if an option given as @option{--branch} or @option{-b} should be
+followed by an argument), and because the server sees this as an
+@code{automate remote_stdio} connection (so it expects the options to already
+be parsed).
+
+@item Added in
+
+12.0
+
+@item Purpose
+
+Permit a single @code{automate} command to be run against a database that is
+being used to serve netsync connections, without having its input and output
+encoded as by @code{automate stdio}.
+
+@item Input/Output Format
+
+This command does not accept input.
+
+The output will be whatever output the remote command generates.
+
+Remote diagnostic messages are written to standard error, prefixed either
+with @code{mtn: remote error:}, @code{mtn: remote warning:} or
+@code{mtn: remote message:} to make them distinguishable from local
+diagnostics. Tickers are not supported over this interface. If you need
+remote ticker support, please use @command{automate remote_stdio}.
+
+@item Error Conditions
+
+If the remote command returns a nonzero error code, will exit with code 1 and
+print "received remote error code N" to standard error, with "N" being
+the remote error code.
+
+@item Notes
+
+If no database is specified, a @command{:memory:} database is used.
+
+On the server side the @code{get_remote_automate_permitted} hook has to be
+configured to include every command which should be executable over this
+interface.
+
+Keyboard interaction is disabled on the server, just as if
+@option{--non-interactive} would have been specified on server startup.
+Actions which require operations on password-encrypted private keys will
+therefor fail unless a @code{get_passphrase} hook is set up remotely.
+
+@end table
+
+@item mtn automate remote_stdio [@var{hostname}]
+
+@table @strong
+@item Arguments
+
+@var{hostname} is the host (and optionally port) of the monotone server
+process to connect to. If not given, the default server is used.
+
+@item Added in
+
+12.0
+
+@item Purpose
+
+Permit @code{automate} commands to be run against a database that is
+being used to serve netsync connections.
+
+@item Input/Output format
+
+This command takes input and produces output in exactly the
+same format as @code{automate stdio}. Note that the commands run with
+@code{automate remote_stdio} may conform to a different @var{interface_version},
+because they are handled by a remote instance of monotone.
+
+There will be some extra chatter on stderr unless @option{--quiet} is given.
+
+@item Error Conditions
+
+If left idle for too long or there are network problems, the connection to the
+server may be dropped. This will not be detected while monotone is waiting for
+input. Instead, when a complete command has been entered and monotone tries to
+send it to the remote server it will print a message to stderr and exit with
+code 1.
+
+@item Notes
+
+If no database is specified, a @command{:memory:} database is used.
+
+On the server side the @code{get_remote_automate_permitted} hook has to be
+configured to include every command which should be executable over this
+interface.
+
+For both, the client and the server, keyboard interaction is disabled,
+just as if @option{--non-interactive} is specified. Actions which require
+operations on password-encrypted private keys will therefor fail unless the
+@code{get_passphrase} hook is set up locally and / or remotely.
+
+@end table
+
+@item mtn automate roots
+
+@table @strong
+@item Arguments:
+
+None.
+
+@item Added in:
+
+4.3
+
+@item Purpose:
+
+Prints the roots of the revision graph, i.e. all revisions that have
+no parents.
+
+@item Sample output:
+
+@verbatim
+276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f
+@end verbatim
+
+@item Output format:
+
+Zero or more lines, each a root of the revision graph.  Each line
+consists of a revision ID, in hexadecimal, followed by a newline.  The
+lines are printed in alphabetically sorted order.
+
+@item Error conditions:
+
+None.
+
+@end table
+
+
+@item mtn automate select @var{selector}
+
+@table @strong
+@item Arguments:
+
+One selector (or combined selector).
+
+@item Added in:
+
+0.2
+
+@item Purpose:
+
+Print all revisions that match the given selector.
+
+@item Sample output:
+
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+75156724e0e2e3245838f356ec373c50fa469f1f
+@end verbatim
+
+@item Output format:
+
+Zero or more lines, each giving the ID of one revision that matches the
+given selector.  Each line consists of a revision ID, in hexadecimal,
+followed by a newline.  Revision ids are printed in alphabetically
+sorted order.
+
+@item Error conditions:
+
+None.
+
+@end table
+
+@item mtn automate set_attribute @var{path} @var{key} @var{value}
+
+@table @strong
+@item Arguments:
+
+A path, an attribute key and an attribute value.
+
+@item Added in:
+
+5.0
+
+@item Purpose:
+
+Edits the current workspace revision and inserts the given attribute key and
+value for the specified path. Note that this change is not committed and
+therefor behaves exactly like @command{mtn attr set @var{key} @var{value}}.
+
+@item Output format:
+
+This command does not print out anything if successful.
+
+@item Error conditions:
+
+If the path specified is unknown in the new workspace revision, prints an error
+message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate set_db_variable @var{domain} @var{name} @var{value}
+
+@table @strong
+@item Arguments:
+
+The @var{domain} and @var{name} specify the database variable
+which is changed to @var{value}.
+
+@item Changes:
+
+@itemize
+@item
+7.0 -- renamed to 'set_db_variable'
+@item
+4.1 -- added as 'db_set'
+@end itemize
+
+@item Purpose:
+
+Change a database variable, see also @ref{Vars}.
 
 @item Sample usage:
 
 @verbatim
-mtn automate cert 4c2c1d846fa561601254200918fba1fd71e6795d author tester@test.net
+mtn automate set_db_variable database default-server off.net
 @end verbatim
 
 @item Output format:
@@ -10435,8 +10295,7 @@ No output.
 
 @item Error conditions:
 
-If the revision is invalid prints an error message to stderr and
-exits with status 1.
+None.
 
 @end table
 
@@ -10746,75 +10605,354 @@ invalid, prints an error message to stderr and exits with status 1.
 
 @end table
 
-@item mtn automate get_workspace_root
+@anchor{mtn-au-stdio}@item mtn automate stdio
 
 @table @strong
 @item Arguments:
 
-None.
+none
 
-@item Added in:
+@item Changes:
 
-8.0
+@itemize
+@item
+12.0 -- Introduced out of band streams ('e', 'p', 't', 'w'); the main output
+    of a command now only happens in the 'm' stream; the 'l' stream now marks
+    the end of all streams of a command; introduced the concept of "headers"
+    which are output before the first command is issued; specific error codes
+    to distinguish command from interface errors have also been introduced.
+@item
+3.1 -- Added the 'o' item to the recognized input. This change should not
+break anything.
+@item
+1.0 -- Initial version.
+@end itemize
 
 @item Purpose:
 
-To show the path of the workspace root for the current directory.
+Allow multiple automate commands to be run from one instance of monotone.
+
+@item Sample input:
+
+@verbatim
+l6:leavese
+l7:parents40:0e3171212f34839c2e3263e7282cdeea22fc5378e
+o3:key11:foo@bar.come l4:cert40:0e3171212f34839c2e3263e7282cdeea22fc53783:foo3:bare
+@end verbatim
+
+@item Input format:
+
+@verbatim
+[ 'o' <string> <string> [ <string> <string> [ ... ] ] 'e' ]
+'l' <string> [ <string> [ ... ] ] 'e'
+@end verbatim
+
+The input is a series of commands. The command name plus arguments are
+provided as 'l' <string> [<string> ...] 'e', where <string> = <size> colon
+<data> . This may optionally be preceded by a set of key=value pairs
+(command options) as 'o' <string> <string> [<string> <string> ...] 'e', where
+strings come in pairs, key followed by value. For flag options that
+don't take values, specify the second string as zero length; @code{0:}.
+
+The space between the ending 'e' of one group of strings and the beginning
+'l' or 'o' of the next is reserved. Any characters other than whitespace
+will cause an error.
 
 @item Sample output:
 
 @verbatim
-/home/jim/juice
+format-version: 2
+
+0:m:41:7706a422ccad41621c958affa999b1a1dd644e79
+0:l:1:0
+...
+1:e:38:misuse: key 'test@test' already exists
+1:l:1:2
+...
+2:w:39:skipping file '\' with unsupported name
+2:m:144:    path ""
+old_type "directory"
+new_type "directory"
+ fs_type "directory"
+   birth [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
+  status "known"
+...
+3:t:34:c:certificates;k:keys;r:revisions;
+3:t:12:c=0;k=0;r=0;
+3:t:13:c#0;k#0;r#64;
+3:t:14:c#0;k#0;r#128;
+3:t:6:c;k;r;
+...
 @end verbatim
 
 @item Output format:
 
-A path.
+Right after a stdio session has been set up, header information is
+issued; to date the only header defined is @code{format-version},
+which denotes the version of the stdio format used throughout the
+session. The original format had no such version output, so our
+numbering starts with "2" here.
+
+Headers are separated from each other by single newline character @code{'\n'}
+and the last is separated from the following output by a pair of newline
+characters.
+
+After a command has been issued, one or more packets are returned for it.
+A packet looks like:
+
+@verbatim
+<command number>:<stream>:<size>:<output>
+@end verbatim
+
+@code{<command number>} is a decimal number specifying which command this output
+is from. It is 0 for the first command, and increases by one each time.
+
+@code{<stream>} is an identifier for which output stream this packet represents,
+allowing multiple streams to be multiplexed over the channel.  The following
+streams are presently defined; more streams may be added later.
+
+@itemize
+@item
+ @code{m}: this stream represents the normal ("main") stdout automate output of
+ the command, formatted as described in the description for that command.
+@item
+ @code{e}: this stream represents any (unstructured) error message data.
+
+ Internally, this maps to calls to the @code{E()} print macros that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
+@item
+ @code{w}: this stream represents any (unstructured) warning message data.
+
+ Internally, this maps to calls to the @code{W()} print macro that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
+@item
+ @code{p}: this stream represents any (unstructured) progress message data.
+
+ Internally, this maps to calls to the @code{P()} print macro that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
+@item
+ @code{t}: this stream represents ticker updates, which may be used
+ by a user interface to display the progress of a command.
+
+ The output for this channel can be described as follows:
+
+ @itemize
+ @item
+ @code{<output>       ::= <definition><payload><end>}
+ @item
+ @code{<definition>   ::= <shortname> ':' <longname> <eol>}
+ @item
+ @code{<payload>      ::= <total_count><advance>+}
+ @item
+ @code{<end>          ::= <shortname> <eol>}
+ @item
+ @code{<total_count>  ::= <shortname> '=' <count> <eol>}
+ @item
+ @code{<advance>      ::= <shortname> '#' <count> <eol>}
+ @item
+ @code{<shortname>    ::= "\w+"}
+ @item
+ @code{<longname>     ::= "[^;]+"}
+ @item
+ @code{<count>        ::= ['0'-'9']+}
+ @item
+ @code{<eol>          ::= ';'}
+ @end itemize
+
+ The definition tells the implementor the short name and long name of
+any upcoming ticker event. The names and meanings are command-specific
+and are therefore explained in the sections for the particular
+commands which support ticker output.
+
+ The @code{total_count} might be 0 right at the start and can later be changed
+ to a different number if the command later on knows a more exact value. If
+ this is the case, this stanza is output again with this new value. A
+ constant @code{total_count} of 0 means that the command may continue to run
+ for a undefined amount of time until the end stanza appears.
+
+ The advance tells the implementor how much work has been done so far.
+
+ Finally, the end stanza is printed just before the ticker ends
+ (i.e. the work has been done).
+
+ All counts output absolute, raw values; no modulation takes place. It
+is usually the case that definition, @code{total_count}, advance and
+end are output in separate stanzas. It is also possible that two or
+more parallel tickers output their stanzas at the same time, in this
+case it's ensured that the output does not get intermixed; first
+all definitions are output, afterwards all total_counts, and so on.
+
+ @emph{Note:} The ticker format used for stdio is fixed and cannot be selected
+ explicitely via the global @option{--ticker} option. However, if you run an
+ automate command outside of stdio you can set a different ticker type, f.e.
+ @var{count}, @var{dot} or @var{none}.
+@item
+ @code{l}: this stream marks the termination of a command and all of
+ its streams and carries the return code of the command in the payload.
+
+ A return code "0" stands for success, "1" for an error which occurred within
+ the stdio interface (f.e. syntax errors or missing privileges) before the
+ command is run and finally "2" for any other command-specific error.
+@end itemize
+
+@code{<size>} is the number of bytes in the output.
+
+@code{<output>} is a piece of the output of the command.
 
 @item Error conditions:
 
-If the current directory isn't part of a workspace, prints an error to
-stderr and exits with status 1.
+Errors in the commands run through this interface do not affect the exit
+status of this command. Instead, if a badly formatted or invalid command
+is received, or a command is given with invalid arguments or options,
+an error message to the error stream is printed and and the particular
+sub-command exits with return code "1". Other command-specific errors are
+returned as code "2".
+
+Trying to run the @code{automate stdio} or @code{automate remote_stdio}
+sub-commands will exit the particular command with return code "1".
+
+@item Notes:
+
+Keyboard interaction is disabled, just as if @option{--non-interactive} is
+specified. Actions which require operations on password-encrypted private keys
+will therefor fail unless the @code{get_passphrase} hook is set up locally.
+
+@item Multiple streams
+
+The multiple stream encoding allows the output of errors and warnings to be
+associated with the command that generated them, allows the communication
+path to always stay in sync, and offers the opportunity to add other stream
+types for other useful purposes in the future as needs arise.
 
 @end table
 
-@item mtn automate log
+@item mtn automate sync
+See @command{mtn automate pull}
+
+@item mtn automate tags [@var{branch_pattern}]
 
 @table @strong
 @item Arguments:
 
-[--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]]
-[--clear-from] [--to=@var{id} [...]] [--clear-to]
-[--[no-]merges] [@var{pathname...}]
+A branch pattern (optional).
 
-Same as @command{mtn log}, but without the output control options; see
-@ref{Informative}.
+@item Changes:
 
-@item Added in:
-
-12.2
+@itemize
+@item
+11.0 -- @var{signer} now prints the hash of the signing key, no longer the name.
+        Also, the @var{format_version} stanza has been removed in favour of the
+        global @var{interface_version}.
+@item
+2.2 -- added
+@end itemize
 
 @item Purpose:
 
-Print the selected revisions on stdout, in topological order. The user
-can then use other automate commands to retrieve additional
-information about each revision.
+If a branch pattern is given, prints all tags that are attached to
+revisions on branches matched by the pattern; otherwise prints all
+tags of the revision graph.
+
+If a branch name is ignored by means of the Lua hook
+@code{ignore_branch}, it is neither printed, nor can it be matched by
+a pattern.
 
 @item Sample output:
 
 @verbatim
-233afb8c4832bf33d5f5734225164de5f5a6278c
-4a368a6b217c40b2ff3b12bb7cfa00987e0f191c
-233afb8c4832bf33d5f5734225164de5f5a6278c
+     tag "monotree-0.1"
+revision [8a121346ce2920b6f85df68b3b620de96bd14a8d]
+  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
+branches "net.venge.monotone.contrib" "net.venge.monotone.contrib.monotree"
+
+     tag "monotree-0.2"
+revision [5d288b39b49613b0d9dca8ece6b9a42c3773f35b]
+  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
+branches "net.venge.monotone.contrib.monotree"
+
+     tag "monotree-0.3"
+revision [35cff8e8ba14155f5f7ddf7965073f514fd60f61]
+  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
+branches "net.venge.monotone.contrib.monotree"
+
+     tag "monotree-0.4"
+revision [f1afc520474f83c58262896ede027ef77226046e]
+  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
+branches "net.venge.monotone.contrib.monotree"
 @end verbatim
 
 @item Output format:
 
-One revision per line.
+There is one basic_io stanza for each tag.
+
+All stanzas are formatted by basic_io. Stanzas are separated by a
+blank line. Values will be escaped, '\' to '\\' and '"' to '\"'.
+
+Each stanza has exactly the following four entries:
+
+@table @option
+@item 'tag'
+the value of the tag cert, i.e. the name of the tag
+
+@item 'revision'
+the hexadecimal id of the revision the tag is attached to
+
+@item 'signer'
+the name of the key used to sign the tag cert
+
+@item 'branches'
+a (possibly empty) list of all branches the tagged revision is on
+@end table
+
+Stanzas are printed in arbitrary order.
 
 @item Error conditions:
 
-see @command{mtn log} in @ref{Informative}.
+A run-time exception occurs if an illegal branch pattern is
+specified.
+
+@end table
+
+
+@item mtn automate toposort [@var{rev1} [@var{rev2} [...]]]
+
+@table @strong
+@item Arguments:
+
+One or more revision IDs, @var{rev1}, @var{rev2}, etc.
+
+@item Added in:
+
+0.1
+
+@item Purpose:
+
+Prints all arguments, topologically sorted.  I.e., if @var{rev1} is an
+ancestor of @var{rev2}, then @var{rev1} will appear before @var{rev2} in
+the output; if @var{rev2} is an ancestor of @var{rev1}, then @var{rev2}
+will appear before @var{rev1} in the output; and if neither is an
+ancestor of the other, then they may appear in either order.  If there
+are no arguments, prints nothing.
+
+@item Sample output:
+
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+75156724e0e2e3245838f356ec373c50fa469f1f
+@end verbatim
+
+@item Output format:
+
+A list of revision IDs, in hexadecimal, each followed by a newline.
+Revisions are printed in topologically sorted order.
+
+@item Error conditions:
+
+If any of the revisions do not exist, prints nothing to stdout, prints
+an error message to stderr, and exits with status 1.
 
 @end table
 
@@ -10858,159 +10996,6 @@ Free form, prefixed by ``mtn:''.
 see @command{update} in @ref{Workspace}.
 
 @end table
-
-@item mtn automate checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
-
-@table @strong
-@item Arguments:
-
-Same as @command{mtn checkout}; directory to create workspace in.
-
-@item Changes:
-
-13.0 -- initial
-
-@item Purpose:
-
-Create a new workspace containing the given revision; see
-@command{checkout} in @ref{Workspace}.
-
-@item Sample output:
-
-None.
-
-@item Output format:
-
-None.
-
-@item Error conditions:
-
-see @command{checkout} in @ref{Workspace}.
-
-@end table
-
-@item mtn automate read_packets @var{packet-data}
-
-@table @strong
-@item Arguments:
-
-A data packet, @var{packet-data}, as produced by @command{mtn pubkey @var{keyid}}.
-
-@item Added in:
-
-9.0
-
-@item Purpose:
-
-Store public keys (and incidentally anything else that can be represented as
-a packet) into the database.
-
-@item Output format:
-
-No output.
-
-@item Error conditions:
-
-An error will be produced if the argument is not a valid packet.
-
-@end table
-
-@item mtn automate lua @var{function_name} [@var{function_args...}]
-
-@table @strong
-@item Arguments:
-
-A valid Lua function name and zero or more function arguments. Note that string
-arguments need to be wrapped in another pair of quotes, i.e. @code{"foo"} or
-@code{'foo'} will not work, but @code{"'foo'"} or @code{'"foo"'} will.
-
-Complex types are also supported, anything which can be evaluated as valid
-Lua expression can be given as input, including nested tables and functions,
-like f.e. @code{@{1,true,@{['func'] = function(...) return ... end @}@}}
-
-@item Added in:
-
-9.0
-
-@item Purpose:
-
-Call Lua functions, like monotone hooks, in the monotone context, f.e. to
-retrieve user defaults like keys, passwords, ignorable files and more.
-
-@item Output format:
-
-A string dump of the return value of the function, in Lua code. The Lua types
-@code{function}, @code{thread}, @code{userdata} and @code{lightuserdata} are not
-serialized, but set to @code{nil} in the dump.
-
-Please note that @code{nil} values in tables are not printed since Lua does not
-distinguish between unset and not existing entries in a table like other
-programming languages do.
-
-@item Sample output:
-
-A single string return value:
-
-@verbatim
-[1] = "Output";
-@end verbatim
-
-Two numeric return values:
-
-@verbatim
-[1] = 3;
-[2] = 4.4;
-@end verbatim
-
-A nested table:
-
-@verbatim
-[1] = {
-    ["bar"] = {
-        [1] = 1;
-        [2] = 2;
-        [3] = 3;
-    };
-};
-@end verbatim
-
-A callback function:
-
-@verbatim
-[1] = nil --[[function]];
-@end verbatim
-
-@item Error conditions:
-
-This command prints an error message and exists with status 1 if the function
-does not exist, one or more function arguments could not be evaluated or the
-function could not be called for another reason.
-
-@end table
-
-@itemx mtn automate packets_for_certs @var{id}
-
-This command prints out an @code{rcert} packet for each cert in your
-database associated with @var{id}. These can be used to transport
-certificates safely between monotone databases.  See @ref{Automation}
-for details of this command.
-
-@item mtn automate packet_for_fdata @var{id}
-@itemx mtn automate packet_for_rdata @var{id}
-
-These commands print out an @code{fdata} or @code{rdata} packet for
-the file, manifest or revision @var{id} in your database.  These can
-be used to transport files or revisions, in their entirety, safely
-between monotone databases.  See @ref{Automation} for details of these
-commands.
-
-@item mtn automate packet_for_fdelta @var{id1} @var{id2}
-
-This command prints out an @code{fdelta} packet for the differences
-between file versions @var{id1} and @var{id2}, in your database.
-These can be used to transport file differences safely between
-monotone databases.  See @ref{Automation} for details of this
-command.
 
 @end ftable
 
