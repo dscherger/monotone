@@ -5038,15 +5038,17 @@ Insert command line arguments taken from the given file.
 
 @ftable @command
 @item mtn checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
-@itemx mtn co [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
-@itemx mtn [--[no-]move-conflicting-paths] --branch=@var{branchname} checkout @var{directory}
-@itemx mtn [--[no-]move-conflicting-paths] --branch=@var{branchname} co @var{directory}
-
+@itemx mtn checkout [--[no-]move-conflicting-paths] --branch=@var{branchname} @var{directory}
+@itemx mtn co
 These commands copy a revision @var{id} out of your database,
 recording the chosen revision (the @dfn{base revision}) in the file
 @file{@var{directory}/_MTN/revision}. These commands then copy every
 file version listed in the revision's manifest to paths under
-@var{directory}. For example, if the revision's manifest contains
+@var{directory}.
+
+@command{co} is an alias for @command{checkout}
+
+For example, if the revision's manifest contains
 these entries:
 
 @smallexample
@@ -5087,50 +5089,6 @@ If no @var{id} is provided, as in the latter two commands, you
 @item mtn conflicts
 @ref{Conflicts}
 
-@item mtn heads --branch=@var{branchname}
-This command lists the ``heads'' of @var{branchname}.
-
-The ``heads'' of a branch is the set of revisions which are members of
-the branch, but which have no descendants. These revisions are
-generally the ``newest'' revisions committed by you or your
-colleagues, at least in terms of ancestry. The heads of a branch may
-not be the newest revisions, in terms of time, but synchronization of
-computer clocks is not reliable, so monotone usually ignores time.
-
-@item mtn merge [--branch=@var{branchname}]
-This command merges the ``heads'' of @var{branchname}, if there are
-multiple heads, and commits the results to the database, marking the
-resulting merged revision as a member of @var{branchname}. The merged
-revision will contain each of the head revision IDs as ancestors.
-
-A commit message may be provided. A message stating the revision ids
-that were merged will be prepended to any user commit message.
-
-Merging is performed by repeated pairwise merges: two heads are
-selected, then their least common ancestor is located in the ancestry
-graph and these 3 revisions are provided to the built-in 3-way merge
-algorithm. The process then repeats for each additional head, using
-the result of each previous merge as an input to the next.
-
-@item mtn propagate @var{sourcebranch} @var{destbranch}
-This command takes a unique head from @var{sourcebranch} and merges it
-with a unique head of @var{destbranch}, using the least common
-ancestor of the two heads for a 3-way merge. The resulting revision is
-committed to @var{destbranch}. If
-either @var{sourcebranch} or @var{destbranch} has multiple heads,
-@command{propagate} aborts, doing nothing.
-
-A commit message may be provided. A message stating the source and
-target branches will be prepended to any user commit message.
-
-The purpose of @command{propagate} is to copy all the changes on
-@var{sourcebranch}, since the last @command{propagate}, to
-@var{destbranch}. This command supports the idea of making separate
-branches for medium-length development activities, such as
-maintenance branches for stable software releases, trivial bug fix
-branches, public contribution branches, or branches devoted to the
-development of a single module within a larger project.
-
 @item mtn explicit_merge @var{id} @var{id} @var{destbranch}
 This command merges exactly the two @var{id}s you give it, and places
 the result in branch @var{destbranch}.  It is useful when you need more
@@ -5140,24 +5098,15 @@ only want to merge two of them, you can use this command.  Or if you
 have a branch with two heads, and you want to propagate one of them to
 another branch, again, you can use this command.
 
-@item mtn merge_into_dir @var{sourcebranch} @var{destbranch} @var{dir}
-This command takes a unique head from @var{sourcebranch} and merges it
-into a unique head of @var{destbranch}, as a directory. The resulting
-revision is committed to @var{destbranch}. If either @var{sourcebranch} or
-@var{destbranch} has multiple heads, @command{merge_into_dir} aborts, doing
-nothing.
+@item mtn heads --branch=@var{branchname}
+This command lists the ``heads'' of @var{branchname}.
 
-The purpose of @command{merge_into_dir} is to permit a project to contain
-another project in such a way that @command{propagate} can be used to keep
-the contained project up-to-date. It is meant to replace the use of nested
-checkouts in many circumstances.
-
-Note that @command{merge_into_dir} @emph{does not} permit changes made to the
-contained project in @var{destbranch} to be propagated back to
-@var{sourcebranch}. Attempting this would lead to @var{sourcebranch} containing
-both projects nested as in @var{destbranch} instead of only the project
-originally in @var{sourcebranch}, which is almost certainly not what would be
-intended.
+The ``heads'' of a branch is the set of revisions which are members of
+the branch, but which have no descendants. These revisions are
+generally the ``newest'' revisions committed by you or your
+colleagues, at least in terms of ancestry. The heads of a branch may
+not be the newest revisions, in terms of time, but synchronization of
+computer clocks is not reliable, so monotone usually ignores time.
 
 @item mtn import --branch=@var{branch} [--message=@var{message}] [--[no-]dry-run] @var{dir}
 @item mtn import --revision=@var{revision} [--message=@var{message}] [--[no-]dry-run] @var{dir}
@@ -5185,6 +5134,62 @@ $ mtn commit
 The twist with the @command{mtn setup} part is that it sets the parent
 to be the given revision or the head of the given branch instead of the
 null revision.
+
+@item mtn merge [--branch=@var{branchname}]
+This command merges the ``heads'' of @var{branchname}, if there are
+multiple heads, and commits the results to the database, marking the
+resulting merged revision as a member of @var{branchname}. The merged
+revision will contain each of the head revision IDs as ancestors.
+
+A commit message may be provided. A message stating the revision ids
+that were merged will be prepended to any user commit message.
+
+Merging is performed by repeated pairwise merges: two heads are
+selected, then their least common ancestor is located in the ancestry
+graph and these 3 revisions are provided to the built-in 3-way merge
+algorithm. The process then repeats for each additional head, using
+the result of each previous merge as an input to the next.
+
+@item mtn merge_into_dir @var{sourcebranch} @var{destbranch} @var{dir}
+This command takes a unique head from @var{sourcebranch} and merges it
+into a unique head of @var{destbranch}, as a directory. The resulting
+revision is committed to @var{destbranch}. If either @var{sourcebranch} or
+@var{destbranch} has multiple heads, @command{merge_into_dir} aborts, doing
+nothing.
+
+The purpose of @command{merge_into_dir} is to permit a project to contain
+another project in such a way that @command{propagate} can be used to keep
+the contained project up-to-date. It is meant to replace the use of nested
+checkouts in many circumstances.
+
+Note that @command{merge_into_dir} @emph{does not} permit changes made to the
+contained project in @var{destbranch} to be propagated back to
+@var{sourcebranch}. Attempting this would lead to @var{sourcebranch} containing
+both projects nested as in @var{destbranch} instead of only the project
+originally in @var{sourcebranch}, which is almost certainly not what would be
+intended.
+
+@c need merge_into_workspace
+@c need migrate_workspace
+
+@item mtn propagate @var{sourcebranch} @var{destbranch}
+This command takes a unique head from @var{sourcebranch} and merges it
+with a unique head of @var{destbranch}, using the least common
+ancestor of the two heads for a 3-way merge. The resulting revision is
+committed to @var{destbranch}. If
+either @var{sourcebranch} or @var{destbranch} has multiple heads,
+@command{propagate} aborts, doing nothing.
+
+A commit message may be provided. A message stating the source and
+target branches will be prepended to any user commit message.
+
+The purpose of @command{propagate} is to copy all the changes on
+@var{sourcebranch}, since the last @command{propagate}, to
+@var{destbranch}. This command supports the idea of making separate
+branches for medium-length development activities, such as
+maintenance branches for stable software releases, trivial bug fix
+branches, public contribution branches, or branches devoted to the
+development of a single module within a larger project.
 
 @item mtn refresh_inodeprints
 This command puts the current workspace into @ref{Inodeprints} mode,
@@ -5236,10 +5241,13 @@ Files given in these commands are relative to the current working
 directory, or absolute. In the conflict file, they are relative to the
 workspace root, or absolute.
 
+The commands are listed in the order they are typically used, not
+in alphabetical order. Then the conflict resolutions are discussed.
+
 @subheading Commands
 
 @ftable @command
-@item mtn conflicts --conflicts-file=@var{file} store @var{left_rev_id} @var{right_rev_id}
+@item mtn conflicts store --conflicts-file=@var{file} @var{left_rev_id} @var{right_rev_id}
 Store the conflicts encountered by merging @var{left_rev_id} with
 @var{right_rev_id}, in the specified file.
 
@@ -5253,19 +5261,19 @@ Content conflicts that can be resolved by the internal line merger
 have resolutions, so they will not show up in subsequent
 @command{show_first} commands.
 
-@item mtn conflicts --conflicts-file=@var{file} show_first
+@item mtn conflicts show_first --conflicts-file=@var{file}
 Show the first unresolved conflict in the conflicts file, and list the
 possible resolutions.
 
-@item mtn conflicts --conflicts-file=@var{file} show_remaining
+@item mtn conflicts show_remaining --conflicts-file=@var{file}
 Show remaining unresolved conflicts in the conflicts file.
 
-@item mtn conflicts --conflicts-file=@var{file} resolve_first @var{resolution}
+@item mtn conflicts resolve_first --conflicts-file=@var{file} @var{resolution}
 Specify a resolution for the first conflict in the conflicts file; it
 must be a single file conflict. The conflicts file is updated.
 
-@item mtn conflicts --conflicts-file=@var{file} resolve_first_left @var{resolution}
-@itemx mtn conflicts --conflicts-file=@var{file} resolve_first_right @var{resolution}
+@item mtn conflicts resolve_first_left --conflicts-file=@var{file} @var{resolution}
+@itemx mtn conflicts resolve_first_right --conflicts-file=@var{file} @var{resolution}
 Specify a resolution for one of the files in the first conflict in the
 conflicts file; it must be a two file conflict. The conflicts file is
 updated.
@@ -5369,7 +5377,7 @@ as addition, removal or renaming of files.
 
 As a convenience, the @option{--unknown} option can be used; this
 option will cause all of the files listed by @command{mtn list
-unknown} to be added.
+unknown} to be added. @c FIXME: what happens for '--unknown pathname'?
 
 While this command places an ``add'' entry on your work list, it does
 not immediately affect your database. When you @command{commit} your
@@ -5383,83 +5391,26 @@ made recursive using the @option{--recursive} option.  When adding a
 directory non-recursively, monotone will warn if the directory has
 any files that would be added by a recursive add.
 
-@item mtn mkdir [--[no-]respect-ignore] @var{directory...}
-This command creates a directory in the filesystem relative to your
-current location and adds it to your workspace's ``work list''.  The
-changes are not reflected in your database until such time as you
-perform a commit.  If you use the @option{--no-respect-ignore} flag,
-entries in @file{.mtn-ignore} will not be honored.
-@c FIXME: what does it mean to honor .mtn-ignore here?
-
-@item mtn drop [--bookkeep-only] @var{pathname...}
-@itemx mtn drop --missing
-This command places ``drop'' entries for the paths specified in
-@var{pathname...} in the workspace's ``work list'' and deletes
-the file from the workspace. The work list of
-your workspace is stored in @file{_MTN/revision}, and is a list of
-explicit pathname changes you wish to commit at some future time, such
-as addition, removal, or renaming of files.  This command also removes
-any attributes on @var{pathname}; see @ref{File Attributes} for more
-details.  If you use the @option{--missing} flag it will add drop
-entries for any paths that monotone is tracking for which you have
-already removed the files from the filesystem, in addition to all those
-specified in @var{pathname...}.
-
-While this command places a ``drop'' entry on your work list, it does
-not immediately affect your database. When you @command{commit} your
-workspace, monotone will use the work list to build a new revision,
-which it will then commit to the database. The new revision will have
-any dropped entries removed from its manifest.
-
-There are situations in which @command{drop} will tell monotone
-to remove the file from the revision at commit time, but where it will
-@emph{not} to remove the file from the workspace immediately.  One
-is if the @option{--bookkeep-only} option is supplied.  Another is
-if a file has un-committed changes or if a directory is not empty.
-
-@item mtn undrop @var{pathname...}
-Undoes a previous ``drop''; useful when you make a mistake. If the
-file was deleted from the workspace, this reverts it. If it was not
-deleted (because it was changed), it just removes the pending drop.
-
-@item mtn rename [--bookkeep-only] @var{src} @var{dst}
-@itemx mtn mv [--bookkeep-only] @var{src} @var{dst}
-@itemx mtn rename [--bookkeep-only] @var{src1} @var{...} @var{dst/}
-@itemx mtn mv [--bookkeep-only] @var{src1} @var{...} @var{dst/}
-This command places ``rename'' entries for the paths specified in
-@var{src} and @var{dst} in the workspace's ``work list''. The second form
-renames a number of source paths to the given destination. The work
-list of your workspace is stored in @file{_MTN/revision}, and is a list of
-explicit pathname changes you wish to commit at some future time, such
-as addition, removal, or renaming of files.  This command also moves any
-attributes on @var{src} to @var{dst}; see @ref{File Attributes} for more
-details, and, unless the @option{--bookkeep-only} option is supplied, it
-will rename the files immediately in the filesystem.  In the case where
-@var{dst} must be a directory (multiple @var{src} items), exists
-physically in the filesystem as a directory or is specified as a
-directory by convention (a trailing /), it will be automatically added
-to the workspace if it is not already versioned.
+@c need 'attr'
 
 @item mtn commit
-@item mtn ci
 @itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...]
-@itemx mtn ci --message=@var{logmsg} [--message=@var{logmsg}...]
 @itemx mtn commit --message-file=@var{logfile}
-@itemx mtn ci --message-file=@var{logfile}
 @itemx mtn commit @var{pathname...}
-@itemx mtn ci @var{pathname...}
 @itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...] @var{pathname...}
-@itemx mtn ci --message=@var{logmsg} [--message=@var{logmsg}...] @var{pathname...}
 @itemx mtn commit --message-file=@var{logfile} @var{pathname...}
-@itemx mtn ci --message-file=@var{logfile} @var{pathname...}
+@itemx mtn ci
 
 This command looks at your workspace, decides which files have
-changed, and saves the changes to your database. It does this by
-loading the revision named in @file{_MTN/revision}, locating the base
-manifest for your workspace, applying any pathname changes described
-in @file{_MTN/revision}, and then comparing the updated base manifest
-to the files it finds in your workspace, to determine which files have
-been edited.
+changed, and saves the changes to your database.
+
+@command{ci} is an alias for @command{commit}.
+
+@command{commit} works by loading the revision named in
+@file{_MTN/revision}, locating the base manifest for your workspace,
+applying any pathname changes described in @file{_MTN/revision}, and
+then comparing the updated base manifest to the files it finds in your
+workspace, to determine which files have been edited.
 
 For each edited file, a delta is copied into the database. Then the
 newly constructed manifest is recorded (as a delta) and finally the
@@ -5624,6 +5575,137 @@ commit needs to be cancelled the line following the leading
 instructions should be removed. Any pending text in @file{MTN/log}
 will be left untouched if the commit is cancelled.
 
+@item mtn drop [--bookkeep-only] @var{pathname...}
+@itemx mtn drop --missing
+This command places ``drop'' entries for the paths specified in
+@var{pathname...} in the workspace's ``work list'' and deletes
+the file from the workspace.
+
+@command{rm} is an alias for @command{drop}.
+
+The work list of your workspace is stored in @file{_MTN/revision}, and
+is a list of explicit pathname changes you wish to commit at some
+future time, such as addition, removal, or renaming of files.  This
+command also removes any attributes on @var{pathname}; see @ref{File
+Attributes} for more details.  If you use the @option{--missing} flag
+it will add drop entries for any paths that monotone is tracking for
+which you have already removed the files from the filesystem, in
+addition to all those specified in @var{pathname...}.
+
+While this command places a ``drop'' entry on your work list, it does
+not immediately affect your database. When you @command{commit} your
+workspace, monotone will use the work list to build a new revision,
+which it will then commit to the database. The new revision will have
+any dropped entries removed from its manifest.
+
+There are situations in which @command{drop} will tell monotone
+to remove the file from the revision at commit time, but where it will
+@emph{not} to remove the file from the workspace immediately.  One
+is if the @option{--bookkeep-only} option is supplied.  Another is
+if a file has un-committed changes or if a directory is not empty.
+
+See the @command{undrop} command for undoing a @command{drop} before commit.
+
+@item mtn mkdir [--[no-]respect-ignore] @var{directory...}
+This command creates a directory in the filesystem relative to your
+current location and adds it to your workspace's ``work list''.  The
+changes are not reflected in your database until such time as you
+perform a commit.  If you use the @option{--no-respect-ignore} flag,
+entries in @file{.mtn-ignore} will not be honored.
+@c FIXME: what does it mean to honor .mtn-ignore here?
+
+@item mtn pivot_root [--bookkeep-only] [--[no-]move-conflicting-paths] @var{new_root} @var{put_old}
+Most users will never need this command.  It is primarily useful in
+certain tricky cases where one wishes to combine several projects
+into one, or split one project into several. See also @command{merge_into_dir}.
+
+Its effect is to rename the directory whose name is currently
+@var{new_root} to become the root directory of the versioned tree, and
+to at the same time rename the directory that is currently the root of
+the versioned tree to have the name @var{put_old}.  Conceptually, it
+is equivalent to executing the following commands in the root of the
+workspace:
+
+@smallexample
+@group
+$ mtn rename . @var{new_root}/@var{put_old}
+$ mtn rename @var{new_root} .
+@end group
+@end smallexample
+
+Except, of course, that these @command{rename} commands are illegal,
+because after the first command the tree has no root at all, and there
+is a directory loop.  This illegality is the only reason for
+@command{pivot_root}'s existence; internally, the result is treated
+exactly like two renames, including with respect to merges and
+updates.
+
+The use of @option{--bookkeep-only} with this command is not
+recommended.  It causes the changes to be made in monotone's
+records, but not in the filesystem itself.
+
+When running @command{pivot_root}, it is sometimes possible for
+@ref{Workspace Collisions} to occur.
+
+@item mtn pluck [--[no-]move-conflicting-paths] --revision=@var{to}
+@itemx mtn pluck [--[no-]move-conflicting-paths] --revision=@var{from} --revision=@var{to}
+
+This command takes changes made at any point in history, and attempts to
+edit your current workspace to include those changes.  The end result is
+identical to running @command{mtn diff @option{-r} @var{from}
+@option{-r} @var{to} | patch @option{-p0}}, except that this command
+uses monotone's merger, and thus intelligently handles renames,
+conflicts, and so on.
+
+If only one revision is given, applies the changes made in @var{to} as
+compared with @var{to}'s parent.  If two revisions are given, applies
+the changes made to get from @var{from} to @var{to}.
+
+Note that this is not a true cherrypick operation.  A true cherrypick,
+as that word is used in version control theory, involves applying some
+changes out of context, and then recording the identity between the
+original changes and the newly applied changes for the use of later
+merges.  This command does the first part, not the second.  As far as
+monotone is concerned, the changes made by @command{mtn pluck} are
+exactly like those made in an editor; the command is simply a
+convenient way to make certain edits quickly.  In practice, this is
+rarely a problem.  @command{mtn pluck} should almost always be used
+between branches that will never be merged --- for instance,
+backporting fixes from a development branch to a stable branch.
+
+When you use @command{pluck} you are going behind monotone's back, and
+reducing its ability to help you keep track of what has happened in
+your history.  Never use @command{pluck} where a true merging command
+like @command{merge}, @command{propagate}, or @command{explicit_merge}
+will do.  If you find yourself using @command{pluck} often, you should
+consider carefully whether there is any way to change your workflow to
+reduce your need for @command{pluck}ing.
+
+When running @command{pluck}, it is sometimes possible for
+@ref{Workspace Collisions} to occur.
+
+@item mtn rename [--bookkeep-only] @var{src} @var{dst}
+@itemx mtn rename [--bookkeep-only] @var{src1} @var{...} @var{dst/}
+@itemx mtn mv
+This command places ``rename'' entries for the paths specified in
+@var{src} and @var{dst} in the workspace's ``work list'', and
+optionally renames the paths on the disk. The second form
+renames a number of source paths to the given destination.
+
+@command{mv} is an alias for @command{rename}.
+
+The work list of your workspace is stored in @file{_MTN/revision}, and
+is a list of explicit pathname changes you wish to commit at some
+future time, such as addition, removal, or renaming of files.  This
+command also moves any attributes on @var{src} to @var{dst}; see
+@ref{File Attributes} for more details, and, unless the
+@option{--bookkeep-only} option is supplied, it will rename the files
+immediately in the filesystem.  In the case where @var{dst} must be a
+directory (multiple @var{src} items), exists physically in the
+filesystem as a directory or is specified as a directory by convention
+(a trailing /), it will be automatically added to the workspace if it
+is not already versioned.
+
 @item mtn revert @var{pathname...}
 @itemx mtn revert --missing @var{pathname...}
 This command changes your workspace, so that changes you have made
@@ -5637,6 +5719,12 @@ If the flag @option{--missing} is given it reverts (ie, restores) any
 files which monotone has listed in its manifest, but which have been
 deleted from the workspace.  Only missing files matching the given
 file or directory arguments are reverted.
+
+@item mtn undrop @var{pathname...}
+Undoes a previous @command{drop}; useful when you make a mistake. If
+the file was deleted from the workspace, this reverts it. If it was
+not deleted (because it was changed), it just removes the pending
+drop.
 
 @item mtn update [--[no-]move-conflicting-paths]
 @itemx mtn update [--[no-]move-conflicting-paths] --revision=@var{revision}
@@ -5679,76 +5767,6 @@ becomes the new default branch of the workspace (even if you also
 specify an explicit @option{--revision} argument).
 
 When running @command{update}, it is sometimes possible for
-@ref{Workspace Collisions} to occur.
-
-@item mtn pluck [--[no-]move-conflicting-paths] --revision=@var{to}
-@itemx mtn pluck [--[no-]move-conflicting-paths] --revision=@var{from} --revision=@var{to}
-
-This command takes changes made at any point in history, and attempts to
-edit your current workspace to include those changes.  The end result is
-identical to running @command{mtn diff @option{-r} @var{from}
-@option{-r} @var{to} | patch @option{-p0}}, except that this command
-uses monotone's merger, and thus intelligently handles renames,
-conflicts, and so on.
-
-If only one revision is given, applies the changes made in @var{to} as
-compared with @var{to}'s parent.  If two revisions are given, applies
-the changes made to get from @var{from} to @var{to}.
-
-Note that this is not a true cherrypick operation.  A true cherrypick,
-as that word is used in version control theory, involves applying some
-changes out of context, and then recording the identity between the
-original changes and the newly applied changes for the use of later
-merges.  This command does the first part, not the second.  As far as
-monotone is concerned, the changes made by @command{mtn pluck} are
-exactly like those made in an editor; the command is simply a
-convenient way to make certain edits quickly.  In practice, this is
-rarely a problem.  @command{mtn pluck} should almost always be used
-between branches that will never be merged --- for instance,
-backporting fixes from a development branch to a stable branch.
-
-When you use @command{pluck} you are going behind monotone's back, and
-reducing its ability to help you keep track of what has happened in
-your history.  Never use @command{pluck} where a true merging command
-like @command{merge}, @command{propagate}, or @command{explicit_merge}
-will do.  If you find yourself using @command{pluck} often, you should
-consider carefully whether there is any way to change your workflow to
-reduce your need for @command{pluck}ing.
-
-When running @command{pluck}, it is sometimes possible for
-@ref{Workspace Collisions} to occur.
-
-@item mtn pivot_root [--bookkeep-only] [--[no-]move-conflicting-paths] pivot_root @var{new_root} @var{put_old}
-Most users will never need this command.  It is primarily useful in
-certain tricky cases where one wishes to combine several projects
-into one, or split one project into several. See also @command{merge_into_dir}.
-
-Its effect is to rename the directory whose name is currently
-@var{new_root} to become the root directory of the versioned tree, and
-to at the same time rename the directory that is currently the root of
-the versioned tree to have the name @var{put_old}.  Conceptually, it
-is equivalent to executing the following commands in the root of the
-workspace:
-
-@smallexample
-@group
-$ mtn rename . @var{new_root}/@var{put_old}
-$ mtn rename @var{new_root} .
-@end group
-@end smallexample
-
-Except, of course, that these @command{rename} commands are illegal,
-because after the first command the tree has no root at all, and there
-is a directory loop.  This illegality is the only reason for
-@command{pivot_root}'s existence; internally, the result is treated
-exactly like two renames, including with respect to merges and
-updates.
-
-The use of @option{--bookkeep-only} with this command is not
-recommended.  It causes the changes to be made in monotone's
-records, but not in the filesystem itself.
-
-When running @command{pivot_root}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
 @end ftable
@@ -5927,8 +5945,20 @@ call syntax is deprecated and subject of removal in future versions of monotone!
 @page
 @node    Informative, Review, Network, Command Reference
 @section Informative
-
 @ftable @command
+@item mtn annotate @var{file}
+@itemx mtn annotate [--revision=@var{id}] [--revs-only] @var{file}
+
+Dumps an annotated copy of the file to stdout. The output is in the form
+<short revision id>.. by <author> <date>: <line> Only the first 8
+characters of the revision id are displayed, the author cert value is
+truncated at the first @code{@@} or space character and the date field
+is truncated to remove the time of day.
+
+If @option{--revs-only} is specified, each line of the file is
+translated to <revision id>: <line> in the output, where <revision id>
+is the revision in which that line of the file was last edited.
+
 @item mtn bisect good [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
 Mark the specified revisions as ``good'' for the current bisection
 operation. If no bisection operation is in progress a new bisection is
@@ -5996,122 +6026,6 @@ the command be executed from within a workspace.
 
 With an explicit @option{--revision} argument, the command outputs
 contents of @var{path} at that revision.
-
-@item mtn status
-@itemx mtn status @var{pathname...}
-
-This command prints a description of the ``status'' of your workspace.
-In particular, it prints:
-@itemize
-@item
-The branch currently selected in @file{_MTN/options} for the
-workspace.
-@item
-The revision id of the ``parent'' revision of the workspace, on which
-your in-progress changes are based.
-@item
-A list of logical changes between the base and current manifest
-versions, such as adds, drops, renames, and patches.
-@end itemize
-
-Specifying optional @var{pathname...} arguments to the @command{status}
-command restricts the set of changes that are visible and results in
-only a partial status of the workspace. Changes to files not included
-in the specified set of pathnames will be ignored.
-
-From within a subdirectory of the workspace the @command{status} command
-will, by default, include @emph{all changes} in the workspace.
-Specifying only the pathname "." will restrict @command{status} to files
-changed within the current subdirectory of the workspace.
-
-@item mtn log
-@itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--clear-from] [--to=@var{id} [...]] [--clear-to] [--revision=@var{id} [...]] [--[no-]brief] [--[no-]merges] [--[no-]files] [--[no-]graph] [--[no-]diffs] [@var{pathname...}]
-
-This command prints out a log, in forward ancestry order by default
-but optionally in reverse ancestry order, of small history summaries.
-Each summary contains author, date, branch, changelog and comment
-information associated with a revision.
-
-If @option{--brief} is given, the output consists of two lines per
-revision with the revision ID, the author, the date and the branches
-(separated with commas). If the @option{--no-graph} option is also
-given the output contains only one line per revision.
-
-If @option{--last=}@var{n} is given, at most @var{n} log entries will
-be given and log will trace through history in reverse-ancestry order,
-from newer revisions to older revisions.
-
-If @option{--next=}@var{n} is given, at most @var{n} log entries will
-be given and log will trace through history in forward-ancestry order,
-from older revisions to newer revisions. This is useful to review
-changes that will be applied to the workspace when @command{update} is
-run.
-
-If @option{--from=}@var{id} is given, log starts tracing through
-history from the specified revisions, otherwise it starts from the
-base revision of your workspace. Log will stop when it reaches the end
-of the revision history or revisions specified by the @option{--to}
-option.
-
-@option{--clear-from} erases the effect of all previous
-@option{--from} options. @option{--clear-to} erases the effect of all
-previous @option{--to} options.
-
-When tracing through history in reverse-ancestry order and
-@option{--to=}@var{id} is given, log will stop when it reaches the
-specified revisions or any of their ancestors or the end of the
-revision history. When tracing through history in forward-ancestry
-order log will stop when it reaches the specified revisions or any of
-their descendants or the end of the revision history.
-
-If @option{--revision=}@var{id} is given, log will print only the
-specified revisions.
-
-If both @option{--from} and @option{--revision} are given only
-revisions included by both options will be logged. Revisions specified
-by @option{--revision} that are beyond the starting points specified
-by @option{--from} will be excluded.
-
-Additionally, each of the @option{--from}, @option{--to} and
-@option{--revision} options accept selectors, see
-@ref{Selectors}. These can be used in various ways to log interesting
-revisions.  For example:
-@verbatim
-$ mtn log --revision b:
-$ mtn log --revision today
-$ mtn log --revision bob
-@end verbatim
-will log all revisions from the current branch, all revisions dated
-today and all revisions with bob as the author, respectively.
-
-By default, the log entries for merge nodes are shown.  If
-@option{--no-merges} is given, the log entries for these nodes will be
-excluded.
-
-If @option{--no-files} is given, the log output excludes the list of
-files changed in each revision.
-
-If @option{--no-graph} is given, the log output excludes the ASCII revision graph
-prefix on log output lines.
-
-Specifying @option{--diffs} causes the log output to include a unified
-diff of the changes in each revision.
-
-If one or more files are given, the command will only log the revisions
-where those files are changed.
-
-@item mtn annotate @var{file}
-@itemx mtn annotate [--revision=@var{id}] [--revs-only] @var{file}
-
-Dumps an annotated copy of the file to stdout. The output is in the form
-<short revision id>.. by <author> <date>: <line> Only the first 8
-characters of the revision id are displayed, the author cert value is
-truncated at the first @code{@@} or space character and the date field
-is truncated to remove the time of day.
-
-If @option{--revs-only} is specified, each line of the file is
-translated to <revision id>: <line> in the output, where <revision id>
-is the revision in which that line of the file was last edited.
 
 @item mtn complete file @var{partial-id}
 @itemx mtn complete [--brief] key @var{partial-id}
@@ -6229,8 +6143,18 @@ formatting.  The actual invocation of @command{diff}, default arguments
 passed to it, and so on, are controlled by the hook
 @code{external_diff}; see @ref{Hooks} for more details.
 
+@c FIXME: need help
+
+@item mtn list branches [@var{pattern}] [--exclude=@var{pattern}]
+@itemx mtn ls
+This command lists all known branches in your database. If
+@var{pattern} is provided, it is used as a glob to select the branches
+listed, otherwise all branches are listed.  If @option{-exclude}
+options are provided they are used as globs to exclude specified
+branches.
+
 @item mtn list certs @var{id}
-@item mtn ls certs @var{id}
+@itemx mtn ls
 
 These commands will print out a list of certificates associated with
 a particular revision @var{id}. Each line of the print out will
@@ -6286,126 +6210,9 @@ Value : 2003-10-16  graydon hoare  <graydon@@pobox.com>
 @end group
 @end smallexample
 
-@item mtn list duplicates [--revision=@var{id}]
-@item mtn ls duplicates [--revision=@var{id}]
-
-This command lists duplicate files in a given revision. If no revision is
-given, the workspace is used instead. Ignored and unknown files are
-excluded from the listing.
-
-Two or more files are considered duplicates if the @sc{sha1} hashes of their
-contents are equal.
-
-@item mtn list keys
-@item mtn ls keys
-@itemx mtn list keys @var{pattern}
-@itemx mtn ls keys @var{pattern}
-These commands list @sc{rsa} keys held in your keystore and current database.
-They do not print out any cryptographic information; they simply list the
-names of public and private keys you have on hand.
-
-If @var{pattern} is provided, it is used as a glob to limit the keys
-listed. Otherwise all keys in your database are listed.
-
-@item mtn list branches [@var{pattern}] [--exclude=@var{pattern}]
-@item mtn ls branches [@var{pattern}] [--exclude=@var{pattern}]
-
-This command lists all known branches in your database. If
-@var{pattern} is provided, it is used as a glob to select the branches
-listed, otherwise all branches are listed.  If @option{-exclude}
-options are provided they are used as globs to exclude specified
-branches.
-
-@item mtn list tags [@var{pattern}] [--exclude=@var{pattern}]
-@item mtn ls tags [@var{pattern}] [--exclude=@var{pattern}]
-
-This command lists all known tags in your database. If @var{pattern}
-is provided, it is used as a glob to select the tags listed, otherwise
-all tags are listed.  If @option{-exclude} options are provided they
-are used as globs to exclude specified tags.
-
-@item mtn list vars
-@item mtn ls vars
-@item mtn list vars @var{domain}
-@item mtn ls vars @var{domain}
-
-This command lists all vars in your database, or all vars within a given
-@var{domain}.  See @ref{Vars} for more information.
-
-@item mtn list known
-@item mtn ls known
-@itemx mtn list known @var{pathname...}
-@itemx mtn ls known @var{pathname...}
-
-This command lists all files which would become part of the manifest of
-the next revision if you committed your workspace at this point.
-
-Specifying pathnames to the @command{list known} command restricts
-the set of paths that are searched for manifest files. Files not
-included in the specified set of pathnames will not be listed.
-
-From within a subdirectory of the workspace the @command{list
-known} command will, by default, search the entire workspace.
-Specifying only the pathname "." will restrict the search for known
-files to the current subdirectory of the workspace.
-
-@item mtn list unknown
-@item mtn ls unknown
-@itemx mtn list unknown @var{pathname...}
-@itemx mtn ls unknown @var{pathname...}
-
-This command lists all files in your workspace that monotone is
-either ignoring or knows nothing about.
-
-Specifying pathnames to the @command{list unknown} command restricts the
-set of paths that are searched for unknown files. Unknown files not
-included in the specified set of pathnames will not be listed.
-
-From within a subdirectory of the workspace the @command{list
-unknown} command will, by default, search the entire workspace.
-Specifying only the pathname "." will restrict the search for unknown
-files to the current subdirectory of the workspace.
-
-@item mtn list ignored
-@item mtn ls ignored
-@itemx mtn list ignored @var{pathname...}
-@itemx mtn ls ignored @var{pathname...}
-
-This command lists all files in your workspace that monotone is
-intentionally ignoring, due to the results of the @code{ignore_file
-(@var{filename})} hook.
-
-Specifying pathnames to the @command{list ignored} command restricts the
-set of paths that are searched for ignored files. Ignored files not
-included in the specified set of pathnames will not be listed.
-
-From within a subdirectory of the workspace the @command{list
-ignored} command will, by default, search the entire workspace.
-Specifying only the pathname "." will restrict the search for ignored
-files to the current subdirectory of the workspace.
-
-@item mtn list missing
-@item mtn ls missing
-@itemx mtn list missing @var{pathname...}
-@itemx mtn ls missing @var{pathname...}
-
-This command lists all files in your workspace's base manifest,
-which are not present in the workspace.
-
-Specifying pathnames to the @command{list missing} command restricts the
-set of paths that are searched for missing files. Missing files not
-included in the specified set of pathnames will not be listed.
-
-From within a subdirectory of the workspace the @command{list
-missing} command will, by default, search the entire workspace.
-Specifying only the pathname "." will restrict the search for missing
-files to the current subdirectory of the workspace.
-
 @item mtn list changed
-@item mtn ls changed
 @itemx mtn list changed @var{pathname...}
-@itemx mtn ls changed @var{pathname...}
-
+@itemx mtn ls
 This command lists all files in your workspace that have changed
 compared to the base revision, including files that are dropped, added
 or renamed.
@@ -6419,16 +6226,177 @@ changed} command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for known
 files to the current subdirectory of the workspace.
 
-@item mtn show_conflicts @var{rev} @var{rev}
+@item mtn list duplicates [--revision=@var{id}]
+@itemx mtn ls
 
-This command shows what conflicts would need to be resolved in order to merge
-the given revisions.
+This command lists duplicate files in a given revision. If no revision is
+given, the workspace is used instead. Ignored and unknown files are
+excluded from the listing.
 
-Note that this does not show conflicts due to update commands, since
-in that case one revision is the workspace.
+Two or more files are considered duplicates if the @sc{sha1} hashes of their
+contents are equal.
+
+@item mtn list ignored
+@itemx mtn list ignored @var{pathname...}
+@itemx mtn ls
+This command lists all files in your workspace that monotone is
+intentionally ignoring, due to the results of the @code{ignore_file
+(@var{filename})} hook.
+
+Specifying pathnames to the @command{list ignored} command restricts the
+set of paths that are searched for ignored files. Ignored files not
+included in the specified set of pathnames will not be listed.
+
+From within a subdirectory of the workspace the @command{list
+ignored} command will, by default, search the entire workspace.
+Specifying only the pathname "." will restrict the search for ignored
+files to the current subdirectory of the workspace.
+
+@item mtn list keys
+@itemx mtn list keys @var{pattern}
+@itemx mtn ls
+These commands list @sc{rsa} keys held in your keystore and current database.
+They do not print out any cryptographic information; they simply list the
+names of public and private keys you have on hand.
+
+If @var{pattern} is provided, it is used as a glob to limit the keys
+listed. Otherwise all keys in your database are listed.
+
+@item mtn list known
+@itemx mtn list known @var{pathname...}
+@itemx mtn ls
+This command lists all files which would become part of the manifest of
+the next revision if you committed your workspace at this point.
+
+Specifying pathnames to the @command{list known} command restricts
+the set of paths that are searched for manifest files. Files not
+included in the specified set of pathnames will not be listed.
+
+From within a subdirectory of the workspace the @command{list
+known} command will, by default, search the entire workspace.
+Specifying only the pathname "." will restrict the search for known
+files to the current subdirectory of the workspace.
+
+@item mtn list missing
+@itemx mtn list missing @var{pathname...}
+@itemx mtn ls
+This command lists all files in your workspace's base manifest,
+which are not present in the workspace.
+
+Specifying pathnames to the @command{list missing} command restricts the
+set of paths that are searched for missing files. Missing files not
+included in the specified set of pathnames will not be listed.
+
+From within a subdirectory of the workspace the @command{list
+missing} command will, by default, search the entire workspace.
+Specifying only the pathname "." will restrict the search for missing
+files to the current subdirectory of the workspace.
+
+@item mtn list vars
+@itemx mtn list vars @var{domain}
+@itemx mtn ls
+This command lists all vars in your database, or all vars within a given
+@var{domain}.  See @ref{Vars} for more information.
+
+@item mtn list tags [@var{pattern}] [--exclude=@var{pattern}]
+@itemx mtn ls
+This command lists all known tags in your database. If @var{pattern}
+is provided, it is used as a glob to select the tags listed, otherwise
+all tags are listed.  If @option{-exclude} options are provided they
+are used as globs to exclude specified tags.
+
+@item mtn list unknown
+@itemx mtn list unknown @var{pathname...}
+@itemx mtn ls
+This command lists all files in your workspace that monotone is
+either ignoring or knows nothing about.
+
+Specifying pathnames to the @command{list unknown} command restricts the
+set of paths that are searched for unknown files. Unknown files not
+included in the specified set of pathnames will not be listed.
+
+From within a subdirectory of the workspace the @command{list
+unknown} command will, by default, search the entire workspace.
+Specifying only the pathname "." will restrict the search for unknown
+files to the current subdirectory of the workspace.
+
+@item mtn log
+@itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--clear-from] [--to=@var{id} [...]] [--clear-to] [--revision=@var{id} [...]] [--[no-]brief] [--[no-]merges] [--[no-]files] [--[no-]graph] [--[no-]diffs] [@var{pathname...}]
+
+This command prints out a log, in forward ancestry order by default
+but optionally in reverse ancestry order, of small history summaries.
+Each summary contains author, date, branch, changelog and comment
+information associated with a revision.
+
+If @option{--brief} is given, the output consists of two lines per
+revision with the revision ID, the author, the date and the branches
+(separated with commas). If the @option{--no-graph} option is also
+given the output contains only one line per revision.
+
+If @option{--last=}@var{n} is given, at most @var{n} log entries will
+be given and log will trace through history in reverse-ancestry order,
+from newer revisions to older revisions.
+
+If @option{--next=}@var{n} is given, at most @var{n} log entries will
+be given and log will trace through history in forward-ancestry order,
+from older revisions to newer revisions. This is useful to review
+changes that will be applied to the workspace when @command{update} is
+run.
+
+If @option{--from=}@var{id} is given, log starts tracing through
+history from the specified revisions, otherwise it starts from the
+base revision of your workspace. Log will stop when it reaches the end
+of the revision history or revisions specified by the @option{--to}
+option.
+
+@option{--clear-from} erases the effect of all previous
+@option{--from} options. @option{--clear-to} erases the effect of all
+previous @option{--to} options.
+
+When tracing through history in reverse-ancestry order and
+@option{--to=}@var{id} is given, log will stop when it reaches the
+specified revisions or any of their ancestors or the end of the
+revision history. When tracing through history in forward-ancestry
+order log will stop when it reaches the specified revisions or any of
+their descendants or the end of the revision history.
+
+If @option{--revision=}@var{id} is given, log will print only the
+specified revisions.
+
+If both @option{--from} and @option{--revision} are given only
+revisions included by both options will be logged. Revisions specified
+by @option{--revision} that are beyond the starting points specified
+by @option{--from} will be excluded.
+
+Additionally, each of the @option{--from}, @option{--to} and
+@option{--revision} options accept selectors, see
+@ref{Selectors}. These can be used in various ways to log interesting
+revisions.  For example:
+@verbatim
+$ mtn log --revision b:
+$ mtn log --revision today
+$ mtn log --revision bob
+@end verbatim
+will log all revisions from the current branch, all revisions dated
+today and all revisions with bob as the author, respectively.
+
+By default, the log entries for merge nodes are shown.  If
+@option{--no-merges} is given, the log entries for these nodes will be
+excluded.
+
+If @option{--no-files} is given, the log output excludes the list of
+files changed in each revision.
+
+If @option{--no-graph} is given, the log output excludes the ASCII revision graph
+prefix on log output lines.
+
+Specifying @option{--diffs} causes the log output to include a unified
+diff of the changes in each revision.
+
+If one or more files are given, the command will only log the revisions
+where those files are changed.
 
 @item mtn manpage [--formatted/--plain] [--[no-]hidden]
-
 The manpage command generates a complete (and if monotone is available
 in your language, also localized) manual page for all available commands,
 including all custom Lua commands.
@@ -6444,6 +6412,42 @@ different formatter or pager, please have a look at the
 
 The option @option{--hidden} additionally enables the output of hidden
 commands and options, which is deactivated by default.
+
+@item mtn show_conflicts @var{rev} @var{rev}
+This command shows what conflicts would need to be resolved in order to merge
+the given revisions.
+
+Note that this does not show conflicts due to update commands, since
+in that case one revision is the workspace.
+
+@item mtn status
+@itemx mtn status @var{pathname...}
+This command prints a description of the ``status'' of your workspace.
+In particular, it prints:
+@itemize
+@item
+The branch currently selected in @file{_MTN/options} for the
+workspace.
+@item
+The revision id of the ``parent'' revision of the workspace, on which
+your in-progress changes are based.
+@item
+A list of logical changes between the base and current manifest
+versions, such as adds, drops, renames, and patches.
+@end itemize
+
+Specifying optional @var{pathname...} arguments to the @command{status}
+command restricts the set of changes that are visible and results in
+only a partial status of the workspace. Changes to files not included
+in the specified set of pathnames will be ignored.
+
+From within a subdirectory of the workspace the @command{status} command
+will, by default, include @emph{all changes} in the workspace.
+Specifying only the pathname "." will restrict @command{status} to files
+changed within the current subdirectory of the workspace.
+
+@c FIXME: need version
+
 @end ftable
 
 @node    Review, Variables, Informative, Command Reference
@@ -6451,7 +6455,6 @@ commands and options, which is deactivated by default.
 
 @ftable @command
 @item mtn approve @var{id}
-
 This command is a synonym for @command{mtn cert @var{id} branch
 @var{branchname}} where @var{branchname} is the current branch name
 (either deduced from the workspace or from the @option{--branch}
@@ -6459,13 +6462,11 @@ option).
 
 @item mtn comment @var{id}
 @itemx mtn comment @var{id} @var{comment}
-
 These commands are synonyms for @command{mtn cert @var{id}
 comment @var{comment}}. If @var{comment} is not provided, it is read
 from @code{stdin}.
 
 @item mtn disapprove [@var{parent}] @var{child}
-
 This command records a disapproval of the changes between @var{parent}'s
 ancestor and @var{child}.  If @var{parent} is omitted, only @var{child}
 is disapproved.  The command does the disapproval by committing
@@ -6484,14 +6485,12 @@ one ancestor, since it hasn't been worked out how to generate such
 a descendant in the multi-ancestor case.
 
 @item mtn suspend @var{id}
-
 This command is a synonym for @command{mtn cert @var{id} suspend
 @var{branchname}} where @var{branchname} is the current branch name
 (either deduced from the workspace or from the @option{--branch}
 option).
 
 @item mtn tag @var{id} @var{tagname}
-
 This command associates the symbolic name @var{tagname} with the
 revision @var{id}, so that symbolic name can later be used in
 @ref{Selectors} for specifying revisions for commands like
@@ -6502,7 +6501,6 @@ This command is a synonym for @command{mtn cert @var{id} tag
 
 @item mtn testresult @var{id} 0
 @itemx mtn testresult @var{id} 1
-
 These commands are synonyms for @command{mtn cert @var{id}
 testresult 0} or @command{mtn cert @var{id} testresult 1}.
 
@@ -6512,14 +6510,12 @@ testresult 0} or @command{mtn cert @var{id} testresult 1}.
 @section Variables
 @ftable @command
 @item mtn cleanup_workspace_list
-
 Removes all invalid workspaces from the list of registered workspaces
 of the current database.  A workspace is considered invalid if its path
 does either not contain an _MTN directory anymore or if the configured
 database for this workspace is a different one.
 
 @item mtn register_workspace [@var{workspace_path}]
-
 Registers the given workspace from the current database, so that it
 will show up in the output of @command{list databases} (the database
 has to be in a managed location for this to work).
@@ -6528,12 +6524,10 @@ If no @var{workspace_path} is given, this command defaults to the
 current workspace.
 
 @item mtn set @var{domain} @var{name} @var{value}
-
 Associates the value @var{value} to @var{name} in domain @var{domain}.
-See @ref{Vars} for more information.
+@ref{Vars} for more information.
 
 @item mtn unregister_workspace [@var{workspace_path}]
-
 Unregisters the given workspace from the current database, so that it
 will no longer show up in the output of @command{list databases}.
 
@@ -6541,7 +6535,6 @@ If no @var{workspace_path} is given, this command defaults to the
 current workspace.
 
 @item mtn unset @var{domain} @var{name}
-
 Deletes any value associated with @var{name} in @var{domain}.  See
 @ref{Vars} for more information.
 
@@ -6552,8 +6545,23 @@ Deletes any value associated with @var{name} in @var{domain}.  See
 @section Key and Cert
 
 @ftable @command
-@item mtn genkey @var{keyid}
+@item mtn cert @var{selector} @var{certname}
+@itemx mtn cert @var{selector} @var{certname} @var{certval}
 
+These commands create a new certificate with name @var{certname}, for all
+revisions matching @var{selector}. The @var{selector} argument can
+use certs already on the revision, such as @code{h:@var{branchname}}.
+
+If @var{certval} is provided, it is the value of the certificate.
+Otherwise the certificate value is read from @code{stdin}.
+
+@item mtn dropkey @var{keyid}
+This command drops the public and/or private key. If both exist, both
+are dropped, if only one exists, it is dropped. This command should
+be used with caution as changes are irreversible without a backup of
+the key(s) that were dropped.
+
+@item mtn genkey @var{keyid}
 This command generates an @sc{rsa} public/private key pair, using a
 system random number generator, and stores it in your keystore under
 the key name @var{keyid.keyhash}.  The key's hash is printed out after
@@ -6580,31 +6588,11 @@ commands executed in a workspace, or to
 the system default (@file{~/.monotone/keys} on Unix and Cygwin,
 @file{%APPDATA%/monotone/keys} on native Win32).
 
-@item mtn dropkey @var{keyid}
-
-This command drops the public and/or private key. If both exist, both
-are dropped, if only one exists, it is dropped. This command should
-be used with caution as changes are irreversible without a backup of
-the key(s) that were dropped.
-
 @item mtn passphrase @var{keyid}
-
 This command lets you change the passphrase of the private half of the
 key @var{id}.
 
-@item mtn trusted @var{id} @var{certname} @var{certval} @var{signers}
-
-This command lets you test your revision trust hook
-@code{get_revision_cert_trust} (see @ref{Lua Reference}).  You pass it
-a revision ID, a certificate name, a certificate value, and one or more
-key IDs or key names, and it will tell you whether, under your current settings,
-Monotone would trust a cert on that revision with that value signed by
-those keys.
-
-The specified keys mist exist either in your keystore or in the database.
-
 @item mtn ssh_agent_add
-
 This command will add your monotone keys to your current ssh-agent session.
 You will be asked for the passphrase for each of your monotone private keys
 and they will be added to the ssh-agent. Once this is done you should be able
@@ -6637,7 +6625,6 @@ In the second example, monotone automatically added the key to ssh-agent, making
 entering the passphrase not needed during the push.
 
 @item mtn ssh_agent_export @var{filename}
-
 This command will export your private key in a format that ssh-agent
 can read (PKCS8, PEM). You will be asked for your current key's password
 and a new password to encrypt the key with. The key will be printed to
@@ -6672,15 +6659,15 @@ it) and monotone's internal signing code, then compare the results. @emph{check}
 will be removed at some future time as it is meant only for testing and will not
 work with all signing algorithms.
 
-@item mtn cert @var{selector} @var{certname}
-@itemx mtn cert @var{selector} @var{certname} @var{certval}
+@item mtn trusted @var{id} @var{certname} @var{certval} @var{signers}
+This command lets you test your revision trust hook
+@code{get_revision_cert_trust} (see @ref{Lua Reference}).  You pass it
+a revision ID, a certificate name, a certificate value, and one or more
+key IDs or key names, and it will tell you whether, under your current settings,
+Monotone would trust a cert on that revision with that value signed by
+those keys.
 
-These commands create a new certificate with name @var{certname}, for all
-revisions matching @var{selector}. The @var{selector} argument can
-use certs already on the revision, such as @code{h:@var{branchname}}.
-
-If @var{certval} is provided, it is the value of the certificate.
-Otherwise the certificate value is read from @code{stdin}.
+The specified keys mist exist either in your keystore or in the database.
 
 @end ftable
 
@@ -6703,40 +6690,14 @@ facility will remain in monotone as a utility for moving individual
 data items around manually.
 
 @ftable @command
-@itemx mtn automate packets_for_certs @var{id}
-
-This command prints out an @code{rcert} packet for each cert in your
-database associated with @var{id}. These can be used to transport
-certificates safely between monotone databases.  See @ref{Automation}
-for details of this command.
-
-@item mtn automate packet_for_fdata @var{id}
-@itemx mtn automate packet_for_rdata @var{id}
-
-These commands print out an @code{fdata} or @code{rdata} packet for
-the file, manifest or revision @var{id} in your database.  These can
-be used to transport files or revisions, in their entirety, safely
-between monotone databases.  See @ref{Automation} for details of these
-commands.
-
-@item mtn automate packet_for_fdelta @var{id1} @var{id2}
-
-This command prints out an @code{fdelta} packet for the differences
-between file versions @var{id1} and @var{id2}, in your database.
-These can be used to transport file differences safely between
-monotone databases.  See @ref{Automation} for details of this
-command.
-
 @item mtn privkey @var{keyid}
 @itemx mtn pubkey @var{keyid}
-
 These commands print out an @code{keypair} or @code{pubkey} packet for
 the @sc{rsa} key @var{keyid}. These can be used to transport public or
 private keys safely between monotone databases.
 
 @item mtn read
 @item mtn read @var{file1} @var{file2...}
-
 This command reads packets from files or @code{stdin} and stores them
 in your database.
 
@@ -6747,49 +6708,7 @@ in your database.
 @section Database
 
 @ftable @command
-@item mtn db init --db=@var{dbfile}
-
-This command initializes a new monotone database at @var{dbfile}.
-
-@item mtn db info --db=@var{dbfile}
-
-This command prints information about the monotone database @var{dbfile},
-including its schema version and various table size statistics.
-
-@item mtn db version --db=@var{dbfile}
-
-This command prints out just the schema version of the monotone
-database @var{dbfile}.
-
-@item mtn db dump --db=@var{dbfile}
-
-This command dumps an SQL statement representing the entire state of
-@var{dbfile} to the standard output stream. It is a very low-level
-command, and produces the most ``recoverable'' dumps of your database
-possible. It is sometimes also useful when migrating databases between
-variants of the underlying SQLite database format.
-
-@item mtn db load --db=@var{dbfile}
-
-This command applies a raw SQL statement, read from the standard input
-stream, to the database @var{dbfile}. It is most useful when loading
-a database dumped with the @command{dump} command.
-
-Note that when reloading a dumped database, the schema of the dumped
-database is @emph{included} in the dump, so you should not try to
-@command{init} your database before a @command{load}.
-
-@item mtn db migrate --db=@var{dbfile}
-
-This command attempts to migrate the database @var{dbfile} to the
-newest schema known by the version of monotone you are currently
-running.  If the migration fails, no changes should be made to the
-database.
-
-If you have important information in your database, you should back up
-a copy of it before migrating, in case there is an untrapped error
-during migration.
-
+@c FIXME: need changesetify
 @item mtn db check --db=@var{dbfile}
 
 Monotone always works hard to verify the data it creates and accesses.
@@ -6928,8 +6847,74 @@ list. You can fix it by running @command{db regenerate_caches}.
 This command also verifies that the @sc{sha1} hash of every file, manifest,
 and revision is correct.
 
-@item mtn local kill_revision @var{id}
+@item mtn db dump --db=@var{dbfile}
 
+This command dumps an SQL statement representing the entire state of
+@var{dbfile} to the standard output stream. It is a very low-level
+command, and produces the most ``recoverable'' dumps of your database
+possible. It is sometimes also useful when migrating databases between
+variants of the underlying SQLite database format.
+
+@item mtn db execute @var{sql-statement}
+
+This is a debugging command which executes @var{sql-statement} against
+your database, and prints any results of the expression in a tabular
+form.  It can be used to investigate the state of your database, or
+help diagnose failures.
+
+@c FIXME: need mtn db fix_certs
+
+@item mtn db info --db=@var{dbfile}
+This command prints information about the monotone database @var{dbfile},
+including its schema version and various table size statistics.
+
+@item mtn db init --db=@var{dbfile}
+This command initializes a new monotone database at @var{dbfile}.
+
+@item mtn db load --db=@var{dbfile}
+This command applies a raw SQL statement, read from the standard input
+stream, to the database @var{dbfile}. It is most useful when loading
+a database dumped with the @command{dump} command.
+
+Note that when reloading a dumped database, the schema of the dumped
+database is @emph{included} in the dump, so you should not try to
+@command{init} your database before a @command{load}.
+
+@item mtn db migrate --db=@var{dbfile}
+This command attempts to migrate the database @var{dbfile} to the
+newest schema known by the version of monotone you are currently
+running.  If the migration fails, no changes should be made to the
+database.
+
+If you have important information in your database, you should back up
+a copy of it before migrating, in case there is an untrapped error
+during migration.
+
+@c FIXME: need mtn db regenerate_caches
+@c FIXME: need mtn db rosterify
+@c FIXME: need mtn db set_epoch
+
+@item mtn db version --db=@var{dbfile}
+This command prints out just the schema version of the monotone
+database @var{dbfile}.
+
+@item mtn local kill_certs @var{selector} @var{certname} [@var{certval}]
+This command deletes certs with the given name on revisions that match
+the given selector. If a value is given, it restricts itself to only
+delete certs that also have that same value. Like @command{kill_revision},
+it is a very dangerous command; it permanently and irrevocably deletes
+historical information from your database. Also like @command{kill_revision},
+this only deletes the certs from your local database; if there are
+other databases that you sync with which have these certs they
+will reappear when you sync, unless the owners of those databases also delete
+those certificates locally.
+
+Early versions of monotone had @command{db kill_tag_locally} and
+@command{db kill_branch_certs_locally} commands. These can be emulated with
+@command{local kill_certs i: tag TAG} and
+@command{local kill_certs i: branch BRANCH}, respectively.
+
+@item mtn local kill_revision @var{id}
 This command ``kills'', i.e., deletes, a given revision, as well as any
 certs attached to it.  It is a very dangerous
 command; it permanently and irrevocably deletes historical information
@@ -6965,32 +6950,7 @@ you do, after all, need to retrieve the data in @var{id}, then
 work you can extract @var{id}'s data.
 @end itemize
 
-@item mtn local kill_certs @var{selector} @var{certname} [@var{certval}]
-
-This command deletes certs with the given name on revisions that match
-the given selector. If a value is given, it restricts itself to only
-delete certs that also have that same value. Like @command{kill_revision},
-it is a very dangerous command; it permanently and irrevocably deletes
-historical information from your database. Also like @command{kill_revision},
-this only deletes the certs from your local database; if there are
-other databases that you sync with which have these certs they
-will reappear when you sync, unless the owners of those databases also delete
-those certificates locally.
-
-Early versions of monotone had @command{db kill_tag_locally} and
-@command{db kill_branch_certs_locally} commands. These can be emulated with
-@command{local kill_certs i: tag TAG} and
-@command{local kill_certs i: branch BRANCH}, respectively.
-
-@item mtn db execute @var{sql-statement}
-
-This is a debugging command which executes @var{sql-statement} against
-your database, and prints any results of the expression in a tabular
-form.  It can be used to investigate the state of your database, or
-help diagnose failures.
-
 @end ftable
-
 
 @page
 @node    Automation, VCS, Database, Command Reference
@@ -11027,6 +10987,30 @@ does not exist, one or more function arguments could not be evaluated or the
 function could not be called for another reason.
 
 @end table
+
+@itemx mtn automate packets_for_certs @var{id}
+
+This command prints out an @code{rcert} packet for each cert in your
+database associated with @var{id}. These can be used to transport
+certificates safely between monotone databases.  See @ref{Automation}
+for details of this command.
+
+@item mtn automate packet_for_fdata @var{id}
+@itemx mtn automate packet_for_rdata @var{id}
+
+These commands print out an @code{fdata} or @code{rdata} packet for
+the file, manifest or revision @var{id} in your database.  These can
+be used to transport files or revisions, in their entirety, safely
+between monotone databases.  See @ref{Automation} for details of these
+commands.
+
+@item mtn automate packet_for_fdelta @var{id1} @var{id2}
+
+This command prints out an @code{fdelta} packet for the differences
+between file versions @var{id1} and @var{id2}, in your database.
+These can be used to transport file differences safely between
+monotone databases.  See @ref{Automation} for details of this
+command.
 
 @end ftable
 
