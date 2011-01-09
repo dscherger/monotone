@@ -5174,8 +5174,23 @@ both projects nested as in @var{destbranch} instead of only the project
 originally in @var{sourcebranch}, which is almost certainly not what would be
 intended.
 
-@c need merge_into_workspace
-@c need migrate_workspace
+@item mtn merge_into_workspace @var{revision}
+Merges @var{revision} into the current workspace; the result is not
+committed to the database. There can be no pending changes in the
+current workspace. The workspace's selected branch is not
+changed.
+
+When a later commit is done, both @var{revision} and the workspace's
+base revision will be recorded as parents.
+
+Merge conflicts can occur.
+
+@item mtn migrate_workspace @var{[directory]}
+Migrates a workspace directory's metadata to the latest format.
+
+If no directory is given, defaults to the current workspace.
+
+This may be needed when upgrading to a new version of monotone.
 
 @item mtn propagate @var{sourcebranch} @var{destbranch}
 This command takes a unique head from @var{sourcebranch} and merges it
@@ -5380,9 +5395,9 @@ your workspace is stored in @file{_MTN/revision}, and is a list of
 explicit pathname changes you wish to commit at some future time, such
 as addition, removal or renaming of files.
 
-As a convenience, the @option{--unknown} option can be used; this
-option will cause all of the files listed by @command{mtn list
-unknown} to be added. @c FIXME: what happens for '--unknown pathname'?
+As a convenience, the @command{--unknown pathname} option can be used;
+this option will cause all of the files listed by @command{mtn list
+unknown pathname} to be added.
 
 While this command places an ``add'' entry on your work list, it does
 not immediately affect your database. When you @command{commit} your
@@ -5396,7 +5411,25 @@ made recursive using the @option{--recursive} option.  When adding a
 directory non-recursively, monotone will warn if the directory has
 any files that would be added by a recursive add.
 
-@c need 'attr'
+@item mtn attr
+Manage file attributes.
+
+In @command{drop} and @command{get}, if no attribute is specified, the
+command applies to all attributes attached to the file given in
+@var{path}.  Otherwise it applies only to the attribute specified in
+@var{attr}.
+
+    @table @command
+    @item mtn attr drop @var{path} @var{[attr]}
+    Remove attributes.
+
+    @item mtn attr get @var{path} @var{[attr]}
+    Output the attributes.
+
+    @item mtn attr set @var{path} @var{attr} @var{value}
+    Sets @var{attr} on @var{path} to @var{value}.
+
+   @end table
 
 @item mtn commit
 @itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...]
@@ -5612,12 +5645,15 @@ if a file has un-committed changes or if a directory is not empty.
 See the @command{undrop} command for undoing a @command{drop} before commit.
 
 @item mtn mkdir [--[no-]respect-ignore] @var{directory...}
-This command creates a directory in the filesystem relative to your
-current location and adds it to your workspace's ``work list''.  The
+This command creates directories in the filesystem relative to your
+current location and adds them to your workspace's ``work list''.  The
 changes are not reflected in your database until such time as you
-perform a commit.  If you use the @option{--no-respect-ignore} flag,
-entries in @file{.mtn-ignore} will not be honored.
-@c FIXME: what does it mean to honor .mtn-ignore here?
+perform a commit.
+
+Normally, if any of @var{directory...} are in @file{.mtn-ignore}, this
+command will fail. You can use @option{--no-respect-ignore} to
+override this check. But it would be better to remove @var{directory}
+from @file{.mtn-ignore}.
 
 @item mtn pivot_root [--bookkeep-only] [--[no-]move-conflicting-paths] @var{new_root} @var{put_old}
 Most users will never need this command.  It is primarily useful in
@@ -6147,7 +6183,8 @@ formatting.  The actual invocation of @command{diff}, default arguments
 passed to it, and so on, are controlled by the hook
 @code{external_diff}; see @ref{Hooks} for more details.
 
-@c FIXME: need help
+@item mtn help [--[no]-hidden] @var{command...}
+Displays help about commands and options.
 
 @item mtn list branches [@var{pattern}] [--exclude=@var{pattern}]
 @itemx mtn ls
@@ -6450,7 +6487,17 @@ will, by default, include @emph{all changes} in the workspace.
 Specifying only the pathname "." will restrict @command{status} to files
 changed within the current subdirectory of the workspace.
 
-@c FIXME: need version
+@item mtn version [--full | --concise]
+Shows the program version.
+
+The concise version is one line, for example:
+@example
+monotone 1.0dev (base revision: c91edf22b20f5a8b750a8a02af763412d6b936e8)
+@end example
+
+The full version gives more information, including a changelist of the
+monotone source tree from the base revision at the time the executable
+was compiled.
 
 @end ftable
 
@@ -6712,7 +6759,12 @@ in your database.
 @section Database
 
 @ftable @command
-@c FIXME: need changesetify
+@item mtn db changesetify
+Converts the database to the changeset format.
+
+This is only needed when upgrading very old monotone databases,
+created with monotone versions less than 0.15.
+
 @item mtn db check --db=@var{dbfile}
 
 Monotone always works hard to verify the data it creates and accesses.
@@ -6866,11 +6918,20 @@ your database, and prints any results of the expression in a tabular
 form.  It can be used to investigate the state of your database, or
 help diagnose failures.
 
-@c FIXME: need mtn db fix_certs
+@item mtn db fix_certs [--drop-bad-certs]
+Attempt to fix bad certs.
+
+Older monotone versions could sometimes associate certs with the wrong
+key. This fixes such certs if you have the correct key, and if
+@command{--drop-bad-certs} is given, drops any certs that you don't
+have the correct key for. This should only be needed if you had such
+certs in your db when upgrading from monotone 0.44 or earlier, or if
+you loaded such certs with 'mtn read'.
 
 @item mtn db info --db=@var{dbfile}
-This command prints information about the monotone database @var{dbfile},
-including its schema version and various table size statistics.
+This command prints information about the monotone database
+@var{dbfile}, including its schema version and various table size
+statistics.
 
 @item mtn db init --db=@var{dbfile}
 This command initializes a new monotone database at @var{dbfile}.
@@ -6894,9 +6955,20 @@ If you have important information in your database, you should back up
 a copy of it before migrating, in case there is an untrapped error
 during migration.
 
-@c FIXME: need mtn db regenerate_caches
-@c FIXME: need mtn db rosterify
-@c FIXME: need mtn db set_epoch
+@item mtn db regenerate_caches
+Regenerates the caches stored in the database.
+
+This is only needed to recover from a newly discovered bug in
+monotone, or if your database becomes corrupted for some other reason.
+
+@item mtn db rosterify
+Converts the database to the rosters format.
+
+This is only needed when upgrading very old monotone databases,
+created with monotone versions less than 0.15.
+
+@item mtn db set_epoch @var{branch} @var{epoch}
+Sets the branch's epoch. @ref{Rebuilding ancestry} for discussion of epochs.
 
 @item mtn db version --db=@var{dbfile}
 This command prints out just the schema version of the monotone
@@ -12803,7 +12875,7 @@ for platform name semantics, for example changing the Windows
 processing is performed by boost::filesystem.
 
 @item
-FIXME: Monotone does not properly handle case insensitivity on Windows.
+Monotone does not properly handle case insensitivity on Windows.
 
 @item
 A filename (in normal form) is constrained to be a nonempty sequence
