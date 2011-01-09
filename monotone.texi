@@ -4874,10 +4874,16 @@ overridden on the command line. For example, if
 @command{log}, you can override that with @command{mtn log
 --no-brief}.
 
+Command names can be abbreviated to the shortest unique strings. Some
+commands also have short aliases, such as @command{mv} for
+@command{rename}.
+
 The command descriptions describe the most important options for each
 command, and only one of each pair of options. For a complete list of
 options, see the online help (@command{mtn help cmd}), or the manpage.
 
+Many options can be specified by a single character; see the online
+help for those.
 
 @menu
 * Global Options::              Options that affect all commands
@@ -5046,16 +5052,15 @@ Insert command line arguments taken from the given file.
 @anchor{mtn checkout}@item mtn checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
 @itemx mtn checkout [--[no-]move-conflicting-paths] --branch=@var{branchname} @var{directory}
 @itemx mtn co
+@command{co} is an alias for @command{checkout}
+
 These commands copy a revision @var{id} out of your database,
 recording the chosen revision (the @dfn{base revision}) in the file
 @file{@var{directory}/_MTN/revision}. These commands then copy every
 file version listed in the revision's manifest to paths under
 @var{directory}.
 
-@command{co} is an alias for @command{checkout}
-
-For example, if the revision's manifest contains
-these entries:
+For example, if the revision's manifest contains these entries:
 
 @smallexample
 @group
@@ -5096,6 +5101,8 @@ If no @var{id} is provided, as in the latter two commands, you
 See @ref{Conflicts}
 
 @item mtn explicit_merge @var{id} @var{id} @var{destbranch}
+See the online help for options.
+
 This command merges exactly the two @var{id}s you give it, and places
 the result in branch @var{destbranch}.  It is useful when you need more
 control over the merging process than @command{propagate} or @command{merge}
@@ -5104,8 +5111,9 @@ only want to merge two of them, you can use this command.  Or if you
 have a branch with two heads, and you want to propagate one of them to
 another branch, again, you can use this command.
 
-@item mtn heads --branch=@var{branchname}
-This command lists the ``heads'' of @var{branchname}.
+@item mtn heads [--branch=@var{branchname}]
+This command lists the ``heads'' of @var{branchname} (defaults to the
+current workspace).
 
 The ``heads'' of a branch is the set of revisions which are members of
 the branch, but which have no descendants. These revisions are
@@ -5115,7 +5123,9 @@ not be the newest revisions, in terms of time, but synchronization of
 computer clocks is not reliable, so monotone usually ignores time.
 
 @item mtn import --branch=@var{branch} [--message=@var{message}] [--[no-]dry-run] @var{dir}
-@item mtn import --revision=@var{revision} [--message=@var{message}] [--[no-]dry-run] @var{dir}
+@itemx mtn import --revision=@var{revision} [--message=@var{message}] [--[no-]dry-run] @var{dir}
+See the online help for more options.
+
 This command imports the contents of the given directory and commits it
 to the head of the given branch or as a child of the given revision (and
 consequently into the branch that revision resides in).
@@ -5141,20 +5151,27 @@ The twist with the @command{mtn setup} part is that it sets the parent
 to be the given revision or the head of the given branch instead of the
 null revision.
 
-@item mtn merge [--branch=@var{branchname}]
-This command merges the ``heads'' of @var{branchname}, if there are
-multiple heads, and commits the results to the database, marking the
-resulting merged revision as a member of @var{branchname}. The merged
-revision will contain each of the head revision IDs as ancestors.
+@item mtn merge [--branch=@var{branchname}] [--message @var{string}] [--message-file @var{filename}]
+See the online help for more options.
 
-A commit message may be provided. A message stating the revision ids
-that were merged will be prepended to any user commit message.
+This command merges the ``heads'' of @var{branchname} (default the
+branch of the current workspace), if there are multiple heads, and
+commits the results to the database, marking the resulting merged
+revision as a member of @var{branchname}. The merged revision will
+contain each of the head revision IDs as ancestors.
+
+A commit message may be provided via @command{--message @var{string}}
+or @command{--message-file @var{filename}}. A message stating the
+revision ids that were merged will be prepended to any user commit
+message.
 
 Merging is performed by repeated pairwise merges: two heads are
 selected, then their least common ancestor is located in the ancestry
 graph and these 3 revisions are provided to the built-in 3-way merge
 algorithm. The process then repeats for each additional head, using
 the result of each previous merge as an input to the next.
+
+@ref{Merge Conflicts} can occur.
 
 @item mtn merge_into_dir @var{sourcebranch} @var{destbranch} @var{dir}
 This command takes a unique head from @var{sourcebranch} and merges it
@@ -5175,7 +5192,9 @@ both projects nested as in @var{destbranch} instead of only the project
 originally in @var{sourcebranch}, which is almost certainly not what would be
 intended.
 
-@item mtn merge_into_workspace @var{revision}
+@ref{Merge Conflicts} can occur.
+
+@item mtn merge_into_workspace [--[no]-move-conflicting-paths] @var{revision}
 Merges @var{revision} into the current workspace; the result is not
 committed to the database. There can be no pending changes in the
 current workspace. The workspace's selected branch is not
@@ -5184,16 +5203,18 @@ changed.
 When a later commit is done, both @var{revision} and the workspace's
 base revision will be recorded as parents.
 
-Merge conflicts can occur.
+@ref{Merge Conflicts} and @ref{Workspace Collisions} can occur.
 
-@item mtn migrate_workspace @var{[directory]}
+@item mtn migrate_workspace [@var{directory}]
 Migrates a workspace directory's metadata to the latest format.
 
 If no directory is given, defaults to the current workspace.
 
 This may be needed when upgrading to a new version of monotone.
 
-@item mtn propagate @var{sourcebranch} @var{destbranch}
+@item mtn propagate @var{sourcebranch} @var{destbranch} [--message @var{string}] [--message-file @var{filename}]
+See online help for more options.
+
 This command takes a unique head from @var{sourcebranch} and merges it
 with a unique head of @var{destbranch}, using the least common
 ancestor of the two heads for a 3-way merge. The resulting revision is
@@ -5201,8 +5222,10 @@ committed to @var{destbranch}. If
 either @var{sourcebranch} or @var{destbranch} has multiple heads,
 @command{propagate} aborts, doing nothing.
 
-A commit message may be provided. A message stating the source and
-target branches will be prepended to any user commit message.
+A commit message may be provided via @command{--message @var{string}}
+or @command{--message-file @var{filename}}. A message stating the
+source and target branches will be prepended to any user commit
+message.
 
 The purpose of @command{propagate} is to copy all the changes on
 @var{sourcebranch}, since the last @command{propagate}, to
@@ -5212,6 +5235,8 @@ maintenance branches for stable software releases, trivial bug fix
 branches, public contribution branches, or branches devoted to the
 development of a single module within a larger project.
 
+@ref{Merge Conflicts} can occur.
+
 @item mtn refresh_inodeprints
 This command puts the current workspace into @ref{Inodeprints} mode,
 if it was not already, and forces a full inodeprints cache refresh.
@@ -5219,19 +5244,19 @@ After running this command, you are guaranteed that your workspace is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
-@item mtn setup -b @var{branchname} [-d @var{database}] [@var{directory}]
-This command prepares @var{directory} as a monotone workspace, by
-creating and populating the @file{_MTN} directory with basic
-information.  This information must include at least the branch to be
-used.  If no database is given, the configured default database is
-created or re-used (see @ref{get_default_database_alias} for more
-details).  Both settings, branch and database name, will be placed in
-the @file{_MTN/options} file.
+@item mtn setup --branch @var{branchname} [--db @var{database}] [@var{directory}]
+This command prepares @var{directory} (default current directory) as a
+monotone workspace, by creating and populating the @file{_MTN}
+directory with basic information.
+
+If no database is given, the configured default database is created or
+re-used (see @ref{get_default_database_alias} for more details).  Both
+settings, branch and database name, will be placed in the
+@file{_MTN/options} file.
 
 This can be used with an empty directory to start a new blank project,
 or within an existing directory full of files, prior to using
-@command{mtn commit}. If no directory is specified, the current
-directory is used.
+@command{mtn commit}.
 
 @end ftable
 
@@ -5309,7 +5334,7 @@ convenient way to clean up.
 For single file conflicts, there are several possible resolutions:
 
 @ftable @command
-@item interactive @var{[file]}
+@item interactive [@var{file}]
 The Lua @code{merge3} hook is called to allow the user to manually
 merge the left and right files, leaving the result in the specified file.
 
@@ -5412,10 +5437,10 @@ command applies to all attributes attached to the file given in
 @var{attr}.
 
     @table @command
-    @item mtn attr drop @var{path} @var{[attr]}
+    @item mtn attr drop @var{path} [@var{attr}]
     Remove attributes.
 
-    @item mtn attr get @var{path} @var{[attr]}
+    @item mtn attr get @var{path} [@var{attr}]
     Output the attributes.
 
     @item mtn attr set @var{path} @var{attr} @var{value}
@@ -5430,17 +5455,15 @@ command applies to all attributes attached to the file given in
 @itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...] @var{pathname...}
 @itemx mtn commit --message-file=@var{logfile} @var{pathname...}
 @itemx mtn ci
-
-This command looks at your workspace, decides which files have
-changed, and saves the changes to your database.
-
 @command{ci} is an alias for @command{commit}.
 
-@command{commit} works by loading the revision named in
-@ref{_MTN/revision}, locating the base manifest for your workspace,
-applying any pathname changes described in @file{_MTN/revision}, and
-then comparing the updated base manifest to the files it finds in your
-workspace, to determine which files have been edited.
+This command looks at your workspace, decides which files have
+changed, and saves the changes to your database. It works by loading
+the revision named in @ref{_MTN/revision}, locating the base manifest
+for your workspace, applying any pathname changes described in
+@file{_MTN/revision}, and then comparing the updated base manifest to
+the files it finds in your workspace, to determine which files have
+been edited.
 
 For each edited file, a delta is copied into the database. Then the
 newly constructed manifest is recorded (as a delta) and finally the
@@ -5607,17 +5630,19 @@ will be left untouched if the commit is cancelled.
 
 @item mtn drop [--bookkeep-only] @var{pathname...}
 @itemx mtn drop --missing
+@itemx mtn rm
+@command{rm} is an alias for @command{drop}.
+
 This command places ``drop'' entries for the paths specified in
 @var{pathname...} in @ref{_MTN/revision} and deletes the file from
 the workspace. This will be part of the next @command{commit}.
 
-@command{rm} is an alias for @command{drop}.
-
 This command also removes any attributes on @var{pathname}; see
-@ref{File Attributes} for more details.  If you use the
-@option{--missing} flag it will add drop entries for any paths that
-monotone is tracking for which you have already removed the files from
-the filesystem, in addition to all those specified in
+@ref{File Attributes} for more details.
+
+If you use the @option{--missing} flag it will add drop entries for
+any paths that monotone is tracking for which you have already removed
+the files from the filesystem, in addition to all those specified in
 @var{pathname...}.
 
 There are situations in which @command{drop} will tell monotone
@@ -5711,13 +5736,13 @@ When running @command{pluck}, it is sometimes possible for
 @item mtn rename [--bookkeep-only] @var{src} @var{dst}
 @itemx mtn rename [--bookkeep-only] @var{src1} @var{...} @var{dst/}
 @itemx mtn mv
+@command{mv} is an alias for @command{rename}.
+
 This command places ``rename'' entries for the paths specified in
 @var{src} and @var{dst} in @ref{_MTN/revision}, and optionally renames
 the paths on the disk. The second form renames a number of source
 paths to the given destination. This will be part of the next
 @command{commit}.
-
-@command{mv} is an alias for @command{rename}.
 
 This command also moves any attributes on @var{src} to @var{dst}; see
 @ref{File Attributes} for more details, and, unless the
@@ -6094,12 +6119,12 @@ $ mtn complete revision 01f
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2}
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2} @var{pathname...}
 @itemx mtn di
+@command{di} is an alias for @command{diff}.
+
 These commands print out GNU ``unified diff format'' textual difference
 listings between various manifest versions. With no @option{--revision}
 options, @command{diff} will print the difference from the
 base revision to the current revision in the workspace.
-
-@command{di} is an alias for @command{diff}.
 
 With one @option{--revision} option, @command{diff} will print the
 difference from the revision @var{id} to the current revision in the
@@ -6109,7 +6134,6 @@ reversed.
 With two @option{--revision} options @command{diff} will print the
 difference from revision @var{id1} to @var{id2}, ignoring any
 workspace.
-
 
 In all cases, monotone will print a textual summary -- identical to
 the summary presented by @command{mtn status} -- of the logical
