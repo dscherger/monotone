@@ -9486,6 +9486,7 @@ See @ref{mtn log}.
 
 @end table
 
+@anchor{mtn automate lua}
 @item mtn automate lua @var{function_name} [@var{function_args...}]
 
 @table @strong
@@ -12482,7 +12483,7 @@ is not defined and is thus ignored during a commit.
 @subsection Meta Hooks
 
 Monotone allows the execution of arbitrary Lua hooks and functions through a
-special generalized "meta hook". See @command{automate lua} for more information.
+special generalized "meta hook". See @ref{automate lua} for more information.
 
 @ftable @code
 @item hook_wrapper (@var{func_name}, @var{...})
