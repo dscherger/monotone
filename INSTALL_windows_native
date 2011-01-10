@@ -146,8 +146,13 @@ maps to both / and /usr/ under the MinGW shell.
    just ignore that that test fails.
 
 10. build monotone
+   You can skip the CXXFLAGS and LDFLAGS if you really want to, but if you do that
+   then libgcc_s and libstdc++-6 will be linked dynamically and the resulting
+   monotone binary will take several extra seconds to start.
    $ cd /c/.../monotone
    $ autoreconf -i # not needed if you use the distributed tarball
+   $ CXXFLAGS="-static-libgcc -static-libstdc++ -O2 -Wall"; export CXXFLAGS
+   $ LDFLAGS="-static-libgcc -static-libstdc++"; export LDFLAGS
    $ ./configure
    $ make
 
