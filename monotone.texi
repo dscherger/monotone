@@ -3688,7 +3688,8 @@ evaluate the set of signers, as a group, and decide whether to grant
 or deny trust to the assertion made by the cert.
 
 The evaluation of testresults is controlled by the
-@code{accept_testresult_change} hook. This hook is called when
+@code{accept_testresult_change} hook (see @ref{accept_testresult_change}).
+This hook is called when
 selecting update candidates, and is passed a pair of tables describing
 the @code{testresult} certs present on the source and proposed
 destination of an update. Only if the change in test results are
