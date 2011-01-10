@@ -3210,7 +3210,7 @@ In addition, the @command{conflicts} set of commands can be used to
 specify resolutions for some conflicts. The resolutions are stored in a
 file, and given to the @command{merge} command via the
 @command{--resolve-conflicts-file=filename} or
-@command{--resolve-conflicts} option; see @xref{Conflicts}.
+@command{--resolve-conflicts} option; see @ref{Conflicts}.
 
 The @command{merge} command normally will perform as many merges as
 necessary to merge all current heads of a branch. However, when
