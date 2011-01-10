@@ -3224,7 +3224,7 @@ invoked without @command{--resolve-conflicts} will attempt to start an
 external interactive merge tool; the user must then resolve the conflicts
 and terminate the merge tool, letting monotone continue with the
 merge. This process is repeated for each file content conflict. See
-@ref{File Content Conflicts} below for more detail.
+@ref{File Content Conflict} below for more detail.
 
 For other conflicts, a merge command invoked without
 @command{--resolve-conflicts} will fail.
@@ -3548,30 +3548,22 @@ values.
 @node    Workspace Collisions, Quality Assurance, Merge Conflicts, Advanced Uses
 @section Workspace Collisions
 
-Sometimes when you work on a project, several people make similar
-changes in parallel.  When these changes occur in an existing file that
-is known to both sides, monotone can merge the edits when the two
-revisions meet (possibly after getting help to resolve content
-conflicts).  Other kinds of changes cannot be merged so readily,
-especially ones that involve files in your workspace that are not
-tracked by monotone.
-
 Workspace collisions can happen for many reasons; some examples include:
 @itemize
 @item
 You have a file in your workspace that is unknown to monotone (you
 have not @command{add}ed it).  Someone else has @command{add}ed and
-@command{commit}ed a different file with the same name.  If you try to
-@command{update} your workspace to their revision, the added file in the
-incoming revision will collide with your file over use of the name.
+@command{commit}ed a file with the same name.  If you try to
+@command{update} your workspace to their revision, the added file in
+the incoming revision will collide with your file.
 @item
 There is a directory which contains both versioned and unversioned files
 (perhaps versioned sources, and unversioned object files built from the
 sources).  Someone else @command{commit}s a revision that
 @command{drop}s the versioned files @emph{and} the containing
 directory.  If you try to @command{update} to this revision, your
-directory will still contain the untracked files, and therefore cannot
-be deleted.
+directory will still contain the untracked files, and monotone will
+not delete them.
 @item
 You have an unversioned file in your workspace, and you're trying to
 @command{update} to a revision that @command{add}s a directory with the
@@ -3581,18 +3573,20 @@ same name.
 These examples describe collisions on @command{update}; the same kinds
 of things can happen with other commands that can bring changes into
 your workspace, such as @command{checkout}, @command{pivot_root} or
-@command{pluck} too.
+@command{pluck}.
 
-Monotone is careful to avoid hitting such collisions. Before changing
-the workspace, it will try and detect the possibility of collisions, and
-the command will fail, warning you about the names that collide.  The
-file content in the database is safe and can be recovered at any time,
-so monotone is conservative and will refuse to destroy the information
-in your workspace contents. Furthermore, all workspace-changing commands have
-an option @option{--move-conflicting-paths}, which moves unversioned, but
-conflicting files and directories from the workspace into a new subdirectory
-under _MTN/resolutions. This is useful if you want to ensure that an update
-always succeeds and you just want to move blocking paths out of the way.
+In order to handle such collisions safely, before changing the
+workspace, monotone will detect them, and the command will fail with a
+warning.  The file content in the database is safe and can be
+recovered at any time, so monotone is conservative and will refuse to
+destroy the information in your workspace contents.
+
+In addition, all workspace-changing commands have an option
+@option{--move-conflicting-paths}, which moves unversioned but
+conflicting files and directories from the workspace into a
+corresponding directory under @file{_MTN/resolutions}. This is useful
+if you want to ensure that an update always succeeds and you just want
+to move blocking paths out of the way.
 
 However, monotone cannot detect all kinds of failures and collisions in
 your workspace. For example:
@@ -3623,12 +3617,12 @@ When monotone applies renaming changes to the workspace, each file is
 first @dfn{detached} from the workspace under its old name, then
 @dfn{attached} under the new name. This is done by moving it to the
 @file{_MTN/detached} directory. Newly added files are created here
-before being moved into place, too.  While inside @file{_MTN/detached},
-the file or directory is named as a simple integer (these numbers come
-from monotone's internal identification of the node).  If the detached
-node is a directory, the directory is moved with all of its contents
-(including unversioned files); this can help identify which directory
-has been detached.
+before being moved into place, too.  While inside
+@file{_MTN/detached}, the file or directory is named as a simple
+integer (monotone's internal identification of the file node).  If the
+detached node is a directory, the directory is moved with all of its
+contents (including unversioned files); this can help identify which
+directory has been detached.
 
 If a previous workspace alteration failed part-way, the
 @file{_MTN/detached} directory will still exist, and monotone will
@@ -4898,7 +4892,7 @@ help for those.
 * Informative::                 Production of descriptive reports
 * Review::                      Reviewing revisions
 * Variables::                   Managing persistent variables
-* Key and Cert::                Keys, Certificates, and Trust Evaluations based on them
+* Key and Cert::                Keys, Certificates
 * Packet I/O::                  Production or consumption of packets
 * Database::                    Manipulation of your database as a whole
 * Automation::                  Running monotone from other programs
@@ -5283,7 +5277,7 @@ The @command{conflicts} set of commands is used to specify conflict
 resolutions for merges, asynchronously from the merge command itself.
 This lets the user take as much time as needed to prepare all the
 conflict resolutions, and avoids losing work when a merge is aborted
-due to a complicated conflict.
+due to a complicated conflict. See @ref{Merge Conflicts}.
 
 These commands require a workspace, to provide a place to store the
 conflicts and user resolution files.
@@ -5303,33 +5297,33 @@ in alphabetical order. Then the conflict resolutions are discussed.
 @subheading Commands
 
 @ftable @command
-@item mtn conflicts store --conflicts-file=@var{file} @var{left_rev_id} @var{right_rev_id}
+@item mtn conflicts store [--conflicts-file=@var{file}] [@var{left_rev_id} @var{right_rev_id}]
 Store the conflicts encountered by merging @var{left_rev_id} with
-@var{right_rev_id}, in the specified file.
-
-If @var{left_rev_id} and @var{right_rev_id} are not given, the first
-two heads that the @command{merge} command would merge are used.
+@var{right_rev_id}, in the specified file (defaults to
+@file{_MTN/conflicts}. If @var{left_rev_id} and @var{right_rev_id} are
+not given, the first two heads that the @command{merge} command would
+merge are used.
 
 The conflicts file format is as output by the @command{automate
-show_conflicts} command; see @xref{Automation}.
+show_conflicts} command; see @ref{mtn automate show_conflicts}.
 
 Content conflicts that can be resolved by the internal line merger
 have resolutions, so they will not show up in subsequent
 @command{show_first} commands.
 
-@item mtn conflicts show_first --conflicts-file=@var{file}
+@item mtn conflicts show_first [--conflicts-file=@var{file}]
 Show the first unresolved conflict in the conflicts file, and list the
 possible resolutions.
 
-@item mtn conflicts show_remaining --conflicts-file=@var{file}
+@item mtn conflicts show_remaining [--conflicts-file=@var{file}]
 Show remaining unresolved conflicts in the conflicts file.
 
-@item mtn conflicts resolve_first --conflicts-file=@var{file} @var{resolution}
+@item mtn conflicts resolve_first [--conflicts-file=@var{file}] @var{resolution}
 Specify a resolution for the first conflict in the conflicts file; it
 must be a single file conflict. The conflicts file is updated.
 
-@item mtn conflicts resolve_first_left --conflicts-file=@var{file} @var{resolution}
-@itemx mtn conflicts resolve_first_right --conflicts-file=@var{file} @var{resolution}
+@item mtn conflicts resolve_first_left [--conflicts-file=@var{file}] @var{resolution}
+@itemx mtn conflicts resolve_first_right [--conflicts-file=@var{file}] @var{resolution}
 Specify a resolution for one of the files in the first conflict in the
 conflicts file; it must be a two file conflict. The conflicts file is
 updated.
@@ -5343,7 +5337,9 @@ convenient way to clean up.
 
 @subheading Single file conflict resolutions
 
-For single file conflicts, there are several possible resolutions:
+For single file conflicts, there are several possible
+resolutions. Note that @command{resolved_user_left} is used even for
+single file conflicts.
 
 @ftable @command
 @item interactive [@var{file}]
@@ -5354,27 +5350,26 @@ merge the left and right files, leaving the result in the specified file.
 specified, @var{file} defaults to @file{_MTN/resolutions/<path>},
 where @file{<path>} is the path to the file that has the conflict.
 
-This inserts a @var{resolved_user_left file} conflict resolution in the
+This inserts a @command{resolved_user_left @var{file}} conflict resolution in the
 conflicts file.
 
 @item user @var{file}
 The file contents are replaced by the contents of the specified file.
 
-This inserts a @var{resolved_user_left file} conflict resolution in the
+This inserts a @command{resolved_user_left @var{file}} conflict resolution in the
 conflicts file.
 
 @item drop
 The file is dropped in the merge. This is useful for an orphaned file
 conflict.
 
-This inserts a @var{resolved_drop_left} conflict resolution in the
+This inserts a @command{resolved_drop_left} conflict resolution in the
 conflicts file.
 
 @item rename @var{filename}
-The file is renamed. This is useful for an orphaned file
-conflict.
+The file is renamed. This is useful for an orphaned file conflict.
 
-This inserts a @var{resolved_rename_left filename} conflict resolution
+This inserts a @command{resolved_rename_left @var{filename}} conflict resolution
 in the conflicts file.
 
 @end ftable
@@ -5387,29 +5382,29 @@ For two file conflicts, the possible resolutions are:
 @item drop
 The file is dropped in the merge.
 
-This inserts a @var{resolved_drop_left} or @var{resolved_drop_right}
+This inserts a @command{resolved_drop_left} or @command{resolved_drop_right}
 conflict resolution in the conflicts file.
 
 @item keep
 The file is kept in the merge.
 
-This inserts a @var{resolved_keep_left} or @var{resolved_keep_right}
+This inserts a @command{resolved_keep_left} or @command{resolved_keep_right}
 conflict resolution in the conflicts file.
 
 @item rename @var{filename}
 The file is renamed.
 
-This inserts a @var{resolved_rename_left filename} or
-@var{resolved_rename_right filename} conflict resolution in the
-conflicts file.
+This inserts a @command{resolved_rename_left @var{filename}} or
+@command{resolved_rename_right @var{filename}} conflict resolution in
+the conflicts file.
 
 @item user @var{file}
 The file contents are replaced by the contents of the specified file.
 The other file in the conflict must be dropped or renamed.
 
-This inserts a @var{resolved_user_left file} or
-@var{resolved_user_right file} conflict resolution in the conflicts
-file.
+This inserts a @command{resolved_user_left @var{file}} or
+@command{resolved_user_right @var{file}} conflict resolution in the
+conflicts file.
 
 @end ftable
 
@@ -5423,9 +5418,9 @@ shared ancestor, so @code{merge3} is not applicable.
 @section Workspace
 
 @ftable @command
-@item mtn add [--[no-]recursive | -R] [--[no-]respect-ignore] @var{pathname...}
-@itemx mtn add [--[no-]recursive | -R] [--[no-]respect-ignore] --[no-]unknown [@var{pathname...}]
-This command places ``add'' entries for the paths specified in
+@item mtn add [--[no-]recursive] [--[no-]respect-ignore] @var{pathname...}
+@itemx mtn add [--[no-]recursive] [--[no-]respect-ignore] --[no-]unknown [@var{pathname...}]
+This command places @code{add} entries for the paths specified in
 @var{pathname...} in @ref{_MTN/revision}; they will be part of the
 next @command{commit}. See @ref{Storage and workflow} for
 more information on @command{add} and @command{commit}.
@@ -5441,7 +5436,7 @@ directory non-recursively, monotone will warn if the directory has
 any files that would be added by a recursive add.
 
 @anchor{mtn attr}@item mtn attr
-Manage file attributes.
+Manage @ref{File Attributes}.
 
 In @command{drop} and @command{get}, if no attribute is specified, the
 command applies to all attributes attached to the file given in
@@ -5461,25 +5456,22 @@ command applies to all attributes attached to the file given in
    @end table
 
 @item mtn commit
-@itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...]
-@itemx mtn commit --message-file=@var{logfile}
-@itemx mtn commit @var{pathname...}
-@itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...] @var{pathname...}
-@itemx mtn commit --message-file=@var{logfile} @var{pathname...}
+@itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...] [@var{pathname...}]
+@itemx mtn commit --message-file=@var{logfile} [@var{pathname...}]
 @itemx mtn ci
-@command{ci} is an alias for @command{commit}.
+@command{ci} is an alias for @command{commit}. See the online help for
+more options.
 
 This command looks at your workspace, decides which files have
 changed, and saves the changes to your database. It works by loading
 the revision named in @ref{_MTN/revision}, locating the base manifest
-for your workspace, applying any pathname changes described in
-@file{_MTN/revision}, and then comparing the updated base manifest to
-the files it finds in your workspace, to determine which files have
-been edited.
+for your workspace, applying any pathname changes described, and then
+comparing the updated base manifest to the files it finds in your
+workspace, to determine which files have been edited.
 
 For each edited file, a delta is copied into the database. Then the
 newly constructed manifest is recorded (as a delta) and finally the
-new revision.  Once all these objects are recorded in you database,
+new revision.  Once all these objects are recorded in your database,
 @command{commit} updates @file{_MTN/revision} to indicate that the base
 revision is now the newly created revision, and that there are no
 pathname changes to apply.
@@ -5497,22 +5489,26 @@ will, by default, include @emph{all changes} in the workspace.
 Specifying only the pathname "." will restrict @command{commit} to files
 changed within the current subdirectory of the workspace.
 
-The @option{--message} and @option{--message-file} options are mutually
-exclusive.  Both provide a @var{logmsg} describing the commit.
-@option{--message-file} actually specifies the name of the file containing
-the log message, while @option{--message} provides it directly.
+The @option{--message} and @option{--message-file} options are
+mutually exclusive.  Both provide a @var{logmsg} describing the
+commit.  @option{--message-file} specifies the name of the file
+containing the log message, while @option{--message} provides it
+directly.
 
 Multiple @option{--message} options may be provided on the command line.
 The log message will be formed by concatenating the @option{--message}
 options provided, with each one starting at the beginning of a new line.
 
-The @file{_MTN/log} file can be edited by the user during their daily
-work to record the changes made to the workspace. When running the
-@command{commit} command without a @var{logmsg} supplied, the contents
-of the @file{_MTN/log} file will be read and passed to the Lua hook
-@code{edit_comment} as a parameter named @var{user_log_message}.  The
-log message passed to the user's editor will contain additional text
-formatted as follows:
+If neither @option{--message-file} nor @option{--message} are given,
+the commit message defaults to the contents of @file{_MTN/log}, after
+processing by the Lua hook @ref{edit_comment}. @file{_MTN/log} can be
+edited by the user during their daily work to record the changes made
+to the workspace.
+
+The default definition of @code{edit_comment} invokes the user's
+editor (specified by the environment variables @code{VISUAL} and
+@code{EDITOR}, or @code{editor, vi}, or @code{notepad} on Windows),
+with text formatted as follows:
 
 @smallexample
 @group
@@ -5564,8 +5560,9 @@ The rest of the text is ignored.
 If the commit is successful, the @file{_MTN/log} file is cleared of
 all content making it ready for another edit/commit cycle.
 
-If @option{--message-file=_MTN/log} is specified, the contents of
-@file{_MTN/log} will be used without confirmation.
+As a special case, if @option{--message-file=_MTN/log} is specified,
+the contents of @file{_MTN/log} will be used without first invoking
+@code{edit_comment}.
 
 If a @option{--branch} option is specified, the @command{commit} command
 commits to this branch (creating it if necessary).  The branch becomes
@@ -5576,92 +5573,55 @@ certificates, which it attaches to the new manifest version and copies
 into your database:
 @itemize
 @item
-An @code{author} cert, indicating the person responsible for the changes
-leading to the new revision.  Normally this defaults to your signing key
-or the return value of the @code{get_author} hook; you may override this
-by passing the @option{--author} option to commit.  This is useful when
+An @code{author} cert, indicating the person responsible for the
+changes leading to the new revision.  Normally this defaults to your
+signing key or the return value of the @ref{get_author} hook; you may
+override this by passing the @option{--author} option to commit, or by
+editing the @dfn{Author} field in your editor.  This is useful when
 committing a patch on behalf of someone else, or when importing ``by
 hand'' from another version control system.
+
 @item
 A @code{branch} cert, indicating the branch the committed revision
 belongs to.
+
 @item
 A @code{date} cert, indicating when the new revision was created.
-Normally this defaults to the current time; you may override this by
-passing the @option{--date} option to commit.  This is useful when
-importing ``by hand'' from another version control system.
+Normally this defaults to the current date and time; you may override
+this by passing the @option{--date} option to commit, or by editing
+the @dfn{Date} field in your editor.  This is useful when importing
+``by hand'' from another version control system.
+
 @item
-A @code{changelog} cert, containing the ``log message'' for these
-changes.  If you provided @var{logmsg} on the command line, this text
-will be used, otherwise @command{commit} will run the Lua hook
-@code{edit_comment(@var{user_log_message})}, which typically invokes
-an external editor program, in which you can compose and/or review the
-revision and log message for the change.
+A @code{changelog} cert, containing the @var{logmsg}.
+
 @end itemize
 
-The @var{user_log_message} passed to the @code{edit_comment} hook will
-contain a full summary of the revision as it would have been displayed
-by the @command{status} command prior to committing and as the
-@command{log} command will display it after it has been committed:
-
-@smallexample
-@group
-Enter a description of this change following the Changelog line below.
-The values of Author, Date and Branch may be modified as required.
-
-*** REMOVE THIS LINE TO CANCEL THE COMMIT ***
-----------------------------------------------------------------------
-Revision: 42eae36587508faa664b111cefc291f0b85ef83a
-Parent:   493bda86628fd72c992eb56f73899db9ead3cf6f
-Author:   abe@@juicebot.co.jp
-Date:     2004-10-26T02:53:08
-Branch:   jp.co.juicebot.jb7
-
-Changelog:
-
-polling implementation of src/apple.c
-
-----------------------------------------------------------------------
-Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
-
-  patched  src/apple.c
-
-@end group
-@end smallexample
-
-Values specified in @option{--author}, @option{--date} or
-@option{--branch} options on the command line will be displayed in the
-editor and may be further changed while editing the changelog
-message. The changelog message will be extracted from between the
-@code{Changelog:} header and the trailing line of @code{----}
-characters. Care must be taken to ensure no other lines are changed or
-the commit will abort to avoid extracting an incorrect message. If the
-commit needs to be cancelled the line following the leading
-instructions should be removed. Any pending text in @file{MTN/log}
-will be left untouched if the commit is cancelled.
-
-@item mtn drop [--bookkeep-only] @var{pathname...}
-@itemx mtn drop --missing
+@item mtn drop [--[no]-recursive] [--bookkeep-only] @var{pathname...}
+@itemx mtn drop --missing @var{pathname...}
 @itemx mtn rm
 @command{rm} is an alias for @command{drop}.
 
 This command places ``drop'' entries for the paths specified in
-@var{pathname...} in @ref{_MTN/revision} and deletes the file from
-the workspace. This will be part of the next @command{commit}.
+@var{pathname...} in @ref{_MTN/revision} and deletes the file from the
+workspace. This will be part of the next @command{commit}. If any of
+@var{pathname...} is a directory, and @option{--recursive} is not
+given, and the directory contains any versioned files, the command
+will fail. If @option{--recursive} is given, the versioned files will be
+dropped. If the directory contains unversioned files, it will be
+dropped from the revision, but not deleted from the disk.
+
+If @option{--missing} is given, @command{drop} will add drop entries
+for any versioned paths in @var{pathname...} for which you have
+already removed the files from the filesystem.
 
 This command also removes any attributes on @var{pathname}; see
 @ref{File Attributes} for more details.
 
-If you use the @option{--missing} flag it will add drop entries for
-any paths that monotone is tracking for which you have already removed
-the files from the filesystem, in addition to all those specified in
-@var{pathname...}.
-
-There are situations in which @command{drop} will tell monotone
-to remove the file from the revision at commit time, but where it will
-@emph{not} to remove the file from the workspace immediately.  One
-is if the @option{--bookkeep-only} option is supplied.  Another is
-if a file has un-committed changes or if a directory is not empty.
+If @option{--bookkeep-only} is given, or if a file is different from
+the version in the base revision, @command{drop} will drop remove
+@var{pathname...} from the revision at commit time, but @emph{not}
+remove the file from the workspace.
 
 See the @command{undrop} command for undoing a @command{drop} before commit.
 
@@ -5710,6 +5670,7 @@ When running @command{pivot_root}, it is sometimes possible for
 
 @item mtn pluck [--[no-]move-conflicting-paths] --revision=@var{to}
 @itemx mtn pluck [--[no-]move-conflicting-paths] --revision=@var{from} --revision=@var{to}
+See the online help for more options.
 
 This command takes changes made at any point in history, and attempts to
 edit your current workspace to include those changes.  The end result is
@@ -5749,23 +5710,23 @@ reduce your need for @command{pluck}ing.
 @itemx mtn mv
 @command{mv} is an alias for @command{rename}.
 
-This command places ``rename'' entries for the paths specified in
-@var{src} and @var{dst} in @ref{_MTN/revision}, and optionally renames
-the paths on the disk. The second form renames a number of source
-paths to the given destination. This will be part of the next
-@command{commit}.
+This command places @code{rename} entries for the paths specified in
+@var{src} and @var{dst} in @ref{_MTN/revision}, and (if
+@command{--bookkeep-only} is not specified) renames the paths on the
+disk. This will be part of the next @command{commit}.
+
+The second form renames a number of source paths (or a single source,
+if @var{dst} ends in '/') to the given destination. In this case
+@var{dst} will be created if necessary, and added to the workspace if
+it is not already versioned.
 
 This command also moves any attributes on @var{src} to @var{dst}; see
-@ref{File Attributes} for more details, and, unless the
-@option{--bookkeep-only} option is supplied, it will rename the files
-immediately in the filesystem.  In the case where @var{dst} must be a
-directory (multiple @var{src} items), exists physically in the
-filesystem as a directory or is specified as a directory by convention
-(a trailing /), it will be automatically added to the workspace if it
-is not already versioned.
+@ref{File Attributes} for more details.
 
 @item mtn revert @var{pathname...}
 @itemx mtn revert --missing @var{pathname...}
+See the online help for more options.
+
 This command changes your workspace, so that changes you have made
 since the last checkout or update are discarded. The command is
 restricted the set of files or directories given as arguments.  To
@@ -5773,41 +5734,45 @@ revert the entire workspace, use @command{revert} "." in the
 top-level directory. Specifying "." in a subdirectory will restrict
 @command{revert} to files changed within the current subdirectory.
 
-If the flag @option{--missing} is given it reverts (ie, restores) any
-files which monotone has listed in its manifest, but which have been
-deleted from the workspace.  Only missing files matching the given
-file or directory arguments are reverted.
+If @option{--missing} is given it reverts any versioned files in
+@var{pathname...} that have been deleted from the workspace.
 
 @item mtn undrop @var{pathname...}
 Undoes a previous @command{drop}; useful when you make a mistake. If
 the file was deleted from the workspace, this reverts it. If it was
-not deleted (because it was changed), it just removes the pending
-drop.
+not deleted (because it was changed or @command{--bookkeep-only} was
+given), it just removes the pending drop.
 
-@anchor{mtn update}@item mtn update [--[no-]move-conflicting-paths]
+@anchor{mtn update}@item mtn update [--[no-]move-conflicting-paths] [--branch @var{branchname}]
 @itemx mtn update [--[no-]move-conflicting-paths] --revision=@var{revision}
-Without a @option{--revision} argument, this command incorporates
-``recent'' changes found in your database into your workspace. It
-does this by performing 3 separate stages. If any of these stages
-fails, the update aborts, doing nothing. The stages are:
+This command changes your workspace to have the a different revision as
+the base revision.
+
+@command{update} performs 3 separate stages. If any of these stages
+fails, the update aborts, doing nothing. The first two stages select
+the target revision; they are skipped if @command{--revision} is given
+- that revision is the target.
+
+In the first stage, if @command{--branch} is not given, the workspace
+branch is used. If @command{--branch} is given, the branch becomes the
+new default branch of the workspace (even if you also specify an
+explicit @option{--revision} argument).
 
 @itemize
 @item
-Examine the ancestry graph of revisions in your database, and (subject
-to trust evaluation) select the set of all descendants of your
-workspace's base revision. Call this set the ``candidates'' of the
-update.
+Examine the ancestry graph of revisions on the branch in your
+database, and (subject to trust evaluation; see @ref{Trust Evaluation
+Hooks}) select the set of all descendants of your workspace's base
+revision. Call this set the ``candidates'' of the update.
 @item
-Remove any candidates which lack acceptable testresult
-certificates. From the remaining candidates, select the deepest child
-by ancestry and call it the ``target'' of the update.
+Remove any candidates which lack acceptable testresult certificates;
+see @ref{accept_testresult_change} (defaults to all candidates). From
+the remaining candidates, select the deepest child by ancestry and
+call it the ``target'' of the update.
 @item
 Merge the target of the update with the workspace, in memory, and
 if the merge is successful, write the result over top of the workspace.
 @end itemize
-
-With an explicit @option{--revision} argument, the command uses that revision
-as the update target instead of finding an acceptable candidate.
 
 The effect is always to take whatever changes you have made in the
 workspace, and to ``transpose'' them onto a new revision, using
@@ -5818,11 +5783,6 @@ an earlier revision, or if your branch has two heads, updating to the
 other.  In all cases, the end result will be whatever revision you
 specified, with your local changes (and only your local changes)
 applied.
-
-If a @option{--branch} option is specified, the @command{update} command
-tries to select the revision to update to from this branch.  The branch
-becomes the new default branch of the workspace (even if you also
-specify an explicit @option{--revision} argument).
 
 @ref{Merge Conflicts} and @ref{Workspace Collisions} can occur.
 
@@ -10391,6 +10351,7 @@ None.
 
 @end table
 
+@anchor{mtn automate show_conflicts}
 @item mtn automate show_conflicts [@var{--branch BRANCH}] [@var{left_rev right_rev}]
 
 @table @strong
@@ -11054,7 +11015,7 @@ an error message to stderr, and exits with status 1.
 @item Arguments:
 
 Same as @command{mtn update}; no arguments, options
-@var{--[no-]move-conflicting-paths}, @var{--revision=revision}
+@command{--[no-]move-conflicting-paths}, @command{--revision=@var{revision}}
 
 @item Added in:
 
@@ -11685,7 +11646,7 @@ fields of @var{key_identity} will be populated, and the @var{name} field
 will not be. The return value indicates what the @var{name} field should
 contain. The default implementation make this the same as @var{given_name}.
 
-@item get_author (@var{branchname}, @var{key_identity})
+@anchor{get_author}@item get_author (@var{branchname}, @var{key_identity})
 
 Returns a string which is used as a value for automatically generated
 @code{author} certificates when you commit changes to
@@ -11739,7 +11700,7 @@ of this default database.
 
 The default implementation returns @code{:default.mtn}.
 
-@item edit_comment (@var{user_log_message})
+@anchor{edit_comment}@item edit_comment (@var{user_log_message})
 
 Returns a log entry for a given set of changes, described in
 @var{user_log_message}.  The user_log_message is identical to the
@@ -12153,7 +12114,7 @@ Similar to @ref{get_revision_cert_trust}, for certs on files.
 @anchor{get_manifest_cert_trust}@item get_manifest_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
 Similar to @ref{get_revision_cert_trust}, for certs on manifests.
 
-@item accept_testresult_change (@var{old_results}, @var{new_results})
+@anchor{accept_testresult_change}@item accept_testresult_change (@var{old_results}, @var{new_results})
 
 This hook is used by the update algorithm to determine whether a
 change in test results between update source and update target is

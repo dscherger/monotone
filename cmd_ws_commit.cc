@@ -1,4 +1,4 @@
-// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2010, 2011 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -544,7 +544,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   revert(app, args, false);
 }
 
-CMD(undrop, "undrop", "", CMD_REF(workspace), N_("[PATH]..."),
+CMD(undrop, "undrop", "", CMD_REF(workspace), N_("PATH..."),
     N_("Reverses a mistaken 'drop'"),
     N_("If the file was deleted from the workspace, this is the same as 'revert'. "
        "Otherwise, it just removes the 'drop' from the manifest."),
