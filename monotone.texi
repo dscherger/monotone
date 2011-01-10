@@ -6174,9 +6174,9 @@ branches.
 
 @item mtn list certs @var{id}
 @itemx mtn ls certs
-@command{ls branches} is an alias for @command{list branches}.
+@command{ls certs} is an alias for @command{list certs}.
 
-This commands will print out a list of certificates associated with
+This command will print out a list of certificates associated with
 a particular revision @var{id}. Each line of the print out will
 indicate:
 @itemize
@@ -11276,8 +11276,7 @@ could cause a particular change to be interpreted against the wrong
 parent.
 
 Another example is the @file{read-permissions} file that's read by the
-default definition of the @code{get_netsync_read_permitted} Lua hook;
-see @ref{get_netsync_read_permitted}.
+default definition of the @ref{get_netsync_read_permitted} Lua hook.
 
 Monotone will format its output in @code{basic_io} as follows:
 @itemize
@@ -12482,8 +12481,9 @@ is not defined and is thus ignored during a commit.
 
 @subsection Meta Hooks
 
-Monotone allows the execution of arbitrary Lua hooks and functions through a
-special generalized "meta hook". See @ref{automate lua} for more information.
+Monotone allows the execution of arbitrary Lua hooks and functions
+through a special generalized "meta hook". See @ref{mtn automate lua}
+for more information.
 
 @ftable @code
 @item hook_wrapper (@var{func_name}, @var{...})
