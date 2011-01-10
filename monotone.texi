@@ -2686,7 +2686,6 @@ familiarize yourself with its operation.
 * Reserved Certs::              Certificate names with special meanings.
 * Naming Conventions::          Choosing appropriate names for keys and branches.
 * File Attributes::             Marking files as executable, or other attributes.
-* Merging::                     Merging with external tools, handling binary files.
 * Migrating and Dumping::       Changing the underlying storage system.
 * Importing from CVS::          Building a monotone database from a CVS repository.
 * Exporting to GIT::            Building a git repository from a monotone database.
@@ -3220,6 +3219,16 @@ resolutions apply only to the first merge, so the subsequent merges
 are not done; the @command{merge} command must be repeated, possibly
 with new conflicts and resolutions, to merge the remaining heads.
 
+For the special case of file content conflicts, a merge command
+invoked without @command{--resolve-conflicts} will attempt to start an
+external interactive merge tool; the user must then resolve the conflicts
+and terminate the merge tool, letting monotone continue with the
+merge. This process is repeated for each file content conflict. See
+@ref{File Content Conflicts} below for more detail.
+
+For other conflicts, a merge command invoked without
+@command{--resolve-conflicts} will fail.
+
 If @command{conflicts} supports resolving a particular conflict, that
 is the simplest way to resolve it. Otherwise, resolving the different
 types of conflicts is accomplished by checking out one of the
@@ -3227,48 +3236,61 @@ conflicting revisions, making changes as described below, committing
 these changes as a new revision and then running the merge again using
 this new revision as one of the merge parents. This process can be
 repeated as necessary to get two revisions into a state where they
-will merge cleanly, or with a minimum of file content conflicts.
+will merge cleanly.
 
 The possible conflict resolutions are discussed with each conflict in
 the following sections.
 
 @subsection Conflict Types
 
-Monotone versions both files and directories explicitly and it tracks
-individual file and directory identity from birth to death so that
-name changes throughout the full life-cycle can be tracked exactly.
-Partly because of these qualities, monotone also notices several types
-of conflicts that other version control systems may not.
+Monotone versions files, directories, and file attributes explicitly,
+and it tracks individual file and directory identity from birth to
+death so that name changes throughout the full life-cycle can be
+tracked exactly.  Partly because of these qualities, monotone notices
+several types of conflicts that other version control systems may not.
 
 The two most common conflicts are described first, then all other
 possible conflicts.
 
 @subheading File Content Conflict
-
+@anchor{File Content Conflict}
 This type of conflict is generally the one encountered most commonly
 and represents conflicting changes made to lines of text within two
 versions of a single file.
 
-Monotone does not generally use CVS style conflict markers for content
-conflicts. Instead it makes the content of both conflicting files and
-the content of their common ancestor available for interactive use
-during the merge with your favorite merge tool. See the @code{merge3}
-hook for more information.
+When a merge command encounters changes in a file in both heads
+relative to the common ancestor, it first checks to see if the file
+has a @code{mtn:manual_merge} attribute with value @code{true}. If
+not, it uses an internal merge algorithm to detect whether the changes
+are to the same lines of the file. If they are not, monotone will use
+the result of the internal merge as the new file version.
 
-Alternatively, rather than using a merge tool it is possible to make
-further changes to one or both of the conflicting file versions so
-that they will merge cleanly. This can also be a very helpful strategy
-if the merge conflicts are due to sections of text in the file being
-moved from one location to another. Rather than struggling to merge
-such conflicting changes with a merge tool, similar rearrangements can
-be made to one of the conflicting files before redoing the merge.
+@code{mtn:manual_merge} is set @code{true} when a file is
+@command{add}ed for all files for which the @code{binary_file} hook
+returns true; see @ref{attr_init_functions}.
 
-Finally, you can use your favorite merge tool asychronously with the
-merge, and specify the result file in the conflicts file, using the
-@command{conflicts} command (@pxref{Conflicts}):
+If @code{mtn:manual_merge} is present and @code{true}, or if the
+changes are to the same lines of the file, and neither
+@command{--resolve-conflicts} nor @command{--non-interactive} was
+specified, the @ref{merge3} hook is called, with the content of both
+conflicting versions and their common ancestor.
+
+Alternatively, you can use your favorite merge tool asychronously with
+the merge, and specify the result file in the conflicts file, using
+the @ref{Conflicts} command:
 @smallexample
 mtn conflicts resolve_first user filename
 @end smallexample
+Then @command{--resolve-conflicts} is specified on the merge command
+line.
+
+Finally, rather than using a merge tool it is possible to commit
+changes to one or both of the conflicting file versions so that they
+will merge cleanly. This can also be a very helpful strategy if the
+merge conflicts are due to sections of text in the file being moved
+from one location to another. Rather than struggling to merge such
+conflicting changes with a merge tool, similar rearrangements can be
+made to one of the conflicting files before redoing the merge.
 
 @subheading Duplicate Name Conflict
 
@@ -3305,17 +3327,19 @@ them is different, because we need to worry about the files in the
 directories.
 
 @subsubheading Same file
-For the first case, the conflict is resolved by dropping one file,
-using @command{conflicts} commands. The contents should be manually
-merged, in case they are slightly different. Typically, a user will
-have one of the files in their current workspace; the other can be
-retrieved via @command{automate get_file_of}; the revision id is shown
-in the merge error message.
+For the first case, the conflict is resolved by dropping one file. The
+contents should be manually merged, in case they are slightly
+different. Typically, a user will have one of the files in their
+current workspace; the other can be retrieved via @command{automate
+get_file_of}; the revision id is shown in the merge error message.
 
-The process for files can be confusing; here's a detailed example.
+This process can be confusing; here's a detailed example. We assume
+the @ref{Conflicts} commands are used to resolve this conflict, since
+that is supported.
 
-Suppose Beth and Abe each commit a new file @file{checkout.sh}. When
-Beth attempts to merge the two heads, she gets a message like:
+Suppose Beth and Abe each commit a new file @file{checkout.sh}, with
+similar contents. When Beth attempts to merge the two heads, she gets
+a message like:
 
 @smallexample
 @group
@@ -3376,7 +3400,7 @@ Suppose Beth and Abe each start working on different thermostat models
 @file{thermostat}. When Beth attempts to merge, she will get the same
 error message as in the first case. When she retrieves Abe's file, she
 will see that they should be different files. So she renames her file,
-merges, and updates:
+merges, and updates (again using @ref{Conflicts} commands):
 
 @smallexample
 @group
@@ -3389,17 +3413,19 @@ mtn update
 @end group
 @end smallexample
 
-Now she has her file in @file{thermostat-honeywell}, and Abe's in
-@file{thermostat-westinghouse}.
+Now she has her file contents in @file{thermostat-honeywell}, and
+Abe's in @file{thermostat-westinghouse}.
 
 @subsubheading Directories
 When two directories are given the same name, there are still the two
 basic approaches to resolving the conflict; drop or rename. However,
 if a directory is dropped, all the files in it must also be dropped.
 Therefore, it is almost always better to first rename one of the
-directories to a temporary name as the conflict resolution, and
-then deal with the files individually, renaming or merging and
-dropping each. Then finally drop the temporary directory.
+directories to a temporary name as the conflict resolution, and then
+deal with the files individually, renaming or merging and dropping
+each. Then finally drop the temporary directory. The
+@command{conflicts} commands do not support doing this; it must be
+done directly.
 
 @subheading Missing Root Conflict
 
@@ -4007,7 +4033,7 @@ original author owned the DNS domain @code{venge.net}.
 @end itemize
 
 @page
-@node    File Attributes, Merging, Naming Conventions, Advanced Uses
+@node    File Attributes, Migrating and Dumping, Naming Conventions, Advanced Uses
 @section File Attributes
 
 Monotone contains a support for storing @dfn{persistent attributes} on
@@ -4055,48 +4081,7 @@ them besides @code{mtn:}; attrs beginning with @code{mtn:} are
 reserved for monotone's own use.
 
 @page
-@node    Merging, Migrating and Dumping, File Attributes, Advanced Uses
-@section Merging
-
-Monotone has two merging modes, controlled by the @code{manual_merge}
-attribute.
-By default all files are merged in automatic mode, unless the
-@code{manual_merge} attribute for that file is present and
-@code{true}.
-In automatic mode files are merged without user intervention, using
-monotone's internal three-way merging algorithm.
-Only if there are conflicts or an ancestor is not available monotone
-switches to manual mode, essentially escalating the merging to the user.
-When working in manual mode, monotone invokes the @code{merge3} hook
-to start an user defined external merge tool.
-If the tool terminates without writing the merged file, monotone aborts the
-merging, reverting any changes made.
-By redefining the aforementioned hooks the user can not only choose a
-preferred merge tool, but even select different programs for different
-file types.  For example, gimp for .png files, OpenOffice.org for
-.doc, and so on.
-Starting with monotone 0.20, the @code{manual_merge} attribute is
-automatically set at add time for all ``binary'' files, i.e. all files
-for which the @code{binary_file} hook returns true.
-Currently, this means all files with extension gif, jpeg, png, bz2, gz
-and zip, plus files containing at least one of the following
-bytes:
-
-@smallexample
-@group
-0x00 thru 0x06
-0x0E thru 0x1a
-0x1c thru 0x1f
-@end group
-@end smallexample
-
-The attribute could also be manually forced or removed using the
-appropriate monotone commands.
-Remember that monotone switches to manual merging even if only one of
-the files to be merged has the @code{manual_merge} attribute set.
-
-@page
-@node    Migrating and Dumping, Importing from CVS, Merging, Advanced Uses
+@node    Migrating and Dumping, Importing from CVS, File Attributes, Advanced Uses
 @section Migrating and Dumping
 
 While the state of your database is logically captured in terms of a
@@ -5136,6 +5121,8 @@ only want to merge two of them, you can use this command.  Or if you
 have a branch with two heads, and you want to propagate one of them to
 another branch, again, you can use this command.
 
+@ref{Merge Conflicts} can occur.
+
 @item mtn heads [--branch=@var{branchname}]
 This command lists the ``heads'' of @var{branchname} (defaults to the
 current workspace).
@@ -5360,7 +5347,7 @@ For single file conflicts, there are several possible resolutions:
 
 @ftable @command
 @item interactive [@var{file}]
-The Lua @code{merge3} hook is called to allow the user to manually
+The Lua @ref{merge3} hook is called to allow the user to manually
 merge the left and right files, leaving the result in the specified file.
 
 @var{file} must be a bookkeeping path; under @file{_MTN}. If not
@@ -5755,8 +5742,7 @@ will do.  If you find yourself using @command{pluck} often, you should
 consider carefully whether there is any way to change your workflow to
 reduce your need for @command{pluck}ing.
 
-When running @command{pluck}, it is sometimes possible for
-@ref{Workspace Collisions} to occur.
+@ref{Merge Conflicts} and @ref{Workspace Collisions} can occur.
 
 @item mtn rename [--bookkeep-only] @var{src} @var{dst}
 @itemx mtn rename [--bookkeep-only] @var{src1} @var{...} @var{dst/}
@@ -5838,8 +5824,7 @@ tries to select the revision to update to from this branch.  The branch
 becomes the new default branch of the workspace (even if you also
 specify an explicit @option{--revision} argument).
 
-When running @command{update}, it is sometimes possible for
-@ref{Workspace Collisions} to occur.
+@ref{Merge Conflicts} and @ref{Workspace Collisions} can occur.
 
 @end ftable
 
@@ -6300,7 +6285,7 @@ files to the current subdirectory of the workspace.
 @anchor{mtn list databases}@item mtn list databases
 @itemx mtn list dbs
 Show all @ref{Managed Databases} and the workspaces registered in
-them. See @ref{register_workspace}.
+them. See @ref{mtn register_workspace}.
 
 @item mtn list duplicates [--revision=@var{id}]
 @itemx mtn ls
@@ -6491,7 +6476,7 @@ commands and options, which is deactivated by default.
 
 @item mtn show_conflicts @var{rev} @var{rev}
 This command shows what conflicts would need to be resolved in order to merge
-the given revisions.
+the given revisions; see @ref{Merge Conflicts}.
 
 Note that this does not show conflicts due to update commands, since
 in that case one revision is the workspace.
@@ -6602,7 +6587,7 @@ path does either not contain an @file{_MTN} directory anymore or if
 the configured database for the workspace is a different from the
 current database.
 
-@anchor{register_workspace}@item mtn register_workspace [@var{workspace_path}]
+@anchor{mtn register_workspace}@item mtn register_workspace [@var{workspace_path}]
 
 Registers the given workspace (default the current workspace) in the
 current database, so that it will show up in the output of @ref{mtn
@@ -12286,14 +12271,28 @@ in their GUI, since the actual path names are likely more meaningful
 than the temporary file names the merge tool will actually be working
 on.
 
-Returns a string, which should be the merger of the given texts.  The
-default definition of this hook delegates the actual merge to the
-result of @ref{get_preferred_merge3_command}.  The default definition
-of @ref{get_preferred_merge3_command} checks to see if the
+On success, @code{merge3} returns a string, which should be the
+contents resulting from merging the given texts.  If nil is returned,
+the merge command fails; this is how the user can abort a merge.
+
+The default definition of this hook
+delegates the actual merge to the result of
+@ref{get_preferred_merge3_command}.  The default definition of
+@ref{get_preferred_merge3_command} checks to see if the
 @env{MTN_MERGE} environment variable, or the Lua variable
 @code{merger} are set to the name of a merge tool that it recognizes,
 and if not, then simply searches for whatever is installed on the
-local system.  For details, see the code in @ref{Default hooks}.
+local system.
+
+The default hook then invokes the merge tool, waits for it to return,
+and checks to see if @var{merged_path} was written. If not, it returns
+nil, and the merge command fails.
+
+For details, see the code in @ref{Default hooks}.
+
+By redefining this hook the user can choose a preferred merge tool, or
+select different merge tools for different file types.  For example,
+gimp for .png files, OpenOffice.org for .doc, and so on.
 
 @anchor{get_preferred_merge3_command}@item get_preferred_merge3_command(@var{tbl})
 
@@ -12337,10 +12336,10 @@ hooks}.
 
 @subsection Attribute Handling
 
-Some files in a project are special; they may require different handling
-(such as binary or structured files that should always be manually
-merged -- see @ref{Merging}), or they may represent executable scripts
-or programs.
+Some files in a project are special; they may require different
+handling (such as binary or structured files that should always be
+manually merged -- see @ref{File Content Conflict}), or they may
+represent executable scripts or programs.
 
 Monotone allows each file (or directory) in a repository to carry
 arbitrary @ref{File Attributes}.  Persistent attributes are stored in
@@ -12389,7 +12388,7 @@ attr_functions["mtn:execute"] =
 @end group
 @end smallexample
 
-@item attr_init_functions [@var{attribute}] (@var{filename})
+@anchor{attr_init_functions}@item attr_init_functions [@var{attribute}] (@var{filename})
 
 This is not a hook function, but a @emph{table} of hook
 functions. Each entry in the table @code{attr_init_functions}, at
