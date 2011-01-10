@@ -5029,8 +5029,11 @@ database_path_helper::validate_and_clean_alias(string const & alias, path_compon
   E(pure_alias.size() > 0, origin::system,
     F("invalid database alias '%s': must not be empty") % alias);
 
-  size_t pos = pure_alias.rfind('.');
-  if (pos == string::npos || pure_alias.substr(pos + 1) != "mtn")
+  globish matcher;
+  E(lua.hook_get_default_database_glob(matcher),
+    origin::user, F("could not query default database glob"));
+
+  if (!matcher.matches(pure_alias))
     pure_alias += ".mtn";
 
   try

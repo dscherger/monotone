@@ -34,3 +34,6 @@ check(mt("ls", "dbs"), 0, true, false)
 check(not qgrep("\tno known valid workspaces", "stdout"))
 check(qgrep("\ttest.foo.branch.+in.+list_databases\/test_foo", "stdout"))
 
+check(rename("managed_databases/bar.mtn", "managed_databases/bar.db"))
+check(mt("ls", "dbs"), 0, true, false)
+check(qgrep(":bar.db.+in.+list_databases\/managed_databases", "stdout"))

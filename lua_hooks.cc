@@ -723,6 +723,20 @@ bool lua_hooks::hook_get_default_database_locations(vector<system_path> & out)
   return ll.ok();
 }
 
+bool lua_hooks::hook_get_default_database_glob(globish & out)
+{
+   string glob;
+   bool exec_ok
+     = Lua(st)
+     .func("get_default_database_extensions")
+     .call(0, 1)
+     .extract_str(glob)
+     .ok();
+
+  out = globish(glob, origin::user);
+  return exec_ok;
+}
+
 bool lua_hooks::hook_hook_wrapper(string const & func_name,
                                   vector<string> const & args,
                                   string & out)
