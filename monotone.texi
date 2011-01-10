@@ -5795,12 +5795,13 @@ applied.
 
 @ftable @command
 @item mtn serve [--bind=[@var{address}][:@var{port}]]
-@itemx mtn pull [--[no-]set-default] [--dry-run] [@var{uri}]
-@itemx mtn push [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
-@itemx mtn sync [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn pull [--[no-]set-default] [--[no-]dry-run] [@var{uri}]
+@itemx mtn push [--[no-]set-default] [--[no-]dry-run] [--keys-to-push=@var{key}] [@var{uri}]
+@itemx mtn sync [--[no-]set-default] [--[no-]dry-run] [--keys-to-push=@var{key}] [@var{uri}]
 @itemx mtn pull [--[no-]set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
+See the online help for more options.
 
 These commands operate the ``netsync'' protocol built into
 monotone. This is a custom protocol for rapidly synchronizing two
@@ -5826,17 +5827,17 @@ are disabled. Only use @option{--no-transport-auth} if you are certain
 that the transport channel in use already provides sufficient
 authentication and authorization facilities.
 
-The @var{uri-or-address} arguments given to @command{push},
-@command{pull}, and @command{sync} can be of two possible forms.
-
 If @option{--dry-run} is given, the connection is made, but no data is
 transferred. Instead, a summary of what would be transferred is
 output; the number of revisions, certs and keys that would be sent and
 received. For sent revisions, the branch names are also output.
 
+The @var{uri-or-address} arguments given to @command{push},
+@command{pull}, and @command{sync} can be of two possible forms.
+
 If the argument is an URI, the Lua hook
-@code{get_netsync_connect_command} may transform it into a connection
-command, which is later executed as transport channel for netsync.
+@ref{get_netsync_connect_command} may transform it into a connection
+command, which is later executed as the transport channel for netsync.
 The URI itself consists of a connection scheme, an optional user (only
 used for @code{ssh}-related transports), a host with an optional port
 (which both might be optional as well, f.e. for the @code{file}
@@ -5860,16 +5861,20 @@ ssh://joe@@my.server/~/db.mtn?joes.branch
 @end group
 @end smallexample
 
+@code{file:} and @code{ssh:} are not supported on Windows native, but
+they are supported on Windows Cygwin.
+
 If the server has a multi-host setup, the path component of the URI
 might be used to distinguish between different databases (please ask the
-provider of the setup for details).
+provider of the server for details).
 
-If the argument is a simple hostname (with optional port number), monotone
-will fall back to the @code{mtn} URI scheme, i.e. use a TCP socket to the
-specified host and port.  The @var{glob} parameters then indicate a set of
-branches to exchange.  Multiple @var{glob} and @option{--exclude} options
-can be specified.  @strong{Important notice:} This call syntax is deprecated
-and subject of removal in future versions of monotone!
+For backward compatibility, if the argument is a simple hostname (with
+no scheme, but with optional port number), monotone will default to
+the @code{mtn:} URI scheme, i.e. use a TCP socket to the specified
+host and port.  The @var{glob} parameters then indicate a set of
+branches to exchange.  Multiple @var{glob} and @option{--exclude}
+options can be specified.  @strong{Important notice:} This call syntax
+is deprecated and subject to removal in future versions of monotone!
 
 For both syntaxes, every branch which matches a @var{glob} or branch pattern
 exactly, and does not match an @var{exclude-glob} or exclude pattern, will be
@@ -5899,10 +5904,10 @@ When the operation completes, all branches matching
 databases.
 
 The @command{pull}, @command{push}, and @command{sync} commands only
-require you pass @var{uri} (or @var{address} and @var{glob}) the first time
-you use one of them; monotone will memorize this use and in the future default
-to the same URI (or server and glob).  For instance, if Bob wants to
-@command{sync} with Alice again, he can simply run:
+require you pass @var{uri} the first time you use one of them;
+monotone will store this in the database and in the future default to
+the same URI.  For instance, if Bob wants to @command{sync} with Alice
+again, he can simply run:
 
 @smallexample
 @group
@@ -5918,44 +5923,49 @@ option when connecting to the server and branch pattern that you want to
 make the new default.
 
 The @command{serve} command doesn't care about workspaces, so even if
-you stand in one, you will have to give it the database to server, the
-server key to use and the key directory explicitely, or otherwise, it
-will take the defaults it would use when you don't stand in a
-workspace.
+you stand in one, you will have to give it the database to serve, the
+server key to use and the key directory explicitly.
 
 In the server, different permissions can be applied to each branch;
 see @ref{get_netsync_read_permitted} and
 @ref{get_netsync_write_permitted}.
 
-If a @option{--pid-file} option is specified, the command
-@command{serve} will create the specified file and record the process
-identifier of the server in the file.  This file can then be read to
-identify specific monotone server processes.
+If @option{--pid-file} is specified, @command{serve} will create the
+specified file and record the process identifier of the server in the
+file.  This file can then be read to identify specific monotone server
+processes.
 
-The syntax for patterns, both in globs as well as URIs, is very simple.
-@code{*} matches 0 or more arbitrary characters.  @code{?} matches exactly
-1 arbitrary character (you need to escape that with @code{%3F} in an URI).
-@code{@{foo,bar,baz@}} matches ``foo'', or ``bar'', or ``baz''.  These
-can be combined arbitrarily.  A backslash, @code{\}, can be prefixed to
-any character, to match exactly that character --- this might be useful
-in case someone, for some odd reason, decides to put a ``*'' into their
-branch name.
+The syntax for patterns is very simple.  @code{*} matches 0 or more
+arbitrary characters.  @code{?} matches exactly 1 arbitrary character
+(you need to escape that with @code{%3F} in a URI). @code{@{,@}}
+matches alternatives; @code{@{foo,bar,baz@}} matches ``foo'', or
+``bar'', or ``baz''.  These can be combined arbitrarily.  A backslash
+(@code{\}) escapes these special characters, to match exactly that
+character; this might be useful in case someone, for some odd
+reason, decides to put a ``*'' into their branch name.
 
-@item mtn clone @var{uri} [--branch=@var{branchname}] [@var{directory}]
-@item mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}]
+@item mtn clone @var{uri} [--branch=@var{branchname}] [--revision=@var{rev}] [@var{directory}]
+@item mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}] @strong{deprecated}
 @command{clone} is a helper command that performs the roles of a
-number of other commands all at once.  Firstly, it constructs a new
+number of other commands all at once.  First, it constructs a new
 database. If no database is given, the configured default database is
 created or re-used (see @ref{get_default_database_alias} for more
-details). Then it populates this database by @command{pull}ing any
-data which match the branch pattern in the @var{uri} or the given
-@var{branchname} argument from the remote database.  Finally, it
-copies the files out of the newly created database into a local
-directory, just as @command{checkout} would.  If no @var{directory} is
-given, the @var{branchname} is used as directory.
+details; @file{~/.monotone/default.mtn} by default). Then it populates
+this database by @command{pull}ing any data which match the branch
+pattern in the @var{uri} argument from the remote database.
+
+The branch pattern must specify a single branch; @command{clone} uses
+that to determine which branch to checkout.
+
+Finally, @command{clone} copies the files out of the newly created
+database into a local directory, just as @command{checkout} would.  If
+no @var{directory} is given, the @var{branchname} is used as
+directory. If @command{--revision} is given, that revision must be on
+the specified branch, and is checked out; otherwise the head of the
+branch is checked out.
 
 @strong{Important notice:} The @var{address}[:@var{port}] @var{branchname}
-call syntax is deprecated and subject of removal in future versions of monotone!
+call syntax is deprecated and subject to removal in future versions of monotone!
 
 @end ftable
 
@@ -11925,7 +11935,7 @@ host argument as a network name (possibly with a port number) and open
 a TCP socket.
 
 @ftable @code
-@item get_netsync_connect_command (@var{uri}, @var{args})
+@anchor{get_netsync_connect_command}@item get_netsync_connect_command (@var{uri}, @var{args})
 
 Returns a table describing a command to run to connect to the
 specified host. The @var{uri} argument is a table containing
