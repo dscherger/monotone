@@ -6163,7 +6163,9 @@ arguments passed to it, and so on, are controlled by the hook
 Displays help about commands and options.
 
 @item mtn list branches [@var{pattern}] [--exclude=@var{pattern}]
-@itemx mtn ls
+@itemx mtn ls branches
+@command{ls branches} is an alias for @command{list branches}.
+
 This command lists all known branches in your database. If
 @var{pattern} is provided, it is used as a glob to select the branches
 listed, otherwise all branches are listed.  If @option{-exclude}
@@ -6171,9 +6173,10 @@ options are provided they are used as globs to exclude specified
 branches.
 
 @item mtn list certs @var{id}
-@itemx mtn ls
+@itemx mtn ls certs
+@command{ls branches} is an alias for @command{list branches}.
 
-These commands will print out a list of certificates associated with
+This commands will print out a list of certificates associated with
 a particular revision @var{id}. Each line of the print out will
 indicate:
 @itemize
@@ -6229,7 +6232,9 @@ Value : 2003-10-16  graydon hoare  <graydon@@pobox.com>
 
 @item mtn list changed
 @itemx mtn list changed @var{pathname...}
-@itemx mtn ls
+@itemx mtn ls changed
+@command{ls changed} is an alias for @command{list changed}.
+
 This command lists all files in your workspace that have changed
 compared to the base revision, including files that are dropped, added
 or renamed.
@@ -6245,11 +6250,15 @@ files to the current subdirectory of the workspace.
 
 @anchor{mtn list databases}@item mtn list databases
 @itemx mtn list dbs
+@itemx mtn ls databases
+@itemx mtn ls dbs
+
 Show all @ref{Managed Databases} and the workspaces registered in
 them. See @ref{mtn register_workspace}.
 
 @item mtn list duplicates [--revision=@var{id}]
-@itemx mtn ls
+@itemx mtn ls duplicates
+@command{ls duplicates} is an alias for @command{list duplicates}.
 
 This command lists duplicate files in a given revision. If no revision is
 given, the workspace is used instead. Ignored and unknown files are
@@ -6260,7 +6269,9 @@ contents are equal.
 
 @item mtn list ignored
 @itemx mtn list ignored @var{pathname...}
-@itemx mtn ls
+@itemx mtn ls ignored
+@command{ls ignored} is an alias for @command{list ignored}.
+
 This command lists all files in your workspace that monotone is
 intentionally ignoring, due to the results of the @code{ignore_file
 (@var{filename})} hook.
@@ -6276,7 +6287,9 @@ files to the current subdirectory of the workspace.
 
 @item mtn list keys
 @itemx mtn list keys @var{pattern}
-@itemx mtn ls
+@itemx mtn ls keys
+@command{ls keys} is an alias for @command{list keys}.
+
 These commands list @sc{rsa} keys held in your keystore and current database.
 They do not print out any cryptographic information; they simply list the
 names of public and private keys you have on hand.
@@ -6286,7 +6299,9 @@ listed. Otherwise all keys in your database are listed.
 
 @item mtn list known
 @itemx mtn list known @var{pathname...}
-@itemx mtn ls
+@itemx mtn ls known
+@command{ls known} is an alias for @command{list known}.
+
 This command lists all files which would become part of the manifest of
 the next revision if you committed your workspace at this point.
 
@@ -6301,7 +6316,9 @@ files to the current subdirectory of the workspace.
 
 @item mtn list missing
 @itemx mtn list missing @var{pathname...}
-@itemx mtn ls
+@itemx mtn ls missing
+@command{ls missing} is an alias for @command{list missing}.
+
 This command lists all files in your workspace's base manifest,
 which are not present in the workspace.
 
@@ -6316,12 +6333,16 @@ files to the current subdirectory of the workspace.
 
 @item mtn list vars
 @itemx mtn list vars @var{domain}
-@itemx mtn ls
+@itemx mtn ls vars
+@command{ls vars} is an alias for @command{list vars}.
+
 This command lists all vars in your database, or all vars within a given
 @var{domain}.  See @ref{Vars} for more information.
 
 @item mtn list tags [@var{pattern}] [--exclude=@var{pattern}]
-@itemx mtn ls
+@itemx mtn ls tags
+@command{ls tags} is an alias for @command{list tags}.
+
 This command lists all known tags in your database. If @var{pattern}
 is provided, it is used as a glob to select the tags listed, otherwise
 all tags are listed.  If @option{-exclude} options are provided they
@@ -6329,7 +6350,9 @@ are used as globs to exclude specified tags.
 
 @item mtn list unknown
 @itemx mtn list unknown @var{pathname...}
-@itemx mtn ls
+@itemx mtn ls unknown
+@command{ls unknown} is an alias for @command{list unknown}.
+
 This command lists all files in your workspace that monotone is
 either ignoring or knows nothing about.
 
@@ -11253,7 +11276,7 @@ parent.
 
 Another example is the @file{read-permissions} file that's read by the
 default definition of the @code{get_netsync_read_permitted} Lua hook;
-see @ref{Default hooks}.
+see @ref{get_netsync_read_permitted}.
 
 Monotone will format its output in @code{basic_io} as follows:
 @itemize
