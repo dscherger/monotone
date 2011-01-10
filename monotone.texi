@@ -12483,7 +12483,8 @@ is not defined and is thus ignored during a commit.
 @subsection Meta Hooks
 
 Monotone allows the execution of arbitrary Lua hooks and functions through a
-special generalized "meta hook". See @ref{automate lua} for more information.
+special generalized "meta hook". See @ref{mtn automate lua} for more
+information.
 
 @ftable @code
 @item hook_wrapper (@var{func_name}, @var{...})
