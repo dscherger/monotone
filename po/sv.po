@@ -154,8 +154,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2011-01-09 22:49+0100\n"
-"PO-Revision-Date: 2011-01-09 22:51+0100\n"
+"POT-Creation-Date: 2011-01-10 04:37+0100\n"
+"PO-Revision-Date: 2011-01-10 04:37+0100\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -2506,9 +2506,9 @@ msgstr ""
 msgid "no changes"
 msgstr "inga ändringar"
 
-#: cmd_diff_log.cc:424 cmd_ws_commit.cc:538 cmd_ws_commit.cc:547
-#: cmd_ws_commit.cc:776 cmd_ws_commit.cc:818 cmd_ws_commit.cc:890
-#: cmd_ws_commit.cc:1808 automate.cc:1019
+#: cmd_diff_log.cc:424 cmd_ws_commit.cc:538 cmd_ws_commit.cc:776
+#: cmd_ws_commit.cc:818 cmd_ws_commit.cc:890 cmd_ws_commit.cc:1808
+#: automate.cc:1019
 msgid "[PATH]..."
 msgstr "[SÖKVÄG]..."
 
@@ -2731,6 +2731,10 @@ msgstr "Återställer filer och/eller kataloger"
 msgid ""
 "In order to revert the entire workspace, specify \".\" as the file name."
 msgstr "Använda \".\" om hela arbetskopian ska återställas."
+
+#: cmd_ws_commit.cc:547
+msgid "PATH..."
+msgstr "SÖKVÄG..."
 
 #: cmd_ws_commit.cc:548
 msgid "Reverses a mistaken 'drop'"
@@ -4657,7 +4661,7 @@ msgid "could not query default database alias"
 msgstr "kunde inte fråga efter databasens standardalias"
 
 #: database.cc:5016
-#, fuzzy, c-format
+#, c-format
 msgid "using default database '%s'"
 msgstr "använder standarddatabasen '%s'"
 
