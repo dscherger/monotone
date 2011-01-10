@@ -144,7 +144,7 @@ namespace pcre
     // because pcre_exec might not signal trailing unmatched subpatterns
     // i.e. if "abc" matches "(abc)(de)?", the match count is two, not
     // the expected three
-    size_t cap_count = 0;
+    int cap_count = 0;
     int rc = pcre_fullinfo(basedat, extradat, PCRE_INFO_CAPTURECOUNT, &cap_count);
     I(rc == 0);
 
