@@ -4886,7 +4886,7 @@ Many options can be specified by a single character; see the online
 help for those.
 
 @menu
-* Global Options::              Options that affect all commands
+* Global and Common Options::   Options that affect all or many commands
 * Tree::                        Operations on tree states in your database
 * Workspace::                   Operations on your workspace
 * Network::                     Communication with the network
@@ -4904,8 +4904,18 @@ help for those.
 @c this manual.
 
 @page
-@node    Global Options, Tree, Command Reference, Command Reference
-@section Global Options
+@node    Global and Common Options, Tree, Command Reference, Command Reference
+@section Global and Common Options
+
+@menu
+* Global Options::
+* Common Options::
+@end menu
+
+@node Global Options
+@subsection Global Options
+These options are available on all commands.
+
 @ftable @command
 @item --confdir <arg>
 Set the location of the configuration directory (default
@@ -4968,11 +4978,13 @@ command.
 Do not ignore revisions marked as suspended; see the @command{mtn
 suspend} command.
 
-@item --key <arg>
+@anchor{--key}@item --key <arg>
 @itemx --use-default-key
 Set the key for signatures, using either the key name or the key hash
-(see @ref{Generating Keys}).  If there is only one key in the keydir, then
-that is the default key. Otherwise there is no default key.
+(see @ref{Generating Keys}).  If there is only one key in the keydir,
+then that is the default key. Otherwise there is no default key. If no
+key is specified (by this option or by default), and the command needs
+a key, then the user is prompted for the key to use.
 
 @item --keydir <arg>
 Set the key directory (where the ``key store'' is located); default is
@@ -4997,8 +5009,7 @@ a configuration file is needed.
 @item --no-format-dates
 Print date certs exactly as stored in the database.
 
-@item --no-standard-rcfiles
-@itemx --standard-rcfiles
+@item --[no-]standard-rcfiles
 Do not load the standard rcfiles, which are
 @file{$HOME/.monotone/monotonerc} on Unix or
 @file{%APPDATA%\monotone\monotonerc} on Windows, and
@@ -5023,7 +5034,7 @@ debug, information, warning, and none. The default is information.
 @item --rcfile <arg>
 Specify an extra rcfile to load. See @ref{rcfiles}.
 
-@itemx --clear-rcfiles
+@item --clear-rcfiles
 Cancel all previous @option{--rcfile} options (standard rcfiles are
 still loaded). See @ref{rcfiles}.
 
@@ -5050,7 +5061,39 @@ Print version number, then exit; same as @command{mtn version}.
 Insert command line arguments taken from the given file.
 @end ftable
 
-@node    Tree, Workspace, Global Options, Command Reference
+@node Common Options
+@subsection Common Options
+These options are available on many commands.
+@ftable @command
+@anchor{--author}@item --author
+Override the author cert for a commit; normally, the author is the
+name of the key used for the commit. See @ref{--key}.
+
+@anchor{--branch}@item --branch
+Specify the branch for a command. This normally defaults to the
+workspace branch.
+
+@anchor{--date}@item --date
+Override the date cert for a commit. The date defaults to the current
+calendar time.
+
+@anchor{--message}@item --message @var{string}
+Set the commit changelog message, as a string. Each command that does
+a commit has a different default for the message.
+
+@anchor{--message-file}@item --message-file @var{filename}
+Set the commit changelog message, as a file. Each command that does
+a commit has a different default for the message.
+
+@anchor{--update}@item --[no-]update
+If @option{--update} is given, and the command is executed in a
+workspace, the workspace is updated to the new head of the workspace
+branch if the workspace was at a head, and the command makes a new
+head of the workspace branch.
+
+@end ftable
+
+@node    Tree, Workspace, Global and Common Options, Command Reference
 @section Tree
 
 @ftable @command
@@ -5105,8 +5148,8 @@ If no @var{id} is provided, as in the latter two commands, you
 @item mtn conflicts
 See @ref{Conflicts}
 
-@item mtn explicit_merge @var{id} @var{id} @var{destbranch}
-See the online help for options.
+@item mtn explicit_merge [--[no-]update] @var{id} @var{id} @var{destbranch}
+See the online help for options. See @ref{--update}.
 
 This command merges exactly the two @var{id}s you give it, and places
 the result in branch @var{destbranch}.  It is useful when you need more
@@ -5158,8 +5201,8 @@ The twist with the @command{mtn setup} part is that it sets the parent
 to be the given revision or the head of the given branch instead of the
 null revision.
 
-@item mtn merge [--branch=@var{branchname}] [--message @var{string}] [--message-file @var{filename}]
-See the online help for more options.
+@item mtn merge [--branch=@var{branchname}] [--message @var{string}] [--message-file @var{filename}] [--[no-]update]
+See the online help for more options. See @ref{--update}.
 
 This command merges the ``heads'' of @var{branchname} (default the
 branch of the current workspace), if there are multiple heads, and
@@ -5180,7 +5223,7 @@ the result of each previous merge as an input to the next.
 
 @ref{Merge Conflicts} can occur.
 
-@item mtn merge_into_dir @var{sourcebranch} @var{destbranch} @var{dir}
+@item mtn merge_into_dir [--[no-]update] @var{sourcebranch} @var{destbranch} @var{dir}
 This command takes a unique head from @var{sourcebranch} and merges it
 into a unique head of @var{destbranch}, as a directory. The resulting
 revision is committed to @var{destbranch}. If either @var{sourcebranch} or
@@ -5199,7 +5242,7 @@ both projects nested as in @var{destbranch} instead of only the project
 originally in @var{sourcebranch}, which is almost certainly not what would be
 intended.
 
-@ref{Merge Conflicts} can occur.
+@ref{Merge Conflicts} can occur. See @ref{--update}.
 
 @item mtn merge_into_workspace [--[no]-move-conflicting-paths] @var{revision}
 Merges @var{revision} into the current workspace; the result is not
@@ -5801,7 +5844,7 @@ applied.
 @itemx mtn pull [--[no-]set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn push [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
 @itemx mtn sync [--[no-]set-default] [--keys-to-push=@var{key}] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
-See the online help for more options.
+See the online help for more options. See @ref{--update}.
 
 These commands operate the ``netsync'' protocol built into
 monotone. This is a custom protocol for rapidly synchronizing two
@@ -6499,55 +6542,71 @@ was compiled.
 @section Review
 
 @ftable @command
-@item mtn approve @var{id}
-This command is a synonym for @command{mtn cert @var{id} branch
-@var{branchname}} where @var{branchname} is the current branch name
-(either deduced from the workspace or from the @option{--branch}
-option).
+@item mtn approve @var{rev} [--branch=@var{branchname}] [--[no-]update]
+This command puts @var{rev} on the branch @var{branchname} (defaults
+to the workspace branch).
 
-@item mtn comment @var{id}
-@itemx mtn comment @var{id} @var{comment}
-These commands are synonyms for @command{mtn cert @var{id}
-comment @var{comment}}. If @var{comment} is not provided, it is read
-from @code{stdin}.
+This command is a synonym for @command{mtn cert @var{rev} branch
+@var{branchname}}.
 
-@item mtn disapprove [@var{parent}] @var{child}
+See @ref{--update}.
+
+@item mtn comment @var{rev} [@var{comment}]
+
+This adds a new comment to a committed revision.  If @var{comment} is
+not provided, it is read from @code{stdin}.
+
+This command is a synonym for @command{mtn cert @var{rev} comment
+@var{comment}}.
+
+@item mtn disapprove [--[no-]update] [@var{parent}] @var{child}
+See online help for more options; see @ref{Common Options}. See @ref{--update}.
+
 This command records a disapproval of the changes between @var{parent}'s
 ancestor and @var{child}.  If @var{parent} is omitted, only @var{child}
 is disapproved.  The command does the disapproval by committing
 the @i{inverse} changes as a new revision descending from @var{child}.
-The new revision will show up as a new head and thus a subsequent
-@command{merge} will incorporate the inverse of the disapproved changes
-in the other head(s).
 
-Conceptually, @command{disapprove}s contract is that disapprove(A) gives a
+Conceptually, @command{disapprove}'s contract is that disapprove(A) gives a
 revision B such that whenever B is merged with a descendant D of A the merge
 will result in what D ``would have looked like'' if A had never happened.
 
-Note that as a consequence of this contract the @command{disapprove} command
-only works if all changesets from @var{parent} to @var{child} have exactly
-one ancestor, since it hasn't been worked out how to generate such
-a descendant in the multi-ancestor case.
+Note that as a consequence of this contract the @command{disapprove}
+command only works if all changesets from @var{parent} to @var{child}
+have exactly one ancestor (that is, none are the result of a merge),
+since it hasn't been worked out how to generate such a descendant in
+the multi-ancestor case.
 
-@anchor{mtn suspend}@item mtn suspend @var{id}
-This command is a synonym for @command{mtn cert @var{id} suspend
-@var{branchname}} where @var{branchname} is the current branch name
-(either deduced from the workspace or from the @option{--branch}
-option).
+@anchor{mtn suspend}@item mtn suspend [--[no-]update] [--branch @var{branchname}] @var{rev}
+See @ref{--update}.
 
-@item mtn tag @var{id} @var{tagname}
+This makes @var{rev} invisible as a head of branch @var{branchname}
+(defaults to the current workspace branch).  Any operation that looks
+for heads will not count @var{rev}; this includes @command{mtn list branches}
+as well as @command{mtn merge} etc.
+
+If @var{rev} is not a head, @command{suspend} has no effect.
+
+@command{suspend} is not inherited; if a new revision is committed as
+the child of a @command{suspend}ed revision, the new revision will be
+visible as a head.
+
+This command is a synonym for @command{mtn cert @var{rev} suspend
+@var{branchname}}.
+
+@item mtn tag @var{rev} @var{tagname}
 This command associates the symbolic name @var{tagname} with the
-revision @var{id}, so that symbolic name can later be used in
-@ref{Selectors} for specifying revisions for commands like
-@command{update} or @command{diff}.
+revision @var{rev}, so that symbolic name can later be used in
+@ref{Selectors} for specifying revisions.
 
-This command is a synonym for @command{mtn cert @var{id} tag
+This command is a synonym for @command{mtn cert @var{rev} tag
 @var{tagname}}.
 
-@item mtn testresult @var{id} 0
-@itemx mtn testresult @var{id} 1
-These commands are synonyms for @command{mtn cert @var{id}
-testresult 0} or @command{mtn cert @var{id} testresult 1}.
+@item mtn testresult @var{rev} @{pass | fail | true | false | yes | no | 1 | 0@}
+This command adds a @option{testresult} certificate to @var{rev}, with
+a value of 0 or 1. @option{pass}, @option{true}, @option{yes} give a
+value of 1; @option{fail}, @option{false}, @option{no} give a value of
+0. See @ref{Quality Assurance}.
 
 @end ftable
 
