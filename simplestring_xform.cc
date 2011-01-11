@@ -60,22 +60,15 @@ uppercase(string const & in)
 
 void split_into_lines(string const & in,
                       vector<string> & out,
-                      bool diff_compat)
+                      split_flags::split_flags flags)
 {
-  return split_into_lines(in, constants::default_encoding, out, diff_compat);
-}
-
-void split_into_lines(string const & in,
-                      string const & encoding,
-                      vector<string> & out)
-{
-  return split_into_lines(in, encoding, out, false);
+  return split_into_lines(in, constants::default_encoding, out, flags);
 }
 
 void split_into_lines(string const & in,
                       string const & encoding,
                       vector<string> & out,
-                      bool diff_compat)
+                      split_flags::split_flags flags)
 {
   string lc_encoding = lowercase(encoding);
   out.clear();
@@ -105,13 +98,22 @@ void split_into_lines(string const & in,
 
       while (end != string::npos && end >= begin)
         {
-          out.push_back(in.substr(begin, end-begin));
+          string::size_type next_begin;
+
           if (in.at(end) == '\r'
               && in.size() > end+1
               && in.at(end+1) == '\n')
-            begin = end + 2;
+            next_begin = end + 2;
           else
-            begin = end + 1;
+            next_begin = end + 1;
+
+          if (flags & split_flags::keep_endings)
+            out.push_back(in.substr(begin, next_begin-begin));
+          else
+            out.push_back(in.substr(begin, end-begin));
+
+          begin = next_begin;
+
           if (begin >= in.size())
             break;
           end = in.find_first_of("\r\n", begin);
@@ -119,7 +121,7 @@ void split_into_lines(string const & in,
       if (begin < in.size()) {
         // special case: last line without trailing newline
         string s = in.substr(begin, in.size() - begin);
-        if (diff_compat) {
+        if (flags & split_flags::diff_compat) {
           // special handling: produce diff(1) compatible output
           s += (in.find_first_of("\r") != string::npos ? "\r\n" : "\n");
           s += "\\ No newline at end of file";
@@ -134,12 +136,6 @@ void split_into_lines(string const & in,
 }
 
 
-void
-split_into_lines(string const & in,
-                 vector<string> & out)
-{
-  split_into_lines(in, constants::default_encoding, out);
-}
 
 void
 join_lines(vector<string> const & in,
