@@ -176,7 +176,7 @@ namespace pcre
     else if (rc < 0)
       pcre_exec_error(rc, made_from, subject_origin); // throws
 
-    for (size_t i=0; i < cap_count; ++i)
+    for (int i=0; i < cap_count; ++i)
       {
         string match;
         // not an empty match
