@@ -6341,14 +6341,6 @@ missing} command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for missing
 files to the current subdirectory of the workspace.
 
-@item mtn list vars
-@itemx mtn list vars @var{domain}
-@itemx mtn ls vars
-@command{ls vars} is an alias for @command{list vars}.
-
-This command lists all vars in your database, or all vars within a given
-@var{domain}.  See @ref{Vars} for more information.
-
 @item mtn list tags [@var{pattern}] [--exclude=@var{pattern}]
 @itemx mtn ls tags
 @command{ls tags} is an alias for @command{list tags}.
@@ -6374,6 +6366,23 @@ From within a subdirectory of the workspace the @command{list
 unknown} command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for unknown
 files to the current subdirectory of the workspace.
+
+@item mtn list vars
+@itemx mtn list vars @var{domain}
+@itemx mtn ls vars
+@command{ls vars} is an alias for @command{list vars}.
+
+This command lists all vars in your database, or all vars within a given
+@var{domain}.  See @ref{Vars} for more information.
+
+@item mtn list workspaces
+@itemx mtn ls workspaces
+@command{ls workspaces} is an alias for @command{list workspaces}.
+
+This command shows all registered workspaces for a database, be it
+managed or unmanaged.  If no database is given explicitely, defaults to
+the workspace' database in which the command is executed.
+See @ref{Managed Databases} and @ref{mtn register_workspace} for more information.
 
 @anchor{mtn log}@item mtn log
 @itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--clear-from] [--to=@var{id} [...]] [--clear-to] [--revision=@var{id} [...]] [--[no-]brief] [--[no-]merges] [--[no-]files] [--[no-]graph] [--[no-]diffs] [@var{pathname...}]
