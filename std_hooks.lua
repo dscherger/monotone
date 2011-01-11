@@ -1304,7 +1304,7 @@ function get_default_database_locations()
     return paths
 end
 
-function get_default_database_extensions()
+function get_default_database_glob()
     return "*.{mtn,db}"
 end
 

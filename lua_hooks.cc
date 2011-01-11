@@ -728,7 +728,7 @@ bool lua_hooks::hook_get_default_database_glob(globish & out)
    string glob;
    bool exec_ok
      = Lua(st)
-     .func("get_default_database_extensions")
+     .func("get_default_database_glob")
      .call(0, 1)
      .extract_str(glob)
      .ok();
