@@ -123,6 +123,7 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
           "verify the server key, because we have no record of what it should be.")
           % memory_db_identifier);
       app.opts.dbname_type = memory_db;
+      app.opts.dbname_given = true;
     }
 
   database db(app);
@@ -224,6 +225,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
           "verify the server key, because we have no record of what it should be.")
           % memory_db_identifier);
       app.opts.dbname_type = memory_db;
+      app.opts.dbname_given = true;
     }
 
   database db(app);

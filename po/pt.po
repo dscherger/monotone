@@ -1,13 +1,13 @@
 # Translation of monotone to Portuguese
 # This file is distributed under the same license as the monotone package.
 #
-# Américo Monteiro <a_monteiro@netcabo.pt>, 2009, 2010.
+# Américo Monteiro <a_monteiro@netcabo.pt>, 2009, 2010, 2011.
 msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.99\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2010-10-28 00:42+0200\n"
-"PO-Revision-Date: 2010-10-19 19:56+0100\n"
+"PO-Revision-Date: 2011-01-09 01:43+0000\n"
 "Last-Translator: Américo Monteiro <a_monteiro@netcabo.pt>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
 "Language: pt\n"
@@ -1149,9 +1149,9 @@ msgid "could not query default database locations"
 msgstr "incapaz de questionar localizações da base de dados predefinida"
 
 #: cmd_list.cc:671
-#, fuzzy, c-format
+#, c-format
 msgid "ignoring database '%s'"
-msgstr "A inicializar nova base de dados '%s'"
+msgstr "a ignorar a base de dados '%s'"
 
 #: cmd_list.cc:678
 #, c-format
@@ -3000,24 +3000,21 @@ msgid "import directory '%s' is a file"
 msgstr "directório de importação '%s' é um ficheiro"
 
 #: cmd_ws_commit.cc:1978
-#, fuzzy
 msgid "Exports a revision from the database into a directory"
-msgstr "Faz o checkout a uma revisão da base de dados para um directório"
+msgstr "Exporta uma revisão da base de dados para um directório"
 
 #: cmd_ws_commit.cc:1979
-#, fuzzy
 msgid ""
 "If a revision is given, that's the one that will be exported.  Otherwise, it "
 "will be the head of the branch (given or implicit)."
 msgstr ""
-"Se for fornecida uma revisão, é a essa que será feita o checkout. Caso "
-"contrário, será o cabeçalho do branch (fornecido ou implícito). Se nenhum "
-"directório for fornecido, o nome do branch será usado como directório."
+"Se for fornecida uma revisão, é a essa que será exportada. Caso contrário, "
+"será o cabeçalho do branch (fornecido ou implícito)."
 
 #: cmd_ws_commit.cc:1991
-#, fuzzy, c-format
+#, c-format
 msgid "You can't export in the current directory"
-msgstr "Escreve a raiz do espaço de trabalho para o directório actual"
+msgstr "Você não pode exportar para o directório actual"
 
 #: cmd_ws_commit.cc:1999
 msgid "Migrates a workspace directory's metadata to the latest format"
@@ -3135,7 +3132,6 @@ msgid "Reports on the current status of the bisection search"
 msgstr "Reporta o estado actual da pesquisa bi-secção"
 
 #: cmd_ws_commit.cc:2389
-#, fuzzy
 msgid ""
 "Lists the total number of revisions in the search set, the number of "
 "revisions that have been determined to be good or bad, the number of "
@@ -7298,14 +7294,14 @@ msgid "merge failed due to unresolved conflicts"
 msgstr "fusão falhada devido a conflitos não resolvidos"
 
 #: uri.cc:40
-#, fuzzy, c-format
+#, c-format
 msgid "unable to parse URI '%s'"
-msgstr "incapaz de analisar data '%s' com formato '%s'"
+msgstr "incapaz de analisar o URI '%s'"
 
 #: uri.cc:68
-#, fuzzy, c-format
+#, c-format
 msgid "unable to parse host of URI '%s'"
-msgstr "incapaz de analisar data '%s' com formato '%s'"
+msgstr "incapaz de analisar a máquina do URI '%s'"
 
 #: uri.cc:150 uri.cc:153 uri.cc:175 uri.cc:196
 #, c-format
@@ -7368,9 +7364,9 @@ msgstr ""
 "sequência UTF-8 inválida durante a correspondência de expressão regular"
 
 #: pcrewrap.cc:266
-#, fuzzy, c-format
+#, c-format
 msgid "pcre_exec returned %d"
-msgstr "pcre_match retornou %d"
+msgstr "pcre_exec retornou %d"
 
 #: rev_output.cc:61
 msgid "Revision: "
