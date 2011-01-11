@@ -657,17 +657,14 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
       system_path current_workspace;
       get_current_workspace(current_workspace);
 
-      if (cur_opts.dbname_type == managed_db)
+      if (cur_opts.dbname_given)
         {
           database old_db(cur_opts, lua);
           old_db.unregister_workspace(current_workspace);
         }
 
-      if (opts.dbname_type == managed_db)
-        {
-          database new_db(opts, lua);
-          new_db.register_workspace(current_workspace);
-        }
+      database new_db(opts, lua);
+      new_db.register_workspace(current_workspace);
 
       cur_opts.dbname_type = opts.dbname_type;
       cur_opts.dbname_alias = opts.dbname_alias;
