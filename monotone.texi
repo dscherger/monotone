@@ -5263,7 +5263,7 @@ If no directory is given, defaults to the current workspace.
 This may be needed when upgrading to a new version of monotone.
 
 @item mtn propagate @var{sourcebranch} @var{destbranch} [--message @var{string}] [--message-file @var{filename}]
-See online help for more options.
+See online help for more options. See @ref{Common Options}.
 
 This command takes a unique head from @var{sourcebranch} and merges it
 with a unique head of @var{destbranch}, using the least common
@@ -6628,15 +6628,13 @@ list databases} (the database has to be in a managed location for
 @command{list databases} to work; see @ref{Managed Databases}).
 
 @item mtn set @var{domain} @var{name} @var{value}
-Associates the value @var{value} to @var{name} in domain @var{domain}.
+Associates @var{value} to @var{name} in domain @var{domain}.
 See @ref{Vars} for more information.
 
 @item mtn unregister_workspace [@var{workspace_path}]
-Unregisters the given workspace from the current database, so that it
-will no longer show up in the output of @ref{mtn list databases}.
-
-If no @var{workspace_path} is given, this command defaults to the
-current workspace.
+Unregisters the given workspace (default the current workspace) from
+the current database, so that it will no longer show up in the output
+of @ref{mtn list databases}.
 
 @item mtn unset @var{domain} @var{name}
 Deletes any value associated with @var{name} in @var{domain}.  See
@@ -6649,21 +6647,18 @@ Deletes any value associated with @var{name} in @var{domain}.  See
 @section Key and Cert
 
 @ftable @command
-@item mtn cert @var{selector} @var{certname}
-@itemx mtn cert @var{selector} @var{certname} @var{certval}
+@item mtn cert @var{selector} @var{certname} [@var{certval}]
 
-These commands create a new certificate with name @var{certname}, for all
-revisions matching @var{selector}. The @var{selector} argument can
-use certs already on the revision, such as @code{h:@var{branchname}}.
+Create a new certificate with name @var{certname}, for all
+revisions matching @var{selector}.
 
 If @var{certval} is provided, it is the value of the certificate.
 Otherwise the certificate value is read from @code{stdin}.
 
 @item mtn dropkey @var{keyid}
-This command drops the public and/or private key. If both exist, both
-are dropped, if only one exists, it is dropped. This command should
-be used with caution as changes are irreversible without a backup of
-the key(s) that were dropped.
+Drop the public and/or private key. This command should be used with
+caution as changes are irreversible without a backup of the key(s)
+that were dropped.
 
 @item mtn genkey @var{keyid}
 This command generates an @sc{rsa} public/private key pair, using a
@@ -6671,38 +6666,47 @@ system random number generator, and stores it in your keystore under
 the key name @var{keyid.keyhash}.  The key's hash is printed out after
 the key has been created.
 
-The private half of the key is stored in an encrypted form, so that anyone
-who can read your keystore cannot extract your private key and use it.
-You must provide a passphrase for your key when it is generated, which is used
-to determine the encryption key. In the future you will need to enter this
-passphrase again each time you sign a certificate, which happens every
-time you @command{commit} to your database. You can tell monotone to
-automatically use a certain passphrase for a given key using the
-@code{get_passphrase(@var{key_identity})}, but this significantly
-increases the risk of a key compromise on your local computer. Be
-careful using this hook.
+The private half of the key is stored in an encrypted form, so that
+anyone who can read your keystore cannot extract your private key and
+use it.  You must provide a passphrase for your key when it is
+generated, which is used to determine the encryption key. In the
+future you will need to enter this passphrase again each time you sign
+a certificate, which happens every time you @command{commit} to your
+database. You can tell monotone to automatically use a certain
+passphrase for a given key using the
+@code{get_passphrase(@var{key_identity})} (see @ref{get_passphrase}),
+but this significantly increases the risk of a key compromise on your
+local computer. Be careful using this hook.
+
+Another way to avoid entering the private key passphrase each time it
+is needed is to export it to ssh-agent; see @ref{mtn
+ssh_agent_export}, @ref{mtn ssh_agent_add}.
 
 The public key is stored in the database; the public and private keys
 are stored in the keystore. This allows copying the database without
 copying the private key.
 
-The location of the keystore is specified by the @option{--keydir}
-option; it defaults to the value stored in @file{_MTN/options} for
-commands executed in a workspace, or to
-the system default (@file{$HOME/.monotone/keys} on Unix and Cygwin,
+The location of the keystore is specified by @option{--keydir}; it
+defaults to the value stored in @file{_MTN/options} for commands
+executed in a workspace, or to the system default
+(@file{$HOME/.monotone/keys} on Unix and Cygwin,
 @file{%APPDATA%/monotone/keys} on native Win32).
 
 @item mtn passphrase @var{keyid}
 This command lets you change the passphrase of the private half of the
 key @var{id}.
 
-@item mtn ssh_agent_add
+@anchor{mtn ssh_agent_add}@item mtn ssh_agent_add
 This command will add your monotone keys to your current ssh-agent session.
 You will be asked for the passphrase for each of your monotone private keys
 and they will be added to the ssh-agent. Once this is done you should be able
 to type @emph{ssh-add -l} and see your monotone key listed. When you
 subsequently use these keys through monotone it will use ssh-agent for signing
 without asking your for your passphrase.
+
+On Windows native, monotone only supports the PuTTY ssh-agent
+implementation. On Windows Cygwin and Unix, any standard ssh-agent
+implementation can be used.
 
 This command is mainly for use in a session script as monotone will automatically
 add your keys to ssh-agent on first use if it is available. For example the
@@ -6728,13 +6732,15 @@ $ mtn push -k user@@example.com
 In the second example, monotone automatically added the key to ssh-agent, making
 entering the passphrase not needed during the push.
 
-@item mtn ssh_agent_export @var{filename}
+@anchor{mtn ssh_agent_export}@item mtn ssh_agent_export [@var{filename}]
+
 This command will export your private key in a format that ssh-agent
-can read (PKCS8, PEM). You will be asked for your current key's password
-and a new password to encrypt the key with. The key will be printed to
-stdout. Once you have put this key in a file simply add it to ssh-agent
-and you will only have to enter your key password once as ssh-agent
-will cache the key for you.
+can read (PKCS8, PEM), to @var{filename} (defaults to standard
+output). You will be asked for your current key's monotone password
+and a new password to encrypt the key with (the ssh passphrase). The
+key will be printed to stdout. Once you have put this key in a file
+simply add it to ssh-agent and you will only have to enter your key
+password once as ssh-agent will cache the key for you.
 
 @smallexample
 @group
@@ -6771,7 +6777,7 @@ names, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
 those keys.
 
-The specified keys mist exist either in your keystore or in the database.
+The specified keys must exist either in your keystore or in the database.
 
 @end ftable
 
@@ -10237,7 +10243,7 @@ interface.
 Keyboard interaction is disabled on the server, just as if
 @option{--non-interactive} would have been specified on server startup.
 Actions which require operations on password-encrypted private keys will
-therefor fail unless a @code{get_passphrase} hook is set up remotely.
+therefor fail unless a @ref{get_passphrase} hook is set up remotely.
 
 @end table
 
@@ -10286,7 +10292,7 @@ interface.
 For both, the client and the server, keyboard interaction is disabled,
 just as if @option{--non-interactive} is specified. Actions which require
 operations on password-encrypted private keys will therefor fail unless the
-@code{get_passphrase} hook is set up locally and / or remotely.
+@ref{get_passphrase} hook is set up locally and / or remotely.
 
 @end table
 
@@ -10945,7 +10951,7 @@ sub-commands will exit the particular command with return code "1".
 
 Keyboard interaction is disabled, just as if @option{--non-interactive} is
 specified. Actions which require operations on password-encrypted private keys
-will therefor fail unless the @code{get_passphrase} hook is set up locally.
+will therefor fail unless the @ref{get_passphrase} hook is set up locally.
 
 @item Multiple streams
 
@@ -11704,7 +11710,7 @@ end
 @end group
 @end smallexample
 
-@item get_passphrase (@var{key_identity})
+@anchor{get_passphrase}@item get_passphrase (@var{key_identity})
 
 Returns a string which is the passphrase used to encrypt the private
 half of @var{key_identity} in your key store, using the @sc{TripleDES} symmetric
