@@ -29,6 +29,9 @@ XXX XXX XX XX:XX:XX UTC 2010
         
         Bugs fixed
 
+        - The internal line merger will actually preserve your line
+          endings now, instead of changing everything to "\n".
+
         - Improve help, fix arg indexing in 'conflicts resolve_first'
           (fixes monotone issue 101)
         
