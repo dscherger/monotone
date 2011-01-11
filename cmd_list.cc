@@ -761,7 +761,7 @@ CMD(known, "known", "", CMD_REF(list), "",
        ostream_iterator<file_path>(cout, "\n"));
 }
 
-CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
+CMD(unknown, "unknown", "ignored", CMD_REF(list), "[PATH]",
     N_("Lists workspace files that do not belong to the current branch"),
     "",
     options::opts::depth | options::opts::exclude)
@@ -815,7 +815,7 @@ CMD(missing, "missing", "", CMD_REF(list), "",
 }
 
 
-CMD(changed, "changed", "", CMD_REF(list), "",
+CMD(changed, "changed", "", CMD_REF(list), "[PATH...]",
     N_("Lists files that have changed with respect to the current revision"),
     "",
     options::opts::depth | options::opts::exclude)
