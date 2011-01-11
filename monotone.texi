@@ -11782,6 +11782,21 @@ of this default database.
 
 The default implementation returns @code{:default.mtn}.
 
+@anchor{hook_get_default_database_glob}@item get_default_database_glob ()
+
+Returns a pattern to let monotone distinguish a valid from an invalid
+database file name. This pattern is used in two places:
+
+@itemize
+@item When monotone scans for database files in its default database locations,
+      it will skip all files which do not match the pattern return from this hook.
+@item When a partial database alias is validated and the alias' name does not
+      match the pattern returned from this hook, @code{.mtn} is appended to
+      the alias' name.
+@end itemize
+
+The default implementation returns @code{*.@{mtn,db@}}.
+
 @anchor{edit_comment}@item edit_comment (@var{user_log_message})
 
 Returns a log entry for a given set of changes, described in
