@@ -17,6 +17,7 @@
 #include "simplestring_xform.hh"
 
 #include <ostream>
+#include <sstream>
 #include <iterator>
 #include <boost/scoped_ptr.hpp>
 
@@ -25,6 +26,7 @@ using std::min;
 using std::ostream;
 using std::ostream_iterator;
 using std::string;
+using std::stringstream;
 using std::vector;
 using boost::scoped_ptr;
 
@@ -208,22 +210,23 @@ void unidiff_hunk_writer::flush_hunk(size_t pos)
         }
 
       // write hunk to stream
+      stringstream ss;
       if (a_len == 0)
-        ost << "@@ -0,0";
+        ss << "@@ -0,0";
       else
         {
-          ost << "@@ -" << a_begin+1;
+          ss << "@@ -" << a_begin+1;
           if (a_len > 1)
-            ost << ',' << a_len;
+            ss << ',' << a_len;
         }
-
+ 
       if (b_len == 0)
-        ost << " +0,0";
+        ss << " +0,0";
       else
         {
-          ost << " +" << b_begin+1;
+          ss << " +" << b_begin+1;
           if (b_len > 1)
-            ost << ',' << b_len;
+            ss << ',' << b_len;
         }
 
       {
@@ -238,7 +241,7 @@ void unidiff_hunk_writer::flush_hunk(size_t pos)
             }
 
         find_encloser(a_begin + first_mod, encloser);
-        ost << " @@" << encloser << '\n';
+        ss << " @@";
 
         ost << color.colorize(ss.str(), colorizer::diff_separator);
         ost << color.colorize(encloser, colorizer::diff_encloser);
