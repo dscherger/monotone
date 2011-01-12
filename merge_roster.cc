@@ -1,4 +1,4 @@
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //               2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -177,6 +177,14 @@ roster_merge_result::has_non_content_conflicts() const
     || !multiple_name_conflicts.empty()
     || !duplicate_name_conflicts.empty()
     || !attribute_conflicts.empty();
+}
+
+int
+roster_merge_result::count_supported_resolution() const
+{
+  return orphaned_node_conflicts.size()
+    + file_content_conflicts.size()
+    + duplicate_name_conflicts.size();
 }
 
 int

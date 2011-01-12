@@ -18,23 +18,29 @@ do
    end
 
    notifier = {
-      start = function(session_id,...)
-		 netsync_branches[session_id] = {}
-	      end,
-      revision_received = function(new_id,revision,certs,session_id)
-			     for _, item in pairs(certs) do
-				RL_note_netsync_cert_received(new_id,
-							      item.key,
-							      item.name,
-							      item.value,
-							      session_id)
-			     end
-			  end,
-      cert_received = function(rev_id,key,name,value,session_id)
-			 RL_note_netsync_cert_received(rev_id,
-						       key,name,value,
-						       session_id)
-		      end,
+      start =
+	 function(session_id,...)
+	    netsync_branches[session_id] = {}
+	    return "continue",nil
+	 end,
+      revision_received =
+	 function(new_id,revision,certs,session_id)
+	    for _, item in pairs(certs) do
+	       RL_note_netsync_cert_received(new_id,
+					     item.key,
+					     item.name,
+					     item.value,
+					     session_id)
+	    end
+	    return "continue",nil
+	 end,
+      cert_received =
+	 function(rev_id,key,name,value,session_id)
+	    RL_note_netsync_cert_received(rev_id,
+					  key,name,value,
+					  session_id)
+	    return "continue",nil
+	 end,
       ["end"] = function(session_id)
 		   local first = true
 		   for item, amount in pairs(netsync_branches[session_id])
@@ -46,10 +52,11 @@ do
 		      io.stderr:write("  ",item,"  (",amount,")\n")   
 		   end
 		   netsync_branches[session_id] = nil
+		   return "continue",nil
 		end
    }
 
-   local v,m = push_netsync_notifier(notifier)
+   local v,m = push_hook_functions(notifier)
    if not v then
       error(m)
    elseif m then

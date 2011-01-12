@@ -12,9 +12,9 @@
 -- This means that every time the database schema is changed, you need
 -- to add a new piece to this test, for the new schema.  The way you do
 -- this is to run this test with the -d option, like so:
---   $ ./testsuite -d schema_migration
--- this will cause autotest to leave behind the temporary files the test
--- generates. You want 'tester_dir/schema_migration/<something>.db.dumped'.
+--   $ ./tester -d lua-testsuite.lua schema_migration
+-- this will cause the tester program to leave behind the temporary files the
+-- test generates. You want 'tester_dir/schema_migration/<something>.mtn.dumped'.
 -- Copy that file to this directory, and add a line
 --   check_migrate_from("<something>")
 -- to the end of this file, with the <something> being the same <something>
@@ -69,13 +69,11 @@ check(mtn("commit", "--branch=testbranch3", "--date=2003-01-01T12:00:00", "--mes
 
 rename("test.db", "latest.mtn")
 
-if debugging then
-  check(mtn("--db=latest.mtn", "db", "dump"), 0, true, false)
-  rename("stdout", "latest.mtn.dumped")
-  check(mtn("--db=latest.mtn", "db", "version"), 0, true, false)
-  local ver = string.gsub(readfile("stdout"), "^.*: ([0-9a-f]*).*$", "%1")
-  rename("latest.mtn.dumped", ver..".mtn.dumped")
-end
+check(mtn("--db=latest.mtn", "db", "dump"), 0, true, false)
+rename("stdout", "latest.mtn.dumped")
+check(mtn("--db=latest.mtn", "db", "version"), 0, true, false)
+local ver = string.gsub(readfile("stdout"), "^.*: ([0-9a-f]*).*$", "%1")
+rename("latest.mtn.dumped", ver..".mtn.dumped")
 
 ----------------------------------------------------------------------------
 ---- End untouchable code
@@ -106,3 +104,5 @@ check_migrate_from("fe48b0804e0048b87b4cea51b3ab338ba187bdc2")
 check_migrate_from("7ca81b45279403419581d7fde31ed888a80bd34e")
 check_migrate_from("212dd25a23bfd7bfe030ab910e9d62aa66aa2955")
 check_migrate_from("9c8d5a9ea8e29c69be6459300982a68321b0ec12")
+check_migrate_from("1f60cec1b0f6c8c095dc6d0ffeff2bd0af971ce1")
+check_migrate_from("c3a13c60edc432f9a7739f8a260565d77112c86e")

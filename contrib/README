@@ -25,6 +25,10 @@ See individual files for licenses.
      For a manual, do `perl Notify.pl --man'.
      To get a help text, do `perl Notify.pl --help'.
 
+  -- mtn-cleanup: A Perl script for returning a workspace to its pristine state
+     with the minimum of change (i.e. missing files are restored, changed files
+     are reverted and new files are removed).
+
   -- Monotone.pm: A Perl module to access a 'mtn automate stdio' subprocess.
 
   -- monoprof.sh: A simple monotone profiling script.
@@ -67,7 +71,40 @@ See individual files for licenses.
      individual per-branch recipient configuration with a syntax similar
      to the one found in ~/.monotone/read-permissions.
      It writes out details of each revision received to files which are then
-     picked up by the monotone-mail-notify.sh script which requires shell,
+     picked up by the monotone-mail-notify.sh script which requires bash,
      source-highlight and mime-construct to build nicely structured emails
      with summaries of the revision and its diffs.
 
+  -- ciabot_monotone_hookversion.lua / ciabot_monotone_hookversion.py:
+     Two scripts that work together to send commit notifications to
+     http://CIA.cv/.  The main configuration is done in the file
+     ciabot.conf, found in the monotone configuration directory.
+     Before including ciabot_monotone_hookversion.lua, you need to assign
+     the path (as a string) to ciabot_monotone_hookversion.py to the
+     variable ciabot_python_script.
+     For further documentation on the configuration, see the comments
+     in ciabot_monotone_hookversion.py.
+
+  -- display_branches.lua: A simple Lua script that hooks into the netsync
+     notifiers.  After a pull, it will display what branches are being
+     filled with new revisions, and how many.  Easy to include from your
+     monotonerc.
+
+  -- dump-test-logs.sh: Dump the detailed logs for all tests with an
+     unexpected outcome to stdout.  This is intended for use in super-
+     automated build environments, e.g. the Debian build daemons, where
+     the easiest way to recover detailed test logs for a failed build
+     is to embed them in the overall 'make' output.  Run, with no
+     arguments, from the top level of a monotone build tree.
+
+  -- get_passphrase_from_file.lua: This creates a version of the function
+     get_passphrase() that reads passphrases from a file in the monotone
+     configuration directory called "passphrases".  This is useful for
+     automated startup of servers.
+
+  -- authorize_remote_automate.lua: This is a server hook to authenticate
+     remote automate operations, either by matching a key identity with
+     patterns in the file remote-automate-permissions, or matching the
+     command with a configured list of safe remote automate commands
+     (configured through the variable ARA_safe_commands, which can be set
+     up anywhere before this hook is loaded).

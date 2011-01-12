@@ -25,7 +25,9 @@ commit("testbranch", "beth_1")
 beth_1 = base_revision()
 
 -- Resolve conflict
-check(mtn("conflicts", "store"), 0, true, nil)
+check(mtn("conflicts", "store"), 0, false, true)
+check(samelines("stderr", {"mtn: 1 conflict with supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts'"}))
 
 check(mtn("conflicts", "show_first"), 0, nil, true)
 check(qgrep("duplicate_name gui", "stderr"))
@@ -40,7 +42,9 @@ check(qgrep("misuse: can't drop gui; not empty", "stderr"))
 -- Start again, use renames for both sides
 check(mtn("conflicts", "clean"), 0, nil, true)
 
-check(mtn("conflicts", "store"), 0, true, nil)
+check(mtn("conflicts", "store"), 0, nil, true)
+check(samelines("stderr", {"mtn: 1 conflict with supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts'"}))
 
 check(mtn("conflicts", "show_first"), 0, nil, true)
 check(qgrep("duplicate_name gui", "stderr"))

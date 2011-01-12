@@ -1,4 +1,4 @@
-// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2010, 2011 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -69,8 +69,8 @@ get_old_branch_names(database & db, parent_map const & parents,
 class message_reader
 {
 public:
-  message_reader(string const & message) :
-    message(message), offset(0) {}
+  message_reader(string const & message, size_t offset) :
+    message(message), offset(offset) {}
 
   bool read(string const & text)
   {
@@ -181,76 +181,89 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
       "You may recover the previous message from this file if necessary."));
 
   utf8 instructions(
-    _("Enter a description of this change following the Changelog line below.\n"
-      "The values of Author, Date and Branch may be modified as required.\n"
-      "\n"));
+    _("-- Enter a description of this change above --\n"
+      "-- You may edit the fields below            --\n"));
+
+  utf8 ignored(
+    _("\n-- Modifications below this line are ignored --\n"));
 
   utf8 cancel(_("*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"));
+
+  utf8 const BRANCH(_("Branch:   "));
+  utf8 const AUTHOR(_("Author:   "));
+  utf8 const DATE(  _("Date:     "));
+
+  bool is_date_fmt_valid = date_fmt_valid(date_fmt);
 
   utf8 changelog;
   work.read_user_log(changelog);
 
-  // ensure the changelog message is non-empty so that the Changelog: cert
-  // line is produced by revision_header and there is somewhere to enter a
-  // message
+  // ensure there are two blank lines after the changelog
 
-  string text = changelog();
+  changelog = utf8(changelog() + "\n\n", origin::user);
 
-  if (text.empty() || text[text.length()-1] != '\n')
-    {
-      text += '\n';
-      changelog = utf8(text, origin::user);
-    }
+  // build editable fields
+  utf8 editable;
+  {
+    ostringstream oss;
 
-  ostringstream oss;
+    oss << BRANCH << ' ' << branch << '\n';
+    oss << AUTHOR << ' ' << author << '\n';
 
-  oss << string(70, '-') << '\n';
-  if (!old_branches.empty() && old_branches.find(branch) == old_branches.end())
-    {
-      oss << _("*** THIS REVISION WILL CREATE A NEW BRANCH ***") << "\n\n";
-      for (set<branch_name>::const_iterator i = old_branches.begin();
-           i != old_branches.end(); ++i)
-        oss << _("Old Branch: ") << *i << '\n';
-      oss << _("New Branch: ") << branch << "\n\n";
-    }
-  set<revision_id> heads;
-  project.get_branch_heads(branch, heads, false);
-  if (!heads.empty())
-    {
-      for (edge_map::const_iterator e = rev.edges.begin();
-           e != rev.edges.end(); ++e)
-        {
-          if (heads.find(edge_old_revision(e)) == heads.end())
-            {
-              oss << _("*** THIS REVISION WILL CREATE DIVERGENCE ***") << "\n\n";
-              break;
-            }
-        }
-    }
+    if (!is_date_fmt_valid)
+      {
+        W(F("date format '%s' cannot be parsed; using default instead") % date_fmt);
+      }
 
-  utf8 notes(oss.str().c_str());
+    if (!is_date_fmt_valid || date_fmt.empty())
+      {
+        oss << DATE << ' ' << date << '\n';
+      }
+    else
+      {
+        oss << DATE << ' ' << date.as_formatted_localtime(date_fmt) << '\n';
+      }
 
-  utf8 header;
+    editable = utf8(oss.str().c_str());
+  }
+
+  // Build notes
+  utf8 notes;
+  {
+    ostringstream oss;
+
+    if (!old_branches.empty() && old_branches.find(branch) == old_branches.end())
+      {
+        oss << _("*** THIS REVISION WILL CREATE A NEW BRANCH ***") << "\n\n";
+        for (set<branch_name>::const_iterator i = old_branches.begin();
+             i != old_branches.end(); ++i)
+          oss << _("Old Branch: ") << *i << '\n';
+        oss << _("New Branch: ") << branch << "\n\n";
+      }
+    set<revision_id> heads;
+    project.get_branch_heads(branch, heads, false);
+    if (!heads.empty())
+      {
+        for (edge_map::const_iterator e = rev.edges.begin();
+             e != rev.edges.end(); ++e)
+          {
+            if (heads.find(edge_old_revision(e)) == heads.end())
+              {
+                oss << _("*** THIS REVISION WILL CREATE DIVERGENCE ***") << "\n\n";
+                break;
+              }
+          }
+      }
+
+    notes = utf8(oss.str().c_str());
+  }
+
   utf8 summary;
-
-  bool is_date_fmt_valid = date_fmt_valid(date_fmt);
-  string null_date_fmt("");
   colorizer color(false);
-
-  if (!is_date_fmt_valid)
-    {
-      W(F("date format '%s' cannot be parsed; using default instead") % date_fmt);
-      revision_header(rid, rev, author, date, branch, changelog,
-                      null_date_fmt, color, header);
-    }
-  else
-    {
-      revision_header(rid, rev, author, date, branch, changelog,
-                      date_fmt, color, header);
-    }
   revision_summary(rev, color, summary);
 
-  utf8 full_message(instructions() + cancel() + header() + notes() + summary(),
+  utf8 full_message(changelog() + cancel() + instructions() + editable() + ignored() +
+                    notes() + summary(),
                     origin::internal);
 
   external input_message;
@@ -264,55 +277,51 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   system_to_utf8(output_message, full_message);
 
-  // look for the cancel notification anywhere in the text.
-  // this might be needed in case the user moves it down accidentially
-  // and the previous instructions are kept intact
-  if (full_message().find(cancel()) == string::npos)
+  // Everything up to the cancel message is the changelog; trailing blank
+  // lines trimmed.
+  size_t changelog_end = full_message().find(cancel());
+  if (changelog_end == string::npos)
     {
+      // try to save the edited changelog, now delimited by the instructions.
+      changelog_end = full_message().find(instructions());
+      if (changelog_end != string::npos)
+        work.write_user_log(utf8(trim_right(full_message().substr(0, changelog_end)) + '\n', origin::user));
+
       E(false, origin::user, F("Commit cancelled."));
     }
 
-  // save the message in _MTN/commit so its not lost if something fails below
+  // save the message in _MTN/commit so it's not lost if something fails
+  // below
   work.save_commit_text(full_message);
 
-  message_reader message(full_message());
+  string content = trim_right(full_message().substr(0, changelog_end)) + '\n';
+  log_message = utf8(content, origin::user);
 
-  // Check the message carefully to make sure the user didn't edit somewhere
-  // outside of the author, date, branch or changelog values. The section
-  // between the "Changelog: " line from the header and the following line
-  // of dashes preceeding the summary is where they should be adding
-  // lines. Ideally, there is a blank line following "Changelog:"
-  // (preceeding the changelog message) and another blank line preceeding
-  // the next line of dashes (following the changelog message) but both of
-  // these are optional.
+  message_reader message(full_message(), changelog_end);
+
+  // Parse the editable fields.
+
+  // this can't fail, since we start reading where we found it above.
+  message.read(cancel());
 
   E(message.read(instructions()), origin::user,
     F("Commit failed. Instructions not found."));
 
-  E(message.read(cancel()), origin::user,
-    F("Commit failed. Cancel hint not found."));
+  // Branch:
 
-  utf8 const AUTHOR(trim_right(_("Author: ")).c_str());
-  utf8 const DATE(trim_right(_("Date: ")).c_str());
-  utf8 const BRANCH(trim_right(_("Branch: ")).c_str());
-  utf8 const CHANGELOG(trim_right(_("Changelog: ")).c_str());
+  E(message.read(trim_right(BRANCH())), origin::user,
+    F("Commit failed. Branch header not found."));
 
-  // ----------------------------------------------------------------------
-  // Revision:
-  // Parent:
-  // Parent:
-  // Author:
+  string b = message.readline();
 
-  size_t pos = header().find(AUTHOR()); // look in unedited header
-  I(pos != string::npos);
+  E(!b.empty(), origin::user,
+    F("Commit failed. Branch value empty."));
 
-  string prefix = header().substr(0, pos);
-  E(message.read(prefix), origin::user,
-    F("Commit failed. Revision/Parent header not found."));
+  branch = branch_name(b, origin::user);
 
   // Author:
 
-  E(message.read(AUTHOR()), origin::user,
+  E(message.read(trim_right(AUTHOR())), origin::user,
     F("Commit failed. Author header not found."));
 
   author = message.readline();
@@ -322,7 +331,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   // Date:
 
-  E(message.read(DATE()), origin::user,
+  E(message.read(trim_right(DATE())), origin::user,
     F("Commit failed. Date header not found."));
 
   string d = message.readline();
@@ -335,43 +344,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   else
     date = date_t::from_formatted_localtime(d, date_fmt);
 
-  // Branch:
-
-  E(message.read(BRANCH()), origin::user,
-    F("Commit failed. Branch header not found."));
-
-  string b = message.readline();
-
-  E(!b.empty(), origin::user,
-    F("Commit failed. Branch value empty."));
-
-  branch = branch_name(b, origin::user);
-
-  string blank = message.readline();
-  E(blank == "", origin::user,
-    F("Commit failed. Blank line before Changelog header not found."));
-
-  // Changelog:
-
-  E(message.read(CHANGELOG()), origin::user,
-    F("Commit failed. Changelog header not found."));
-
-  // remove the summary before extracting the changelog content
-
-  string footer = notes() + summary();
-
-  if (!footer.empty())
-    {
-      E(message.contains(footer), origin::user,
-        F("Commit failed. Change summary not found."));
-
-      E(message.remove(footer), origin::user,
-        F("Commit failed. Text following Change summary."));
-    }
-
-  string content = trim(message.content()) + '\n';
-
-  log_message = utf8(content, origin::user);
+  // rest is ignored
 
   // remove the backup file now that all values have been extracted
   work.clear_commit_text();
@@ -572,7 +545,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   revert(app, args, false);
 }
 
-CMD(undrop, "undrop", "", CMD_REF(workspace), N_("[PATH]..."),
+CMD(undrop, "undrop", "", CMD_REF(workspace), N_("PATH..."),
     N_("Reverses a mistaken 'drop'"),
     N_("If the file was deleted from the workspace, this is the same as 'revert'. "
        "Otherwise, it just removes the 'drop' from the manifest."),
@@ -1720,7 +1693,7 @@ void perform_commit(app_state & app,
                     // sanity check
                     file_id tid;
                     calculate_ident(file_data(new_data), tid);
-                    E(tid == new_content, origin::system,
+                    E(tid == new_content, origin::user,
                       F("file '%s' modified during commit, aborting")
                       % path);
                     delta del;
@@ -2395,8 +2368,8 @@ bisect_update(app_state & app, bisect::type type)
 
 CMD(bisect_status, "status", "", CMD_REF(bisect), "",
     N_("Reports on the current status of the bisection search"),
-    N_("Lists the total number of revisions in the search set; "
-       "the number of revisions that have been determined to be good or bad; "
+    N_("Lists the total number of revisions in the search set, "
+       "the number of revisions that have been determined to be good or bad, "
        "the number of revisions that have been skipped "
        "and the number of revisions remaining to be tested."),
     options::opts::none)

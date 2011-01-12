@@ -14,7 +14,7 @@ commit()
 right = base_revision()
 
 check(mtn("merge"), 0, nil, true)
-check(qgrep("not been updated", "stderr"))
+check(not qgrep("update", "stderr"))
 check(mtn("heads"), 0, true, false)
 check(not qgrep(base_revision(), "stdout"))
 

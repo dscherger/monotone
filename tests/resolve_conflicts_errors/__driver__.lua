@@ -22,6 +22,7 @@ right_1 = base_revision()
 check(mtn("conflicts", "store", left_1), 1, nil, true)
 check(mtn("conflicts", "store", left_1, right_1, right_1), 1, nil, true)
 
+-- success
 check(mtn("conflicts", "store", left_1, right_1), 0, nil, true)
 canonicalize("stderr")
 check(samefilestd("conflicts-attr-store-1", "stderr"))
@@ -72,7 +73,9 @@ revert_to(left_1)
 addfile("checkout.sh", "checkout.sh left 1")
 commit("testbranch", "left 2")
 
-check(mtn("conflicts", "store"), 0, true, nil)
+check(mtn("conflicts", "store"), 0, nil, true)
+check(samelines("stderr", {"mtn: 1 conflict with supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts'"}))
 
 -- invalid number of params
 check(mtn("conflicts", "resolve_first_left", "user"), 1, nil, true)

@@ -30,7 +30,9 @@ beth_1 = base_revision()
 
 -- Propagate abe_branch to beth_branch
 
-check(mtn("conflicts", "store", abe_1, beth_1), 0, true, nil)
+check(mtn("conflicts", "store", abe_1, beth_1), 0, nil, true)
+check(samelines("stderr", {"mtn: 2 conflicts with supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts'"}))
 check(samefilestd("conflicts-1", "_MTN/conflicts"))
 
 check(mtn("conflicts", "resolve_first_left", "drop"), 0, nil, nil)
@@ -63,7 +65,9 @@ check(mtn("automate", "show_conflicts", beth_1, abe_1), 0, true, nil)
 canonicalize("stdout")
 check(samefilestd("conflicts-2", "stdout"))
 
-check(mtn("conflicts", "store",  beth_1, abe_1), 0, nil, nil)
+check(mtn("conflicts", "store",  beth_1, abe_1), 0, nil, true)
+check(samelines("stderr", {"mtn: 2 conflicts with supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts'"}))
 check(samefilestd("conflicts-2", "_MTN/conflicts"))
 
 check(mtn("propagate", "beth_branch", "abe_branch"), 0, nil, true)

@@ -1,0 +1,76 @@
+Setting up your personal configuration
+======================================
+
+Setting up your personal configuration can be done in many ways, and
+the ideas are probably many.  Usually, that would involve editing your
+configuration startup file, $HOME/.monotone/monotonerc, personalising
+it, adding includes of other lua files, pasting snippets of code into
+it, you name it.
+
+Another way could be to borrow from server setup idea (see
+../server-setup/README) and have $HOME/.monotone/monotonerc only be a
+couple of includes and let the rest be a matter of putting the right
+files in the right place.  In a personal setup, it's not as elaborate
+a thing to do as it is with the server setup, as it doesn't involve
+creating a new user, adding a new database specifically for this,
+setting up ownership, setting up the startup of a monotone process.
+All that's needed is set up a few files and maybe change permissions a
+bit.
+
+
+Creating and populating files and directories
+---------------------------------------------
+
+For starters, let's create a directory to drop snippets of code in:
+
+  mkdir $HOME/.monotone/hooks.d
+
+Now, it's time to add a generic monotonerc.  All this one does is to
+load files matching *.conf and *.lua that are placed in the hooks.d we
+just created.
+However, maybe you already have a file $HOME/.monotone/monotonerc that
+you've edited and have precious stuff in.  No biggie, let's start with
+putting it away, making it the first lua file that will get loaded:
+
+  mv $HOME/.monotone/monotonerc $HOME/.monotone/hooks.d/000-orig-rc.lua
+
+Now that this is done, all you have to do is to copy the monotonerc
+that you find in this directory (please replace /PATH/TO with the
+correct path for it) to your configuration directory:
+
+  cp /PATH/TO/monotonerc $HOME/.monotone/monotonerc
+
+Voilà, you're done!  The behaviour of monotone won't have changed a
+bit.
+
+
+Adding hooks
+------------
+
+At this point, you might be interested in a few snippets of code to
+place in your $HOME/.monotone/hooks.d.  I suggest you have a walk
+around in the contribution directory (contrib/ in the monotone source
+or documentation directory) and examples directory (examples/) and
+have a look.  Beware, though, that some of the scripts found there are
+made for server setups and probably won't do you much good.
+
+Here are a few that you might be interested in:
+
+  - contrib/get_passphrase_from_file.lua 
+		This will use the file 'passphrases' in the monotone
+		configuration directory ($HOME/.monotone/) to open any
+		of the keys defined there that it needs to use.
+		Take care of 'passphrases', protect it well.
+		Something like this should do the trick pretty well:
+
+		  chmod 600 $HOME/.monotone/passphrases
+
+		If you want to be even more careful, you might want to
+		protect the directory as well:
+
+		  chmod 700 $HOME/.monotone/
+
+  - examples/display_branches.lua
+		After doing a push, a pull or a sync, this will
+		display on which branches revisions were sent or
+		received, and how many there were on each branch.

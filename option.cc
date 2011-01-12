@@ -273,6 +273,26 @@ void concrete_option_set::from_command_line(int argc,
   from_command_line(arguments);
 }
 
+// checks a multi-word option like 'no-builtin-rcfile' against a
+// possible abbreviated given option 'nbr' which is only compiled
+// of the first character of each word
+static bool
+abbrev_match(string const & option, string const & part)
+{
+  if (option.find('-') == 0)
+    return false;
+
+  string::const_iterator it = option.begin();
+  string opt_part(1, *it);
+  for (; it != option.end(); ++it)
+    {
+      if (*it == '-' && it != option.end())
+        opt_part += *(it+1);
+    }
+
+  return part == opt_part;
+}
+
 static concrete_option const &
 getopt(map<string, concrete_option> const & by_name, string & name)
 {
@@ -287,11 +307,13 @@ getopt(map<string, concrete_option> const & by_name, string & name)
     throw unknown_option(name);
 
   // try to find the option by partial name
-  vector<string> candidates;
+  set<string> candidates;
   for (i = by_name.begin(); i != by_name.end(); ++i)
     {
       if (i->first.find(name) == 0)
-        candidates.push_back(i->first);
+        candidates.insert(i->first);
+      if (abbrev_match(i->first, name))
+        candidates.insert(i->first);
     }
 
   if (candidates.size() == 0)
@@ -299,17 +321,18 @@ getopt(map<string, concrete_option> const & by_name, string & name)
 
   if (candidates.size() == 1)
     {
-       i = by_name.find(candidates[0]);
+       string expanded_name = *candidates.begin();
+       i = by_name.find(expanded_name);
        I(i != by_name.end());
-       L(FL("expanding option '%s' to '%s'") % name % candidates[0]);
-       name = candidates[0];
+       L(FL("expanding option '%s' to '%s'") % name % expanded_name);
+       name = expanded_name;
        return i->second;
     }
 
   string err = (F("option '%s' has multiple ambiguous expansions:")
                 % name).str();
 
-  for (vector<string>::const_iterator j = candidates.begin();
+  for (set<string>::const_iterator j = candidates.begin();
        j != candidates.end(); ++j)
     {
         i = by_name.find(*j);

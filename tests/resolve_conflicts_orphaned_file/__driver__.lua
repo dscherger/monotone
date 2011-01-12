@@ -26,16 +26,20 @@ check(mtn("add", "stuff/dir3"), 0, nil, false)
 commit("testbranch", "left 1")
 left_1 = base_revision()
 
-check(mtn("conflicts", "store"), 0, nil, nil)
+check(mtn("conflicts", "store"), 0, nil, true)
+check(samelines("stderr", {"mtn: 5 conflicts with supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts'"}))
 
 -- Check suggested resolutions for orphaned directory
 check(mtn("conflicts", "show_first"), 0, nil, true)
-canonicalize("stderr")
-check(
-"mtn: orphaned node stuff/dir1\n" ..
-"mtn: possible resolutions:\n" ..
-"mtn: resolve_first drop\n" ..
-"mtn: resolve_first rename \"file_name\"\n" == readfile("stderr"))
+check(samelines("stderr", {"mtn: orphaned node stuff/dir1",
+                           "mtn: possible resolutions:",
+                           "mtn: resolve_first drop",
+                           "mtn: resolve_first rename \"file_name\""}))
+
+-- invalid resolution identifier
+check(mtn("conflicts", "resolve_first", "foo"), 1, nil, true)
+check(qgrep("'foo' is not a supported conflict resolution for orphaned_node", "stderr"))
 
 -- stuff/dir1 => dir1
 check(mtn("conflicts", "resolve_first", "rename", "dir1"), 0, nil, nil)
@@ -75,7 +79,9 @@ commit("testbranch", "right 2")
 right_2 = base_revision()
 
 --  and now we start the resolution process over again
-check(mtn("conflicts", "store"), 0, nil, nil)
+check(mtn("conflicts", "store"), 0, nil, true)
+check(samelines("stderr", {"mtn: 5 conflicts with supported resolutions.",
+                           "mtn: stored in '_MTN/conflicts'"}))
 check(mtn("conflicts", "show_first"), 0, nil, true)
 check(qgrep("orphaned node stuff/dir1", "stderr"));
 check(mtn("conflicts", "resolve_first", "rename", "dir1"), 0, nil, nil)

@@ -17,7 +17,6 @@
 #include "simplestring_xform.hh"
 
 #include <ostream>
-#include <sstream>
 #include <iterator>
 #include <boost/scoped_ptr.hpp>
 
@@ -26,7 +25,6 @@ using std::min;
 using std::ostream;
 using std::ostream_iterator;
 using std::string;
-using std::stringstream;
 using std::vector;
 using boost::scoped_ptr;
 
@@ -210,23 +208,22 @@ void unidiff_hunk_writer::flush_hunk(size_t pos)
         }
 
       // write hunk to stream
-      stringstream ss;
       if (a_len == 0)
-        ss << "@@ -0,0";
+        ost << "@@ -0,0";
       else
         {
-          ss << "@@ -" << a_begin+1;
+          ost << "@@ -" << a_begin+1;
           if (a_len > 1)
-            ss << ',' << a_len;
+            ost << ',' << a_len;
         }
 
       if (b_len == 0)
-        ss << " +0,0";
+        ost << " +0,0";
       else
         {
-          ss << " +" << b_begin+1;
+          ost << " +" << b_begin+1;
           if (b_len > 1)
-            ss << ',' << b_len;
+            ost << ',' << b_len;
         }
 
       {
@@ -241,7 +238,7 @@ void unidiff_hunk_writer::flush_hunk(size_t pos)
             }
 
         find_encloser(a_begin + first_mod, encloser);
-        ss << " @@";
+        ost << " @@" << encloser << '\n';
 
         ost << color.colorize(ss.str(), colorizer::diff_separator);
         ost << color.colorize(encloser, colorizer::diff_encloser);
@@ -502,14 +499,20 @@ make_diff(string const & filename1,
 {
   if (guess_binary(data1()) || guess_binary(data2()))
     {
-      ost << color.colorize(string("# ") + filename2 + " is binary",
-                            colorizer::diff_comment) << "\n";
+      // If a file has been removed, filename2 will be "/dev/null".
+      // It doesn't make sense to output that.
+      if (filename2 == "/dev/null")
+        ost << color.colorize(string("# ") + filename1 + " is binary",
+                              colorizer::diff_comment) << "\n";
+      else
+        ost << color.colorize(string("# ") + filename2 + " is binary",
+                              colorizer::diff_comment) << "\n";
       return;
     }
 
   vector<string> lines1, lines2;
-  split_into_lines(data1(), lines1, true);
-  split_into_lines(data2(), lines2, true);
+  split_into_lines(data1(), lines1, split_flags::diff_compat);
+  split_into_lines(data2(), lines2, split_flags::diff_compat);
 
   vector<long, QA(long)> left_interned;
   vector<long, QA(long)> right_interned;

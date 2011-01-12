@@ -37,6 +37,12 @@ CREATE TABLE file_deltas
 	unique(id, base)
 	);
 
+CREATE TABLE file_sizes
+	(
+	id primary key,     -- joins with files.id or file_deltas.id
+	size not null       -- the size of the file in byte
+	);
+
 CREATE TABLE revisions
 	(
 	id primary key,      -- SHA1(text of revision)
@@ -101,7 +107,8 @@ CREATE TABLE revision_certs
 	unique(name, value, revision_id, keypair_id, signature)
 	);
 
-CREATE INDEX revision_certs__revision_id ON revision_certs (revision_id);
+CREATE INDEX revision_certs__revnameval ON revision_certs (revision_id,
+       name, value, keypair_id, signature);
 
 CREATE TABLE branch_epochs
 	(
