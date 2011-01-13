@@ -3787,20 +3787,45 @@ are also automatically set on the first connection or when the option
 @node Managed Databases, Reserved Files, Vars, Advanced Uses
 @section Managed Databases
 In monotone commands, a database name (provided to a @option{--db}
-option) starting with ``:'' is a ``database alias''. The rest of the
-database name is a file name; the file extension @file{.mtn} is added
-if the file name has no extension. The file is searched for in the
-list of directories returned by the Lua hook
-@ref{get_default_database_locations} (which defaults to a single
-directory; @file{$HOME/.monotone/databases} on Unix and
-@file{%APPDATA%\monotone\databases} on Windows).
+option) starting with ``:'' is a ``database alias''. It addresses
+a usual monotone database sitting in a special, ``managed'' location,
+which we therefore call a ``managed database''.
 
-A database that is named by an alias is called a ``managed database'';
-the directories returned by @code{get_default_database_locations} are
-called ``managed locations''.
+The database alias is a regular file name (excluding the leading colon).
+Monotone searches for this file name in common locations and internally
+expands it to a full path once it found an unambigious match.
 
-All managed databases can be shown by the command @ref{mtn list
-databases}, which also shows the workspaces registered in that database.
+Some commands, most noticable @ref{mtn clone} and @ref{mtn setup}, work
+out of the box without that any @option{--db} option is needed; they
+fall back on a managed ``default'' database and even initialize that
+in case it is not existant.
+
+To keep an overview of managed databases and their workspaces, the commands
+@ref{mtn list databases} and @ref{mtn list workspaces} can be used:  The
+former shows a list of all known databases in all managed locations together
+with their workspaces, while the latter only shows the list of workspaces for
+a single, specified database.
+
+Finally, all this magic behaviour can be customized by a variety of
+lua hooks:
+
+@itemize
+@item @ref{get_default_database_locations} returns a list of search paths
+where monotone should look for managed databases.
+This hook defaults to a single directory; @file{$HOME/.monotone/databases}
+on Unix and @file{%APPDATA%\monotone\databases} on Windows.
+
+@item @ref{get_default_database_glob} returns a pattern which monotone uses
+to match and recognized database files in the configured default locations.
+This pattern is also used to determine if shortened database aliases, such
+as @code{:default}, should get suffixed with @code{.mtn} to be transformed
+into a valid database file name. By default this hook returns @code{.@{mtn,db@}}.
+
+@item @ref{get_default_database_alias} returns the name of the alias of a
+default database that is initialized and used on demand.  If more than one
+database locations are configured, the first location is used as save location
+for this database. This hook defaults to @code{:default.mtn}.
+@end itemize
 
 @page
 @node    Reserved Files, Reserved Certs, Managed Databases, Advanced Uses
@@ -5294,7 +5319,7 @@ After running this command, you are guaranteed that your workspace is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
-@item mtn setup --branch @var{branchname} [--db @var{database}] [@var{directory}]
+@anchor{mtn setup}@item mtn setup --branch @var{branchname} [--db @var{database}] [@var{directory}]
 This command prepares @var{directory} (default current directory) as a
 monotone workspace, by creating and populating the @file{_MTN}
 directory with basic information.
@@ -5987,8 +6012,8 @@ matches alternatives; @code{@{foo,bar,baz@}} matches ``foo'', or
 character; this might be useful in case someone, for some odd
 reason, decides to put a ``*'' into their branch name.
 
-@item mtn clone @var{uri} [--branch=@var{branchname}] [--revision=@var{rev}] [@var{directory}]
-@item mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}] @strong{deprecated}
+@anchor{mtn clone}@item mtn clone @var{uri} [--branch=@var{branchname}] [--revision=@var{rev}] [@var{directory}]
+@itemx mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}] @strong{deprecated}
 @command{clone} is a helper command that performs the roles of a
 number of other commands all at once.  First, it constructs a new
 database. If no database is given, the configured default database is
@@ -6294,7 +6319,9 @@ files to the current subdirectory of the workspace.
 @itemx mtn ls dbs
 
 Show all @ref{Managed Databases} and the workspaces registered in
-them. See @ref{mtn register_workspace}.
+them. The commands @ref{mtn register_workspace} and @ref{mtn unregister_workspace}
+can be used to explicitely register and unregister workspaces shown
+within this list.
 
 @item mtn list duplicates [--revision=@var{id}]
 @itemx mtn ls duplicates
@@ -6398,14 +6425,16 @@ files to the current subdirectory of the workspace.
 This command lists all vars in your database, or all vars within a given
 @var{domain}.  See @ref{Vars} for more information.
 
-@item mtn list workspaces
+@anchor{mtn list workspaces}@item mtn list workspaces
 @itemx mtn ls workspaces
 @command{ls workspaces} is an alias for @command{list workspaces}.
 
 This command shows all registered workspaces for a database, be it
 managed or unmanaged.  If no database is given explicitely, defaults to
-the workspace' database in which the command is executed.
-See @ref{Managed Databases} and @ref{mtn register_workspace} for more information.
+the workspace' database in which the command is executed.  The commands
+@ref{mtn register_workspace} and @ref{mtn unregister_workspace}
+can be used to explicitely register and unregister workspaces shown
+within this list.  See @ref{Managed Databases} for more information.
 
 @anchor{mtn log}@item mtn log
 @itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--clear-from] [--to=@var{id} [...]] [--clear-to] [--revision=@var{id} [...]] [--[no-]brief] [--[no-]merges] [--[no-]files] [--[no-]graph] [--[no-]diffs] [@var{pathname...}]
@@ -6640,7 +6669,7 @@ list databases} (the database has to be in a managed location for
 Associates the value @var{value} to @var{name} in domain @var{domain}.
 See @ref{Vars} for more information.
 
-@item mtn unregister_workspace [@var{workspace_path}]
+@anchor{mtn unregister_workspace}@item mtn unregister_workspace [@var{workspace_path}]
 Unregisters the given workspace from the current database, so that it
 will no longer show up in the output of @ref{mtn list databases}.
 
@@ -11782,7 +11811,7 @@ of this default database.
 
 The default implementation returns @code{:default.mtn}.
 
-@anchor{hook_get_default_database_glob}@item get_default_database_glob ()
+@anchor{get_default_database_glob}@item get_default_database_glob ()
 
 Returns a pattern to let monotone distinguish a valid from an invalid
 database file name. This pattern is used in two places:
