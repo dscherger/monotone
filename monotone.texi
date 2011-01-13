@@ -1223,7 +1223,7 @@ Beth can distinguish a managed database name from an unmanaged one by
 the leading colon in its name.  This special alias can now be used
 interchangeably in every monotone invocation.  If Beth wants to see
 where monotone actually created the database and what other databases
-monotone knows of, she uses the @ref{mtn list databases} command
+monotone knows of, she uses the @command{@ref{mtn list databases}} command
 (or @command{mtn ls dbs}) for that.  We'll come back to this in a bit.
 
 @page
@@ -3795,16 +3795,24 @@ The database alias is a regular file name (excluding the leading colon).
 Monotone searches for this file name in common locations and internally
 expands it to a full path once it found an unambigious match.
 
-Some commands, most noticable @ref{mtn clone} and @ref{mtn setup}, work
-out of the box without that any @option{--db} option is needed; they
-fall back on a managed ``default'' database and even initialize that
-in case it is not existant.
+Some commands, most noticable @command{@ref{mtn clone}} and
+@command{@ref{mtn setup}}, work out of the box without that any
+@option{--db} option is needed; they fall back on a managed ``default''
+database and even initialize that in case it is not existant.
 
 To keep an overview of managed databases and their workspaces, the commands
-@ref{mtn list databases} and @ref{mtn list workspaces} can be used:  The
-former shows a list of all known databases in all managed locations together
-with their workspaces, while the latter only shows the list of workspaces for
-a single, specified database.
+@command{@ref{mtn list databases}} and @command{@ref{mtn list workspaces}}
+can be used:  The former shows a list of all known databases in all managed
+locations together with their workspaces, while the latter only shows the
+list of workspaces for a single, specified database.
+
+Monotone usually keeps track of known workspaces automatically in the
+background and updates the references as soon as your workspace' database
+option in @file{_MTN/options} is set up or changed. There are a few cases
+where monotone is unable to detect changes, though, for example when a
+workspace is moved in the file system. To get monotone back on track in
+cases like this, the commands @command{@ref{mtn register_workspace}} and
+@command{@ref{mtn unregister_workspace}} can be used.
 
 Finally, all this magic behaviour can be customized by a variety of
 lua hooks:
@@ -4083,7 +4091,7 @@ be set.  However, monotone will still know that the attr is set, and
 Windows users can view and modify the attr like anyone else.)
 
 Attrs in the current workspace can be seen and modified using the
-@ref{mtn attr} command.  Attrs can also be found by examining any
+@command{@ref{mtn attr}} command.  Attrs can also be found by examining any
 manifest directly.
 
 You can tell monotone to automatically take actions based on these
@@ -5374,7 +5382,7 @@ not given, the first two heads that the @command{merge} command would
 merge are used.
 
 The conflicts file format is as output by the @command{automate
-show_conflicts} command; see @ref{mtn automate show_conflicts}.
+show_conflicts} command; see @command{@ref{mtn automate show_conflicts}}.
 
 Content conflicts that can be resolved by the internal line merger
 have resolutions, so they will not show up in subsequent
@@ -6235,7 +6243,7 @@ branches.
 
 Normally, branches that have been suspended are not listed; the global
 option @option{--ignore-suspend-certs} causes suspended branches to
-be listed; see @ref{mtn suspend}.
+be listed; see @command{@ref{mtn suspend}}.
 
 @item mtn list certs @var{id}
 @itemx mtn ls certs
@@ -6319,9 +6327,9 @@ files to the current subdirectory of the workspace.
 @itemx mtn ls dbs
 
 Show all @ref{Managed Databases} and the workspaces registered in
-them. The commands @ref{mtn register_workspace} and @ref{mtn unregister_workspace}
-can be used to explicitely register and unregister workspaces shown
-within this list.
+them. The commands @command{@ref{mtn register_workspace}} and
+@command{@ref{mtn unregister_workspace}} can be used to explicitely
+register and unregister workspaces shown within this list.
 
 @item mtn list duplicates [--revision=@var{id}]
 @itemx mtn ls duplicates
@@ -6432,7 +6440,7 @@ This command lists all vars in your database, or all vars within a given
 This command shows all registered workspaces for a database, be it
 managed or unmanaged.  If no database is given explicitely, defaults to
 the workspace' database in which the command is executed.  The commands
-@ref{mtn register_workspace} and @ref{mtn unregister_workspace}
+@command{@ref{mtn register_workspace}} and @command{@ref{mtn unregister_workspace}}
 can be used to explicitely register and unregister workspaces shown
 within this list.  See @ref{Managed Databases} for more information.
 
@@ -6661,8 +6669,8 @@ current database.
 @anchor{mtn register_workspace}@item mtn register_workspace [@var{workspace_path}]
 
 Registers the given workspace (default the current workspace) in the
-current database, so that it will show up in the output of @ref{mtn
-list databases} (the database has to be in a managed location for
+current database, so that it will show up in the output of @command{@ref{mtn
+list databases}} (the database has to be in a managed location for
 @command{list databases} to work; see @ref{Managed Databases}).
 
 @item mtn set @var{domain} @var{name} @var{value}
@@ -6671,7 +6679,7 @@ See @ref{Vars} for more information.
 
 @anchor{mtn unregister_workspace}@item mtn unregister_workspace [@var{workspace_path}]
 Unregisters the given workspace from the current database, so that it
-will no longer show up in the output of @ref{mtn list databases}.
+will no longer show up in the output of @command{@ref{mtn list databases}}.
 
 If no @var{workspace_path} is given, this command defaults to the
 current workspace.
@@ -7385,7 +7393,7 @@ Same as @command{mtn checkout}; directory to create workspace in.
 @item Purpose:
 
 Create a new workspace containing the given revision; see
-@ref{mtn checkout}.
+@command{@ref{mtn checkout}}.
 
 @item Sample output:
 
@@ -7397,7 +7405,7 @@ None.
 
 @item Error conditions:
 
-see @ref{mtn checkout}.
+see @command{@ref{mtn checkout}}.
 
 @end table
 
@@ -9543,7 +9551,7 @@ None.
 [--[no-]merges] [@var{pathname...}]
 
 Same as @command{mtn log}, but without the output control options; see
-@ref{mtn log}.
+@command{@ref{mtn log}}.
 
 @item Added in:
 
@@ -9569,7 +9577,7 @@ One revision per line.
 
 @item Error conditions:
 
-See @ref{mtn log}.
+See @command{@ref{mtn log}}.
 
 @end table
 
@@ -11136,7 +11144,7 @@ Same as @command{mtn update}; no arguments, options
 @item Purpose:
 
 Update the current workspace to the latest or given revision; see
-@ref{mtn update}.
+@command{@ref{mtn update}}.
 
 @item Sample output:
 
@@ -11158,7 +11166,7 @@ Free form, prefixed by ``mtn:''.
 
 @item Error conditions:
 
-see @ref{mtn update}.
+see @command{@ref{mtn update}}.
 
 @end table
 
@@ -11794,7 +11802,7 @@ end
 @anchor{get_default_database_locations}@item get_default_database_locations ()
 
 Returns a table of paths where monotone should look for managable
-databases.  The command @ref{mtn list databases} searches all these
+databases.  The command @command{@ref{mtn list databases}} searches all these
 paths for valid monotone databases and outputs details on each one.
 
 The default implementation returns a table with a single entry,
@@ -12585,7 +12593,7 @@ is not defined and is thus ignored during a commit.
 @subsection Meta Hooks
 
 Monotone allows the execution of arbitrary Lua hooks and functions through a
-special generalized "meta hook". See @ref{mtn automate lua} for more
+special generalized "meta hook". See @command{@ref{mtn automate lua}} for more
 information.
 
 @ftable @code
