@@ -31,40 +31,40 @@ void
 revision_header(revision_id const rid, revision_t const & rev,
                 string const & author, date_t const date,
                 branch_name const & branch, utf8 const & changelog,
-                string const & date_fmt, utf8 & header)
+                string const & date_fmt, colorizer const & color, utf8 & header)
 {
   vector<cert> certs;
   key_id empty_key;
-  certs.push_back(cert(rid, author_cert_name, 
+  certs.push_back(cert(rid, author_cert_name,
                        cert_value(author, origin::user), empty_key));
-  certs.push_back(cert(rid, date_cert_name, 
+  certs.push_back(cert(rid, date_cert_name,
                        cert_value(date.as_iso_8601_extended(), origin::user),
                        empty_key));
-  certs.push_back(cert(rid, branch_cert_name, 
+  certs.push_back(cert(rid, branch_cert_name,
                        cert_value(branch(), origin::user), empty_key));
 
   if (!changelog().empty())
-    certs.push_back(cert(rid, changelog_cert_name, 
+    certs.push_back(cert(rid, changelog_cert_name,
                          cert_value(changelog(), origin::user), empty_key));
 
-  revision_header(rid, rev, certs, date_fmt, header);
+  revision_header(rid, rev, certs, date_fmt, color, header);
 }
 
 void
 revision_header(revision_id const rid, revision_t const & rev,
                 vector<cert> const & certs, string const & date_fmt,
-                utf8 & header)
+                colorizer const & color, utf8 & header)
 {
   ostringstream out;
 
-  out << string(70, '-') << '\n'
-      << _("Revision: ") << rid << '\n';
+  out << color.colorize(string(70, '-'), colorizer::log_revision) << '\n'
+      << color.colorize(_("Revision: "), colorizer::rev_header) << rid << '\n';
 
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
       revision_id parent = edge_old_revision(*i);
       if (!null_id(parent))
-        out << _("Parent:   ") << parent << '\n';
+        out << color.colorize(_("Parent:   "), colorizer::rev_header) << parent << '\n';
     }
 
   cert_name const author(author_cert_name);
@@ -76,34 +76,40 @@ revision_header(revision_id const rid, revision_t const & rev,
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == author)
-      out << _("Author:   ") << i->value << '\n';
+      out << color.colorize(_("Author:   "), colorizer::rev_header)
+          << i->value << '\n';
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == date)
       {
         if (date_fmt.empty())
-          out << _("Date:     ") << i->value << '\n';
+          out << color.colorize(_("Date:     "), colorizer::rev_header)
+              << i->value << '\n';
         else
           {
             date_t date(i->value());
-            out << _("Date:     ") << date.as_formatted_localtime(date_fmt) << '\n';
+            out << color.colorize(_("Date:     "), colorizer::rev_header)
+                << date.as_formatted_localtime(date_fmt) << '\n';
           }
       }
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == branch)
-      out << _("Branch:   ") << i->value << '\n';
+      out << color.colorize(_("Branch:   "), colorizer::rev_header)
+          << i->value << '\n';
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == tag)
-      out << _("Tag:      ") << i->value << '\n';
+      out << color.colorize(_("Tag:      "), colorizer::rev_header)
+          << i->value << '\n';
 
   out << "\n";
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == changelog)
       {
-        out << _("Changelog: ") << "\n\n" << i->value << '\n';
+        out << color.colorize(_("Changelog: "), colorizer::rev_header) << "\n\n"
+            << i->value << '\n';
         if (!i->value().empty() && i->value()[i->value().length()-1] != '\n')
           out << '\n';
       }
@@ -111,7 +117,8 @@ revision_header(revision_id const rid, revision_t const & rev,
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == comment)
       {
-        out << _("Comments: ") << "\n\n" << i->value << '\n';
+        out << color.colorize(_("Comments: "), colorizer::rev_header) << "\n\n"
+            << i->value << '\n';
         if (!i->value().empty() && i->value()[i->value().length()-1] != '\n')
           out << '\n';
       }
@@ -120,7 +127,7 @@ revision_header(revision_id const rid, revision_t const & rev,
 }
 
 void
-revision_summary(revision_t const & rev, utf8 & summary)
+revision_summary(revision_t const & rev, colorizer const & color, utf8 & summary)
 {
   // We intentionally do not collapse the final \n into the format
   // strings here, for consistency with newline conventions used by most
@@ -138,9 +145,9 @@ revision_summary(revision_t const & rev, utf8 & summary)
       // A colon at the end of this string looked nicer, but it made
       // double-click copying from terminals annoying.
       if (null_id(parent))
-        out << _("Changes") << "\n\n";
+        out << color.colorize(_("Changes"), colorizer::rev_header) << "\n\n";
       else
-        out << _("Changes against parent ") << parent << "\n\n";
+        out << color.colorize(_("Changes against parent "), colorizer::rev_header) << parent << "\n\n";
 
       // presumably a merge rev could have an empty edge if one side won
       if (cs.empty())
@@ -179,7 +186,7 @@ revision_summary(revision_t const & rev, utf8 & summary)
       // the cset calls it attrs_cleared
       // the command is attr drop
       // here it is called unset
-      // the revision text uses attr clear 
+      // the revision text uses attr clear
 
       for (set<pair<file_path, attr_key> >::const_iterator
              i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)

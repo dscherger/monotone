@@ -770,6 +770,18 @@ lua_hooks::hook_get_man_page_formatter_command(string & command)
 }
 
 bool
+lua_hooks::hook_get_output_color(string const purpose, string & color)
+{
+  Lua ll = Lua(st);
+
+  return ll.func("get_output_color")
+    .push_str(purpose)
+    .call(1, 1)
+    .extract_str(color)
+    .ok();
+}
+
+bool
 lua_hooks::hook_use_inodeprints()
 {
   bool use = false, exec_ok = false;
