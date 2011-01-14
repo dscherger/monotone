@@ -390,7 +390,7 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
   toposort(db, revs, sorted);
   reverse(sorted.begin(), sorted.end());
 
-  asciik graph(std::cout, colorizer(app.opts.colorize), 10);
+  asciik graph(std::cout, colorizer(app.opts.colorize, app.lua), 10);
 
   for (vector<revision_id>::const_iterator rev = sorted.begin();
        rev != sorted.end(); ++rev)

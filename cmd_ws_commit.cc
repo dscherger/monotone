@@ -259,7 +259,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   }
 
   utf8 summary;
-  colorizer color(false);
+  colorizer color(false, lua);
   revision_summary(rev, color, summary);
 
   utf8 full_message(changelog() + cancel() + instructions() + editable() + ignored() +
@@ -966,7 +966,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   utf8 header;
   utf8 summary;
-  colorizer color(app.opts.colorize);
+  colorizer color(app.opts.colorize, app.lua);
 
   revision_header(rid, rev, author, date_t::now(), app.opts.branch, changelog,
                   date_fmt, color, header);

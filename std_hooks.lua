@@ -1528,3 +1528,33 @@ function get_man_page_formatter_command()
    end
 end
 
+function get_output_color(purpose)
+	-- returns a friendly color name which will be converted by monotone
+	-- into the relevant ASCII escape code.
+	-- valid return values are
+	-- "" for monotone to use the default output
+	-- black, white, red, green, blue, magenta, yellow, cyan, bold, reset
+	if purpose == "normal" then
+		return ""
+	elseif purpose == "reset" then
+		return "reset"
+	elseif purpose == "diff_add" then
+		return "green"
+	elseif purpose == "diff_change" then
+		return "magenta"
+	elseif purpose == "diff_comment" then
+		return "cyan"
+	elseif purpose == "diff_delete" then
+		return "red"
+	elseif purpose == "diff_encloser" then
+		return "bold"
+	elseif purpose == "diff_separator" then
+		return "bold"
+	elseif purpose == "log_revision" then
+		return "bold"
+	elseif purpose == "rev_header" then
+		return "bold"
+	else
+		return ""
+	end
+end

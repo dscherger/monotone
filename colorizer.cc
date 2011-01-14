@@ -15,23 +15,101 @@ using std::string;
 using std::map;
 using std::make_pair;
 
-colorizer::colorizer(bool enable)
+
+string colorizer::purpose_to_name(colorizer::purpose const p) const
+{
+  switch (p)
+  {
+    case normal:
+      return "normal";
+
+    case reset:
+      return "reset";
+
+    case diff_add:
+      return "diff_add";
+
+    case diff_change:
+      return "diff_change";
+
+    case diff_comment:
+      return "diff_comment";
+
+    case diff_delete:
+      return "diff_delete";
+
+    case diff_encloser:
+      return "diff_encloser";
+
+    case diff_separator:
+      return "diff_separator";
+
+    case log_revision:
+      return "log_revision";
+
+    case rev_header:
+      return "rev_header";
+
+    default:
+      I(false); // should never get here
+  }
+}
+
+std::pair<colorizer::purpose, string> colorizer::map_output_color(
+  purpose const p)
+{
+  string color;
+  string purpose_name = purpose_to_name(p);
+
+  lua.hook_get_output_color(purpose_name, color);
+
+  return std::make_pair(p, color_to_code(color));
+}
+
+string colorizer::color_to_code(string const color) const
+{
+  if (color == "red")
+    return "\033[31m";
+  else if (color == "green")
+    return "\033[32m";
+  else if (color == "blue")
+    return "\033[34m";
+  else if (color == "magenta")
+    return "\033[35m";
+  else if (color == "yellow")
+    return "\033[33m";
+  else if (color == "cyan")
+    return "\033[36m";
+  else if (color == "reset")
+    return "\033[m";
+  else if (color == "bold")
+    return "\033[1m";
+  else if (color == "black")
+    return "\033[30m";
+  else if (color == "white")
+    return "\033[37m";
+  else
+    return "\033[37m"; // no color specified - so use default (white)
+}
+
+colorizer::colorizer(bool enable, lua_hooks & lh) 
+  : lua(lh)
 {
   if (!have_smart_terminal())
     enable = false;
 
   if (enable)
     {
-      colormap.insert(std::make_pair(normal,         ""));
-      colormap.insert(std::make_pair(reset,          "\033[m"));
-      colormap.insert(std::make_pair(diff_encloser,  "\033[1;34m"));
-      colormap.insert(std::make_pair(diff_add,       "\033[32m"));
-      colormap.insert(std::make_pair(diff_delete,    "\033[31m"));
-      colormap.insert(std::make_pair(diff_change,    "\033[33m"));
-      colormap.insert(std::make_pair(diff_comment,   "\033[36m"));
-      colormap.insert(std::make_pair(diff_separator, "\033[1m"));
-      colormap.insert(std::make_pair(log_revision,   "\033[34m"));
-      colormap.insert(std::make_pair(rev_header,     "\033[1m"));
+      colormap.insert(map_output_color(normal));
+      colormap.insert(map_output_color(reset));
+      colormap.insert(map_output_color(diff_encloser));
+      colormap.insert(map_output_color(diff_add));
+      colormap.insert(map_output_color(diff_delete));
+      colormap.insert(map_output_color(diff_change));
+      colormap.insert(map_output_color(diff_comment));
+      colormap.insert(map_output_color(diff_separator));
+      colormap.insert(map_output_color(log_revision));
+      colormap.insert(map_output_color(rev_header));
     }
 }
 

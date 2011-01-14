@@ -10,6 +10,7 @@
 #ifndef __COLORIZER_HH__
 #define __COLORIZER_HH__
 
+#include "lua_hooks.hh"
 #include "vocab.hh"
 #include <map>
 
@@ -27,13 +28,20 @@ struct colorizer {
                  rev_header
                  } purpose;
 
-  colorizer(bool enable);
+  colorizer(bool enable, lua_hooks & lh);
 
   std::string
   colorize(std::string const & in, purpose p = normal) const;
 
 private:
   std::map<purpose, std::string> colormap;
+  lua_hooks & lua;
+  
+  std::pair<purpose, std::string>
+  map_output_color(purpose const p);
+
+  std::string color_to_code(std::string const color) const;
+  std::string purpose_to_name(purpose const p) const;
 };
 
 #endif // __COLORIZER_HH__

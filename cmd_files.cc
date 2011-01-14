@@ -134,7 +134,7 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
             src_id, dst_id,
             src.inner(), dst.inner(),
             cout, app.opts.diff_format, 
-            pattern, colorizer(app.opts.colorize));
+            pattern, colorizer(app.opts.colorize, app.lua));
 }
 
 CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),

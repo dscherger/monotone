@@ -454,7 +454,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
 
   prepare_diff(app, db, old_roster, new_roster, args, old_from_db, new_from_db, revs);
 
-  colorizer colorizer(app.opts.colorize);
+  colorizer colorizer(app.opts.colorize, app.lua);
 
   if (app.opts.with_header)
     {
@@ -497,7 +497,7 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
                dummy_header);
 
   // never colorize the diff output
-  colorizer colorizer(false);
+  colorizer colorizer(false, app.lua);
 
   if (app.opts.with_header)
     {
@@ -864,7 +864,7 @@ log_common(app_state & app,
   set<revision_id> seen;
   revision_t rev;
 
-  colorizer color(app.opts.colorize && !automate);
+  colorizer color(app.opts.colorize && !automate, app.lua);
   // this is instantiated even when not used, but it's lightweight
   asciik graph(output, color);
 
