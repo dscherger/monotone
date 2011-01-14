@@ -1,0 +1,27 @@
+#
+# old_revision [c263739ff64bb637b6535bf8399322a7d8d6fadd]
+#
+# patch "bbb"
+#  from [32b1bf1853e6c39e4a1c3dae941ab7094ff1d293]
+#    to [e81daec0385673562ae66971d78bfd91bb92c276]
+# 
+# patch "ccc"
+#  from [8843d7f92416211de9ebb963ff4ce28125932878]
+#    to [e81daec0385673562ae66971d78bfd91bb92c276]
+#
+============================================================
+--- bbb	32b1bf1853e6c39e4a1c3dae941ab7094ff1d293
++++ bbb	e81daec0385673562ae66971d78bfd91bb92c276
+@@ -1 +1 @@
+-barbaz
+\ No newline at end of file
++new stuff
+\ No newline at end of file
+============================================================
+--- ccc	8843d7f92416211de9ebb963ff4ce28125932878
++++ ccc	e81daec0385673562ae66971d78bfd91bb92c276
+@@ -1 +1 @@
+-foobar
+\ No newline at end of file
++new stuff
+\ No newline at end of file

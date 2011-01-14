@@ -24,9 +24,9 @@ XXX XXX XX XX:XX:XX UTC 2010
         New Features
 
         - 'mtn conflicts store' now outputs a count of the conflicts,
-          and the name of the conflicts file. 
+          and the name of the conflicts file.
           (fixes monotone issue 108)
-        
+
         Bugs fixed
 
         - The internal line merger will actually preserve your line
@@ -34,7 +34,11 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         - Improve help, fix arg indexing in 'conflicts resolve_first'
           (fixes monotone issue 101)
-        
+
+        - A regression from 0.48 prevented monotone from ordering the
+          diff output of individual files alphabetically.
+          (fixes monotone issue 102)
+
         - 'mtn privkey' did not recognize private keys solely available
           in the key store. this has been fixed.
 
