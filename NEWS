@@ -12,7 +12,7 @@ XXX XXX XX XX:XX:XX UTC 2010
           (fixes monotone issue 103)
 
         - The French monotone translation has been updated and is
-          now part of the main distribution again. many thanks to
+          now part of the main distribution again. Many thanks to
           Steve Petruzzello <dlist@bluewin.ch> for the outstanding
           work!
 
@@ -21,11 +21,18 @@ XXX XXX XX XX:XX:XX UTC 2010
           but also the files in the subdirectories read-permissions.d
           and write-permissions.d.
 
+        - monotone now also tracks the workspaces of databases which
+          do not reside in a "managed" location.
+
         New Features
 
         - 'mtn conflicts store' now outputs a count of the conflicts,
           and the name of the conflicts file.
           (fixes monotone issue 108)
+
+        - New 'mtn list workspaces' command which outputs all the
+          known workspaces for a specific database.
+          (closes monotone issue 129)
 
         Bugs fixed
 
@@ -70,6 +77,13 @@ XXX XXX XX XX:XX:XX UTC 2010
           that fall back on the configured default database, again,
           if no database is specified for these commands.
           (fixes monotone issue 113)
+
+        - monotone does no longer enforce ".mtn" as file extension
+          for managed databases.  Instead a new Lua hook,
+          get_default_database_glob(), is used to determine a pattern
+          which matches accepted database filenames and this pattern
+          by default accept files ending with both, ".mtn" and ".db".
+          (fixes monotone issue 128) 
 
         Internal
 

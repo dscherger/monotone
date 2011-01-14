@@ -136,6 +136,8 @@ public:
 
   bool hook_get_default_database_locations(vector<system_path> & out);
 
+  bool hook_get_default_database_glob(globish & out);
+
   // workspace hooks
   bool hook_use_inodeprints();
 
