@@ -4947,7 +4947,7 @@ Revision arguments to commands may be selectors or hex ids.
 * Common Options::
 @end menu
 
-@node Global Options
+@node Global Options, Common Options, Global and Common Options, Global and Common Options
 @subsection Global Options
 These options are available on all commands.
 
@@ -5015,11 +5015,39 @@ suspend} command.
 
 @anchor{--key}@item --key <arg>
 @itemx --use-default-key
-Set the key for signatures, using either the key name or the key hash
-(see @ref{Generating Keys}).  If there is only one key in the keydir,
-then that is the default key. Otherwise there is no default key. If no
-key is specified (by this option or by default), and the command needs
-a key, then the user is prompted for the key to use.
+Set the key for signatures or network authentication, using either the
+key name or the key hash (see @ref{Generating Keys}).
+
+monotone determines the key to use as follows:
+
+@enumerate
+@item
+If @option{--key} is given, that is the key.
+
+@item
+If @var{key} is given in @file{_MTN/options}, that is the key.
+
+Each time @option{--key} is given, it will be stored in
+@file{_MTN/options} for future use.
+
+@item
+For a non-netsync command, the Lua hook @code{@ref{get_branch_key}} is
+called.
+
+For a netsync command, the Lua hook @code{@ref{get_netsync_key}} is
+called.
+
+If the hook returns non-nil, the return value is the name of the
+key.
+
+@item
+If there is only one key in the keydir, that is the key.
+
+@item
+Otherwise there is no key; an error occurs.
+
+@end enumerate
+
 
 @item --keydir <arg>
 Set the key directory (where the ``key store'' is located); default is
@@ -5096,7 +5124,7 @@ Print version number, then exit; same as @command{mtn version}.
 Insert command line arguments taken from the given file.
 @end ftable
 
-@node Common Options
+@node Common Options,  , Global Options, Global and Common Options
 @subsection Common Options
 These options are available on many commands.
 @ftable @command
@@ -5922,6 +5950,7 @@ used for @code{ssh}-related transports), a host with an optional port
 scheme), a path and a query part, which denotes one or more branches
 and optionally also exclude patterns for the exchange:
 
+@anchor{netsync uri}
 @smallexample
 @group
 <scheme>://[[<user>@@]<host>[:<port>]][/<path>][?<pattern>[;-<exclude-pattern>[...]]]
@@ -11335,7 +11364,7 @@ language to customize and extend its behaviour.  By writing
 help monotone to make a particular decision, set a suitable default or
 preference or perform a certain action.
 
-@anchor{rcfiles}You can put Lua functions in ``rcfiles'' which will be
+@anchor{rcfiles}Lua functions are defined in ``rcfiles'' which will be
 read every time monotone runs. @file{rcfiles} consist of:
 
 @itemize
@@ -11359,14 +11388,15 @@ The files are loaded in the order @file{.monotone/monotonerc},
 Definitions loaded later shadow (override) earlier definitions.
 
 There are two uses for Lua functions; hooks and user-defined
-commands. This section documents hooks; see @ref{register_command} for
-user-defined commands. The source distribution contains some example
-user commands in the @file{contrib/command} directory.
+commands. This section documents hooks; see
+@command{@ref{register_command}} for user-defined commands. The source
+distribution contains some example user commands in the
+@file{contrib/command} directory.
 
 Hooks are Lua functions that are called from monotone code in many
 places. Monotone provides default definitions for some hooks; see
 @ref{Default hooks} for their complete source. For other hooks, if no
-definition is provided a default return value is used. When writing new
+definition is provided, a default return value is used. When writing new
 hooks, it may be helpful to reuse some code from the default
 ones. Since Lua is a lexically scoped language with closures, this can
 be achieved with the following code:
@@ -11385,7 +11415,7 @@ end
 @end smallexample
 
 Now the default hook is trapped in a variable local to this block, and can
-only be seen by the new hook. Since in Lua variables default to the global
+only be seen by the new hook. Since in Lua functions default to the global
 scope, the new hook is seen from inside monotone.
 
 Monotone also provides a number of helper functions to hook writers
@@ -11404,20 +11434,32 @@ exposing functionality not available with standard Lua.
 This section documents the existing hook functions and their default
 definitions.
 
+@menu
+* Common Data Types::
+* Event Notifications and Triggers::
+* User Defaults::
+* Netsync Permission Hooks::
+* Netsync Transport Hooks::
+* Trust Evaluation Hooks::
+* External Diff Tools::
+* External Merge Tools::
+* Selector Expansion::
+* Attribute Handling::
+* GIT Export Hooks::
+* Validation Hooks::
+* Meta Hooks::
+@end menu
+
+@node Common Data Types, Event Notifications and Triggers, Hooks, Hooks
 @subsection Common Data Types
 
-Some hooks take arguments which are more complex than a simple string or number.
-Where multiple hooks take the same kind of argument, we generally try to make
-them take that kind of argument in the same format.
+Some hooks take arguments which are more complex than a simple string
+or number (they are a Lua ``table'').  Where multiple hooks take the
+same kind of argument, we generally try to make them take that kind of
+argument in the same format, described here.
 
 @ftable @code
 @item key_identity
-
-When a key is created, it is given a meaningful name. Because this is chosen by
-the key creator and may be unreliable, trust hooks need to be able to look at
-the key hash as well. This may be inconvenient, so a local alias is also provided.
-This alias is obtained from an other hook, which can provide reliable easy-to-use
-names based on the key hash (or however else you want).
 
 @smallexample
 @group
@@ -11429,8 +11471,15 @@ names based on the key hash (or however else you want).
 @end group
 @end smallexample
 
+When a key is created, it is given a meaningful name. Because this is chosen by
+the key creator and may be unreliable, trust hooks need to be able to look at
+the key hash as well. This may be inconvenient, so a local alias is also provided.
+This alias is obtained from a Lua hook, which can provide reliable easy-to-use
+names based on the key hash (or however else you want).
+
 @end ftable
 
+@node Event Notifications and Triggers, User Defaults, Common Data Types, Hooks
 @subsection Event Notifications and Triggers
 
 There are a number of hooks that are called when noteworthy events
@@ -11441,15 +11490,19 @@ such as generating email.
 By default, these hooks are undefined, so no special external actions
 are taken.
 
+Hooks are presented not in alphabetic order; they are grouped by
+function, and then by the order they are typically called by monotone.
+
 @ftable @code
 @item note_commit (@var{new_id}, @var{revision}, @var{certs})
 
-Called by monotone after the version @var{new_id} is committed. The
-second parameter, @var{revision} is the text of the revision, what would
-be given by @command{mtn automate get_revision @var{new_id}}. The third
-parameter, @var{certs}, is a Lua table containing the set of certificate
-names and values committed along with this version. There is no default
-definition for this hook.
+Called by monotone after the revsion @var{new_id} is
+committed. @var{revision} is the text of the revision, what would be
+given by @command{mtn automate get_revision @var{new_id}}. @var{certs}
+is a Lua table containing the set of certificate names and values
+committed along with this version.
+
+There is no default definition for this hook.
 
 Note that since the @var{certs} table does not contain cryptographic
 or trust information, and only contains one entry per cert name, it is
@@ -11460,139 +11513,163 @@ should not perform any security-critical operations.
 
 @item note_netsync_start (@var{session_id}, @var{my_role}, @var{sync_type}, @var{remote_host}, @var{remote_key}, @var{includes}, @var{excludes})
 
-Called by monotone before any other of the netsync notification hooks
-are called.  The @var{session_id} helps keep track of the current netsync
-session in case several are happening at the same time, and is used
-throughout all netsync notification hooks.
+Called by monotone just after a netsync session is started, before any
+of the other netsync notification hooks are called.
 
-The other arguments are:
+The arguments are:
 
-@table @strong
+@table @var
 
-@item @var{my_role}
+@item session_id
+Identifies the current netsync session in case several are happening
+at the same time (only possible on a server).
 
-This will be either "client" or "server".
+@item my_role
 
-@item @var{sync_type}
+One of "client" or "server".
 
-This will be one of "sync", "push", or "pull".
+@item sync_type
 
-@item @var{remote_host}
+One of "sync", "push", or "pull".
+
+@item remote_host
 
 The network address of the remote host. At the client, this will be the name
 it was told to connect to; at the server, this will use the numerical IP address
 the connection was received from.
 
-@item @var{remote_key}
+@item remote_key
 
 The identity of the key being used by the other end of the connection. The fields may
 be empty at the server if the key used by the client is not present at the server.
 
-@item @var{includes} and @var{excludes}
+@item includes
+@itemx excludes
 
 The include and exclude patterns used by the client.
 
 @end table
 
 @item note_netsync_revision_received (@var{new_id}, @var{revision}, @var{certs}, @var{session_id})
+@itemx note_netsync_revision_sent (@var{rev_id}, @var{revision}, @var{certs}, @var{session_id})
 
-Called by monotone after the revision @var{new_id} is received through
-netsync. @var{revision} is the text of the revision, what would be given
-by @command{mtn automate get_revision @var{new_id}}. @var{certs} is a
-Lua table containing one subtable for each cert attached to the revision
+Called after the revision @var{new_id} is received or sent through
+netsync.
+
+There are no default definitions for these hooks.
+
+Arguments:
+
+@table @var
+@item new_id
+The revision id.
+
+@item revision
+The text of the revision; what would be given
+by @command{mtn automate get_revision @var{new_id}}.
+
+@item certs
+A Lua table containing one subtable for each cert attached to the revision
 @var{new_id}. These subtables have fields named "key", "name", and
 "value", containing the identity of the signing key for the cert, the name of the cert,
-and the value of the cert. There is no default definition for this hook.
-@var{session_id} is used together with @code{note_netsync_start} and
-@code{note_netsync_end}.  If you're not interested in that type of
-tracking, you can ignore that variable entirely.
+and the value of the cert.
 
-@item note_netsync_revision_sent (@var{rev_id}, @var{revision}, @var{certs}, @var{session_id})
+@item session_id
+Identifies the current netsync session.
 
-Called by monotone after the revision @var{rev_id} is sent through
-netsync. The arguments are the same as for
-@var{note_netsync_revision_received}.
+@end table
 
 @item note_netsync_cert_received (@var{rev_id}, @var{key_identity}, @var{name}, @var{value}, @var{session_id})
+@itemx note_netsync_cert_sent (@var{rev_id}, @var{key_identity}, @var{name}, @var{value}, @var{session_id})
 
-Called by monotone after a cert is received through netsync, if the revision
-that the cert is attached to was not also received in the same netsync
-operation. @var{rev_id} is the revision id that the cert is attached to,
-@var{key_identity} is the key that the cert is signed with, @var{name} is the name
-of the cert, and @var{value} is the cert value. There is no default
-definition for this hook.
-@var{session_id} is used together with @code{note_netsync_start} and
-@code{note_netsync_end}.  If you're not interested in that type of
-tracking, you can ignore that variable entirely.
+Called by monotone after a cert is received (or sent) through netsync,
+if the revision that the cert is attached to was not also received (or
+sent) in the same netsync operation.
 
-@item note_netsync_cert_sent (@var{rev_id}, @var{key_identity}, @var{name}, @var{value}, @var{session_id})
+There is no default definition for this hook.
 
-Called by monotone after a cert is sent through netsync, if the revision
-that the cert is attached to was not also sent in the same netsync
-operation. The arguments are the same as for
-@var{note_netsync_cert_received}.
+Arguments:
+
+@table @var
+@item rev_id
+The revision id that the cert is attached to.
+
+@item key_identity
+The key that the cert is signed with.
+
+@item name
+The name of the cert.
+
+@item value
+The cert value.
+
+@item session_id
+Identifies the netsync session.
+@end table
 
 @item note_netsync_pubkey_received (@var{key_identity}, @var{session_id})
+@itemx note_netsync_pubkey_sent (@var{key_identity}, @var{session_id})
 
-Called by monotone after a pubkey is received through netsync. @var{key_identity}
-is the identity of the key received. There is no default definition for this hook.
-@var{session_id} is used together with @code{note_netsync_start} and
-@code{note_netsync_end}.  If you're not interested in that type of
-tracking, you can ignore that variable entirely.
+Called by monotone after a pubkey is received or sent through netsync.
 
-@item note_netsync_pubkey_sent (@var{key_identity}, @var{session_id})
+There is no default definition for this hook.
 
-Called by monotone after a pubkey is sent through netsync. The arguments are the same as for
-@var{note_netsync_pubkey_received}.
+Arguments:
+
+@table @var
+@item key_identity
+The identity of the key received.
+
+@item session_id
+Identifies the current netsync session.
+
+@end table
 
 @item note_netsync_end (@var{session_id}, @var{status}, @var{bytes_in}, @var{bytes_out}, @var{certs_in}, @var{certs_out}, @var{revs_in}, @var{revs_out}, @var{keys_in}, @var{keys_out})
 
-Called by monotone after all other the netsync notification hooks have
-been called.  This hook would usually be used for post-netsync purposes,
-like collecting all the data from all other netsync notification hooks,
-make some nice output from them and finally send the result somewhere.
-It could also be used to prepare parallel databases with all the data
-to be displayed through something like viewmtn.
+Called by monotone after a netsync session ends. This hook would
+usually be used for post-netsync purposes, like collecting all the
+data from all other netsync notification hooks, make some nice output
+from them and finally send the result somewhere.  It could also be
+used to prepare parallel databases with all the data to be displayed
+through something like viewmtn.
 
-@var{status} is a three digit integer that tells whether there was an error,
+Arguments:
+
+@table @var
+@item session_id
+Identifies the current netsync session.
+
+@item status
+A three digit integer that tells whether there was an error,
 and if so what kind of error it was:
 
 @table @strong
-
 @item 200
-
 No error, connection successful.
 
 @item 211
-
 The connection was interrupted after some data may have been transferred.
 
 @item 212
-
 The connection was interrupted before any data could be transferred.
 
 @item 412
-
 The request is not permitted.
 
 @item 422
-
 The client tried to use a key that the server doesn't know about.
 
 @item 432
-
 The client and server have different epochs for a branch.
 
 @item 512
-
 Protocol error (source/sink confusion).
 
 @item 521
-
 Protocol error (packet received at a time when it doesn't make sense).
 
 @item 532
-
 The client did not identify itself correctly. (Possible replay attack?)
 
 @end table
@@ -11602,14 +11679,36 @@ error, and 5xx means there was a protocol error. xx1 means some data may
 have been transferred, xx2 means no data was transferred, and xx0 means all
 data was transferred.
 
+@item bytes_in
+@itemx bytes_out
+The number of bytes received/sent during the session.
+
+@item certs_in
+@itemx certs_out
+The number of certs received/sent during the session.
+
+@item revs_in
+@itemx revs_out
+The number of revisions received/sent during the session.
+
+@item keys_in
+@itemx keys_out
+The number of keys received/sent during the session.
+
+@end table
+
 @item note_mtn_startup (...)
 
-Called by monotone when it is first started, this hook was added so that
-usage of monotone could be monitored for user interface testing.  Note
-that by default, no monitoring occurs.  The arguments to the hook
-function are the arguments to monotone, without the initial
-@command{mtn} command.  They can be accessed through the lua @var{arg}
-variable as in this example:
+Called by monotone when it is first started.
+
+There is no default definition of this hook.
+
+One use of this hook is to monitor usage of monotone, for user
+interface testing.
+
+The arguments to the hook are the command line arguments to monotone,
+without the initial @command{mtn} command.  They can be accessed
+through the lua @var{arg} variable as in this example:
 
 @smallexample
 @group
@@ -11625,6 +11724,7 @@ end
 
 @end ftable
 
+@node User Defaults, Netsync Permission Hooks, Event Notifications and Triggers, Hooks
 @subsection User Defaults
 
 These are hooks that can be used to provide smart, context-sensitive
@@ -11632,27 +11732,59 @@ default values for a number of parameters the user might otherwise be
 prompted for.
 
 @ftable @code
-@item get_branch_key (@var{branchname})
+@anchor{get_branch_key}@item get_branch_key (@var{branchname})
 
-Returns a string which is the name or hash of an @sc{rsa} private key used to sign
-certificates in a particular branch @var{branchname}. There is no
-default definition for this hook. The command-line option
-@option{--key=@var{keyname}} overrides any value returned from this
-hook function. If you have only one private key in your database, you
-do not need to define this function or provide a
-@option{--key=@var{keyname}} option; monotone will guess that you want
-to use the unique private key.
+Called whenever monotone needs a key to sign a certificate, and
+@option{@ref{--key}} was not given.
 
-@item get_netsync_key(@var{server}, @var{include}, @var{exclude})
+Returns a string which is the name or hash of a private key used to sign
+certificates in a particular branch @var{branchname}, or nil for no key.
 
-Returns a string which is the name or hash of the key to use to authenticate
-the given netsync connection. When called by the @command{serve} command,
-@var{server} is the address monotone is listening on, @var{include} is
-@option{"*"}, and @var{exclude} is @option{""}.
+See @option{@ref{--key}} for a description of how monotone determines
+what key to use.
 
-There is no default definition of this hook. The command-line option
-@option{--key=@var{keyname}} overrides any value returned from this
-hook function.
+There is no default definition for this hook; it returns nil.
+
+@anchor{get_netsync_key}@item get_netsync_key(@var{server}, @var{include}, @var{exclude})
+
+Called by the server and client when a netsync connection is being
+established, and @option{@ref{--key}} was not given. Returns a string
+which is the name or hash of the key to use to authenticate the
+netsync connection.
+
+Note that netsync commands do not need a signing key; they only transmit
+already signed information.
+
+See @option{@ref{--key}} for a discussion of how monotone determines
+what key to use.
+
+Arguments, when called by the server:
+
+@table @var
+@item server
+The address monotone is listening on.
+
+@item include
+"*"
+
+@item exclude
+""
+@end table
+
+When called by the client:
+
+@table @var
+@item server
+The scheme, user, host, port, and path fields from the URI provided on
+the command line. See @ref{netsync uri}.
+
+@item include
+The include pattern in the URI provided on the command line.
+
+@item exclude
+The exclude pattern in the URI provided on the command line.
+
+@end table
 
 @item get_default_command_options(@var{command})
 
@@ -11873,6 +12005,7 @@ and Cygwin, it is run in the @command{sh} shell.
 
 @end ftable
 
+@node Netsync Permission Hooks, Netsync Transport Hooks, User Defaults, Hooks
 @subsection Netsync Permission Hooks
 
 These hooks are used when running a netsync server, via
@@ -11958,7 +12091,7 @@ if through @code{automate stdio}.
 
 @end ftable
 
-@anchor{Netsync Transport Hooks}
+@node Netsync Transport Hooks, Trust Evaluation Hooks, Netsync Permission Hooks, Hooks
 @subsection Netsync Transport Hooks
 
 When a monotone client initiates a netsync connection, these hooks are
@@ -12105,7 +12238,7 @@ end
 @end ftable
 
 
-@anchor{Trust Evaluation Hooks}
+@node Trust Evaluation Hooks, External Diff Tools, Netsync Transport Hooks, Hooks
 @subsection Trust Evaluation Hooks
 
 Monotone makes heavy use of certs to provide descriptive information
@@ -12225,6 +12358,7 @@ will only take revisions where that test still returned @code{true}.
 
 @end ftable
 
+@node External Diff Tools, External Merge Tools, Trust Evaluation Hooks, Hooks
 @subsection External Diff Tools
 
 Differences between files can be shown in a number of ways, varying
@@ -12271,6 +12405,7 @@ the whole hook.
 @end ftable
 
 
+@node External Merge Tools, Selector Expansion, External Diff Tools, Hooks
 @subsection External Merge Tools
 
 Monotone often needs to merge together the work of multiple distributed
@@ -12332,6 +12467,7 @@ this hook to specify it.
 
 @end ftable
 
+@node Selector Expansion, Attribute Handling, External Merge Tools, Hooks
 @subsection Selector Expansion
 
 Monotone's selectors are a powerful mechanism used to refer to revisions
@@ -12362,6 +12498,7 @@ hooks}.
 
 @end ftable
 
+@node Attribute Handling, GIT Export Hooks, Selector Expansion, Hooks
 @subsection Attribute Handling
 
 Some files in a project are special; they may require different
@@ -12455,6 +12592,7 @@ The @code{binary_file} function is also defined as a Lua hook. See
 
 @end ftable
 
+@node GIT Export Hooks, Validation Hooks, Attribute Handling, Hooks
 @subsection GIT Export Hooks
 
 Exporting monotone revisions in git-fast-import(1) format often
@@ -12486,6 +12624,7 @@ aborted if this hook returns false for any value.
 
 @end ftable
 
+@node Validation Hooks, Meta Hooks, GIT Export Hooks, Hooks
 @subsection Validation Hooks
 
 If there is a policy decision to make, Monotone defines certain hooks to
@@ -12522,6 +12661,7 @@ is not defined and is thus ignored during a commit.
 
 @end ftable
 
+@node Meta Hooks,  , Validation Hooks, Hooks
 @subsection Meta Hooks
 
 Monotone allows the execution of arbitrary Lua hooks and functions through a
