@@ -5218,7 +5218,7 @@ If no @var{id} is provided, as in the latter two commands, you
 @item mtn conflicts
 See @ref{Conflicts}
 
-@item mtn explicit_merge [--[no-]update] @var{id} @var{id} @var{destbranch}
+@anchor{mtn explicit_merge}@item mtn explicit_merge [--[no-]update] @var{id} @var{id} @var{destbranch}
 See the online help for options. See @ref{--update}.
 
 This command merges exactly the two @var{id}s you give it, and places
@@ -5318,7 +5318,7 @@ intended.
 
 @ref{Merge Conflicts} can occur. See @ref{--update}.
 
-@item mtn merge_into_workspace [--[no]-move-conflicting-paths] @var{revision}
+@anchor{mtn merge_into_workspace}@item mtn merge_into_workspace [--[no]-move-conflicting-paths] @var{revision}
 Merges @var{revision} into the current workspace; the result is not
 committed to the database. There can be no pending changes in the
 current workspace. The workspace's selected branch is not
@@ -5440,7 +5440,7 @@ Show remaining unresolved conflicts in the conflicts file.
 Specify a resolution for the first conflict in the conflicts file; it
 must be a single file conflict. The conflicts file is updated.
 
-@item mtn conflicts resolve_first_left [--conflicts-file=@var{file}] @var{resolution}
+@anchor{mtn conflicts resolve_first}@item mtn conflicts resolve_first_left [--conflicts-file=@var{file}] @var{resolution}
 @itemx mtn conflicts resolve_first_right [--conflicts-file=@var{file}] @var{resolution}
 Specify a resolution for one of the files in the first conflict in the
 conflicts file; it must be a two file conflict. The conflicts file is
@@ -5794,7 +5794,7 @@ records, but not in the filesystem itself.
 When running @command{pivot_root}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
-@item mtn pluck [--[no-]move-conflicting-paths] --revision=@var{to}
+@anchor{mtn pluck}@item mtn pluck [--[no-]move-conflicting-paths] --revision=@var{to}
 @itemx mtn pluck [--[no-]move-conflicting-paths] --revision=@var{from} --revision=@var{to}
 See the online help for more options.
 
@@ -5849,7 +5849,7 @@ it is not already versioned.
 This command also moves any attributes on @var{src} to @var{dst}; see
 @ref{File Attributes} for more details.
 
-@item mtn revert @var{pathname...}
+@anchor{mtn revert}@item mtn revert @var{pathname...}
 @itemx mtn revert --missing @var{pathname...}
 See the online help for more options.
 
@@ -5863,7 +5863,7 @@ top-level directory. Specifying "." in a subdirectory will restrict
 If @option{--missing} is given it reverts any versioned files in
 @var{pathname...} that have been deleted from the workspace.
 
-@item mtn undrop @var{pathname...}
+@anchor{mtn undrop}@item mtn undrop @var{pathname...}
 Undoes a previous @command{drop}; useful when you make a mistake. If
 the file was deleted from the workspace, this reverts it. If it was
 not deleted (because it was changed or @option{--bookkeep-only} was
@@ -6205,7 +6205,7 @@ about, in its database, which begin with the 4 hex digits
 @code{fa36}. This command is intended to be used by programmable
 completion systems, such as those in @command{bash} and @command{zsh}.
 
-@item mtn diff [--unified] [--[no-]show-encloser]
+@anchor{mtn diff}@item mtn diff [--unified] [--[no-]show-encloser]
 @itemx mtn diff --context [--[no-]show-encloser]
 @itemx mtn diff --external [--diff-args=@var{argstring}]
 @itemx mtn diff @var{pathname...}
@@ -7560,7 +7560,7 @@ an error message to stderr, and exits with status 1.
 @end table
 
 
-@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [--reverse] [@var{file...}]
+@anchor{mtn automate content_diff}@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [--reverse] [@var{file...}]
 
 @table @strong
 @item Arguments:
@@ -9517,7 +9517,7 @@ None.
 @end table
 
 
-@item mtn automate log [@var{options}] [@var{pathname...}]
+@anchor{mtn automate log}@item mtn automate log [@var{options}] [@var{pathname...}]
 
 @table @strong
 @item Arguments:
@@ -12284,27 +12284,29 @@ These hooks allow the user to configure which signers will be trusted to
 make which kinds of assertions using certs. Monotone uses these certs when
 selecting available revisions for commands such as @command{update}.
 
-Each user, or even each workspace, can have their own
-implementation of these hooks, and thus a different filtered view of
-valid revisions, according to their own preferences and purposes.
+Each user, or even each workspace, can have their own implementation
+of these hooks, and thus a different filtered view of valid revisions,
+according to their own preferences and purposes.
 
 See @ref{Quality Assurance}.
 
 @ftable @code
 @anchor{get_revision_cert_trust}@item get_revision_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
 
-Returns whether or not you @emph{trust} the assertion
+Returns @code{true} if you @emph{trust} the assertion
 @var{name}=@var{value} on a given revision @var{id}, given a valid
-signature from all the keys in @var{signers}. The @var{signers}
-parameter is a table containing all the key identities which signed this
-cert, the other three parameters are strings.
+signature from all the keys in @var{signers}; @code{false}
+otherwise. @var{signers} is a table containing a
+@code{@ref{key_identity}} for all signatures on this cert, the other
+three parameters are strings.
 
-The default definition of this hook simply returns @code{true}, which
-corresponds to a form of trust where every key which is defined in
-your database is trusted. This is a @emph{weak} trust setting; you
-should change it to something stronger. A possible example of a
-stronger trust function (along with a utility function for computing
-the intersection of tables) is the following:
+The default definition of this hook returns @code{true}.
+
+The default definition corresponds to a form of trust where every key
+which is defined in your database is trusted. This is a @emph{weak}
+trust setting. A possible example of a stronger trust function (along
+with a utility function for computing the intersection of tables) is
+the following:
 
 @smallexample
 @group
@@ -12343,12 +12345,13 @@ the revision has been approved by an extra ``reviewer'' who used the
 @command{approve} command.
 
 @anchor{get_file_cert_trust}@item get_file_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
-Similar to @ref{get_revision_cert_trust}, for certs on files.
+Similar to @code{@ref{get_revision_cert_trust}}, for certs on files.
 
 @anchor{get_manifest_cert_trust}@item get_manifest_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
-Similar to @ref{get_revision_cert_trust}, for certs on manifests.
+Similar to @code{@ref{get_revision_cert_trust}}, for certs on manifests.
 
 @anchor{accept_testresult_change}@item accept_testresult_change (@var{old_results}, @var{new_results})
+Called by @command{@ref{mtn update}}.
 
 This hook is used by the update algorithm to determine whether a
 change in test results between update source and update target is
@@ -12359,36 +12362,12 @@ function should return @code{true} if you consider an update from the
 version carrying the @var{old_results} to the version carrying the
 @var{new_results} to be acceptable.
 
-The default definition of this hook follows:
-
-@smallexample
-@group
-function accept_testresult_change(old_results, new_results)
-   local reqfile = io.open("_MTN/wanted-testresults", "r")
-   if (reqfile == nil) then return true end
-   local line = reqfile:read()
-   local required = @{@}
-   while (line ~= nil)
-   do
-      required[line] = true
-      line = reqfile:read()
-   end
-   io.close(reqfile)
-   for test, res in pairs(required)
-   do
-      if old_results[test] == true and new_results[test] ~= true
-      then
-         return false
-      end
-   end
-   return true
-end
-@end group
-@end smallexample
-
-This definition looks at the file @code{_MTN/wanted-testresults} and
-requires that once any test listed there has returned @code{true}, updates
-will only take revisions where that test still returned @code{true}.
+The default definition of this hook returns @code{true} if
+@file{_MTN/wanted-testresults} does not exist. Otherwise, the file
+should contain a list of signing key ids. The hook returns @code{false}
+if a listed signing key id is present in both @var{old_results} and
+@var{new_results}, and @var{old_results} is @code{true} but
+@var{new_results} is @code{false}; otherwise it returns @code{true}.
 
 @end ftable
 
@@ -12397,34 +12376,64 @@ will only take revisions where that test still returned @code{true}.
 
 Differences between files can be shown in a number of ways, varying
 according to user preference and file type. These hooks allow
-customisation of the way file differences are shown.
+customization of the way file differences are shown in @command{diff}
+and @command{log} commands.
 
 @ftable @code
 @anchor{get_encloser_pattern}@item get_encloser_pattern (@var{file_path})
 
-Called for each file unless @command{diff} is given the
-@option{--no-show-encloser} option (or the
-@option{--external} option).  @var{file_path} is the pathname of the
-file that is being diffed.  The hook should return a string constant
-containing a regular expression; this regular expression will be used
-to find lines that, in that file, name the ``top-level'' constructs
-enclosing each ``hunk'' of changes.  The default is
-@code{^[[:alnum:]$_]}, which is correct for many programming
-languages; a few text authoring packages, like Texinfo, have special
-regular expressions that match their particular syntax.  If you have a
-better regular expression for some language, you can add it to this
-hook; and if you send it to the monotone developers, we will likely
-make it the default for that language.  @xref{Regexps}, for the
-regular expression syntax.
+Called by @command{@ref{mtn diff}}, @command{@ref{mtn automate
+content_diff}}, @command{@ref{mtn log}}, @command{@ref{mtn automate
+log}}, for each file in the diff output, if
+@option{--no-show-encloser} is not given.
+
+@var{file_path} is the pathname of the file that is being diffed.
+
+The hook should return a string constant containing a regular
+expression; this regular expression will be used to find lines in the
+file that name the ``top-level'' constructs enclosing each ``hunk'' of
+changes.
+
+If a null string is returned, no enclosers are shown.
+
+See @ref{Regexps}, for the regular expression syntax used by monotone.
+
+The default hook treats looks at the file extension, as follows:
+
+@table @file
+@item .texi
+Returns a regular expression matching nodes, subsections, headings.
+
+@item .tex
+@itemx .ltx
+@itemx .latex
+Returns a regular expression matching part, chapter, [sub]sections, paragraphs.
+
+@item .txt
+Empty string.
+
+@item
+Otherwise returns @code{^[[:alnum:]$_]}, which is correct for
+many programming languages.
+@end table
 
 @anchor{external_diff}@item external_diff (@var{file_path}, @var{old_data}, @var{new_data}, @var{is_binary}, @var{diff_args}, @var{old_rev}, @var{new_rev})
 
-Called for each file when @command{diff} is given the
-@option{--external} option.  @var{file_path} is the pathname of the
-file that is being diffed.  @var{old_data} and @var{new_data} are the
-data contents of the old and the new file.  If the data is binary,
-@var{is_binary} will be true, otherwise false.  @var{old_rev} and
-@var{new_rev} are the revision IDs of the old and new data.
+Called by @command{@ref{mtn diff}}, @command{@ref{mtn automate
+content_diff}}, @command{@ref{mtn log}}, @command{@ref{mtn automate
+log}}, for each file in the diff output, if @option{--external} is
+given.
+
+The hook should run a program that displays the differences between
+two versions of a file. The return value of the hook is not used.
+
+@var{file_path} is the pathname of the file that is being diffed.
+
+@var{old_data} and @var{new_data} are the contents of the old and the
+new file (@var{old_data} is nil if the file is new).  If the content
+is binary, @var{is_binary} will be true, otherwise false.
+@var{old_rev} and @var{new_rev} are the revision IDs of the old and
+new data.
 
 If an extra arguments are given via @option{--diff-args}, the string
 will be passed in as @var{diff_args}.  Otherwise @var{diff_args} will
@@ -12442,10 +12451,8 @@ the whole hook.
 @node External Merge Tools, Selector Expansion, External Diff Tools, Hooks
 @subsection External Merge Tools
 
-Monotone often needs to merge together the work of multiple distributed
-developers, and uses these hooks to help this process when the merge
-does not automatically succeed.  Often these hooks will be used to invoke
-an external interactive merge tool.
+These hooks allow the user to use their favorite tools when resolving
+@ref{File Content Conflict}s.
 
 The @ref{Default hooks} include helper functions used by the hooks below
 to invoke a number of external merge tools known to monotone, and you
@@ -12456,8 +12463,14 @@ you have a tool specific to certain file types.
 @anchor{merge3}
 @item merge3 (@var{ancestor_path}, @var{left_path}, @var{right_path}, @var{merged_path}, @var{ancestor_text}, @var{left_text}, @var{right_text})
 
-This hook is called to resolve merges that monotone could not resolve
-automatically.  The actual ancestor, left, and right contents of the
+Called by @command{@ref{mtn conflicts resolve_first}} when
+@command{interactive} is given; by @command{@ref{mtn merge}},
+@command{@ref{mtn explicit_merge}} when @option{--resolve-conflicts}
+is not specified and the internal merger fails for a file content
+conflict; and by @command{@ref{mtn update}} or any command that
+accepts @option{--update} for workspace file content conflicts.
+
+The actual ancestor, left, and right contents of the
 file are passed in the @var{ancestor_text}, @var{left_text}, and
 @var{right_text} strings.  In addition, the hook is given the names
 that this file had in the ancestor (@var{ancestor_path}), left
@@ -12468,18 +12481,19 @@ in their GUI, since the actual path names are likely more meaningful
 than the temporary file names the merge tool will actually be working
 on.
 
-On success, @code{merge3} returns a string, which should be the
-contents resulting from merging the given texts.  If nil is returned,
-the merge command fails; this is how the user can abort a merge.
+On success, @code{merge3} returns a string, which should be the new
+file contents, the result of merging the given texts.  If nil is
+returned, the merge command fails; this is how the user can abort a
+merge.
 
-The default definition of this hook
-delegates the actual merge to the result of
+The default definition of this hook writes the texts to temporary
+files, then delegates the actual merge to the result of
 @ref{get_preferred_merge3_command}.  The default definition of
 @ref{get_preferred_merge3_command} checks to see if the
 @env{MTN_MERGE} environment variable, or the Lua variable
 @code{merger} are set to the name of a merge tool that it recognizes,
-and if not, then simply searches for whatever is installed on the
-local system.
+and if not, then simply searches for several popular tools that might
+be installed on the local system.
 
 The default hook then invokes the merge tool, waits for it to return,
 and checks to see if @var{merged_path} was written. If not, it returns
@@ -12493,7 +12507,9 @@ gimp for .png files, OpenOffice.org for .doc, and so on.
 
 @anchor{get_preferred_merge3_command}@item get_preferred_merge3_command(@var{tbl})
 
-Returns the results of running an external merge on three strings.
+Returns a table @code{command, mkey} telling @code{@ref{merge3}} what
+external merge tool to run.
+
 @var{tbl} wraps up the various arguments for each merge command and
 is always provided by @ref{merge3}. If there is a particular editor
 that you would like to use to perform merge3 operations, override
@@ -12515,20 +12531,29 @@ For more detail on the use of selectors, see @ref{Selectors}.
 @ftable @code
 @anchor{expand_selector}@item expand_selector (@var{str})
 
-Attempts to expand @var{str} as a selector. Expansion generally means
-providing a type prefix for the selector, such as @code{a:} for authors
-or @code{d:} for dates. This hook is called once for each element of a
-combined selector string (between @code{/} separators) prior to
-evaluation of the selector. For the default definition of this hook, see
-@ref{Default hooks}.
+Called by any command that can take a selector argument, for each
+element of a combined selector string (between @code{/} separators).
+
+The input @var{str} is the command line argument. The hook should return
+a string that is a valid monotone selector.
+
+Expansion generally means providing a type prefix for the selector,
+such as @code{a:} for authors or @code{d:} for dates.
+
+The default definition of this hook attempts to recognize certs, email
+addresses, branch names, hex ids, and dates, and adds the appropriate
+prefix. See @ref{Default hooks}.
 
 @anchor{expand_date}@item expand_date (@var{str})
+Called when processing a date selector (@command{d:}).
 
-Attempts to expand @var{str} as a date expression. Expansion means
-recognizing and interpreting special words such as @code{yesterday} or
-@code{6 months ago} and converting them into well formed date
-expressions. For the default definition of this hook, see @ref{Default
-hooks}.
+The input @var{str} is the command line selector, after processing by
+@command{expand_selector}. The hook should return a date that can be
+used by a standard SQL select statement.
+
+The default hook recognizes special words such as @code{yesterday} or
+@code{6 months ago} and converts them into well formed date
+expressions. See @ref{Default hooks}.
 
 @end ftable
 
@@ -12550,51 +12575,40 @@ according to its attributes when the workspace is changed.
 @ftable @code
 @anchor{attr_functions}@item attr_functions [@var{attribute}] (@var{filename}, @var{value})
 
-This is not a hook function, but a @emph{table} of hook
-functions. Each entry in the table @code{attr_functions}, at table
-entry @var{attribute}, is a function taking a file name @var{filename}
+This is not a hook function, but a @emph{table} of hook functions,
+indexed by @var{attribute}. Each entry in the table
+@code{attr_functions} is a function taking a file name @var{filename}
 and an attribute value @var{value}. The function should ``apply'' the
-attribute to the file, possibly in a platform-specific way.  When
-called to set an attribute the value this hook receives will be a
-string representing the value of the attribute. When called to clear
-an attribute the value this hook receives will be @code{nil}.
+attribute to the file in the file system, possibly in a
+platform-specific way.
 
-Hook functions from this table are called for each existing attribute,
-after any command which modifies the workspace. These functions are
-also called during creation and modification of a workspace by the
-@command{update}, @command{merge_into_workspace}, @command{pluck},
-@command{clone} and @command{checkout} commands to set or clear
-attributes as they change.
+These hooks are called by any command that modifies workspace files,
+including @command{@ref{mtn revert}}, @command{@ref{mtn undrop}},
+@command{@ref{mtn update}}, @command{@ref{mtn merge_into_workspace}},
+@command{@ref{mtn pluck}}, @command{@ref{mtn clone}} and
+@command{@ref{mtn checkout}}.
 
-This facility can
-be used to extend monotone's understanding of files with
-platform-specific attributes, such as permission bits, access control
-lists, or special file types.
+When called to set an attribute, @var{value} is a string representing
+the value of the attribute.
+
+When called to clear an attribute, @var{value} is @code{nil}.
+
+This facility can be used to extend monotone's understanding of files
+with platform-specific attributes, such as permission bits, access
+control lists, or special file types.
 
 By default, there is only one entry in this table, for the @code{mtn:execute}
-attribute. Its definition is:
-
-@smallexample
-@group
-attr_functions["mtn:execute"] =
-  function(filename, value)
-      if (value == "true") then
-         set_executable(filename)
-      else
-         clear_executable(filename)
-      end
-   end
-@end group
-@end smallexample
+attribute. It calls platform-specific functions to mark files as
+executable or not. See @ref{Default hooks}.
 
 @anchor{attr_init_functions}@item attr_init_functions [@var{attribute}] (@var{filename})
 
 This is not a hook function, but a @emph{table} of hook
 functions. Each entry in the table @code{attr_init_functions}, at
 table entry @var{attribute}, is a function taking a file (or
-directory) name @var{filename}. Each function defines the attributes
-that should be set on the file named @var{filename}. This table of
-hook functions is called once for each file during an @dfn{add}.
+directory) name @var{filename}. Each function returns @code{true} if
+the attribute should be set on @var{filename}. This table of hook
+functions is called once for each file during an @dfn{add}.
 
 By default, there are only two entries in this table, for the
 @code{mtn:execute} and @code{mtn:manual_merge} attributes. Their
