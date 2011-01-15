@@ -1538,27 +1538,28 @@ function get_output_color(purpose)
 	-- valid return values are
 	-- "" for monotone to use the default output
 	-- black, white, red, green, blue, magenta, yellow, cyan, bold, reset
-	if purpose == "normal" then
+
+	local color_table = 
+	{
+		normal = "",
+		reset = "reset",
+		
+		diff_add = "green",
+		diff_change = "magenta",
+		diff_comment = "cyan",
+		diff_delete = "red",
+		diff_encloser = "bold",
+		diff_separator = "bold",
+		
+		log_revision = "bold",
+		rev_header = "bold"
+	}
+
+	local chosen_color = color_table[purpose]
+	
+	if chosen_color == nil then
 		return ""
-	elseif purpose == "reset" then
-		return "reset"
-	elseif purpose == "diff_add" then
-		return "green"
-	elseif purpose == "diff_change" then
-		return "magenta"
-	elseif purpose == "diff_comment" then
-		return "cyan"
-	elseif purpose == "diff_delete" then
-		return "red"
-	elseif purpose == "diff_encloser" then
-		return "bold"
-	elseif purpose == "diff_separator" then
-		return "bold"
-	elseif purpose == "log_revision" then
-		return "bold"
-	elseif purpose == "rev_header" then
-		return "bold"
 	else
-		return ""
+		return chosen_color
 	end
 end
