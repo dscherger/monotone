@@ -9798,7 +9798,7 @@ stdout, prints an error message to stderr, and exits with status 1.
 @end table
 
 
-@item mtn automate pull [--[no-]set-default] [--dry-run] [@var{uri}]
+@anchor{mtn automate pull}@item mtn automate pull [--[no-]set-default] [--dry-run] [@var{uri}]
 @itemx mtn automate push [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
 @itemx mtn automate sync [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
 @itemx mtn automate pull [--[no-]set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
@@ -10749,12 +10749,14 @@ o3:key11:foo@bar.come l4:cert40:0e3171212f34839c2e3263e7282cdeea22fc53783:foo3:b
 'l' <string> [ <string> [ ... ] ] 'e'
 @end verbatim
 
-The input is a series of commands. The command name plus arguments are
-provided as 'l' <string> [<string> ...] 'e', where <string> = <size> colon
-<data> . This may optionally be preceded by a set of key=value pairs
-(command options) as 'o' <string> <string> [<string> <string> ...] 'e', where
-strings come in pairs, key followed by value. For flag options that
-don't take values, specify the second string as zero length; @code{0:}.
+The input is a series of commands and options. The command name plus
+arguments are provided as 'l' <string> [<string> ...] 'e', where
+<string> = <size> colon <data> . This may optionally be preceded by a
+set of key=value pairs (command options) as 'o' <string> <string>
+[<string> <string> ...] 'e', where strings come in pairs, key followed
+by value. For flag options that don't take values, specify the second
+string as zero length; @code{0:}. The option names do @emph{not}
+include the leading @command{--}.
 
 The space between the ending 'e' of one group of strings and the beginning
 'l' or 'o' of the next is reserved. Any characters other than whitespace
@@ -10869,28 +10871,30 @@ any upcoming ticker event. The names and meanings are command-specific
 and are therefore explained in the sections for the particular
 commands which support ticker output.
 
- The @code{total_count} might be 0 right at the start and can later be changed
- to a different number if the command later on knows a more exact value. If
- this is the case, this stanza is output again with this new value. A
- constant @code{total_count} of 0 means that the command may continue to run
- for a undefined amount of time until the end stanza appears.
+ The @code{total_count} might be 0 right at the start and can later be
+changed to a different number if the command later on knows a more
+exact value. If this is the case, this stanza is output again with
+this new value. A constant @code{total_count} of 0 means that the
+command may continue to run for a undefined amount of time until the
+end stanza appears.
 
  The advance tells the implementor how much work has been done so far.
 
  Finally, the end stanza is printed just before the ticker ends
- (i.e. the work has been done).
+(i.e. the work has been done).
 
  All counts output absolute, raw values; no modulation takes place. It
 is usually the case that definition, @code{total_count}, advance and
 end are output in separate stanzas. It is also possible that two or
 more parallel tickers output their stanzas at the same time, in this
-case it's ensured that the output does not get intermixed; first
-all definitions are output, afterwards all total_counts, and so on.
+case it's ensured that the output does not get intermixed; first all
+definitions are output, afterwards all total_counts, and so on.
 
- @emph{Note:} The ticker format used for stdio is fixed and cannot be selected
- explicitely via the global @option{--ticker} option. However, if you run an
- automate command outside of stdio you can set a different ticker type, f.e.
- @var{count}, @var{dot} or @var{none}.
+ @emph{Note:} The ticker format used for stdio is fixed and cannot be
+selected explicitely via the global @option{--ticker} option. However,
+if you run an automate command outside of stdio you can set a
+different ticker type, f.e.  @var{count}, @var{dot} or @var{none}.
+
 @item
  @code{l}: this stream marks the termination of a command and all of
  its streams and carries the return code of the command in the payload.
@@ -10918,9 +10922,10 @@ sub-commands will exit the particular command with return code "1".
 
 @item Notes:
 
-Keyboard interaction is disabled, just as if @option{--non-interactive} is
-specified. Actions which require operations on password-encrypted private keys
-will therefor fail unless the @ref{get_passphrase} hook is set up locally.
+Keyboard interaction is disabled, just as if
+@option{--non-interactive} is specified. Actions which require
+operations on password-encrypted private keys will therefore fail
+unless the @command{@ref{get_passphrase}} hook is set up locally.
 
 @item Multiple streams
 
@@ -10932,14 +10937,14 @@ types for other useful purposes in the future as needs arise.
 @end table
 
 @item mtn automate sync
-See @command{mtn automate pull}
+See @command{@ref{mtn automate pull}}
 
 @item mtn automate tags [@var{branch_pattern}]
 
 @table @strong
 @item Arguments:
 
-A branch pattern (optional).
+A branch pattern (defaults to all).
 
 @item Changes:
 
@@ -11000,7 +11005,7 @@ the value of the tag cert, i.e. the name of the tag
 the hexadecimal id of the revision the tag is attached to
 
 @item 'signer'
-the name of the key used to sign the tag cert
+the hexadecimal value of the key used to sign the tag cert
 
 @item 'branches'
 a (possibly empty) list of all branches the tagged revision is on
@@ -11016,12 +11021,12 @@ specified.
 @end table
 
 
-@item mtn automate toposort [@var{rev1} [@var{rev2} [...]]]
+@item mtn automate toposort [@var{rev...}]
 
 @table @strong
 @item Arguments:
 
-One or more revision IDs, @var{rev1}, @var{rev2}, etc.
+One or more revision IDs.
 
 @item Added in:
 
@@ -11033,8 +11038,9 @@ Prints all arguments, topologically sorted.  I.e., if @var{rev1} is an
 ancestor of @var{rev2}, then @var{rev1} will appear before @var{rev2} in
 the output; if @var{rev2} is an ancestor of @var{rev1}, then @var{rev2}
 will appear before @var{rev1} in the output; and if neither is an
-ancestor of the other, then they may appear in either order.  If there
-are no arguments, prints nothing.
+ancestor of the other, then they may appear in either order.
+
+If there are no arguments, prints nothing.
 
 @item Sample output:
 
@@ -11046,7 +11052,6 @@ are no arguments, prints nothing.
 @item Output format:
 
 A list of revision IDs, in hexadecimal, each followed by a newline.
-Revisions are printed in topologically sorted order.
 
 @item Error conditions:
 
@@ -11060,8 +11065,7 @@ an error message to stderr, and exits with status 1.
 @table @strong
 @item Arguments:
 
-Same as @command{mtn update}; no arguments, options
-@option{--[no-]move-conflicting-paths}, @option{--revision=@var{revision}}
+Same as @command{@ref{mtn update}}.
 
 @item Added in:
 
@@ -11074,7 +11078,7 @@ Update the current workspace to the latest or given revision; see
 
 @item Sample output:
 
-Nothing on stdout. stderr gives progress messages of the form:
+Nothing on the main stream. The progress stream gives messages of the form:
 @verbatim
 mtn: updating along branch 'mms.work_stephe'
 mtn: selected update target 233afb8c4832bf33d5f5734225164de5f5a6278c
@@ -11083,8 +11087,6 @@ mtn: [right] 233afb8c4832bf33d5f5734225164de5f5a6278c
 mtn: renaming build/windows_common.make to build/utf_common.make
 mtn: adding build/x86_gnu_linux_release
 @end verbatim
-
-These messages are in the 'p' stream in automate stdio.
 
 @item Output format:
 
@@ -11119,9 +11121,9 @@ directory you point it at will become the root of monotone's version of
 the tree.
 
 @item mtn git_export [--authors-file=@var{authors-file}] [--branches-file=@var{branches-file}]
-@itemx mtn git_export [--import-marks=@var{marks-file}] [--export-marks=@var{marks-file}]
-@itemx mtn git_export [--log-revids] [--log-certs] [--use-one-changelog]
-@itemx mtn git_export [--refs=@var{type}]
+@itemx  [--import-marks=@var{marks-file}] [--export-marks=@var{marks-file}]
+@itemx  [--log-revids] [--log-certs] [--use-one-changelog]
+@itemx  [--refs=@var{type}]
 
 This command exports all revisions from the current monotone database
 to @code{stdout} in a format that can be piped directly to git
