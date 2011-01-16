@@ -13,6 +13,7 @@
 #include "lua_hooks.hh"
 #include "vocab.hh"
 #include <map>
+#include <boost/tuple/tuple.hpp>
 
 struct colorizer {
 
@@ -38,13 +39,19 @@ struct colorizer {
   colorize(std::string const & in, purpose p = normal) const;
 
 private:
-  std::map<purpose, std::string> colormap;
+  std::map<purpose, boost::tuple<std::string, std::string, std::string> >
+    colormap;
   lua_hooks & lua;
-  
-  std::pair<purpose, std::string>
+
+  std::pair<purpose, boost::tuple<std::string, std::string, std::string> >
   map_output_color(purpose const p);
 
-  std::string color_to_code(std::string const color) const;
+  std::string fg_to_code(std::string const color) const;
+  std::string bg_to_code(std::string const color) const;
+  std::string style_to_code(std::string const style) const;
+
+  std::string get_format(purpose const p) const;
+
   std::string purpose_to_name(purpose const p) const;
 };
 

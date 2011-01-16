@@ -1533,35 +1533,40 @@ function get_man_page_formatter_command()
 end
 
 function get_output_color(purpose)
-	-- returns a friendly color name which will be converted by monotone
-	-- into the relevant ASCII escape code.
-	-- valid return values are
-	-- "" for monotone to use the default output
-	-- black, white, red, green, blue, magenta, yellow, cyan, bold, reset
+	-- Returns a triple containing the fore color, background color and
+	-- style to use for formatting the output.
+	-- The fore color and background color can be any of the following
+	-- red, green, blue, yellow, cyan, magenta, black, white
+	-- Alternatively, they can be the empty string and Monotone will
+	-- decide.
+	-- Valid values for style are
+	-- none, bold, italic, underline
+	-- Alternatively, it can be the empty string and Monotone will
+	-- decide.
 
+	local default_color = { fg = "", bg = "", style = "" }
 	local color_table = 
 	{
-		normal = "",
-		reset = "reset",
+		normal = default_color,
 		
-                add = "green",
-                change = "blue",
-                comment = "yellow",
-                encloser = "magenta",
-                log_revision = "bold",
-                remove = "red",
-                rename = "yellow",
-                rev_header = "bold",
-                separator = "bold",
-                set = "cyan",
-                unset = "magenta"
+                add = { fg = "green", bg = "", style = "" },
+                change = { fg = "blue", bg = "", style = "" },
+                comment = { fg = "yellow", bg = "", style = "" },
+                encloser = { fg = "magenta", bg = "", style = "" },
+                log_revision = { fg = "", bg = "", style = "bold" },
+                remove = { fg = "red", bg = "", style = "" },
+                rename = { fg = "yellow", bg = "", style = "" },
+                rev_header = { fg = "", bg = "", style = "bold" },
+                separator = { fg = "", bg = "", style = "bold" },
+                set = { fg = "cyan", bg = "", style = "" },
+                unset = { fg = "magenta", bg = "", style = "" }
 	}
 
 	local chosen_color = color_table[purpose]
 	
 	if chosen_color == nil then
-		return ""
+		return default_color
 	else
-		return chosen_color
+		return chosen_color.fg, chosen_color.bg, chosen_color.style
 	end
 end

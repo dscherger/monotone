@@ -53,41 +53,84 @@ string colorizer::purpose_to_name(colorizer::purpose const p) const
   }
 }
 
-std::pair<colorizer::purpose, string> colorizer::map_output_color(
+std::pair<colorizer::purpose, boost::tuple<string, string, string> > colorizer::map_output_color(
   purpose const p)
 {
-  string color;
+  string fg, bg, style;
   string purpose_name = purpose_to_name(p);
 
-  lua.hook_get_output_color(purpose_name, color);
+  if (p == reset)
+    {
+      // the user doesn't need to know about reset - it's an implementation
+      // detail for us to handle
+      fg = bg = style = "";
+    }
+  else
+    {
+      lua.hook_get_output_color(purpose_name, fg, bg, style);
+    }
 
-  return std::make_pair(p, color_to_code(color));
+  return std::make_pair(p, boost::make_tuple(fg_to_code(fg),
+                                             bg_to_code(bg),
+                                             style_to_code(style)));
 }
 
-string colorizer::color_to_code(string const color) const
+string colorizer::fg_to_code(string const color) const
 {
-  if (color == "red")
+  if (color == "black")
+    return "\033[30m";
+  else if (color == "red")
     return "\033[31m";
   else if (color == "green")
     return "\033[32m";
+  else if (color == "yellow")
+    return "\033[33m";
   else if (color == "blue")
     return "\033[34m";
   else if (color == "magenta")
     return "\033[35m";
-  else if (color == "yellow")
-    return "\033[33m";
   else if (color == "cyan")
     return "\033[36m";
-  else if (color == "reset")
-    return "\033[m";
-  else if (color == "bold")
-    return "\033[1m";
-  else if (color == "black")
-    return "\033[30m";
   else if (color == "white")
     return "\033[37m";
   else
-    return "\033[37m"; // no color specified - so use default (white)
+    return "\033[39m"; // default
+}
+
+string colorizer::bg_to_code(string const color) const
+{
+  if (color == "black")
+    return "\033[40m";
+  else if (color == "red")
+    return "\033[41m";
+  else if (color == "green")
+    return "\033[42m";
+  else if (color == "yellow")
+    return "\033[43m";
+  else if (color == "blue")
+    return "\033[44m";
+  else if (color == "magenta")
+    return "\033[45m";
+  else if (color == "cyan")
+    return "\033[46m";
+  else if (color == "white")
+    return "\033[47m";
+  else
+    return "\033[49m"; // default
+}
+
+string colorizer::style_to_code(string const style) const
+{
+  if (style == "none")
+    return "\033[22m\033[23m\033[24m";
+  else if (style == "bold")
+    return "\033[1m";
+  else if (style == "italic")
+    return "\033[3m";
+  else if (style == "underline")
+    return "\033[4m";
+  else
+    return "\033[22m\033[23m\033[24m"; // all off
 }
 
 colorizer::colorizer(bool enable, lua_hooks & lh) 
@@ -120,7 +163,16 @@ colorizer::colorize(string const & in, purpose p) const
 {
   if (colormap.find(p) == colormap.end())
     return in;
-  return colormap.find(p)->second + in + colormap.find(reset)->second;
+
+   return get_format(p) + in + get_format(reset);
+}
+
+string
+colorizer::get_format(purpose const p) const
+{
+  boost::tuple<string, string, string> format = colormap.find(p)->second;
+
+  return format.get<0>() + format.get<1>() + format.get<2>();
 }
 
 // Local Variables:
