@@ -1691,7 +1691,7 @@ void perform_commit(app_state & app,
                     // sanity check
                     file_id tid;
                     calculate_ident(file_data(new_data), tid);
-                    E(tid == new_content, origin::system,
+                    E(tid == new_content, origin::user,
                       F("file '%s' modified during commit, aborting")
                       % path);
                     delta del;

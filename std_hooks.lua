@@ -1120,9 +1120,9 @@ function _get_netsync_read_permitted(branch, ident, permfilename, state)
       end elseif item.name == "continue" then if state["matches"] then
          state["cont"] = true
          for j, val in pairs(item.values) do
-            if val == "false" or val == "no" then 
-	       state["cont"] = false
-	    end
+            if val == "false" or val == "no" then
+              state["cont"] = false
+            end
          end
       end elseif item.name ~= "comment" then
          io.stderr:write("unknown symbol in read-permissions: " .. item.name .. "\n")
@@ -1143,10 +1143,10 @@ function get_netsync_read_permitted(branch, ident)
       local files = read_directory(permdirname)
       table.sort(files)
       for _,f in ipairs(files) do
-	 pf = permdirname.."/"..f
-	 if _get_netsync_read_permitted(branch, ident, pf, state) then
-	    return true
-	 end
+        pf = permdirname.."/"..f
+        if _get_netsync_read_permitted(branch, ident, pf, state) then
+          return true
+        end
       end
    end
    return false
@@ -1179,8 +1179,8 @@ function get_netsync_write_permitted(ident)
       local files = read_directory(permdirname)
       table.sort(files)
       for _,f in ipairs(files) do
-	 pf = permdirname.."/"..f
-	 if _get_netsync_write_permitted(ident, pf) then return true end
+        pf = permdirname.."/"..f
+        if _get_netsync_write_permitted(ident, pf) then return true end
       end
    end
    return false
@@ -1302,6 +1302,10 @@ function get_default_database_locations()
     local paths = {}
     table.insert(paths, get_confdir() .. "/databases")
     return paths
+end
+
+function get_default_database_glob()
+    return "*.{mtn,db}"
 end
 
 hook_wrapper_dump                = {}

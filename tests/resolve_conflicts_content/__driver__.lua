@@ -81,7 +81,7 @@ canonicalize("stderr")
 check(samefilestd("update-1", "stderr"))
 
 check(readfile("files/foo") == "foo\nmerged\nrevision")
-check(readfile("files/bar") == "bar\nzero\none\ntwo\nthree\nfour\n")
+check(readfile("files/bar") == "bar\nzero\none\ntwo\nthree\nfour")
 check(readfile("files/baz") == "baz\nAaa\nBbb\nCcc")
 check(readfile("files/inter1") == "files/inter1")
 check(readfile("files/inter2") == "files/inter2")
