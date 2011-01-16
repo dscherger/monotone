@@ -81,14 +81,18 @@ struct key_identity_info;
 
 typedef std::map<system_path, boost::shared_ptr<database_impl> > database_cache;
 
+// database options
+typedef enum { none, maybe_unspecified } dboptions;
+
 class database
 {
   //
   // --== Opening the database and schema checking ==--
   //
 public:
-  explicit database(app_state & app);
-  database(options const & o, lua_hooks & l);
+public:
+  explicit database(app_state & app, dboptions dbopts = none);
+  database(options const & o, lua_hooks & l, dboptions dbopts = none);
   ~database();
 
   system_path get_filename();
@@ -499,6 +503,7 @@ private:
   boost::shared_ptr<database_impl> imp;
   options opts;
   lua_hooks & lua;
+  dboptions dbopts;
 };
 
 // not a member function, defined in database_check.cc
@@ -607,7 +612,8 @@ class database_path_helper
 public:
   database_path_helper(lua_hooks & l) : lua(l) {}
 
-  void get_database_path(options const & opts, system_path & path);
+  void get_database_path(options const & opts, system_path & path,
+                         dboptions dbopts = none);
 
   void maybe_set_default_alias(options & opts);
 
