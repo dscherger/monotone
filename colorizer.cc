@@ -50,6 +50,24 @@ string colorizer::purpose_to_name(colorizer::purpose const p) const
     case rev_header:
       return "rev_header";
 
+    case status_added:
+      return "status_added";
+
+    case status_dropped:
+      return "status_dropped";
+
+    case status_patched:
+      return "status_patched";
+
+    case status_renamed:
+      return "status_renamed";
+
+    case status_set:
+      return "status_set";
+
+    case status_unset:
+      return "status_unset";
+
     default:
       I(false); // should never get here
   }
@@ -110,6 +128,12 @@ colorizer::colorizer(bool enable, lua_hooks & lh)
       colormap.insert(map_output_color(diff_separator));
       colormap.insert(map_output_color(log_revision));
       colormap.insert(map_output_color(rev_header));
+      colormap.insert(map_output_color(status_added));
+      colormap.insert(map_output_color(status_dropped));
+      colormap.insert(map_output_color(status_patched));
+      colormap.insert(map_output_color(status_renamed));
+      colormap.insert(map_output_color(status_set));
+      colormap.insert(map_output_color(status_unset));
     }
 }
 

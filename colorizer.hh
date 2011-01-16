@@ -25,7 +25,13 @@ struct colorizer {
                  diff_comment,
                  diff_separator,
                  log_revision,
-                 rev_header
+                 rev_header,
+                 status_added,
+                 status_dropped,
+                 status_patched,
+                 status_renamed,
+                 status_set,
+                 status_unset
                  } purpose;
 
   colorizer(bool enable, lua_hooks & lh);

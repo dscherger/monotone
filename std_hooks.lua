@@ -1552,7 +1552,14 @@ function get_output_color(purpose)
 		diff_separator = "bold",
 		
 		log_revision = "bold",
-		rev_header = "bold"
+		rev_header = "bold",
+
+		status_added = "green",
+		status_dropped = "red",
+		status_patched = "blue",
+		status_renamed = "yellow",
+		status_set = "cyan",
+		status_unset = "magenta"
 	}
 
 	local chosen_color = color_table[purpose]
