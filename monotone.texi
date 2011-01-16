@@ -3795,10 +3795,10 @@ The database alias is a regular file name (excluding the leading colon).
 Monotone searches for this file name in common locations and internally
 expands it to a full path once it found an unambigious match.
 
-Some commands, most noticable @command{@ref{mtn clone}} and
-@command{@ref{mtn setup}}, work out of the box without that any
-@option{--db} option is needed; they fall back on a managed ``default''
-database and even initialize that in case it is not existant.
+Some commands, such as @command{@ref{mtn clone}} and @command{@ref{mtn
+setup}}, work without a @option{--db} option; they fall back on a
+managed ``default'' database and even initialize that in case it is
+not existant.
 
 To keep an overview of managed databases and their workspaces, the commands
 @command{@ref{mtn list databases}} and @command{@ref{mtn list workspaces}}
@@ -4918,6 +4918,9 @@ options, see the online help (@command{mtn help cmd}), or the manpage.
 Many options can be specified by a single character; see the online
 help for those.
 
+The Lua hook @code{@ref{get_default_command_options}} can change the
+default value for any option.
+
 Revision arguments to commands may be selectors or hex ids.
 
 @menu
@@ -4947,7 +4950,7 @@ Revision arguments to commands may be selectors or hex ids.
 * Common Options::
 @end menu
 
-@node Global Options
+@node Global Options, Common Options, Global and Common Options, Global and Common Options
 @subsection Global Options
 These options are available on all commands.
 
@@ -4981,10 +4984,10 @@ directory when it fails (if it can't write to @file{_MTN} in a
 workspace).
 
 @item --date-format <arg>
-strftime(3) format specification for printing dates. The default
-format is @code{%x} for dates, @code{%X} for times, @code{%x %X} for
-both. This can also be overridden by the @ref{get_date_format_spec}
-hook.
+@code{strftime(3)} format specification for printing dates. The
+default format is given by the @code{@ref{get_date_format_spec}} hook;
+the default hook returns @code{%x} for dates, @code{%X} for times,
+@code{%x %X} for both.
 
 @item --db <arg>
 Set the database to use; defaults to the database specified in the
@@ -5015,11 +5018,39 @@ suspend} command.
 
 @anchor{--key}@item --key <arg>
 @itemx --use-default-key
-Set the key for signatures, using either the key name or the key hash
-(see @ref{Generating Keys}).  If there is only one key in the keydir,
-then that is the default key. Otherwise there is no default key. If no
-key is specified (by this option or by default), and the command needs
-a key, then the user is prompted for the key to use.
+Set the key for signatures or network authentication, using either the
+key name or the key hash (see @ref{Generating Keys}).
+
+monotone determines the key to use as follows:
+
+@enumerate
+@item
+If @option{--key} is given, that is the key.
+
+@item
+If @var{key} is given in @file{_MTN/options}, that is the key.
+
+Each time @option{--key} is given, it will be stored in
+@file{_MTN/options} for future use.
+
+@item
+For a non-netsync command, the Lua hook @code{@ref{get_branch_key}} is
+called.
+
+For a netsync command, the Lua hook @code{@ref{get_netsync_key}} is
+called.
+
+If the hook returns non-nil, the return value is the name of the
+key.
+
+@item
+If there is only one key in the keydir, that is the key.
+
+@item
+Otherwise there is no key; an error occurs.
+
+@end enumerate
+
 
 @item --keydir <arg>
 Set the key directory (where the ``key store'' is located); default is
@@ -5042,7 +5073,9 @@ Don't use a default confdir; @option{--confdir} must be specified if
 a configuration file is needed.
 
 @item --no-format-dates
-Print date certs exactly as stored in the database.
+Don't use the format provided by a previous @option{--date-format},
+nor the format returned by @code{@ref{get_date_format_spec}}; instead,
+print dates in the format ``yyyy-mm-ddThh:mm:ss''.
 
 @item --[no-]standard-rcfiles
 Do not load the standard rcfiles, which are
@@ -5096,13 +5129,15 @@ Print version number, then exit; same as @command{mtn version}.
 Insert command line arguments taken from the given file.
 @end ftable
 
-@node Common Options
+@node Common Options,  , Global Options, Global and Common Options
 @subsection Common Options
 These options are available on many commands.
 @ftable @command
 @anchor{--author}@item --author
 Override the author cert for a commit; normally, the author is the
-name of the key used for the commit. See @ref{--key}.
+local name of the key used for the commit. See
+@code{@ref{get_author}}, @option{@ref{--key}},
+@code{@ref{get_local_key_name}}.
 
 @anchor{--branch}@item --branch
 Specify the branch for a command. This normally defaults to the
@@ -5183,7 +5218,7 @@ If no @var{id} is provided, as in the latter two commands, you
 @item mtn conflicts
 See @ref{Conflicts}
 
-@item mtn explicit_merge [--[no-]update] @var{id} @var{id} @var{destbranch}
+@anchor{mtn explicit_merge}@item mtn explicit_merge [--[no-]update] @var{id} @var{id} @var{destbranch}
 See the online help for options. See @ref{--update}.
 
 This command merges exactly the two @var{id}s you give it, and places
@@ -5207,7 +5242,7 @@ colleagues, at least in terms of ancestry. The heads of a branch may
 not be the newest revisions, in terms of time, but synchronization of
 computer clocks is not reliable, so monotone usually ignores time.
 
-@item mtn import --branch=@var{branch} [--message=@var{message}] [--[no-]dry-run] @var{dir}
+@anchor{mtn import}@item mtn import --branch=@var{branch} [--message=@var{message}] [--[no-]dry-run] @var{dir}
 @itemx mtn import --revision=@var{revision} [--message=@var{message}] [--[no-]dry-run] @var{dir}
 See the online help for more options.
 
@@ -5218,6 +5253,10 @@ consequently into the branch that revision resides in).
 If the given branch doesn't exist, it is created automatically.  If the
 branch already exists, any missing files are dropped and any unknown
 files are added before committing.
+
+If neither @option{--message} nor @option{--message-file} is given,
+the Lua hook @code{@ref{edit_comment}} is called to provide a commit
+comment, with text formatted as in @command{@ref{mtn commit}}.
 
 If @option{--dry-run} is given, no commit is done.
 
@@ -5279,7 +5318,7 @@ intended.
 
 @ref{Merge Conflicts} can occur. See @ref{--update}.
 
-@item mtn merge_into_workspace [--[no]-move-conflicting-paths] @var{revision}
+@anchor{mtn merge_into_workspace}@item mtn merge_into_workspace [--[no]-move-conflicting-paths] @var{revision}
 Merges @var{revision} into the current workspace; the result is not
 committed to the database. There can be no pending changes in the
 current workspace. The workspace's selected branch is not
@@ -5401,7 +5440,7 @@ Show remaining unresolved conflicts in the conflicts file.
 Specify a resolution for the first conflict in the conflicts file; it
 must be a single file conflict. The conflicts file is updated.
 
-@item mtn conflicts resolve_first_left [--conflicts-file=@var{file}] @var{resolution}
+@anchor{mtn conflicts resolve_first}@item mtn conflicts resolve_first_left [--conflicts-file=@var{file}] @var{resolution}
 @itemx mtn conflicts resolve_first_right [--conflicts-file=@var{file}] @var{resolution}
 Specify a resolution for one of the files in the first conflict in the
 conflicts file; it must be a two file conflict. The conflicts file is
@@ -5534,7 +5573,7 @@ command applies to all attributes attached to the file given in
 
    @end table
 
-@item mtn commit
+@anchor{mtn commit}@item mtn commit
 @itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...] [@var{pathname...}]
 @itemx mtn commit --message-file=@var{logfile} [@var{pathname...}]
 @itemx mtn ci
@@ -5586,8 +5625,9 @@ to the workspace.
 
 The default definition of @code{edit_comment} invokes the user's
 editor (specified by the environment variables @code{VISUAL} and
-@code{EDITOR}, or @code{editor, vi}, or @code{notepad} on Windows),
-with text formatted as follows:
+@code{EDITOR}, or @code{editor, vi}, or @code{notepad} on Windows).
+
+@command{commit} formats the input to @code{edit_comment} as follows:
 
 @smallexample
 @group
@@ -5631,6 +5671,13 @@ The @dfn{Branch}, @dfn{Author}, and @dfn{Date} fields are parsed, and
 the new values used for the commit. If the parsing fails, the commit
 is aborted, and the entire file is saved in @file{_MTN/commit},
 so the user may recover.
+
+The date is formatted with the spec provided by @option{--date-format}
+or Lua hook @code{@ref{get_date_format_spec}}. When the date field is
+parsed, the same spec is used. Therefore this spec must be supported
+by the operating system function for parsing dates; if not, the
+monotone internal format of ``yyyy-mm-ddThh:mm:ss'' is used for both
+formatting and parsing.
 
 @item
 The rest of the text is ignored.
@@ -5747,7 +5794,7 @@ records, but not in the filesystem itself.
 When running @command{pivot_root}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
-@item mtn pluck [--[no-]move-conflicting-paths] --revision=@var{to}
+@anchor{mtn pluck}@item mtn pluck [--[no-]move-conflicting-paths] --revision=@var{to}
 @itemx mtn pluck [--[no-]move-conflicting-paths] --revision=@var{from} --revision=@var{to}
 See the online help for more options.
 
@@ -5802,7 +5849,7 @@ it is not already versioned.
 This command also moves any attributes on @var{src} to @var{dst}; see
 @ref{File Attributes} for more details.
 
-@item mtn revert @var{pathname...}
+@anchor{mtn revert}@item mtn revert @var{pathname...}
 @itemx mtn revert --missing @var{pathname...}
 See the online help for more options.
 
@@ -5816,7 +5863,7 @@ top-level directory. Specifying "." in a subdirectory will restrict
 If @option{--missing} is given it reverts any versioned files in
 @var{pathname...} that have been deleted from the workspace.
 
-@item mtn undrop @var{pathname...}
+@anchor{mtn undrop}@item mtn undrop @var{pathname...}
 Undoes a previous @command{drop}; useful when you make a mistake. If
 the file was deleted from the workspace, this reverts it. If it was
 not deleted (because it was changed or @option{--bookkeep-only} was
@@ -5922,6 +5969,7 @@ used for @code{ssh}-related transports), a host with an optional port
 scheme), a path and a query part, which denotes one or more branches
 and optionally also exclude patterns for the exchange:
 
+@anchor{netsync uri}
 @smallexample
 @group
 <scheme>://[[<user>@@]<host>[:<port>]][/<path>][?<pattern>[;-<exclude-pattern>[...]]]
@@ -6157,7 +6205,7 @@ about, in its database, which begin with the 4 hex digits
 @code{fa36}. This command is intended to be used by programmable
 completion systems, such as those in @command{bash} and @command{zsh}.
 
-@item mtn diff [--unified] [--[no-]show-encloser] [--[no-]colorize]
+@anchor{mtn diff}@item mtn diff [--unified] [--[no-]show-encloser] [--[no-]colorize]
 @itemx mtn diff --context [--[no-]show-encloser]
 @itemx mtn diff --external [--diff-args=@var{argstring}]
 @itemx mtn diff @var{pathname...}
@@ -6531,19 +6579,22 @@ supports that.
 If one or more files are given, the command will only log the revisions
 where those files are changed.
 
-@item mtn manpage [--formatted/--plain] [--[no-]hidden]
+@anchor{mtn manpage}@item mtn manpage [--formatted/--plain] [--[no-]hidden]
 The manpage command generates a complete (and if monotone is available
 in your language, also localized) manual page for all available commands,
 including all user-defined Lua commands.
 
-If the command's output is directly written to a terminal, its output is
-automatically formatted using @command{nroff} and displayed in the
-@command{less} pager.  If the auto-detection does not work for you for
-some reason, you can enforce the formatting by giving the @option{--formatted}
-option to the command and the @option{--plain} option to achieve the
-opposite, i.e. plain, unformatted troff output.  If you wish to use a
-different formatter or pager, please have a look at the
-@ref{get_man_page_formatter_command} Lua hook.
+The default for @option{--formatted/--plain} depends on whether
+@command{mtn manpage} is run from a terminal, or from a shell
+script. From a terminal, the default is @option{--formatted}; from a
+script, it is @option{--plain}.
+
+If @option{--formatted}, the output is formatted and displayed using
+the command given by the Lua hook
+@code{@ref{get_man_page_formatter_command}} (defaults to
+@command{nroff | less}).
+
+If @option{--plain}, the output is nroff markup.
 
 The option @option{--hidden} additionally enables the output of hidden
 commands and options, which is deactivated by default.
@@ -6607,10 +6658,11 @@ This command is a synonym for @command{mtn cert @var{rev} branch
 
 See @ref{--update}.
 
-@item mtn comment @var{rev} [@var{comment}]
+@anchor{mtn comment}@item mtn comment @var{rev} [@var{comment}]
 
 This adds a new comment to a committed revision.  If @var{comment} is
-not provided, it is read from @code{stdin}.
+not provided, it is obtained from the Lua hook
+@code{@ref{edit_comment}}; the hook is passed an empty string.
 
 This command is a synonym for @command{mtn cert @var{rev} comment
 @var{comment}}.
@@ -7254,7 +7306,7 @@ an error message to stderr, and exits with status 1.
 @end table
 
 
-@item mtn automate branches
+@anchor{mtn automate branches}@item mtn automate branches
 
 @table @strong
 @item Arguments:
@@ -7515,7 +7567,7 @@ an error message to stderr, and exits with status 1.
 @end table
 
 
-@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [--reverse] [@var{file...}]
+@anchor{mtn automate content_diff}@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [--reverse] [@var{file...}]
 
 @table @strong
 @item Arguments:
@@ -9472,7 +9524,7 @@ None.
 @end table
 
 
-@item mtn automate log [@var{options}] [@var{pathname...}]
+@anchor{mtn automate log}@item mtn automate log [@var{options}] [@var{pathname...}]
 
 @table @strong
 @item Arguments:
@@ -9805,7 +9857,7 @@ stdout, prints an error message to stderr, and exits with status 1.
 @end table
 
 
-@item mtn automate pull [--[no-]set-default] [--dry-run] [@var{uri}]
+@anchor{mtn automate pull}@item mtn automate pull [--[no-]set-default] [--dry-run] [@var{uri}]
 @itemx mtn automate push [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
 @itemx mtn automate sync [--[no-]set-default] [--dry-run] [--keys-to-push=@var{key}] [@var{uri}]
 @itemx mtn automate pull [--[no-]set-default] [@var{address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]] @strong{deprecated}
@@ -10756,12 +10808,14 @@ o3:key11:foo@bar.come l4:cert40:0e3171212f34839c2e3263e7282cdeea22fc53783:foo3:b
 'l' <string> [ <string> [ ... ] ] 'e'
 @end verbatim
 
-The input is a series of commands. The command name plus arguments are
-provided as 'l' <string> [<string> ...] 'e', where <string> = <size> colon
-<data> . This may optionally be preceded by a set of key=value pairs
-(command options) as 'o' <string> <string> [<string> <string> ...] 'e', where
-strings come in pairs, key followed by value. For flag options that
-don't take values, specify the second string as zero length; @code{0:}.
+The input is a series of commands and options. The command name plus
+arguments are provided as 'l' <string> [<string> ...] 'e', where
+<string> = <size> colon <data> . This may optionally be preceded by a
+set of key=value pairs (command options) as 'o' <string> <string>
+[<string> <string> ...] 'e', where strings come in pairs, key followed
+by value. For flag options that don't take values, specify the second
+string as zero length; @code{0:}. The option names do @emph{not}
+include the leading @command{--}.
 
 The space between the ending 'e' of one group of strings and the beginning
 'l' or 'o' of the next is reserved. Any characters other than whitespace
@@ -10876,28 +10930,30 @@ any upcoming ticker event. The names and meanings are command-specific
 and are therefore explained in the sections for the particular
 commands which support ticker output.
 
- The @code{total_count} might be 0 right at the start and can later be changed
- to a different number if the command later on knows a more exact value. If
- this is the case, this stanza is output again with this new value. A
- constant @code{total_count} of 0 means that the command may continue to run
- for a undefined amount of time until the end stanza appears.
+ The @code{total_count} might be 0 right at the start and can later be
+changed to a different number if the command later on knows a more
+exact value. If this is the case, this stanza is output again with
+this new value. A constant @code{total_count} of 0 means that the
+command may continue to run for a undefined amount of time until the
+end stanza appears.
 
  The advance tells the implementor how much work has been done so far.
 
  Finally, the end stanza is printed just before the ticker ends
- (i.e. the work has been done).
+(i.e. the work has been done).
 
  All counts output absolute, raw values; no modulation takes place. It
 is usually the case that definition, @code{total_count}, advance and
 end are output in separate stanzas. It is also possible that two or
 more parallel tickers output their stanzas at the same time, in this
-case it's ensured that the output does not get intermixed; first
-all definitions are output, afterwards all total_counts, and so on.
+case it's ensured that the output does not get intermixed; first all
+definitions are output, afterwards all total_counts, and so on.
 
- @emph{Note:} The ticker format used for stdio is fixed and cannot be selected
- explicitely via the global @option{--ticker} option. However, if you run an
- automate command outside of stdio you can set a different ticker type, f.e.
- @var{count}, @var{dot} or @var{none}.
+ @emph{Note:} The ticker format used for stdio is fixed and cannot be
+selected explicitely via the global @option{--ticker} option. However,
+if you run an automate command outside of stdio you can set a
+different ticker type, f.e.  @var{count}, @var{dot} or @var{none}.
+
 @item
  @code{l}: this stream marks the termination of a command and all of
  its streams and carries the return code of the command in the payload.
@@ -10925,9 +10981,10 @@ sub-commands will exit the particular command with return code "1".
 
 @item Notes:
 
-Keyboard interaction is disabled, just as if @option{--non-interactive} is
-specified. Actions which require operations on password-encrypted private keys
-will therefor fail unless the @ref{get_passphrase} hook is set up locally.
+Keyboard interaction is disabled, just as if
+@option{--non-interactive} is specified. Actions which require
+operations on password-encrypted private keys will therefore fail
+unless the @command{@ref{get_passphrase}} hook is set up locally.
 
 @item Multiple streams
 
@@ -10939,14 +10996,14 @@ types for other useful purposes in the future as needs arise.
 @end table
 
 @item mtn automate sync
-See @command{mtn automate pull}
+See @command{@ref{mtn automate pull}}
 
-@item mtn automate tags [@var{branch_pattern}]
+@anchor{mtn automate tags}@item mtn automate tags [@var{branch_pattern}]
 
 @table @strong
 @item Arguments:
 
-A branch pattern (optional).
+A branch pattern (defaults to all).
 
 @item Changes:
 
@@ -11007,7 +11064,7 @@ the value of the tag cert, i.e. the name of the tag
 the hexadecimal id of the revision the tag is attached to
 
 @item 'signer'
-the name of the key used to sign the tag cert
+the hexadecimal value of the key used to sign the tag cert
 
 @item 'branches'
 a (possibly empty) list of all branches the tagged revision is on
@@ -11023,12 +11080,12 @@ specified.
 @end table
 
 
-@item mtn automate toposort [@var{rev1} [@var{rev2} [...]]]
+@item mtn automate toposort [@var{rev...}]
 
 @table @strong
 @item Arguments:
 
-One or more revision IDs, @var{rev1}, @var{rev2}, etc.
+One or more revision IDs.
 
 @item Added in:
 
@@ -11040,8 +11097,9 @@ Prints all arguments, topologically sorted.  I.e., if @var{rev1} is an
 ancestor of @var{rev2}, then @var{rev1} will appear before @var{rev2} in
 the output; if @var{rev2} is an ancestor of @var{rev1}, then @var{rev2}
 will appear before @var{rev1} in the output; and if neither is an
-ancestor of the other, then they may appear in either order.  If there
-are no arguments, prints nothing.
+ancestor of the other, then they may appear in either order.
+
+If there are no arguments, prints nothing.
 
 @item Sample output:
 
@@ -11053,7 +11111,6 @@ are no arguments, prints nothing.
 @item Output format:
 
 A list of revision IDs, in hexadecimal, each followed by a newline.
-Revisions are printed in topologically sorted order.
 
 @item Error conditions:
 
@@ -11067,8 +11124,7 @@ an error message to stderr, and exits with status 1.
 @table @strong
 @item Arguments:
 
-Same as @command{mtn update}; no arguments, options
-@option{--[no-]move-conflicting-paths}, @option{--revision=@var{revision}}
+Same as @command{@ref{mtn update}}.
 
 @item Added in:
 
@@ -11081,7 +11137,7 @@ Update the current workspace to the latest or given revision; see
 
 @item Sample output:
 
-Nothing on stdout. stderr gives progress messages of the form:
+Nothing on the main stream. The progress stream gives messages of the form:
 @verbatim
 mtn: updating along branch 'mms.work_stephe'
 mtn: selected update target 233afb8c4832bf33d5f5734225164de5f5a6278c
@@ -11090,8 +11146,6 @@ mtn: [right] 233afb8c4832bf33d5f5734225164de5f5a6278c
 mtn: renaming build/windows_common.make to build/utf_common.make
 mtn: adding build/x86_gnu_linux_release
 @end verbatim
-
-These messages are in the 'p' stream in automate stdio.
 
 @item Output format:
 
@@ -11126,9 +11180,9 @@ directory you point it at will become the root of monotone's version of
 the tree.
 
 @item mtn git_export [--authors-file=@var{authors-file}] [--branches-file=@var{branches-file}]
-@itemx mtn git_export [--import-marks=@var{marks-file}] [--export-marks=@var{marks-file}]
-@itemx mtn git_export [--log-revids] [--log-certs] [--use-one-changelog]
-@itemx mtn git_export [--refs=@var{type}]
+@itemx  [--import-marks=@var{marks-file}] [--export-marks=@var{marks-file}]
+@itemx  [--log-revids] [--log-certs] [--use-one-changelog]
+@itemx  [--refs=@var{type}]
 
 This command exports all revisions from the current monotone database
 to @code{stdout} in a format that can be piped directly to git
@@ -11340,7 +11394,7 @@ language to customize and extend its behaviour.  By writing
 help monotone to make a particular decision, set a suitable default or
 preference or perform a certain action.
 
-@anchor{rcfiles}You can put Lua functions in ``rcfiles'' which will be
+@anchor{rcfiles}Lua functions are defined in ``rcfiles'' which will be
 read every time monotone runs. @file{rcfiles} consist of:
 
 @itemize
@@ -11364,14 +11418,15 @@ The files are loaded in the order @file{.monotone/monotonerc},
 Definitions loaded later shadow (override) earlier definitions.
 
 There are two uses for Lua functions; hooks and user-defined
-commands. This section documents hooks; see @ref{register_command} for
-user-defined commands. The source distribution contains some example
-user commands in the @file{contrib/command} directory.
+commands. This section documents hooks; see
+@command{@ref{register_command}} for user-defined commands. The source
+distribution contains some example user commands in the
+@file{contrib/command} directory.
 
 Hooks are Lua functions that are called from monotone code in many
 places. Monotone provides default definitions for some hooks; see
 @ref{Default hooks} for their complete source. For other hooks, if no
-definition is provided a default return value is used. When writing new
+definition is provided, a default return value is used. When writing new
 hooks, it may be helpful to reuse some code from the default
 ones. Since Lua is a lexically scoped language with closures, this can
 be achieved with the following code:
@@ -11390,7 +11445,7 @@ end
 @end smallexample
 
 Now the default hook is trapped in a variable local to this block, and can
-only be seen by the new hook. Since in Lua variables default to the global
+only be seen by the new hook. Since in Lua functions default to the global
 scope, the new hook is seen from inside monotone.
 
 Monotone also provides a number of helper functions to hook writers
@@ -11409,20 +11464,32 @@ exposing functionality not available with standard Lua.
 This section documents the existing hook functions and their default
 definitions.
 
+@menu
+* Common Data Types::
+* Event Notifications and Triggers::
+* User Defaults::
+* Netsync Permission Hooks::
+* Netsync Transport Hooks::
+* Trust Evaluation Hooks::
+* External Diff Tools::
+* External Merge Tools::
+* Selector Expansion::
+* Attribute Handling::
+* GIT Export Hooks::
+* Validation Hooks::
+* Meta Hooks::
+@end menu
+
+@node Common Data Types, Event Notifications and Triggers, Hooks, Hooks
 @subsection Common Data Types
 
-Some hooks take arguments which are more complex than a simple string or number.
-Where multiple hooks take the same kind of argument, we generally try to make
-them take that kind of argument in the same format.
+Some hooks take arguments which are more complex than a simple string
+or number (they are a Lua ``table'').  Where multiple hooks take the
+same kind of argument, we generally try to make them take that kind of
+argument in the same format, described here.
 
 @ftable @code
-@item key_identity
-
-When a key is created, it is given a meaningful name. Because this is chosen by
-the key creator and may be unreliable, trust hooks need to be able to look at
-the key hash as well. This may be inconvenient, so a local alias is also provided.
-This alias is obtained from an other hook, which can provide reliable easy-to-use
-names based on the key hash (or however else you want).
+@anchor{key_identity}@item key_identity
 
 @smallexample
 @group
@@ -11434,8 +11501,15 @@ names based on the key hash (or however else you want).
 @end group
 @end smallexample
 
+When a key is created, it is given a meaningful name. Because this is chosen by
+the key creator and may be unreliable, trust hooks need to be able to look at
+the key hash as well. This may be inconvenient, so a local alias is also provided.
+This alias is obtained from a Lua hook, which can provide reliable easy-to-use
+names based on the key hash (or however else you want).
+
 @end ftable
 
+@node Event Notifications and Triggers, User Defaults, Common Data Types, Hooks
 @subsection Event Notifications and Triggers
 
 There are a number of hooks that are called when noteworthy events
@@ -11446,15 +11520,19 @@ such as generating email.
 By default, these hooks are undefined, so no special external actions
 are taken.
 
+Hooks are presented not in alphabetic order; they are grouped by
+function, and then by the order they are typically called by monotone.
+
 @ftable @code
 @item note_commit (@var{new_id}, @var{revision}, @var{certs})
 
-Called by monotone after the version @var{new_id} is committed. The
-second parameter, @var{revision} is the text of the revision, what would
-be given by @command{mtn automate get_revision @var{new_id}}. The third
-parameter, @var{certs}, is a Lua table containing the set of certificate
-names and values committed along with this version. There is no default
-definition for this hook.
+Called by monotone after the revsion @var{new_id} is
+committed. @var{revision} is the text of the revision, what would be
+given by @command{mtn automate get_revision @var{new_id}}. @var{certs}
+is a Lua table containing the set of certificate names and values
+committed along with this version.
+
+There is no default definition for this hook.
 
 Note that since the @var{certs} table does not contain cryptographic
 or trust information, and only contains one entry per cert name, it is
@@ -11465,139 +11543,163 @@ should not perform any security-critical operations.
 
 @item note_netsync_start (@var{session_id}, @var{my_role}, @var{sync_type}, @var{remote_host}, @var{remote_key}, @var{includes}, @var{excludes})
 
-Called by monotone before any other of the netsync notification hooks
-are called.  The @var{session_id} helps keep track of the current netsync
-session in case several are happening at the same time, and is used
-throughout all netsync notification hooks.
+Called by monotone just after a netsync session is started, before any
+of the other netsync notification hooks are called.
 
-The other arguments are:
+The arguments are:
 
-@table @strong
+@table @var
 
-@item @var{my_role}
+@item session_id
+Identifies the current netsync session in case several are happening
+at the same time (only possible on a server).
 
-This will be either "client" or "server".
+@item my_role
 
-@item @var{sync_type}
+One of "client" or "server".
 
-This will be one of "sync", "push", or "pull".
+@item sync_type
 
-@item @var{remote_host}
+One of "sync", "push", or "pull".
+
+@item remote_host
 
 The network address of the remote host. At the client, this will be the name
 it was told to connect to; at the server, this will use the numerical IP address
 the connection was received from.
 
-@item @var{remote_key}
+@item remote_key
 
 The identity of the key being used by the other end of the connection. The fields may
 be empty at the server if the key used by the client is not present at the server.
 
-@item @var{includes} and @var{excludes}
+@item includes
+@itemx excludes
 
 The include and exclude patterns used by the client.
 
 @end table
 
 @item note_netsync_revision_received (@var{new_id}, @var{revision}, @var{certs}, @var{session_id})
+@itemx note_netsync_revision_sent (@var{rev_id}, @var{revision}, @var{certs}, @var{session_id})
 
-Called by monotone after the revision @var{new_id} is received through
-netsync. @var{revision} is the text of the revision, what would be given
-by @command{mtn automate get_revision @var{new_id}}. @var{certs} is a
-Lua table containing one subtable for each cert attached to the revision
+Called after the revision @var{new_id} is received or sent through
+netsync.
+
+There are no default definitions for these hooks.
+
+Arguments:
+
+@table @var
+@item new_id
+The revision id.
+
+@item revision
+The text of the revision; what would be given
+by @command{mtn automate get_revision @var{new_id}}.
+
+@item certs
+A Lua table containing one subtable for each cert attached to the revision
 @var{new_id}. These subtables have fields named "key", "name", and
 "value", containing the identity of the signing key for the cert, the name of the cert,
-and the value of the cert. There is no default definition for this hook.
-@var{session_id} is used together with @code{note_netsync_start} and
-@code{note_netsync_end}.  If you're not interested in that type of
-tracking, you can ignore that variable entirely.
+and the value of the cert.
 
-@item note_netsync_revision_sent (@var{rev_id}, @var{revision}, @var{certs}, @var{session_id})
+@item session_id
+Identifies the current netsync session.
 
-Called by monotone after the revision @var{rev_id} is sent through
-netsync. The arguments are the same as for
-@var{note_netsync_revision_received}.
+@end table
 
 @item note_netsync_cert_received (@var{rev_id}, @var{key_identity}, @var{name}, @var{value}, @var{session_id})
+@itemx note_netsync_cert_sent (@var{rev_id}, @var{key_identity}, @var{name}, @var{value}, @var{session_id})
 
-Called by monotone after a cert is received through netsync, if the revision
-that the cert is attached to was not also received in the same netsync
-operation. @var{rev_id} is the revision id that the cert is attached to,
-@var{key_identity} is the key that the cert is signed with, @var{name} is the name
-of the cert, and @var{value} is the cert value. There is no default
-definition for this hook.
-@var{session_id} is used together with @code{note_netsync_start} and
-@code{note_netsync_end}.  If you're not interested in that type of
-tracking, you can ignore that variable entirely.
+Called by monotone after a cert is received (or sent) through netsync,
+if the revision that the cert is attached to was not also received (or
+sent) in the same netsync operation.
 
-@item note_netsync_cert_sent (@var{rev_id}, @var{key_identity}, @var{name}, @var{value}, @var{session_id})
+There is no default definition for this hook.
 
-Called by monotone after a cert is sent through netsync, if the revision
-that the cert is attached to was not also sent in the same netsync
-operation. The arguments are the same as for
-@var{note_netsync_cert_received}.
+Arguments:
+
+@table @var
+@item rev_id
+The revision id that the cert is attached to.
+
+@item key_identity
+The key that the cert is signed with; see @var{@ref{key_identity}}.
+
+@item name
+The name of the cert.
+
+@item value
+The cert value.
+
+@item session_id
+Identifies the netsync session.
+@end table
 
 @item note_netsync_pubkey_received (@var{key_identity}, @var{session_id})
+@itemx note_netsync_pubkey_sent (@var{key_identity}, @var{session_id})
 
-Called by monotone after a pubkey is received through netsync. @var{key_identity}
-is the identity of the key received. There is no default definition for this hook.
-@var{session_id} is used together with @code{note_netsync_start} and
-@code{note_netsync_end}.  If you're not interested in that type of
-tracking, you can ignore that variable entirely.
+Called by monotone after a pubkey is received or sent through netsync.
 
-@item note_netsync_pubkey_sent (@var{key_identity}, @var{session_id})
+There is no default definition for this hook.
 
-Called by monotone after a pubkey is sent through netsync. The arguments are the same as for
-@var{note_netsync_pubkey_received}.
+Arguments:
+
+@table @var
+@item key_identity
+The identity of the key received; see @var{@ref{key_identity}}.
+
+@item session_id
+Identifies the current netsync session.
+
+@end table
 
 @item note_netsync_end (@var{session_id}, @var{status}, @var{bytes_in}, @var{bytes_out}, @var{certs_in}, @var{certs_out}, @var{revs_in}, @var{revs_out}, @var{keys_in}, @var{keys_out})
 
-Called by monotone after all other the netsync notification hooks have
-been called.  This hook would usually be used for post-netsync purposes,
-like collecting all the data from all other netsync notification hooks,
-make some nice output from them and finally send the result somewhere.
-It could also be used to prepare parallel databases with all the data
-to be displayed through something like viewmtn.
+Called by monotone after a netsync session ends. This hook would
+usually be used for post-netsync purposes, like collecting all the
+data from all other netsync notification hooks, make some nice output
+from them and finally send the result somewhere.  It could also be
+used to prepare parallel databases with all the data to be displayed
+through something like viewmtn.
 
-@var{status} is a three digit integer that tells whether there was an error,
+Arguments:
+
+@table @var
+@item session_id
+Identifies the current netsync session.
+
+@item status
+A three digit integer that tells whether there was an error,
 and if so what kind of error it was:
 
 @table @strong
-
 @item 200
-
 No error, connection successful.
 
 @item 211
-
 The connection was interrupted after some data may have been transferred.
 
 @item 212
-
 The connection was interrupted before any data could be transferred.
 
 @item 412
-
 The request is not permitted.
 
 @item 422
-
 The client tried to use a key that the server doesn't know about.
 
 @item 432
-
 The client and server have different epochs for a branch.
 
 @item 512
-
 Protocol error (source/sink confusion).
 
 @item 521
-
 Protocol error (packet received at a time when it doesn't make sense).
 
 @item 532
-
 The client did not identify itself correctly. (Possible replay attack?)
 
 @end table
@@ -11607,14 +11709,37 @@ error, and 5xx means there was a protocol error. xx1 means some data may
 have been transferred, xx2 means no data was transferred, and xx0 means all
 data was transferred.
 
+@item bytes_in
+@itemx bytes_out
+The number of bytes received/sent during the session.
+
+@item certs_in
+@itemx certs_out
+The number of certs received/sent during the session.
+
+@item revs_in
+@itemx revs_out
+The number of revisions received/sent during the session.
+
+@item keys_in
+@itemx keys_out
+The number of keys received/sent during the session.
+
+@end table
+
 @item note_mtn_startup (...)
 
-Called by monotone when it is first started, this hook was added so that
-usage of monotone could be monitored for user interface testing.  Note
-that by default, no monitoring occurs.  The arguments to the hook
-function are the arguments to monotone, without the initial
-@command{mtn} command.  They can be accessed through the lua @var{arg}
-variable as in this example:
+Called by monotone when it is first started, after all command
+completion and option processing, before the command starts executing.
+
+There is no default definition of this hook.
+
+One use of this hook is to monitor usage of monotone, for user
+interface testing.
+
+The arguments to the hook are the command line arguments to monotone,
+without the initial @command{mtn} command.  They can be accessed
+through the lua @var{arg} variable as in this example:
 
 @smallexample
 @group
@@ -11630,6 +11755,7 @@ end
 
 @end ftable
 
+@node User Defaults, Netsync Permission Hooks, Event Notifications and Triggers, Hooks
 @subsection User Defaults
 
 These are hooks that can be used to provide smart, context-sensitive
@@ -11637,41 +11763,74 @@ default values for a number of parameters the user might otherwise be
 prompted for.
 
 @ftable @code
-@item get_branch_key (@var{branchname})
+@anchor{get_branch_key}@item get_branch_key (@var{branchname})
 
-Returns a string which is the name or hash of an @sc{rsa} private key used to sign
-certificates in a particular branch @var{branchname}. There is no
-default definition for this hook. The command-line option
-@option{--key=@var{keyname}} overrides any value returned from this
-hook function. If you have only one private key in your database, you
-do not need to define this function or provide a
-@option{--key=@var{keyname}} option; monotone will guess that you want
-to use the unique private key.
+Called whenever monotone needs a key to sign a certificate, and
+@option{@ref{--key}} was not given.
 
-@item get_netsync_key(@var{server}, @var{include}, @var{exclude})
+Returns a string which is the name or hash of a private key used to sign
+certificates in a particular branch @var{branchname}, or nil for no key.
 
-Returns a string which is the name or hash of the key to use to authenticate
-the given netsync connection. When called by the @command{serve} command,
-@var{server} is the address monotone is listening on, @var{include} is
-@option{"*"}, and @var{exclude} is @option{""}.
+See @option{@ref{--key}} for a description of how monotone determines
+what key to use.
 
-There is no default definition of this hook. The command-line option
-@option{--key=@var{keyname}} overrides any value returned from this
-hook function.
+There is no default definition for this hook; it returns nil.
 
-@item get_default_command_options(@var{command})
+@anchor{get_netsync_key}@item get_netsync_key(@var{server}, @var{include}, @var{exclude})
 
-Returns a table of program options, either valid for the given command or
-valid global options. The @var{command} argument is given as a table of command
-parts, i.e. for commands with subcommands like @command{automate} or @command{db}
-this argument contains at least two elements.
+Called by the server and client when a netsync connection is being
+established, and @option{@ref{--key}} was not given. Returns a string
+which is the name or hash of the key to use to authenticate the
+netsync connection.
 
-Note that there is no way to "override" these default options via a given
-command-line option once they've been set. This is especially true if you
-specify options with arguments in this hook such as
-@option{--exclude=@var{path}} - no subsequent command-line argument or
-@option{--exclude} option argument will be able to replace or remove the
-already excluded @var{path}.
+Note that netsync commands do not need a signing key; they only transmit
+already signed information.
+
+See @option{@ref{--key}} for a discussion of how monotone determines
+what key to use.
+
+Arguments, when called by the server:
+
+@table @var
+@item server
+The address monotone is listening on.
+
+@item include
+"*"
+
+@item exclude
+""
+@end table
+
+When called by the client:
+
+@table @var
+@item server
+The scheme, user, host, port, and path fields from the URI provided on
+the command line. See @ref{netsync uri}.
+
+@item include
+The include pattern in the URI provided on the command line.
+
+@item exclude
+The exclude pattern in the URI provided on the command line.
+
+@end table
+
+@anchor{get_default_command_options}@item get_default_command_options(@var{command})
+Called after a command is completed, before the workspace options are
+loaded, and before the command line options are processed.
+
+Returns a table of options. The options must be valid for the given
+command or global options. The returned option values overwrite the
+standard default options values; workspace and command line options
+override the new defaults as usual.
+
+The argument is a table containing the command keywords, indexed by
+the integer position of the keyword in the command. For example,
+@command{mtn list branches} passes a table @code{(1 => "list", 2 => "branches")}.
+
+The default definition of this hook returns an empty table.
 
 Simple example which enables recursive directory scanning for @command{mtn add}
 by default:
@@ -11688,31 +11847,45 @@ end
 @end smallexample
 
 @anchor{get_passphrase}@item get_passphrase (@var{key_identity})
+Called whenever monotone needs to use a private key.
 
-Returns a string which is the passphrase used to encrypt the private
-half of @var{key_identity} in your key store, using the @sc{TripleDES} symmetric
-cipher.  This hook has no default definition. If
-this hook is not defined or returns false, monotone will prompt you for
-a passphrase each time it needs to use a private key.
+Returns a string which must match the passphrase used to encrypt the
+private @var{@ref{key_identity}} in your key store.
+
+This hook has no default definition.
+
+If this hook is not defined or returns false, and ssh keys are not
+enabled (see @command{@ref{mtn ssh_agent_export}}), monotone will
+prompt you for a passphrase each time it needs to use a private key.
 
 @anchor{get_local_key_name}@item get_local_key_name (@var{key_identity})
 
-Return the local alias for the given key. The @var{id} and @var{given_name}
-fields of @var{key_identity} will be populated, and the @var{name} field
-will not be. The return value indicates what the @var{name} field should
-contain. The default implementation make this the same as @var{given_name}.
+Called whenever monotone retrieves a key from the keystore or
+database, or completes a user-provided key, to provide the local alias
+(the @var{name} field in @var{@ref{key_identity}}).
+
+Returns the local alias for the given @var{key_identity}. The
+@var{id} and @var{given_name} fields of @var{key_identity} will be
+populated, and the @var{name} field will not be. The return value
+indicates what the @var{name} field should contain.
+
+The default implementation of this hook returns @var{given_name}.
 
 @anchor{get_author}@item get_author (@var{branchname}, @var{key_identity})
 
-Returns a string which is used as a value for automatically generated
-@code{author} certificates when you commit changes to
-@var{branchname} with the keypair identity @var{key_identity}.  Generally
-this hook remains undefined, and monotone selects your signing key name
-for the author certificate. You can use this hook to override that
-choice, if you like.
+Called by any command that needs an author name for an
+author cert for a commit, if @option{@ref{--author}} is not given.
 
-This hook has no default definition, but a couple of possible
-definitions might be:
+Returns a string which is the author name. If it returns nil, the key
+local name (as provided by @code{@ref{get_local_key_name}}) is used
+for the author name.
+
+@var{branchname} is the branch for the commit,
+@var{@ref{key_identity}} is the key.
+
+There is no default definition for this hook; it returns nil.
+
+Example definitions:
 @smallexample
 @group
 function get_author(branchname, key_identity)
@@ -11737,27 +11910,24 @@ end
 @end smallexample
 
 @anchor{get_default_database_locations}@item get_default_database_locations ()
+Called whenever monotone converts a database name to an absolute path.
 
-Returns a table of paths where monotone should look for managable
-databases.  The command @command{@ref{mtn list databases}} searches all these
-paths for valid monotone databases and outputs details on each one.
+Returns a table of paths where monotone should look for @ref{Managed
+Databases}.
 
 The default implementation returns a table with a single entry,
 @file{$HOME/.monotone/databases} on Unix and
 @file{%APPDATA%\monotone\databases} on Windows.
 
 @anchor{get_default_database_alias}@item get_default_database_alias ()
+Called whenever monotone converts a database name to an absolute path.
 
-Returns the alias of the managed database which should be used as default
-for commands like @command{clone} or @command{setup} if these are missing
-an explicit database option.  This alias and the first path found in the
-@code{get_default_database_locations} hook form the complete path
-of this default database.
+Returns the alias of the managed database which should be used as
+default. See @ref{Managed Databases}.
 
 The default implementation returns @code{:default.mtn}.
 
 @anchor{get_default_database_glob}@item get_default_database_glob ()
-
 Returns a pattern to let monotone distinguish a valid from an invalid
 database file name. This pattern is used in two places:
 
@@ -11772,25 +11942,23 @@ database file name. This pattern is used in two places:
 The default implementation returns @code{*.@{mtn,db@}}.
 
 @anchor{edit_comment}@item edit_comment (@var{user_log_message})
+Called by @command{@ref{mtn comment}}, @command{@ref{mtn commit}},
+@command{@ref{mtn import}} when a comment is not provided on the
+command line.
 
-Returns a log entry for a given set of changes, described in
-@var{user_log_message}.  The user_log_message is identical to the
-output of @command{mtn status}. This hook is intended to interface
-with some sort of editor, so that you can interactively document each
-change you make. Values for @code{author}, @code{date}, @code{branch}
-and the @code{changelog} are extracted from the result and used to
-generate these certificates when you commit changes.
+Returns a commit comment for the command.  @var{user_log_message}
+depends on the calling command; see the command definitions.
 
-The contents of @file{_MTN/log} are read and passed as as the
-@code{changelog} value in @var{user_log_message}. This allows you to
-document your changes as you proceed instead of waiting until you are
-ready to commit. Upon a successful commit, the contents of
-@file{_MTN/log} are erased setting the system up for another
-edit/commit cycle.
+This hook is intended to interface with some sort of editor, so that
+you can interactively document each change you make.
 
-For the default definition of this hook, see @ref{Default hooks}.
+The default definition of @code{edit_comment} invokes the user's
+editor (specified by the environment variables @code{VISUAL} and
+@code{EDITOR}, or @code{editor, vi}, or @code{notepad} on
+Windows). See @ref{Default hooks}.
 
 @item persist_phrase_ok ()
+Called whenever a passphrase is provided to decrypt a private key.
 
 Returns @code{true} if you want monotone to remember the passphrase of
 a private key for the duration of a single command, or @code{false} if
@@ -11799,85 +11967,86 @@ it generates. Since monotone often generates several certificates in
 quick succession, unless you are very concerned about security you
 probably want this hook to return @code{true}.
 
-The default definition of this hook is:
-@smallexample
-@group
-function persist_phrase_ok()
-        return true
-end
-@end group
-@end smallexample
+The default definition of this hook returns @code{true}.
 
 @item use_inodeprints ()
+Called when creating a new workspace.
 
 Returns @code{true} if you want monotone to automatically enable
-@ref{Inodeprints} support in all workspaces.  Only affects working
-copies created after you modify the hook.
+@ref{Inodeprints} support in the workspace.
 
-The default definition of this hook is:
-@smallexample
-@group
-function use_inodeprints()
-        return false
-end
-@end group
-@end smallexample
+The default definition of this hook returns @code{false}.
 
 @anchor{ignore_file}@item ignore_file (@var{filename})
+Called by many monotone commands when considering whether to process a
+file in a workspace.
 
-Returns @code{true} if @var{filename} should be ignored while adding,
-dropping, or moving files. Otherwise returns @code{false}. This is
-most important when performing recursive actions on directories, which
-may affect multiple files simultaneously.
+Returns @code{true} if @var{filename} should be ignored by the
+command, @code{false} otherwise.
+
+This is most important when performing recursive actions on
+directories; if @code{ignore_file} returns @code{true} for a
+directory, all files under that directory will be ignored.
+
+In some commands, @option{--no-ignore} will cause this hook to not be
+called.
 
 The default definition of this hook recognises a number of common file
 types and extensions for temporary and generated file types that users
 typically don't want to track. In addition, if the file
 @file{.mtn-ignore} exists in the root workspace directory, this hook
 will read a list of regular expressions from the file, one per line,
-and ignore all files matching one of these expressions. For the
-default definition of this hook, see @ref{Default hooks}.
+and ignore all files matching one of these expressions. See
+@ref{Default hooks}.
 
 @anchor{ignore_branch}@item ignore_branch (@var{branchname})
 
-Returns @code{true} if @var{branchname} should be ignored while listing
-branches. Otherwise returns @code{false}. This hook has no default
-definition, therefore the default behavior is to list all branches.
+Called by @command{@ref{mtn automate branches}}, @command{@ref{mtn
+automate tags}}, @command{@ref{mtn list branches}}.
+
+Returns @code{true} if @var{branchname} should be ignored by the
+command, otherwise returns @code{false}.
+
+This hook has no default definition; it acts as if it returns false.
 
 @anchor{get_date_format_spec}@item get_date_format_spec (@var{wanted})
+Called by commands that display dates, when neither
+@option{--date-format} nor @option{--no-format-dates} is given.
 
-Returns a @code{strftime} format specification, which @command{mtn
-log} and similar commands will use to format dates, unless instructed
-otherwise.  The default definition returns @samp{%x} for long and short
+Returns a @code{strftime} format specification.
+
+If an empty string is returned, monotone uses the date format
+``yyyy-mm-ddThh:mm:ss''.
+@c see dates.cc date_t::as_iso_8601_extended
+
+The default definition returns @samp{%x} for long and short
 date formats, @samp{%X} for long and short time formats and @samp{%x %X}
 for long and short date time formats, which is equivalent to @samp{22/05/09},
 @samp{09:06:14} and @samp{22/05/09 09:06:14} in an English locale.
 
 @var{wanted} can be one of @samp{date_long}, @samp{date_short},
-@samp{time_long}, @samp{time_short}, @samp{date_time_long} and
-@samp{date_time_short}, though only @samp{date_short} and
-@samp{date_time_short} are currently used.
-
-The @samp{date_time_long} format is used by the @command{status},
-@command{commit} and @command{log} commands to format revision dates
-for printing. This format must preserve a date passed through a
-formatting and parsing cycle. Otherwise the @command{status} command
-will issue warnings that the format is unsuitable and the
-@command{commit} command will abort.
+@samp{time_long}, @samp{time_short}, @samp{date_time_long},
+@samp{date_time_short}.
 
 @anchor{get_man_page_formatter_command}@item get_man_page_formatter_command ()
+Called by @command{@ref{mtn manpage}}, if @option{--formatted} is specified.
 
-Specifies the command chain which should be executed if the
-@command{manpage} command is executed interactively. The default is
-to call the @command{nroff} formatter and pipe that output into the
-@command{less} pager.
+Returns a command string that is passed to the operating system
+function @code{popen} to format man pages. The input to the pipe is
+@command{nroff} markup.
 
-Note that on the native Windows build of monotone, the command
-specified by this hook is run in the @command{cmd.exe} shell. On Unix
-and Cygwin, it is run in the @command{sh} shell.
+Note that on the native Windows build of monotone, @code{popen} runs
+the @command{cmd.exe} shell to execute the command string. On Unix and
+Windows Cygwin, @code{popen} runs the @command{sh} shell.
+
+The default hook returns a string that runs @command{nroff} and pipes
+that output into the @command{less} pager, with appropriate
+options. On Windows native, the default hook assumes that Cygwin or
+equivalent is installed, and includes @code{sh} in the command string.
 
 @end ftable
 
+@node Netsync Permission Hooks, Netsync Transport Hooks, User Defaults, Hooks
 @subsection Netsync Permission Hooks
 
 These hooks are used when running a netsync server, via
@@ -11963,7 +12132,7 @@ if through @code{automate stdio}.
 
 @end ftable
 
-@anchor{Netsync Transport Hooks}
+@node Netsync Transport Hooks, Trust Evaluation Hooks, Netsync Permission Hooks, Hooks
 @subsection Netsync Transport Hooks
 
 When a monotone client initiates a netsync connection, these hooks are
@@ -12110,7 +12279,7 @@ end
 @end ftable
 
 
-@anchor{Trust Evaluation Hooks}
+@node Trust Evaluation Hooks, External Diff Tools, Netsync Transport Hooks, Hooks
 @subsection Trust Evaluation Hooks
 
 Monotone makes heavy use of certs to provide descriptive information
@@ -12122,27 +12291,29 @@ These hooks allow the user to configure which signers will be trusted to
 make which kinds of assertions using certs. Monotone uses these certs when
 selecting available revisions for commands such as @command{update}.
 
-Each user, or even each workspace, can have their own
-implementation of these hooks, and thus a different filtered view of
-valid revisions, according to their own preferences and purposes.
+Each user, or even each workspace, can have their own implementation
+of these hooks, and thus a different filtered view of valid revisions,
+according to their own preferences and purposes.
 
 See @ref{Quality Assurance}.
 
 @ftable @code
 @anchor{get_revision_cert_trust}@item get_revision_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
 
-Returns whether or not you @emph{trust} the assertion
+Returns @code{true} if you @emph{trust} the assertion
 @var{name}=@var{value} on a given revision @var{id}, given a valid
-signature from all the keys in @var{signers}. The @var{signers}
-parameter is a table containing all the key identities which signed this
-cert, the other three parameters are strings.
+signature from all the keys in @var{signers}; @code{false}
+otherwise. @var{signers} is a table containing a
+@code{@ref{key_identity}} for all signatures on this cert, the other
+three parameters are strings.
 
-The default definition of this hook simply returns @code{true}, which
-corresponds to a form of trust where every key which is defined in
-your database is trusted. This is a @emph{weak} trust setting; you
-should change it to something stronger. A possible example of a
-stronger trust function (along with a utility function for computing
-the intersection of tables) is the following:
+The default definition of this hook returns @code{true}.
+
+The default definition corresponds to a form of trust where every key
+which is defined in your database is trusted. This is a @emph{weak}
+trust setting. A possible example of a stronger trust function (along
+with a utility function for computing the intersection of tables) is
+the following:
 
 @smallexample
 @group
@@ -12181,12 +12352,13 @@ the revision has been approved by an extra ``reviewer'' who used the
 @command{approve} command.
 
 @anchor{get_file_cert_trust}@item get_file_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
-Similar to @ref{get_revision_cert_trust}, for certs on files.
+Similar to @code{@ref{get_revision_cert_trust}}, for certs on files.
 
 @anchor{get_manifest_cert_trust}@item get_manifest_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
-Similar to @ref{get_revision_cert_trust}, for certs on manifests.
+Similar to @code{@ref{get_revision_cert_trust}}, for certs on manifests.
 
 @anchor{accept_testresult_change}@item accept_testresult_change (@var{old_results}, @var{new_results})
+Called by @command{@ref{mtn update}}.
 
 This hook is used by the update algorithm to determine whether a
 change in test results between update source and update target is
@@ -12197,71 +12369,78 @@ function should return @code{true} if you consider an update from the
 version carrying the @var{old_results} to the version carrying the
 @var{new_results} to be acceptable.
 
-The default definition of this hook follows:
-
-@smallexample
-@group
-function accept_testresult_change(old_results, new_results)
-   local reqfile = io.open("_MTN/wanted-testresults", "r")
-   if (reqfile == nil) then return true end
-   local line = reqfile:read()
-   local required = @{@}
-   while (line ~= nil)
-   do
-      required[line] = true
-      line = reqfile:read()
-   end
-   io.close(reqfile)
-   for test, res in pairs(required)
-   do
-      if old_results[test] == true and new_results[test] ~= true
-      then
-         return false
-      end
-   end
-   return true
-end
-@end group
-@end smallexample
-
-This definition looks at the file @code{_MTN/wanted-testresults} and
-requires that once any test listed there has returned @code{true}, updates
-will only take revisions where that test still returned @code{true}.
+The default definition of this hook returns @code{true} if
+@file{_MTN/wanted-testresults} does not exist. Otherwise, the file
+should contain a list of signing key ids. The hook returns @code{false}
+if a listed signing key id is present in both @var{old_results} and
+@var{new_results}, and @var{old_results} is @code{true} but
+@var{new_results} is @code{false}; otherwise it returns @code{true}.
 
 @end ftable
 
+@node External Diff Tools, External Merge Tools, Trust Evaluation Hooks, Hooks
 @subsection External Diff Tools
 
 Differences between files can be shown in a number of ways, varying
 according to user preference and file type. These hooks allow
-customisation of the way file differences are shown.
+customization of the way file differences are shown in @command{diff}
+and @command{log} commands.
 
 @ftable @code
 @anchor{get_encloser_pattern}@item get_encloser_pattern (@var{file_path})
 
-Called for each file unless @command{diff} is given the
-@option{--no-show-encloser} option (or the
-@option{--external} option).  @var{file_path} is the pathname of the
-file that is being diffed.  The hook should return a string constant
-containing a regular expression; this regular expression will be used
-to find lines that, in that file, name the ``top-level'' constructs
-enclosing each ``hunk'' of changes.  The default is
-@code{^[[:alnum:]$_]}, which is correct for many programming
-languages; a few text authoring packages, like Texinfo, have special
-regular expressions that match their particular syntax.  If you have a
-better regular expression for some language, you can add it to this
-hook; and if you send it to the monotone developers, we will likely
-make it the default for that language.  @xref{Regexps}, for the
-regular expression syntax.
+Called by @command{@ref{mtn diff}}, @command{@ref{mtn automate
+content_diff}}, @command{@ref{mtn log}}, @command{@ref{mtn automate
+log}}, for each file in the diff output, if
+@option{--no-show-encloser} is not given.
+
+@var{file_path} is the pathname of the file that is being diffed.
+
+The hook should return a string constant containing a regular
+expression; this regular expression will be used to find lines in the
+file that name the ``top-level'' constructs enclosing each ``hunk'' of
+changes.
+
+If a null string is returned, no enclosers are shown.
+
+See @ref{Regexps}, for the regular expression syntax used by monotone.
+
+The default hook treats looks at the file extension, as follows:
+
+@table @file
+@item .texi
+Returns a regular expression matching nodes, subsections, headings.
+
+@item .tex
+@itemx .ltx
+@itemx .latex
+Returns a regular expression matching part, chapter, [sub]sections, paragraphs.
+
+@item .txt
+Empty string.
+
+@item
+Otherwise returns @code{^[[:alnum:]$_]}, which is correct for
+many programming languages.
+@end table
 
 @anchor{external_diff}@item external_diff (@var{file_path}, @var{old_data}, @var{new_data}, @var{is_binary}, @var{diff_args}, @var{old_rev}, @var{new_rev})
 
-Called for each file when @command{diff} is given the
-@option{--external} option.  @var{file_path} is the pathname of the
-file that is being diffed.  @var{old_data} and @var{new_data} are the
-data contents of the old and the new file.  If the data is binary,
-@var{is_binary} will be true, otherwise false.  @var{old_rev} and
-@var{new_rev} are the revision IDs of the old and new data.
+Called by @command{@ref{mtn diff}}, @command{@ref{mtn automate
+content_diff}}, @command{@ref{mtn log}}, @command{@ref{mtn automate
+log}}, for each file in the diff output, if @option{--external} is
+given.
+
+The hook should run a program that displays the differences between
+two versions of a file. The return value of the hook is not used.
+
+@var{file_path} is the pathname of the file that is being diffed.
+
+@var{old_data} and @var{new_data} are the contents of the old and the
+new file (@var{old_data} is nil if the file is new).  If the content
+is binary, @var{is_binary} will be true, otherwise false.
+@var{old_rev} and @var{new_rev} are the revision IDs of the old and
+new data.
 
 If an extra arguments are given via @option{--diff-args}, the string
 will be passed in as @var{diff_args}.  Otherwise @var{diff_args} will
@@ -12276,12 +12455,11 @@ the whole hook.
 @end ftable
 
 
+@node External Merge Tools, Selector Expansion, External Diff Tools, Hooks
 @subsection External Merge Tools
 
-Monotone often needs to merge together the work of multiple distributed
-developers, and uses these hooks to help this process when the merge
-does not automatically succeed.  Often these hooks will be used to invoke
-an external interactive merge tool.
+These hooks allow the user to use their favorite tools when resolving
+@ref{File Content Conflict}s.
 
 The @ref{Default hooks} include helper functions used by the hooks below
 to invoke a number of external merge tools known to monotone, and you
@@ -12292,8 +12470,14 @@ you have a tool specific to certain file types.
 @anchor{merge3}
 @item merge3 (@var{ancestor_path}, @var{left_path}, @var{right_path}, @var{merged_path}, @var{ancestor_text}, @var{left_text}, @var{right_text})
 
-This hook is called to resolve merges that monotone could not resolve
-automatically.  The actual ancestor, left, and right contents of the
+Called by @command{@ref{mtn conflicts resolve_first}} when
+@command{interactive} is given; by @command{@ref{mtn merge}},
+@command{@ref{mtn explicit_merge}} when @option{--resolve-conflicts}
+is not specified and the internal merger fails for a file content
+conflict; and by @command{@ref{mtn update}} or any command that
+accepts @option{--update} for workspace file content conflicts.
+
+The actual ancestor, left, and right contents of the
 file are passed in the @var{ancestor_text}, @var{left_text}, and
 @var{right_text} strings.  In addition, the hook is given the names
 that this file had in the ancestor (@var{ancestor_path}), left
@@ -12304,18 +12488,19 @@ in their GUI, since the actual path names are likely more meaningful
 than the temporary file names the merge tool will actually be working
 on.
 
-On success, @code{merge3} returns a string, which should be the
-contents resulting from merging the given texts.  If nil is returned,
-the merge command fails; this is how the user can abort a merge.
+On success, @code{merge3} returns a string, which should be the new
+file contents, the result of merging the given texts.  If nil is
+returned, the merge command fails; this is how the user can abort a
+merge.
 
-The default definition of this hook
-delegates the actual merge to the result of
+The default definition of this hook writes the texts to temporary
+files, then delegates the actual merge to the result of
 @ref{get_preferred_merge3_command}.  The default definition of
 @ref{get_preferred_merge3_command} checks to see if the
 @env{MTN_MERGE} environment variable, or the Lua variable
 @code{merger} are set to the name of a merge tool that it recognizes,
-and if not, then simply searches for whatever is installed on the
-local system.
+and if not, then simply searches for several popular tools that might
+be installed on the local system.
 
 The default hook then invokes the merge tool, waits for it to return,
 and checks to see if @var{merged_path} was written. If not, it returns
@@ -12329,7 +12514,9 @@ gimp for .png files, OpenOffice.org for .doc, and so on.
 
 @anchor{get_preferred_merge3_command}@item get_preferred_merge3_command(@var{tbl})
 
-Returns the results of running an external merge on three strings.
+Returns a table @code{command, mkey} telling @code{@ref{merge3}} what
+external merge tool to run.
+
 @var{tbl} wraps up the various arguments for each merge command and
 is always provided by @ref{merge3}. If there is a particular editor
 that you would like to use to perform merge3 operations, override
@@ -12337,6 +12524,7 @@ this hook to specify it.
 
 @end ftable
 
+@node Selector Expansion, Attribute Handling, External Merge Tools, Hooks
 @subsection Selector Expansion
 
 Monotone's selectors are a powerful mechanism used to refer to revisions
@@ -12350,23 +12538,33 @@ For more detail on the use of selectors, see @ref{Selectors}.
 @ftable @code
 @anchor{expand_selector}@item expand_selector (@var{str})
 
-Attempts to expand @var{str} as a selector. Expansion generally means
-providing a type prefix for the selector, such as @code{a:} for authors
-or @code{d:} for dates. This hook is called once for each element of a
-combined selector string (between @code{/} separators) prior to
-evaluation of the selector. For the default definition of this hook, see
-@ref{Default hooks}.
+Called by any command that can take a selector argument, for each
+element of a combined selector string (between @code{/} separators).
+
+The input @var{str} is the command line argument. The hook should return
+a string that is a valid monotone selector.
+
+Expansion generally means providing a type prefix for the selector,
+such as @code{a:} for authors or @code{d:} for dates.
+
+The default definition of this hook attempts to recognize certs, email
+addresses, branch names, hex ids, and dates, and adds the appropriate
+prefix. See @ref{Default hooks}.
 
 @anchor{expand_date}@item expand_date (@var{str})
+Called when processing a date selector (@command{d:}).
 
-Attempts to expand @var{str} as a date expression. Expansion means
-recognizing and interpreting special words such as @code{yesterday} or
-@code{6 months ago} and converting them into well formed date
-expressions. For the default definition of this hook, see @ref{Default
-hooks}.
+The input @var{str} is the command line selector, after processing by
+@command{expand_selector}. The hook should return a date that can be
+used by a standard SQL select statement.
+
+The default hook recognizes special words such as @code{yesterday} or
+@code{6 months ago} and converts them into well formed date
+expressions. See @ref{Default hooks}.
 
 @end ftable
 
+@node Attribute Handling, GIT Export Hooks, Selector Expansion, Hooks
 @subsection Attribute Handling
 
 Some files in a project are special; they may require different
@@ -12384,51 +12582,40 @@ according to its attributes when the workspace is changed.
 @ftable @code
 @anchor{attr_functions}@item attr_functions [@var{attribute}] (@var{filename}, @var{value})
 
-This is not a hook function, but a @emph{table} of hook
-functions. Each entry in the table @code{attr_functions}, at table
-entry @var{attribute}, is a function taking a file name @var{filename}
+This is not a hook function, but a @emph{table} of hook functions,
+indexed by @var{attribute}. Each entry in the table
+@code{attr_functions} is a function taking a file name @var{filename}
 and an attribute value @var{value}. The function should ``apply'' the
-attribute to the file, possibly in a platform-specific way.  When
-called to set an attribute the value this hook receives will be a
-string representing the value of the attribute. When called to clear
-an attribute the value this hook receives will be @code{nil}.
+attribute to the file in the file system, possibly in a
+platform-specific way.
 
-Hook functions from this table are called for each existing attribute,
-after any command which modifies the workspace. These functions are
-also called during creation and modification of a workspace by the
-@command{update}, @command{merge_into_workspace}, @command{pluck},
-@command{clone} and @command{checkout} commands to set or clear
-attributes as they change.
+These hooks are called by any command that modifies workspace files,
+including @command{@ref{mtn revert}}, @command{@ref{mtn undrop}},
+@command{@ref{mtn update}}, @command{@ref{mtn merge_into_workspace}},
+@command{@ref{mtn pluck}}, @command{@ref{mtn clone}} and
+@command{@ref{mtn checkout}}.
 
-This facility can
-be used to extend monotone's understanding of files with
-platform-specific attributes, such as permission bits, access control
-lists, or special file types.
+When called to set an attribute, @var{value} is a string representing
+the value of the attribute.
+
+When called to clear an attribute, @var{value} is @code{nil}.
+
+This facility can be used to extend monotone's understanding of files
+with platform-specific attributes, such as permission bits, access
+control lists, or special file types.
 
 By default, there is only one entry in this table, for the @code{mtn:execute}
-attribute. Its definition is:
-
-@smallexample
-@group
-attr_functions["mtn:execute"] =
-  function(filename, value)
-      if (value == "true") then
-         set_executable(filename)
-      else
-         clear_executable(filename)
-      end
-   end
-@end group
-@end smallexample
+attribute. It calls platform-specific functions to mark files as
+executable or not. See @ref{Default hooks}.
 
 @anchor{attr_init_functions}@item attr_init_functions [@var{attribute}] (@var{filename})
 
 This is not a hook function, but a @emph{table} of hook
 functions. Each entry in the table @code{attr_init_functions}, at
 table entry @var{attribute}, is a function taking a file (or
-directory) name @var{filename}. Each function defines the attributes
-that should be set on the file named @var{filename}. This table of
-hook functions is called once for each file during an @dfn{add}.
+directory) name @var{filename}. Each function returns @code{true} if
+the attribute should be set on @var{filename}. This table of hook
+functions is called once for each file during an @dfn{add}.
 
 By default, there are only two entries in this table, for the
 @code{mtn:execute} and @code{mtn:manual_merge} attributes. Their
@@ -12460,6 +12647,7 @@ The @code{binary_file} function is also defined as a Lua hook. See
 
 @end ftable
 
+@node GIT Export Hooks, Validation Hooks, Attribute Handling, Hooks
 @subsection GIT Export Hooks
 
 Exporting monotone revisions in git-fast-import(1) format often
@@ -12491,6 +12679,7 @@ aborted if this hook returns false for any value.
 
 @end ftable
 
+@node Validation Hooks, Meta Hooks, GIT Export Hooks, Hooks
 @subsection Validation Hooks
 
 If there is a policy decision to make, Monotone defines certain hooks to
@@ -12527,6 +12716,7 @@ is not defined and is thus ignored during a commit.
 
 @end ftable
 
+@node Meta Hooks,  , Validation Hooks, Hooks
 @subsection Meta Hooks
 
 Monotone allows the execution of arbitrary Lua hooks and functions through a
