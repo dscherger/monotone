@@ -399,23 +399,23 @@ void dump_header(std::string const & revs,
 
   vector<string> lines;
   split_into_lines(summary(), lines);
-  out << colorizer.colorize("#", colorizer::diff_comment) << "\n";
+  out << colorizer.colorize("#", colorizer::comment) << "\n";
   if (!summary().empty())
     {
-      out << colorizer.colorize(revs, colorizer::diff_comment);
-      out << colorizer.colorize("#", colorizer::diff_comment) << "\n";
+      out << colorizer.colorize(revs, colorizer::comment);
+      out << colorizer.colorize("#", colorizer::comment) << "\n";
 
       for (vector<string>::iterator i = lines.begin();
            i != lines.end(); ++i)
         out << colorizer.colorize(string("# ") + *i,
-                                  colorizer::diff_comment) << "\n";
+                                  colorizer::comment) << "\n";
     }
   else
     {
       out << colorizer.colorize(string("# ") + _("no changes"),
-                                colorizer::diff_comment) << "\n";
+                                colorizer::comment) << "\n";
     }
-  out << colorizer.colorize("#", colorizer::diff_comment) << "\n";
+  out << colorizer.colorize("#", colorizer::comment) << "\n";
 }
 
 CMD_PRESET_OPTIONS(diff)

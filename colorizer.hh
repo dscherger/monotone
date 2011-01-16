@@ -18,21 +18,19 @@ struct colorizer {
 
   typedef enum { normal = 0,
                  reset,
-                 diff_encloser,
-                 diff_add,
-                 diff_delete,
-                 diff_change,
-                 diff_comment,
-                 diff_separator,
+
+                 add,
+                 change,
+                 comment,
+                 encloser,
                  log_revision,
+                 remove,
+                 rename,
                  rev_header,
-                 status_added,
-                 status_dropped,
-                 status_patched,
-                 status_renamed,
-                 status_set,
-                 status_unset
-                 } purpose;
+                 separator,
+                 set,
+                 unset
+                } purpose;
 
   colorizer(bool enable, lua_hooks & lh);
 

@@ -1544,22 +1544,17 @@ function get_output_color(purpose)
 		normal = "",
 		reset = "reset",
 		
-		diff_add = "green",
-		diff_change = "magenta",
-		diff_comment = "cyan",
-		diff_delete = "red",
-		diff_encloser = "bold",
-		diff_separator = "bold",
-		
-		log_revision = "bold",
-		rev_header = "bold",
-
-		status_added = "green",
-		status_dropped = "red",
-		status_patched = "blue",
-		status_renamed = "yellow",
-		status_set = "cyan",
-		status_unset = "magenta"
+                add = "green",
+                change = "blue",
+                comment = "yellow",
+                encloser = "magenta",
+                log_revision = "bold",
+                remove = "red",
+                rename = "yellow",
+                rev_header = "bold",
+                separator = "bold",
+                set = "cyan",
+                unset = "magenta"
 	}
 
 	local chosen_color = color_table[purpose]

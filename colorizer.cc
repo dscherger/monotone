@@ -22,51 +22,31 @@ string colorizer::purpose_to_name(colorizer::purpose const p) const
   {
     case normal:
       return "normal";
-
     case reset:
       return "reset";
 
-    case diff_add:
-      return "diff_add";
-
-    case diff_change:
-      return "diff_change";
-
-    case diff_comment:
-      return "diff_comment";
-
-    case diff_delete:
-      return "diff_delete";
-
-    case diff_encloser:
-      return "diff_encloser";
-
-    case diff_separator:
-      return "diff_separator";
-
+    case add:
+      return "add";
+    case change:
+      return "change";
+    case comment:
+      return "comment";
+    case encloser:
+      return "encloser";
     case log_revision:
       return "log_revision";
-
+    case remove:
+      return "remove";
+    case rename:
+      return "rename";
     case rev_header:
       return "rev_header";
-
-    case status_added:
-      return "status_added";
-
-    case status_dropped:
-      return "status_dropped";
-
-    case status_patched:
-      return "status_patched";
-
-    case status_renamed:
-      return "status_renamed";
-
-    case status_set:
-      return "status_set";
-
-    case status_unset:
-      return "status_unset";
+    case separator:
+      return "separator";
+    case set:
+      return "set";
+    case unset:
+      return "unset";
 
     default:
       I(false); // should never get here
@@ -120,20 +100,18 @@ colorizer::colorizer(bool enable, lua_hooks & lh)
     {
       colormap.insert(map_output_color(normal));
       colormap.insert(map_output_color(reset));
-      colormap.insert(map_output_color(diff_encloser));
-      colormap.insert(map_output_color(diff_add));
-      colormap.insert(map_output_color(diff_delete));
-      colormap.insert(map_output_color(diff_change));
-      colormap.insert(map_output_color(diff_comment));
-      colormap.insert(map_output_color(diff_separator));
+
+      colormap.insert(map_output_color(add));
+      colormap.insert(map_output_color(change));
+      colormap.insert(map_output_color(comment));
+      colormap.insert(map_output_color(encloser));
       colormap.insert(map_output_color(log_revision));
+      colormap.insert(map_output_color(remove));
+      colormap.insert(map_output_color(rename));
       colormap.insert(map_output_color(rev_header));
-      colormap.insert(map_output_color(status_added));
-      colormap.insert(map_output_color(status_dropped));
-      colormap.insert(map_output_color(status_patched));
-      colormap.insert(map_output_color(status_renamed));
-      colormap.insert(map_output_color(status_set));
-      colormap.insert(map_output_color(status_unset));
+      colormap.insert(map_output_color(separator));
+      colormap.insert(map_output_color(set));
+      colormap.insert(map_output_color(unset));
     }
 }
 

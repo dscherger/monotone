@@ -156,7 +156,7 @@ revision_summary(revision_t const & rev, colorizer const & color, utf8 & summary
       for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
             i != cs.nodes_deleted.end(); ++i)
         out << color.colorize((F("  dropped  %s") %*i).str(),
-                              colorizer::status_dropped) << '\n';
+                              colorizer::remove) << '\n';
 
       for (map<file_path, file_path>::const_iterator
             i = cs.nodes_renamed.begin();
@@ -164,22 +164,22 @@ revision_summary(revision_t const & rev, colorizer const & color, utf8 & summary
         out << color.colorize((F("  renamed  %s\n"
                                  "       to  %s") % i->first
                                  % i->second).str(),
-                              colorizer::status_renamed) << '\n';
+                              colorizer::rename) << '\n';
 
       for (set<file_path>::const_iterator i = cs.dirs_added.begin();
             i != cs.dirs_added.end(); ++i)
         out << color.colorize((F("  added    %s") % *i).str(),
-                              colorizer::status_added) << '\n';
+                              colorizer::add) << '\n';
 
       for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
             i != cs.files_added.end(); ++i)
         out << color.colorize((F("  added    %s") % i->first).str(),
-                              colorizer::status_added) << '\n';
+                              colorizer::add) << '\n';
 
       for (map<file_path, pair<file_id, file_id> >::const_iterator
               i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
         out << color.colorize((F("  patched  %s") % i->first).str(),
-                              colorizer::status_patched) << '\n';
+                              colorizer::change) << '\n';
 
       for (map<pair<file_path, attr_key>, attr_value >::const_iterator
              i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
@@ -188,7 +188,7 @@ revision_summary(revision_t const & rev, colorizer const & color, utf8 & summary
                                  "       to  %s")
                                % i->first.first % i->first.second
                                % i->second).str(),
-                              colorizer::status_set) << '\n';
+                              colorizer::set) << '\n';
 
       // FIXME: naming here could not be more inconsistent
       // the cset calls it attrs_cleared
@@ -201,7 +201,7 @@ revision_summary(revision_t const & rev, colorizer const & color, utf8 & summary
         out << color.colorize((F("  attr on  %s\n"
                                  "    unset  %s") % i->first
                                  % i->second).str(),
-                              colorizer::status_unset) << '\n';
+                              colorizer::unset) << '\n';
 
       out << '\n';
     }
