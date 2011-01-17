@@ -666,7 +666,7 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
             }
           catch (recoverable_failure & rf)
             {
-              W(F("could not unregiser workspace from old database %s")
+              W(F("could not unregister workspace from old database '%s'")
                 % old_db_path);
             }
         }
