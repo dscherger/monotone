@@ -32,7 +32,7 @@ check(samefile("expected_bar", "stdout"))
 
 writefile("expected_baz", "baz\r\nAAA\r\nbbb\r\nCCC")
 check(mtn("automate", "file_merge", first, "baz", second, "baz"), 0, true, nil)
-canonicalize("stdout")
+--canonicalize("stdout")
 check(samefile("expected_baz", "stdout"))
 
 -- end of file
