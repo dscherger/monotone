@@ -198,7 +198,7 @@ CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
     throw usage(execid);
 
   key_store keys(app);
-  database db(app);
+  database db(app, maybe_unspecified);
   project_t project(db);
   key_identity_info identity;
 
@@ -216,7 +216,7 @@ CMD(ssh_agent_export, "ssh_agent_export", "", CMD_REF(key_and_cert),
     "",
     options::opts::none)
 {
-  database db(app);
+  database db(app, maybe_unspecified);
   key_store keys(app);
   project_t project(db);
 
@@ -244,7 +244,7 @@ CMD(ssh_agent_add, "ssh_agent_add", "", CMD_REF(key_and_cert), "",
     "",
     options::opts::none)
 {
-  database db(app);
+  database db(app, maybe_unspecified);
   key_store keys(app);
   project_t project(db);
 
