@@ -104,7 +104,7 @@ writefile("_MTN/log", "ok")
 check(mtn("commit", "--date-format", "%Y-%m-%d", "--rcfile=changelog.lua"), 0, false, true)
 if ostype == "Windows" then
    -- date parsing never works on Win32, so
-   -- get_default_command_options specifies --no-format-dates, and
+   -- CMD_PRESET_OPTIONS(commit) specifies --no-format-dates, and
    -- we don't get a warning message.
 else
    check(qgrep("warning: .* using default instead", "stderr"))

@@ -130,7 +130,6 @@ get_user_key(options const & opts, lua_hooks & lua,
       return;
     }
 
-  // key_given is not set if the key option was extracted from the workspace
   if (opts.key_given || !opts.key().empty())
     {
       if (!opts.key().empty())
@@ -173,7 +172,6 @@ cache_netsync_key(options const & opts,
   bool found_key = false;
   key_id key;
 
-  // key_given is not set if the key option was extracted from the workspace
   if (opts.key_given || !opts.key().empty())
     {
       key_identity_info identity;

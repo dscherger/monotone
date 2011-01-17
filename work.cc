@@ -659,8 +659,16 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
 
       if (cur_opts.dbname_given)
         {
-          database old_db(cur_opts, lua);
-          old_db.unregister_workspace(current_workspace);
+          try
+            {
+              database old_db(cur_opts, lua);
+              old_db.unregister_workspace(current_workspace);
+            }
+          catch (recoverable_failure & rf)
+            {
+              W(F("could not unregiser workspace from old database %s")
+                % old_db_path);
+            }
         }
 
       database new_db(opts, lua);
