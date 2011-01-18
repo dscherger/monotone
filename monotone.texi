@@ -13020,7 +13020,7 @@ monotone's user interface. This allows them to be logged just as other
 progress messages, and prevents unexpected out-of-band output in the
 @ref{Automation} interface.
 
-If you explicitely need to write to either stdout or stderr, please use
+If you explicitly need to write to either stdout or stderr, please use
 @code{io.stdout:write} and @code{io.stderr.write}.
 
 @item os.execute, io.popen
