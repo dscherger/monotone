@@ -47,7 +47,7 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
     "",
     options::opts::force_duplicate_key)
 {
-  database db(app, maybe_unspecified);
+  database db(app, database::maybe_unspecified);
   key_store keys(app);
 
   if (args.size() != 1)
@@ -80,7 +80,7 @@ CMD_AUTOMATE(generate_key, N_("KEY_NAME PASSPHRASE"),
   E(args.size() == 2, origin::user,
     F("wrong argument count"));
 
-  database db(app, maybe_unspecified);
+  database db(app, database::maybe_unspecified);
   key_store keys(app);
 
   key_name name = typecast_vocab<key_name>(idx(args, 0));
@@ -124,7 +124,7 @@ dropkey_common(app_state & app,
                args_vector args,
                bool drop_private)
 {
-  database db(app, maybe_unspecified);
+  database db(app, database::maybe_unspecified);
   key_store keys(app);
   bool key_deleted = false;
   bool checked_db = false;
@@ -198,7 +198,7 @@ CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
     throw usage(execid);
 
   key_store keys(app);
-  database db(app, maybe_unspecified);
+  database db(app, database::maybe_unspecified);
   project_t project(db);
   key_identity_info identity;
 
@@ -216,7 +216,7 @@ CMD(ssh_agent_export, "ssh_agent_export", "", CMD_REF(key_and_cert),
     "",
     options::opts::none)
 {
-  database db(app, maybe_unspecified);
+  database db(app, database::maybe_unspecified);
   key_store keys(app);
   project_t project(db);
 
@@ -244,7 +244,7 @@ CMD(ssh_agent_add, "ssh_agent_add", "", CMD_REF(key_and_cert), "",
     "",
     options::opts::none)
 {
-  database db(app, maybe_unspecified);
+  database db(app, database::maybe_unspecified);
   key_store keys(app);
   project_t project(db);
 

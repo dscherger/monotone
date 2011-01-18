@@ -85,7 +85,7 @@ pubkey_common(app_state & app,
               args_vector args,
               std::ostream & output)
 {
-  database db(app, maybe_unspecified);
+  database db(app, database::maybe_unspecified);
   key_store keys(app);
   project_t project(db);
 
@@ -141,7 +141,7 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
     "",
     options::opts::none)
 {
-  database db(app, maybe_unspecified);
+  database db(app, database::maybe_unspecified);
   key_store keys(app);
   project_t project(db);
 
