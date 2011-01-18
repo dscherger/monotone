@@ -30,16 +30,12 @@ do
       _safe_commands = ARA_safe_commands
    end
 
-   local _save_get_remote_automate_permitted = get_remote_automate_permitted
-   function get_remote_automate_permitted(key_identity, command, options)
-      local permfile =
-	 io.open(get_confdir() .. "/remote-automate-permissions", "r")
+   function _get_remote_automate_permitted(key_identity, permfilename)
+      if not exists(permfilename) or isdir(permfilename) then return false end
+      local permfile = io.open(permfilename, "r")
       if (permfile == nil) then
 	 return false
       end
-
-      -- See if the incoming key matches any of the key identities or
-      -- patterns found in the permissions file.
       local matches = false
       local line = permfile:read()
       while (not matches and line ~= nil) do
@@ -52,7 +48,27 @@ do
 	 end
       end
       io.close(permfile)
-      if matches then return true end
+      return matches
+   end
+
+   local _save_get_remote_automate_permitted = get_remote_automate_permitted
+   function get_remote_automate_permitted(key_identity, command, options)
+      local permfilename = get_confdir() .. "/remote-automate-permissions"
+      local permdirname = permfilename .. ".d"
+
+      -- See if the incoming key matches any of the key identities or
+      -- patterns found in the permissions file.
+      if _get_remote_automate_permitted(ident, permfilename) then
+	 return true
+      end
+      if isdir(permdirname) then
+	 local files = read_directory(permdirname)
+	 table.sort(files)
+	 for _,f in ipairs(files) do
+	    pf = permdirname.."/"..f
+	    if _get_remote_automate_permitted(ident, pf) then return true end
+	 end
+      end
 
       -- No matching key found, let's see if the command matches one the
       -- admin allowed to be performed anonymously
