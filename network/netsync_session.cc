@@ -103,7 +103,7 @@ netsync_session::netsync_session(session * owner,
   is_dry_run(opts.dryrun),
   dry_run_keys_refined(false),
   counts(counts),
-  rev_enumerator(project, *this),
+  rev_enumerator(project.db, *this),
   initiated_by_server(initiated_by_server)
 {
   I(counts);
@@ -641,6 +641,16 @@ netsync_session::request_service()
   // user requested
   set<branch_name> all_branches, ok_branches;
   project.get_branch_list(all_branches);
+  {
+    set<branch_name> policies;
+    project.get_subpolicies(branch_name(), policies);
+    branch_name suffix("__policy__", origin::internal);
+    for (set<branch_name>::const_iterator i = policies.begin();
+         i != policies.end(); ++i)
+      {
+        all_branches.insert(*i / suffix);
+      }
+  }
   for (set<branch_name>::const_iterator i = all_branches.begin();
       i != all_branches.end(); i++)
     {
@@ -860,7 +870,7 @@ netsync_session::load_data(netcmd_item_type type,
     {
     case epoch_item:
       {
-        branch_name branch;
+        branch_uid branch;
         epoch_data epoch;
         project.db.get_epoch(epoch_id(item), branch, epoch);
         write_epoch(branch, epoch, out);
@@ -940,14 +950,14 @@ netsync_session::process_data_cmd(netcmd_item_type type,
     {
     case epoch_item:
       {
-        branch_name branch;
+        branch_uid branch;
         epoch_data epoch;
         read_epoch(dat, branch, epoch);
         L(FL("received epoch %s for branch %s")
           % epoch % branch);
-        map<branch_name, epoch_data> epochs;
+        map<branch_uid, epoch_data> epochs;
         project.db.get_epochs(epochs);
-        map<branch_name, epoch_data>::const_iterator i;
+        map<branch_uid, epoch_data>::const_iterator i;
         i = epochs.find(branch);
         if (i == epochs.end())
           {
@@ -1230,6 +1240,16 @@ netsync_session::prepare_to_confirm(key_identity_info const & client_identity,
   set<branch_name> ok_branches, all_branches;
 
   project.get_branch_list(all_branches);
+  {
+    set<branch_name> policies;
+    project.get_subpolicies(branch_name(), policies);
+    branch_name suffix("__policy__", origin::internal);
+    for (set<branch_name>::const_iterator i = policies.begin();
+         i != policies.end(); ++i)
+      {
+        all_branches.insert(*i / suffix);
+      }
+  }
   globish_matcher matcher(our_include_pattern, our_exclude_pattern);
 
   for (set<branch_name>::const_iterator i = all_branches.begin();
@@ -1393,7 +1413,7 @@ netsync_session::rebuild_merkle_trees(set<branch_name> const & branchnames)
   }
 
   {
-    map<branch_name, epoch_data> epochs;
+    map<branch_uid, epoch_data> epochs;
     project.db.get_epochs(epochs);
 
     epoch_data epoch_zero(string(constants::epochlen_bytes, '\x00'),
@@ -1401,8 +1421,8 @@ netsync_session::rebuild_merkle_trees(set<branch_name> const & branchnames)
     for (set<branch_name>::const_iterator i = branchnames.begin();
          i != branchnames.end(); ++i)
       {
-        branch_name const & branch(*i);
-        map<branch_name, epoch_data>::const_iterator j;
+        branch_uid branch = project.translate_branch(*i);
+        map<branch_uid, epoch_data>::const_iterator j;
         j = epochs.find(branch);
 
         // Set to zero any epoch which is not yet set.

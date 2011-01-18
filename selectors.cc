@@ -118,8 +118,17 @@ public:
   }
   virtual set<revision_id> complete(project_t & project)
   {
+    set<branch_name> branches;
+    project.get_branch_list(globish(value, origin::user), branches);
     set<revision_id> ret;
-    project.db.select_cert(branch_cert_name(), value, ret);
+    for (set<branch_name>::const_iterator b = branches.begin();
+         b != branches.end(); ++b)
+      {
+        set<revision_id> revs;
+        branch_uid uid = project.translate_branch(*b);
+        project.db.select_cert(branch_cert_name(), uid(), revs);
+        ret.insert(revs.begin(), revs.end());
+      }
     return ret;
   }
 };
@@ -389,6 +398,7 @@ public:
   }
 };
 
+// FIXME: this needs to translate branch names vs UIDs
 class unknown_selector : public selector
 {
   string value;

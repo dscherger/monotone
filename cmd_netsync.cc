@@ -128,7 +128,7 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   shared_conn_info info;
   extract_client_connection_info(app.opts, project, keys, app.lua,
@@ -230,7 +230,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   shared_conn_info info;
   extract_client_connection_info(app.opts, project, keys, app.lua,
@@ -546,7 +546,7 @@ CMD(push, "push", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   shared_conn_info info;
   extract_client_connection_info(app.opts, project, keys, app.lua,
@@ -569,7 +569,7 @@ CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   shared_conn_info info;
   extract_client_connection_info(app.opts, project, keys, app.lua,
@@ -595,7 +595,7 @@ CMD(pull, "pull", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   maybe_workspace_updater updater(app, project);
 
@@ -630,7 +630,7 @@ CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   shared_conn_info info;
   extract_client_connection_info(app.opts, project, keys, app.lua,
@@ -657,7 +657,7 @@ CMD(sync, "sync", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   maybe_workspace_updater updater(app, project);
 
@@ -695,7 +695,7 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   shared_conn_info info;
   extract_client_connection_info(app.opts, project, keys, app.lua,
@@ -750,11 +750,11 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
   helper.maybe_set_default_alias(app.opts);
 
   database db(app);
-  project_t project(db);
   key_store keys(app);
 
   db.create_if_not_exists();
   db.ensure_open();
+  project_t project(db, app.lua, app.opts);
 
   shared_conn_info info;
   arg_type server = idx(args, 0);
@@ -950,7 +950,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   pid_file pid(app.opts.pidfile);
 
   db.ensure_open();

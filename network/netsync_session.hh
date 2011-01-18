@@ -25,6 +25,7 @@
 #include "network/connection_info.hh"
 #include "network/wrapped_session.hh"
 
+class branch_name;
 class cert;
 
 // A set of session innards that knows how to talk 'netsync'.

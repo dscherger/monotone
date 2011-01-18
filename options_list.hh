@@ -201,6 +201,21 @@ OPTION(globals, positionals, true, "--", "")
   args.push_back(arg_type(arg, origin::user));
 }
 #endif
+
+typedef std::map<branch_name, hexenc<id> > policy_revision_arg_map;
+OPTVAR(globals, policy_revision_arg_map, policy_revisions, )
+OPTION(globals, policy_revisions, true, "policy-revision",
+       gettext_noop("prefix@REVISION_ID, use a specific policy revision"))
+#ifdef option_bodies
+{
+  size_t at = arg.find('@');
+  if (at == std::string::npos)
+    throw bad_arg_internal(F("no '@' found").str());
+  branch_name bn(arg.substr(0, at), origin::user);
+  hexenc<id> rid(arg.substr(at+1), origin::user);
+  policy_revisions.insert(std::make_pair(bn, rid));
+}
+#endif
 // this is a more magic option
 OPTION(globals, xargs, true, "xargs,@",
        gettext_noop("insert command line arguments taken from the given file"))

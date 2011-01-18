@@ -85,7 +85,10 @@ namespace {
 
     out += hexid();
     out += " ";
-    out += info.official_name();
+    if (info.official_name().empty())
+      out += "(no name)";
+    else
+      out += info.official_name();
     if (info.given_name != info.official_name)
       {
         out += " (";
@@ -106,7 +109,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
     throw usage(execid);
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   key_store keys(app);
   vector<cert> certs;
 
@@ -115,6 +118,8 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
   revision_id ident;
   complete(app.opts, app.lua,  project, idx(args, 0)(), ident);
   vector<cert> ts;
+  // FIXME_PROJECTS: after projects are implemented,
+  // use the app.db version instead if no project is specified.
   project.get_revision_certs(ident, ts);
 
   for (size_t i = 0; i < ts.size(); ++i)
@@ -216,7 +221,7 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
   revision_id rev_id;
   roster_t roster;
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   E(app.opts.revision.size() <= 1, origin::user,
     F("more than one revision given"));
@@ -361,7 +366,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   key_map items;
   get_key_list(db, keys, app.lua, project, items);
@@ -413,7 +418,8 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
         {
           duplicate_aliases.insert(alias);
         }
-      seen_aliases.insert(alias);
+      if (!alias.empty())
+        seen_aliases.insert(alias);
 
       string rendered_basic = format_key_for_ls_keys(identity);
       string sort_key = alias + identity.id.inner()();
@@ -485,7 +491,7 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
     throw usage(execid);
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   globish exc(app.opts.exclude);
   set<branch_name> names;
   project.get_branch_list(inc, names, !app.opts.ignore_suspend_certs);
@@ -502,31 +508,46 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
     options::opts::none)
 {
   database db(app);
-  map<branch_name, epoch_data> epochs;
+  map<branch_uid, epoch_data> epochs;
   db.get_epochs(epochs);
+  project_t project(db, app.lua, app.opts);
 
   if (args.empty())
     {
-      for (map<branch_name, epoch_data>::const_iterator
+      std::set<branch_uid> branches;
+      project.get_branch_list(branches);
+      for (map<branch_uid, epoch_data>::const_iterator
              i = epochs.begin();
            i != epochs.end(); ++i)
         {
-          cout << encode_hexenc(i->second.inner()(),
-                                i->second.inner().made_from)
-               << ' ' << i->first << '\n';
+          if (branches.find(i->first) == branches.end())
+            {
+              cout << encode_hexenc(i->second.inner()(), origin::internal)
+                   << ' ' << i->first << '\n';
+            }
+          else
+            {
+              branch_name branch = project.translate_branch(i->first);
+              cout << encode_hexenc(i->second.inner()(), origin::internal)
+                   << ' ' << branch << '\n';
+            }
         }
     }
   else
     {
+      std::set<branch_name> branches;
+      project.get_branch_list(branches, false);
       for (args_vector::const_iterator i = args.begin();
            i != args.end();
            ++i)
         {
-          map<branch_name, epoch_data>::const_iterator j =
-            epochs.find(typecast_vocab<branch_name>((*i)));
+          branch_name branch = typecast_vocab<branch_name>(*i);
+          E(branches.find(branch) != branches.end(), branch.made_from,
+            F("Unknown branch %s") % branch);
+          branch_uid b = project.translate_branch(branch);
+          map<branch_uid, epoch_data>::const_iterator j = epochs.find(b);
           E(j != epochs.end(), origin::user, F("no epoch for branch %s") % *i);
-          cout << encode_hexenc(j->second.inner()(),
-                                j->second.inner().made_from)
+          cout << encode_hexenc(j->second.inner()(), origin::internal)
                << ' ' << j->first << '\n';
         }
     }
@@ -545,7 +566,7 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
 
   database db(app);
   set<tag_t> tags;
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   cert_name branch = branch_cert_name;
 
   project.get_tags(tags);
@@ -554,7 +575,10 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
     {
       key_identity_info identity;
       identity.id = i->key;
-      project.complete_key_identity_from_id(app.lua, identity);
+      if (!null_id(identity.id.inner()))
+        {
+          project.complete_key_identity_from_id(app.lua, identity);
+        }
 
       vector<cert> certs;
       project.get_revision_certs(i->ident, certs);
@@ -573,11 +597,15 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
             {
               if (c->name == branch)
                 {
-                  cout << c->value << ' ';
+                  cout << project.translate_branch(typecast_vocab<branch_uid>(c->value)) << ' ';
                 }
             }
 
-          cout << format_key(identity)  << '\n';
+          if (!null_id(identity.id.inner()))
+            {
+              cout << format_key(identity);
+            }
+          cout << '\n';
         }
     }
 }
@@ -963,7 +991,7 @@ CMD_AUTOMATE(keys, "",
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   key_map items;
   get_key_list(db, keys, app.lua, project, items);
@@ -1021,7 +1049,7 @@ CMD_AUTOMATE(certs, N_("REV"),
     F("wrong argument count"));
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   vector<cert> certs;
 
@@ -1034,8 +1062,6 @@ CMD_AUTOMATE(certs, N_("REV"),
     F("no such revision '%s'") % hrid);
 
   vector<cert> ts;
-  // FIXME_PROJECTS: after projects are implemented,
-  // use the db version instead if no project is specified.
   project.get_revision_certs(rid, ts);
 
   for (size_t i = 0; i < ts.size(); ++i)
