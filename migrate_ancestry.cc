@@ -1112,6 +1112,49 @@ regenerate_file_sizes(database & db)
   P(F("finished regenerating cached file sizes"));
 }
 
+typedef rev_ancestry_map::const_iterator ancestry_iter;
+typedef pair<ancestry_iter, ancestry_iter> ancestry_iter_pair;
+
+// Find all nearest ancestors in the 'reverse' ancestry map,
+// which are also in the 'next_reverse' ancestry map.
+void
+find_chosen_ancestors(rev_ancestry_map const & reverse,
+                      rev_ancestry_map const & next_reverse,
+                      revision_id const & revid,
+                      set<revision_id> & chosen)
+{
+  for (ancestry_iter_pair parents = reverse.equal_range(revid);
+       parents.first != parents.second; ++parents.first)
+    {
+      revision_id const & this_parent = parents.first->second;
+      if (next_reverse.find(this_parent) != next_reverse.end())
+        find_chosen_ancestors(reverse, next_reverse, this_parent, chosen);
+      else
+        chosen.insert(this_parent);
+    }
+}
+
+void
+regenerate_skipgraph(database & db)
+{
+  db.ensure_open_for_cache_reset();
+  transaction_guard guard(db);
+
+  // clear the skipgraph and the data
+  db.delete_skipgraph();
+
+  // rebuild the skipgraph
+  vector<revision_id> sorted_ids;
+  allrevs_toposorted(db, sorted_ids);
+  for (vector<revision_id>::const_iterator r = sorted_ids.begin();
+       r != sorted_ids.end(); ++r)
+    {
+      db.update_skipgraph_for_rev(*r);
+    }
+
+  guard.commit();
+}
+
 void
 regenerate_caches(database & db, regen_cache_type type)
 {
@@ -1125,6 +1168,8 @@ regenerate_caches(database & db, regen_cache_type type)
     regenerate_branches(db);
   if ((type & regen_file_sizes) == regen_file_sizes)
     regenerate_file_sizes(db);
+  if ((type & regen_skipgraph) == regen_skipgraph)
+    regenerate_skipgraph(db);
 }
 
 // Local Variables:

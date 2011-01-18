@@ -38,6 +38,10 @@ namespace constants
   // number of characters in a raw epoch
   std::size_t const epochlen_bytes = idlen_bytes;
 
+  // skipgraph fanout per level
+  // fast netsync refinement requires the same value on both ends
+  std::size_t const skipgraph_fanout = 64;
+
   // default packet size for 'automate stdio'
   std::size_t const default_stdio_packet_size = 32768;
 

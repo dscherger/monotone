@@ -32,7 +32,8 @@ void check_sql_schema(sqlite3 * db, system_path const & filename);
 // value of the "catch all" item "regen_all"
 enum regen_cache_type { regen_none = 0, regen_rosters = 1,
                         regen_heights = 2, regen_branches = 4,
-                        regen_file_sizes = 8, regen_all = 15 };
+                        regen_file_sizes = 8, regen_skipgraph = 16,
+                        regen_all = 31 };
 
 class migration_status {
   regen_cache_type _regen_type;

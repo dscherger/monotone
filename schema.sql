@@ -58,6 +58,24 @@ CREATE TABLE revision_ancestry
 
 CREATE INDEX revision_ancestry__child ON revision_ancestry (child);
 
+CREATE TABLE skip_data
+       (
+       id,				-- matches revisions.id
+       level int,			-- matches skip_graph.level
+       my_cert_summary not null,	-- certs not covered by any parents
+       old_cert_summary not null,	-- from parents' my_ and old_ hashes
+       primary key (id, level)
+       );
+
+CREATE TABLE skip_graph
+       (
+       parent not null,		-- joins with skip_data.id
+       child not null,		-- joins with skip_data.id
+       level int not null	-- skip-graph level
+       );
+
+CREATE UNIQUE INDEX skip_graph_go_backwards ON skip_graph (child, level, parent);
+
 CREATE TABLE heights
 	(
 	revision not null,	-- joins with revisions.id

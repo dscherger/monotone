@@ -2831,6 +2831,40 @@ database::is_a_ancestor_of_b(revision_id const & ancestor,
 }
 
 void
+database::update_skipgraph_for_rev(revision_id const & rid)
+{
+  // This requires all appropriate ancestors to already be in the skipgraph.
+  // During migrate / cache regen, it needs to be called in
+  // toposort order.
+
+  // This node may not belong in the skipgraph at all (maybe it gets skipped)
+  // If it doesn't, any descendants that may be in the graph may need their
+  // my_cert_summary (nearest descendants at each level) or old_cert_summary
+  // (more distant descendants) updated.
+  // If it does, any descendants may still need to have their old_cert_summary
+  // updated.
+  // There can be descendants, because we may well be updating an arbitrarily
+  // old revision that someone just put a new cert on.
+
+  //   1. Does this revision already exist in the skipgraph?
+  // v    If yes, go to 4.
+  // | 2. Find nearest ancestors that are in the skipgraph (use
+  // |    revision_ancestry). Count intervening ancestors, see if we get an
+  // |    entry.
+  // | 3. If we got an entry, go up a level. Find ancestors at the next level
+  // |    up by walking back at the level of the entry we just added, and see
+  // |    if we repeat for the next higher level.
+  // L 4. Rehash our certs plus ancestors' (walking revision_ancestory) certs
+  //      until (not including) our nearest first-level skip parents. If those
+  //      don't match our stored first-level my_cert_summary, then update it
+  //      and all descendants' first-level old_cert_summary's. For each level
+  //      higher, repeat for ourselves (if we're at that level), or all our
+  //      nearest descendants that are at that level.
+
+  // FIXME: populate this
+}
+
+void
 database::get_revision(revision_id const & id,
                        revision_t & rev)
 {
@@ -3080,7 +3114,7 @@ database::put_revision(revision_id const & new_id,
   put_height_for_revision(new_id, rev);
 
   // Finally, commit.
-
+  update_skipgraph_for_rev(new_id);
   guard.commit();
   return true;
 }
@@ -3215,6 +3249,13 @@ void
 database::delete_existing_file_sizes()
 {
   imp->execute(query("DELETE FROM file_sizes"));
+}
+
+void
+database::delete_skipgraph()
+{
+  imp->execute(query("DELETE FROM skip_data"));
+  imp->execute(query("DELETE FROM skip_graph"));
 }
 
 /// Deletes one revision from the local database.
@@ -3815,6 +3856,7 @@ database::put_revision_cert(cert const & cert)
       record_as_branch_leaf(cert.value, cert.ident);
     }
 
+  update_skipgraph_for_rev(cert.ident);
   imp->cert_stamper.note_change();
   return true;
 }

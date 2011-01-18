@@ -195,6 +195,9 @@ public:
   bool is_a_ancestor_of_b(revision_id const & ancestor,
                           revision_id const & child);
 
+  // exposed for cache rebuild
+  void update_skipgraph_for_rev(revision_id const & rid);
+
   void get_revision_ids(std::set<revision_id> & ids);
   // this is exposed for 'db check':
   void get_file_ids(std::set<file_id> & ids);
@@ -492,6 +495,9 @@ public:
   // for regenerate_rosters
   void delete_existing_file_sizes();
   void put_file_sizes_for_revision(revision_t const & rev);
+
+  // for regenerate_skipgraph
+  void delete_skipgraph();
 
 private:
   static database_cache dbcache;

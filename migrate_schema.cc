@@ -875,6 +875,23 @@ char const migrate_add_file_sizes[] =
     "        size not null       -- the size of the file in byte\n"
     "        );";
 
+char const migrate_add_skipgraph[] =
+  "CREATE TABLE skip_data\n"
+  "       (\n"
+  "       id,				-- matches revisions.id\n"
+  "       level int,			-- matches skip_graph.level\n"
+  "       my_cert_summary not null,	-- certs not covered by any parents\n"
+  "       old_cert_summary not null,	-- from parents' my_ and old_ hashes\n"
+  "       primary key (id, level)\n"
+  "       );\n"
+  "CREATE TABLE skip_graph\n"
+  "       (\n"
+  "       parent not null,		-- joins with skip_data.id\n"
+  "       child not null,		-- joins with skip_data.id\n"
+  "       level int not null	-- skip-graph level\n"
+  "       );\n"
+  "CREATE UNIQUE INDEX skip_graph_go_backwards ON skip_graph (child, level, parent);"
+  ;
 
 // these must be listed in order so that ones listed earlier override ones
 // listed later
@@ -970,9 +987,12 @@ const migration_event migration_events[] = {
   { "1f60cec1b0f6c8c095dc6d0ffeff2bd0af971ce1",
     migrate_better_cert_indexing, 0, upgrade_none, regen_none },
 
+  { "c3a13c60edc432f9a7739f8a260565d77112c86e",
+    migrate_add_skipgraph, 0, upgrade_none, regen_skipgraph },
+
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "c3a13c60edc432f9a7739f8a260565d77112c86e", 0, 0, upgrade_none, regen_none }
+  { "10121ea0cab0b1be8ac6c370c7dbf83689bbe094", 0, 0, upgrade_none, regen_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);
