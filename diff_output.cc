@@ -485,8 +485,8 @@ make_diff(string const & filename1,
     }
 
   vector<string> lines1, lines2;
-  split_into_lines(data1(), lines1, true);
-  split_into_lines(data2(), lines2, true);
+  split_into_lines(data1(), lines1, split_flags::diff_compat);
+  split_into_lines(data2(), lines2, split_flags::diff_compat);
 
   vector<long, QA(long)> left_interned;
   vector<long, QA(long)> right_interned;

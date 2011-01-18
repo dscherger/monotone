@@ -4927,10 +4927,10 @@ database_path_helper::get_database_path(options const & opts, system_path & path
 {
   if (!opts.dbname_given ||
       (opts.dbname.as_internal().empty() &&
-       opts.dbname_alias.empty()))
+       opts.dbname_alias.empty() &&
+       opts.dbname_type != memory_db))
     {
-      L(FL("no database option given or options empty"));
-      return;
+      E(false, origin::user, F("no database specified"));
     }
 
   if (opts.dbname_type == unmanaged_db)
@@ -5013,6 +5013,7 @@ database_path_helper::maybe_set_default_alias(options & opts)
   E(lua.hook_get_default_database_alias(alias) && !alias.empty(),
     origin::user, F("could not query default database alias"));
 
+  P(F("using default database '%s'") % alias);
   opts.dbname_given = true;
   opts.dbname_alias = alias;
   opts.dbname_type = managed_db;
@@ -5028,8 +5029,11 @@ database_path_helper::validate_and_clean_alias(string const & alias, path_compon
   E(pure_alias.size() > 0, origin::system,
     F("invalid database alias '%s': must not be empty") % alias);
 
-  size_t pos = pure_alias.rfind('.');
-  if (pos == string::npos || pure_alias.substr(pos + 1) != "mtn")
+  globish matcher;
+  E(lua.hook_get_default_database_glob(matcher),
+    origin::user, F("could not query default database glob"));
+
+  if (!matcher.matches(pure_alias))
     pure_alias += ".mtn";
 
   try

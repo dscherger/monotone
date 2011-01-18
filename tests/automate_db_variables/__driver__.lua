@@ -19,6 +19,8 @@ check(mtn("automate", "set_db_variable", "domain1", "other_var"), 1, false, fals
 --
 
 writefile("expected1",
+	  'domain "database"\n' ..
+          ' entry "known-workspaces" "' .. test.root:gsub('\\', '/') .. '\n"\n\n' ..
           'domain "domain1"\n' ..
           ' entry "other_var" "value"\n' ..
           ' entry "var" "value"\n\n' ..

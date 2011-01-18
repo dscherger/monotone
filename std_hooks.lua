@@ -1078,46 +1078,51 @@ function globish_match(glob, str)
       end
 end
 
-function get_netsync_read_permitted(branch, ident)
-   local permfile = io.open(get_confdir() .. "/read-permissions", "r")
+function _get_netsync_read_permitted(branch, ident, permfilename, state)
+   if not exists(permfilename) or isdir(permfilename) then
+      return false
+   end
+   local permfile = io.open(permfilename, "r")
    if (permfile == nil) then return false end
    local dat = permfile:read("*a")
    io.close(permfile)
    local res = parse_basic_io(dat)
    if res == nil then
-      io.stderr:write("file read-permissions cannot be parsed\n")
-      return false
+      io.stderr:write("file "..permfilename.." cannot be parsed\n")
+      return false,"continue"
    end
-   local matches = false
-   local cont = false
+   state["matches"] = state["matches"] or false
+   state["cont"] = state["cont"] or false
    for i, item in pairs(res)
    do
       -- legal names: pattern, allow, deny, continue
       if item.name == "pattern" then
-         if matches and not cont then return false end
-         matches = false
-         cont = false
+         if state["matches"] and not state["cont"] then return false end
+         state["matches"] = false
+         state["cont"] = false
          for j, val in pairs(item.values) do
-            if globish_match(val, branch) then matches = true end
+            if globish_match(val, branch) then state["matches"] = true end
          end
-      elseif item.name == "allow" then if matches then
+      elseif item.name == "allow" then if state["matches"] then
          for j, val in pairs(item.values) do
             if val == "*" then return true end
             if val == "" and ident == nil then return true end
             if ident ~= nil and val == ident.id then return true end
             if ident ~= nil and globish_match(val, ident.name) then return true end
          end
-      end elseif item.name == "deny" then if matches then
+      end elseif item.name == "deny" then if state["matches"] then
          for j, val in pairs(item.values) do
             if val == "*" then return false end
             if val == "" and ident == nil then return false end
             if ident ~= nil and val == ident.id then return false end
             if ident ~= nil and globish_match(val, ident.name) then return false end
          end
-      end elseif item.name == "continue" then if matches then
-         cont = true
+      end elseif item.name == "continue" then if state["matches"] then
+         state["cont"] = true
          for j, val in pairs(item.values) do
-            if val == "false" or val == "no" then cont = false end
+            if val == "false" or val == "no" then
+              state["cont"] = false
+            end
          end
       end elseif item.name ~= "comment" then
          io.stderr:write("unknown symbol in read-permissions: " .. item.name .. "\n")
@@ -1127,8 +1132,29 @@ function get_netsync_read_permitted(branch, ident)
    return false
 end
 
-function get_netsync_write_permitted(ident)
-   local permfile = io.open(get_confdir() .. "/write-permissions", "r")
+function get_netsync_read_permitted(branch, ident)
+   local permfilename = get_confdir() .. "/read-permissions"
+   local permdirname = permfilename .. ".d"
+   local state = {}
+   if _get_netsync_read_permitted(branch, ident, permfilename, state) then
+      return true
+   end
+   if isdir(permdirname) then
+      local files = read_directory(permdirname)
+      table.sort(files)
+      for _,f in ipairs(files) do
+        pf = permdirname.."/"..f
+        if _get_netsync_read_permitted(branch, ident, pf, state) then
+          return true
+        end
+      end
+   end
+   return false
+end
+
+function _get_netsync_write_permitted(ident, permfilename)
+   if not exists(permfilename) or isdir(permfilename) then return false end
+   local permfile = io.open(permfilename, "r")
    if (permfile == nil) then
       return false
    end
@@ -1143,6 +1169,21 @@ function get_netsync_write_permitted(ident)
    end
    io.close(permfile)
    return matches
+end
+
+function get_netsync_write_permitted(ident)
+   local permfilename = get_confdir() .. "/write-permissions"
+   local permdirname = permfilename .. ".d"
+   if _get_netsync_write_permitted(ident, permfilename) then return true end
+   if isdir(permdirname) then
+      local files = read_directory(permdirname)
+      table.sort(files)
+      for _,f in ipairs(files) do
+        pf = permdirname.."/"..f
+        if _get_netsync_write_permitted(ident, pf) then return true end
+      end
+   end
+   return false
 end
 
 -- This is a simple function which assumes you're going to be spawning
@@ -1261,6 +1302,10 @@ function get_default_database_locations()
     local paths = {}
     table.insert(paths, get_confdir() .. "/databases")
     return paths
+end
+
+function get_default_database_glob()
+    return "*.{mtn,db}"
 end
 
 hook_wrapper_dump                = {}

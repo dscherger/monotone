@@ -44,6 +44,7 @@ using std::pair;
 using std::set;
 using std::sort;
 using std::copy;
+using std::ostream;
 using std::string;
 using std::vector;
 
@@ -614,6 +615,64 @@ CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
     }
 }
 
+static void
+print_workspace_info(database & db, lua_hooks & lua,
+                     ostream & out, string const & indent = string())
+{
+  bool has_valid_workspaces = false;
+
+  vector<system_path> workspaces;
+  db.get_registered_workspaces(workspaces);
+  system_path db_path = db.get_filename();
+
+  database_path_helper helper(lua);
+  for (vector<system_path>::const_iterator k = workspaces.begin();
+       k != workspaces.end(); ++k)
+    {
+      system_path workspace_path(*k);
+      if (!directory_exists(workspace_path / bookkeeping_root_component))
+        {
+          L(FL("ignoring missing workspace '%s'") % workspace_path);
+          continue;
+        }
+
+      options workspace_opts;
+      workspace::get_options(workspace_path, workspace_opts);
+
+      system_path workspace_db_path;
+      helper.get_database_path(workspace_opts, workspace_db_path);
+
+      if (workspace_db_path != db_path)
+        {
+          L(FL("ignoring workspace '%s', expected database %s, "
+               "but has %s configured in _MTN/options")
+              % workspace_path % db_path % workspace_db_path);
+          continue;
+        }
+
+      has_valid_workspaces = true;
+
+      string workspace_branch = workspace_opts.branch();
+      if (!workspace_opts.branch_given)
+        workspace_branch = _("<no branch set>");
+
+      out << indent << F("%s (in %s)") % workspace_branch % workspace_path << '\n';
+    }
+
+    if (!has_valid_workspaces)
+      out << indent << F("no known valid workspaces") << '\n';
+}
+
+CMD(workspaces, "workspaces", "", CMD_REF(list), "",
+    N_("Lists known workspaces of a specified database"),
+    "",
+    options::opts::none)
+{
+  database db(app.opts, app.lua);
+  db.ensure_open();
+  print_workspace_info(db, app.lua, cout);
+}
+
 CMD(databases, "databases", "dbs", CMD_REF(list), "",
     N_("Lists managed databases and their known workspaces"),
     "",
@@ -621,10 +680,12 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
 {
   vector<system_path> search_paths, files, dirs;
 
-  E(app.lua.hook_get_default_database_locations(search_paths), origin::database,
+  E(app.lua.hook_get_default_database_locations(search_paths), origin::user,
     F("could not query default database locations"));
 
-  database_path_helper helper(app.lua);
+  globish file_matcher;
+  E(app.lua.hook_get_default_database_glob(file_matcher), origin::user,
+    F("could not query default database glob"));
 
   for (vector<system_path>::const_iterator i = search_paths.begin();
        i != search_paths.end(); ++i)
@@ -642,19 +703,22 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
 
           // a little optimization, so we don't scan and open every file
           string p = db_path.as_internal();
-          if (p.size() < 4 || p.substr(p.size() - 4) != ".mtn")
+          if (!file_matcher.matches(p))
             {
               L(FL("ignoring file '%s'") % db_path);
               continue;
             }
 
-          options opts;
-          opts.dbname_type = unmanaged_db;
-          opts.dbname = db_path;
-          opts.dbname_given = true;
+          string db_alias = ":" + db_path.as_internal().substr(
+            search_path.as_internal().size() + 1
+          );
 
-          database db(opts, app.lua);
+          options db_opts;
+          db_opts.dbname_type = managed_db;
+          db_opts.dbname_alias = db_alias;
+          db_opts.dbname_given = true;
 
+          database db(db_opts, app.lua);
           try
             {
               db.ensure_open();
@@ -672,51 +736,8 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
               continue;
             }
 
-          string managed_path = db_path.as_internal().substr(
-              search_path.as_internal().size() + 1
-          );
-          cout << F(":%s (in %s):") % managed_path % search_path << '\n';
-
-          bool has_valid_workspaces = false;
-
-          vector<system_path> workspaces;
-          db.get_registered_workspaces(workspaces);
-
-          for (vector<system_path>::const_iterator k = workspaces.begin();
-               k != workspaces.end(); ++k)
-            {
-              system_path workspace_path(*k);
-              if (!directory_exists(workspace_path / bookkeeping_root_component))
-                {
-                  L(FL("ignoring missing workspace '%s'") % workspace_path);
-                  continue;
-                }
-
-              options workspace_opts;
-              workspace::get_options(workspace_path, workspace_opts);
-
-              system_path workspace_db_path;
-              helper.get_database_path(workspace_opts, workspace_db_path);
-
-              if (workspace_db_path != db_path)
-                {
-                  L(FL("ignoring workspace '%s', expected database %s, "
-                       "but has %s configured in _MTN/options")
-                      % workspace_path % db_path % workspace_db_path);
-                  continue;
-                }
-
-              has_valid_workspaces = true;
-
-              string workspace_branch = workspace_opts.branch();
-              if (!workspace_opts.branch_given)
-                workspace_branch = _("<no branch set>");
-
-              cout << F("\t%s (in %s)") % workspace_branch % workspace_path << '\n';
-            }
-
-            if (!has_valid_workspaces)
-              cout << F("\tno known valid workspaces") << '\n';
+            cout << F("%s (in %s):") % db_alias % search_path << "\n";
+            print_workspace_info(db, app.lua, cout, "\t");
         }
     }
 }
@@ -761,10 +782,10 @@ CMD(known, "known", "", CMD_REF(list), "",
        ostream_iterator<file_path>(cout, "\n"));
 }
 
-CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
-    N_("Lists workspace files that do not belong to the current branch"),
-    "",
-    options::opts::depth | options::opts::exclude)
+static void get_unknown_ignored(app_state & app,
+                                args_vector const & args,
+                                set<file_path> & unknown,
+                                set<file_path> & ignored)
 {
   database db(app);
   workspace work(app);
@@ -772,24 +793,36 @@ CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
   vector<file_path> roots = args_to_paths(args);
   path_restriction mask(roots, args_to_paths(app.opts.exclude),
                         app.opts.depth, ignored_file(work));
-  set<file_path> unknown, ignored;
 
   // if no starting paths have been specified use the workspace root
   if (roots.empty())
     roots.push_back(file_path());
 
   work.find_unknown_and_ignored(db, mask, roots, unknown, ignored);
+}
 
-  utf8 const & realname = execid[execid.size() - 1];
-  if (realname() == "ignored")
-    copy(ignored.begin(), ignored.end(),
-         ostream_iterator<file_path>(cout, "\n"));
-  else
-    {
-      I(realname() == "unknown");
-      copy(unknown.begin(), unknown.end(),
-           ostream_iterator<file_path>(cout, "\n"));
-    }
+CMD(unknown, "unknown", "", CMD_REF(list), "[PATH]",
+    N_("Lists workspace files that are unknown in the current branch"),
+    "",
+    options::opts::depth | options::opts::exclude)
+{
+  set<file_path> unknown, _;
+  get_unknown_ignored(app, args, unknown, _);
+
+  copy(unknown.begin(), unknown.end(),
+       ostream_iterator<file_path>(cout, "\n"));
+}
+
+CMD(ignored, "ignored", "", CMD_REF(list), "[PATH]",
+    N_("Lists workspace files that are ignored in the current branch"),
+    "",
+    options::opts::depth | options::opts::exclude)
+{
+  set<file_path> _, ignored;
+  get_unknown_ignored(app, args, _, ignored);
+
+  copy(ignored.begin(), ignored.end(),
+       ostream_iterator<file_path>(cout, "\n"));
 }
 
 CMD(missing, "missing", "", CMD_REF(list), "",
@@ -815,7 +848,7 @@ CMD(missing, "missing", "", CMD_REF(list), "",
 }
 
 
-CMD(changed, "changed", "", CMD_REF(list), "",
+CMD(changed, "changed", "", CMD_REF(list), "[PATH...]",
     N_("Lists files that have changed with respect to the current revision"),
     "",
     options::opts::depth | options::opts::exclude)

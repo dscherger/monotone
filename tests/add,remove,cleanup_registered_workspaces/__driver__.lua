@@ -4,10 +4,6 @@ mtn_setup()
 testname="add,remove,cleanup_registered_workspaces"
 
 check(mtn("ls", "vars"), 0, true, false)
-check(not qgrep("database: known-workspaces", "stdout"))
-
-check(mtn("register_workspace"), 0, false, false)
-check(mtn("ls", "vars"), 0, true, false)
 check(qgrep("database: known-workspaces .+/"..testname, "stdout"))
 
 check(mtn("register_workspace", "foo"), 0, false, false)
@@ -16,6 +12,10 @@ check(qgrep("database: known-workspaces .+/"..testname, "stdout"))
 check(qgrep(testname.."/foo", "stdout"))
 
 check(nodb_mtn("db", "init", "-d", "other.mtn"), 0, false, false)
+
+check(nodb_mtn("ls", "vars", "-d", "other.mtn"), 0, true, false)
+check(not qgrep("database: known-workspaces", "stdout"))
+
 check(nodb_mtn("setup", "-b", "bar", "-d", "other.mtn", "bar"), 0, false, false)
 check(mtn("register_workspace", "bar"), 0, false, false)
 check(mtn("ls", "vars"), 0, true, false)

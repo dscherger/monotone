@@ -56,6 +56,13 @@ building and installation process for monotone
              autoconf automake gettext boost boost-devel zlib zlib-devel
              lua lua-devel pcre pcre-devel sqlite sqlite-devel libidn
              libidn-devel gcc-c++ texinfo texinfo-tex botan botan-devel
+ 
+        on openSUSE:
+
+            install the following extra packages with YaST or zypper:
+              autoconf automake gettext-tools gcc-g++ boost-devel zlib-devel
+              libbotan-devel sqlite3-dev pcre-devel lua-devel libidn-devel
+              libbz2-devel texinfo make
 
         on Mac OS X:
 

@@ -667,7 +667,7 @@ _monotone() {
 			argtype=${args[${#args[*]}-2]}
 		    fi
 		    case $argtype in
-			PATH | *FILENAME )
+			*PATH | PATHS | *FILENAME )
 			    _filedir
 			    ;;
 			REV* | NEW_REV* | OLD_REV* | *REVID | FROM | TO )

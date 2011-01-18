@@ -313,22 +313,6 @@ LUAEXT(copy_recursive, )
     }
 }
 
-LUAEXT(mkdir, )
-{
-  try
-    {
-      char const * dirname = luaL_checkstring(LS, -1);
-      do_mkdir(dirname);
-      lua_pushboolean(LS, true);
-      return 1;
-    }
-  catch(recoverable_failure & e)
-    {
-      lua_pushnil(LS);
-      return 1;
-    }
-}
-
 LUAEXT(make_temp_dir, )
 {
   try
@@ -365,88 +349,6 @@ LUAEXT(mtime, )
       lua_pushnil(LS);
       return 1;
     }
-}
-
-LUAEXT(exists, )
-{
-  try
-    {
-      char const * name = luaL_checkstring(LS, -1);
-      switch (get_path_status(name))
-        {
-        case path::nonexistent:  lua_pushboolean(LS, false); break;
-        case path::file:
-        case path::directory:    lua_pushboolean(LS, true); break;
-        }
-    }
-  catch(recoverable_failure & e)
-    {
-      lua_pushnil(LS);
-    }
-  return 1;
-}
-
-LUAEXT(isdir, )
-{
-  try
-    {
-      char const * name = luaL_checkstring(LS, -1);
-      switch (get_path_status(name))
-        {
-        case path::nonexistent:
-        case path::file:         lua_pushboolean(LS, false); break;
-        case path::directory:    lua_pushboolean(LS, true); break;
-        }
-    }
-  catch(recoverable_failure & e)
-    {
-      lua_pushnil(LS);
-    }
-  return 1;
-}
-
-namespace
-{
-  struct build_table : public dirent_consumer
-  {
-    build_table(lua_State * st) : st(st), n(1)
-    {
-      lua_newtable(st);
-    }
-    virtual void consume(const char *s)
-    {
-      lua_pushstring(st, s);
-      lua_rawseti(st, -2, n);
-      n++;
-    }
-  private:
-    lua_State * st;
-    unsigned int n;
-  };
-}
-
-LUAEXT(read_directory, )
-{
-  int top = lua_gettop(LS);
-  try
-    {
-      string path(luaL_checkstring(LS, -1));
-      build_table tbl(LS);
-
-      read_directory(path, tbl, tbl, tbl);
-    }
-  catch(recoverable_failure &)
-    {
-      // discard the table and any pending path element
-      lua_settop(LS, top);
-      lua_pushnil(LS);
-    }
-  catch (...)
-    {
-      lua_settop(LS, top);
-      throw;
-    }
-  return 1;
 }
 
 LUAEXT(get_source_dir, )

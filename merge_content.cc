@@ -424,15 +424,18 @@ content_merger::attempt_auto_merge(file_path const & anc_path, // inputs
   string const right_encoding(get_file_encoding(right_path, right_ros));
 
   vector<string> left_lines, ancestor_lines, right_lines, merged_lines;
-  split_into_lines(left_unpacked(), left_encoding, left_lines);
-  split_into_lines(ancestor_unpacked(), anc_encoding, ancestor_lines);
-  split_into_lines(right_unpacked(), right_encoding, right_lines);
+  split_into_lines(left_unpacked(), left_encoding, left_lines,
+                   split_flags::keep_endings);
+  split_into_lines(ancestor_unpacked(), anc_encoding, ancestor_lines,
+                   split_flags::keep_endings);
+  split_into_lines(right_unpacked(), right_encoding, right_lines,
+                   split_flags::keep_endings);
 
   if (merge3(ancestor_lines, left_lines, right_lines, merged_lines))
     {
       string tmp;
 
-      join_lines(merged_lines, tmp);
+      join_lines(merged_lines, tmp, "");
       merge_data = file_data(tmp, origin::internal);
       return true;
     }

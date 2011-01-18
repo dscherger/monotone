@@ -15,21 +15,23 @@
 std::string uppercase(std::string const & in);
 std::string lowercase(std::string const & in);
 
-void split_into_lines(std::string const & in,
-                      std::vector<std::string> & out);
-
-void split_into_lines(std::string const & in,
-                      std::string const & encoding,
-                      std::vector<std::string> & out);
+namespace split_flags
+{
+  enum split_flags {
+    none = 0,
+    diff_compat = 1,
+    keep_endings = 2
+  };
+}
 
 void split_into_lines(std::string const & in,
                       std::vector<std::string> & out,
-                      bool diff_compat);
+                      split_flags::split_flags flags = split_flags::none);
 
 void split_into_lines(std::string const & in,
                       std::string const & encoding,
                       std::vector<std::string> & out,
-                      bool diff_compat);
+                      split_flags::split_flags flags = split_flags::none);
 
 void join_lines(std::vector<std::string> const & in,
                 std::string & out,
