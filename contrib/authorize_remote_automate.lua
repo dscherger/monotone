@@ -1,5 +1,6 @@
 -- Copyright (c) 2010, Thomas Keller <me@thomaskeller.biz>
 --                     Richard Levitte <richard@levitte.org>
+-- License: GPLv2 or later
 --
 -- This script reads key identities from a file "remote-automate-permissions"
 -- in the configuration directory and permits those authenticating with one
