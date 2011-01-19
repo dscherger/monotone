@@ -58,7 +58,7 @@ do
 
       -- See if the incoming key matches any of the key identities or
       -- patterns found in the permissions file.
-      if _get_remote_automate_permitted(ident, permfilename) then
+      if _get_remote_automate_permitted(key_identity, permfilename) then
 	 return true
       end
       if isdir(permdirname) then
@@ -66,7 +66,9 @@ do
 	 table.sort(files)
 	 for _,f in ipairs(files) do
 	    pf = permdirname.."/"..f
-	    if _get_remote_automate_permitted(ident, pf) then return true end
+	    if _get_remote_automate_permitted(key_identity, pf) then
+	       return true
+	    end
 	 end
       end
 
