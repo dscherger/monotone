@@ -4497,22 +4497,29 @@ database::get_vars(map<var_key, var_value> & vars)
 void
 database::get_var(var_key const & key, var_value & value)
 {
-  // FIXME: sillyly inefficient.  Doesn't really matter, though.
-  map<var_key, var_value> vars;
-  get_vars(vars);
-  map<var_key, var_value>::const_iterator i = vars.find(key);
-  I(i != vars.end());
-  value = i->second;
+  results res;
+  imp->fetch(res, one_col, any_rows, 
+             query("SELECT value FROM db_vars "
+                   "WHERE domain = ? AND name = ?")
+                   % text(key.first())
+                   % blob(key.second()));
+  I(res.size() == 1);
+  var_value dbvalue(res[0][0], origin::database);
+  value = dbvalue;
 }
 
 bool
 database::var_exists(var_key const & key)
 {
-  // FIXME: sillyly inefficient.  Doesn't really matter, though.
-  map<var_key, var_value> vars;
-  get_vars(vars);
-  map<var_key, var_value>::const_iterator i = vars.find(key);
-  return i != vars.end();
+  results res;
+  imp->fetch(res, one_col, any_rows,
+             query("SELECT 1 "
+                   "WHERE EXISTS("
+                   "  SELECT 1 FROM db_vars "
+                   "  WHERE domain = ? AND name = ?)")
+                   % text(key.first())
+                   % blob(key.second()));
+  return ! res.empty();
 }
 
 void
