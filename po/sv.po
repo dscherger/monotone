@@ -158,7 +158,7 @@ msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2011-01-20 14:26+0100\n"
-"PO-Revision-Date: 2011-01-21 01:10+0100\n"
+"PO-Revision-Date: 2011-01-21 15:13+0100\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -4810,7 +4810,7 @@ msgstr "lagrar den publika nyckeln '%s' i %s"
 #: key_store.cc:762
 #, c-format
 msgid "key '%s' has hash '%s'"
-msgstr "nyckeln '%s' has kontrollsumman '%s'"
+msgstr "nyckeln '%s' har kontrollsumman '%s'"
 
 #: key_store.cc:828
 #, c-format
