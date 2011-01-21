@@ -154,8 +154,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2011-01-17 12:50+0100\n"
-"PO-Revision-Date: 2011-01-17 13:15+0100\n"
+"POT-Creation-Date: 2011-01-20 14:26+0100\n"
+"PO-Revision-Date: 2011-01-21 00:39+0100\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -947,7 +947,7 @@ msgstr "kunde inte köra kommandot för formatering av manualsidor '%s': %s"
 msgid "--message and --message-file are mutually exclusive"
 msgstr "--message och --message-file får inte anges samtidigt"
 
-#: cmd_netsync.cc:68 cmd_netsync.cc:766
+#: cmd_netsync.cc:68 cmd_netsync.cc:768
 #, c-format
 msgid "cannot use --exclude in URL mode"
 msgstr "kan inte använda --exclude när en URL används"
@@ -964,25 +964,26 @@ msgstr ""
 msgid "Opens an 'automate stdio' connection to a remote server"
 msgstr "Öppnar en koppling till en server, typ 'automate stdio'"
 
-#: cmd_netsync.cc:122 cmd_netsync.cc:224
-#, c-format
+#: cmd_netsync.cc:122 cmd_netsync.cc:225
+#, fuzzy, c-format
 msgid ""
-"No database given; assuming '%s' database. This means that we can't\n"
-"verify the server key, because we have no record of what it should be."
+"No database given; assuming '%s' database. This means that\n"
+"we can't verify the server key, because we have no record of\n"
+"what it should be."
 msgstr ""
-"Ingen databas angiven; databasen '%s' antagen.  Detta innebär att vi\n"
-"inte kan kolla servernyckeln, eftersom vi inte har någon uppgift om\n"
-"vad den borde vara."
+"Ingen databas angiven; databasen '%s' antagen.  Detta innebär\n"
+"att vi inte kan kolla servernyckeln, eftersom vi inte har\n"
+"någon uppgift om vad den borde vara."
 
-#: cmd_netsync.cc:211
+#: cmd_netsync.cc:212
 msgid "COMMAND [ARGS]"
 msgstr "KOMMANDO [ARGUMENT]"
 
-#: cmd_netsync.cc:212
+#: cmd_netsync.cc:213
 msgid "Executes COMMAND on a remote server"
 msgstr "Kör KOMMANDO på servern i andra änden"
 
-#: cmd_netsync.cc:220 cmd_list.cc:1021 cmd_packet.cc:73 cmd_packet.cc:134
+#: cmd_netsync.cc:221 cmd_list.cc:1021 cmd_packet.cc:73 cmd_packet.cc:134
 #: cmd_packet.cc:254 cmd_key_cert.cc:81 cmd_key_cert.cc:186 cmd_merging.cc:384
 #: cmd_merging.cc:1141 cmd_merging.cc:1219 cmd_ws_commit.cc:1134
 #: cmd_ws_commit.cc:1342 cmd_ws_commit.cc:1456 cmd_ws_commit.cc:1478
@@ -998,41 +999,41 @@ msgstr "Kör KOMMANDO på servern i andra änden"
 msgid "wrong argument count"
 msgstr "felaktigt antal givna argument"
 
-#: cmd_netsync.cc:278
+#: cmd_netsync.cc:280
 #, c-format
 msgid "received remote error code %d"
 msgstr "fick felkod %d från andra änden"
 
-#: cmd_netsync.cc:291
+#: cmd_netsync.cc:293
 #, c-format
 msgid "would receive %d revisions, %d certs, and at least %d keys\n"
 msgstr ""
 "skulle ha tagit emot %d revisioner, %d certifikat och minst %d nycklar\n"
 
-#: cmd_netsync.cc:298
+#: cmd_netsync.cc:300
 #, c-format
 msgid "would receive %d revisions, %d certs, and %d keys\n"
 msgstr "skulle ha tagit emot %d revisioner, %d certifikat och %d nycklar\n"
 
-#: cmd_netsync.cc:306
+#: cmd_netsync.cc:308
 #, c-format
 msgid "would send %d certs and %d keys\n"
 msgstr "skulle ha skickat %d certifikat och %d nycklar\n"
 
-#: cmd_netsync.cc:310
+#: cmd_netsync.cc:312
 #, c-format
 msgid "would send %d revisions\n"
 msgid_plural "would send %d revisions:\n"
 msgstr[0] "skulle ha skickat %d revisioner\n"
 msgstr[1] "skulle ha skickat %d revisioner:\n"
 
-#: cmd_netsync.cc:329
+#: cmd_netsync.cc:331
 #, c-format
 msgid "%9d in branch %s\n"
 msgstr "%9d i grenen %s\n"
 
-#: cmd_netsync.cc:539 cmd_netsync.cc:562 cmd_netsync.cc:588 cmd_netsync.cc:623
-#: cmd_netsync.cc:649 cmd_netsync.cc:689
+#: cmd_netsync.cc:541 cmd_netsync.cc:564 cmd_netsync.cc:590 cmd_netsync.cc:625
+#: cmd_netsync.cc:651 cmd_netsync.cc:691
 msgid ""
 "[URL]\n"
 "[ADDRESS[:PORTNUMBER] [PATTERN ...]]"
@@ -1040,11 +1041,11 @@ msgstr ""
 "[URL]\n"
 "[ADRESS[:PORTNUMMER] [MÖNSTER ...]]"
 
-#: cmd_netsync.cc:540 cmd_netsync.cc:563
+#: cmd_netsync.cc:542 cmd_netsync.cc:565
 msgid "Pushes branches to a netsync server"
 msgstr "Skickar grenar till en netsync-server"
 
-#: cmd_netsync.cc:541
+#: cmd_netsync.cc:543
 msgid ""
 "This will push all branches that match the pattern given in PATTERN to the "
 "netsync server at the address ADDRESS."
@@ -1052,11 +1053,11 @@ msgstr ""
 "Det här kommer att skicka alla grenar som matchar MÖNSTER till netsync-"
 "server på adressen ADRESS"
 
-#: cmd_netsync.cc:589 cmd_netsync.cc:624
+#: cmd_netsync.cc:591 cmd_netsync.cc:626
 msgid "Pulls branches from a netsync server"
 msgstr "Hämtar grenar från netsync-server"
 
-#: cmd_netsync.cc:590
+#: cmd_netsync.cc:592
 msgid ""
 "This pulls all branches that match the pattern given in PATTERN from the "
 "netsync server at the address ADDRESS."
@@ -1064,16 +1065,16 @@ msgstr ""
 "Det här hämtar alla grenar som matchar MÖNSTER till netsync-server på "
 "adressen ADRESS"
 
-#: cmd_netsync.cc:607 cmd_netsync.cc:844
+#: cmd_netsync.cc:609 cmd_netsync.cc:846
 #, c-format
 msgid "doing anonymous pull; use -kKEYNAME if you need authentication"
 msgstr "hämtar anonymt; använd -kNYCKELNAMN om du behöver autentisera"
 
-#: cmd_netsync.cc:650 cmd_netsync.cc:690
+#: cmd_netsync.cc:652 cmd_netsync.cc:692
 msgid "Synchronizes branches with a netsync server"
 msgstr "Synkronisera grenar med en netsync-server"
 
-#: cmd_netsync.cc:651
+#: cmd_netsync.cc:653
 msgid ""
 "This synchronizes branches that match the pattern given in PATTERN with the "
 "netsync server at the address ADDRESS."
@@ -1081,7 +1082,7 @@ msgstr ""
 "Det här synkronisera grenar som matchar MÖNSTER med netsync-server på "
 "adressen ADRESS"
 
-#: cmd_netsync.cc:721
+#: cmd_netsync.cc:723
 msgid ""
 "URL [DIRECTORY]\n"
 "HOST[:PORTNUMBER] BRANCH [DIRECTORY]"
@@ -1089,11 +1090,11 @@ msgstr ""
 "URL [KATALOG]\n"
 "ADRESS[:PORTNUMMER] GREN [KATALOG]"
 
-#: cmd_netsync.cc:722
+#: cmd_netsync.cc:724
 msgid "Checks out a revision from a remote database into a directory"
 msgstr "Hämtar en revision från en databas på en annan dator till en katalog"
 
-#: cmd_netsync.cc:723
+#: cmd_netsync.cc:725
 msgid ""
 "If a revision is given, that's the one that will be checked out.  Otherwise, "
 "it will be the head of the branch supplied.  If no directory is given, the "
@@ -1103,63 +1104,63 @@ msgstr ""
 "kommer lövet i grenen (implicit eller angiven) att hämtas. Om ingen katalog "
 "anges kommer grenens namn att användas som katalognamn."
 
-#: cmd_netsync.cc:742
+#: cmd_netsync.cc:744
 #, c-format
 msgid "the --branch option is only valid with an URI to clone"
 msgstr "Flaggan --branch kan enbart användas tillsammans med en URL"
 
-#: cmd_netsync.cc:791
+#: cmd_netsync.cc:793
 #, c-format
 msgid "you must specify an unambiguous branch to clone"
 msgstr "du måste ange en unik gren att klona"
 
-#: cmd_netsync.cc:823
+#: cmd_netsync.cc:825
 #, c-format
 msgid "clone destination directory '%s' already exists"
 msgstr "kloningens tilltänkta katalog '%s' finns redan"
 
-#: cmd_netsync.cc:830 cmd_ws_commit.cc:1842 cmd_ws_commit.cc:1931
+#: cmd_netsync.cc:832 cmd_ws_commit.cc:1842 cmd_ws_commit.cc:1931
 #, c-format
 msgid "bookkeeping directory already exists in '%s'"
 msgstr "det finns redan en administrativ katalog i '%s'"
 
-#: cmd_netsync.cc:864 cmd_merging.cc:535 cmd_merging.cc:636 cmd_merging.cc:641
+#: cmd_netsync.cc:866 cmd_merging.cc:535 cmd_merging.cc:636 cmd_merging.cc:641
 #: cmd_merging.cc:1471 cmd_ws_commit.cc:1030
 #, c-format
 msgid "branch '%s' is empty"
 msgstr "grenen '%s' är tom"
 
-#: cmd_netsync.cc:867 cmd_ws_commit.cc:1033 cmd_ws_commit.cc:1910
+#: cmd_netsync.cc:869 cmd_ws_commit.cc:1033 cmd_ws_commit.cc:1910
 #, c-format
 msgid "branch %s has multiple heads:"
 msgstr "grenen %s har flera löv:"
 
-#: cmd_netsync.cc:871
+#: cmd_netsync.cc:873
 #, c-format
 msgid "choose one with '%s clone -r<id> URL'"
 msgstr "välj ett med '%s clone -r<id> URL'"
 
-#: cmd_netsync.cc:872 cmd_ws_commit.cc:1039 cmd_ws_commit.cc:1916
+#: cmd_netsync.cc:874 cmd_ws_commit.cc:1039 cmd_ws_commit.cc:1916
 #, c-format
 msgid "branch %s has multiple heads"
 msgstr "grenen %s har flera löv"
 
-#: cmd_netsync.cc:883 cmd_ws_commit.cc:1054 cmd_ws_commit.cc:1896
+#: cmd_netsync.cc:885 cmd_ws_commit.cc:1054 cmd_ws_commit.cc:1896
 #, c-format
 msgid "revision %s is not a member of branch %s"
 msgstr "revisionen %s är inte med i grenen %s"
 
-#: cmd_netsync.cc:916
+#: cmd_netsync.cc:918
 #, c-format
 msgid "pid file '%s' already exists"
 msgstr "pid-filen '%s' finns redan"
 
-#: cmd_netsync.cc:918
+#: cmd_netsync.cc:920
 #, c-format
 msgid "failed to create pid file '%s'"
 msgstr "misslyckades med att skapa pid-filen %s"
 
-#: cmd_netsync.cc:941
+#: cmd_netsync.cc:943
 msgid "Serves the database to connecting clients"
 msgstr "Servera databasen till anslutande klienter"
 
@@ -8508,4 +8509,3 @@ msgstr "Tryck på Enter"
 #: std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Tryck [Retur] när underprocessen är klar"
-
