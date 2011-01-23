@@ -359,7 +359,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
   if (args.size() > 1)
     throw usage(execid);
 
-  database db(app);
+  database db(app, database::maybe_unspecified);
   key_store keys(app);
   project_t project(db);
 
@@ -961,7 +961,7 @@ CMD_AUTOMATE(keys, "",
   E(args.empty(), origin::user,
     F("no arguments needed"));
 
-  database db(app);
+  database db(app, database::maybe_unspecified);
   key_store keys(app);
   project_t project(db);
 

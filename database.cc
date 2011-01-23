@@ -509,14 +509,14 @@ database_impl::~database_impl()
 
 database_cache database::dbcache;
 
-database::database(app_state & app)
-  : opts(app.opts), lua(app.lua)
+database::database(app_state & app, database::dboptions d)
+  : opts(app.opts), lua(app.lua), dbopts(d)
 {
   init();
 }
 
-database::database(options const & o, lua_hooks & l)
-  : opts(o), lua(l)
+database::database(options const & o, lua_hooks & l, database::dboptions d)
+  : opts(o), lua(l), dbopts(d)
 {
   init();
 }
@@ -526,7 +526,7 @@ database::init()
 {
   database_path_helper helper(lua);
   system_path dbpath;
-  helper.get_database_path(opts, dbpath);
+  helper.get_database_path(opts, dbpath, dbopts);
 
   // FIXME: for all :memory: databases an empty path is returned above, thus
   // all requests for a :memory: database point to the same database
@@ -4930,13 +4930,20 @@ conditional_transaction_guard::commit()
 }
 
 void
-database_path_helper::get_database_path(options const & opts, system_path & path)
+database_path_helper::get_database_path(options const & opts,
+                                        system_path & path,
+                                        database::dboptions dbopts)
 {
   if (!opts.dbname_given ||
       (opts.dbname.as_internal().empty() &&
        opts.dbname_alias.empty() &&
        opts.dbname_type != memory_db))
     {
+      if (dbopts == database::maybe_unspecified)
+        {
+          L(FL("no database option given or options empty"));
+          return;
+        }
       E(false, origin::user, F("no database specified"));
     }
 
