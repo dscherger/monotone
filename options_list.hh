@@ -217,7 +217,7 @@ SIMPLE_OPTION(automate_stdio_size, "automate-stdio-size",
               gettext_noop("block size in bytes for \"automate stdio\" output"))
 
 SIMPLE_OPTION(auto_update, "update/no-update", bool,
-              gettext_noop("automatically update the workspace, if it was at a head and the"
+              gettext_noop("automatically update the workspace, if it was at a head and the "
                            "command creates a new head"))
 
 OPTSET(bind_opts)
