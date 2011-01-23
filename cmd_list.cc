@@ -782,10 +782,10 @@ CMD(known, "known", "", CMD_REF(list), "",
        ostream_iterator<file_path>(cout, "\n"));
 }
 
-CMD(unknown, "unknown", "ignored", CMD_REF(list), "[PATH]",
-    N_("Lists workspace files that do not belong to the current branch"),
-    "",
-    options::opts::depth | options::opts::exclude)
+static void get_unknown_ignored(app_state & app,
+                                args_vector const & args,
+                                set<file_path> & unknown,
+                                set<file_path> & ignored)
 {
   database db(app);
   workspace work(app);
@@ -793,24 +793,36 @@ CMD(unknown, "unknown", "ignored", CMD_REF(list), "[PATH]",
   vector<file_path> roots = args_to_paths(args);
   path_restriction mask(roots, args_to_paths(app.opts.exclude),
                         app.opts.depth, ignored_file(work));
-  set<file_path> unknown, ignored;
 
   // if no starting paths have been specified use the workspace root
   if (roots.empty())
     roots.push_back(file_path());
 
   work.find_unknown_and_ignored(db, mask, roots, unknown, ignored);
+}
 
-  utf8 const & realname = execid[execid.size() - 1];
-  if (realname() == "ignored")
-    copy(ignored.begin(), ignored.end(),
-         ostream_iterator<file_path>(cout, "\n"));
-  else
-    {
-      I(realname() == "unknown");
-      copy(unknown.begin(), unknown.end(),
-           ostream_iterator<file_path>(cout, "\n"));
-    }
+CMD(unknown, "unknown", "", CMD_REF(list), "[PATH]",
+    N_("Lists workspace files that are unknown in the current branch"),
+    "",
+    options::opts::depth | options::opts::exclude)
+{
+  set<file_path> unknown, _;
+  get_unknown_ignored(app, args, unknown, _);
+
+  copy(unknown.begin(), unknown.end(),
+       ostream_iterator<file_path>(cout, "\n"));
+}
+
+CMD(ignored, "ignored", "", CMD_REF(list), "[PATH]",
+    N_("Lists workspace files that are ignored in the current branch"),
+    "",
+    options::opts::depth | options::opts::exclude)
+{
+  set<file_path> _, ignored;
+  get_unknown_ignored(app, args, _, ignored);
+
+  copy(ignored.begin(), ignored.end(),
+       ostream_iterator<file_path>(cout, "\n"));
 }
 
 CMD(missing, "missing", "", CMD_REF(list), "",

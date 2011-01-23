@@ -4955,7 +4955,7 @@ Revision arguments to commands may be selectors or hex ids.
 These options are available on all commands.
 
 @ftable @command
-@item --confdir <arg>
+@anchor{--confdir}@item --confdir <arg>
 Set the location of the configuration directory (default
 @file{$HOME/.monotone} on Unix and Cygwin, @file{%APPDATA%\monotone%} on
 Windows MinGW). In this manual, references to these specific directories are
@@ -10986,6 +10986,8 @@ Keyboard interaction is disabled, just as if
 operations on password-encrypted private keys will therefore fail
 unless the @command{@ref{get_passphrase}} hook is set up locally.
 
+Workspace options are read before executing each command.
+
 @item Multiple streams
 
 The multiple stream encoding allows the output of errors and warnings to be
@@ -11179,7 +11181,7 @@ possible to point it at a directory within a module as well.  Whatever
 directory you point it at will become the root of monotone's version of
 the tree.
 
-@item mtn git_export [--authors-file=@var{authors-file}] [--branches-file=@var{branches-file}]
+@anchor{mtn git_export}@item mtn git_export [--authors-file=@var{authors-file}] [--branches-file=@var{branches-file}]
 @itemx  [--import-marks=@var{marks-file}] [--export-marks=@var{marks-file}]
 @itemx  [--log-revids] [--log-certs] [--use-one-changelog]
 @itemx  [--refs=@var{type}]
@@ -11190,8 +11192,7 @@ fast-import.
 
 The @option{--authors-file} option may be used to map monotone author
 and committer names to different values in a manner similar to that
-documented in git-svn(1). Mappings are specified in the
-@var{authors-file} as:
+documented in git-svn(1). Mappings are specified in the file as:
 @verbatim
 loginname = Joe User <user@example.com>
 @end verbatim
@@ -11309,7 +11310,7 @@ data (mostly structured), @code{basic_io}, @code{stdio}, and @code{packet}.
 while @code{stdio} is used for communication with @code{automate stdio}.
 
 The @code{stdio} format is not described here.  For information on it,
-see @ref{mtn automate stdio}.
+see @command{@ref{mtn automate stdio}}.
 
 The @code{packet} format is not described here; see @ref{Packet I/O}.
 For examples, see @command{@ref{mtn automate packet_for_fdelta}}, @command{@ref{mtn
@@ -12654,19 +12655,20 @@ Exporting monotone revisions in git-fast-import(1) format often
 requires translation of monotone author cert values and associated
 signing keys into corresponding git author and committer
 values. Translation of author and committer values and validation of
-the results is controlled by these hooks. See @ref{Default hooks}.
+the results is controlled by these hooks. See @command{@ref{mtn git_export}}.
 
 @ftable @code
 
 @item unmapped_git_author(@var{author})
 
 This hook is called for any git author or committer value that does
-not come from the current @emph{author map} file. If no @emph{author
-map} file is specified this hook will be called for @emph{every}
-unique git author and committer value.  It may return the value
-unchanged or modify it in some way in an effort to ensure that it is
-valid. The default implementation attempts several common pattern
-replacements to produce valid authors from monotone authors.
+not come from the current @emph{author map} file, specified by
+@option{--authors-file}. If no @emph{author map} file is specified
+this hook will be called for @emph{every} unique git author and
+committer value.  It may return the value unchanged or modify it in
+some way in an effort to ensure that it is valid. The default
+implementation attempts several common pattern replacements to produce
+valid authors from monotone authors.
 
 @item validate_git_author(@var{author})
 
@@ -12676,6 +12678,8 @@ the mapped value from the current @emph{author map} file or the value
 produced by the @code{unmapped_git_author} hook. This hook may return
 true if the author is valid or false if it is not. The export will be
 aborted if this hook returns false for any value.
+
+The default definition enforces the @code{Name <email>} pattern.
 
 @end ftable
 
@@ -12688,31 +12692,34 @@ allow a client to validate or reject certain behaviors.
 @ftable @code
 @item validate_changes (@var{revision_text}, @var{branchname})
 
-This hook is called just after the to-be-committed changes and the branch
-have been logically verified and before the user enters his/her commit message.
+This hook is called by @command{@ref{mtn commit}} just after the
+to-be-committed changes and the branch have been logically verified
+and before the user enters his/her commit message.
 @var{revision_text} is the full text of the changes for this revision,
-which can be parsed with the parse_basic_io function. The second parameter,
-@var{branchname}, is the branch for this commit - unless it gets changed
-in the editor later on.
+which can be parsed with the @code{@ref{parse_basic_io}} function. The
+second parameter, @var{branchname}, is the branch for this commit -
+unless it gets changed in @code{@ref{edit_comment}} later on.
 
-If the hook finds the changes satisfactory, it can return @code{true,
-""}. If it finds fault, then it can return @code{false, reason} where
-@var{reason} is the reason the changes were rejected. By default, this hook
-is not defined and is thus ignored during a commit.
+If the hook finds the changes satisfactory, it should return
+@code{true, ""}. If it finds fault, then it should return @code{false,
+reason} where @var{reason} is a string containing the reason the
+changes were rejected. By default, this hook is not defined and acts
+as if it returned @code{true, ""}.
 
 @item validate_commit_message (@var{message}, @var{revision_text}, @var{branchname})
 
-This hook is called after the user has entered his/her commit message.
-@var{message} is the commit message that the user has entered and
-@var{revision_text} is the full text of the changes for this revision,
-which, again, can be parsed with the parse_basic_io function.
-The @var{branchname} on which the new revision will be committed if all goes
-well is passed in as the third parameter.
+This hook is called by @command{@ref{mtn commit}} after
+@code{@ref{edit_comment}}.  @var{message} is the result of
+@code{edit_comment} and @var{revision_text} is the full text of the
+changes for this revision, which can be parsed with the
+@code{@ref{parse_basic_io}} function.  @var{branchname} is parsed from
+the result of @code{edit_comment}.
 
-If the hook finds the commit message satisfactory, it can return @code{true,
-""}. If it finds fault, then it can return @code{false, reason} where
-@var{reason} is the reason the message was rejected. By default, this hook
-is not defined and is thus ignored during a commit.
+If the hook finds the commit message satisfactory, it should return
+@code{true, ""}. If it finds fault, then it should return @code{false,
+reason} where @var{reason} is a string containing the reason the
+message was rejected. By default, this hook is not defined and acts as
+if it returned @code{true, ""}.
 
 @end ftable
 
@@ -12726,10 +12733,14 @@ information.
 @ftable @code
 @item hook_wrapper (@var{func_name}, @var{...})
 
-This hook is explicitely called on every execution of @command{automate lua}.
-It takes a function name and zero or more string function arguments which are
-internally evaluated into Lua code. It returns a dump of the return value of
-the called function in Lua code on success.
+This hook is called on every execution of @command{@ref{mtn automate
+lua}}.
+
+The default definition takes a function name and zero or more string
+function arguments which are evaluated into a Lua function call. It
+returns a dump of the return value of the called function.
+
+There is very little reason for a user to redefine this function.
 
 @end ftable
 
@@ -12738,43 +12749,42 @@ the called function in Lua code on success.
 @section Additional Lua Functions
 
 This section documents the additional Lua functions made available to
-hook writers.
+hook and user command writers.
 
 @ftable @code
 
 @item alias_command(@var{original}, @var{alias})
 
-This function adds a new alias for a monotone command.  A call to this function would
-normally be placed directly in the @file{monotonerc} file, rather than in a hook function.
+This function adds a new alias for a monotone command.  @var{original}
+must be an existing montone command, @var{alias} is the new alias.
 
 @item change_workspace(@var{directory})
 
 Change to workspace @var{directory}, which may be absolute or
-relative to the directory that was current when mtn was started.
+relative to the directory that was current when monotone was started.
 
 Throws an error if @var{directory} does not exist or is not a
 workspace (does not contain @file{_MTN}).
 
-After calling change_workspace, the next operation should read the
-workspace options. @command{mtn_automate} does this; other Lua
-extensions do not. In addition, @command{automate stio} reads the
-workspace options before executing each command.
+After calling @code{change_workspace}, the next operation should read
+the workspace options. @command{@ref{mtn_automate}} does this; other Lua
+functions do not.
 
-@item existonpath(@var{possible_command})
+@item existonpath(@var{command})
 
-This function receives a string containing the name of an external
-program and returns 0 if it exists on path and is executable, -1
-otherwise.
-As an example, @code{existonpath("xxdiff")} returns 0 if the
+Return 0 if @var{command} (a string) exists on @code{$PATH} and is
+executable, -1 otherwise.
+
+For example, @code{existonpath("xxdiff")} returns 0 if the
 program xxdiff is available.
+
 On Windows, this function automatically appends ``.exe'' to the
-program name. In the previous example, @code{existonpath} would search
-for ``xxdiff.exe''.
+program name if it is not present. In the previous example,
+@code{existonpath} would search for ``xxdiff.exe''.
 
 @item get_confdir()
 
-Returns the path to the configuration directory, either implied or given
-with @option{--confdir}.
+Returns the path to the configuration directory; see @option{@ref{--confdir}}.
 
 @item get_ostype()
 
@@ -12782,46 +12792,55 @@ Returns the operating system flavor as a string.
 
 @item guess_binary_file_contents(@var{filespec})
 
-Returns true if the file appears to be binary, i.e. contains one or
-more of the following characters:
+Returns true if the file contains one or more of the following
+bytes:
 @smallexample
 @group
 0x00 thru 0x06
-0x0E thru 0x1a
-0x1c thru 0x1f
+0x0E thru 0x1f
+0x7f
 @end group
 @end smallexample
+@c see file_io.cc guess_binary
 
 @item guess_terminal_width()
 
 Returns the size of the terminal window as number or a sane default
-(72) if the information cannot be retrieved.
+(80) if the information cannot be retrieved.
 
 @item include(@var{scriptfile})
 
-This function tries to load and execute the script contained into
-scriptfile.  It returns true for success and false if there is an
+This function tries to load and execute the Lua script contained in
+@var{scriptfile}.  It returns true for success and false if there is an
 error.
+
+This is the same as Lua @code{loadfile}.
 
 @item includedir(@var{scriptpath})
 
 This function loads and executes in alphabetical order all the scripts
-contained in the directory scriptpath.
+contained in the directory @var{scriptpath}.
 
 If one of the scripts has an error, the function doesn't process the
-remaining scripts and immediately returns false.
+remaining scripts.
+
+There is no useful return value.
 
 @item includedirpattern(@var{scriptpath}, @var{pattern})
 
 This function loads and executes in alphabetical order all the scripts
-contained into the directory scriptpath that match the given pattern.
+contained into the directory @var{scriptpath} that match @var{pattern}
+(a glob pattern).
+
 If one of the scripts has an error, the functions doesn't process the
-remaining scripts and immediately returns false.
+remaining scripts.
 
-@item is_executable(@var{filespec})
+There is no useful return value.
 
-This function returns true if the file is executable, false
-otherwise.  On Windows this function returns always false.
+@item is_executable(@var{file})
+
+This function returns true if @var{file} is executable, false
+otherwise.  On Windows this function always returns false.
 
 @item kill(@var{pid} [, @var{signal}])
 
@@ -12829,61 +12848,65 @@ This function calls the kill() C library function on POSIX systems and
 TerminateProcess on Win32 (in that case @var{pid} is the process
 handle).  If the optional @var{signal} parameter is missing, SIGTERM
 will be used.
+
 Returns 0 on success, -1 on error.
 
-@item make_executable(@var{filespec})
+@item make_executable(@var{file})
 
-This function marks the named file as executable.  On Windows has no
+This function marks @var{file} as executable.  On Windows this has no
 effect.
 
-@item match(@var{glob}, @var{string})
+@item globish.match(@var{glob}, @var{string})
 
-Returns true if @var{glob} matches @var{str}, return false otherwise.
+Returns @code{true} if @var{glob} matches @var{str}, return @code{false} otherwise.
 
 @item mkstemp(@var{template})
 
-Like its C library counterpart,  mkstemp creates a unique name and
-returns a file descriptor for the newly created file.
-The value of template should be a pointer to a character buffer loaded
-with a null-terminated string that consists of contiguous, legal file
-ad path name characters followed by six Xs.
-The function mkstemp replaces the Xs by an alpha-numeric sequence
-that is chosen to ensure that no file in the chosen directory has that
-name.
-Furthermore, subsequent calls to mkstemp within the same process
+Returns a unique name for a writeable temporary file. Note that it
+does not create the file.
+
+@var{template} should be a string that consists of contiguous, legal file
+and path name characters followed by six 'X's.
+
+@code{mkstemp} replaces the 'X's by an alpha-numeric sequence
+that is unique in the directory given in @var{template}.
+
+Subsequent calls to @code{mkstemp} within the same process
 each yield different file names.
-Unlike other implementations, monotone mkstemp allows the template
-string to contain a complete path, not only a filename, allowing users
-to create temporary files outside the current directory.
+
+Unlike other implementations, monotone mkstemp allows @var{template}
+to contain a complete path, not only a filename, allowing users to
+create temporary files outside the current directory.
 
 @strong{Important notice:}@*
-To create a temporary file, you must use the @code{temp_file()}
+To create a temporary file, you should use the @code{temp_file}
 function, unless you need to run monotone with the @option{--no-builtin-rcfiles}
 option.  @code{temp_file()} builds on @code{mkstemp()} and creates a
 file in the standard TMP/TEMP directories.
 For the definition of @code{temp_file()}, see @ref{Default hooks}.
 
-@item mtn_automate( ... )
+@anchor{mtn_automate}@item mtn_automate(@var{command} @var{args...} )
 
-The @code{mtn_automate} Lua function calls the Monotone
-@command{automate} command passed in its arguments. The result of the
-call is a pair consisting of a boolean return code, indicating whether
-the call was successful or not, and a string being the @code{stdout}
-output from the @command{automate} command. This function is not for use
-in ordinary Lua hooks, but rather for Lua based commands as defined by
-the Lua function @ref{register_command}.
+@code{mtn_automate} calls the monotone @command{automate}
+@var{command}, with @var{args...} (may include options). The result of
+the call is a pair consisting of a boolean (@code{true} on success),
+and a string containing the @code{stdout} output from
+@command{automate @var{command}}.
+
+This function is not for use in ordinary Lua hooks, but rather for Lua
+based commands as defined by the Lua function @ref{register_command}.
 
 Note that keyboard interaction is disabled, just as if @option{--non-interactive}
 is specified. Actions which require operations on password-encrypted private
-keys will therefor fail unless the @code{get_passphrase} hook is set up locally.
+keys will therefor fail unless the @code{@ref{get_passphrase}} hook is set up locally.
 
-@item parse_basic_io(@var{data})
+@anchor{parse_basic_io}@item parse_basic_io(@var{data})
 
-Parse the string @var{data}, which should be in basic_io format. It returns nil
-if it can't parse the string; otherwise it returns a table. This will be a list
-of all statements, with each entry being a table having a "name" element that is
-the symbol beginning the statement and a "values" element that is a list of all
-the arguments.
+Parse the string @var{data}, which should be in @code{basic_io}
+format. Returns nil if it can't parse the string; otherwise
+returns a table, with each entry in the table corresponding to one
+@code{basic_io} line, consisting of a @code{name} element and a
+@code{values} element.
 
 For example, given this as input:
 
@@ -12910,21 +12933,27 @@ The output table will be:
 
 @item regex.search(@var{regexp}, @var{string})
 
-Returns true if a match for @var{regexp} is found in @var{str}, return
-false otherwise.  @xref{Regexps}, for the syntax of @var{regexp}.
+Returns @code{true} if a match for @var{regexp} is found in @var{str},
+@code{false} otherwise.  @xref{Regexps}, for the syntax of
+@var{regexp}.
 
 @anchor{register_command}@item register_command(@var{name}, @var{params}, @var{abstract}, @var{description}, @var{function})
 
-Add a command named @var{name} to the @var{user} command group in monotone.  This function is
-normally called directly from a @file{monotonerc} file rather than a hook.  When the user issues the
-registered command, monotone will call the lua @var{function} name supplied.  That function would
-then normally use mtn_automate() calls to service the request.
+Add a command named @var{name} to the user command group in monotone.
+When the user issues the registered command, monotone will call the
+lua @var{function} name supplied.  That function would then normally
+use @code{@ref{mtn_automate}} calls to service the
+request. @var{params} is a string with the list of parameters for the
+command, @var{abstract} gives a brief description, @var{description} a
+longer description. @var{params}, @var{abstract}, @var{description}
+are output by @command{mtn help}.
 
 @item server_request_sync(@var{what}, @var{address}, @var{include}, @var{exclude})
 
 Initiate a netsync connection to the server at @var{address}, with the
-given include and exclude patterns, of type @option{sync}, @option{push},
-or @option{pull}, as given by the @var{what} argument.
+given @var{include} and @var{exclude} branch patterns. @var{what} is
+one of @option{sync}, @option{push}, or @option{pull}, indicating
+netsync operation.
 
 When called by a monotone instance which is not running the @option{serve}
 command, this function has no effect.
@@ -12945,6 +12974,7 @@ Makes the calling process sleep for the specified number of seconds.
 Starts the named executable with the given arguments.  Returns the
 process PID on POSIX systems, the process handle on Win32 or -1 if
 there was an error.
+
 Calls fork/execvp on POSIX, CreateProcess on Win32.
 
 @strong{Important notice:}@*
@@ -12970,6 +13000,7 @@ error redirected to the given files.
 Wait until the process with given PID (process handle on Win32) exits.
 Returns two values: a result value and the exit code of the waited-for
 process.
+
 The exit code is meaningful only if the result value is 0.
 
 @end ftable
@@ -12996,7 +13027,7 @@ monotone's user interface. This allows them to be logged just as other
 progress messages, and prevents unexpected out-of-band output in the
 @ref{Automation} interface.
 
-If you explicitely need to write to either stdout or stderr, please use
+If you explicitly need to write to either stdout or stderr, please use
 @code{io.stdout:write} and @code{io.stderr.write}.
 
 @item os.execute, io.popen

@@ -1011,7 +1011,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
 }
 
 CMD_AUTOMATE(log, N_("[PATH] ..."),
-             N_("list selected revision history"),
+             N_("Lists the selected revision history"),
              "",
     options::opts::last | options::opts::next |
     options::opts::from | options::opts::to |
