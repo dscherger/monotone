@@ -77,7 +77,6 @@ version control tools.
 * Concepts::                    Taxonomy of monotone
 * Tutorial::                    A detailed example of using monotone
 * Advanced Uses::               Going beyond the basics
-* CVS Phrasebook::              Transitional guide for CVS users
 * Command Reference::           Details of each monotone command
 * Formats::                     Formats used by monotone and scripts
 * Lua Reference::               How Lua is integrated in monotone
@@ -2662,7 +2661,7 @@ content}, rather than on the @emph{replication path} by which that
 content arrived in your database.
 @end itemize
 
-@node    Advanced Uses, CVS Phrasebook, Tutorial, Top
+@node    Advanced Uses, Command Reference, Tutorial, Top
 @chapter Advanced Uses
 
 This chapter covers slightly less common aspects of using
@@ -4538,356 +4537,7 @@ starting revision with the @command{bisect reset} command. This
 command also removes all stored bisection information in preparation
 for future bisect operations.
 
-@page
-@node    CVS Phrasebook, Command Reference, Advanced Uses, Top
-@chapter CVS Phrasebook
-
-This chapter translates common CVS commands into monotone commands. It
-is an easy alternative to reading through the complete command
-reference.
-
-@heading Checking Out a Tree
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ CVSROOT=:pserver:cvs.foo.com/wobbler
-$ cvs -d $CVSROOT checkout -r 1.2
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn pull "mtn://www.foo.com?com.foo.wobbler*"
-$ mtn checkout --revision=fe37 wobbler
-@end group
-@end smallexample
-@end multitable
-
-The CVS command contacts a network server, retrieves a revision, and
-stores it in your workspace. There are two cosmetic differences
-with the monotone command: remote databases are specified by hostnames
-and globs, and revisions are denoted by @sc{sha1} values (or
-selectors).
-
-There is also one deep difference: pulling revisions into your
-database is a separate step from checking out a single revision; after
-you have pulled from a network server, your database will contain
-@emph{several} revisions, possibly the entire history of a
-project. Checking out is a separate step, after communication, which
-only copies a particular revision out of your database and into a named
-directory.
-
-@heading Committing Changes
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs commit -m "log message"
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn commit --message="log message"
-$ mtn push "mtn://www.foo.com?com.foo.wobbler*"
-@end group
-@end smallexample
-@end multitable
-
-As with other networking commands, the communication step with
-monotone is explicit: committing changes only saves them to the local
-database. A separate command, @command{push}, sends the changes to a
-remote database.
-
-@heading Undoing Changes
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs update -C file
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn revert file
-@end group
-@end smallexample
-@end multitable
-
-Unlike CVS, monotone includes a separate @command{revert} command for
-undoing local changes and restoring the workspace to the original
-contents of the base revision. Because this can be dangerous,
-@command{revert} insists on an explicit argument to name the files or
-directories to be reverted; use the current directory "@file{.}" at the
-top of the workspace to revert everything.  The @command{revert} command
-is also used to restore deleted files (with a convenient
-@option{--missing} option for naming these files).
-
-In CVS, you would need to use @command{update} to restore missing or
-changed files, and you might get back a newer version of the file than
-you started with. In monotone, @command{revert} always takes you back to
-where you started, and the @command{update} command is only used to move
-the workspace to a different (usually newer) base revision.
-
-
-@heading Incorporating New Changes
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs update -d
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn pull "mtn://www.foo.com?com.foo.wobbler*"
-$ mtn merge
-$ mtn update
-@end group
-@end smallexample
-@end multitable
-
-This command, like other networking commands, involves a separate
-communication step with monotone. The extra command, @command{merge},
-ensures that the branch your are working on has a unique head. You can
-omit the @command{merge} step if you only want @command{update} to
-examine descendants of your base revision, and ignore other heads on
-your branch.
-
-
-@heading Tagging Revisions
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs tag FOO_TAG .
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn tag h: FOO_TAG
-@end group
-@end smallexample
-@end multitable
-
-With CVS, tags are placed on individual files, and the closest thing to
-identifying a consistent repository-wide revision is a set of files with
-the same tag.  In monotone, all changes are part of a repository-wide
-revision, and some of those revisions may be tagged.  Monotone has no
-partial tags that apply only to a subset of files.
-
-
-@heading Moving Workspace to Another Revision
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs update -r FOO_TAG -d
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn update -r 830ac1a5f033825ab364f911608ec294fe37f7bc
-$ mtn update -r t:FOO_TAG
-@end group
-@end smallexample
-@end multitable
-
-With a revision parameter, the @command{update} command operates
-similarly in monotone and CVS. One difference is that a subsequent
-@command{commit} will be based off the chosen revision in monotone,
-while a @command{commit} in the CVS case is not possible without going
-back to the branch head again.  This version of @command{update} can
-thus be very useful if, for example, you discover that the tree you are
-working against is somehow broken --- you can @command{update} to an
-older non-broken version, and continue to work normally while waiting
-for the tree to be fixed.
-
-@heading Viewing Differences
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs diff
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn diff
-@end group
-@end smallexample
-@item
-@smallexample
-@group
-$ cvs diff -r 1.2 -r 1.4 myfile
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn diff -r 3e7db -r 278df myfile
-@end group
-@end smallexample
-@end multitable
-
-Monotone's @command{diff} command is modeled on that of CVS, so the
-main features are the same: @command{diff} alone prints the
-differences between your workspace and its base revision, whereas
-@command{diff} accompanied by two revision numbers prints the
-difference between those two revisions. The major difference between
-CVS and monotone here is that monotone's revision numbers are
-@emph{revision IDs}, rather than file IDs.  If one leaves off the file
-argument, then diff can print the difference between two entire trees.
-
-@heading Showing Workspace Status
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs status
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn status
-@end group
-@end smallexample
-@end multitable
-
-This command operates similarly in monotone and CVS. The only major
-difference is that monotone's @command{status} command always gives a
-status of the whole tree, and outputs a more compact summary than CVS.
-
-@heading Adding Directories and Files to Workspace
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs add dir
-$ cvs add dir/subdir
-$ cvs add dir/subdir/file.txt
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn add dir/subdir/file.txt
-@end group
-@end smallexample
-@end multitable
-
-Monotone does not explicitly store directories, so adding a file only
-involves adding the file's complete path, including any directories.
-Directories are created as needed, and empty directories are ignored.
-
-
-@heading Removing Directories and Files from Workspace
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ rm file.txt
-$ cvs remove file.txt
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn drop file.txt
-@end group
-@end smallexample
-@end multitable
-
-Monotone does not require that you erase a file from the workspace
-before you drop it. Dropping a file both removes its entry in the
-manifest of the current revision and removes it from the filesystem.
-
-
-@heading Viewing History
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs log [file]
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn log [file]
-@end group
-@end smallexample
-@end multitable
-
-Unlike CVS log, monotone log can also be used without a workspace; but
-in this case you must pass a @option{--from} revision argument to tell
-monotone where to start displaying the log from.
-
-@heading Importing a New Project
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs import wobbler vendor start
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn --db=/path/to/database.mtn --branch=com.foo.wobbler setup .
-$ mtn add -R .
-$ mtn commit
-@end group
-@end smallexample
-@end multitable
-
-The @command{setup} command turns an ordinary directory into a
-monotone workspace.  After that, you can add your files and commit
-them as usual.
-
-@heading Initializing a Repository
-
-@multitable @columnfractions .4 .4
-@item
-@smallexample
-@group
-$ cvs init -d /path/to/repository
-@end group
-@end smallexample
-@tab
-@smallexample
-@group
-$ mtn db init --db=/path/to/database.mtn
-@end group
-@end smallexample
-@end multitable
-
-Monotone's ``repository'' is a single-file database, which is created
-and initialized by this command. This file is only ever used by you,
-and does not need to be in any special location, or readable by other
-users.
-
-
-@node    Command Reference, Formats, CVS Phrasebook, Top
+@node    Command Reference, Formats, Advanced Uses, Top
 @chapter Command Reference
 
 Monotone has a large number of commands. To help navigate through them
@@ -11471,7 +11121,6 @@ definitions.
 * Attribute Handling::
 * GIT Export Hooks::
 * Validation Hooks::
-* Meta Hooks::
 @end menu
 
 @node Common Data Types, Event Notifications and Triggers, Hooks, Hooks
@@ -12676,7 +12325,7 @@ The default definition enforces the @code{Name <email>} pattern.
 
 @end ftable
 
-@node Validation Hooks, Meta Hooks, GIT Export Hooks, Hooks
+@node Validation Hooks,  , GIT Export Hooks, Hooks
 @subsection Validation Hooks
 
 If there is a policy decision to make, Monotone defines certain hooks to
@@ -12713,27 +12362,6 @@ If the hook finds the commit message satisfactory, it should return
 reason} where @var{reason} is a string containing the reason the
 message was rejected. By default, this hook is not defined and acts as
 if it returned @code{true, ""}.
-
-@end ftable
-
-@node Meta Hooks,  , Validation Hooks, Hooks
-@subsection Meta Hooks
-
-Monotone allows the execution of arbitrary Lua hooks and functions through a
-special generalized "meta hook". See @command{@ref{mtn automate lua}} for more
-information.
-
-@ftable @code
-@item hook_wrapper (@var{func_name}, @var{...})
-
-This hook is called on every execution of @command{@ref{mtn automate
-lua}}.
-
-The default definition takes a function name and zero or more string
-function arguments which are evaluated into a Lua function call. It
-returns a dump of the return value of the called function.
-
-There is very little reason for a user to redefine this function.
 
 @end ftable
 
@@ -13155,9 +12783,7 @@ By default, monotone does @emph{not} decode IDNA when printing to the
 console (IDNA names are ASCII, which is a subset of UTF-8, so this
 normal form conversion can still apply, albeit oddly). this behavior
 is to protect users against security problems associated with
-malicious use of "similar-looking" characters. If the hook
-@code{display_decoded_idna} returns true, IDNA names are decoded for
-display.
+malicious use of "similar-looking" characters.
 
 @end table
 
