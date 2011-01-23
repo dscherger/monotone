@@ -110,6 +110,8 @@ call_server(app_state & app,
     instant(0,1);
 
   P(F("connecting to %s") % info->client.get_uri().resource());
+  P(F("  include pattern  %s") % info->client.get_include_pattern());
+  P(F("  exclude pattern  %s") % info->client.get_exclude_pattern());
 
   shared_ptr<Netxx::StreamBase> server
     = build_stream_to_server(app.opts, app.lua, info, timeout);
