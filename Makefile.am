@@ -351,7 +351,7 @@ EXTRA_DIST =								\
 									\
 	contrib cygwin examples mac notes visualc
 
-MAKEINFOFLAGS=-I $(top_builddir)
+AM_MAKEINFOFLAGS=-I $(top_builddir)
 
 monotone.info: monotone.texi version.texi std_hooks.lua $(TEXI_FRAGMENTS)
 
