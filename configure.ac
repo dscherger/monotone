@@ -11,8 +11,8 @@
 
 AC_PREREQ(2.58)
 AC_INIT([monotone], [1.0dev], [monotone-devel@nongnu.org])
-AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
-AC_CONFIG_SRCDIR([app_state.cc])
+AM_INIT_AUTOMAKE([1.9 tar-ustar dist-bzip2 no-dist-gzip std-options])
+AC_CONFIG_SRCDIR([src/app_state.cc])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 AC_LANG([C++])
@@ -50,7 +50,7 @@ case "$host" in
     os_err_t="unsigned int"
     
     # Inno setup configuration
-    AC_CONFIG_FILES([monotone.iss:win32/monotone.iss.in])
+    AC_CONFIG_FILES([monotone.iss:src/win32/monotone.iss.in])
     AC_PATH_PROG(ISCC, [ISCC]) 
   ;;
 
