@@ -371,15 +371,15 @@ EXTRA_DIST =								\
 									\
 	contrib examples mac notes visualc
 
-AM_MAKEINFOFLAGS=-I $(top_builddir)
+AM_MAKEINFOFLAGS=-I $(top_builddir) -I $(srcdir)
 
 doc/monotone.info: doc/monotone.texi doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS)
 
 doc/monotone.pdf: doc/monotone.texi doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
-    	          $(PDF_FIGURES)
+	          $(PDF_FIGURES)
 
 doc/monotone.dvi: doc/monotone.texi doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
-        	  $(EPS_FIGURES)
+		  $(EPS_FIGURES)
 
 #%.eps: %.epsi
 #	mv -f $< $@
