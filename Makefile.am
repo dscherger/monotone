@@ -240,13 +240,13 @@ src_lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			    $(NETXX_SOURCES)
 
 htmldir = $(datadir)/doc/monotone
-html_DATA = monotone.html texinfo.css
+html_DATA = doc/monotone.html doc/texinfo.css
 
 htmlfiguredir = $(htmldir)/figures
-htmlfigure_DATA = $(wildcard figures/*.png)
+htmlfigure_DATA = $(wildcard doc/figures/*.png)
 
 htmlimagedir = $(htmldir)/images
-htmlimage_DATA = $(wildcard images/*.png)
+htmlimage_DATA = $(wildcard doc/images/*.png)
 
 # flags
 
@@ -327,35 +327,36 @@ endif
 
 # extra files
 
-PDF_FIGURES= figures/branch-heads.pdf figures/cert.pdf			\
-	figures/difference-between-versions.pdf				\
-	figures/file-id-manifest-id.pdf figures/fork.pdf		\
-	figures/general-workflow.pdf figures/linear-history.pdf		\
-	figures/local-workflow.pdf figures/manifest.pdf			\
-	figures/merge.pdf figures/network-workflow.pdf			\
-	figures/parent-child-hashes.pdf					\
-	figures/parent-child-names-hashes.pdf figures/parent-child.pdf	\
-	figures/revision-chaining.pdf figures/revision.pdf		\
-	figures/statement.pdf figures/three-versions.pdf		\
-	figures/two-branches.pdf
+PDF_FIGURES= doc/figures/branch-heads.pdf doc/figures/cert.pdf			\
+	doc/figures/difference-between-versions.pdf				\
+	doc/figures/file-id-manifest-id.pdf doc/figures/fork.pdf		\
+	doc/figures/general-workflow.pdf doc/figures/linear-history.pdf		\
+	doc/figures/local-workflow.pdf doc/figures/manifest.pdf			\
+	doc/figures/merge.pdf doc/figures/network-workflow.pdf			\
+	doc/figures/parent-child-hashes.pdf					\
+	doc/figures/parent-child-names-hashes.pdf doc/figures/parent-child.pdf	\
+	doc/figures/revision-chaining.pdf doc/figures/revision.pdf		\
+	doc/figures/statement.pdf doc/figures/three-versions.pdf		\
+	doc/figures/two-branches.pdf
 
-PNG_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.png)))
-EPS_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.eps)))
-TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
+PNG_FIGURES=$(addprefix $(top_builddir)/doc/figures/,$(notdir $(PDF_FIGURES:.pdf=.png)))
+EPS_FIGURES=$(addprefix $(top_builddir)/doc/figures/,$(notdir $(PDF_FIGURES:.pdf=.eps)))
+TEXI_FRAGMENTS = doc/pcrepattern.texi doc/pcresyntax.texi
 
 man1_MANS = mtn.1
-info_TEXINFOS = monotone.texi
+info_TEXINFOS = doc/monotone.texi
 EXTRA_DIST =								\
-	HACKING INSTALL README.visualc8 UPGRADE				\
+	HACKING INSTALL INSTALL_windows_cygwin.txt			\
+	INSTALL_windows_native.txt README.visualc8 UPGRADE		\
 	util/audit-includes util/do-editor-vars.sh			\
-	$(wildcard $(srcdir)/m4/*.m4) monotone.html images		\
-	texinfo.css src/schema.sql src/unix/README src/util/mtnopt.in 	\
-	src/win32/README src/win32/monotone.iss.in			\
+	$(wildcard $(srcdir)/m4/*.m4) doc/monotone.html doc/images	\
+	doc/texinfo.css src/schema.sql src/unix/README			\
+	src/util/mtnopt.in src/win32/README src/win32/monotone.iss.in	\
 	src/win32/modpath.iss src/win32/monotone.bmp src/win32/dlls.sh	\
 									\
 	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
-	figures/monotone-logo.svg figures/oo-figures.sxd		\
-	figures/pdfcrop.pl figures/README				\
+	doc/figures/monotone-logo.svg doc/figures/oo-figures.sxd	\
+	doc/figures/pdfcrop.pl doc/figures/README			\
 									\
 	src/std_hooks.lua						\
 	test/func test/func-testsuite.lua				\
@@ -372,13 +373,13 @@ EXTRA_DIST =								\
 
 MAKEINFOFLAGS=-I $(top_builddir)
 
-monotone.info: monotone.texi version.texi src/std_hooks.lua $(TEXI_FRAGMENTS)
+doc/monotone.info: doc/monotone.texi doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS)
 
-monotone.pdf: monotone.texi version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
-              $(PDF_FIGURES)
+doc/monotone.pdf: doc/monotone.texi doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
+    	          $(PDF_FIGURES)
 
-monotone.dvi: monotone.texi version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
-              $(EPS_FIGURES)
+doc/monotone.dvi: doc/monotone.texi doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
+        	  $(EPS_FIGURES)
 
 #%.eps: %.epsi
 #	mv -f $< $@
@@ -389,8 +390,8 @@ monotone.dvi: monotone.texi version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
 %.eps : %.ps
 	ps2eps <$< >$@
 
-$(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
-	mkdir -p $(top_builddir)/figures
+$(top_builddir)/doc/figures/%.ps: $(srcdir)/figures/%.pdf
+	mkdir -p $(top_builddir)/doc/figures
 #	acroread -toPostScript -pairs $< $@
 	pdftops $< $@
 
@@ -621,8 +622,8 @@ FORCE:
 #        only in a separate maintainer-clean target as suggested by
 #	 automake's man page
 mostlyclean-local:
-	rm -rf html test/bin test/work
-	rm -f monotone.{dvi,pdf,html} monotone.info{,-*} \
+	rm -rf doc/html test/bin test/work
+	rm -f doc/monotone.{dvi,pdf,html} doc/monotone.info{,-*} \
 	  run_*_tests test/*.status test/src/testlib.cc util/txt2c
 	set -ex; for d in test/unit/tests/*/__driver__.lua; do \
 	  rm -f $$d; \
@@ -767,34 +768,37 @@ distcheck-hook:
 
 # automake doesn't build html docs
 
-CHECK_SRCDIR_EQ_BUILDDIR=[ "`cd \"$(srcdir)\"; pwd`" = "`pwd`" -a -f ./monotone.texi ]
+CHECK_SRCDIR_EQ_BUILDDIR=[ "`cd \"$(srcdir)\"; pwd`" = "`pwd`" -a -f ./doc/monotone.texi ]
 
-monotone.html: monotone.texi version.texi $(TEXI_FRAGMENTS) \
-	       src/std_hooks.lua texinfo.css
+doc/monotone.html: doc/monotone.texi doc/version.texi $(TEXI_FRAGMENTS) \
+	       src/std_hooks.lua doc/texinfo.css
 	$(V_makeinfo)set -e; if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
-		cp -r $(srcdir)/figures .; \
-		cp -r $(srcdir)/images .; \
-		cp $(srcdir)/texinfo.css .; \
+		cp -r $(srcdir)/doc/figures .; \
+		cp -r $(srcdir)/doc/images .; \
+		cp $(srcdir)/doc/texinfo.css .; \
 	fi; \
 	makeinfo -I $(srcdir) --no-split --no-headers --output $@ --html $<; \
 	cp $@ $@.bak; \
 	sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $@.bak >$@; \
 	rm -f $@.bak
 
-html: monotone.texi version.texi src/std_hooks.lua texinfo.css
+doc/html: doc/monotone.texi doc/version.texi src/std_hooks.lua doc/texinfo.css
 	$(V_makeinfo)set -e; if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
-		cp -r $(srcdir)/figures .; \
+		cp -r $(srcdir)/doc/figures .; \
 	fi; \
 	mkdir -p $@; \
-	cp -r $(srcdir)/figures $@; \
-	cp -r $(srcdir)/images $@; \
-	cp $(srcdir)/texinfo.css $@; \
+	cp -r $(srcdir)/doc/figures $@; \
+	cp -r $(srcdir)/doc/images $@; \
+	cp $(srcdir)/doc/texinfo.css $@; \
 	makeinfo -I $(srcdir) --number-sections --html --output $@ $<; \
 	for f in $@/*.html; do \
 		cp $$f $$f.bak; \
 		sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $$f.bak >$$f; \
 		rm -f $$f.bak; \
 	done
+
+.PHONY: htmldoc
+htmldoc: doc/monotone.html doc/html
 
 mtn.1: mtn$(EXEEXT)
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
