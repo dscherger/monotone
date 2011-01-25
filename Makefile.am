@@ -239,14 +239,14 @@ src_libplatform_a_SOURCES = src/platform.hh
 src_lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			    $(NETXX_SOURCES)
 
-htmldir = $(datadir)/doc/monotone
-html_DATA = doc/monotone.html doc/texinfo.css
+htmldir = $(datadir)/doc/monotone/html
+html_DATA = doc/texinfo.css
 
 htmlfiguredir = $(htmldir)/figures
-htmlfigure_DATA = $(wildcard doc/figures/*.png)
+htmlfigure_DATA = $(PNG_FIGURES)
 
 htmlimagedir = $(htmldir)/images
-htmlimage_DATA = $(wildcard doc/images/*.png)
+htmlimage_DATA = $(PNG_IMAGES)
 
 # flags
 
@@ -339,13 +339,25 @@ PDF_FIGURES= doc/figures/branch-heads.pdf doc/figures/cert.pdf			\
 	doc/figures/statement.pdf doc/figures/three-versions.pdf		\
 	doc/figures/two-branches.pdf
 
-PNG_FIGURES=$(addprefix $(top_builddir)/doc/figures/,$(notdir $(PDF_FIGURES:.pdf=.png)))
-EPS_FIGURES=$(addprefix $(top_builddir)/doc/figures/,$(notdir $(PDF_FIGURES:.pdf=.eps)))
+PNG_IMAGES= doc/images/bg.png doc/images/go-next.png			\
+	doc/images/go-previous.png doc/images/go-up.png			\
+	doc/images/toc.png
+
+PNG_FIGURES=$(PDF_FIGURES:.pdf=.png)
+EPS_FIGURES=$(PDF_FIGURES:.pdf=.eps)
 TEXI_FRAGMENTS = doc/pcrepattern.texi doc/pcresyntax.texi
 
 man1_MANS = mtn.1
 info_TEXINFOS = doc/monotone.texi
-doc_monotone_TEXINFOS = doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) $(PDF_FIGURES)
+
+# It's quite absurd that to produce HTML files, or PDF files, from the texinfo
+# files, I need to have the texinfo file depend on the files that the HTML/PDF
+# files depend on.  Unfortunately, at the time of writing, automake doesn't
+# support adding dependencies to the different targets.
+# Adding phony targets as dependencies (copy-*) is quite a hack, but the only
+# way to have images copied to the build directory.
+doc_monotone_TEXINFOS = src/std_hooks.lua $(TEXI_FRAGMENTS) \
+	copy-html-deps copy-pdf-deps $(EPS_FIGURES)
 
 EXTRA_DIST =								\
 	HACKING INSTALL INSTALL_windows_cygwin.txt			\
@@ -373,7 +385,28 @@ EXTRA_DIST =								\
 									\
 	contrib examples mac notes visualc
 
-AM_MAKEINFOFLAGS=-I $(top_builddir) -I $(srcdir)
+AM_MAKEINFOFLAGS= -I $(srcdir)
+
+AM_MAKEINFOHTMLFLAGS= -I $(srcdir) \
+	--number-sections --no-split --no-headers --css-ref=texinfo.css
+
+# Html and pdf dependencies are simply copied.
+# All other are generated with the rules further down.
+copy-html-deps: doc/texinfo.css $(PNG_FIGURES) $(PNG_IMAGES)
+	for f in doc/texinfo.css $(PNG_FIGURES) $(PNG_IMAGES); do \
+	    d=`dirname $$f`; \
+	    [ -d $$d ] || $(MKDIR_P) $$d && \
+		cmp -s $(srcdir)/$$f $(builddir)/$$f || \
+		    cp -v $(srcdir)/$$f $(builddir)/$$f; \
+	done
+
+copy-pdf-deps:  $(PDF_FIGURES)
+	for f in $(PDF_FIGURES); do \
+	    d=`dirname $$f`; \
+	    [ -d $$d ] || $(MKDIR_P) $$d && \
+		cmp -s $(srcdir)/$$f $(builddir)/$$f || \
+		    cp -v $(srcdir)/$$f $(builddir)/$$f; \
+	done
 
 #%.eps: %.epsi
 #	mv -f $< $@
@@ -384,11 +417,33 @@ AM_MAKEINFOFLAGS=-I $(top_builddir) -I $(srcdir)
 doc/figures/%.eps: doc/figures/%.ps
 	ps2eps <$< >$@
 
-doc/figures/%.ps: $(srcdir)/figures/%.pdf
+doc/figures/%.ps: $(srcdir)/doc/figures/%.pdf
 	mkdir -p $(top_builddir)/doc/figures
 #	acroread -toPostScript -pairs $< $@
 	pdftops $< $@
 
+# Stealing code from automake and adapting, we want a HTML file tree as well
+AM_MAKEINFODOCHTMLFLAGS= -I $(srcdir) \
+	--number-sections --css-ref=texinfo.css
+
+doc/html: doc/monotone.texi $(srcdir)/doc/version.texi $(doc_monotone_TEXINFOS) doc/html/$(am__dirstamp)
+	$(MKDIR_P) $@.htp
+	cp -r $(srcdir)/doc/figures $@.htp
+	cp -r $(srcdir)/doc/images $@.htp
+	cp $(srcdir)/doc/texinfo.css $@.htp
+	if $(MAKEINFOHTML) $(AM_MAKEINFODOCHTMLFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc \
+	 -o $@.htp `test -f 'doc/monotone.texi' || echo '$(srcdir)/'`doc/monotone.texi; \
+	then \
+	  rm -rf $@; \
+	  mv $@.htp $@; \
+	else \
+	  rm -Rf $@.htp; \
+	  exit 1; \
+	fi
+html-local: doc/html
+doc/html/$(am__dirstamp):
+	@$(MKDIR_P) doc/html
+	@: > doc/$(am__dirstamp)
 
 # Message translation support
 # INST_LINGUAS is set by configure, based on the po/LINGUAS file and
@@ -759,40 +814,6 @@ distcheck-hook:
 		$(sort $(mtn_SOURCES) $(test_unit_tester_SOURCES) $(test_bin_tester_SOURCES) \
                        $(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
                        src/win32/main.cc src/unix/main.cc)
-
-# automake doesn't build html docs
-
-CHECK_SRCDIR_EQ_BUILDDIR=[ "`cd \"$(srcdir)\"; pwd`" = "`pwd`" -a -f ./doc/monotone.texi ]
-
-doc/monotone.html: doc/monotone.texi doc/version.texi $(TEXI_FRAGMENTS) \
-	       src/std_hooks.lua doc/texinfo.css
-	$(V_makeinfo)set -e; if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
-		cp -r $(srcdir)/doc/figures .; \
-		cp -r $(srcdir)/doc/images .; \
-		cp $(srcdir)/doc/texinfo.css .; \
-	fi; \
-	makeinfo -I $(srcdir) --no-split --no-headers --output $@ --html $<; \
-	cp $@ $@.bak; \
-	sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $@.bak >$@; \
-	rm -f $@.bak
-
-doc/html: doc/monotone.texi doc/version.texi src/std_hooks.lua doc/texinfo.css
-	$(V_makeinfo)set -e; if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
-		cp -r $(srcdir)/doc/figures .; \
-	fi; \
-	mkdir -p $@; \
-	cp -r $(srcdir)/doc/figures $@; \
-	cp -r $(srcdir)/doc/images $@; \
-	cp $(srcdir)/doc/texinfo.css $@; \
-	makeinfo -I $(srcdir) --number-sections --html --output $@ $<; \
-	for f in $@/*.html; do \
-		cp $$f $$f.bak; \
-		sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $$f.bak >$$f; \
-		rm -f $$f.bak; \
-	done
-
-.PHONY: htmldoc
-htmldoc: doc/monotone.html doc/html
 
 mtn.1: mtn$(EXEEXT)
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
