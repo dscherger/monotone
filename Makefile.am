@@ -345,7 +345,7 @@ TEXI_FRAGMENTS = doc/pcrepattern.texi doc/pcresyntax.texi
 
 man1_MANS = mtn.1
 info_TEXINFOS = doc/monotone.texi
-monotone_TEXINFOS = doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) $(PDF_FIGURES)
+doc_monotone_TEXINFOS = doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) $(PDF_FIGURES)
 
 EXTRA_DIST =								\
 	HACKING INSTALL INSTALL_windows_cygwin.txt			\
