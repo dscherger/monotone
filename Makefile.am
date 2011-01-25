@@ -345,6 +345,8 @@ TEXI_FRAGMENTS = doc/pcrepattern.texi doc/pcresyntax.texi
 
 man1_MANS = mtn.1
 info_TEXINFOS = doc/monotone.texi
+monotone_TEXINFOS = doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) $(PDF_FIGURES)
+
 EXTRA_DIST =								\
 	HACKING INSTALL INSTALL_windows_cygwin.txt			\
 	INSTALL_windows_native.txt README.visualc8 UPGRADE		\
@@ -372,14 +374,6 @@ EXTRA_DIST =								\
 	contrib examples mac notes visualc
 
 MAKEINFOFLAGS=-I $(top_builddir)
-
-doc/monotone.info: doc/monotone.texi doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS)
-
-doc/monotone.pdf: doc/monotone.texi doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
-    	          $(PDF_FIGURES)
-
-doc/monotone.dvi: doc/monotone.texi doc/version.texi src/std_hooks.lua $(TEXI_FRAGMENTS) \
-        	  $(EPS_FIGURES)
 
 #%.eps: %.epsi
 #	mv -f $< $@
