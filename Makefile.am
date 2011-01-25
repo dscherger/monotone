@@ -387,10 +387,10 @@ doc/monotone.dvi: doc/monotone.texi doc/version.texi src/std_hooks.lua $(TEXI_FR
 #%.epsi: %.ps
 #	ps2epsi $< $@
 
-%.eps : %.ps
+doc/figures/%.eps: doc/figures/%.ps
 	ps2eps <$< >$@
 
-$(top_builddir)/doc/figures/%.ps: $(srcdir)/figures/%.pdf
+doc/figures/%.ps: $(srcdir)/figures/%.pdf
 	mkdir -p $(top_builddir)/doc/figures
 #	acroread -toPostScript -pairs $< $@
 	pdftops $< $@
@@ -484,13 +484,13 @@ endif
 # build an OS X installer
 # requires sudo since packagemaker just looks at directory permissions.
 PKG_INST_ROOT = $(PWD)/$(top_builddir)/pkg_inst_root
-monotone-$(PACKAGE_VERSION).pkg: monotone.pdf html
+monotone-$(PACKAGE_VERSION).pkg: doc/monotone.pdf doc/html
 	sudo rm -rf $(PKG_INST_ROOT)
 	rm -rf "$@"
 	$(MAKE) install-strip DESTDIR=$(PKG_INST_ROOT)
 	mkdir -p $(PKG_INST_ROOT)/Developer/Documentation/monotone
-	cp monotone.pdf $(PKG_INST_ROOT)/Developer/Documentation/monotone/
-	cp -r html $(PKG_INST_ROOT)/Developer/Documentation/monotone/html
+	cp doc/monotone.pdf $(PKG_INST_ROOT)/Developer/Documentation/monotone/
+	cp -r doc/html $(PKG_INST_ROOT)/Developer/Documentation/monotone/html
 	plutil -convert xml1 -o monotone-xml.pmproj.in $(srcdir)/mac/monotone.pmproj
 	sed "s/__MONOTONE_VERSION__/$(PACKAGE_VERSION)/g" \
 		< monotone-xml.pmproj.in > monotone-xml.pmproj
