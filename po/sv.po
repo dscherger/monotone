@@ -157,8 +157,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2011-01-20 14:26+0100\n"
-"PO-Revision-Date: 2011-01-21 15:13+0100\n"
+"POT-Creation-Date: 2011-01-23 19:58+0100\n"
+"PO-Revision-Date: 2011-01-23 19:59+0100\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -968,7 +968,7 @@ msgid "Opens an 'automate stdio' connection to a remote server"
 msgstr "Öppnar en koppling till en server, typ 'automate stdio'"
 
 #: cmd_netsync.cc:122 cmd_netsync.cc:225
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "No database given; assuming '%s' database. This means that\n"
 "we can't verify the server key, because we have no record of\n"
@@ -1306,12 +1306,12 @@ msgstr "Listar kända arbetskopior för en specifik databas"
 msgid "Lists managed databases and their known workspaces"
 msgstr "Visa vilka databaser som hanteras och deras kända arbetskopior"
 
-#: cmd_list.cc:684 database.cc:4956
+#: cmd_list.cc:684 database.cc:4970
 #, c-format
 msgid "could not query default database locations"
 msgstr "ingen standardkatalog för databaser finns definierad"
 
-#: cmd_list.cc:688 database.cc:5034
+#: cmd_list.cc:688 database.cc:5048
 #, c-format
 msgid "could not query default database glob"
 msgstr "kunde inte fråga efter standardglobben för databaser"
@@ -2602,8 +2602,8 @@ msgstr ""
 "SÖKVÄG är angiven."
 
 #: cmd_diff_log.cc:992
-msgid "list selected revision history"
-msgstr "visa vald revisionshistoria"
+msgid "Lists the selected revision history"
+msgstr "Visa vald revisionshistoria"
 
 #: cmd_ws_commit.cc:179
 #, c-format
@@ -4632,17 +4632,17 @@ msgstr "ignorerar okänd signatur på '%2$s', av '%1$s'"
 msgid "trust function disliked %d signers of %s cert on revision %s"
 msgstr "tillitsfunktionen ogillar %d signerare av certet %s i revisionen %s"
 
-#: database.cc:4798 database.cc:4933
+#: database.cc:4805 database.cc:4947
 #, c-format
 msgid "no database specified"
 msgstr "ingen databas angiven"
 
-#: database.cc:4811
+#: database.cc:4818
 #, c-format
 msgid "database %s does not exist"
 msgstr "databasen %s finns inte"
 
-#: database.cc:4819
+#: database.cc:4826
 #, c-format
 msgid ""
 "%s is a workspace, not a database\n"
@@ -4651,17 +4651,17 @@ msgstr ""
 "%s är en katalog, inte en databas\n"
 "(menade du %s?)"
 
-#: database.cc:4823
+#: database.cc:4830
 #, c-format
 msgid "%s is a directory, not a database"
 msgstr "%s är en katalog, inte en databas"
 
-#: database.cc:4831
+#: database.cc:4838
 #, c-format
 msgid "database %s already exists"
 msgstr "databasen %s finns redan"
 
-#: database.cc:4836
+#: database.cc:4843
 #, c-format
 msgid ""
 "existing (possibly stale) journal file '%s' has same stem as new database "
@@ -4672,32 +4672,32 @@ msgstr ""
 "databasen '%s'\n"
 "avbryter skapandet av databasen"
 
-#: database.cc:4991
+#: database.cc:5005
 #, c-format
 msgid "the database alias '%s' has multiple ambiguous expansions:"
 msgstr "databasaliaset '%s' har flera motsägelsefulla uttydningar:"
 
-#: database.cc:5014
+#: database.cc:5028
 #, c-format
 msgid "could not query default database alias"
 msgstr "kunde inte fråga efter databasens standardalias"
 
-#: database.cc:5016
+#: database.cc:5030
 #, c-format
 msgid "using default database '%s'"
 msgstr "använder standarddatabasen '%s'"
 
-#: database.cc:5026
+#: database.cc:5040
 #, c-format
 msgid "invalid database alias '%s': does not start with a colon"
 msgstr "ogiltigt databasalias '%s': startar inte med ett kolon"
 
-#: database.cc:5030
+#: database.cc:5044
 #, c-format
 msgid "invalid database alias '%s': must not be empty"
 msgstr "ogiltigt databasalias '%s': får inte vara tomt"
 
-#: database.cc:5046
+#: database.cc:5060
 #, c-format
 msgid "invalid database alias '%s': does contain invalid characters"
 msgstr "ogiltigt databasalias '%s': innehåller ogiltiga tecken"
@@ -5318,47 +5318,57 @@ msgstr "färdig med återskapandet av cachade filstorlekar"
 msgid "underflow on query-in-flight counter"
 msgstr "räknaren query-in-flight blev för låg"
 
-#: netsync.cc:112 netsync.cc:217
+#: netsync.cc:112 netsync.cc:219
 #, c-format
 msgid "connecting to %s"
 msgstr "ansluter till %s"
 
-#: netsync.cc:161
+#: netsync.cc:113
+#, c-format
+msgid "  include pattern  %s"
+msgstr "  inkluderat mönster  %s"
+
+#: netsync.cc:114
+#, c-format
+msgid "  exclude pattern  %s"
+msgstr "  exkluderat mönster  %s"
+
+#: netsync.cc:163
 #, c-format
 msgid "processing failure while talking to peer %s, disconnecting"
 msgstr "tar hand om misslyckande i samtal med %s, kopplar ifrån"
 
-#: netsync.cc:169
+#: netsync.cc:171
 #, c-format
 msgid "timed out waiting for I/O with peer %s, disconnecting"
 msgstr "att vänta på I/O från %s tog för lång tid, kopplar ifrån"
 
-#: netsync.cc:186
+#: netsync.cc:188
 #, c-format
 msgid "successful exchange with %s"
 msgstr "lyckat utbyte med %s"
 
-#: netsync.cc:192
+#: netsync.cc:194
 #, c-format
 msgid "peer %s disconnected after we informed them of error"
 msgstr "%s kopplade ifrån efter att vi informerade den om ett fel"
 
-#: netsync.cc:198
+#: netsync.cc:200
 #, c-format
 msgid "I/O failure while talking to peer %s, disconnecting"
 msgstr "I/O-fel i samtal med %s, kopplar ifrån"
 
-#: netsync.cc:244
+#: netsync.cc:246
 #, c-format
 msgid "Network error: %s"
 msgstr "Nätverksfel: %s"
 
-#: netsync.cc:358
+#: netsync.cc:360
 #, c-format
 msgid "beginning service on %s"
 msgstr "startar tjänst på %s"
 
-#: netsync.cc:417 netsync.cc:421
+#: netsync.cc:419 netsync.cc:423
 #, c-format
 msgid "network error: %s"
 msgstr "nätverksfel: %s"
@@ -7754,11 +7764,11 @@ msgstr "blockstorlek för utdata från \"automate stdio\", i antal byte"
 
 #: options_list.hh:220
 msgid ""
-"automatically update the workspace, if it is clean and the base revision is "
-"a head of an affected branch"
+"automatically update the workspace, if it was at a head and the command "
+"creates a new head"
 msgstr ""
-"uppdaterar automatiskt arbetskopian om den är ren från ändringar och "
-"basrevisionen är ett huvud i den påverkade grenen"
+"uppdaterar automatiskt arbetskopian om basrevisionen är ett huvud i den "
+"påverkade grenen och uppdateringen skapar ett nytt huvud"
 
 #: options_list.hh:225
 msgid "address:port to listen on (default :4691)"

@@ -509,14 +509,14 @@ database_impl::~database_impl()
 
 database_cache database::dbcache;
 
-database::database(app_state & app)
-  : opts(app.opts), lua(app.lua)
+database::database(app_state & app, database::dboptions d)
+  : opts(app.opts), lua(app.lua), dbopts(d)
 {
   init();
 }
 
-database::database(options const & o, lua_hooks & l)
-  : opts(o), lua(l)
+database::database(options const & o, lua_hooks & l, database::dboptions d)
+  : opts(o), lua(l), dbopts(d)
 {
   init();
 }
@@ -526,7 +526,7 @@ database::init()
 {
   database_path_helper helper(lua);
   system_path dbpath;
-  helper.get_database_path(opts, dbpath);
+  helper.get_database_path(opts, dbpath, dbopts);
 
   // FIXME: for all :memory: databases an empty path is returned above, thus
   // all requests for a :memory: database point to the same database
@@ -4497,22 +4497,29 @@ database::get_vars(map<var_key, var_value> & vars)
 void
 database::get_var(var_key const & key, var_value & value)
 {
-  // FIXME: sillyly inefficient.  Doesn't really matter, though.
-  map<var_key, var_value> vars;
-  get_vars(vars);
-  map<var_key, var_value>::const_iterator i = vars.find(key);
-  I(i != vars.end());
-  value = i->second;
+  results res;
+  imp->fetch(res, one_col, any_rows, 
+             query("SELECT value FROM db_vars "
+                   "WHERE domain = ? AND name = ?")
+                   % text(key.first())
+                   % blob(key.second()));
+  I(res.size() == 1);
+  var_value dbvalue(res[0][0], origin::database);
+  value = dbvalue;
 }
 
 bool
 database::var_exists(var_key const & key)
 {
-  // FIXME: sillyly inefficient.  Doesn't really matter, though.
-  map<var_key, var_value> vars;
-  get_vars(vars);
-  map<var_key, var_value>::const_iterator i = vars.find(key);
-  return i != vars.end();
+  results res;
+  imp->fetch(res, one_col, any_rows,
+             query("SELECT 1 "
+                   "WHERE EXISTS("
+                   "  SELECT 1 FROM db_vars "
+                   "  WHERE domain = ? AND name = ?)")
+                   % text(key.first())
+                   % blob(key.second()));
+  return ! res.empty();
 }
 
 void
@@ -4923,13 +4930,20 @@ conditional_transaction_guard::commit()
 }
 
 void
-database_path_helper::get_database_path(options const & opts, system_path & path)
+database_path_helper::get_database_path(options const & opts,
+                                        system_path & path,
+                                        database::dboptions dbopts)
 {
   if (!opts.dbname_given ||
       (opts.dbname.as_internal().empty() &&
        opts.dbname_alias.empty() &&
        opts.dbname_type != memory_db))
     {
+      if (dbopts == database::maybe_unspecified)
+        {
+          L(FL("no database option given or options empty"));
+          return;
+        }
       E(false, origin::user, F("no database specified"));
     }
 
