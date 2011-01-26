@@ -8,6 +8,11 @@
 ^config\.(guess|h(\.in)?|log|rpath|status|sub)$
 ^configure$
 ^depcomp$
+^doc/monotone\.info$
+^doc/monotone\.info-1$
+^doc/monotone\.info-2$
+^doc/stamp-vti$
+^doc/version\.texi$
 ^html
 ^install-sh$
 ^m4/codeset\.m4$

@@ -48,6 +48,7 @@ case "$host" in
     AC_MSG_RESULT([Windows])
     WIN32_PLATFORM="true"
     os_err_t="unsigned int"
+    ac_executable_extensions=".exe"
     
     # Inno setup configuration
     AC_CONFIG_FILES([monotone.iss:src/win32/monotone.iss.in])
