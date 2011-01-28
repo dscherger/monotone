@@ -578,7 +578,7 @@ dlls.iss: mtn-stripped.exe ${top_srcdir}/Makefile.am
 linguas.iss: ${top_srcdir}/Makefile.am
 	rm -rf $@
 	for LANG in $(INST_LINGUAS) ; do \
-		echo "Source: \"{#BUILDDIR}\\$${LANG}.gmo\"; DestDir: \"{app}\\locale\\$${LANG}\\LC_MESSAGES\"; DestName: \"monotone.mo\"; Flags: ignoreversion" >> $@ ; \
+		echo "Source: \"{#BUILDDIR}\\po\\$${LANG}.gmo\"; DestDir: \"{app}\\locale\\$${LANG}\\LC_MESSAGES\"; DestName: \"monotone.mo\"; Flags: ignoreversion" >> $@ ; \
 	done
 
 
