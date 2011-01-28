@@ -350,14 +350,7 @@ TEXI_FRAGMENTS = doc/pcrepattern.texi doc/pcresyntax.texi
 man1_MANS = mtn.1
 info_TEXINFOS = doc/monotone.texi
 
-# It's quite absurd that to produce HTML files, or PDF files, from the texinfo
-# files, I need to have the texinfo file depend on the files that the HTML/PDF
-# files depend on.  Unfortunately, at the time of writing, automake doesn't
-# support adding dependencies to the different targets.
-# Adding phony targets as dependencies (copy-*) is quite a hack, but the only
-# way to have images copied to the build directory.
-doc_monotone_TEXINFOS = src/std_hooks.lua $(TEXI_FRAGMENTS) \
-	copy-html-deps copy-pdf-deps $(EPS_FIGURES)
+doc_monotone_TEXINFOS = src/std_hooks.lua $(TEXI_FRAGMENTS)
 
 EXTRA_DIST =								\
 	HACKING INSTALL INSTALL_windows_cygwin.txt			\
@@ -365,8 +358,9 @@ EXTRA_DIST =								\
 	util/audit-includes util/do-editor-vars.sh			\
 	$(wildcard $(srcdir)/m4/*.m4) doc/monotone.html doc/images	\
 	doc/texinfo.css src/schema.sql src/unix/README			\
-	src/util/mtnopt.in src/win32/README src/win32/monotone.iss.in	\
-	src/win32/modpath.iss src/win32/monotone.bmp src/win32/dlls.sh	\
+	src/util/mtnopt.in src/win32/README.txt				\
+	src/win32/monotone.iss.in src/win32/modpath.iss 		\
+	src/win32/monotone.bmp src/win32/dlls.sh			\
 									\
 	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
 	doc/figures/monotone-logo.svg doc/figures/oo-figures.sxd	\
@@ -417,16 +411,17 @@ copy-pdf-deps:  $(PDF_FIGURES)
 doc/figures/%.eps: doc/figures/%.ps
 	ps2eps <$< >$@
 
-doc/figures/%.ps: $(srcdir)/doc/figures/%.pdf
-	mkdir -p $(top_builddir)/doc/figures
+doc/figures/%.ps: $(top_builddir)/doc/figures/%.pdf
 #	acroread -toPostScript -pairs $< $@
 	pdftops $< $@
+
+$(top_builddir)/doc/figures/%.pdf : $(srcdir)/doc/figures/%.pdf copy-pdf-deps
 
 # Stealing code from automake and adapting, we want a HTML file tree as well
 AM_MAKEINFODOCHTMLFLAGS= -I $(srcdir) \
 	--number-sections --css-ref=texinfo.css
 
-doc/html: doc/monotone.texi $(srcdir)/doc/version.texi $(doc_monotone_TEXINFOS) doc/html/$(am__dirstamp)
+doc/html: doc/monotone.texi $(srcdir)/doc/version.texi $(doc_monotone_TEXINFOS) copy-html-deps doc/html/$(am__dirstamp)
 	$(MKDIR_P) $@.htp
 	cp -r $(srcdir)/doc/figures $@.htp
 	cp -r $(srcdir)/doc/images $@.htp
@@ -512,8 +507,8 @@ po/$(PACKAGE).pot: $(POTFILES)
 	  $(XGETTEXT_PKG_OPTS) $(XGETTEXT_OPTS) \
 	  $(POTFILES)
 
-dist-hook: $(ALL_GMOFILES)
-	cp $^ $(distdir)/po
+dist-hook: $(ALL_GMOFILES) copy-html-deps copy-pdf-deps
+	cp $(ALL_GMOFILES) $(distdir)/po
 # also, kill off any backup files that got pulled in by one of the
 # recursive subdirectory includes in EXTRA_DIST
 # note use of slightly non-portable "-delete" action
