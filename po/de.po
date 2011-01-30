@@ -856,15 +856,16 @@ msgid "Opens an 'automate stdio' connection to a remote server"
 msgstr "Öffnet eine 'automate stdio'-Verbindung zu einem entfernten Server"
 
 #: cmd_netsync.cc:122 cmd_netsync.cc:225
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "No database given; assuming '%s' database. This means that\n"
 "we can't verify the server key, because we have no record of\n"
 "what it should be."
 msgstr ""
-"Keine Datenbank angegeben; nutze '%s'-Datenbank. Das bedeutet, dass\n"
-"der Serverschlüssel nicht verifiziert werden kann, da es keinen\n"
-"existierenden Schlüssel zum Vergleich in der Datenbank gibt."
+"Keine Datenbank angegeben; nutze '%s'-Datenbank.\n"
+"Das bedeutet, dass der Serverschlüssel nicht\n"
+"verifiziert werden kann, da es keinen existierenden\n"
+"Schlüssel zum Vergleich in der Datenbank gibt."
 
 #: cmd_netsync.cc:212
 msgid "COMMAND [ARGS]"
@@ -1182,19 +1183,18 @@ msgid "<no branch set>"
 msgstr "<kein Zweig gesetzt>"
 
 #: cmd_list.cc:659
-#, fuzzy, c-format
+#, c-format
 msgid "%s (in %s)"
-msgstr "\t%s (in %s)"
+msgstr "%s (in %s)"
 
 #: cmd_list.cc:663
-#, fuzzy, c-format
+#, c-format
 msgid "no known valid workspaces"
-msgstr "\tkeine bekannten und gültigen Arbeitsbereiche gefunden"
+msgstr "keine bekannten und gültigen Arbeitsbereiche"
 
 #: cmd_list.cc:667
-#, fuzzy
 msgid "Lists known workspaces of a specified database"
-msgstr "Registriert einen neuen Arbeitsbereich für die gewählte Datenbank"
+msgstr "Listet bekannte Arbeitsbereiche der gewählten Datenbank"
 
 #: cmd_list.cc:677
 msgid "Lists managed databases and their known workspaces"
@@ -1206,9 +1206,9 @@ msgid "could not query default database locations"
 msgstr "konnte Standarddatenbankpfade nicht abfragen"
 
 #: cmd_list.cc:688 database.cc:5048
-#, fuzzy, c-format
+#, c-format
 msgid "could not query default database glob"
-msgstr "konnte nicht den Standarddatenbankalias abfragen"
+msgstr "konnte nicht das Standarddateimuster für Datenbanken abfragen"
 
 #: cmd_list.cc:735
 #, c-format
@@ -1216,9 +1216,9 @@ msgid "ignoring database '%s'"
 msgstr "ignoriere Datenbank '%s'"
 
 #: cmd_list.cc:739
-#, fuzzy, c-format
+#, c-format
 msgid "%s (in %s):"
-msgstr ":%s (in %s):"
+msgstr "%s (in %s):"
 
 #: cmd_list.cc:746
 msgid "Lists workspace files that belong to the current branch"
@@ -1226,16 +1226,14 @@ msgstr ""
 "Listet Dateien des Arbeitsbereiches auf, die zum derzeitigen Zweig gehören"
 
 #: cmd_list.cc:805
-#, fuzzy
 msgid "Lists workspace files that are unknown in the current branch"
 msgstr ""
-"Listet Dateien des Arbeitsbereiches auf, die zum derzeitigen Zweig gehören"
+"Listet Dateien des Arbeitsbereiches auf, die im derzeitigen Zweig unbekannt sind"
 
 #: cmd_list.cc:817
-#, fuzzy
 msgid "Lists workspace files that are ignored in the current branch"
 msgstr ""
-"Listet Dateien des Arbeitsbereiches auf, die zum derzeitigen Zweig gehören"
+"Listet Dateien des Arbeitsbereiches auf, die im derzeitigen Zweig ignoriert werden"
 
 #: cmd_list.cc:829
 msgid "Lists files that belong to the branch but are not in the workspace"
@@ -1848,16 +1846,16 @@ msgid "%s is an ancestor of %s; no merge is needed."
 msgstr "%s ist ein Vorgänger von %s; kein Vereinigen notwendig."
 
 #: cmd_merging.cc:1042
-#, fuzzy, c-format
+#, c-format
 msgid "0 conflicts"
-msgstr "keine Konflikte erkannt"
+msgstr "0 Konflikte"
 
 #: cmd_merging.cc:1077
-#, fuzzy, c-format
+#, c-format
 msgid "%d conflict with supported resolutions."
 msgid_plural "%d conflicts with supported resolutions."
-msgstr[0] "Warnung: %d Konflikt ohne unterstützte Konfliktlösungen"
-msgstr[1] "Warnung: %d Konflikte ohne unterstützte Konfliktlösungen"
+msgstr[0] "%d Konflikt mit unterstützten Konfliktlösungen"
+msgstr[1] "%d Konflikte mit unterstützten Konfliktlösungen"
 
 #: cmd_merging.cc:1082 cmd_conflicts.cc:160 cmd_conflicts.cc:173
 #, c-format
@@ -1927,9 +1925,9 @@ msgid "conflicts file must be under _MTN"
 msgstr "Konfliktdatei muss sich unterhalb des _MTN-Verzeichnisses befinden"
 
 #: cmd_merging.cc:1202
-#, fuzzy, c-format
+#, c-format
 msgid "stored in '%s'"
-msgstr "Monat außerhalb des Bereichs in '%s'"
+msgstr "in '%s' gespeichert"
 
 #: cmd_merging.cc:1205
 msgid "LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME"
@@ -1949,9 +1947,8 @@ msgid "internal line merger failed"
 msgstr "Ausführung des internen Zeilenzusammenführers fehlgeschlagen"
 
 #: cmd_merging.cc:1263
-#, fuzzy
 msgid "[PATH...]"
-msgstr "[PFADE...]"
+msgstr "[PFAD...]"
 
 #: cmd_merging.cc:1264
 msgid "Applies changes made at arbitrary places in history"
@@ -2542,9 +2539,8 @@ msgstr ""
 "gefiltert durch PFAD, sofern angegeben."
 
 #: cmd_diff_log.cc:992
-#, fuzzy
 msgid "Lists the selected revision history"
-msgstr "listed die ausgewählte Revisionshistorie"
+msgstr "Listet die ausgewählte Revisionshistorie"
 
 #: cmd_ws_commit.cc:179
 #, c-format
@@ -2698,9 +2694,8 @@ msgstr ""
 "übergeben werden."
 
 #: cmd_ws_commit.cc:547
-#, fuzzy
 msgid "PATH..."
-msgstr "[PFAD]..."
+msgstr "PFAD..."
 
 #: cmd_ws_commit.cc:548
 msgid "Reverses a mistaken 'drop'"
@@ -3420,9 +3415,8 @@ msgid "Loads a file's contents into the database"
 msgstr "Lädt die Inhalte einer Datei in die Datenbank"
 
 #: cmd_files.cc:58
-#, fuzzy
 msgid "PARENT_FILEID LEFT_FILEID RIGHT_FILEID"
-msgstr "LINKE_REVID LINKER_DATEINAME RECHTE_REVID RECHTER_DATEINAME"
+msgstr "ELTERN_DATEI_ID LINKE_DATEI_ID RECHTE_DATEI_ID"
 
 #: cmd_files.cc:59
 msgid "Merges 3 files and outputs the result"
@@ -3655,9 +3649,9 @@ msgid "all conflicts resolved"
 msgstr "alle Konflikte aufgelöst"
 
 #: cmd_conflicts.cc:200
-#, fuzzy, c-format
+#, c-format
 msgid "'%s' is not a supported conflict resolution for %s"
-msgstr "%s ist keine unterstützte Konfliktlösung für %s"
+msgstr "'%s' ist keine unterstützte Konfliktlösung für %s"
 
 #: cmd_conflicts.cc:250 cmd_conflicts.cc:255
 #, c-format
@@ -3679,12 +3673,12 @@ msgstr "falsche Anzahl an Parametern"
 #: cmd_conflicts.cc:401
 #, c-format
 msgid "interactive merge result saved in '%s'"
-msgstr ""
+msgstr "interaktives Ergebnis der Vereinigung in '%s' gespeichert"
 
 #: cmd_conflicts.cc:404
-#, fuzzy, c-format
+#, c-format
 msgid "interactive merge failed."
-msgstr "Ausführung des internen Zeilenzusammenführers fehlgeschlagen"
+msgstr "interaktives Vereinigen fehlgeschlagen"
 
 #: cmd_conflicts.cc:428
 #, c-format
@@ -3718,9 +3712,8 @@ msgid "RESOLUTION"
 msgstr "LÖSUNG"
 
 #: cmd_conflicts.cc:476
-#, fuzzy
 msgid "Set the resolution for the first unresolved single-file conflict."
-msgstr "Setzt die Lösung für den ersten, nicht gelösten Einzeldatei-Konflikt"
+msgstr "Setzt die Lösung für den ersten, nicht gelösten Einzeldatei-Konflikt."
 
 #: cmd_conflicts.cc:490
 msgid "Set the left resolution for the first unresolved two-file conflict"
@@ -3853,9 +3846,9 @@ msgid "Failed to write options file %s: %s"
 msgstr "Konnte Optionen-Datei %s nicht schreiben: %s"
 
 #: work.cc:669
-#, fuzzy, c-format
+#, c-format
 msgid "could not unregister workspace from old database '%s'"
-msgstr "konnte nicht den Standarddatenbankalias abfragen"
+msgstr "konnte den Arbeitsbereich nicht in der alten Datenbank '%s' deregistrieren"
 
 #: work.cc:733
 #, c-format
@@ -4709,9 +4702,9 @@ msgid "could not query default database alias"
 msgstr "konnte nicht den Standarddatenbankalias abfragen"
 
 #: database.cc:5030
-#, fuzzy, c-format
+#, c-format
 msgid "using default database '%s'"
-msgstr "ignoriere Datenbank '%s'"
+msgstr "nutze Standarddatenbank '%s'"
 
 #: database.cc:5040
 #, c-format
@@ -5360,14 +5353,14 @@ msgid "connecting to %s"
 msgstr "verbinde zu %s"
 
 #: netsync.cc:113
-#, fuzzy, c-format
+#, c-format
 msgid "  include pattern  %s"
-msgstr "setze Standard-'include'-Muster auf '%s'"
+msgstr "  'include'-Muster  %s"
 
 #: netsync.cc:114
 #, c-format
 msgid "  exclude pattern  %s"
-msgstr ""
+msgstr "  'exclude'-Muster  %s"
 
 #: netsync.cc:163
 #, c-format
@@ -5459,7 +5452,7 @@ msgstr ""
 #: network/connection_info.cc:283
 #, c-format
 msgid "a non-empty hostname is expected for the 'mtn' uri scheme"
-msgstr ""
+msgstr "das 'mtn'-URI-Schema erwartet einen nicht leeren Rechnernamen"
 
 #: network/connection_info.cc:345
 #, c-format
@@ -5553,27 +5546,27 @@ msgstr "Überprüfung von '%s' schlug fehl"
 
 #: network/netsync_session.cc:347
 msgid "bytes in"
-msgstr "Bytes gelesen"
+msgstr "Bytes rein"
 
 #: network/netsync_session.cc:349
 msgid "bytes out"
-msgstr "Bytes geschrieben"
+msgstr "Bytes raus"
 
 #: network/netsync_session.cc:357 network/netsync_session.cc:378
 msgid "certs in"
-msgstr "Zertifikate gelesen"
+msgstr "Zertifikate rein"
 
 #: network/netsync_session.cc:359 network/netsync_session.cc:372
 msgid "revs in"
-msgstr "Revisionen gelesen"
+msgstr "Revisionen raus"
 
 #: network/netsync_session.cc:364 network/netsync_session.cc:380
 msgid "certs out"
-msgstr "Zertifikate geschrieben"
+msgstr "Zertifikate raus"
 
 #: network/netsync_session.cc:366 network/netsync_session.cc:374
 msgid "revs out"
-msgstr "Revisionen geschrieben"
+msgstr "Revisionen raus"
 
 #: network/netsync_session.cc:513
 #, c-format
@@ -7834,13 +7827,13 @@ msgid "block size in bytes for \"automate stdio\" output"
 msgstr "Blockgröße in Bytes der Ausgabe von \"automate stdio\""
 
 #: options_list.hh:220
-#, fuzzy
 msgid ""
 "automatically update the workspace, if it was at a head and the command "
 "creates a new head"
 msgstr ""
-"aktualisiere automatisch den Arbeitsbereich, wenn dieser sauber und die "
-"Basisrevision der Kopf eines betroffenen Zweiges ist"
+"aktualisiere automatisch den Arbeitsbereich, wenn dieser gerade die "
+"Kopfrevision eines Zweiges repräsentiert und das Kommando eine "
+"neue Kopfversion holt oder erzeugt"
 
 #: options_list.hh:225
 msgid "address:port to listen on (default :4691)"
