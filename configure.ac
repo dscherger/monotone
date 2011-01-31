@@ -14,7 +14,7 @@ AC_INIT([monotone], [1.0dev], [monotone-devel@nongnu.org])
 AM_INIT_AUTOMAKE([1.9 tar-ustar dist-bzip2 no-dist-gzip std-options])
 AC_CONFIG_SRCDIR([src/app_state.cc])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile doc/Makefile])
 AC_LANG([C++])
 
 dnl We want to take advantage of automake 1.11's optional "quiet build"

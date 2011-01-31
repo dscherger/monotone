@@ -327,31 +327,6 @@ endif
 
 # extra files
 
-PDF_FIGURES= doc/figures/branch-heads.pdf doc/figures/cert.pdf			\
-	doc/figures/difference-between-versions.pdf				\
-	doc/figures/file-id-manifest-id.pdf doc/figures/fork.pdf		\
-	doc/figures/general-workflow.pdf doc/figures/linear-history.pdf		\
-	doc/figures/local-workflow.pdf doc/figures/manifest.pdf			\
-	doc/figures/merge.pdf doc/figures/network-workflow.pdf			\
-	doc/figures/parent-child-hashes.pdf					\
-	doc/figures/parent-child-names-hashes.pdf doc/figures/parent-child.pdf	\
-	doc/figures/revision-chaining.pdf doc/figures/revision.pdf		\
-	doc/figures/statement.pdf doc/figures/three-versions.pdf		\
-	doc/figures/two-branches.pdf
-
-PNG_IMAGES= doc/images/bg.png doc/images/go-next.png			\
-	doc/images/go-previous.png doc/images/go-up.png			\
-	doc/images/toc.png
-
-PNG_FIGURES=$(PDF_FIGURES:.pdf=.png)
-EPS_FIGURES=$(PDF_FIGURES:.pdf=.eps)
-TEXI_FRAGMENTS = doc/pcrepattern.texi doc/pcresyntax.texi
-
-man1_MANS = mtn.1
-info_TEXINFOS = doc/monotone.texi
-
-doc_monotone_TEXINFOS = src/std_hooks.lua $(TEXI_FRAGMENTS)
-
 EXTRA_DIST =								\
 	HACKING INSTALL INSTALL_windows_cygwin.txt			\
 	INSTALL_windows_native.txt README.visualc8 UPGRADE		\
@@ -361,10 +336,6 @@ EXTRA_DIST =								\
 	src/util/mtnopt.in src/win32/README.txt				\
 	src/win32/monotone.iss.in src/win32/modpath.iss 		\
 	src/win32/monotone.bmp src/win32/dlls.sh			\
-									\
-	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
-	doc/figures/monotone-logo.svg doc/figures/oo-figures.sxd	\
-	doc/figures/pdfcrop.pl doc/figures/README			\
 									\
 	src/std_hooks.lua						\
 	test/func test/func-testsuite.lua				\
@@ -378,67 +349,6 @@ EXTRA_DIST =								\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
 									\
 	contrib examples mac notes visualc
-
-AM_MAKEINFOFLAGS= -I $(srcdir)
-
-AM_MAKEINFOHTMLFLAGS= -I $(srcdir) \
-	--number-sections --no-split --no-headers --css-ref=texinfo.css
-
-# Html and pdf dependencies are simply copied.
-# All other are generated with the rules further down.
-copy-html-deps: doc/texinfo.css $(PNG_FIGURES) $(PNG_IMAGES)
-	for f in doc/texinfo.css $(PNG_FIGURES) $(PNG_IMAGES); do \
-	    d=`dirname $$f`; \
-	    [ -d $$d ] || $(MKDIR_P) $$d && \
-		cmp -s $(srcdir)/$$f $(builddir)/$$f || \
-		    cp -v $(srcdir)/$$f $(builddir)/$$f; \
-	done
-
-copy-pdf-deps:  $(PDF_FIGURES)
-	for f in $(PDF_FIGURES); do \
-	    d=`dirname $$f`; \
-	    [ -d $$d ] || $(MKDIR_P) $$d && \
-		cmp -s $(srcdir)/$$f $(builddir)/$$f || \
-		    cp -v $(srcdir)/$$f $(builddir)/$$f; \
-	done
-
-#%.eps: %.epsi
-#	mv -f $< $@
-#
-#%.epsi: %.ps
-#	ps2epsi $< $@
-
-doc/figures/%.eps: doc/figures/%.ps
-	ps2eps <$< >$@
-
-doc/figures/%.ps: $(top_builddir)/doc/figures/%.pdf
-#	acroread -toPostScript -pairs $< $@
-	pdftops $< $@
-
-$(top_builddir)/doc/figures/%.pdf : $(srcdir)/doc/figures/%.pdf copy-pdf-deps
-
-# Stealing code from automake and adapting, we want a HTML file tree as well
-AM_MAKEINFODOCHTMLFLAGS= -I $(srcdir) \
-	--number-sections --css-ref=texinfo.css
-
-doc/html: doc/monotone.texi $(srcdir)/doc/version.texi $(doc_monotone_TEXINFOS) copy-html-deps doc/html/$(am__dirstamp)
-	$(MKDIR_P) $@.htp
-	cp -r $(srcdir)/doc/figures $@.htp
-	cp -r $(srcdir)/doc/images $@.htp
-	cp $(srcdir)/doc/texinfo.css $@.htp
-	if $(MAKEINFOHTML) $(AM_MAKEINFODOCHTMLFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc \
-	 -o $@.htp `test -f 'doc/monotone.texi' || echo '$(srcdir)/'`doc/monotone.texi; \
-	then \
-	  rm -rf $@; \
-	  mv $@.htp $@; \
-	else \
-	  rm -Rf $@.htp; \
-	  exit 1; \
-	fi
-html-local: doc/html
-doc/html/$(am__dirstamp):
-	@$(MKDIR_P) doc/html
-	@: > doc/$(am__dirstamp)
 
 # Message translation support
 # INST_LINGUAS is set by configure, based on the po/LINGUAS file and
@@ -507,7 +417,7 @@ po/$(PACKAGE).pot: $(POTFILES)
 	  $(XGETTEXT_PKG_OPTS) $(XGETTEXT_OPTS) \
 	  $(POTFILES)
 
-dist-hook: $(ALL_GMOFILES) copy-html-deps copy-pdf-deps
+dist-hook: $(ALL_GMOFILES)
 	cp $(ALL_GMOFILES) $(distdir)/po
 # also, kill off any backup files that got pulled in by one of the
 # recursive subdirectory includes in EXTRA_DIST
@@ -813,6 +723,27 @@ distcheck-hook:
 mtn.1: mtn$(EXEEXT)
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
 	(cd $(srcdir) && $$REAL_BLDDIR/mtn manpage --norc) 2>/dev/null >$@ || rm -f $@
+
+
+info-local:
+	$(MKDIR_P) doc
+	cd doc; $(MAKE) info
+dvi-local doc/monotone.dvi:
+	$(MKDIR_P) doc
+	cd doc; $(MAKE) dvi
+pdf-local doc/monotone.pdf:
+	$(MKDIR_P) doc
+	cd doc; $(MAKE) pdf
+ps-local doc/monotone.ps:
+	$(MKDIR_P) doc
+	cd doc; $(MAKE) ps
+html-local doc/html doc/monotone.html:
+	$(MKDIR_P) doc
+	cd doc; $(MAKE) html
+.PHONY: pdf-local html-local dvi-local info-local ps-local
+# Not really phony, but the only way to make sure we wander into
+# the subdirectory and do the build with dependencies and all.
+.PHONY: doc/monotone.dvi doc/monotone.pdf doc/monotone.ps doc/monotone.html
 
 # Verbosity goo.
 V_bcxx       = $(V_bcxx_$(V))
