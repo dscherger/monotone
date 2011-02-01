@@ -35,7 +35,6 @@ EPS_FIGURES=$(PDF_FIGURES:.pdf=.eps)
 PDF_FIGURES_copied = $(addprefix $(abs_builddir)/,$(PDF_FIGURES))
 PNG_FIGURES_copied = $(addprefix $(abs_builddir)/,$(PNG_FIGURES))
 PNG_IMAGES_copied = $(addprefix $(abs_builddir)/,$(PNG_IMAGES))
-EPS_FIGURES_generated = $(addprefix $(abs_builddir)/,$(EPS_FIGURES))
 HTML_EXTRA_copied = $(abs_builddir)/texinfo.css
 
 TEXI_FRAGMENTS = monotonevars.texi pcrepattern.texi pcresyntax.texi
@@ -44,7 +43,7 @@ man1_MANS = mtn.1
 info_TEXINFOS = monotone.texi
 
 monotone_TEXINFOS = ../src/std_hooks.lua $(TEXI_FRAGMENTS) \
-	$(EPS_FIGURES_generated) \
+	$(EPS_FIGURES) \
 	$(PDF_FIGURES_copied) \
 	$(PNG_FIGURES_copied) $(PNG_IMAGES_copied) \
 	$(HTML_EXTRA_copied)
