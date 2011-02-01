@@ -28,6 +28,8 @@ PNG_IMAGES= images/bg.png images/go-next.png			\
 	images/go-previous.png images/go-up.png			\
 	images/toc.png
 
+HTML_EXTRA = texinfo.css
+
 PNG_FIGURES=$(PDF_FIGURES:.pdf=.png)
 EPS_FIGURES=$(PDF_FIGURES:.pdf=.eps)
 
@@ -35,18 +37,14 @@ EPS_FIGURES=$(PDF_FIGURES:.pdf=.eps)
 PDF_FIGURES_copied = $(addprefix $(abs_builddir)/,$(PDF_FIGURES))
 PNG_FIGURES_copied = $(addprefix $(abs_builddir)/,$(PNG_FIGURES))
 PNG_IMAGES_copied = $(addprefix $(abs_builddir)/,$(PNG_IMAGES))
-HTML_EXTRA_copied = $(abs_builddir)/texinfo.css
+HTML_EXTRA_copied = $(addprefix $(abs_builddir)/,$(HTML_EXTRA))
 
 TEXI_FRAGMENTS = monotonevars.texi pcrepattern.texi pcresyntax.texi
 
 man1_MANS = mtn.1
 info_TEXINFOS = monotone.texi
 
-monotone_TEXINFOS = ../src/std_hooks.lua $(TEXI_FRAGMENTS) \
-	$(EPS_FIGURES) \
-	$(PDF_FIGURES_copied) \
-	$(PNG_FIGURES_copied) $(PNG_IMAGES_copied) \
-	$(HTML_EXTRA_copied)
+monotone_TEXINFOS = ../src/std_hooks.lua $(TEXI_FRAGMENTS)
 
 EXTRA_DIST = \
 	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
@@ -109,11 +107,13 @@ AM_MAKEINFODOCHTMLFLAGS= -I $(srcdir) \
 
 # Because automake already generates a html target that produces a single file
 # HTML, we have to use a different target to make a multifile HTML.
-htmldir: monotone.texi $(srcdir)/version.texi $(doc_monotone_TEXINFOS) html/$(am__dirstamp)
-	$(MKDIR_P) html.htp
-	cp -r $(srcdir)/figures html.htp
-	cp -r $(srcdir)/images html.htp
-	cp $(srcdir)/texinfo.css html.htp
+htmldir: monotone.texi $(srcdir)/version.texi $(doc_monotone_TEXINFOS) $(PNG_FIGURES) $(PNG_IMAGES) $(HTML_EXTRA) html/$(am__dirstamp)
+	$(MKDIR_P) html.htp && \
+	  cp $(addprefix $(srcdir)/,$(HTML_EXTRA)) html.htp
+	$(MKDIR_P) html.htp/figures && \
+	  cp $(addprefix $(srcdir)/,$(PNG_FIGURES)) html.htp/figures
+	$(MKDIR_P) html.htp/images && \
+	  cp $(addprefix $(srcdir)/,$(PNG_IMAGES)) html.htp/images
 	if $(MAKEINFOHTML) $(AM_MAKEINFODOCHTMLFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc -o html.htp `test -f 'monotone.texi' || echo '$(srcdir)/'`monotone.texi; \
 	then \
 	  rm -rf html; \
@@ -124,13 +124,25 @@ htmldir: monotone.texi $(srcdir)/version.texi $(doc_monotone_TEXINFOS) html/$(am
 	fi
 html/$(am__dirstamp):
 	@$(MKDIR_P) html
-	@: > $(am__dirstamp)
+	@touch $@
 # Then let's have the html target produce the multifile HTML as well.
 html-local: htmldir
 
-# automake doesn't seem to generate any specific PostScript target.
-# It does generate the general rule to produce .ps from .dvi, though,
-# so all we need to do is to set up the dependencies.
-#dvi-local: $(EPS_FIGURES)
-#monotone.ps: $(srcdir)/version.texi $(doc_monotone_TEXINFOS) $(EPS_FIGURES) $(am__dirstamp)
-
+# Because we don't want to have the different document targets depend on
+# irrelevant files, we have these dependencies lists.
+# NOTE: This wouldn't work if this Makefile had been part of the top Makefile,
+# because automake produces very different results when the main .texi is in
+# a subdirectory.
+# Also note that we need to specify everything that automake would specify,
+# since what we write overrides what automake would otherwise produce.
+monotone.dvi: monotone.texi $(srcdir)/version.texi $(monotone_TEXINFOS) \
+	$(EPS_FIGURES)
+monotone.pdf: monotone.texi $(srcdir)/version.texi $(monotone_TEXINFOS) \
+	$(PDF_FIGURES_copied)
+monotone.html: monotone.texi $(srcdir)/version.texi $(monotone_TEXINFOS) \
+	$(PNG_FIGURES_copied) $(PNG_IMAGES_copied) $(HTML_EXTRA_copied)
+# Note that we don't need anything for monotone.ps, as it's produced using
+# the generic rule .dvi.ps, and the monotone.dvi already has all the
+# dependencies.
+# Also, we don't need anything extra for htmldir, as it does things a bit
+# differently.
