@@ -591,22 +591,21 @@ DISTCLEANFILES = src/mt-stdint.h src/xgettext.opts src/pch-build.hh.gch.dep	\
 	test/tester.status test/unit.status test/func.status
 
 # we generate some source files to copy data into the executable
-# note that the only things that should go in BUILT_SOURCES are things
+# note that the only things that should go in BUILT_SRCS are things
 # that need to be generated early on 'make all'; this is _not_ true of
 # generated source files, but it is true for the PCH if used.
 
 # package_revision.txt and package_full_revision_dist.txt are shipped
 # in the distribution, so don't delete them here
-CLEAN_SOURCES = src/std_hooks.cc unit/src/testlib.cc src/schema.cc \
+CLEAN_SRCS = src/std_hooks.cc unit/src/testlib.cc src/schema.cc \
 	src/package_revision.cc src/package_full_revision.cc \
 	src/package_revision_raw.txt \
 	src/package_full_revision.txt src/package_full_revision_raw.txt \
 	mtn.1
 
-BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
+BUILT_SRCS = $(PCH_FILE) $(PCH_BUILD)
 
-CLEANFILES = $(bin_SCRIPTS) $(BUILT_SOURCES) $(CLEAN_SOURCES) \
-	     $(EPS_FIGURES) $(CLEAN_POFILES)
+CLEANFILES = $(bin_SCRIPTS) $(BUILT_SRCS) $(CLEAN_SRCS) $(CLEAN_POFILES)
 
 # automake provides no nice way to build a helper program to execute
 # on the build machine, so we need our own rule.  almost all the
