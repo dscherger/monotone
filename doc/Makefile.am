@@ -39,14 +39,15 @@ PNG_FIGURES_copied = $(addprefix $(abs_builddir)/,$(PNG_FIGURES))
 PNG_IMAGES_copied = $(addprefix $(abs_builddir)/,$(PNG_IMAGES))
 HTML_EXTRA_copied = $(addprefix $(abs_builddir)/,$(HTML_EXTRA))
 
-TEXI_FRAGMENTS = monotonevars.texi pcrepattern.texi pcresyntax.texi
+TEXI_VARS = monotonevars.texi
+TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
 CLEANFILES = $(EPS_FIGURES) $(PDF_FIGURES_copied) $(PNG_FIGURES_copied) \
-	$(PNG_IMAGES_copied) $(HTML_EXTRA_copied)
+	$(PNG_IMAGES_copied) $(HTML_EXTRA_copied) $(TEXI_VARS)
 
 info_TEXINFOS = monotone.texi
 
-monotone_TEXINFOS = ../src/std_hooks.lua $(TEXI_FRAGMENTS)
+monotone_TEXINFOS = ../src/std_hooks.lua $(TEXI_VARS) $(TEXI_FRAGMENTS)
 
 EXTRA_DIST = \
 	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
