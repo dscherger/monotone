@@ -12,6 +12,8 @@
 AUTOMAKE_OPTIONS = subdir-objects -Wno-portability
 ACLOCAL_AMFLAGS  = -I m4
 
+SUBDIRS = doc
+
 CMD_SOURCES =								\
 	src/cmd.hh src/cmd.cc src/cmd_netsync.cc src/cmd_list.cc 	\
 	src/cmd_packet.cc src/cmd_key_cert.cc src/cmd_merging.cc 	\
@@ -720,30 +722,21 @@ distcheck-hook:
                        $(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
                        src/win32/main.cc src/unix/main.cc)
 
+man1_MANS = mtn.1
+
 mtn.1: mtn$(EXEEXT)
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
 	(cd $(srcdir) && $$REAL_BLDDIR/mtn manpage --norc) 2>/dev/null >$@ || rm -f $@
 
+doc/monotone.dvi: dvi
+doc/monotone.pdf: pdf
+doc/monotone.ps: ps
+doc/html doc/monotone.html: html
 
-info-local:
-	$(MKDIR_P) doc
-	cd doc; $(MAKE) info
-dvi-local doc/monotone.dvi:
-	$(MKDIR_P) doc
-	cd doc; $(MAKE) dvi
-pdf-local doc/monotone.pdf:
-	$(MKDIR_P) doc
-	cd doc; $(MAKE) pdf
-ps-local doc/monotone.ps:
-	$(MKDIR_P) doc
-	cd doc; $(MAKE) ps
-html-local doc/html doc/monotone.html:
-	$(MKDIR_P) doc
-	cd doc; $(MAKE) html
-.PHONY: pdf-local html-local dvi-local info-local ps-local
 # Not really phony, but the only way to make sure we wander into
 # the subdirectory and do the build with dependencies and all.
-.PHONY: doc/monotone.dvi doc/monotone.pdf doc/monotone.ps doc/monotone.html
+.PHONY: doc/monotone.dvi doc/monotone.pdf doc/monotone.ps doc/monotone.html \
+	doc/html
 
 # Verbosity goo.
 V_bcxx       = $(V_bcxx_$(V))

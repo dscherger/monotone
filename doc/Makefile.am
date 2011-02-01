@@ -41,7 +41,6 @@ HTML_EXTRA_copied = $(addprefix $(abs_builddir)/,$(HTML_EXTRA))
 
 TEXI_FRAGMENTS = monotonevars.texi pcrepattern.texi pcresyntax.texi
 
-man1_MANS = mtn.1
 info_TEXINFOS = monotone.texi
 
 monotone_TEXINFOS = ../src/std_hooks.lua $(TEXI_FRAGMENTS)
