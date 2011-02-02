@@ -39,46 +39,24 @@ PNG_FIGURES_copied = $(addprefix $(abs_builddir)/,$(PNG_FIGURES))
 PNG_IMAGES_copied = $(addprefix $(abs_builddir)/,$(PNG_IMAGES))
 HTML_EXTRA_copied = $(addprefix $(abs_builddir)/,$(HTML_EXTRA))
 
-TEXI_VARS = monotonevars.texi
 TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
 CLEANFILES = $(EPS_FIGURES) $(PDF_FIGURES_copied) $(PNG_FIGURES_copied) \
-	$(PNG_IMAGES_copied) $(HTML_EXTRA_copied) $(TEXI_VARS)
+	$(PNG_IMAGES_copied) $(HTML_EXTRA_copied)
 
 info_TEXINFOS = monotone.texi
 
-monotone_TEXINFOS = ../src/std_hooks.lua $(TEXI_VARS) $(TEXI_FRAGMENTS)
+monotone_TEXINFOS = $(top_srcdir)/src/std_hooks.lua $(TEXI_FRAGMENTS)
 
 EXTRA_DIST = \
 	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
 	figures/monotone-logo.svg figures/oo-figures.sxd	\
 	figures/pdfcrop.pl figures/README
 
-AM_MAKEINFOFLAGS= -I $(srcdir)
+AM_MAKEINFOFLAGS= -I $(top_srcdir)/src -I $(srcdir)
 
-AM_MAKEINFOHTMLFLAGS= -I $(srcdir) \
+AM_MAKEINFOHTMLFLAGS= -I $(top_srcdir)/src -I $(srcdir) \
 	--number-sections --no-split --no-headers --css-ref=texinfo.css
-
-monotonevars.texi: Makefile
-	rm -f monotonevars.texi
-	echo "@set top_srcdir $(top_srcdir)" >> monotonevars.texi
-	echo "@set top_builddir $(top_builddir)" >> monotonevars.texi
-
-## # Html and pdf dependencies are simply copied.
-## # All other are generated with the rules further down.
-## copy-html-deps: texinfo.css $(PNG_FIGURES) $(PNG_IMAGES)
-## 	for f in texinfo.css $(PNG_FIGURES) $(PNG_IMAGES); do \
-## 	    d=`dirname $$f`; \
-## 	    [ -d $$d ] || $(MKDIR_P) $$d && \
-## 		cmp -s $(srcdir)/$$f $(builddir)/$$f || \
-## 		    cp -v $(srcdir)/$$f $(builddir)/$$f; \
-## 	done
-
-#%.eps: %.epsi
-#	mv -f $< $@
-#
-#%.epsi: %.ps
-#	ps2epsi $< $@
 
 figures/%.eps: figures/%.ps
 	$(MKDIR_P) figures
@@ -105,7 +83,7 @@ $(abs_builddir)/texinfo.css: texinfo.css
 	cmp -s $< $@ || cp $< $@
 
 # Stealing code from automake and adapting, we want a HTML file tree as well
-AM_MAKEINFODOCHTMLFLAGS= -I $(srcdir) \
+AM_MAKEINFODOCHTMLFLAGS= -I $(top_srcdir)/src -I $(srcdir) \
 	--number-sections --css-ref=texinfo.css
 
 # Because automake already generates a html target that produces a single file
@@ -138,6 +116,13 @@ html-local: htmldir
 # a subdirectory.
 # Also note that we need to specify everything that automake would specify,
 # since what we write overrides what automake would otherwise produce.
+#
+# For the info and html targets, '@verbatiminclude std_hooks.lua'
+# works with -I $(top_srcdir)/src. However the dvi target requires
+# '$(top_srcdir)/src' in TEXINPUTS. We can't specify a per-target
+# variable for 'dvi', because that would override the automake
+# definition. So we just set TEXINPUTS globally.
+export TEXINPUTS := $(top_srcdir)/src:$(TEXINPUTS)
 monotone.dvi: monotone.texi $(srcdir)/version.texi $(monotone_TEXINFOS) \
 	$(EPS_FIGURES)
 monotone.pdf: monotone.texi $(srcdir)/version.texi $(monotone_TEXINFOS) \

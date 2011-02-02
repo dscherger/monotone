@@ -12,7 +12,6 @@
 
 @syncodeindex fn cp
 @include version.texi
-@include monotonevars.texi
 
 @dircategory Programming
 @direntry
@@ -13215,7 +13214,9 @@ that is built in to the monotone executable, and read before any user
 hooks files (unless @option{--no-builtin-rcfiles} is passed).  It contains the
 default values for all hooks. See @ref{rcfiles}.
 
-@verbatiminclude @value{top_srcdir}/src/std_hooks.lua
+@c note that this requires -I $(top_srcdir)/src on the makeinfo
+@c command line, and $(top_srcdir)/src in TEXINPUTS for texi2dvi
+@verbatiminclude std_hooks.lua
 
 @node General Index,  , Default hooks, Top
 @unnumbered General Index
