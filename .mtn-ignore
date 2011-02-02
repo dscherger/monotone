@@ -8,10 +8,13 @@
 ^config\.(guess|h(\.in)?|log|rpath|status|sub)$
 ^configure$
 ^depcomp$
+^doc/Makefile\.in$
+^doc/mdate-sh$
 ^doc/monotone\.info$
 ^doc/monotone\.info-1$
 ^doc/monotone\.info-2$
 ^doc/stamp-vti$
+^doc/texinfo\.tex$
 ^doc/version\.texi$
 ^html
 ^install-sh$
