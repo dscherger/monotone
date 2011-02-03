@@ -578,9 +578,8 @@ FORCE:
 #        only in a separate maintainer-clean target as suggested by
 #	 automake's man page
 mostlyclean-local:
-	rm -rf doc/html test/bin test/work
-	rm -f doc/monotone.{dvi,pdf,html} doc/monotone.info{,-*} \
-	  run_*_tests test/*.status test/src/testlib.cc util/txt2c
+	rm -rf test/bin test/work
+	rm -f run_*_tests test/*.status test/src/testlib.cc util/txt2c
 	set -ex; for d in test/unit/tests/*/__driver__.lua; do \
 	  rm -f $$d; \
 	  rmdir $${d%/*} || :; \
