@@ -229,7 +229,7 @@ nodist_mtn_SOURCES = src/std_hooks.cc src/schema.cc
 test_bin_unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
 	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
 
-test_bin_tester_SOURCES = test/src/tester.cc src/transforms.cc src/gzip.cc \
+test_bin_tester_SOURCES = test/src/tester.cc test/src/tester-plaf.hh src/transforms.cc src/gzip.cc \
 	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) src/pcrewrap.cc \
 	src/specialized_lexical_cast.cc
 nodist_test_bin_tester_SOURCES = test/src/testlib.cc
