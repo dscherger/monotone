@@ -8,7 +8,7 @@
 ^config\.(guess|h(\.in)?|log|rpath|status|sub)$
 ^configure$
 ^depcomp$
-^doc/Makefile\.in$
+^doc/Makefile(\.in)?$
 ^doc/mdate-sh$
 ^doc/monotone\.info$
 ^doc/monotone\.info-1$
