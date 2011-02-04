@@ -87,7 +87,7 @@ AM_MAKEINFODOCHTMLFLAGS= -I $(top_srcdir)/src -I $(srcdir) \
 
 # Because automake already generates a html target that produces a single file
 # HTML, we have to use a different target to make a multifile HTML.
-htmldir: monotone.texi $(srcdir)/version.texi $(doc_monotone_TEXINFOS) $(PNG_FIGURES) $(PNG_IMAGES) $(HTML_EXTRA) html/$(am__dirstamp)
+htmldir: monotone.texi $(srcdir)/version.texi $(doc_monotone_TEXINFOS) $(PNG_FIGURES) $(PNG_IMAGES) $(HTML_EXTRA)
 	$(MKDIR_P) html.htp && \
 	  cp $(addprefix $(srcdir)/,$(HTML_EXTRA)) html.htp
 	$(MKDIR_P) html.htp/figures && \
