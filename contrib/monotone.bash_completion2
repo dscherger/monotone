@@ -357,7 +357,7 @@ _monotone_command_options['mtn import']='--author --branch --date --dry-run --ex
 _monotone_commands['mtn list']='branches certs changed databases dbs duplicates epochs ignored keys known missing tags unknown vars workspaces'
 _monotone_command_args['mtn list branches']='PATTERN'
 _monotone_command_options['mtn list branches']='--exclude'
-_monotone_command_args['mtn list certs']='ID'
+_monotone_command_args['mtn list certs']='REVID'
 _monotone_command_args['mtn list changed']='PATH ...'
 _monotone_command_options['mtn list changed']='--depth --exclude'
 ### Missing mtn list databases
@@ -377,7 +377,7 @@ _monotone_command_args['mtn list vars']='DOMAIN'
 ### Missing mtn list workspaces
 _monotone_commands['mtn local']='kill_certs kill_revision'
 _monotone_command_args['mtn local kill_certs']='SELECTOR CERTNAME CERTVAL'
-_monotone_command_args['mtn local kill_revision']='ID'
+_monotone_command_args['mtn local kill_revision']='REVID'
 _monotone_command_args['mtn log']='PATH ...'
 _monotone_command_options['mtn log']='--brief --clear-from --clear-to --depth --diffs --exclude --files --from --graph --last --merges --next --no-brief --no-diffs --no-files --no-graph --no-merges --revision --to -r'
 _monotone_command_options['mtn manpage']='--formatted --hidden --no-hidden --plain'
@@ -395,7 +395,7 @@ _monotone_command_args['mtn pivot_root']='NEW_ROOT PUT_OLD'
 _monotone_command_options['mtn pivot_root']='--bookkeep-only --move-conflicting-paths --no-move-conflicting-paths'
 _monotone_command_args['mtn pluck']='PATH ...'
 _monotone_command_options['mtn pluck']='--depth --exclude --move-conflicting-paths --no-move-conflicting-paths --revision -r'
-_monotone_command_args['mtn privkey']='ID'
+_monotone_command_args['mtn privkey']='KEY_NAME_OR_HASH'
 _monotone_command_args['mtn propagate']='SOURCE-BRANCH DEST-BRANCH'
 _monotone_command_options['mtn propagate']='--author --date --message --message-file --no-resolve-conflicts --resolve-conflicts --resolve-conflicts-file -m'
 _monotone_command_args['mtn pubkey']='KEY_NAME_OR_HASH'
@@ -539,6 +539,13 @@ _monotone_command_words() {
     for i in ${!words[@]}; do
 	pw=$w
 	w=${words[$i]}
+
+	# We know that the first word is the command itself.  Because it might
+	# have a directory spec in it, just set it to the command we know.
+	if [ $cmdi -eq 0 ]; then
+	    w=mtn
+	fi
+
 	if [[ "$w" == --*=* || "$w" == -* ]]; then
 	    :
 	elif [[ "$pw" != -* \
@@ -669,7 +676,9 @@ _monotone() {
 		elif [ $arg_cword -ge 0 ]; then
 		    local args=( ${_monotone_command_args[$cmd_line]} )
 		    local argtype=${args[$arg_cword]}
-		    if [ -z "$argtype" -a "${args[${#args[*]}-1]}" = "..." ]; then
+		    if [ "$argtype" = "..." ]; then
+			argtype=${args[$arg_cword-1]}
+		    elif [ -z "$argtype" -a "${args[${#args[*]}-1]}" = "..." ]; then
 			argtype=${args[${#args[*]}-2]}
 		    fi
 		    case $argtype in

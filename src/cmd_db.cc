@@ -173,7 +173,7 @@ CMD_GROUP(db_local, "local", "", CMD_REF(database),
           N_("Deletions cannot be propagated through netsync, so the deleted items "
              "will come back if you sync with a database that still has them."));
 
-CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "ID",
+CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "REVID",
     N_("Kills a revision from the local database"),
     "",
     options::opts::none)
