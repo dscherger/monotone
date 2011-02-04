@@ -157,8 +157,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2011-01-23 19:58+0100\n"
-"PO-Revision-Date: 2011-01-23 19:59+0100\n"
+"POT-Creation-Date: 2011-02-04 08:20+0100\n"
+"PO-Revision-Date: 2011-02-04 11:08+0100\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -1579,8 +1579,8 @@ msgid "Puts a symbolic tag certificate on a revision"
 msgstr "Sätter ett symboliskt tagg-cert på en revision"
 
 #: cmd_key_cert.cc:376
-msgid "ID (pass|fail|true|false|yes|no|1|0)"
-msgstr "ID (pass|fail|true|false|yes|no|1|0)"
+msgid "REV (pass|fail|true|false|yes|no|1|0)"
+msgstr "REV (pass|fail|true|false|yes|no|1|0)"
 
 #: cmd_key_cert.cc:377
 msgid "Notes the results of running a test on a revision"
