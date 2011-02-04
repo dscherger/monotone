@@ -4,6 +4,7 @@ use warnings;
 use strict;
 
 my $mtn = $ENV{'MTN'} || 'mtn';
+$ENV{'LANG'} = 'C';
 
 open MANPAGE,"$mtn manpage|" || die "Couldn't start 'mtn manpage': $!\n";
 
