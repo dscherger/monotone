@@ -539,6 +539,13 @@ _monotone_command_words() {
     for i in ${!words[@]}; do
 	pw=$w
 	w=${words[$i]}
+
+	# We know that the first word is the command itself.  Because it might
+	# have a directory spec in it, just set it to the command we know.
+	if [ $cmdi -eq 0 ]; then
+	    w=mtn
+	fi
+
 	if [[ "$w" == --*=* || "$w" == -* ]]; then
 	    :
 	elif [[ "$pw" != -* \
