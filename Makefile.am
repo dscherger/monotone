@@ -335,9 +335,9 @@ EXTRA_DIST =								\
 	util/audit-includes util/do-editor-vars.sh			\
 	$(wildcard $(srcdir)/m4/*.m4) doc/monotone.html doc/images	\
 	doc/texinfo.css src/schema.sql src/unix/README			\
-	src/util/mtnopt.in src/win32/README.txt				\
-	src/win32/monotone.iss.in src/win32/modpath.iss 		\
-	src/win32/monotone.bmp src/win32/dlls.sh			\
+	src/util/mtnopt.in innosetup/README.txt				\
+	innosetup/monotone.iss.in innosetup/modpath.iss 		\
+	innosetup/monotone.bmp innosetup/dlls.sh			\
 									\
 	src/std_hooks.lua						\
 	test/func test/func-testsuite.lua				\
@@ -483,7 +483,7 @@ mtn-stripped.exe: mtn.exe
 
 dlls.iss: mtn-stripped.exe ${top_srcdir}/Makefile.am
 	rm -f $@
-	for DLL in $$( ${top_srcdir}/src/win32/dlls.sh mtn-stripped.exe | xargs cmd //c echo) ; do \
+	for DLL in $$( ${top_srcdir}/innosetup/dlls.sh mtn-stripped.exe | xargs cmd //c echo) ; do \
 	    echo "Source: \"$$DLL\"; DestDir: \"{app}\"" >> $@ ; \
 	done
 

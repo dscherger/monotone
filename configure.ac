@@ -51,7 +51,7 @@ case "$host" in
     ac_executable_extensions=".exe"
     
     # Inno setup configuration
-    AC_CONFIG_FILES([monotone.iss:src/win32/monotone.iss.in])
+    AC_CONFIG_FILES([monotone.iss:innosetup/monotone.iss.in])
     AC_PATH_PROG(ISCC, [ISCC]) 
   ;;
 
