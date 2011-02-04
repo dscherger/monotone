@@ -2848,7 +2848,7 @@ database::get_revision(revision_id const & id,
   imp->fetch(res, one_col, one_row,
              query("SELECT data FROM revisions WHERE id = ?")
              % blob(id.inner()()));
-
+  I(res.size() == 1);
   gzip<data> gzdata(res[0][0], origin::database);
   data rdat;
   decode_gzip(gzdata,rdat);

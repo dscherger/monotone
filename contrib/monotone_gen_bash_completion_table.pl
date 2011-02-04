@@ -3,7 +3,9 @@
 use warnings;
 use strict;
 
-open MANPAGE,"mtn manpage|" || die "Couldn't start 'mtn manpage': $!\n";
+my $mtn = $ENV{'MTN'} || 'mtn';
+
+open MANPAGE,"$mtn manpage|" || die "Couldn't start 'mtn manpage': $!\n";
 
 my $current_command = "mtn";
 my %options_noarg = ();

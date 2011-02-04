@@ -373,7 +373,7 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
 
 
 CMD(testresult, "testresult", "", CMD_REF(review),
-    N_("ID (pass|fail|true|false|yes|no|1|0)"),
+    N_("REV (pass|fail|true|false|yes|no|1|0)"),
     N_("Notes the results of running a test on a revision"),
     "",
     options::opts::none)

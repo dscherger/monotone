@@ -16,6 +16,9 @@
 # separate file that any completion package could load and use).
 # These lines were generated with the perl script
 # monotone_gen_bash_completion_table.pl
+# If you do it, be careful to set your locale to "C" and be sure the right
+# mtn is used (you can use the environment variable MTN to point at the right
+# one).
 # BEGIN ----------------------------------------------------------------------
 declare -a _monotone_options_noarg
 _monotone_options_noarg=(
@@ -340,7 +343,7 @@ _monotone_command_options['mtn explicit_merge']='--author --date --message --mes
 _monotone_command_args['mtn fdiff']='SRCNAME DESTNAME SRCID DESTID'
 _monotone_command_options['mtn fdiff']='--context --diff-args --external --no-show-encloser --reverse --show-encloser --unified --with-header --without-header'
 ### Missing mtn fload
-_monotone_command_args['mtn fmerge']='<parent> <left> <right>'
+_monotone_command_args['mtn fmerge']='PARENT_FILEID LEFT_FILEID RIGHT_FILEID'
 _monotone_command_args['mtn genkey']='KEY_NAME'
 _monotone_command_options['mtn genkey']='--force-duplicate-key'
 _monotone_command_args['mtn get_roster']='REVID'
@@ -351,26 +354,29 @@ _monotone_command_options['mtn help']='--hidden --no-hidden'
 _monotone_command_args['mtn identify']='PATH'
 _monotone_command_args['mtn import']='DIRECTORY'
 _monotone_command_options['mtn import']='--author --branch --date --dry-run --exclude --message --message-file --no-dry-run --no-respect-ignore --respect-ignore --revision -b -m -r'
-_monotone_commands['mtn list']='branches certs changed databases dbs duplicates epochs ignored keys known missing tags unknown vars'
+_monotone_commands['mtn list']='branches certs changed databases dbs duplicates epochs ignored keys known missing tags unknown vars workspaces'
 _monotone_command_args['mtn list branches']='PATTERN'
 _monotone_command_options['mtn list branches']='--exclude'
 _monotone_command_args['mtn list certs']='ID'
+_monotone_command_args['mtn list changed']='PATH ...'
 _monotone_command_options['mtn list changed']='--depth --exclude'
 ### Missing mtn list databases
 ### Missing mtn list dbs
 _monotone_command_options['mtn list duplicates']='--revision -r'
 _monotone_command_args['mtn list epochs']='BRANCH ...'
-### Missing mtn list ignored
+_monotone_command_args['mtn list ignored']='PATH'
+_monotone_command_options['mtn list ignored']='--depth --exclude'
 _monotone_command_args['mtn list keys']='PATTERN'
 _monotone_command_options['mtn list known']='--depth --exclude'
 _monotone_command_options['mtn list missing']='--depth --exclude'
 _monotone_command_args['mtn list tags']='PATTERN'
 _monotone_command_options['mtn list tags']='--exclude'
+_monotone_command_args['mtn list unknown']='PATH'
 _monotone_command_options['mtn list unknown']='--depth --exclude'
 _monotone_command_args['mtn list vars']='DOMAIN'
+### Missing mtn list workspaces
 _monotone_commands['mtn local']='kill_certs kill_revision'
 _monotone_command_args['mtn local kill_certs']='SELECTOR CERTNAME CERTVAL'
-_monotone_command_options['mtn local kill_certs']='--revision -r'
 _monotone_command_args['mtn local kill_revision']='ID'
 _monotone_command_args['mtn log']='PATH ...'
 _monotone_command_options['mtn log']='--brief --clear-from --clear-to --depth --diffs --exclude --files --from --graph --last --merges --next --no-brief --no-diffs --no-files --no-graph --no-merges --revision --to -r'
@@ -387,7 +393,7 @@ _monotone_command_args['mtn mv']='SRC1 SRC2 ... DEST_DIR'
 _monotone_command_args['mtn passphrase']='KEY_NAME_OR_HASH'
 _monotone_command_args['mtn pivot_root']='NEW_ROOT PUT_OLD'
 _monotone_command_options['mtn pivot_root']='--bookkeep-only --move-conflicting-paths --no-move-conflicting-paths'
-_monotone_command_args['mtn pluck']='-r FROM -r TO PATH ...'
+_monotone_command_args['mtn pluck']='PATH ...'
 _monotone_command_options['mtn pluck']='--depth --exclude --move-conflicting-paths --no-move-conflicting-paths --revision -r'
 _monotone_command_args['mtn privkey']='ID'
 _monotone_command_args['mtn propagate']='SOURCE-BRANCH DEST-BRANCH'
@@ -422,7 +428,7 @@ _monotone_command_options['mtn suspend']='--branch --no-update --update -b'
 _monotone_command_args['mtn sync']='ADDRESS:PORTNUMBER PATTERN ...'
 _monotone_command_options['mtn sync']='--dry-run --exclude --key-to-push --no-dry-run --no-set-default --no-update --set-default --update'
 _monotone_command_args['mtn tag']='REVISION TAGNAME'
-_monotone_command_args['mtn testresult']='ID (pass|fail|true|false|yes|no|1|0)'
+_monotone_command_args['mtn testresult']='REV (pass|fail|true|false|yes|no|1|0)'
 _monotone_command_args['mtn trusted']='REVISION NAME VALUE SIGNER1 SIGNER2 ...'
 _monotone_command_args['mtn undrop']='PATH ...'
 _monotone_command_args['mtn unregister_workspace']='WORKSPACE_PATH'
@@ -667,20 +673,23 @@ _monotone() {
 			argtype=${args[${#args[*]}-2]}
 		    fi
 		    case $argtype in
-			*PATH | PATHS | *FILENAME )
+			*PATH | PATHS | *FILENAME | *FILE | SRC | SRC[0-9] | FILE[0-9] )
 			    _filedir
 			    ;;
-			REV* | NEW_REV* | OLD_REV* | *REVID | FROM | TO )
+			*REVISION | REV* | NEW_REV* | OLD_REV* | *REVID | FROM | TO )
 			    _monotone_revisions
 			    ;;
-			DIR* | *ROOT )
+			DIR* | *ROOT | DEST_DIR | WORKSPACE_PATH )
 			    _filedir -d
 			    ;;
 			KEY* )
 			    _monotone_public_keys
 			    ;;
-			BRANCH* )
+			BRANCH* | SOURCE-BRANCH | DEST-BRANCH )
 			    _monotone_branches
+			    ;;
+			TAG* )
+			    _monotone_tags
 			    ;;
 			ADDR*:PORT* | HOST*:PORT* )
 			    _monotone_address_port
