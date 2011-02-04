@@ -9,10 +9,10 @@
 ^configure$
 ^depcomp$
 ^doc/Makefile(\.in)?$
+^doc/html$
 ^doc/mdate-sh$
-^doc/monotone\.info$
-^doc/monotone\.info-1$
-^doc/monotone\.info-2$
+^doc/monotone\.html$
+^doc/monotone\.info(-\d)?$
 ^doc/stamp-vti$
 ^doc/texinfo\.tex$
 ^doc/version\.texi$
