@@ -346,6 +346,7 @@ EXTRA_DIST =								\
 	$(wildcard $(srcdir)/test/unit/*.hh)				\
 	$(wildcard $(srcdir)/test/unit/tests/*.cc)			\
 	test/unit-testsuite.lua						\
+	test/extra test/extra-testsuite.lua				\
 	test/src/testlib.lua						\
 									\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
@@ -499,7 +500,7 @@ linguas.iss: ${top_srcdir}/Makefile.am
 # shell script embedded in the 'check-local' rule is partially
 # borrowed from automake 1.9's check.am
 
-check-local: test/tester.status test/unit.status test/func.status
+check-local: test/tester.status test/unit.status test/func.status test/extra.status
 	@all=0; failed=0; error=0;					       \
 	for f in $^; do							       \
 	  all=`expr $$all + 1`;						       \
@@ -563,7 +564,8 @@ test/func.status : mtn$(EXEEXT) test/bin/check_net$(EXEEXT)
 # Creates the needed artifacts for manual test execution
 .PHONY: testers
 testers: mtn$(EXEEXT) test/bin/tester$(EXEEXT) test/bin/unit_tester$(EXEEXT) \
-	test/bin/check_net$(EXEEXT) run_tester_tests run_func_tests run_unit_tests
+	test/bin/check_net$(EXEEXT) \
+	run_tester_tests run_func_tests run_unit_tests run_extra_tests
 
 check_PROGRAMS = test/bin/unit_tester test/bin/tester test/bin/check_net
 
@@ -572,7 +574,7 @@ check_PROGRAMS = test/bin/unit_tester test/bin/tester test/bin/check_net
 # but the FORCE hack does.
 .PHONY: check-local FORCE
 FORCE:
-.PRECIOUS: run_tester_tests run_unit_tests run_func_tests
+.PRECIOUS: run_tester_tests run_unit_tests run_func_tests run_extra_tests
 
 # FIXME: if it annoys anybody, we could clean dvi, pdf and info files
 #        only in a separate maintainer-clean target as suggested by
@@ -586,8 +588,8 @@ mostlyclean-local:
 	done
 
 DISTCLEANFILES = src/mt-stdint.h src/xgettext.opts src/pch-build.hh.gch.dep	\
-	run_tester_tests run_unit_tests run_func_tests				\
-	test/tester.status test/unit.status test/func.status
+	run_tester_tests run_unit_tests run_func_tests run_extra_tests		\
+	test/tester.status test/unit.status test/func.status test/extra.status
 
 # we generate some source files to copy data into the executable
 # note that the only things that should go in BUILT_SRCS are things
