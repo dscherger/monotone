@@ -43,10 +43,6 @@ HTML_EXTRA_copied = $(addprefix $(abs_builddir)/,$(HTML_EXTRA))
 
 TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
-# Things that should only be removed when the build dir is different from
-# the source dir are handled by the clean-local target, further down.
-CLEANFILES = $(EPS_FIGURES)
-
 info_TEXINFOS = monotone.texi
 
 monotone_TEXINFOS = $(top_srcdir)/src/std_hooks.lua $(TEXI_FRAGMENTS)
@@ -139,6 +135,10 @@ monotone.html: monotone.texi $(srcdir)/version.texi $(monotone_TEXINFOS) \
 # differently.
 
 
+# Things that should only be removed when the build dir is different from
+# the source dir are handled by the clean-local target below.
+CLEANFILES = $(EPS_FIGURES)
+
 # We have to be careful only to remove figures and images when they aren't
 # in the source directory.
 clean-local:
@@ -146,3 +146,4 @@ clean-local:
 	  rm -f $(PDF_FIGURES_copied) $(PNG_FIGURES_copied) \
 	      $(PNG_IMAGES_copied) $(HTML_EXTRA_copied); \
 	fi
+	rm -rf html
