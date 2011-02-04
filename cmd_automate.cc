@@ -66,6 +66,7 @@ namespace commands {
                  std::ostream & output) const
   {
     make_io_binary();
+    setlocale(LC_ALL,"POSIX");
     exec_from_automate(app, execid, args, output);
   }
 

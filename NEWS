@@ -24,6 +24,11 @@ XXX XXX XX XX:XX:XX UTC 2010
         - monotone now also tracks the workspaces of databases which
           do not reside in a "managed" location.
 
+        - automate now resets the locale to "POSIX" internally.  This
+          means that all scripts can expect the same untranslated
+          messages from mtn automate, regardless of the locale of the
+          calling process.
+
         New Features
 
         - 'mtn conflicts store' now outputs a count of the conflicts,
