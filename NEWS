@@ -92,6 +92,11 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         Internal
 
+        - The source tree has been reorganized. Sources, tests and documentation
+          now reside in specific directories and many smaller improvements in
+          terms of source code cleanup, developer documentation and general build
+          infrastructure accompany this big change.
+
         Other
 
         - Added the mtn-cleanup Perl script that returns a workspace to its
