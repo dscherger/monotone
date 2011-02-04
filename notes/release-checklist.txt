@@ -13,6 +13,15 @@ How to release a new version of monotone
 1) Make sure that the buildbot looks reasonably green.  Let's not
    release stuff that's known to be broken on any major platforms, eh?
 
+   Also check that the following Makefile targets work:
+
+    Unix and Win32: all check 
+
+    Unix : doc/monotone.pdf doc/monotone.ps distcheck dist distclean
+
+    Win32: win32_installer
+
+
 2) Write user-readable release notes at the top of the NEWS file,
    roughly following the format of existing entries.  Make sure to
    mention any incompatibilities at the top, and generally it's a good
@@ -78,13 +87,13 @@ How to release a new version of monotone
    $ autoreconf -i && ./configure && make distcheck
 
    Wait a long time, eventually it will either bomb out, or say
-   "monotone-0.<whatever>.tar.gz is ready for distribution".  If it
-   bombs out, fix it, otherwise, SOMEDIR/monotone-<NEW VERSION>.tar.gz
+   "monotone-<whatever>.tar.bz2 is ready for distribution".  If it
+   bombs out, fix it, otherwise, SOMEDIR/monotone-<NEW VERSION>.tar.bz2
    is the source package.
 
 10) Build docs for the website:
 
-    $ tar xvzf SOMEDIR/monotone-<NEW VERSION>.tar.gz
+    $ tar xvzf SOMEDIR/monotone-<NEW VERSION>.tar.bz2
     $ cd monotone-<NEW VERSION>
     $ ./configure
     $ LANG=C make monotone.pdf html
@@ -95,7 +104,7 @@ How to release a new version of monotone
     # with the administrators of monotone.ca, currently richard@levitte.org.
     #
     $ mkdir <NEW VERSION>
-    $ mv SOMEDIR/monotone-<NEW VERSION>.tar.gz <NEW VERSION>/
+    $ mv SOMEDIR/monotone-<NEW VERSION>.tar.bz2 <NEW VERSION>/
     $ scp -r <NEW VERSION> mtn-uploads@monotone.ca:~/
 
     # The rest is done via monotone.

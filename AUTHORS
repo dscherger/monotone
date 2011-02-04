@@ -2,8 +2,8 @@ main files:
 -----------
 
 Graydon Hoare <graydon@pobox.com> originally wrote most of the files
-in the top level directory and the OS-specific directories 'unix' and
-'win32'.  That's me.
+in the 'src' directory and the OS-specific directories 'src/unix' and
+'src/win32'.  That's me.
 
 Many of the top level files have subsequently been amended, and new
 files added, by other contributing authors, including:
@@ -94,7 +94,7 @@ I believe I am within my rights to assert my own copyright on:
 
   - the collective work, including the use (though not authorship) of
     files I copied from the public domain, and other copyrighted but
-    freely-licensed sources (and possibly lcs.cc, as discussed below)
+    freely-licensed sources (and possibly src/lcs.cc, as discussed below)
 
 I license my publication of these copyrighted works to the public
 under the terms of the GNU GPL, version 2 or greater. See the file
@@ -128,19 +128,19 @@ These files all carry attribution notices, and may qualify as
 GPL: that is, if separated from the monotone sources, they may be
 usable under less restrictive terms.
 
-lru_writeback_cache.hh was originally written by Patrick Audley and is
-licensed under the GPL v2+.
+src/lru_writeback_cache.hh was originally written by Patrick Audley
+and is licensed under the GPL v2+.
 
-mkstemp.cc was based on a portion of gfileutils.c in glib and is
+src/mkstemp.cc was based on a portion of gfileutils.c in glib and is
 licensed under the LGPL (version 2 or later).
 
-gettext.h is a copy of the one included in the GNU Gettext package,
+src/gettext.h is a copy of the one included in the GNU Gettext package,
 and is Copyright (C) 1995-1998, 2000-2002 Free Software Foundation,
 Inc.  It is licensed under the GNU LGPL version 2 (or later).  For
 more information, see the message on top of that file.
 
-unix/main.cc and win32/main.cc were originally execution_monitor.cc
-from the Boost project.  The files in the boost/ directory are copies
+src/unix/main.cc and src/win32/main.cc were originally execution_monitor.cc
+from the Boost project.  The files in the src/boost/ directory are copies
 of files that were at one time available from the boost "sandbox" CVS
 repository, linked off of http://www.boost.org/.  monotone also makes
 use of several "header-only" Boost libraries (not included in the
@@ -174,7 +174,7 @@ Boost in general is licensed under the Boost Software License:
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
-The files in boost/ are under a slightly different license:
+The files in src/boost/ are under a slightly different license:
 
 #  Copyright (c) 2003 Jan Gaspar, Whitestein Technologies
 #
@@ -186,7 +186,7 @@ The files in boost/ are under a slightly different license:
 #  copyright notice.
 
 
-lcs.cc is a C++ translation of Scheme code written by Aubrey Jaffer.
+src/lcs.cc is a C++ translation of Scheme code written by Aubrey Jaffer.
 The original source is under the following license:
 
 #  "differ.scm" O(NP) Sequence Comparison Algorithm.
@@ -211,7 +211,7 @@ The translation is licensed under the GPL v2+ as the rest of Monotone,
 but only if an independent copyright actually exists in the
 translation, which was quite mechanical.
 
-ssh_agent.cc includes a translation of the GET_32BIT_MSB_FIRST define
+src/ssh_agent.cc includes a translation of the GET_32BIT_MSB_FIRST define
 from PuTTY's misc.h. PuTTY is licensed under an MIT-like license,
 reproduced here:
 
@@ -242,7 +242,7 @@ reproduced here:
 #  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-ssh_agent.cc also includes socket creation code copied from OpenSSH's
+src/ssh_agent.cc also includes socket creation code copied from OpenSSH's
 authfd.c. OpenSSH is licensed under a BSD-like license, reproduced
 here:
 
@@ -284,7 +284,7 @@ here:
 external libraries:
 -------------------
 
-The files in netxx/ comprise the NetXX library, written by Peter
+The files in src/netxx/ comprise the NetXX library, written by Peter
 Jones.  It is no longer available from its author.  It is distributed
 under a BSD-like license, reproduced here:
 
