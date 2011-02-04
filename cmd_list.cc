@@ -97,8 +97,8 @@ namespace {
   }
 }
 
-CMD(certs, "certs", "", CMD_REF(list), "ID",
-    N_("Lists certificates attached to an identifier"),
+CMD(certs, "certs", "", CMD_REF(list), "REVID",
+    N_("Lists certificates attached to a revision"),
     "",
     options::opts::none)
 {

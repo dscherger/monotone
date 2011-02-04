@@ -136,7 +136,7 @@ CMD_AUTOMATE(get_public_key, N_("KEY_NAME_OR_HASH"),
   pubkey_common(app, args, output);
 }
 
-CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
+CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("KEY_NAME_OR_HASH"),
     N_("Prints a private key packet"),
     "",
     options::opts::none)
