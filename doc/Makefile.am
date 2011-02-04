@@ -12,6 +12,8 @@
 AUTOMAKE_OPTIONS = subdir-objects -Wno-portability
 ACLOCAL_AMFLAGS  = -I m4
 
+CHECK_SRCDIR_EQ_BUILDDIR=[ "`cd \"$(srcdir)\"; pwd`" = "`pwd`" ]
+
 PDF_FIGURES= figures/branch-heads.pdf figures/cert.pdf			\
 	figures/difference-between-versions.pdf				\
 	figures/file-id-manifest-id.pdf figures/fork.pdf		\
@@ -41,8 +43,9 @@ HTML_EXTRA_copied = $(addprefix $(abs_builddir)/,$(HTML_EXTRA))
 
 TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
-CLEANFILES = $(EPS_FIGURES) $(PDF_FIGURES_copied) $(PNG_FIGURES_copied) \
-	$(PNG_IMAGES_copied) $(HTML_EXTRA_copied)
+# Things that should only be removed when the build dir is different from
+# the source dir are handled by the clean-local target, further down.
+CLEANFILES = $(EPS_FIGURES)
 
 info_TEXINFOS = monotone.texi
 
@@ -134,3 +137,12 @@ monotone.html: monotone.texi $(srcdir)/version.texi $(monotone_TEXINFOS) \
 # dependencies.
 # Also, we don't need anything extra for htmldir, as it does things a bit
 # differently.
+
+
+# We have to be careful only to remove figures and images when they aren't
+# in the source directory.
+clean-local:
+	if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
+	  rm -f $(PDF_FIGURES_copied) $(PNG_FIGURES_copied) \
+	      $(PNG_IMAGES_copied) $(HTML_EXTRA_copied); \
+	fi
