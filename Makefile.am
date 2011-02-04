@@ -218,7 +218,7 @@ UNIT_TEST_SUPPORT =						\
 # primaries
 
 bin_PROGRAMS = mtn
-noinst_PROGRAMS = txt2c
+noinst_PROGRAMS = util/txt2c
 EXTRA_PROGRAMS =
 
 bin_SCRIPTS = mtnopt
@@ -234,7 +234,7 @@ test_bin_tester_SOURCES = test/src/tester.cc test/src/tester-plaf.hh src/transfo
 	src/specialized_lexical_cast.cc
 nodist_test_bin_tester_SOURCES = test/src/testlib.cc
 
-txt2c_SOURCES = util/txt2c.cc
+util_txt2c_SOURCES = util/txt2c.cc
 
 noinst_LIBRARIES = src/libplatform.a src/lib3rdparty.a
 src_libplatform_a_SOURCES = src/platform.hh
