@@ -157,8 +157,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2011-02-04 08:20+0100\n"
-"PO-Revision-Date: 2011-02-04 11:08+0100\n"
+"POT-Creation-Date: 2011-02-04 16:57+0100\n"
+"PO-Revision-Date: 2011-02-04 16:56+0100\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -990,7 +990,7 @@ msgstr "Kör KOMMANDO på servern i andra änden"
 #: cmd_packet.cc:254 cmd_key_cert.cc:81 cmd_key_cert.cc:186 cmd_merging.cc:384
 #: cmd_merging.cc:1141 cmd_merging.cc:1219 cmd_ws_commit.cc:1134
 #: cmd_ws_commit.cc:1342 cmd_ws_commit.cc:1456 cmd_ws_commit.cc:1478
-#: cmd_automate.cc:137 cmd_files.cc:239 cmd_files.cc:336 cmd_files.cc:360
+#: cmd_automate.cc:138 cmd_files.cc:239 cmd_files.cc:336 cmd_files.cc:360
 #: cmd_files.cc:394 automate.cc:85 automate.cc:122 automate.cc:175
 #: automate.cc:298 automate.cc:400 automate.cc:431 automate.cc:520
 #: automate.cc:1246 automate.cc:1419 automate.cc:1556 automate.cc:1592
@@ -1182,8 +1182,8 @@ msgstr ""
 "ignorerade filer, saknade filer eller ändrade filer"
 
 #: cmd_list.cc:101
-msgid "Lists certificates attached to an identifier"
-msgstr "Visar certifikaten kopplade till en identitet"
+msgid "Lists certificates attached to a revision"
+msgstr "Skriver ut alla certifikat kopplade till en revision"
 
 #: cmd_list.cc:129 cmd_list.cc:1050
 #, c-format
@@ -1354,7 +1354,7 @@ msgstr "Visar alla nycklar i nyckellagret"
 
 #: cmd_list.cc:962 cmd_db.cc:50 cmd_db.cc:62 cmd_db.cc:74 cmd_db.cc:91
 #: cmd_db.cc:105 cmd_db.cc:119 cmd_db.cc:135 cmd_db.cc:325 cmd_db.cc:341
-#: cmd_db.cc:362 cmd_db.cc:380 cmd_automate.cc:112 cmd_automate.cc:234
+#: cmd_db.cc:362 cmd_db.cc:380 cmd_automate.cc:113 cmd_automate.cc:235
 #: automate.cc:344 automate.cc:370 automate.cc:472 automate.cc:1320
 #: automate.cc:1348 automate.cc:1768
 #, c-format
@@ -1391,18 +1391,14 @@ msgstr "Lagra den publika nyckeln i databasen"
 msgid "public key '%s' does not exist"
 msgstr "den publika nyckeln '%s' finns inte"
 
-#: cmd_packet.cc:117 cmd_packet.cc:128 cmd_key_cert.cc:168 cmd_key_cert.cc:180
-#: cmd_key_cert.cc:192
+#: cmd_packet.cc:117 cmd_packet.cc:128 cmd_packet.cc:139 cmd_key_cert.cc:168
+#: cmd_key_cert.cc:180 cmd_key_cert.cc:192
 msgid "KEY_NAME_OR_HASH"
 msgstr "NYCKELNAMN_ELLER_KONTROLLSUMMA"
 
 #: cmd_packet.cc:118 cmd_packet.cc:129
 msgid "Prints a public key packet"
 msgstr "Skriver ut datapaket för publik nyckel till stdout"
-
-#: cmd_packet.cc:139
-msgid "ID"
-msgstr "ID"
 
 #: cmd_packet.cc:140
 msgid "Prints a private key packet"
@@ -3379,11 +3375,11 @@ msgstr "exporterar revisionsmarkörer till '%s'"
 msgid "Interface for scripted execution"
 msgstr "Gränssnitt till skriptat körning"
 
-#: cmd_automate.cc:107
+#: cmd_automate.cc:108
 msgid "Prints the automation interface's version"
 msgstr "Skriv ut automatiseringsgränssnittets versionsnummer"
 
-#: cmd_automate.cc:131
+#: cmd_automate.cc:132
 msgid ""
 "Emulates certain kinds of diagnostic / UI messages for debugging and testing "
 "purposes, such as stdio"
@@ -3391,31 +3387,31 @@ msgstr ""
 "Efterliknar visa typer of fel- och användargränssnittsmeddelanden för "
 "felsökning, till exempel stdio"
 
-#: cmd_automate.cc:142
+#: cmd_automate.cc:143
 #, c-format
 msgid "this is an informational message"
 msgstr "detta är ett informationsmeddelande"
 
-#: cmd_automate.cc:144
+#: cmd_automate.cc:145
 #, c-format
 msgid "this is a warning"
 msgstr "detta är en varning"
 
-#: cmd_automate.cc:146
+#: cmd_automate.cc:147
 #, c-format
 msgid "this is an error message"
 msgstr "detta är ett felmeddelande"
 
-#: cmd_automate.cc:229
+#: cmd_automate.cc:230
 msgid "Automates several commands in one run"
 msgstr "Automatiserar flera kommandon i en och sammam körning"
 
-#: cmd_automate.cc:304
+#: cmd_automate.cc:305
 #, c-format
 msgid "directory %s is not a workspace"
 msgstr "katalogen %s existerar inte i arbetskopian"
 
-#: cmd_automate.cc:323
+#: cmd_automate.cc:324
 #, c-format
 msgid ""
 "It is illegal to call the mtn_automate() lua extension,\n"
@@ -3424,7 +3420,7 @@ msgstr ""
 "Det är inte tillåtet att anropa lua-utökningen mtn_automate(),\n"
 "utom från funktioner definierade med register_command()."
 
-#: cmd_automate.cc:332
+#: cmd_automate.cc:333
 #, c-format
 msgid "Bad input to mtn_automate() lua extension: command name is missing"
 msgstr ""
@@ -8522,3 +8518,9 @@ msgstr "Tryck på Enter"
 #: std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Tryck [Retur] när underprocessen är klar"
+
+#~ msgid "Lists certificates attached to an identifier"
+#~ msgstr "Visar certifikaten kopplade till en identitet"
+
+#~ msgid "ID"
+#~ msgstr "ID"
