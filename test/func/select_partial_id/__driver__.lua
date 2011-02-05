@@ -11,4 +11,4 @@ check(qgrep(rev, "stdout"))
 
 -- also check that invalid hex digits in partial ids lead to a proper error message
 check(mtn("automate", "select", "p:abTcd"), 1, false, true)
-check(qgrep("bad character 't' in id name 'abtcd'", "stderr"))
+check(qgrep("bad character 'T' in id name 'abTcd'", "stderr"))

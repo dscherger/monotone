@@ -94,6 +94,10 @@ XXX XXX XX XX:XX:XX UTC 2010
           by default accept files ending with both, ".mtn" and ".db".
           (fixes monotone issue 128)
 
+        - monotone gives now a proper error message when an incomplete
+          or partial identifier contains non-hex digits
+          (fixes monotone issue 143)
+
         Internal
 
         - The source tree has been reorganized. Sources, tests and documentation

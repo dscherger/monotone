@@ -66,6 +66,7 @@
 #include "lua_hooks.hh"
 #include "outdated_indicator.hh"
 #include "lru_writeback_cache.hh"
+#include "char_classifiers.hh"
 
 // defined in schema.c, generated from schema.sql:
 extern char const schema_constant[];
@@ -4223,6 +4224,12 @@ database_impl::add_prefix_matching_constraint(string const & colname,
     q.sql_cmd += "0"; // always false
   else
     {
+      for (string::const_iterator i = prefix.begin(); i != prefix.end(); ++i)
+       {
+         E(is_xdigit(*i), origin::user,
+           F("bad character '%c' in id name '%s'") % *i % prefix);
+       }
+
       string lower_hex = prefix;
       if (lower_hex.size() < constants::idlen)
         lower_hex.append(constants::idlen - lower_hex.size(), '0');
@@ -4498,7 +4505,7 @@ void
 database::get_var(var_key const & key, var_value & value)
 {
   results res;
-  imp->fetch(res, one_col, any_rows, 
+  imp->fetch(res, one_col, any_rows,
              query("SELECT value FROM db_vars "
                    "WHERE domain = ? AND name = ?")
                    % text(key.first())
