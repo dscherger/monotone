@@ -7,33 +7,15 @@
 -- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 -- PURPOSE.
 
-testdir = srcdir.."/extra-tests"
+testdir = srcdir.."/extra"
 
 function prepare_to_run_tests (P)
-   monotone_path = getpathof("mtn")
-   if monotone_path == nil then monotone_path = "mtn" end
-   set_env("mtn", monotone_path)
+   -- We do a dirty trick and include the functional testsuite, because
+   -- we want all the functionality available for the those tests.
+   include("../func-testsuite.lua")
 
-   writefile_q("in", nil)
-   prepare_redirect("in", "out", "err")
-
-   local status = execute(monotone_path, "version", "--full")
-   local out = readfile_q("out")
-   local err = readfile_q("err")
-
-   if status == 0 and err == "" and out ~= "" then
-      logfile:write(out)
-   else
-      P(string.format("mtn version --full: exit %d\nstdout:\n", status))
-      P(out)
-      P("stderr:\n")
-      P(err)
-
-      if status == 0 then status = 1 end
-   end
-
-   unlogged_remove("in")
-   unlogged_remove("out")
-   unlogged_remove("err")
-   return status
+   -- Because it just got redefined, we need to reset testdir and to run
+   -- the redefined prepare_to_run_tests.
+   testdir = srcdir.."/extra"
+   return prepare_to_run_tests(P)
 end

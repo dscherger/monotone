@@ -1,0 +1,13 @@
+# Check that something is compled with 'mtn -'
+
+send "$mtn -\t"
+#expect -ex "mtn -"
+send "\t"
+expect {
+    -timeout 2
+    -- "--no-workspace" {
+	success
+	exit
+    }
+}
+failure

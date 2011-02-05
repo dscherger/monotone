@@ -1,0 +1,28 @@
+# Functions and starter for the bash completion tests
+
+proc success {} {
+    send_user "\n<<success>>\n"
+}
+
+proc failure {} {
+    send_user "\n<<failure>>\n"
+}
+
+send_user "mtn = $mtn\n"
+send_user "initial_dir = $initial_dir\n"
+send_user "PATH = $env(PATH)\n"
+spawn "bash" "-l"
+send "export PS1='@ '\n"
+send "export PS2='_@ '\n"
+send "pwd\n"
+# For some reason, it seems bash doesn't load the bash completion package,
+# even though started with -l...
+send ". /etc/bash_completion\n"
+expect {
+    -timeout 1
+    "bash: /etc/bash_completion: " { failure; exit }
+}
+send ". $initial_dir/extra/shell/monotone.bash_completion\n"
+# Wait for the last line to be echoed
+expect "bash_completion2"
+#stty rows 512

@@ -1,0 +1,26 @@
+# This test checks that monotone.bash_completion2 can handle arguments that
+# are specified as 'PATH ...'
+
+set CTRLC \003
+set timeout 2
+
+send "$mtn commit -m 'foobar' \t\t"
+expect "mtn commit"
+expect {
+    -ex "commit-test1" {
+	expect {
+	    -ex "commit-test2" {
+	    }
+	}
+    }
+    timeout { failure; exit }
+}
+
+send "commit-test1 commit-test\t\t"
+expect {
+    -ex "commit-test2" {
+	success
+    }
+    timeout { failure; exit }
+}
+failure
