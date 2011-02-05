@@ -222,6 +222,7 @@ noinst_PROGRAMS = util/txt2c
 EXTRA_PROGRAMS =
 
 bin_SCRIPTS = mtnopt
+noinst_SCRIPTS = extra/building/dump-test-logs.sh
 
 mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
 nodist_mtn_SOURCES = src/std_hooks.cc src/schema.cc
@@ -638,7 +639,7 @@ test/src/testlib.cc: test/src/testlib.lua util/txt2c$(EXEEXT)
 do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),' \
 	-e 's,[@]sysconfdir[@],$(sysconfdir),'
 
-%: src/util/%.in
+%: src/util/%.in Makefile
 	$(V_subst)$(do_subst) < $< > $@ && chmod +x $@
 
 extra/shell/monotone.bash_completion: extra/shell/monotone.bash_completion.in \
@@ -649,6 +650,10 @@ extra/shell/monotone.bash_completion: extra/shell/monotone.bash_completion.in \
 	    perl $(srcdir)/extra/shell/monotone_gen_bash_completion_table.pl; \
 	  sed -e '1,/^[@]generated-command-list[@]$$/d' < $< ) | \
 	  $(do_subst) > $@
+
+extra/building/dump-test-logs.sh: extra/building/dump-test-logs.sh.in Makefile
+	$(MKDIR_P) extra/building
+	$(V_subst)$(do_subst) < $< > $@ && chmod +x $@
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its
