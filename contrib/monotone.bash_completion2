@@ -451,7 +451,7 @@ fi
 # Call monotone to complete IDs
 _monotone_complete() {
     if (( "${#cur}" >=2 )) ; then
-	COMPREPLY=( "${COMPREPLY[@]}" $(mtn $mono_db complete $1 $cur 2> /dev/null) )
+	COMPREPLY=( "${COMPREPLY[@]}" $(${mtn} $mono_db complete $1 $cur 2> /dev/null) )
     fi
 }
 
@@ -478,21 +478,21 @@ _monotone_files() {
 # Call monotone to complete key ids (private or public)
 _monotone_keys() {
     local range
-    if [ "$1" == "privkey" ]; then
+    if [ "$1" = "privkey" ]; then
 	range='/\[private/,$'
     else
 	range='1,/\[private/'
     fi
-    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(mtn $mono_db list keys 2> /dev/null |\
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list keys 2> /dev/null |\
                                 sed -n ${range}'{/^[0-9a-f]/s/[0-9a-f]* //p}')" -- ${cur#*=} ) )
 }
 
 _monotone_branches() {
-    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(mtn $mono_db list branches 2> /dev/null)" -- ${cur#*=} ) )
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list branches 2> /dev/null)" -- ${cur#*=} ) )
 }
 
 _monotone_tags() {
-    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(mtn $mono_db list tags 2> /dev/null | awk '{print $1}')" -- ${cur#*=} ) )
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list tags 2> /dev/null | awk '{print $1}')" -- ${cur#*=} ) )
 }
 
 _monotone_public_key() {
@@ -546,9 +546,20 @@ _monotone_command_words() {
 	    w=mtn
 	fi
 
-	if [[ "$w" == --*=* || "$w" == -* ]]; then
-	    :
-	elif [[ "$pw" != -* \
+	# if the current word is '--opt=val', split it up into '--opt' and 'val'
+	if [[ "$w" == --?*=* ]]; then
+	    if [[ "$pw" == -* \
+		&& " ${_monotone_options_noarg[*]} " != *\ $pw\ * ]]; then
+		# Current word is an argument to an earlier option,
+		# so we skip past it
+		continue
+	    fi
+	    pw="${w%%?(\\)=*}"
+	    w="${w#*=}"
+	elif [[ "$w" == -* ]]; then
+	    continue
+	fi
+	if [[ "$pw" != -* \
 	    || " ${_monotone_options_noarg[*]} " == *\ $pw\ * ]]; then
 	    if [[ -z "$cmd_line" \
 		|| -n "${_monotone_commands[$cmd_line]}" ]]; then
@@ -582,7 +593,7 @@ _monotone_command_words() {
 }
 
 _monotone() {
-    local cur prev words cword mono_db
+    local cur prev words cword mono_db mtn
     local cmd_words cmd_cword cmd_cur cmd_prev cmd_line cmd_prev_line
     local arg_words arg_cword arg_cur arg_prev 
     local i cmdi argi
@@ -603,10 +614,11 @@ _monotone() {
 
 
     COMPREPLY=()
-    _get_comp_words_by_ref -n : cur prev words cword
+    _get_comp_words_by_ref -n := cur prev words cword
     _split_longopt
     _monotone_command_words
 
+    mtn=${words[0]}
     for w in ${words[@]} ; do
 	if [[ "$w" == --db=* ]] ; then
 	    mono_db="$w" ; break
@@ -616,7 +628,7 @@ _monotone() {
 	for i in ${!words[@]} ; do
 	    [ $i -eq 0 ] && continue
 	    x="${words[$i-1]}"
-	    if [ "$x" == --db -o "$x" == -d ] ; then
+	    if [ "$x" = --db -o "$x" = -d ] ; then
 		mono_db="--db=${words[$i]}" ; break
 	    fi
 	done
