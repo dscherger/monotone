@@ -457,7 +457,11 @@ void concrete_option_set::from_command_line(args_vector & args,
         {
           name = idx(args,i)().substr(1,1);
 
-          o = getopt(by_name, name);
+          map<string, concrete_option>::const_iterator j = by_name.find(name);
+          if (j == by_name.end())
+            throw unknown_option(name);
+          o = j->second;
+
           is_cancel = (name == o.cancelname);
           I(!is_cancel);
           if (!o.has_arg && idx(args,i)().size() != 2)

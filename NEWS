@@ -29,6 +29,10 @@ XXX XXX XX XX:XX:XX UTC 2010
           messages from mtn automate, regardless of the locale of the
           calling process.
 
+        - Short options ('-b', '-d', ...) are no longer completed.  This
+          fixes an invariant failure originating from wrong option usage.
+          (closes monotone issue 141)
+
         New Features
 
         - 'mtn conflicts store' now outputs a count of the conflicts,
@@ -88,9 +92,14 @@ XXX XXX XX XX:XX:XX UTC 2010
           get_default_database_glob(), is used to determine a pattern
           which matches accepted database filenames and this pattern
           by default accept files ending with both, ".mtn" and ".db".
-          (fixes monotone issue 128) 
+          (fixes monotone issue 128)
 
         Internal
+
+        - The source tree has been reorganized. Sources, tests and documentation
+          now reside in specific directories and many smaller improvements in
+          terms of source code cleanup, developer documentation and general build
+          infrastructure accompany this big change.
 
         Other
 

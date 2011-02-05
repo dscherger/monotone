@@ -16,7 +16,7 @@ check(qgrep("option 'full' does not take an argument", "stderr"))
 check(mtn("help", "--no-h=arg"), 1, false, true)
 check(qgrep("option 'no-hidden' does not take an argument", "stderr"))
 
-check(mtn("version", "-f"), 1, false, true)
+check(mtn("version", "--f"), 1, false, true)
 check(qgrep("option 'f' has multiple ambiguous expansions", "stderr"))
 
 -- ensure that exact option name matches are not matched against
@@ -34,3 +34,7 @@ check(not samefile("no-hidden-expected", "hidden-expected"))
 -- this is the important part
 check(mtn("help", "--hidden", "--nh"), 0, true, false)
 check(samefile("stdout", "no-hidden-expected"))
+
+-- ensure that short options are not completed
+check(mtn("push", "-b", "foo"), 1, false, true)
+check(qgrep("option error: unknown option 'b'", "stderr"))
