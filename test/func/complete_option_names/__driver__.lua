@@ -16,7 +16,7 @@ check(qgrep("option 'full' does not take an argument", "stderr"))
 check(mtn("help", "--no-h=arg"), 1, false, true)
 check(qgrep("option 'no-hidden' does not take an argument", "stderr"))
 
-check(mtn("version", "-f"), 1, false, true)
+check(mtn("version", "--f"), 1, false, true)
 check(qgrep("option 'f' has multiple ambiguous expansions", "stderr"))
 
 -- ensure that exact option name matches are not matched against
