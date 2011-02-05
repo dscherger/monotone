@@ -607,9 +607,9 @@ CLEAN_SRCS = src/std_hooks.cc unit/src/testlib.cc src/schema.cc \
 	src/package_full_revision.txt src/package_full_revision_raw.txt \
 	mtn.1
 
-BUILT_SRCS = $(PCH_FILE) $(PCH_BUILD)
+BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
-CLEANFILES = $(bin_SCRIPTS) $(bashcomp_DATA) $(BUILT_SRCS) $(CLEAN_SRCS) $(CLEAN_POFILES)
+CLEANFILES = $(bin_SCRIPTS) $(bashcomp_DATA) $(BUILT_SOURCES) $(CLEAN_SRCS) $(CLEAN_POFILES)
 
 # automake provides no nice way to build a helper program to execute
 # on the build machine, so we need our own rule.  almost all the
