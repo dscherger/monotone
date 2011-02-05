@@ -250,6 +250,8 @@ htmlfigure_DATA = $(PNG_FIGURES)
 htmlimagedir = $(htmldir)/images
 htmlimage_DATA = $(PNG_IMAGES)
 
+sysconf_DATA = extra/shell/monotone.bash_completion
+
 # flags
 
 # sets DEFS for just this object (autoconf's -DHAVE_CONFIG_H is useless)
@@ -631,11 +633,21 @@ src/package_full_revision.cc: src/package_full_revision.txt util/txt2c$(EXEEXT)
 test/src/testlib.cc: test/src/testlib.lua util/txt2c$(EXEEXT)
 	$(V_txt2c)./util/txt2c testlib $< $@
 
-# Support for scripts
-do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),'
+# Support for scripts and extras
+do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),' \
+	-e 's,[@]sysconfdir[@],$(sysconfdir),'
 
 %: src/util/%.in
 	$(V_subst)$(do_subst) < $< > $@ && chmod +x $@
+
+extra/shell/monotone.bash_completion: extra/shell/monotone.bash_completion.in \
+	$(bin_PROGRAMS) extra/shell/monotone_gen_bash_completion_table.pl
+	$(MKDIR_P) extra/shell
+	( sed -e '/^[@]generated-command-list[@]$$/,$$d' < $<; \
+	  MTN=./mtn$(EXEEXT) \
+	    perl $(srcdir)/extra/shell/monotone_gen_bash_completion_table.pl; \
+	  sed -e '1,/^[@]generated-command-list[@]$$/d' < $< ) | \
+	  $(do_subst) > $@
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its

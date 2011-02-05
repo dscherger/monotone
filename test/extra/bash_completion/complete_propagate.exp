@@ -1,0 +1,26 @@
+set CTRLC \003
+set timeout 2
+
+send "$mtn propagate \t\t"
+expect "mtn propagate"
+expect {
+    -ex "prop-br1" {
+	expect {
+	    -ex "prop-bra2" {
+	    }
+	}
+    }
+    timeout { failure; exit }
+}
+
+send "$CTRLC\n\n"
+
+# One \t is enough for the second branch name to expand
+send "$mtn propagate prop-br1 prop-bra\t"
+expect {
+    -ex "prop-bra2" {
+	success
+    }
+    timeout { failure; exit }
+}
+failure

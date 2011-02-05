@@ -49,8 +49,8 @@ while (<MANPAGE>) {
 
 	my $parent_command = "";
 	for my $commandlet (split(m|\s+|,$current_command)) {
-	    print STDERR "DEBUG[$current_command]: parent command = $parent_command\n";
-	    print STDERR "DEBUG[$current_command]: commandlet = $commandlet\n";
+#	    print STDERR "DEBUG[$current_command]: parent command = $parent_command\n";
+#	    print STDERR "DEBUG[$current_command]: commandlet = $commandlet\n";
 	    if ($parent_command eq "") {
 		$parent_command = $commandlet;
 	    } else {
@@ -66,8 +66,8 @@ while (<MANPAGE>) {
 
 	my $parent_command = "";
 	for my $commandlet (split(m|\s+|,$current_command)) {
-	    print STDERR "DEBUG[$current_command]: parent command = $parent_command\n";
-	    print STDERR "DEBUG[$current_command]: commandlet = $commandlet\n";
+#	    print STDERR "DEBUG[$current_command]: parent command = $parent_command\n";
+#	    print STDERR "DEBUG[$current_command]: commandlet = $commandlet\n";
 	    if ($parent_command eq "") {
 		$parent_command = $commandlet;
 	    } else {
@@ -80,7 +80,7 @@ while (<MANPAGE>) {
     }
 }
 
-print STDERR "DEBUG: command keys: \n  ",join("\n  ", sort keys %commands),"\n";
+#print STDERR "DEBUG: command keys: \n  ",join("\n  ", sort keys %commands),"\n";
 
 print "declare -a _monotone_options_noarg\n";
 print "_monotone_options_noarg=(\n    "
@@ -133,7 +133,7 @@ print "declare -A _monotone_command_args\n";
 print "declare -A _monotone_commands\n";
 
 foreach my $key (sort keys %commands) {
-    print STDERR "DEBUG: key = $key\n";
+#    print STDERR "DEBUG: key = $key\n";
     print "_monotone_commands['$key']='"
 	,join(" ",sort keys %{$commands{$key}})
 	,"'\n" if defined %{$commands{$key}};
