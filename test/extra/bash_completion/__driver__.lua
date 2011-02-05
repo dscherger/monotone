@@ -44,7 +44,7 @@ function expect(test)
    if existsonpath("expect") then
       check({"expect",
 	     "-c", "set mtn \""..cmd_as_str(mtn()).."\"",
-	     "-c", "set srcdir \""..srcdir.."\"",
+	     "-c", "set initial_dir \""..initial_dir.."\"",
 	     "-c", "source library.exp",
 	     "-f", test..".exp"}, 0, true, false)
       check(grep("<<success>>", "stdout"), 0, false, false)

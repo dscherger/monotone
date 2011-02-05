@@ -9,7 +9,7 @@ proc failure {} {
 }
 
 send_user "mtn = $mtn\n"
-send_user "srcdir = $srcdir\n"
+send_user "initial_dir = $initial_dir\n"
 send_user "PATH = $env(PATH)\n"
 spawn "bash" "-l"
 send "export PS1='@ '\n"
@@ -22,7 +22,7 @@ expect {
     -timeout 1
     "bash: /etc/bash_completion: " { failure; exit }
 }
-send ". $srcdir/../extra/shell/monotone.bash_completion\n"
+send ". $initial_dir/extra/shell/monotone.bash_completion\n"
 # Wait for the last line to be echoed
 expect "bash_completion2"
 #stty rows 512
