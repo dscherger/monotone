@@ -34,3 +34,7 @@ check(not samefile("no-hidden-expected", "hidden-expected"))
 -- this is the important part
 check(mtn("help", "--hidden", "--nh"), 0, true, false)
 check(samefile("stdout", "no-hidden-expected"))
+
+-- ensure that short options are not completed
+check(mtn("push", "-b", "foo"), 1, false, true)
+check(qgrep("option error: unknown option 'b'", "stderr"))
