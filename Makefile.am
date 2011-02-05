@@ -250,7 +250,8 @@ htmlfigure_DATA = $(PNG_FIGURES)
 htmlimagedir = $(htmldir)/images
 htmlimage_DATA = $(PNG_IMAGES)
 
-sysconf_DATA = extra/shell/monotone.bash_completion
+bashcompdir = $(sysconfdir)/bash_completion.d
+bashcomp_DATA = extra/shell/monotone.bash_completion
 
 # flags
 
@@ -353,7 +354,7 @@ EXTRA_DIST =								\
 									\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
 									\
-	contrib examples mac notes visualc
+	extra contrib examples mac notes visualc
 
 # Message translation support
 # INST_LINGUAS is set by configure, based on the po/LINGUAS file and
@@ -608,7 +609,7 @@ CLEAN_SRCS = src/std_hooks.cc unit/src/testlib.cc src/schema.cc \
 
 BUILT_SRCS = $(PCH_FILE) $(PCH_BUILD)
 
-CLEANFILES = $(bin_SCRIPTS) $(BUILT_SRCS) $(CLEAN_SRCS) $(CLEAN_POFILES)
+CLEANFILES = $(bin_SCRIPTS) $(bashcomp_DATA) $(BUILT_SRCS) $(CLEAN_SRCS) $(CLEAN_POFILES)
 
 # automake provides no nice way to build a helper program to execute
 # on the build machine, so we need our own rule.  almost all the
