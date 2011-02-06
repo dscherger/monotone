@@ -1,4 +1,7 @@
 skip_if(not existsonpath("expect"))
+check({"bash", "--version"}, 0, true)
+-- hashes/dictionaries/associative arrays are new in version 4
+skip_if(qgrep("bash[, ]*version 3", "stdout"))
 mtn_setup()
 
 local tests = {
