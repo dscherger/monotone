@@ -1,0 +1,30 @@
+# -*- shell-script -*-
+# Use emacs key bindings
+set -o emacs
+# Use bash strict mode
+#set -o posix
+# Set the prompts
+export PS1='@ '
+export PS2='> '
+# Configure readline
+export INPUTRC=$srcdir/extra/bash_completion/inputrc
+# Set dumb terminal
+#export TERM=dummy
+# Give us many columns
+stty columns 4000
+# Make sure to load the bash_completion package
+if [ "$BASH_COMPLETION" = "" ]; then
+    if [ -f /etc/bash_completion ]; then
+	. /etc/bash_completion
+    elif [ -f /usr/local/etc/bash_completion ]; then
+	. /usr/local/etc/bash_completion
+    else
+	echo No bash completion package present.
+	exit
+    fi
+fi
+#
+echo Current settings
+echo pwd: $(pwd)
+echo initial_dir: $initial_dir
+echo srcdir: $srcdir

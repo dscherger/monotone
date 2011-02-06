@@ -1,26 +1,29 @@
-# This test checks that monotone.bash_completion2 can handle arguments that
+# This test checks that monotone.bash_completion can handle arguments that
 # are specified as 'PATH ...'
 
-set CTRLC \003
-set timeout 2
-
-send "$mtn commit -m 'foobar' \t\t"
-expect "mtn commit"
+send_user "\n===== BEGIN complete_commit  =====\n"
+expect -re "@ $"
+send "\n$mtn commit -m 'foobar' "
 expect {
-    -ex "commit-test1" {
-	expect {
-	    -ex "commit-test2" {
-	    }
-	}
-    }
-    timeout { failure; exit }
+    -ex " commit " {}
+    timeout { failure "' commit '"; exit }
 }
 
-send "commit-test1 commit-test\t\t"
+send "\t"
 expect {
-    -ex "commit-test2" {
-	success
-    }
-    timeout { failure; exit }
+    -ex "commit-test1" {}
+    timeout { failure "'commit-test1'"; exit }
 }
-failure
+expect {
+    -ex "commit-test2" {}
+    timeout { failure "'commit-test2'"; exit }
+}
+
+send "commit-test1 commit-test\t"
+expect {
+    -ex "commit-test2" {}
+    timeout { failure "'commit-test1 commit-test2'"; exit }
+}
+
+send_user "\n===== END complete_commit  =====\n"
+success

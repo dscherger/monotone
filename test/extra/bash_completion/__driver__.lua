@@ -14,8 +14,11 @@ local tests = {
 	 function ()
 	    addfile("prop-test", "foo")
 	    commit("prop-br1")
-	    writefile("prop-test", "bar")
+	    addfile("prop-test2", "bar")
 	    commit("prop-bra2")
+	    check(mtn("update","-r","h:prop-br1"), 0, false, false)
+	    writefile("prop-test", "zoot")
+	    commit("prop-br1")
 	 end,
       ["cleanup"] =
 	 function ()
@@ -45,6 +48,7 @@ function expect(test)
       check({"expect",
 	     "-c", "set mtn \""..cmd_as_str(mtn()).."\"",
 	     "-c", "set initial_dir \""..initial_dir.."\"",
+	     "-c", "set srcdir \""..srcdir.."\"",
 	     "-c", "source library.exp",
 	     "-f", test..".exp"}, 0, true, false)
       check(grep("<<success>>", "stdout"), 0, false, false)

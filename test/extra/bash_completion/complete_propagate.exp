@@ -1,26 +1,38 @@
-set CTRLC \003
-set timeout 2
-
-send "$mtn propagate \t\t"
-expect "mtn propagate"
+send_user "\n===== BEGIN complete_propagate  =====\n"
+expect -re "@ $"
+send_user "\n===== Testing for the 'propagate' command =====\n"
+send "\n$mtn propagate "
 expect {
-    -ex "prop-br1" {
-	expect {
-	    -ex "prop-bra2" {
-	    }
-	}
-    }
-    timeout { failure; exit }
+    -ex " propagate " {}
+    timeout { failure "' propagate '"; exit }
 }
 
-send "$CTRLC\n\n"
+send "\t"
+expect {
+    -ex "prop-br1" {}
+    timeout { failure "'prop-bra1'"; exit }
+}
+expect {
+    -ex "prop-bra2" {}
+    timeout { failure "'prop-bra2'"; exit }
+}
 
+send "\003\n"
+
+expect -re "@ $"
+send_user "\n===== Testing that the 'propagate' completes the second branch correctly =====\n"
 # One \t is enough for the second branch name to expand
-send "$mtn propagate prop-br1 prop-bra\t"
+send "\n$mtn propagate prop-br1 prop-bra"
 expect {
-    -ex "prop-bra2" {
-	success
-    }
-    timeout { failure; exit }
+    -ex " propagate " {}
+    timeout { failure "' propagate '"; exit }
 }
-failure
+
+send "\t"
+expect {
+    -ex "prop-bra2" {}
+    timeout { failure "'prop-bra2'"; exit }
+}
+
+send_user "\n===== END complete_propagate  =====\n"
+success
