@@ -242,15 +242,6 @@ src_libplatform_a_SOURCES = src/platform.hh
 src_lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			    $(NETXX_SOURCES)
 
-htmldir = $(datadir)/doc/monotone/html
-html_DATA = doc/texinfo.css
-
-htmlfiguredir = $(htmldir)/figures
-htmlfigure_DATA = $(PNG_FIGURES)
-
-htmlimagedir = $(htmldir)/images
-htmlimage_DATA = $(PNG_IMAGES)
-
 bashcompdir = $(sysconfdir)/bash_completion.d
 bashcomp_DATA = extra/shell/monotone.bash_completion
 
