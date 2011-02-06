@@ -1,13 +1,12 @@
 # Check that something is compled with 'mtn -'
 
+send_user "\n===== BEGIN complete_mtn_-  =====\n"
+expect -re "@ $"
 send "$mtn -\t"
-#expect -ex "mtn -"
-send "\t"
 expect {
-    -timeout 2
-    -- "--no-workspace" {
-	success
-	exit
-    }
+    -gl "--no-workspace" {}
+    timeout { failure "'--no-workspace'"; exit }
 }
-failure
+
+send_user "\n===== END complete_mtn_-  =====\n"
+success

@@ -4,25 +4,25 @@ proc success {} {
     send_user "\n<<success>>\n"
 }
 
-proc failure {} {
-    send_user "\n<<failure>>\n"
+proc failure {str} {
+    if {$str == ""} {
+	send_user "\n<<failure>>\n"
+    } else {
+	send_user "\n<<failure when expecting $str>>\n"
+    }
 }
 
-send_user "mtn = $mtn\n"
-send_user "initial_dir = $initial_dir\n"
-send_user "PATH = $env(PATH)\n"
-spawn "bash" "-l"
-send "export PS1='@ '\n"
-send "export PS2='_@ '\n"
-send "pwd\n"
-# For some reason, it seems bash doesn't load the bash completion package,
-# even though started with -l...
-send ". /etc/bash_completion\n"
+set timeout 2
+set env(initial_dir) $initial_dir
+set env(srcdir) $srcdir
+spawn "bash" "--rcfile" "$srcdir/extra/bash_completion/bashrc"
+# If there is no completion package, it's no point trying this.
 expect {
     -timeout 1
-    "bash: /etc/bash_completion: " { failure; exit }
+    "No bash completion package present." {
+	failure "No bash completion package present."; exit
+    }
 }
 send ". $initial_dir/extra/shell/monotone.bash_completion\n"
 # Wait for the last line to be echoed
 expect "shell/monotone.bash_completion"
-#stty rows 512
