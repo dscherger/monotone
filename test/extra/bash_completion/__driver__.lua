@@ -1,3 +1,4 @@
+skip_if(not existsonpath("expect"))
 mtn_setup()
 
 local tests = {
