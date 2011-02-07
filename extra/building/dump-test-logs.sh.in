@@ -9,8 +9,11 @@
 
 # Conveniently enough, testlib.lua does most of the work for us.
 
-for log in tester_dir/*.log
+testsuites="tester unit func extra"
+
+for test in $testsuites
 do
+    log=test/work/$test.log
     if grep "0 failed" < $log > /dev/null 2>&1 &&
        grep "0 succeeded unexpectedly" < $log > /dev/null 2>&1
     then :

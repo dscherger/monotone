@@ -222,6 +222,7 @@ noinst_PROGRAMS = util/txt2c
 EXTRA_PROGRAMS =
 
 bin_SCRIPTS = mtnopt
+noinst_SCRIPTS = extra/building/dump-test-logs.sh
 
 mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
 nodist_mtn_SOURCES = src/std_hooks.cc src/schema.cc
@@ -240,15 +241,6 @@ noinst_LIBRARIES = src/libplatform.a src/lib3rdparty.a
 src_libplatform_a_SOURCES = src/platform.hh
 src_lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			    $(NETXX_SOURCES)
-
-htmldir = $(datadir)/doc/monotone/html
-html_DATA = doc/texinfo.css
-
-htmlfiguredir = $(htmldir)/figures
-htmlfigure_DATA = $(PNG_FIGURES)
-
-htmlimagedir = $(htmldir)/images
-htmlimage_DATA = $(PNG_IMAGES)
 
 bashcompdir = $(sysconfdir)/bash_completion.d
 bashcomp_DATA = extra/shell/monotone.bash_completion
@@ -638,7 +630,7 @@ test/src/testlib.cc: test/src/testlib.lua util/txt2c$(EXEEXT)
 do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),' \
 	-e 's,[@]sysconfdir[@],$(sysconfdir),'
 
-%: src/util/%.in
+%: src/util/%.in Makefile
 	$(V_subst)$(do_subst) < $< > $@ && chmod +x $@
 
 extra/shell/monotone.bash_completion: extra/shell/monotone.bash_completion.in \
@@ -649,6 +641,10 @@ extra/shell/monotone.bash_completion: extra/shell/monotone.bash_completion.in \
 	    perl $(srcdir)/extra/shell/monotone_gen_bash_completion_table.pl; \
 	  sed -e '1,/^[@]generated-command-list[@]$$/d' < $< ) | \
 	  $(do_subst) > $@
+
+extra/building/dump-test-logs.sh: extra/building/dump-test-logs.sh.in Makefile
+	$(MKDIR_P) extra/building
+	$(V_subst)$(do_subst) < $< > $@ && chmod +x $@
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its

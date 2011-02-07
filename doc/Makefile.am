@@ -12,6 +12,15 @@
 AUTOMAKE_OPTIONS = subdir-objects -Wno-portability
 ACLOCAL_AMFLAGS  = -I m4
 
+htmldir = $(docdir)/html
+html_DATA = texinfo.css
+
+htmlfiguredir = $(htmldir)/figures
+htmlfigure_DATA = $(PNG_FIGURES)
+
+htmlimagedir = $(htmldir)/images
+htmlimage_DATA = $(PNG_IMAGES)
+
 CHECK_SRCDIR_EQ_BUILDDIR=[ "`cd \"$(srcdir)\"; pwd`" = "`pwd`" ]
 
 PDF_FIGURES= figures/branch-heads.pdf figures/cert.pdf			\
@@ -87,7 +96,7 @@ AM_MAKEINFODOCHTMLFLAGS= -I $(top_srcdir)/src -I $(srcdir) \
 
 # Because automake already generates a html target that produces a single file
 # HTML, we have to use a different target to make a multifile HTML.
-htmldir: monotone.texi $(srcdir)/version.texi $(doc_monotone_TEXINFOS) $(PNG_FIGURES) $(PNG_IMAGES) $(HTML_EXTRA)
+htmldir: monotone.texi $(srcdir)/version.texi $(monotone_TEXINFOS) $(PNG_FIGURES) $(PNG_IMAGES) $(HTML_EXTRA)
 	$(MKDIR_P) html.htp && \
 	  cp $(addprefix $(srcdir)/,$(HTML_EXTRA)) html.htp
 	$(MKDIR_P) html.htp/figures && \
