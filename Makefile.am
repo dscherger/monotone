@@ -577,7 +577,8 @@ FORCE:
 mostlyclean-local:
 	rm -rf test/bin test/work
 	rm -f run_*_tests test/*.status test/src/testlib.cc util/txt2c
-	set -ex; for d in test/unit/tests/*/__driver__.lua; do \
+	-set -x; \
+	ls test/unit/tests/*/__driver__.lua 2>/dev/null | while read d; do \
 	  rm -f $$d; \
 	  rmdir $${d%/*} || :; \
 	done
