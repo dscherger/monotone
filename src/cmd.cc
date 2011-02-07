@@ -909,11 +909,11 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
 
   ss << man_section(_("See Also"));
   ss << (F("info %s and the documentation on %s")
-          % prog_name % man_bold("http://monotone.ca/docs")).str() << "\n";
+          % prog_name % man_bold("http://www.monotone.ca/docs")).str() << "\n";
 
   ss << man_section("Bugs");
   ss << (F("Please report bugs to %s.")
-          % man_bold("http://savannah.nongnu.org/bugs/?group=monotone")).str()<< "\n";
+          % man_bold("https://code.monotone.ca/p/monotone/issues")).str()<< "\n";
 
   ss << man_section("Authors");
   ss << _("monotone was written originally by Graydon Hoare "

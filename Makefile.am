@@ -543,7 +543,7 @@ check-local: test/tester.status test/unit.status test/func.status test/extra.sta
 run_%_tests: Makefile
 	$(AM_V_GEN){ echo '#!/bin/sh';						  	\
 	  echo 'export LANG=C';							  	\
-	  echo 'PATH=$(top_builddir):$(top_builddir)/test/bin:$$PATH';		  	\
+	  echo 'PATH=$(abs_builddir):$(abs_builddir)/test/bin:$$PATH';		  	\
 	  echo '$(top_builddir)/test/bin/tester $(srcdir)/test/$*-testsuite.lua "$$@"';	\
 	  echo 'echo $$? > $(top_builddir)/test/$*.status';		  	  	\
 	  echo 'exit 0'; } > $@ && \
