@@ -914,7 +914,7 @@ int main(int argc, char **argv)
 
       if (want_help || need_help)
         {
-          P(F("Usage: %s test-file testsuite [options] [tests]\n") % argv[0]);
+          P(F("Usage: %s testsuite [options] [tests]\n") % argv[0]);
           P(F("Testsuite: a Lua script defining the test suite to run.\n"
               "Options:\n"
               "  -l, --list     just list tests that would be run\n"
