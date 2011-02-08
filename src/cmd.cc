@@ -41,6 +41,9 @@ using std::make_pair;
 using std::cout;
 using boost::lexical_cast;
 
+using std::cerr;
+using std::endl;
+
 //
 // Definition of top-level commands, used to classify the real commands
 // in logical groups.
@@ -630,10 +633,36 @@ man_bold(string const & content)
 }
 
 static string
+man_hyphens(string const s)
+{
+  string out;
+  size_t p1 = 0;
+  size_t p2 = s.find("-", p1);
+  while (p2 != s.npos)
+    {
+      // Sometimes, this function gets called again with the result of a
+      // previous call, so watch out for hyphens that are already preceeded
+      // with a backslash
+      if (p2 > 0 && s[p2 - 1] == '\\')
+        {
+          p2 = s.find("-", p2 + 1);
+          continue;
+        }
+
+      out += s.substr(p1, p2 - p1);
+      out += "\\-";
+      p1 = p2 + 1;
+      p2 = s.find("-", p1);
+    }
+  out += s.substr(p1, s.npos);
+  return out;
+}
+
+static string
 man_definition(vector<string> const & labels, string const & content, int width = -1)
 {
   string out;
-  out += ".IP \"" + (*labels.begin()) + "\"";
+  out += ".IP \"" + man_hyphens(*labels.begin()) + "\"";
 
   if (width != -1)
     out += " " + lexical_cast<string>(width);
@@ -645,13 +674,14 @@ man_definition(vector<string> const & labels, string const & content, int width 
       for (vector<string>::const_iterator i = labels.begin() + 1;
            i < labels.end(); ++i)
         {
-          out += ".IP \"" + (*i) + "\"\n";
+          out += ".IP \"" + man_hyphens(*i) + "\"\n";
         }
       out += ".PD\n";
     }
-  out += content;
+  out += man_hyphens(content);
   if (content.rfind('\n') != (content.size() - 1))
      out += "\n";
+
   return out;
 }
 
@@ -881,7 +911,7 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
   ss << man_title("monotone");
   ss << man_section(_("Name"));
 
-  ss << _("monotone - a distributed version control system") << "\n";
+  ss << _("monotone \\- a distributed version control system") << "\n";
   ss << man_section(_("Synopsis"));
   ss << man_bold(prog_name) << " "
      << man_italic(_("[options...] command [arguments...]"))
@@ -925,7 +955,7 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
           "programmers, known as the monotone development team.") << "\n";
 
   ss << man_section("Copyright");
-  ss << (F("monotone and this man page is Copyright (c) 2004 - %s by "
+  ss << (F("monotone and this man page is Copyright (c) 2004 \\- %s by "
            "the monotone development team.")
            % date_t::now().as_formatted_localtime("%Y")).str() << "\n";
 
