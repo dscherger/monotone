@@ -15,7 +15,8 @@ proc failure {str} {
 set timeout 2
 set env(initial_dir) $initial_dir
 set env(srcdir) $srcdir
-spawn "bash" "--rcfile" "$srcdir/extra/bash_completion/bashrc"
+# some user's ~/.bash_profile start xserver etc; don't do that
+spawn "bash" "--init-file" "/dev/nul" "--rcfile" "$srcdir/extra/bash_completion/bashrc"
 # If there is no completion package, it's no point trying this.
 expect {
     -timeout 1
