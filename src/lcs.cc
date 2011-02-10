@@ -161,38 +161,38 @@ struct jaffer_edit_calculator
 
   // 'compare' here is the core myers, manber and miller algorithm.
   static long compare(cost_vec & costs,
-                      subarray<A> const & a, long m,
-                      subarray<B> const & b, long n,
+                      subarray<A> const & a, long len_a,
+                      subarray<B> const & b, long len_b,
                       long p_lim,
                       bool full_scan = true)
   {
-    long lo = -(m+1), hi = (1+n);
+    long const delta = len_b - len_a;
+    long lo = -(len_a+1), hi = (1+len_b);
     if (full_scan)
       {
         lo = -(p_lim + 1);
-        hi = p_lim + 1 + (n-m);
+        hi = p_lim + 1 + delta;
       }
     work_vec fp(lo, hi);
 
     long p = 0;
-    long delta = n - m;
 
     for (; p <= p_lim; ++p)
       {
 
         // lower sweep
         for (long k = -p; k < delta; ++k)
-          run(fp, k, a, m, b, n, costs, p);
+          run(fp, k, a, len_a, b, len_b, costs, p);
 
         // upper sweep
         for (long k = delta + p; k > delta; --k)
-          run(fp, k, a, m, b, n, costs, p);
+          run(fp, k, a, len_a, b, len_b, costs, p);
 
         // middle
-        long fpval = run(fp, delta, a, m, b, n, costs, p);
+        long fpval = run(fp, delta, a, len_a, b, len_b, costs, p);
 
         // we can bail early if not doing a full scan
-        if (!full_scan && n <= fpval)
+        if (!full_scan && len_b <= fpval)
           break;
       }
 
@@ -352,26 +352,39 @@ struct jaffer_edit_calculator
 
     I(end_a - start_a >= p_lim);
 
-    long bsx, bdx, asx, adx;
+    // last, not end
+    long new_last_a = end_a - 1;
+    long new_last_b = end_b - 1;
+    while ((start_b <= new_last_b) &&
+           (start_a <= new_last_a) &&
+           (a[new_last_a] == b[new_last_b]))
+      {
+        --new_last_a;
+        --new_last_b;
+      }
 
-    for (bdx = end_b - 1, adx = end_a - 1;
-         (start_b <= bdx) && (start_a <= adx) && (a[adx] == b[bdx]);
-         --bdx, --adx) ;
-
-    for (bsx = start_b, asx = start_a;
-         (bsx < bdx) && (asx < adx) && (a[asx] == b[bsx]);
-         ++bsx, ++asx) ;
+    long new_start_a = start_a;
+    long new_start_b = start_b;
+    while((new_start_b < new_last_b) &&
+          (new_start_a < new_last_a) &&
+          (a[new_start_a] == b[new_start_b]))
+      {
+        ++new_start_a;
+        ++new_start_b;
+      }
 
     // we've trimmed; now call diff_to_ez.
 
-    long delta = (bdx - bsx) - (adx - asx);
+    // difference between length of (new) a and length of (new) b
+    long delta = (new_last_b - new_start_b) - (new_last_a - new_start_a);
+
     if (delta < 0)
-      return diff_to_ez (b, bsx, bdx+1,
-                         a, asx, adx+1,
+      return diff_to_ez (b, new_start_b, new_last_b+1,
+                         a, new_start_a, new_last_a+1,
                          edits, edx, -polarity, delta + p_lim);
     else
-      return diff_to_ez (a, asx, adx+1,
-                         b, bsx, bdx+1,
+      return diff_to_ez (a, new_start_a, new_last_a+1,
+                         b, new_start_b, new_last_b+1,
                          edits, edx, polarity, p_lim);
   }
 
