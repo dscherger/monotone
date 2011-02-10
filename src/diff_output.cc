@@ -507,7 +507,6 @@ make_diff(string const & filename1,
   lcs.reserve(min(lines1.size(),lines2.size()));
   longest_common_subsequence(left_interned.begin(), left_interned.end(),
                              right_interned.begin(), right_interned.end(),
-                             min(lines1.size(), lines2.size()),
                              back_inserter(lcs));
 
   // The existence of various hacky diff parsers in the world somewhat

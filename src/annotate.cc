@@ -568,8 +568,6 @@ annotate_lineage_mapping::build_parent_lineage
                              file_interned.end(),
                              parent_lineage->file_interned.begin(),
                              parent_lineage->file_interned.end(),
-                             min(file_interned.size(),
-                                 parent_lineage->file_interned.size()),
                              back_inserter(lcs));
 
   if (verbose)

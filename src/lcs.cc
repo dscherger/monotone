@@ -459,37 +459,34 @@ struct jaffer_edit_calculator
       }
   }
 
-  static void diff_to_edits(subarray<A> const & a, long m,
-                            subarray<B> const & b, long n,
-                            vector<long, QA(long)> & edits,
-                            long p_lim)
+  static void diff_to_edits(subarray<A> const & a, long len_a,
+                            subarray<B> const & b, long len_b,
+                            vector<long, QA(long)> & edits)
   {
-    I(m <= n);
-    cost_vec costs(m+n); // scratch array, ignored
-    long edit_distance = compare(costs, a, m, b, n, p_lim, false);
+    I(len_a <= len_b);
+    cost_vec costs(len_a + len_b); // scratch array, ignored
+    long edit_distance = compare(costs, a, len_a, b, len_b, min(len_a, len_b), false);
 
     edits.clear();
     edits.resize(edit_distance, 0);
-    long cost = diff_to_et(a, 0, m,
-                           b, 0, n,
-                           edits, 0, 1, (edit_distance - (n-m)) / 2);
+    long cost = diff_to_et(a, 0, len_a,
+                           b, 0, len_b,
+                           edits, 0, 1, (edit_distance - (len_b - len_a)) / 2);
     I(cost == edit_distance);
   }
 
   static void edits_to_lcs (vector<long, QA(long)> const & edits,
-                            subarray<A> const a, long m, long n,
+                            subarray<A> const a, long len_a, long len_b,
                             LCS output)
   {
     long edx = 0, sdx = 0, adx = 0;
     typedef typename iterator_traits<A>::value_type vt;
-    vector<vt, QA(vt)> lcs(((m + n) - edits.size()) / 2);
-    while (true)
+    vector<vt, QA(vt)> lcs(((len_a + len_b) - edits.size()) / 2);
+    while (adx < len_a)
       {
         long edit = (edx < static_cast<long>(edits.size())) ? edits[edx] : 0;
 
-        if (adx >= m)
-          break;
-        else if (edit > 0)
+        if (edit > 0)
           { ++edx; }
         else if (edit == 0)
           { lcs[sdx++] = a[adx++]; }
@@ -509,7 +506,6 @@ template <typename A,
           typename LCS>
 void _edit_script(A begin_a, A end_a,
                   B begin_b, B end_b,
-                  long p_lim,
                   vector<long, QA(long)> & edits_out,
                   LCS ignored_out)
 {
@@ -523,14 +519,14 @@ void _edit_script(A begin_a, A end_a,
 
   if (len_b < len_a)
     {
-      calc_t::diff_to_edits (b, len_b, a, len_a, edits, p_lim);
+      calc_t::diff_to_edits (b, len_b, a, len_a, edits);
       calc_t::order_edits (edits, -1, ordered);
       for (size_t i = 0; i < ordered.size(); ++i)
         ordered[i] *= -1;
     }
   else
     {
-      calc_t::diff_to_edits (a, len_a, b, len_b, edits, p_lim);
+      calc_t::diff_to_edits (a, len_a, b, len_b, edits);
       calc_t::order_edits (edits, 1, ordered);
     }
 
@@ -545,7 +541,6 @@ template <typename A,
           typename LCS>
 void _longest_common_subsequence(A begin_a, A end_a,
                                  B begin_b, B end_b,
-                                 long p_lim,
                                  LCS out)
 {
   typedef jaffer_edit_calculator<A,B,LCS> calc_t;
@@ -558,13 +553,13 @@ void _longest_common_subsequence(A begin_a, A end_a,
 
   if (len_b < len_a)
     {
-      calc_t::diff_to_edits(b, len_b, a, len_a, edits, p_lim);
+      calc_t::diff_to_edits(b, len_b, a, len_a, edits);
       calc_t::order_edits(edits, -1, ordered);
       calc_t::edits_to_lcs(ordered, b, len_b, len_a, out);
     }
   else
     {
-      calc_t::diff_to_edits(a, len_a, b, len_b, edits, p_lim);
+      calc_t::diff_to_edits(a, len_a, b, len_b, edits);
       calc_t::order_edits(edits, 1, ordered);
       calc_t::edits_to_lcs(ordered, a, len_a, len_b, out);
     }
@@ -576,12 +571,11 @@ longest_common_subsequence(vector<long, QA(long)>::const_iterator begin_a,
                            vector<long, QA(long)>::const_iterator end_a,
                            vector<long, QA(long)>::const_iterator begin_b,
                            vector<long, QA(long)>::const_iterator end_b,
-                           long p_lim,
                            back_insert_iterator< vector<long, QA(long)> > lcs)
 {
   _longest_common_subsequence(begin_a, end_a,
                               begin_b, end_b,
-                              p_lim, lcs);
+                              lcs);
 }
 
 void
@@ -589,13 +583,12 @@ edit_script(vector<long, QA(long)>::const_iterator begin_a,
             vector<long, QA(long)>::const_iterator end_a,
             vector<long, QA(long)>::const_iterator begin_b,
             vector<long, QA(long)>::const_iterator end_b,
-            long p_lim,
             vector<long, QA(long)> & edits_out)
 {
   vector<long, QA(long)> lcs;
   _edit_script(begin_a, end_a,
                begin_b, end_b,
-               p_lim, edits_out,
+               edits_out,
                back_inserter(lcs));
 }
 

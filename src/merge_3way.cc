@@ -385,7 +385,6 @@ void merge_via_edit_scripts(vector<string> const & ancestor,
 
   edit_script(anc_interned.begin(), anc_interned.end(),
               left_interned.begin(), left_interned.end(),
-              min(ancestor.size(), left.size()),
               left_edits);
 
   L(FL("calculating right edit script on %d -> %d lines")
@@ -393,7 +392,6 @@ void merge_via_edit_scripts(vector<string> const & ancestor,
 
   edit_script(anc_interned.begin(), anc_interned.end(),
               right_interned.begin(), right_interned.end(),
-              min(ancestor.size(), right.size()),
               right_edits);
 
   L(FL("calculating left extents on %d edits") % left_edits.size());
