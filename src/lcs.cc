@@ -43,6 +43,14 @@
 
 */
 
+/*
+  This is now understood better. The comments below are all new,
+  most of the variable names that aren't one letter and don't
+  look like x86 registers are new, and there are some complexity
+  fixes so the recursing doesn't make it accidentally O(n^2) in
+  the input length.
+ */
+
 #include "base.hh"
 #include <algorithm>
 #include "vector.hh"
@@ -58,6 +66,62 @@ using std::max;
 using std::min;
 using std::sort;
 using std::vector;
+
+/*
+  http://read.pudn.com/downloads131/sourcecode/delphi_control/558602/O(NP).pdf
+  An O(NP) Sequence Comparison Algorithm
+  Sun Wu, Udi Manber, Gene Myers; University of Arizona
+  Webb Miller; Pennsylvania State University
+  August 1989
+
+  The above paper shows how to find the edit distance between strings in time
+  at worst O(num-deletions * longer-length), and on average
+  O(longer-length + (edit-distance * num-deletions)).
+
+
+  Name the two input strings "a" and "b", "a" being the shorter one. Consider
+  and edit graph with a going down (x coordinate) and b going across (y coord).
+
+   stringBislonger
+  s\       \.
+  t \       .
+  r  \      .
+  i   \   \ .
+  n    \    . \    .
+  g     X   .
+  A      .
+
+  You start in the top left corner, and want to end up in the lower right
+  corner. There are 3 ways you can move: follow a diagonal for zero cost,
+  or move directly down or directly right for a cost of one. The total cost
+  of the cheapest path is the edit distance. A movement directly down
+  corresponds to a deletion, and a movement directly right corresponds to
+  an insertion.
+
+  If you had a diagonal from the top all the way to the bottom, the cost
+  would be the difference in the lengths of the input strings ("delta").
+  For every movement directly down you need to add exactly one movement
+  directly right, so the total cost D = delta + (2 * num-deletions).
+
+  Give each diagonal in the edit graph a number. The diagonal through the
+  origin is 0; diagonals above / right of it are numbered 1, 2, ...; diagonals
+  below / left of it are numbered -1, -2, ... . The diagonal through the lower
+  right corner will be number delta (difference of input lengths).
+
+  An edit path with a particular number of deletions cannot go below
+  diagonal -(num-deletions) or above diagonal delta + (num-deletions).
+  So we have bounding diagonals for any edit path up to a given number of
+  deletions and therefore up to a given length.
+
+
+  compare() with a large p_lim and full_scan = false implements this algorithm.
+
+  compare() with a given p_lim (maximum number of deletions) calculates
+  the lowest cost of a path through each relevant point along the bottom of
+  the edit graph.
+ */
+
+
 
 struct work_vec
 {
@@ -126,8 +190,8 @@ struct jaffer_edit_calculator
   };
 
   static long run(work_vec & fp, long k,
-                  subarray<A> const & a, long m,
-                  subarray<B> const & b, long n,
+                  subarray<A> const & a, long a_len,
+                  subarray<B> const & b, long b_len,
                   cost_vec & CC, long p)
   {
     long cost = k + 2*p;
@@ -142,12 +206,12 @@ struct jaffer_edit_calculator
     while (true)
       {
         // record costs along the way
-        long xcst = m - x;
+        long xcst = a_len - x;
         if (y < static_cast<long>(CC.size()) && xcst >= 0)
           {
             CC[y] = min(xcst + cost, CC[y]);
           }
-        if (x < m && y < n && a[x] == b[y])
+        if (x < a_len && y < b_len && a[x] == b[y])
           {
             ++x; ++y;
           }
@@ -199,6 +263,18 @@ struct jaffer_edit_calculator
     return delta + 2*p;
   }
 
+  // This splits the edit graph into a top half and a bottom half, calculates
+  // the (cost of the) cheapest possible path through each point along the
+  // middle, and then splits the graph into left/right portions based on that
+  // point. It then recurses on the top left and bottom right quadrants (the
+  // shortest edit path cannot possibly go through the other two quadrants).
+  //
+  // When getting costs through the top and bottom halves, it can discard the
+  // rightmost part of the top and the leftmost part of the bottom, beyond where
+  // the edit band (diagonls -(num-deletes) and delta + num-deletes) crosses
+  // the split. Even with doing this the edit band is overstated in the
+  // calls to compare(), because while max-possible-deletes (p_lim) is correct
+  // the delta value is still larger by max-possible-deletes.
   static long divide_and_conquer(subarray<A> const & a, long start_a, long end_a,
                                  subarray<B> const & b, long start_b, long end_b,
                                  edit_vec & edits,
@@ -206,10 +282,13 @@ struct jaffer_edit_calculator
                                  long polarity,
                                  long p_lim)
   {
-    long mid_a = (start_a + end_a) / 2;
     long len_b = end_b - start_b;
     long len_a = end_a - start_a;
+    long const delta = len_b - len_a;
+    // total edit distance
     long tcst = (2 * p_lim) + (len_b - len_a);
+    // top/bottom split point
+    long mid_a = (start_a + end_a) / 2;
 
     I(start_a >= 0);
     I(start_a <= a.size());
@@ -223,18 +302,34 @@ struct jaffer_edit_calculator
     cost_vec cc(len_b + 1, len_a + len_b);
     cost_vec rr(len_b + 1, len_a + len_b);
 
+    // get costs from the top left through each point on the top/bottom split
+    long const top_len_a = mid_a - start_a;
+    // trim off the rightmost part of b, past where the edit band crosses the split
+    long const top_end_b = min(end_b, start_b + (top_len_a + delta + p_lim + 1));
     compare (cc,
-             a.subset(start_a, mid_a), (mid_a - start_a),
-             b.subset(start_b, end_b), len_b, min(p_lim, len_a));
+             a.subset(start_a, mid_a), top_len_a,
+             b.subset(start_b, top_end_b), top_end_b - start_b,
+             min(p_lim, len_a));
 
+    // get costs from the lower right through each point on the top/bottom split
+    long const bottom_len_a = end_a - mid_a;
+    // here we trim the leftmost part of b (before reversing it)
+    long const bottom_start_b = max(start_b, end_b - (bottom_len_a + delta + p_lim + 1));
     compare (rr,
-             a.subset(end_a, mid_a), (end_a - mid_a),
-             b.subset(end_b, start_b), len_b, min(p_lim, len_a));
+             a.subset(end_a, mid_a), bottom_len_a,
+             b.subset(end_b, bottom_start_b), end_b - bottom_start_b,
+             min(p_lim, len_a));
 
+    // find the first (closest-to-center) point on the split line, which
+    // has the correct total (top + bottom) cost and is therefore on the
+    // shortest edit path
     long b_split = mid_split(len_a, len_b, rr, cc, tcst);
 
+    // known costs of each half of the path
     long est_c = cc[b_split];
     long est_r = rr[len_b - b_split];
+
+    // recurse on the two halves
 
     long cost_c = diff_to_et (a, start_a, mid_a,
                               b, start_b, start_b + b_split,
