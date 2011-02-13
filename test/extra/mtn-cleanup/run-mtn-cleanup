@@ -2,6 +2,7 @@
 
 # $1	{srcdir}/test
 # $2	{builddir}/test/work/extra/mtn-cleanup
+# Current work directory should be
+# {builddir}/test/work/extra/mtn-cleanup/workspace
 
-set -x
 yes | PATH=${2}/../../../..:${PATH} ${1}/../extra/bin/mtn-cleanup 
