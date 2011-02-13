@@ -2,43 +2,6 @@ skip_if(not existsonpath("expect"))
 check({"bash", "--version"}, 0, true)
 -- hashes/dictionaries/associative arrays are new in version 4
 skip_if(qgrep("bash[, ]*version 3", "stdout"))
-mtn_setup()
-
-local tests = {
-   ["complete_mtn_-"] = {
-      ["prepare"] = 
-	 function ()
-	 end,
-      ["cleanup"] =
-	 function ()
-	 end
-   },
-   ["complete_propagate"] = {
-      ["prepare"] = 
-	 function ()
-	    addfile("prop-test", "foo")
-	    commit("prop-br1")
-	    addfile("prop-test2", "bar")
-	    commit("prop-bra2")
-	    check(mtn("update","-r","h:prop-br1"), 0, false, false)
-	    writefile("prop-test", "zoot")
-	    commit("prop-br1")
-	 end,
-      ["cleanup"] =
-	 function ()
-	 end
-   },
-   ["complete_commit"] = {
-      ["prepare"] = 
-	 function ()
-	    addfile("commit-test1", "foo")
-	    addfile("commit-test2", "bar")
-	 end,
-      ["cleanup"] =
-	 function ()
-	 end
-   }
-}
 
 function expect(test)
    if monotone_path == nil then
@@ -62,8 +25,25 @@ function expect(test)
 end
 
 get("library.exp")
-for test,fns in pairs(tests) do
-   fns.prepare()
-   expect(test)
-   fns.cleanup()
-end
+
+mtn_setup()
+
+-- complete_mtn_-
+expect("complete_mtn_-")
+
+-- complete_propagate
+addfile("prop-test", "foo")
+commit("prop-br1")
+addfile("prop-test2", "bar")
+commit("prop-bra2")
+check(mtn("update","-r","h:prop-br1"), 0, false, false)
+writefile("prop-test", "zoot")
+commit("prop-br1")
+
+expect("complete_propagate")
+
+-- complete_commit
+addfile("commit-test1", "foo")
+addfile("commit-test2", "bar")
+
+expect("complete_commit")
