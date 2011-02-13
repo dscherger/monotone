@@ -324,10 +324,6 @@ endif
 
 # extra files
 
-extradir = $(docdir)/extra
-extra_prefix = extra
-extra_data = $(shell cd $(srcdir); find $(extra_prefix) | sed -e 's,^\./,,')
-
 contribdir = $(docdir)/contrib
 contrib_prefix = contrib
 contrib_data = $(shell cd $(srcdir); find $(contrib_prefix) | sed -e 's,^\./,,')
@@ -358,7 +354,7 @@ EXTRA_DIST =								\
 									\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
 									\
-	mac notes visualc $(contrib_data) $(examples_data) $(extra_data)
+	mac notes visualc $(contrib_data) $(examples_data) extra
 
 # Message translation support
 # INST_LINGUAS is set by configure, based on the po/LINGUAS file and
@@ -488,11 +484,6 @@ _uninstall_data = \
 	  echo " rmdir '$(DESTDIR)$(3)/$$to_rmdir'"; \
 	  rmdir "$(DESTDIR)$(3)/$$to_rmdir" || exit $$?; \
 	done
-
-install-extra-data: $(extra_data)
-	@$(call _install_data,$(extra_data),$(extra_prefix),$(extradir))
-uninstall-extra-data:
-	@$(call _uninstall_data,$(extra_data),$(extra_prefix),$(extradir))
 
 install-contrib-data: $(contrib_data)
 	@$(call _install_data,$(contrib_data),$(contrib_prefix),$(contribdir))
@@ -814,9 +805,9 @@ man1_MANS = mtn.1
 # each of them, as dependencies.
 all-local: all-nls
 install-data-local: install-nls \
-	install-extra-data install-contrib-data install-examples-data
+	install-contrib-data install-examples-data
 uninstall-local: uninstall-nls \
-	uninstall-extra-data uninstall-contrib-data uninstall-examples-data
+	uninstall-contrib-data uninstall-examples-data
 mostlyclean-local: mostlyclean-tests
 check-local: check-testers
 # All hooks supported by automake here, depending on all the things we want
