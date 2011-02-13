@@ -324,6 +324,18 @@ endif
 
 # extra files
 
+extradir = $(docdir)/extra
+extra_prefix = extra
+extra_data = $(shell cd $(srcdir); find $(extra_prefix) | sed -e 's,^\./,,')
+
+contribdir = $(docdir)/contrib
+contrib_prefix = contrib
+contrib_data = $(shell cd $(srcdir); find $(contrib_prefix) | sed -e 's,^\./,,')
+
+examplesdir = $(docdir)/examples
+examples_prefix = examples
+examples_data = $(shell cd $(srcdir); find $(examples_prefix) | sed -e 's,^\./,,')
+
 EXTRA_DIST =								\
 	HACKING INSTALL INSTALL_windows_cygwin.txt			\
 	INSTALL_windows_native.txt README.visualc8 UPGRADE		\
@@ -346,7 +358,7 @@ EXTRA_DIST =								\
 									\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
 									\
-	extra contrib examples mac notes visualc
+	mac notes visualc
 
 # Message translation support
 # INST_LINGUAS is set by configure, based on the po/LINGUAS file and
@@ -443,6 +455,54 @@ dist-nls:
 	@echo "*** Cannot 'make dist' without xgettext" >&2; exit 1
 
 endif
+
+_install_data = \
+	list='$(1)'; test -n "$(3)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p" || test -d "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  src="$$d$$p"; \
+	  dest="`if [ "$$p" != "$(2)" ]; then echo $$p | sed -e 's,$(2)/,,'; fi`"; \
+	  if test -d "$$src"; then \
+	    echo " $(MKDIR_P) '$(DESTDIR)$(3)/$$dest'"; \
+	    $(MKDIR_P) "$(DESTDIR)$(3)/$$dest" || exit $$?; \
+	  else \
+	    echo " $(INSTALL_DATA) $$src '$(DESTDIR)$(3)/$$dest'"; \
+	    $(INSTALL_DATA) $$src "$(DESTDIR)$(3)/$$dest" || exit $$?; \
+	  fi; \
+	done
+_uninstall_data = \
+	list='$(1)'; test -n "$(3)" || list=; \
+	dirs_rev=; \
+	for p in $$list; do \
+	  to_rm="`if [ "$$p" != "$(2)" ]; then echo $$p | sed -e 's,$(2)/,,'; fi`"; \
+	  if [ -n "$$to_rm" ]; then \
+	    if test -d "$(DESTDIR)$(3)/$$to_rm"; then \
+	      dirs_rev="echo '$$to_rm';$${dirs_rev}"; \
+	    else \
+	      echo " rm -f '$(DESTDIR)$(3)/$$to_rm'"; \
+	      rm -f $$src "$(DESTDIR)$(3)/$$to_rm" || exit $$?; \
+	    fi; \
+	  fi; \
+	done; \
+	eval "$$dirs_rev" | while read to_rmdir; do \
+	  echo " rmdir '$(DESTDIR)$(3)/$$to_rmdir'"; \
+	  rmdir "$(DESTDIR)$(3)/$$to_rmdir" || exit $$?; \
+	done
+
+install-extra-data: $(extra_data)
+	@$(call _install_data,$(extra_data),$(extra_prefix),$(extradir))
+uninstall-extra-data:
+	@$(call _uninstall_data,$(extra_data),$(extra_prefix),$(extradir))
+
+install-contrib-data: $(contrib_data)
+	@$(call _install_data,$(contrib_data),$(contrib_prefix),$(contribdir))
+uninstall-contrib-data:
+	@$(call _uninstall_data,$(contrib_data),$(contrib_prefix),$(contribdir))
+
+install-examples-data: $(examples_data)
+	@$(call _install_data,$(examples_data),$(examples_prefix),$(examplesdir))
+uninstall-examples-data:
+	@$(call _uninstall_data,$(examples_data),$(examples_prefix),$(examplesdir))
 
 # build an OS X installer
 # requires sudo since packagemaker just looks at directory permissions.
@@ -753,8 +813,10 @@ man1_MANS = mtn.1
 # the things we want to do.  This is to support multiple things to do in
 # each of them, as dependencies.
 all-local: all-nls
-install-data-local: install-nls
-uninstall-local: uninstall-nls
+install-data-local: install-nls \
+	install-extra-data install-contrib-data install-examples-data
+uninstall-local: uninstall-nls \
+	uninstall-extra-data uninstall-contrib-data uninstall-examples-data
 mostlyclean-local: mostlyclean-tests
 check-local: check-testers
 # All hooks supported by automake here, depending on all the things we want
