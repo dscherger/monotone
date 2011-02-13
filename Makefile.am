@@ -382,16 +382,21 @@ GMOFILES := $(addprefix po/,$(addsuffix .gmo, $(INST_LINGUAS)))
 all-nls: $(GMOFILES)
 
 install-nls: all-nls
-	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
+	@linguas='$(INST_LINGUAS)'; set -e; for lang in $$linguas; do \
 	  dir=$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES; \
+	  echo " $(MKDIR_P) '$$dir'"; \
 	  $(MKDIR_P) $$dir; \
+	  echo " $(INSTALL_DATA) po/$$lang.gmo '$$dir/$(PACKAGE).mo'"; \
 	  $(INSTALL_DATA) po/$$lang.gmo $$dir/$(PACKAGE).mo; \
 	done
 
 uninstall-nls:
-	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
+	@linguas='$(INST_LINGUAS)'; set -e; for lang in $$linguas; do \
+	  echo " rm -f '$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES/$(PACKAGE).mo'"; \
 	  rm -f $(DESTDIR)$(localedir)/$$lang/LC_MESSAGES/$(PACKAGE).mo; \
+	  echo " rmdir '$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES'; \
 	  rmdir $(DESTDIR)$(localedir)/$$lang/LC_MESSAGES || :; \
+	  echo " rmdir '$(DESTDIR)$(localedir)/$$lang'; \
 	  rmdir $(DESTDIR)$(localedir)/$$lang || :; \
 	done
 else
@@ -641,9 +646,10 @@ FORCE:
 mostlyclean-tests:
 	rm -rf test/bin test/work
 	rm -f run_*_tests test/*.status test/src/testlib.cc util/txt2c
-	-set -x; \
-	ls test/unit/tests/*/__driver__.lua 2>/dev/null | while read d; do \
+	@ls test/unit/tests/*/__driver__.lua 2>/dev/null | while read d; do \
+	  echo " rm -f '$$d'"; \
 	  rm -f $$d; \
+	  echo " rmdir '$${d%/*}'"; \
 	  rmdir $${d%/*} || :; \
 	done
 
