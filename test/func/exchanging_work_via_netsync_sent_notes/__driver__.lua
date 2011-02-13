@@ -4,7 +4,7 @@
 -- ../exchanging_work_via_netsync,_with_notes/__driver__.lua, but here
 -- we do "push" instead of "pull".
 
-include("common/netsync.lua")
+includecommon("netsync.lua")
 mtn_setup()
 netsync.setup_with_notes()
 revs = {}

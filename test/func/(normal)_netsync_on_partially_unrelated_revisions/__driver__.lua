@@ -1,5 +1,5 @@
 
-include("/common/netsync.lua")
+includecommon("netsync.lua")
 mtn_setup()
 
 -- This test relies on file-suturing

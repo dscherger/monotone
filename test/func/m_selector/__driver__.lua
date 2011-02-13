@@ -1,4 +1,4 @@
-include("common/selectors.lua")
+includecommon("selectors.lua")
 mtn_setup()
 
 addfile("testfile", "blah blah")

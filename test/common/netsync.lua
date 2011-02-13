@@ -19,13 +19,13 @@ function netsync.setup()
   check(copy("keys", "keys2"))
   check(copy("test.db", "test3.db"))
   check(copy("keys", "keys3"))
-  check(getstd("common/netsync-hooks.lua", "netsync.lua"))
+  check(getcommon("netsync-hooks.lua", "netsync.lua"))
   math.randomseed(get_pid())
 end
 
 function netsync.setup_with_notes()
   netsync.setup()
-  check(getstd("common/netsync-hooks_with_notes.lua", "netsync.lua"))
+  check(getcommon("netsync-hooks_with_notes.lua", "netsync.lua"))
 end
 
 function netsync.internal.client(srv, oper, pat, n, res, save_output)

@@ -1,7 +1,7 @@
 -- Test that sync uses _MTN/options properly
 -- It ignored 'keydir' in 0.39, and did not set 'key' in development for 0.40
 
-include("/common/netsync.lua")
+includecommon("netsync.lua")
 
 -- 'mtn_setup' sets 'key' in _MTN/options; we don't want that.
 check(getstd("test_keys"))

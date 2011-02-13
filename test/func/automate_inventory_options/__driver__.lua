@@ -3,7 +3,7 @@
 --
 -- We don't test with --bookkeep-only, because we haven't gotten to it yet.
 
-include("common/automate_stdio.lua")
+includecommon("automate_stdio.lua")
 
 mtn_setup()
 
@@ -21,8 +21,8 @@ check(get("expected-renames-target-no-unchanged.stdout"))
 check(get("expected-renames-target-no-ignored.stdout"))
 check(get("expected-renames-target-no-unknown.stdout"))
 
-include("common/basic_io.lua")
-include("common/test_utils_inventory.lua")
+includecommon("basic_io.lua")
+includecommon("test_utils_inventory.lua")
 
 mkdir("source")
 addfile("source/source_1", "source_1")

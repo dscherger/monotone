@@ -25,7 +25,7 @@ check(get("hooks_automate.lua"))
 check(mtn("automate", "stdio", "--rcfile", "hooks_automate.lua"), 0, true, true, "l6:select1:*e")
 check(qgrep("this is also not catched", "stderr"))
 
-include("common/automate_stdio.lua")
+includecommon("automate_stdio.lua")
 progress = parse_stdio(readfile("stdout"), 0, nil, 'p')
 
 check(progress[1] == "lua: this is catched")

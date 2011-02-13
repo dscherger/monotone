@@ -1,5 +1,5 @@
 
-include("/common/netsync.lua")
+includecommon("netsync.lua")
 mtn_setup()
 keys = {}
 revs = {}

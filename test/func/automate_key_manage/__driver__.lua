@@ -7,7 +7,7 @@
 
 mtn_setup()
 
-include("common/basic_io.lua")
+includecommon("basic_io.lua")
 
 check(mtn("automate", "generate_key", "foo@bar.com", "foopass"), 0, false, false)
 check(mtn("pubkey", "foo@bar.com"), 0, true)

@@ -1,5 +1,5 @@
-include("common/netsync.lua")
-include("common/automate_stdio.lua")
+includecommon("netsync.lua")
+includecommon("automate_stdio.lua")
 
 mtn_setup()
 netsync.setup()

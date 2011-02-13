@@ -8,8 +8,8 @@
 -- 5) receive certs on existing revision
 -- 6) receive key
 
-include("/common/netsync.lua")
-include("/common/automate_stdio.lua")
+includecommon("netsync.lua")
+includecommon("automate_stdio.lua")
 
 mtn_setup()
 netsync.setup()
@@ -110,8 +110,8 @@ srv:stop()
 -- push and pull a key; test 3 and 6. Note that keys are not sent
 -- unless they are used to sign something; we sign another test cert;
 -- tests 5. Can't use 'genkey'; that gives a random key signature
-getstd("common/john_key.packet", "john_key.packet")
-getstd("common/jane_key.packet", "jane_key.packet")
+getcommon("john_key.packet", "john_key.packet")
+getcommon("jane_key.packet", "jane_key.packet")
 check(mtn("read", "john_key.packet"), 0, nil, false)
 check(mtn2("read", "jane_key.packet"), 0, nil, false)
 

@@ -294,6 +294,13 @@ function getstd(name, as)
   return ret
 end
 
+function getcommon(name, as)
+  if as == nil then as = name end
+  local ret = copy(srcdir .. "/common/" .. name, as)
+  make_tree_accessible(as)
+  return ret
+end
+
 function get(name, as)
   if as == nil then as = name end
   return getstd(test.name .. "/" .. name, as)
@@ -304,6 +311,13 @@ end
 -- since in that case it could just go in the driver file.
 function include(name)
   local func, e = loadfile(testdir.."/"..name)
+  if func == nil then err(e, 2) end
+  setfenv(func, getfenv(2))
+  func()
+end
+
+function includecommon(name)
+  local func, e = loadfile(srcdir.."/common/"..name)
   if func == nil then err(e, 2) end
   setfenv(func, getfenv(2))
   func()

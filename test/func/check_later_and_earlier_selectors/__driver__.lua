@@ -1,5 +1,5 @@
 
-include("common/selectors.lua")
+includecommon("selectors.lua")
 mtn_setup()
 revs = {}
 

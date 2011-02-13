@@ -1,6 +1,6 @@
 
 skip_if(ostype == "Windows")
-include("/common/netsync.lua")
+includecommon("netsync.lua")
 mtn_setup()
 netsync.setup()
 

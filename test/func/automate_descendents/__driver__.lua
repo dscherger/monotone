@@ -10,7 +10,7 @@ check(mtn("automate", "descendents", "c7539264e83c5d6af4c792f079b5d46e9c128665")
 --     D E
 --     \/
 --      F
-include("/common/automate_ancestry.lua")
+includecommon("automate_ancestry.lua")
 
 revs = make_graph()
 

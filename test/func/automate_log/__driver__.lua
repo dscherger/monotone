@@ -6,8 +6,8 @@ mtn_setup()
 check(mtn("automate", "log"), 1, false, true)
 check(qgrep("misuse: workspace parent revision '' not found", "stderr"))
 
-include("/common/automate_ancestry.lua")
-include("/common/automate_stdio.lua")
+includecommon("automate_ancestry.lua")
+includecommon("automate_stdio.lua")
 
 revs = make_graph()
 --   A

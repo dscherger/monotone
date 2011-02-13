@@ -26,8 +26,8 @@ mtn_setup()
 
 check(get("local_hooks.lua"))
 
-include("common/basic_io.lua")
-include("common/test_utils_inventory.lua")
+includecommon("basic_io.lua")
+includecommon("test_utils_inventory.lua")
 
 ----------
 -- The local local_hooks.lua defines ignore_file to ignore 'ignored'

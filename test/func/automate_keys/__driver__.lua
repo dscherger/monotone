@@ -1,4 +1,4 @@
-include("common/automate_stdio.lua")
+includecommon("automate_stdio.lua")
 
 mtn_setup()
 

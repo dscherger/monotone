@@ -10,7 +10,7 @@ check(mtn("automate", "graph"), 0, 0, false)
 --     D E
 --     \/
 --      F
-include("/common/automate_ancestry.lua")
+includecommon("automate_ancestry.lua")
 
 revs = make_graph()
 

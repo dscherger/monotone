@@ -2,8 +2,8 @@
 --
 -- See automate_show_conflicts for all conflict cases
 
-include("common/basic_io.lua")
-include("common/automate_stdio.lua")
+includecommon("basic_io.lua")
+includecommon("automate_stdio.lua")
 
 mtn_setup()
 

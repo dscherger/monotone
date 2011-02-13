@@ -1,5 +1,5 @@
 
-include("common/automate_ancestry.lua")
+includecommon("automate_ancestry.lua")
 mtn_setup()
 
 --   A
