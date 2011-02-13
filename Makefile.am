@@ -222,6 +222,7 @@ noinst_PROGRAMS = util/txt2c
 EXTRA_PROGRAMS =
 
 bin_SCRIPTS = mtnopt
+dist_bin_SCRIPTS = extra/bin/mtn-cleanup
 noinst_SCRIPTS = extra/building/dump-test-logs.sh
 
 mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
@@ -324,6 +325,14 @@ endif
 
 # extra files
 
+contribdir = $(docdir)/contrib
+contrib_prefix = contrib
+contrib_data = $(shell cd $(srcdir); find $(contrib_prefix) | sed -e 's,^\./,,')
+
+examplesdir = $(docdir)/examples
+examples_prefix = examples
+examples_data = $(shell cd $(srcdir); find $(examples_prefix) | sed -e 's,^\./,,')
+
 EXTRA_DIST =								\
 	HACKING INSTALL INSTALL_windows_cygwin.txt			\
 	INSTALL_windows_native.txt README.visualc8 UPGRADE		\
@@ -346,7 +355,7 @@ EXTRA_DIST =								\
 									\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
 									\
-	extra contrib examples mac notes visualc
+	mac notes visualc $(contrib_data) $(examples_data) extra
 
 # Message translation support
 # INST_LINGUAS is set by configure, based on the po/LINGUAS file and
@@ -366,27 +375,43 @@ CLEAN_POFILES := $(ALL_GMOFILES) \
 
 EXTRA_DIST += $(ALL_POFILES) po/LINGUAS po/README
 
+.PHONY: all-nls install-nls uninstall-nls
 if USE_NLS
 # for installation
 GMOFILES := $(addprefix po/,$(addsuffix .gmo, $(INST_LINGUAS)))
 
-all-local: $(GMOFILES)
+all-nls: $(GMOFILES)
 
-install-data-local: all-local
-	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
+install-nls: all-nls
+	@linguas='$(INST_LINGUAS)'; set -e; for lang in $$linguas; do \
 	  dir=$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES; \
+	  echo " $(MKDIR_P) '$$dir'"; \
 	  $(MKDIR_P) $$dir; \
+	  echo " $(INSTALL_DATA) po/$$lang.gmo '$$dir/$(PACKAGE).mo'"; \
 	  $(INSTALL_DATA) po/$$lang.gmo $$dir/$(PACKAGE).mo; \
 	done
 
-uninstall-local:
-	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
+uninstall-nls:
+	@linguas='$(INST_LINGUAS)'; set -e; for lang in $$linguas; do \
+	  echo " rm -f '$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES/$(PACKAGE).mo'"; \
 	  rm -f $(DESTDIR)$(localedir)/$$lang/LC_MESSAGES/$(PACKAGE).mo; \
+	  echo " rmdir '$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES'; \
 	  rmdir $(DESTDIR)$(localedir)/$$lang/LC_MESSAGES || :; \
+	  echo " rmdir '$(DESTDIR)$(localedir)/$$lang'; \
 	  rmdir $(DESTDIR)$(localedir)/$$lang || :; \
 	done
+else
+# We need to provide these targets because all-local, install-data-local
+# and uninstall-local expects them as dependencies, further down.
+all-nls:
+	@:
+install-nls:
+	@:
+uninstall-nls:
+	@:
 endif
 
+.PHONY: dist-nls
 if REBUILD_NLS
 po/%.gmo: po/%.merged.po
 	$(V_msgfmt)$(MSGFMT) -c --statistics -o $@ $<
@@ -415,7 +440,7 @@ po/$(PACKAGE).pot: $(POTFILES)
 	  $(XGETTEXT_PKG_OPTS) $(XGETTEXT_OPTS) \
 	  $(POTFILES)
 
-dist-hook: $(ALL_GMOFILES)
+dist-nls: $(ALL_GMOFILES)
 	cp $(ALL_GMOFILES) $(distdir)/po
 # also, kill off any backup files that got pulled in by one of the
 # recursive subdirectory includes in EXTRA_DIST
@@ -428,10 +453,53 @@ else
 po/%.gmo: $(srcdir)/po/%.gmo
 	cp $< $@
 
-dist-hook:
+dist-nls:
 	@echo "*** Cannot 'make dist' without xgettext" >&2; exit 1
 
 endif
+
+_install_data = \
+	list='$(1)'; test -n "$(3)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p" || test -d "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  src="$$d$$p"; \
+	  dest="`if [ "$$p" != "$(2)" ]; then echo $$p | sed -e 's,$(2)/,,'; fi`"; \
+	  if test -d "$$src"; then \
+	    echo " $(MKDIR_P) '$(DESTDIR)$(3)/$$dest'"; \
+	    $(MKDIR_P) "$(DESTDIR)$(3)/$$dest" || exit $$?; \
+	  else \
+	    echo " $(INSTALL_DATA) $$src '$(DESTDIR)$(3)/$$dest'"; \
+	    $(INSTALL_DATA) $$src "$(DESTDIR)$(3)/$$dest" || exit $$?; \
+	  fi; \
+	done
+_uninstall_data = \
+	list='$(1)'; test -n "$(3)" || list=; \
+	dirs_rev=; \
+	for p in $$list; do \
+	  to_rm="`if [ "$$p" != "$(2)" ]; then echo $$p | sed -e 's,$(2)/,,'; fi`"; \
+	  if [ -n "$$to_rm" ]; then \
+	    if test -d "$(DESTDIR)$(3)/$$to_rm"; then \
+	      dirs_rev="echo '$$to_rm';$${dirs_rev}"; \
+	    else \
+	      echo " rm -f '$(DESTDIR)$(3)/$$to_rm'"; \
+	      rm -f $$src "$(DESTDIR)$(3)/$$to_rm" || exit $$?; \
+	    fi; \
+	  fi; \
+	done; \
+	eval "$$dirs_rev" | while read to_rmdir; do \
+	  echo " rmdir '$(DESTDIR)$(3)/$$to_rmdir'"; \
+	  rmdir "$(DESTDIR)$(3)/$$to_rmdir" || exit $$?; \
+	done
+
+install-contrib-data: $(contrib_data)
+	@$(call _install_data,$(contrib_data),$(contrib_prefix),$(contribdir))
+uninstall-contrib-data:
+	@$(call _uninstall_data,$(contrib_data),$(contrib_prefix),$(contribdir))
+
+install-examples-data: $(examples_data)
+	@$(call _install_data,$(examples_data),$(examples_prefix),$(examplesdir))
+uninstall-examples-data:
+	@$(call _uninstall_data,$(examples_data),$(examples_prefix),$(examplesdir))
 
 # build an OS X installer
 # requires sudo since packagemaker just looks at directory permissions.
@@ -492,10 +560,11 @@ linguas.iss: ${top_srcdir}/Makefile.am
 
 # testsuite stuff (could this possibly be more ugly?)  To get
 # parallelism, we cannot use Automake's TESTS feature at all.  The
-# shell script embedded in the 'check-local' rule is partially
+# shell script embedded in the 'check-testers' rule is partially
 # borrowed from automake 1.9's check.am
 
-check-local: test/tester.status test/unit.status test/func.status test/extra.status
+.PHONY: check-testers
+check-testers: test/tester.status test/unit.status test/func.status test/extra.status
 	@all=0; failed=0; error=0;					       \
 	for f in $^; do							       \
 	  all=`expr $$all + 1`;						       \
@@ -567,19 +636,21 @@ check_PROGRAMS = test/bin/unit_tester test/bin/tester test/bin/check_net
 # We want the tests re-run even if the .status files already exist.
 # .PHONY does not work for that (bad interaction with pattern rules),
 # but the FORCE hack does.
-.PHONY: check-local FORCE
+.PHONY: FORCE
 FORCE:
 .PRECIOUS: run_tester_tests run_unit_tests run_func_tests run_extra_tests
 
 # FIXME: if it annoys anybody, we could clean dvi, pdf and info files
 #        only in a separate maintainer-clean target as suggested by
 #	 automake's man page
-mostlyclean-local:
+.PHONY: mostlyclean-tests
+mostlyclean-tests:
 	rm -rf test/bin test/work
 	rm -f run_*_tests test/*.status test/src/testlib.cc util/txt2c
-	-set -x; \
-	ls test/unit/tests/*/__driver__.lua 2>/dev/null | while read d; do \
+	@ls test/unit/tests/*/__driver__.lua 2>/dev/null | while read d; do \
+	  echo " rm -f '$$d'"; \
 	  rm -f $$d; \
+	  echo " rmdir '$${d%/*}'"; \
 	  rmdir $${d%/*} || :; \
 	done
 
@@ -725,14 +796,32 @@ src/package_full_revision.txt: src/package_full_revision_raw.txt src/package_ful
 # line does is tell 'distcheck' to shut up and ignore those two files.
 distcleancheck_listfiles = find . -type f -a ! -name package_revision.txt -a ! -name package_full_revision_dist.txt
 
-# the distcheck-hook checks for errors in the use of base.hh
-distcheck-hook:
+# the distcheck-base.hh checks for errors in the use of base.hh.
+# It's being used by distcheck-hook further down.
+.PHONY: distcheck-base.hh
+distcheck-base.hh:
 	cd $(srcdir) && $(SHELL) util/audit-includes \
 		$(sort $(mtn_SOURCES) $(test_unit_tester_SOURCES) $(test_bin_tester_SOURCES) \
                        $(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
                        src/win32/main.cc src/unix/main.cc)
 
 man1_MANS = mtn.1
+
+# All local variants of automake-supported targets here, depending on all
+# the things we want to do.  This is to support multiple things to do in
+# each of them, as dependencies.
+all-local: all-nls
+install-data-local: install-nls \
+	install-contrib-data install-examples-data
+uninstall-local: uninstall-nls \
+	uninstall-contrib-data uninstall-examples-data
+mostlyclean-local: mostlyclean-tests
+check-local: check-testers
+# All hooks supported by automake here, depending on all the things we want
+# to hook in.  This is to support multiple things into the same hook, as
+# dependencies.
+dist-hook: dist-nls
+distcheck-hook: distcheck-base.hh
 
 mtn.1: mtn$(EXEEXT)
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
