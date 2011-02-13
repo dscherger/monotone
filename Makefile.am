@@ -358,7 +358,7 @@ EXTRA_DIST =								\
 									\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
 									\
-	mac notes visualc
+	mac notes visualc $(contrib_data) $(examples_data) $(extra_data)
 
 # Message translation support
 # INST_LINGUAS is set by configure, based on the po/LINGUAS file and
