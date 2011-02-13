@@ -366,11 +366,11 @@ CLEAN_POFILES := $(ALL_GMOFILES) \
 
 EXTRA_DIST += $(ALL_POFILES) po/LINGUAS po/README
 
+.PHONY: all-nls install-nls uninstall-nls
 if USE_NLS
 # for installation
 GMOFILES := $(addprefix po/,$(addsuffix .gmo, $(INST_LINGUAS)))
 
-.PHONY: all-nls install-nls uninstall-nls
 all-nls: $(GMOFILES)
 
 install-nls: all-nls
@@ -389,7 +389,6 @@ uninstall-nls:
 else
 # We need to provide these targets because all-local, install-data-local
 # and uninstall-local expects them as dependencies, further down.
-.PHONY: all-nls install-nls uninstall-nls
 all-nls:
 	@:
 install-nls:
@@ -398,6 +397,7 @@ uninstall-nls:
 	@:
 endif
 
+.PHONY: dist-nls
 if REBUILD_NLS
 po/%.gmo: po/%.merged.po
 	$(V_msgfmt)$(MSGFMT) -c --statistics -o $@ $<
@@ -426,7 +426,6 @@ po/$(PACKAGE).pot: $(POTFILES)
 	  $(XGETTEXT_PKG_OPTS) $(XGETTEXT_OPTS) \
 	  $(POTFILES)
 
-.PHONY: dist-nls
 dist-nls: $(ALL_GMOFILES)
 	cp $(ALL_GMOFILES) $(distdir)/po
 # also, kill off any backup files that got pulled in by one of the
@@ -440,7 +439,6 @@ else
 po/%.gmo: $(srcdir)/po/%.gmo
 	cp $< $@
 
-.PHONY: dist-nls
 dist-nls:
 	@echo "*** Cannot 'make dist' without xgettext" >&2; exit 1
 
