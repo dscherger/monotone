@@ -222,6 +222,7 @@ noinst_PROGRAMS = util/txt2c
 EXTRA_PROGRAMS =
 
 bin_SCRIPTS = mtnopt
+dist_bin_SCRIPTS = extra/bin/mtn-cleanup
 noinst_SCRIPTS = extra/building/dump-test-logs.sh
 
 mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
