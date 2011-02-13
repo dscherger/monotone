@@ -370,21 +370,32 @@ if USE_NLS
 # for installation
 GMOFILES := $(addprefix po/,$(addsuffix .gmo, $(INST_LINGUAS)))
 
-all-local: $(GMOFILES)
+.PHONY: all-nls install-nls uninstall-nls
+all-nls: $(GMOFILES)
 
-install-data-local: all-local
+install-nls: all-nls
 	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
 	  dir=$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES; \
 	  $(MKDIR_P) $$dir; \
 	  $(INSTALL_DATA) po/$$lang.gmo $$dir/$(PACKAGE).mo; \
 	done
 
-uninstall-local:
+uninstall-nls:
 	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
 	  rm -f $(DESTDIR)$(localedir)/$$lang/LC_MESSAGES/$(PACKAGE).mo; \
 	  rmdir $(DESTDIR)$(localedir)/$$lang/LC_MESSAGES || :; \
 	  rmdir $(DESTDIR)$(localedir)/$$lang || :; \
 	done
+else
+# We need to provide these targets because all-local, install-data-local
+# and uninstall-local expects them as dependencies, further down.
+.PHONY: all-nls install-nls uninstall-nls
+all-nls:
+	@:
+install-nls:
+	@:
+uninstall-nls:
+	@:
 endif
 
 if REBUILD_NLS
@@ -415,7 +426,8 @@ po/$(PACKAGE).pot: $(POTFILES)
 	  $(XGETTEXT_PKG_OPTS) $(XGETTEXT_OPTS) \
 	  $(POTFILES)
 
-dist-hook: $(ALL_GMOFILES)
+.PHONY: dist-nls
+dist-nls: $(ALL_GMOFILES)
 	cp $(ALL_GMOFILES) $(distdir)/po
 # also, kill off any backup files that got pulled in by one of the
 # recursive subdirectory includes in EXTRA_DIST
@@ -428,7 +440,8 @@ else
 po/%.gmo: $(srcdir)/po/%.gmo
 	cp $< $@
 
-dist-hook:
+.PHONY: dist-nls
+dist-nls:
 	@echo "*** Cannot 'make dist' without xgettext" >&2; exit 1
 
 endif
@@ -492,10 +505,11 @@ linguas.iss: ${top_srcdir}/Makefile.am
 
 # testsuite stuff (could this possibly be more ugly?)  To get
 # parallelism, we cannot use Automake's TESTS feature at all.  The
-# shell script embedded in the 'check-local' rule is partially
+# shell script embedded in the 'check-testers' rule is partially
 # borrowed from automake 1.9's check.am
 
-check-local: test/tester.status test/unit.status test/func.status test/extra.status
+.PHONY: check-testers
+check-testers: test/tester.status test/unit.status test/func.status test/extra.status
 	@all=0; failed=0; error=0;					       \
 	for f in $^; do							       \
 	  all=`expr $$all + 1`;						       \
@@ -567,14 +581,15 @@ check_PROGRAMS = test/bin/unit_tester test/bin/tester test/bin/check_net
 # We want the tests re-run even if the .status files already exist.
 # .PHONY does not work for that (bad interaction with pattern rules),
 # but the FORCE hack does.
-.PHONY: check-local FORCE
+.PHONY: FORCE
 FORCE:
 .PRECIOUS: run_tester_tests run_unit_tests run_func_tests run_extra_tests
 
 # FIXME: if it annoys anybody, we could clean dvi, pdf and info files
 #        only in a separate maintainer-clean target as suggested by
 #	 automake's man page
-mostlyclean-local:
+.PHONY: mostlyclean-tests
+mostlyclean-tests:
 	rm -rf test/bin test/work
 	rm -f run_*_tests test/*.status test/src/testlib.cc util/txt2c
 	-set -x; \
@@ -725,14 +740,30 @@ src/package_full_revision.txt: src/package_full_revision_raw.txt src/package_ful
 # line does is tell 'distcheck' to shut up and ignore those two files.
 distcleancheck_listfiles = find . -type f -a ! -name package_revision.txt -a ! -name package_full_revision_dist.txt
 
-# the distcheck-hook checks for errors in the use of base.hh
-distcheck-hook:
+# the distcheck-base.hh checks for errors in the use of base.hh.
+# It's being used by distcheck-hook further down.
+.PHONY: distcheck-base.hh
+distcheck-base.hh:
 	cd $(srcdir) && $(SHELL) util/audit-includes \
 		$(sort $(mtn_SOURCES) $(test_unit_tester_SOURCES) $(test_bin_tester_SOURCES) \
                        $(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
                        src/win32/main.cc src/unix/main.cc)
 
 man1_MANS = mtn.1
+
+# All local variants of automake-supported targets here, depending on all
+# the things we want to do.  This is to support multiple things to do in
+# each of them, as dependencies.
+all-local: all-nls
+install-data-local: install-nls
+uninstall-local: uninstall-nls
+mostlyclean-local: mostlyclean-tests
+check-local: check-testers
+# All hooks supported by automake here, depending on all the things we want
+# to hook in.  This is to support multiple things into the same hook, as
+# dependencies.
+dist-hook: dist-nls
+distcheck-hook: distcheck-base.hh
 
 mtn.1: mtn$(EXEEXT)
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
