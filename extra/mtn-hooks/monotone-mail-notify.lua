@@ -34,7 +34,7 @@
 do
    _from = "monotone@my.domain.please.change.me"
    _server = "localhost"
-   _base = "/var/spool/monotone/"
+   _base = "/var/spool/monotone"
    _keydir = get_confdir() .. "/keys"
    _key = ""
    _shellscript = ""
@@ -91,6 +91,7 @@ do
       data["keydir"] = _keydir
       data["key"] = _key
       data["shellscript"] = _shellscript
+      data["base"] = _base
 
       for i, item in pairs(notifydata)
       do
@@ -112,6 +113,10 @@ do
 	       data[item.name] = val
 	    end
 	 elseif item.name == "shellscript" then
+	    for j, val in pairs(item.values) do
+	       data[item.name] = val
+	    end
+	 elseif item.name == "base" then
 	    for j, val in pairs(item.values) do
 	       data[item.name] = val
 	    end
@@ -142,6 +147,7 @@ do
 	 elseif item.name == "keydir" then
 	 elseif item.name == "key" then
 	 elseif item.name == "shellscript" then
+	 elseif item.name == "base" then
 	    -- legal names: pattern, allow, deny, continue, comment
 	 elseif item.name == "pattern" then
 	    if matches and not cont then
@@ -267,6 +273,7 @@ do
 	       local keydir = _configuration_data["keydir"]
 	       local key = _configuration_data["key"]
 	       local shellscript = _configuration_data["shellscript"]
+	       local base = _configuration_data["base"]
 
 	       --print("monotone-mail-notify: About to write data")
 	       for rev_id,rev_data in pairs(_emails_to_send[session_id]) do
@@ -282,12 +289,13 @@ do
 
 		     local now = os.time()
 
-		     --print("monotone-mail-notify: Writing data for revision ",
-		     --	rev_data["revision"])
+		     -- print("monotone-mail-notify: Writing data for revision",
+		     --       rev_data["revision"], "to files with base",
+		     --       base .. "/" .. now .. "." .. rev_data["revision"])
 
-		     local outputFileRev = io.open(_base .. now .. "." .. rev_data["revision"] .. ".rev.txt", "w+")
-		     local outputFileHdr = io.open(_base .. now .. "." .. rev_data["revision"] .. ".hdr.txt", "w+")
-		     local outputFileDat = io.open(_base .. now .. "." .. rev_data["revision"] .. ".dat.txt", "w+")
+		     local outputFileRev = io.open(base .. "/" .. now .. "." .. rev_data["revision"] .. ".rev.txt", "w+")
+		     local outputFileHdr = io.open(base .. "/" .. now .. "." .. rev_data["revision"] .. ".hdr.txt", "w+")
+		     local outputFileDat = io.open(base .. "/" .. now .. "." .. rev_data["revision"] .. ".dat.txt", "w+")
 
 		     local to = ""
 		     for j,addr in pairs(rev_data["recipients"]) do
@@ -314,12 +322,12 @@ do
 	       end
 
 	       if shellscript and shellscript ~= "" then
-		  print("monotone-mail-notify.lua: Running script ",
-			shellscript)
+		  print("monotone-mail-notify.lua: Running script:",
+			shellscript, base)
 		  spawn_redirected("/dev/null",
 				   _shellscript_log,
 				   _shellscript_errlog,
-				   "bash", shellscript)
+				   shellscript, base)
 	       end
 	       _emails_to_send[session_id] = nil
 	       return "continue",nil

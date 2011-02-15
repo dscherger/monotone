@@ -1,4 +1,4 @@
-#! /usr/local/bin/bash
+#! /usr/bin/env bash
 
 # Install the corresponding .lua file in monotone.  Its
 # comments holds instructions on how to configure this
@@ -12,10 +12,12 @@
 # Copyright (c) 2010, Richard Levitte <richard@levitte.org)
 # License: GPLv2 or later
 
-MTN="/usr/local/bin/mtn"
-HIGHLIGHT="/usr/local/bin/source-highlight"
-MIMECONSTRUCT="/usr/local/bin/mime-construct"
+MTN="mtn"
+HIGHLIGHT="source-highlight"
+MIMECONSTRUCT="mime-construct"
 BASE="/var/spool/monotone"
+
+if [ -n "$1" ]; then BASE="$1"; fi
 
 function processFile() {
     local fileBase=$1
@@ -158,6 +160,7 @@ function processFile() {
 
 if [ "x" = "x$(ls $BASE)" ]
 then
+    echo >&2 "monotone-mail-notify: no files in $BASE, exiting"
     exit 0
 fi
 
