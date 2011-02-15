@@ -6,6 +6,13 @@
 # Based on previous script by Olivier Andrieu <oandrieu@nerim.net>
 # with contributions by Matthew A. Nicholson <matt@matt-land.com>
 # and Matthew Sackman <matthew@wellquite.org>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
 
 # Requirements:
 #    the bash completion package <http://www.caliban.org/bash/>,
