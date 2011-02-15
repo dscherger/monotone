@@ -246,6 +246,17 @@ src_lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 bashcompdir = $(sysconfdir)/bash_completion.d
 bashcomp_DATA = extra/shell/monotone.bash_completion
 
+monotonedir = $(datadir)/monotone
+
+mtnhooksdir = $(monotonedir)/hooks
+mtnhooks_DATA = \
+	extra/mtn-hooks/authorize_remote_automate.lua			\
+	extra/mtn-hooks/get_passphrase_from_file.lua			\
+	extra/mtn-hooks/monotone-mail-notify.lua
+
+mtnscriptsdir = $(monotonedir)/scripts
+dist_mtnscripts_SCRIPTS = extra/mtn-hooks/monotone-mail-notify
+
 # flags
 
 # sets DEFS for just this object (autoconf's -DHAVE_CONFIG_H is useless)
