@@ -107,9 +107,14 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         Other
 
+        - Added a new directory extra/, which contains monotone hooks and
+          related scripts that have been shown to work.  Most of these get
+          installed, most of them somewhere under $(prefix)/share/monotone.
+          Please read extra/README for further information.
+
         - Added the mtn-cleanup Perl script that returns a workspace to its
           pristine state with the minimum amount of change. This script is
-          under the contrib directory.
+          in the extra/bin directory.
 
 
 Sun Oct 31 21:51:16 UTC 2010
