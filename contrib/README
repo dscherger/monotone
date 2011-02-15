@@ -15,15 +15,6 @@ See individual files for licenses.
 
   -- mtbrowse.sh: An interactive text-mode history browser
 
-  -- monotone-notify.pl: a Perl hack to create email logs with recent
-     changes in a repository database.  It's designed to be run at regular
-     intervals, for example from a cron script.  It uses database
-     variables (those handled with 'monotone set/unset') in the domain
-     domain 'notify' to keep track of the last revisions that have
-     already been sent out.
-     For a manual, do `perl Notify.pl --man'.
-     To get a help text, do `perl Notify.pl --help'.
-
   -- Monotone.pm: A Perl module to access a 'mtn automate stdio' subprocess.
 
   -- monoprof.sh: A simple monotone profiling script.
