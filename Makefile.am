@@ -438,6 +438,8 @@ po/%.po-update: $(srcdir)/po/%.po po/$(PACKAGE).pot
 
 update-po: $(UPDATEPOFILES)
 
+update-gmo: update-po $(ALL_GMOFILES)
+
 # for the template file
 POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
 	$(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
