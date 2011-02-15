@@ -157,8 +157,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone 0.26pre1\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2011-02-05 03:45+0100\n"
-"PO-Revision-Date: 2011-02-04 16:56+0100\n"
+"POT-Creation-Date: 2011-02-15 19:07+0100\n"
+"PO-Revision-Date: 2011-02-15 19:18+0100\n"
 "Last-Translator: Joel Rosdahl <joel@rosdahl.net>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: \n"
@@ -176,7 +176,7 @@ msgstr "allvarligt fel: formatering misslyckades vid %s:%d: %s"
 msgid "misuse: "
 msgstr "missbruk: "
 
-#: src/sanity.cc:357 src/database.cc:950 src/migrate_schema.cc:65
+#: src/sanity.cc:357 src/database.cc:951 src/migrate_schema.cc:65
 msgid "error: "
 msgstr "fel: "
 
@@ -205,7 +205,7 @@ msgstr "otillåtet tecken '%c' i '%s'"
 msgid "hex encoded ID '%s' size != %d"
 msgstr "storleken för den hexadecimalt kodade identiteten '%s' != %d"
 
-#: src/vocab.cc:53
+#: src/vocab.cc:53 src/database.cc:4230
 #, c-format
 msgid "bad character '%c' in id name '%s'"
 msgstr "otillåtet tecken '%c' i identitetsnamnet '%s'"
@@ -315,7 +315,7 @@ msgstr "sökroten '%s' är inte en katalog"
 msgid "bad input to parse_basic_io"
 msgstr "felaktigt indata till parse_basic_io"
 
-#: src/lua.cc:485 src/lua.cc:497 src/lua.cc:509 src/cmd.cc:467 src/cmd.cc:491
+#: src/lua.cc:485 src/lua.cc:497 src/lua.cc:509 src/cmd.cc:470 src/cmd.cc:494
 #, c-format
 msgid "%s called with an invalid parameter"
 msgstr "%s anropades med inkorrekt parameter"
@@ -666,109 +666,109 @@ msgstr "ignorerad administrativ sökväg '%s'"
 msgid "all arguments given were bookkeeping paths; aborting"
 msgstr "alla angivna argument är administrativa sökvägar; avbryter"
 
-#: src/cmd.cc:60
+#: src/cmd.cc:63
 msgid "Commands that aid in scripted execution"
 msgstr "Kommandon som kan användas för skriptat körning"
 
-#: src/cmd.cc:63
+#: src/cmd.cc:66
 msgid "Commands that manipulate the database"
 msgstr "Kommandon för att manipulera databasen"
 
-#: src/cmd.cc:66
+#: src/cmd.cc:69
 msgid "Commands that aid in program debugging"
 msgstr "Kommandon som kan användas för att hitta fel och lösa problem"
 
-#: src/cmd.cc:69
+#: src/cmd.cc:72
 msgid "Commands for information retrieval"
 msgstr "Kommandon för att hämta information"
 
-#: src/cmd.cc:72
+#: src/cmd.cc:75
 msgid "Commands to manage keys and certificates"
 msgstr "Kommandon för att hantera nycklar och certifikat"
 
-#: src/cmd.cc:75
+#: src/cmd.cc:78
 msgid "Commands that access the network"
 msgstr "Kommandon som använder nätverket"
 
-#: src/cmd.cc:78
+#: src/cmd.cc:81
 msgid "Commands for packet reading and writing"
 msgstr "Kommandon för att skriva och läsa paket"
 
-#: src/cmd.cc:81
+#: src/cmd.cc:84
 msgid "Commands for interaction with other version control systems"
 msgstr "Kommandon för att kommunicera med andra versionskontrollsystem"
 
-#: src/cmd.cc:84
+#: src/cmd.cc:87
 msgid "Commands to review revisions"
 msgstr "Kommandon för att undersöka revisioner"
 
-#: src/cmd.cc:87
+#: src/cmd.cc:90
 msgid "Commands to manipulate the tree"
 msgstr "Kommandon för att hantera trädet"
 
-#: src/cmd.cc:90
+#: src/cmd.cc:93
 msgid "Commands to manage persistent variables"
 msgstr "Kommandon för att hantera databasvariabler"
 
-#: src/cmd.cc:93
+#: src/cmd.cc:96
 msgid "Commands that deal with the workspace"
 msgstr "Kommandon för att hantera arbetskopian"
 
-#: src/cmd.cc:96
+#: src/cmd.cc:99
 msgid "Commands defined by the user"
 msgstr "Användardefinierade kommandon"
 
-#: src/cmd.cc:198
+#: src/cmd.cc:201
 #, c-format
 msgid "command '%s' is invalid; it is a group"
 msgstr "kommandot '%s' är ogiltigt, det är en grupp"
 
-#: src/cmd.cc:206
+#: src/cmd.cc:209
 #, c-format
 msgid "no subcommand specified for '%s'"
 msgstr "inga underkommandon angivna för '%s'"
 
-#: src/cmd.cc:209
+#: src/cmd.cc:212
 #, c-format
 msgid "could not match '%s' to a subcommand of '%s'"
 msgstr "Kunde inte matcha '%s' med något subkommando i '%s'"
 
-#: src/cmd.cc:323
+#: src/cmd.cc:326
 #, c-format
 msgid "Commands in group '%s':"
 msgstr "Kommandon i gruppen '%s':"
 
-#: src/cmd.cc:329
+#: src/cmd.cc:332
 #, c-format
 msgid "Subcommands of '%s %s':"
 msgstr "Subkommandon till '%s %s':"
 
-#: src/cmd.cc:333
+#: src/cmd.cc:336
 #, c-format
 msgid "Syntax specific to '%s %s':"
 msgstr "Specifik syntax för '%s %s':"
 
-#: src/cmd.cc:357
+#: src/cmd.cc:360
 #, c-format
 msgid "Purpose of group '%s':"
 msgstr "Syftet med gruppen '%s':"
 
-#: src/cmd.cc:361
+#: src/cmd.cc:364
 #, c-format
 msgid "Description for '%s %s':"
 msgstr "Beskrivning av '%s %s':"
 
-#: src/cmd.cc:371
+#: src/cmd.cc:374
 #, c-format
 msgid "Aliases: %s."
 msgstr "Synonym: %s."
 
-#: src/cmd.cc:385
+#: src/cmd.cc:388
 #, c-format
 msgid "Command groups:"
 msgstr "kommandogrupper:"
 
-#: src/cmd.cc:390
+#: src/cmd.cc:393
 #, c-format
 msgid ""
 "For information on a specific command, type 'mtn help <command_name> "
@@ -777,7 +777,7 @@ msgstr ""
 "För att få information om specifika kommandon, skriv 'mtn help "
 "<kommandonamn> [subkommandonamn ...]'."
 
-#: src/cmd.cc:393
+#: src/cmd.cc:396
 #, c-format
 msgid ""
 "To see more details about the commands of a particular group, type 'mtn help "
@@ -786,7 +786,7 @@ msgstr ""
 "För att få mer detaljer om kommandon inom en specifik grupp, skriv 'mtn help "
 "<gruppname>'."
 
-#: src/cmd.cc:396
+#: src/cmd.cc:399
 #, c-format
 msgid ""
 "Note that you can always abbreviate a command name as long as it does not "
@@ -794,71 +794,71 @@ msgid ""
 msgstr ""
 "Notera att du alltid kan förkorta ett kommandonamn så länge det är unikt."
 
-#: src/cmd.cc:456
+#: src/cmd.cc:459
 #, c-format
 msgid "Call to user command %s (lua command: %s) failed."
 msgstr "Anropet till användarkommandot %s (lua command: %s) misslyckades."
 
-#: src/cmd.cc:505
+#: src/cmd.cc:508
 msgid "command [ARGS...]"
 msgstr "kommandon [ARGUMENT...]"
 
-#: src/cmd.cc:506
+#: src/cmd.cc:509
 msgid "Displays help about commands and options"
 msgstr "Visa hjälp för kommandon och väljare"
 
-#: src/cmd.cc:522
+#: src/cmd.cc:525
 msgid "Shows the program version"
 msgstr "Visar programversionen"
 
-#: src/cmd.cc:527
+#: src/cmd.cc:530
 #, c-format
 msgid "no arguments allowed"
 msgstr "inga argument tillåtna"
 
-#: src/cmd.cc:537
+#: src/cmd.cc:540
 msgid "Check that a particular globish matches a particular string"
 msgstr "Kontrollera att ett givet mönster matchar en given textsträng"
 
-#: src/cmd.cc:545
+#: src/cmd.cc:548
 #, c-format
 msgid "Globish <%s> does not match string <%s>"
 msgstr "Mönstret <%s> stämmer inte med textsträngen <%s>"
 
-#: src/cmd.cc:550
+#: src/cmd.cc:553
 msgid "Triggers the specified kind of crash"
 msgstr "Triggar en specifik sorts krash"
 
-#: src/cmd.cc:861
+#: src/cmd.cc:891
 #, c-format
 msgid "command group '%s'"
 msgstr "kommandogrupp '%s'"
 
-#: src/cmd.cc:876
+#: src/cmd.cc:906
 msgid "Generate a manual page from monotone's command help"
 msgstr "Skapa en manualsida från monotone:s hjälptexter"
 
-#: src/cmd.cc:882
+#: src/cmd.cc:912
 msgid "Name"
 msgstr "Namn"
 
-#: src/cmd.cc:884
-msgid "monotone - a distributed version control system"
-msgstr "monotone - ett distribuerat versionskontrollsystem"
+#: src/cmd.cc:914
+msgid "monotone \\- a distributed version control system"
+msgstr "monotone \\- ett distribuerat versionskontrollsystem"
 
-#: src/cmd.cc:885
+#: src/cmd.cc:915
 msgid "Synopsis"
 msgstr "Synopsis"
 
-#: src/cmd.cc:887
+#: src/cmd.cc:917
 msgid "[options...] command [arguments...]"
 msgstr "[flaggor...] kommando [argument...]"
 
-#: src/cmd.cc:890
+#: src/cmd.cc:920
 msgid "Description"
 msgstr "Beskrivning"
 
-#: src/cmd.cc:891
+#: src/cmd.cc:921
 msgid ""
 "monotone is a highly reliable, very customizable distributed version control "
 "system that provides lightweight branches, history-sensitive merging and a "
@@ -872,12 +872,12 @@ msgstr ""
 "kommandon som är enkla att lära sig, ger stora möjligheter till att skriva "
 "script med det, och är väl dokumenterat."
 
-#: src/cmd.cc:897
+#: src/cmd.cc:927
 #, c-format
 msgid "For more information on monotone, visit %s."
 msgstr "För att få mer information om monotone, gå till %s."
 
-#: src/cmd.cc:900
+#: src/cmd.cc:930
 #, c-format
 msgid ""
 "The complete documentation, including a tutorial for a quick start with the "
@@ -886,29 +886,29 @@ msgstr ""
 "Fullständig dokumentation, med en handledning för att snabbt kunna komma "
 "igång med systemet finns på nätet, %s."
 
-#: src/cmd.cc:904
+#: src/cmd.cc:934
 msgid "Global Options"
 msgstr "Allmängiltiga flaggor"
 
-#: src/cmd.cc:907
+#: src/cmd.cc:937
 msgid "Commands"
 msgstr "Kommandon"
 
-#: src/cmd.cc:910
+#: src/cmd.cc:940
 msgid "See Also"
 msgstr "Se även"
 
-#: src/cmd.cc:911
+#: src/cmd.cc:941
 #, c-format
 msgid "info %s and the documentation on %s"
 msgstr "info %s och dokumentationen på %s"
 
-#: src/cmd.cc:915
+#: src/cmd.cc:945
 #, c-format
 msgid "Please report bugs to %s."
 msgstr "Var god skicka buggrapporter till %s."
 
-#: src/cmd.cc:919
+#: src/cmd.cc:949
 msgid ""
 "monotone was written originally by Graydon Hoare <graydon@pobox.com> in 2004 "
 "and has since then received numerous contributions from many individuals. A "
@@ -918,7 +918,7 @@ msgstr ""
 "fått åtskilliga bidrag från många personer sen dess.  Man finner en komplett "
 "lista med författare i filen AUTHORS."
 
-#: src/cmd.cc:924
+#: src/cmd.cc:954
 msgid ""
 "Nowadays, monotone is maintained by a collective of enthusiastic "
 "programmers, known as the monotone development team."
@@ -926,26 +926,24 @@ msgstr ""
 "Numera vidareutvecklas monotone av en samling entusiastiska programmerare, "
 "kända som `the monotone development team'."
 
-#: src/cmd.cc:928
-#, c-format
+#: src/cmd.cc:958
+#, fuzzy, c-format
 msgid ""
-"monotone and this man page is Copyright (c) 2004 - %s by the monotone "
+"monotone and this man page is Copyright (c) 2004 \\- %s by the monotone "
 "development team."
-msgstr ""
-"För monotone och denna manualsida gäller Copyright (c) 2004 - %s, `the "
-"monotone development team'."
+msgstr "För monotone och denna manualsida gäller Copyright (c) 2004 \\- %s, `the monotone development team'."
 
-#: src/cmd.cc:940
+#: src/cmd.cc:970
 #, c-format
 msgid "no man page formatter command configured"
 msgstr "Ingen formaterare för manualsidor har definierats"
 
-#: src/cmd.cc:944
+#: src/cmd.cc:974
 #, c-format
 msgid "could not execute man page formatter command '%s': %s"
 msgstr "kunde inte köra kommandot för formatering av manualsidor '%s': %s"
 
-#: src/cmd.cc:961
+#: src/cmd.cc:991
 #, c-format
 msgid "--message and --message-file are mutually exclusive"
 msgstr "--message och --message-file får inte anges samtidigt"
@@ -1211,7 +1209,7 @@ msgstr ""
 msgid "ok"
 msgstr "ok"
 
-#: src/cmd_list.cc:175 src/database.cc:1325
+#: src/cmd_list.cc:175 src/database.cc:1326
 msgid "bad"
 msgstr "felaktig"
 
@@ -1311,12 +1309,12 @@ msgstr "Listar kända arbetskopior för en specifik databas"
 msgid "Lists managed databases and their known workspaces"
 msgstr "Visa vilka databaser som hanteras och deras kända arbetskopior"
 
-#: src/cmd_list.cc:684 src/database.cc:4970
+#: src/cmd_list.cc:684 src/database.cc:4977
 #, c-format
 msgid "could not query default database locations"
 msgstr "ingen standardkatalog för databaser finns definierad"
 
-#: src/cmd_list.cc:688 src/database.cc:5048
+#: src/cmd_list.cc:688 src/database.cc:5055
 #, c-format
 msgid "could not query default database glob"
 msgstr "kunde inte fråga efter standardglobben för databaser"
@@ -2494,7 +2492,7 @@ msgstr ""
 "Detta kommando laddar alla cert från databasen och är tänkt att användas för "
 "att testa hur lång tid det tar att ladda dem."
 
-#: src/cmd_db.cc:721 src/database.cc:1313
+#: src/cmd_db.cc:721 src/database.cc:1314
 #, c-format
 msgid "loading certs"
 msgstr "laddar cert"
@@ -4283,17 +4281,17 @@ msgid ""
 "multiple branch certs found for revision %s, please provide a branch name"
 msgstr "flera grencert funna för revision %s, var god ange en gren"
 
-#: src/database.cc:585
+#: src/database.cc:586
 #, c-format
 msgid "initializing new database '%s'"
 msgstr "initierar ny databas '%s'"
 
-#: src/database.cc:594
+#: src/database.cc:595
 #, c-format
 msgid "this database already contains rosters"
 msgstr "den här databasen har redan listor"
 
-#: src/database.cc:616
+#: src/database.cc:617
 #, c-format
 msgid ""
 "database %s contains old-style revisions\n"
@@ -4312,7 +4310,7 @@ msgstr ""
 "  sedan databasen på nytt.\n"
 "ursäkta besväret."
 
-#: src/database.cc:626
+#: src/database.cc:627
 #, c-format
 msgid ""
 "database %s contains manifests but no revisions\n"
@@ -4323,7 +4321,7 @@ msgstr ""
 "detta är en väldigt gammal databas; den behöver uppgraderas\n"
 "var god läs README.changesets för detaljer"
 
-#: src/database.cc:648
+#: src/database.cc:649
 #, c-format
 msgid ""
 "database %s lacks some cached data\n"
@@ -4332,25 +4330,25 @@ msgstr ""
 "databasen %s saknar cache-data\n"
 "kör '%s db regenerate_caches' för att göra databasen användbar igen"
 
-#: src/database.cc:951
+#: src/database.cc:952
 msgid "sqlite error: "
 msgstr "sqlite-fel: "
 
-#: src/database.cc:975
+#: src/database.cc:976
 msgid "not set"
 msgstr "ej tilldelat "
 
-#: src/database.cc:988
+#: src/database.cc:989
 msgid " (not a monotone database)"
 msgstr " (är inte en monotonedatabas)"
 
-#: src/database.cc:1038 src/database.cc:1070 src/database.cc:1770
-#: src/database.cc:1790
+#: src/database.cc:1039 src/database.cc:1071 src/database.cc:1771
+#: src/database.cc:1791
 #, c-format
 msgid "%u"
 msgstr "%u"
 
-#: src/database.cc:1089
+#: src/database.cc:1090
 #, c-format
 msgid ""
 "creator code      : %s\n"
@@ -4407,12 +4405,12 @@ msgstr ""
 "  sidstorlek          : %s\n"
 "  cachestorlek        : %s"
 
-#: src/database.cc:1155
+#: src/database.cc:1156
 #, c-format
 msgid "invalid date '%s' for revision %s; skipped"
 msgstr "ogiltigt datum '%s' på revisionen %s; hoppar över"
 
-#: src/database.cc:1237
+#: src/database.cc:1238
 #, c-format
 msgid ""
 "timestamp correctness between revisions:\n"
@@ -4459,84 +4457,84 @@ msgstr ""
 "  95e percentilen  : %s sec\n"
 "  99e percentilen  : %s sec\n"
 
-#: src/database.cc:1288
+#: src/database.cc:1289
 #, c-format
 msgid "database schema version: %s"
 msgstr "databasens schemaversion: %s"
 
-#: src/database.cc:1322
+#: src/database.cc:1323
 #, c-format
 msgid "checking"
 msgstr "kollar"
 
-#: src/database.cc:1324
+#: src/database.cc:1325
 msgid "checked"
 msgstr "kollat"
 
-#: src/database.cc:1326
+#: src/database.cc:1327
 msgid "fixed"
 msgstr "fixat"
 
-#: src/database.cc:1329
+#: src/database.cc:1330
 msgid "dropped"
 msgstr "slängt"
 
-#: src/database.cc:1384
+#: src/database.cc:1385
 #, c-format
 msgid "checked %d certs, found %d bad, fixed %d, dropped %d"
 msgstr "kollade %d cert, hittade %d dåliga, fixade %d, kastade %d"
 
-#: src/database.cc:1389
+#: src/database.cc:1390
 #, c-format
 msgid "checked %d certs, found %d bad, fixed %d"
 msgstr "kollade %d cert, hittade %d dåliga, fixade %d"
 
-#: src/database.cc:1452
+#: src/database.cc:1453
 #, c-format
 msgid "multiple statements in query: %s"
 msgstr "multipla kommandon i databasfråga: %s"
 
-#: src/database.cc:1458
+#: src/database.cc:1459
 #, c-format
 msgid "wanted %d columns got %d in query: %s"
 msgstr "ville ha %d kolumner, fick %d i databasfråga: %s"
 
-#: src/database.cc:1537
+#: src/database.cc:1538
 #, c-format
 msgid "null result in query: %s"
 msgstr "inget resultat med databasfråga: %s"
 
-#: src/database.cc:1563
+#: src/database.cc:1564
 #, c-format
 msgid "wanted %d rows got %d in query: %s"
 msgstr "ville ha %d rader, fick %d i databasfråga: %s"
 
-#: src/database.cc:1897
+#: src/database.cc:1898
 #, c-format
 msgid "roster does not match hash"
 msgstr "'roster' stämmer inte med checksumman"
 
-#: src/database.cc:1918
+#: src/database.cc:1919
 #, c-format
 msgid "roster_delta does not match hash"
 msgstr "'roster_delta' stämmer inte med checksumman"
 
-#: src/database.cc:2103
+#: src/database.cc:2104
 #, c-format
 msgid "delta-reconstructed '%s' item does not match hash"
 msgstr "delta-återskapat element '%s' stämmer inte med checksumman"
 
-#: src/database.cc:2511
+#: src/database.cc:2512
 #, c-format
 msgid "file preimage '%s' missing in db"
 msgstr "\"preimage\" för filen '%s' saknas i databasen"
 
-#: src/database.cc:2512
+#: src/database.cc:2513
 #, c-format
 msgid "dropping delta '%s' -> '%s'"
 msgstr "slänger deltat '%s' -> '%s'"
 
-#: src/database.cc:2528
+#: src/database.cc:2529
 #, c-format
 msgid ""
 "Unknown delta direction '%s'; assuming 'reverse'. Valid values are "
@@ -4545,63 +4543,63 @@ msgstr ""
 "Okänd riktning '%s' för deltan; 'reverse' antas. Giltiga värden är "
 "'reverse', 'forward', 'both'."
 
-#: src/database.cc:2861
+#: src/database.cc:2862
 #, c-format
 msgid "revision does not match hash"
 msgstr "revisionen stämmer inte med identiteten"
 
-#: src/database.cc:2993
+#: src/database.cc:2994
 #, c-format
 msgid "missing prerequisite revision '%s'"
 msgstr "saknar nödvändig revision '%s'"
 
-#: src/database.cc:2995 src/database.cc:3006 src/database.cc:3022
-#: src/database.cc:3030
+#: src/database.cc:2996 src/database.cc:3007 src/database.cc:3023
+#: src/database.cc:3031
 #, c-format
 msgid "dropping revision '%s'"
 msgstr "slänger revisionen '%s'"
 
-#: src/database.cc:3005
+#: src/database.cc:3006
 #, c-format
 msgid "missing prerequisite file '%s'"
 msgstr "saknar nödvändig fil '%s'"
 
-#: src/database.cc:3020
+#: src/database.cc:3021
 #, c-format
 msgid "missing prerequisite file pre-delta '%s'"
 msgstr "saknar nödvändigt predelta till fil '%s'"
 
-#: src/database.cc:3028
+#: src/database.cc:3029
 #, c-format
 msgid "missing prerequisite file post-delta '%s'"
 msgstr "saknar nödvändigt postdelta till fil '%s'"
 
-#: src/database.cc:3161
+#: src/database.cc:3162
 #, c-format
 msgid "revision contains incorrect manifest_id"
 msgstr "revisionen innehåller inkorrekt manifest_id"
 
-#: src/database.cc:3487
+#: src/database.cc:3488
 #, c-format
 msgid "Failed to get RSA verifying key for %s"
 msgstr "Misslyckades med att finna signerande RSA-nyckel för %s"
 
-#: src/database.cc:3626
+#: src/database.cc:3627
 #, c-format
 msgid "Your database contains multiple keys named %s"
 msgstr "Din databas innehåller flera nycklar som heter %s"
 
-#: src/database.cc:3787
+#: src/database.cc:3788
 #, c-format
 msgid "cert revision '%s' does not exist in db"
 msgstr "certrevision '%s' finns inte i databasen"
 
-#: src/database.cc:3789
+#: src/database.cc:3790
 #, c-format
 msgid "dropping cert"
 msgstr "slänger cert"
 
-#: src/database.cc:3799
+#: src/database.cc:3800
 #, c-format
 msgid ""
 "The branch name\n"
@@ -4624,32 +4622,32 @@ msgstr ""
 "kommandot '%s local kill_certs för att ta bort detta särskilda\n"
 "gren-certifikat och lägga till en giltig."
 
-#: src/database.cc:4116
+#: src/database.cc:4117
 #, c-format
 msgid "ignoring bad signature by '%s' on '%s'"
 msgstr "ignorerar felaktig signatur på '%2$s', av '%1$s'"
 
-#: src/database.cc:4121
+#: src/database.cc:4122
 #, c-format
 msgid "ignoring unknown signature by '%s' on '%s'"
 msgstr "ignorerar okänd signatur på '%2$s', av '%1$s'"
 
-#: src/database.cc:4123
+#: src/database.cc:4124
 #, c-format
 msgid "trust function disliked %d signers of %s cert on revision %s"
 msgstr "tillitsfunktionen ogillar %d signerare av certet %s i revisionen %s"
 
-#: src/database.cc:4805 src/database.cc:4947
+#: src/database.cc:4812 src/database.cc:4954
 #, c-format
 msgid "no database specified"
 msgstr "ingen databas angiven"
 
-#: src/database.cc:4818
+#: src/database.cc:4825
 #, c-format
 msgid "database %s does not exist"
 msgstr "databasen %s finns inte"
 
-#: src/database.cc:4826
+#: src/database.cc:4833
 #, c-format
 msgid ""
 "%s is a workspace, not a database\n"
@@ -4658,17 +4656,17 @@ msgstr ""
 "%s är en katalog, inte en databas\n"
 "(menade du %s?)"
 
-#: src/database.cc:4830
+#: src/database.cc:4837
 #, c-format
 msgid "%s is a directory, not a database"
 msgstr "%s är en katalog, inte en databas"
 
-#: src/database.cc:4838
+#: src/database.cc:4845
 #, c-format
 msgid "database %s already exists"
 msgstr "databasen %s finns redan"
 
-#: src/database.cc:4843
+#: src/database.cc:4850
 #, c-format
 msgid ""
 "existing (possibly stale) journal file '%s' has same stem as new database "
@@ -4679,32 +4677,32 @@ msgstr ""
 "databasen '%s'\n"
 "avbryter skapandet av databasen"
 
-#: src/database.cc:5005
+#: src/database.cc:5012
 #, c-format
 msgid "the database alias '%s' has multiple ambiguous expansions:"
 msgstr "databasaliaset '%s' har flera motsägelsefulla uttydningar:"
 
-#: src/database.cc:5028
+#: src/database.cc:5035
 #, c-format
 msgid "could not query default database alias"
 msgstr "kunde inte fråga efter databasens standardalias"
 
-#: src/database.cc:5030
+#: src/database.cc:5037
 #, c-format
 msgid "using default database '%s'"
 msgstr "använder standarddatabasen '%s'"
 
-#: src/database.cc:5040
+#: src/database.cc:5047
 #, c-format
 msgid "invalid database alias '%s': does not start with a colon"
 msgstr "ogiltigt databasalias '%s': startar inte med ett kolon"
 
-#: src/database.cc:5044
+#: src/database.cc:5051
 #, c-format
 msgid "invalid database alias '%s': must not be empty"
 msgstr "ogiltigt databasalias '%s': får inte vara tomt"
 
-#: src/database.cc:5060
+#: src/database.cc:5067
 #, c-format
 msgid "invalid database alias '%s': does contain invalid characters"
 msgstr "ogiltigt databasalias '%s': innehåller ogiltiga tecken"
@@ -7741,7 +7739,7 @@ msgstr "valet '%s' har mer än en möjlig betydelse:"
 msgid "negation of --%s"
 msgstr "negation av --%s"
 
-#: src/option.cc:508 src/option.cc:552
+#: src/option.cc:512 src/option.cc:556
 #, c-format
 msgid "deprecated option '%s' used: %s"
 msgstr "föråldrad flagga '%s' använd: %s"
