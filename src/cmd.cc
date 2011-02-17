@@ -715,7 +715,7 @@ static string
 man_title(string const & title)
 {
   return ".TH \"" + title + "\" 1 "+
-         "\"" + date_t::now().as_formatted_localtime("%Y-%m-%d") + "\" " +
+         "\"" + BUILD_DATE + "\" " +
          "\"" + PACKAGE_STRING + "\"\n";
 }
 
@@ -925,11 +925,11 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
           "interface for scripting purposes and thorough documentation.")
      << "\n\n";
   ss << (F("For more information on monotone, visit %s.")
-          % man_bold("http://www.monotone.ca")).str()
+          % man_bold(PACKAGE_URL)).str()
      << "\n\n";
   ss << (F("The complete documentation, including a tutorial for a quick start "
            "with the system, can be found online on %s.")
-          % man_bold("http://www.monotone.ca/docs")).str() << "\n";
+          % man_bold(PACKAGE_URL "/docs")).str() << "\n";
 
   ss << man_section(_("Global Options"));
   ss << get_options_string(options::opts::globals(), app.opts, 25) << "\n";
@@ -939,25 +939,25 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
 
   ss << man_section(_("See Also"));
   ss << (F("info %s and the documentation on %s")
-          % prog_name % man_bold("http://www.monotone.ca/docs")).str() << "\n";
+          % prog_name % man_bold(PACKAGE_URL "/docs")).str() << "\n";
 
-  ss << man_section("Bugs");
+  ss << man_section(_("Bugs"));
   ss << (F("Please report bugs to %s.")
-          % man_bold("https://code.monotone.ca/p/monotone/issues")).str()<< "\n";
+          % man_bold(PACKAGE_BUGREPORT)).str()<< "\n";
 
-  ss << man_section("Authors");
+  ss << man_section(_("Authors"));
   ss << _("monotone was written originally by Graydon Hoare "
-          "<graydon@pobox.com> in 2004 and has since then received "
+          "<graydon@pobox.com> in 2003 and has since then received "
           "numerous contributions from many individuals. "
           "A complete list of authors can be found in AUTHORS.")
      << "\n\n";
   ss << _("Nowadays, monotone is maintained by a collective of enthusiastic "
           "programmers, known as the monotone development team.") << "\n";
 
-  ss << man_section("Copyright");
-  ss << (F("monotone and this man page is Copyright (c) 2004 \\- %s by "
+  ss << man_section(_("Copyright"));
+  ss << (F("monotone and this man page is Copyright (c) 2003 \\- %s by "
            "the monotone development team.")
-           % date_t::now().as_formatted_localtime("%Y")).str() << "\n";
+           % string(BUILD_DATE).substr(0, 4)).str() << "\n";
 
   if (!app.opts.formatted)
     {

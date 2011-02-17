@@ -62,8 +62,8 @@ bug_report_message()
                       "\nplease send this error message, the output of '");
   write_str_to_stderr(argv0);
   write_str_to_stderr(" version --full',"
-                      "\nand a description of what you were doing to "
-                      PACKAGE_BUGREPORT "\n");
+                      "\nand a description of what you were doing to <"
+                      PACKAGE_BUGREPORT ">\n");
 }
 
 static void

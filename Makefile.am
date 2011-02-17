@@ -447,11 +447,16 @@ POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
 
 po/$(PACKAGE).pot: $(POTFILES)
 	[ -d po ] || mkdir -p po
-	$(V_xgettext)$(XGETTEXT) -o$@ -D. -D$(top_srcdir) -cTRANSLATORS: \
+	$(V_xgettext)$(XGETTEXT) -o$@.in -D. -D$(top_srcdir) -cTRANSLATORS: \
 	  --copyright-holder='$(COPYRIGHT_HOLDER)' \
-	  --msgid-bugs-address='$(MSGID_BUGS_ADDRESS)' \
+	  --msgid-bugs-address='$(PACKAGE_BUGREPORT)' \
 	  $(XGETTEXT_PKG_OPTS) $(XGETTEXT_OPTS) \
 	  $(POTFILES)
+        YEAR=$(word 1, $(subst -, ,$(BUILD_DATE)))
+	sed -e 's/FIRST AUTHOR <EMAIL@ADDRESS>, YEAR./Please see po\/README.<lang> for individual copyrights./' \
+	  -e 's/(C) YEAR/(C) 2003 - $(YEAR)/' -e 's/PACKAGE/$(PACKAGE)/' \
+	  -e 's/SOME DESCRIPTIVE TITLE/monotone message string catalogue/' < $@.in > $@
+	rm $@.in
 
 dist-nls: $(ALL_GMOFILES)
 	cp $(ALL_GMOFILES) $(distdir)/po

@@ -10,7 +10,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT([monotone], [1.0dev], [monotone-devel@nongnu.org])
+AC_INIT([monotone], [1.0dev], [https://code.monotone.ca/p/monotone/issues/], ,
+	[http://www.monotone.ca])
 AM_INIT_AUTOMAKE([1.9 tar-ustar dist-bzip2 no-dist-gzip std-options])
 AC_CONFIG_SRCDIR([src/app_state.cc])
 AC_CONFIG_HEADERS([config.h])
@@ -40,6 +41,11 @@ AC_SUBST([MKDIR_P])
 # case statement if you can possibly avoid it.
 AC_CANONICAL_HOST
 AC_MSG_CHECKING([category of operating system])
+
+BUILD_DATE=`date '+%F'`
+AC_SUBST([BUILD_DATE])
+AC_DEFINE_UNQUOTED([BUILD_DATE], ["$BUILD_DATE"],
+	[The date of the build, used in the manual page and other places.])
 
 WIN32_PLATFORM=false
 os_err_t="int"
