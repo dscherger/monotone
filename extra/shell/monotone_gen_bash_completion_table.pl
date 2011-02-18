@@ -145,15 +145,15 @@ foreach my $key (sort keys %commands) {
 #    print STDERR "DEBUG: key = $key\n";
     print "_monotone_commands['$key']='"
 	,join(" ",sort keys %{$commands{$key}})
-	,"'\n" if defined %{$commands{$key}};
+	,"'\n" if %{$commands{$key}};
     print "_monotone_command_args['$key']='"
 	,join(" ",@{$command_args{$key}})
-	,"'\n" if defined $command_args{$key};
+	,"'\n" if $command_args{$key};
     print "_monotone_command_options['$key']='"
 	,join(" ",sort @{$command_options{$key}}),"'\n"
-	if defined @{$command_options{$key}};
+	if $command_options{$key};
     print "### Missing $key\n"
-	if (!defined %{$commands{$key}} &&
-	    !defined $command_args{$key} &&
-	    !defined @{$command_options{$key}});
+	if (!%{$commands{$key}} &&
+	    !$command_args{$key} &&
+	    !$command_options{$key});
 }
