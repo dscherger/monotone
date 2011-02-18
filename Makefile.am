@@ -355,6 +355,7 @@ EXTRA_DIST =								\
 	innosetup/monotone.bmp innosetup/dlls.sh			\
 									\
 	src/std_hooks.lua						\
+	test/common							\
 	test/func test/func-testsuite.lua				\
 	test/tester test/tester-testsuite.lua				\
 	$(wildcard $(srcdir)/test/unit/*.cc)				\

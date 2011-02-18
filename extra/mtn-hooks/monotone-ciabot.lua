@@ -20,7 +20,7 @@ do
 				  -- Configure with the path to the
 				  -- corresponding python script
 				  if not ciabot_python_script then
-				     print "Please configure by defining 'ciabot_python_script' with the path to the python script ciabot_monotone_hookversion.py"
+				     print "Please configure by defining 'ciabot_python_script' with the path to the python script monotone_ciabot.py"
 				     return "continue",nil
 				  end
 				  

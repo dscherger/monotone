@@ -20,7 +20,9 @@
 #      configuration directory (whatever is returned by get_confdir()).
 #      That configuration file follows basic-io syntax, the comments in
 #      the config class is the best documentation for now.
-#   -- include ciabot_monotone_hookversion.lua in the server's monotonerc
+#   -- include monotone-ciabot.lua in the server's monotonerc
+#   -- add a variable 'ciabot_python_script in the server's monotonerc,
+#      that points to this script.
 
 import sys
 import re
@@ -207,7 +209,7 @@ def send_change_for(rid, branch, author, log, rev, c):
     message_tmpl = """<message>
     <generator>
         <name>Monotone CIA Bot client python script</name>
-        <version>0.9</version>
+        <version>1.0</version>
     </generator>
     <source>
         <project>%(project)s</project>
