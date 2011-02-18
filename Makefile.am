@@ -377,14 +377,15 @@ EXTRA_DIST =								\
 # po/ directory.
 
 include $(srcdir)/po/Makevars
-ALL_POFILES := $(wildcard $(srcdir)/po/*.po)
-ALL_LINGUAS := $(basename $(notdir $(ALL_POFILES)))
-ALL_GMOFILES := $(addprefix po/,$(addsuffix .gmo, $(ALL_LINGUAS)))
+ALL_POFILES   := $(wildcard $(srcdir)/po/*.po)
+ALL_LINGUAS   := $(basename $(notdir $(ALL_POFILES)))
+ALL_POREADMES := $(addprefix po/README.,$(ALL_LINGUAS))
+ALL_GMOFILES  := $(addprefix po/,$(addsuffix .gmo, $(ALL_LINGUAS)))
 CLEAN_POFILES := $(ALL_GMOFILES) \
 		 $(addprefix po/,$(addsuffix .merged.po, $(ALL_LINGUAS))) \
 		 po/$(PACKAGE).pot
 
-EXTRA_DIST += $(ALL_POFILES) po/LINGUAS po/README
+EXTRA_DIST += $(ALL_POFILES) $(ALL_POREADMES) po/LINGUAS po/README
 
 .PHONY: all-nls install-nls uninstall-nls
 if USE_NLS

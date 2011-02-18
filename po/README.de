@@ -1,0 +1,30 @@
+German translation of monotone - de.po
+
+The translation de.po is distributed under the same license as
+the monotone package.
+
+Thomas Keller <me@thomaskeller.biz>, 2006 - 2011
+
+Wieder zu verwendende Übersetzungen:
+------------------------------------
+
+branch         -> Zweig
+tag            -> Marke
+public         -> öffentlich
+private        -> geheim
+keystore       -> Schlüsselbund
+cert           -> Zertifikat
+workspace      -> Arbeitsbereich
+roster         -> Katalog
+manifest       -> Manifest
+revision       -> Revision
+changeset      -> Änderungsmenge (Alternativen?)
+height         -> Höhenangabe
+restriction    -> (Pfad)Beschränkung
+(to) revert    -> etw. zurücksetzen / das Zurücksetzen
+(to) commit    -> etw. einpflegen / das Einpflegen
+(to) update    -> etw. aktualisieren / die Aktualisierung
+(to) merge     -> etw. vereinigen / die Vereinigung
+directory      -> Verzeichnis (NICHT "Ordner")
+argument       -> Parameter
+option         -> Option
