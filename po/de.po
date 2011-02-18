@@ -407,6 +407,10 @@ msgid ""
 "please send this error message, the output of '%s version --full',\n"
 "and a description of what you were doing to <%s>."
 msgstr ""
+"Fataler Fehler: %s\n"
+"Dies ist ganz bestimmt ein Fehler in monotone.\n"
+"Bitte senden Sie diese Nachricht, die Ausgabe von '%s version --full',\n"
+"sowie eine Beschreibung Ihrer Tätigkeit an <%s>."
 
 #: src/ui.cc:671
 #, c-format
@@ -419,6 +423,13 @@ msgid ""
 "database you were using, so please preserve it in case it can\n"
 "help in finding the bug."
 msgstr ""
+"Fataler Fehler: %s\n"
+"Dies ist ganz bestimmt ein Fehler in monotone.\n"
+"Bitte senden Sie diese Nachricht, die Ausgabe von '%s version --full',\n"
+"sowie eine Beschreibung Ihrer Tätigkeit an <%s>.\n"
+"Dieser Fehler scheint durch etwas in der Datenbank ausgelöst worden\n"
+"zu sein, die Sie gerade benutzen. Bitte sichern Sie diese daher für\n"
+"den Fall, dass sie für das Finden des Fehlers nützlich wird."
 
 #: src/ui.cc:713
 msgid "error: memory exhausted"
@@ -692,7 +703,7 @@ msgstr "Name"
 
 #: src/cmd.cc:914
 msgid "monotone \\- a distributed version control system"
-msgstr ""
+msgstr "monotone \\- ein verteiltes Versionskontrollsystem"
 
 #: src/cmd.cc:915
 msgid "Synopsis"
@@ -753,7 +764,7 @@ msgstr "info %s und die Dokumentation unter %s"
 
 #: src/cmd.cc:944
 msgid "Bugs"
-msgstr ""
+msgstr "Fehler"
 
 #: src/cmd.cc:945
 #, c-format
@@ -762,7 +773,7 @@ msgstr "Bitte melden Sie Fehler an %s."
 
 #: src/cmd.cc:948
 msgid "Authors"
-msgstr ""
+msgstr "Autoren"
 
 #: src/cmd.cc:949
 msgid ""
@@ -770,6 +781,10 @@ msgid ""
 "and has since then received numerous contributions from many individuals. A "
 "complete list of authors can be found in AUTHORS."
 msgstr ""
+"monotone wurde ursprünglich von Graydon Hoare <graydon@pobox.com> im Jahr "
+"2003 geschrieben und hat seitdem eine Vielzahl von Beiträgen von vielen "
+"verschiedenen Individuen erhalten. Eine komplette Liste der Autoren kann in "
+"AUTHORS eingesehen werden."
 
 #: src/cmd.cc:954
 msgid ""
@@ -781,7 +796,7 @@ msgstr ""
 
 #: src/cmd.cc:957
 msgid "Copyright"
-msgstr ""
+msgstr "Copyright"
 
 #: src/cmd.cc:958
 #, c-format
@@ -789,6 +804,8 @@ msgid ""
 "monotone and this man page is Copyright (c) 2003 \\- %s by the monotone "
 "development team."
 msgstr ""
+"monotone und diese Handbuchseite sind urheberrechtlich geschützt (C) 2003 \\- %"
+"s durch das monotone Entwicklerteam."
 
 #: src/cmd.cc:970
 #, c-format
@@ -870,7 +887,8 @@ msgstr "erhielt entfernten Fehlercode %d"
 #: src/cmd_netsync.cc:293
 #, c-format
 msgid "would receive %d revisions, %d certs, and at least %d keys\n"
-msgstr "würde %d Revisionen, %d Zertifikate und mindestens %d Schlüssel erhalten\n"
+msgstr ""
+"würde %d Revisionen, %d Zertifikate und mindestens %d Schlüssel erhalten\n"
 
 #: src/cmd_netsync.cc:300
 #, c-format
@@ -2437,6 +2455,7 @@ msgstr "[PFAD]..."
 msgid "Shows current differences"
 msgstr "Zeigt die derzeitigen Unterschiede"
 
+#
 #: src/cmd_diff_log.cc:418
 msgid ""
 "Compares the current tree with the files in the repository and prints the "
@@ -2500,6 +2519,7 @@ msgstr "[PFAD] ..."
 msgid "Prints selected history in forward or reverse order"
 msgstr "Gibt die ausgewählte Historie vorwärts oder rückwärts aus"
 
+#
 #: src/cmd_diff_log.cc:979
 msgid ""
 "This command prints selected history in forward or reverse order, filtering "
@@ -4657,12 +4677,12 @@ msgstr "Datenbank %s existiert bereits"
 #: src/database.cc:4850
 #, c-format
 msgid ""
-"existing (possibly stale) journal file '%s' has same stem as new database "
-"'%s'\n"
+"existing (possibly stale) journal file '%s' has same stem as new database '%"
+"s'\n"
 "cancelling database creation"
 msgstr ""
-"Existierende Journal-Datei '%s' hat denselben Stamm wie die neue Datenbank "
-"'%s'\n"
+"Existierende Journal-Datei '%s' hat denselben Stamm wie die neue Datenbank '%"
+"s'\n"
 "Datenbankerstellung abgebrochen"
 
 #: src/database.cc:5012
@@ -4889,8 +4909,8 @@ msgstr ""
 #: src/ssh_agent.cc:376
 #, c-format
 msgid ""
-"ssh_agent: get_keys: not all or too many packet bytes consumed, location "
-"(%u), length (%i)"
+"ssh_agent: get_keys: not all or too many packet bytes consumed, location (%"
+"u), length (%i)"
 msgstr ""
 "ssh_agent: get_keys: nicht alle oder zu viele Paket-Bytes verarbeitet, "
 "location (%u), length (%i)"
@@ -4914,8 +4934,8 @@ msgstr ""
 #: src/ssh_agent.cc:472
 #, c-format
 msgid ""
-"ssh_agent: sign_data: not all or too many packet bytes consumed, location "
-"(%u), length (%i)"
+"ssh_agent: sign_data: not all or too many packet bytes consumed, location (%"
+"u), length (%i)"
 msgstr ""
 "ssh_agent: sign_data: nicht alle oder zu viele Paket-Bytes verarbeitet, "
 "location (%u), length (%i)"
@@ -5036,8 +5056,8 @@ msgstr ""
 #, c-format
 msgid "malformed key_packet: invalid private key data for '%s': %s"
 msgstr ""
-"falsch gebildetes Schlüssel-Paket: ungültige private Schlüsseldaten für "
-"'%s': %s"
+"falsch gebildetes Schlüssel-Paket: ungültige private Schlüsseldaten für '%"
+"s': %s"
 
 #: src/key_packet.cc:149
 #, c-format
@@ -5896,8 +5916,8 @@ msgid ""
 "code %d)\n"
 "%s"
 msgstr ""
-"Protokoll-Version stimmt nicht überein: benötige Version zwischen '%d' und "
-"'%d', bekam '%d' (netcmd code %d)\n"
+"Protokoll-Version stimmt nicht überein: benötige Version zwischen '%d' und '%"
+"d', bekam '%d' (netcmd code %d)\n"
 "%s"
 
 #: src/netcmd.cc:146
@@ -6060,8 +6080,8 @@ msgstr "konnte Revision nicht analysieren"
 #, c-format
 msgid "restriction includes deletion of '%s' but excludes deletion of '%s'"
 msgstr ""
-"Die Beschränkung schließt das Löschen von '%s' ein, jedoch das Löschen von "
-"'%s' aus."
+"Die Beschränkung schließt das Löschen von '%s' ein, jedoch das Löschen von '%"
+"s' aus."
 
 #: src/roster.cc:2488
 #, c-format
@@ -6721,8 +6741,8 @@ msgid ""
 "check complete: %d files; %d rosters; %d revisions; %d keys; %d certs; %d "
 "heights; %d branches"
 msgstr ""
-"Überprüfung beendet: %d Dateien; %d Kataloge; %d Revisionen; %d Schlüssel; "
-"%d Zertifikate; %d Höhenangaben; %d Zweige"
+"Überprüfung beendet: %d Dateien; %d Kataloge; %d Revisionen; %d Schlüssel; %"
+"d Zertifikate; %d Höhenangaben; %d Zweige"
 
 #: src/database_check.cc:1206
 #, c-format
@@ -6848,8 +6868,8 @@ msgstr "Selektor '%s' ist ungültig, er endet mit dem Escapezeichen '\\'"
 #, c-format
 msgid "selector '%s' is invalid, it contains an unknown escape sequence '%s%s'"
 msgstr ""
-"Selektor '%s' ist ungültig, er beinhaltet eine unbekannte Escapesequenz '%s"
-"%s'"
+"Selektor '%s' ist ungültig, er beinhaltet eine unbekannte Escapesequenz '%s%"
+"s'"
 
 #: src/selectors.cc:770
 #, c-format
