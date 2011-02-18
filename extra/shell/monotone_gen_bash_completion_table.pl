@@ -28,6 +28,8 @@ while (<MANPAGE>) {
     chomp;
     next if ! m|^\.IP\s|;
 
+    # Because the manpage has a lot of dashes escaped, let's unescape them.
+    s/\\-/-/g;
 
     if (m|^\.IP "(--[^"]*)"|) {
 	my $opts = $1;
