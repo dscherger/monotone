@@ -12,15 +12,6 @@
 AUTOMAKE_OPTIONS = subdir-objects -Wno-portability
 ACLOCAL_AMFLAGS  = -I m4
 
-htmldir = $(docdir)/html
-html_DATA = texinfo.css
-
-htmlfiguredir = $(htmldir)/figures
-htmlfigure_DATA = $(PNG_FIGURES)
-
-htmlimagedir = $(htmldir)/images
-htmlimage_DATA = $(PNG_IMAGES)
-
 CHECK_SRCDIR_EQ_BUILDDIR=[ "`cd \"$(srcdir)\"; pwd`" = "`pwd`" ]
 
 PDF_FIGURES= figures/branch-heads.pdf figures/cert.pdf			\
@@ -57,8 +48,8 @@ info_TEXINFOS = monotone.texi
 monotone_TEXINFOS = $(top_srcdir)/src/std_hooks.lua $(TEXI_FRAGMENTS)
 
 EXTRA_DIST = \
-	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
-	figures/monotone-logo.svg figures/oo-figures.sxd	\
+	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)	$(HTML_EXTRA)	\
+	figures/monotone-logo.svg figures/oo-figures.sxd		\
 	figures/pdfcrop.pl figures/README
 
 AM_MAKEINFOFLAGS= -I $(top_srcdir)/src -I $(srcdir)
@@ -96,7 +87,7 @@ AM_MAKEINFODOCHTMLFLAGS= -I $(top_srcdir)/src -I $(srcdir) \
 
 # Because automake already generates a html target that produces a single file
 # HTML, we have to use a different target to make a multifile HTML.
-htmldir: monotone.texi $(srcdir)/version.texi $(monotone_TEXINFOS) $(PNG_FIGURES) $(PNG_IMAGES) $(HTML_EXTRA)
+html-multifile: monotone.texi $(srcdir)/version.texi $(monotone_TEXINFOS) $(PNG_FIGURES) $(PNG_IMAGES) $(HTML_EXTRA)
 	$(MKDIR_P) html.htp && \
 	  cp $(addprefix $(srcdir)/,$(HTML_EXTRA)) html.htp
 	$(MKDIR_P) html.htp/figures && \
@@ -115,7 +106,22 @@ html/$(am__dirstamp):
 	@$(MKDIR_P) html
 	@touch $@
 # Then let's have the html target produce the multifile HTML as well.
-html-local: htmldir
+html-local: html-multifile
+
+htmldir = $(docdir)/html
+
+install-html-local: install-html-support install-html-multifile
+install-html-support: $(PNG_FIGURES) $(PNG_IMAGES) $(HTML_EXTRA)
+	test -n "$(htmldir)"
+	$(MKDIR_P) "$(DESTDIR)$(htmldir)"
+	$(INSTALL_DATA) $(HTML_EXTRA) $(DESTDIR)$(htmldir)
+	$(MKDIR_P) "$(DESTDIR)$(htmldir)/figures"
+	$(INSTALL_DATA) $(PNG_FIGURES) $(DESTDIR)$(htmldir)/figures
+	$(MKDIR_P) "$(DESTDIR)$(htmldir)/images"
+	$(INSTALL_DATA) $(PNG_IMAGES) $(DESTDIR)$(htmldir)/images
+install-html-multifile: html-multifile
+	test -n "$(htmldir)"
+	$(INSTALL_DATA) html/*.html $(DESTDIR)$(htmldir)
 
 # Because we don't want to have the different document targets depend on
 # irrelevant files, we have these dependencies lists.
