@@ -2,20 +2,22 @@
 # Copyright (C) 2003 - 2011 The monotone development team <http://www.monotone.ca>
 # This file is distributed under the same license as the monotone package.
 # Please see po/README.<lang> for individual copyrights.
-# 
+#
+# Américo Monteiro <a_monteiro@netcabo.pt>, 2011.
 msgid ""
 msgstr ""
 "Project-Id-Version: monotone\n"
 "Report-Msgid-Bugs-To: https://code.monotone.ca/p/monotone/issues/\n"
 "POT-Creation-Date: 2011-02-18 01:10+0100\n"
-"PO-Revision-Date: 2011-02-18 00:18+0000\n"
-"Last-Translator: tommyd <me@thomaskeller.biz>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2011-02-18 01:36+0000\n"
+"Last-Translator: Américo Monteiro <a_monteiro@netcabo.pt>\n"
+"Language-Team: Portuguese <traduz@debianpt.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Language: pt\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"X-Generator: Lokalize 1.0\n"
 
 #: src/sanity.cc:252
 #, c-format
@@ -405,6 +407,10 @@ msgid ""
 "please send this error message, the output of '%s version --full',\n"
 "and a description of what you were doing to <%s>."
 msgstr ""
+"fatal: %s\n"
+"isto é certamente um bug no monotone.\n"
+"por favor envie esta mensagem de erro, o resultado de '%s version --full',\n"
+"e uma descrição do que você estava a fazer para <%s>."
 
 #: src/ui.cc:671
 #, c-format
@@ -417,6 +423,13 @@ msgid ""
 "database you were using, so please preserve it in case it can\n"
 "help in finding the bug."
 msgstr ""
+"fatal: %s\n"
+"isto é certamente um bug no monotone.\n"
+"por favor envie esta mensagem de erro, o resultado de '%s version --full',\n"
+"e uma descrição do que você estava a fazer para <%s>. "
+"Este erro parece ter sido provocado por algo na base de dados que você\n"
+"está a usar, portanto por favor preserve-a no caso de ela poder ajudar\n"
+"a descobrir o bug."
 
 #: src/ui.cc:713
 msgid "error: memory exhausted"
@@ -689,7 +702,7 @@ msgstr "Nome"
 
 #: src/cmd.cc:914
 msgid "monotone \\- a distributed version control system"
-msgstr ""
+msgstr "monotone \\- um sistema de controle de versão distribuído"
 
 #: src/cmd.cc:915
 msgid "Synopsis"
@@ -751,7 +764,7 @@ msgstr "info %s e a documentação em %s"
 
 #: src/cmd.cc:944
 msgid "Bugs"
-msgstr ""
+msgstr "Bugs"
 
 #: src/cmd.cc:945
 #, c-format
@@ -760,7 +773,7 @@ msgstr "Por favor reporte bugs para %s."
 
 #: src/cmd.cc:948
 msgid "Authors"
-msgstr ""
+msgstr "Autores"
 
 #: src/cmd.cc:949
 msgid ""
@@ -768,6 +781,9 @@ msgid ""
 " 2003 and has since then received numerous contributions from many "
 "individuals. A complete list of authors can be found in AUTHORS."
 msgstr ""
+"O monotone foi escrito originalmente por Graydon Hoare <graydon@pobox.com> "
+"em 2003 e desde isso tem recebido numerosas contribuições de muitos "
+"indivíduos. Uma lista completa dos autores pode ser encontrada em AUTORES."
 
 #: src/cmd.cc:954
 msgid ""
@@ -780,7 +796,7 @@ msgstr ""
 
 #: src/cmd.cc:957
 msgid "Copyright"
-msgstr ""
+msgstr "Copyright"
 
 #: src/cmd.cc:958
 #, c-format
@@ -788,6 +804,8 @@ msgid ""
 "monotone and this man page is Copyright (c) 2003 \\- %s by the monotone "
 "development team."
 msgstr ""
+"o monotone e o seu manual tem Copyright (c) 2003 \\- %s pela equipa de "
+"desenvolvimento do monotone."
 
 #: src/cmd.cc:970
 #, c-format
@@ -828,6 +846,9 @@ msgid ""
 "we can't verify the server key, because we have no record of\n"
 "what it should be."
 msgstr ""
+"Nenhuma base de dados fornecida; a assumir a base de dados '%s'. Isto\n"
+"significa que não podemos verificar a chave do servidor, porque não\n"
+"temos nenhum registo do que deverá ser."
 
 #: src/cmd_netsync.cc:212
 msgid "COMMAND [ARGS]"
@@ -1040,7 +1061,7 @@ msgstr ""
 
 #: src/cmd_list.cc:101
 msgid "Lists certificates attached to a revision"
-msgstr ""
+msgstr "Lista os certificados anexados a uma revisão"
 
 #: src/cmd_list.cc:129 src/cmd_list.cc:1050
 #, c-format
@@ -1149,16 +1170,16 @@ msgstr "<nenhum branch definido>"
 #: src/cmd_list.cc:659
 #, c-format
 msgid "%s (in %s)"
-msgstr ""
+msgstr "%s (em %s)"
 
 #: src/cmd_list.cc:663
 #, c-format
 msgid "no known valid workspaces"
-msgstr ""
+msgstr "nenhum espaço de trabalho válido conhecido"
 
 #: src/cmd_list.cc:667
 msgid "Lists known workspaces of a specified database"
-msgstr ""
+msgstr "Lista os espaços de trabalho conhecidos de uma base de dados especificada"
 
 #: src/cmd_list.cc:677
 msgid "Lists managed databases and their known workspaces"
@@ -1174,7 +1195,7 @@ msgstr "incapaz de questionar localizações da base de dados predefinida"
 #: src/cmd_list.cc:688 src/database.cc:5055
 #, c-format
 msgid "could not query default database glob"
-msgstr ""
+msgstr "incapaz de consultar o glob da base de dados predefinida"
 
 #: src/cmd_list.cc:735
 #, c-format
@@ -1184,7 +1205,7 @@ msgstr "a ignorar a base de dados '%s'"
 #: src/cmd_list.cc:739
 #, c-format
 msgid "%s (in %s):"
-msgstr ""
+msgstr "%s (em %s):"
 
 #: src/cmd_list.cc:746
 msgid "Lists workspace files that belong to the current branch"
@@ -1193,10 +1214,12 @@ msgstr "Lista ficheiros do espaço de trabalho que pertencem ao branch actual"
 #: src/cmd_list.cc:805
 msgid "Lists workspace files that are unknown in the current branch"
 msgstr ""
+"Lista os ficheiros do espaço de trabalho que são desconhecidos no branch "
+"actual"
 
 #: src/cmd_list.cc:817
 msgid "Lists workspace files that are ignored in the current branch"
-msgstr ""
+msgstr "Lista os ficheiros do espaço de trabalho que estão ignorados no branch actual"
 
 #: src/cmd_list.cc:829
 msgid "Lists files that belong to the branch but are not in the workspace"
@@ -1438,7 +1461,7 @@ msgstr "Coloca um certificado etiqueta simbólico numa revisão"
 
 #: src/cmd_key_cert.cc:376
 msgid "REV (pass|fail|true|false|yes|no|1|0)"
-msgstr ""
+msgstr "REV (pass|fail|true|false|yes|no|1|0)"
 
 #: src/cmd_key_cert.cc:377
 msgid "Notes the results of running a test on a revision"
@@ -1795,14 +1818,14 @@ msgstr "%s é um antepassado do %s, nenhuma fusão necessária."
 #: src/cmd_merging.cc:1042
 #, c-format
 msgid "0 conflicts"
-msgstr ""
+msgstr "0 conflitos"
 
 #: src/cmd_merging.cc:1077
 #, c-format
 msgid "%d conflict with supported resolutions."
 msgid_plural "%d conflicts with supported resolutions."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d conflito com resolução suportada."
+msgstr[1] "%d conflitos com resoluções suportadas."
 
 #: src/cmd_merging.cc:1082 src/cmd_conflicts.cc:160 src/cmd_conflicts.cc:173
 #, c-format
@@ -1876,7 +1899,7 @@ msgstr "ficheiro de conflitos tem que estar sob _MTN"
 #: src/cmd_merging.cc:1202
 #, c-format
 msgid "stored in '%s'"
-msgstr ""
+msgstr "armazenado em '%s'"
 
 #: src/cmd_merging.cc:1205
 msgid "LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME"
@@ -1897,7 +1920,7 @@ msgstr "fusão de linha interna falhada"
 
 #: src/cmd_merging.cc:1263
 msgid "[PATH...]"
-msgstr ""
+msgstr "[PATH...]"
 
 #: src/cmd_merging.cc:1264
 msgid "Applies changes made at arbitrary places in history"
@@ -2465,7 +2488,7 @@ msgstr ""
 
 #: src/cmd_diff_log.cc:992
 msgid "Lists the selected revision history"
-msgstr ""
+msgstr "Lista o histórico da revisão seleccionada"
 
 #: src/cmd_ws_commit.cc:179
 #, c-format
@@ -2615,7 +2638,7 @@ msgstr ""
 
 #: src/cmd_ws_commit.cc:547
 msgid "PATH..."
-msgstr ""
+msgstr "PATH..."
 
 #: src/cmd_ws_commit.cc:548
 msgid "Reverses a mistaken 'drop'"
@@ -3323,7 +3346,7 @@ msgstr "Carrega o conteúdo de um ficheiro para a base de dados"
 
 #: src/cmd_files.cc:58
 msgid "PARENT_FILEID LEFT_FILEID RIGHT_FILEID"
-msgstr ""
+msgstr "PARENT_FILEID LEFT_FILEID RIGHT_FILEID"
 
 #: src/cmd_files.cc:59
 msgid "Merges 3 files and outputs the result"
@@ -3557,7 +3580,7 @@ msgstr "todos os conflitos resolvidos"
 #: src/cmd_conflicts.cc:200
 #, c-format
 msgid "'%s' is not a supported conflict resolution for %s"
-msgstr ""
+msgstr "'%s' não é uma resolução de conflito suportada para %s"
 
 #: src/cmd_conflicts.cc:250 src/cmd_conflicts.cc:255
 #, c-format
@@ -3579,12 +3602,12 @@ msgstr "número de argumentos errado"
 #: src/cmd_conflicts.cc:401
 #, c-format
 msgid "interactive merge result saved in '%s'"
-msgstr ""
+msgstr "resultados da fusão interactiva guardados em '%s'"
 
 #: src/cmd_conflicts.cc:404
 #, c-format
 msgid "interactive merge failed."
-msgstr ""
+msgstr "fusão interactiva falhada."
 
 #: src/cmd_conflicts.cc:428
 #, c-format
@@ -3619,7 +3642,7 @@ msgstr "RESOLUTION"
 
 #: src/cmd_conflicts.cc:476
 msgid "Set the resolution for the first unresolved single-file conflict."
-msgstr ""
+msgstr "Define a resolução para o primeiro conflito de ficheiro único por resolver."
 
 #: src/cmd_conflicts.cc:490
 msgid "Set the left resolution for the first unresolved two-file conflict"
@@ -3756,6 +3779,8 @@ msgstr "Falhou ao escrever ficheiro de opções %s: %s"
 #, c-format
 msgid "could not unregister workspace from old database '%s'"
 msgstr ""
+"incapaz de remover o registo do espaço de trabalho da antiga base de dados "
+"'%s'"
 
 #: src/work.cc:733
 #, c-format
@@ -4598,7 +4623,7 @@ msgstr "incapaz de questionar o alias da base de dados predefinida"
 #: src/database.cc:5037
 #, c-format
 msgid "using default database '%s'"
-msgstr ""
+msgstr "a usar a base de dados predefinida '%s'"
 
 #: src/database.cc:5047
 #, c-format
@@ -5240,12 +5265,12 @@ msgstr "a ligar a %s"
 #: src/netsync.cc:113
 #, c-format
 msgid "  include pattern  %s"
-msgstr ""
+msgstr "  padrão de inclusão  %s"
 
 #: src/netsync.cc:114
 #, c-format
 msgid "  exclude pattern  %s"
-msgstr ""
+msgstr "  padrão de exclusão  %s"
 
 #: src/netsync.cc:163
 #, c-format
@@ -5333,7 +5358,7 @@ msgstr ""
 #: src/network/connection_info.cc:284
 #, c-format
 msgid "a non-empty hostname is expected for the 'mtn' uri scheme"
-msgstr ""
+msgstr "é esperado um nome de máquina não-vazio para o esquema de url 'mtn'"
 
 #: src/network/connection_info.cc:346
 #, c-format
@@ -7693,6 +7718,8 @@ msgid ""
 "automatically update the workspace, if it was at a head and the command"
 " creates a new head"
 msgstr ""
+"actualiza o espaço de trabalho automaticamente, se estava à cabeça e o "
+"comando cria uma nova cabeça"
 
 #: src/options_list.hh:225
 msgid "address:port to listen on (default :4691)"
@@ -8473,3 +8500,4 @@ msgstr "Carregue em enter"
 #: src/std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Carregue em enter quando o sub-processo estiver completo"
+
