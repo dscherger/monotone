@@ -1532,3 +1532,41 @@ function get_man_page_formatter_command()
    end
 end
 
+function get_output_color(purpose)
+	-- Returns a triple containing the fore color, background color and
+	-- style to use for formatting the output.
+	-- The fore color and background color can be any of the following
+	-- red, green, blue, yellow, cyan, magenta, black, white
+	-- Alternatively, they can be the empty string and Monotone will
+	-- decide.
+	-- Valid values for style are
+	-- none, bold, italic, underline
+	-- Alternatively, it can be the empty string and Monotone will
+	-- decide.
+
+	local default_color = { fg = "", bg = "", style = "" }
+	local color_table = 
+	{
+		normal = default_color,
+		
+                add = { fg = "green", bg = "", style = "" },
+                change = { fg = "blue", bg = "", style = "" },
+                comment = { fg = "yellow", bg = "", style = "" },
+                encloser = { fg = "magenta", bg = "", style = "" },
+                log_revision = { fg = "", bg = "", style = "bold" },
+                remove = { fg = "red", bg = "", style = "" },
+                rename = { fg = "yellow", bg = "", style = "" },
+                rev_header = { fg = "", bg = "", style = "bold" },
+                separator = { fg = "", bg = "", style = "bold" },
+                set = { fg = "cyan", bg = "", style = "" },
+                unset = { fg = "magenta", bg = "", style = "" }
+	}
+
+	local chosen_color = color_table[purpose]
+	
+	if chosen_color == nil then
+		return default_color
+	else
+		return chosen_color.fg, chosen_color.bg, chosen_color.style
+	end
+end
