@@ -183,10 +183,17 @@ cache_netsync_key(options const & opts,
           found_key = true;
         }
     }
-  else if (lua.hook_get_netsync_key(utf8(info->client.get_uri().resource(), origin::user),
-                                    info->client.get_include_pattern(),
-                                    info->client.get_exclude_pattern(),
-                                    keys, project, key))
+  else if (info->info_type == netsync_connection_info::client_info &&
+           lua.hook_get_netsync_client_key(utf8(info->client.get_uri().resource(), origin::user),
+                                           info->client.get_include_pattern(),
+                                           info->client.get_exclude_pattern(),
+                                           keys, project, key))
+    {
+      found_key = true;
+    }
+  else if (info->info_type == netsync_connection_info::server_info &&
+           lua.hook_get_netsync_server_key(info->server.addrs,
+                                           keys, project, key))
     {
       found_key = true;
     }

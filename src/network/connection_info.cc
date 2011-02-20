@@ -279,7 +279,7 @@ netsync_connection_info::Client::set_raw_uri(string const & raw_uri)
 
   if (uri.scheme.empty())
     uri.scheme = "mtn";
- 
+
   E(uri.scheme != "mtn" || !uri.host.empty(), origin::user,
     F("a non-empty hostname is expected for the 'mtn' uri scheme"));
 
@@ -400,6 +400,7 @@ netsync_connection_info::setup_default(options const & opts,
                                        shared_conn_info & info)
 {
   info.reset(new netsync_connection_info(db, opts));
+  info->info_type = client_info;
   info->client.conn_type = type;
 
   info->client.ensure_completeness();
@@ -414,6 +415,7 @@ netsync_connection_info::setup_from_sync_request(options const & opts,
                                                  shared_conn_info & info)
 {
   info.reset(new netsync_connection_info(db, opts));
+  info->info_type = client_info;
   info->client.conn_type = netsync_connection;
 
   info->client.set_raw_uri(request.address);
@@ -461,6 +463,7 @@ netsync_connection_info::setup_from_uri(options const & opts,
                                         shared_conn_info & info)
 {
   info.reset(new netsync_connection_info(db, opts));
+  info->info_type = client_info;
   info->client.conn_type = type;
 
   info->client.set_raw_uri(uri());
@@ -497,6 +500,7 @@ netsync_connection_info::setup_from_server_and_pattern(options const & opts,
       "please consider using the URI calling syntax instead"));
 
   info.reset(new netsync_connection_info(db, opts));
+  info->info_type = client_info;
   info->client.conn_type = type;
 
   info->client.set_raw_uri(host());
@@ -515,6 +519,7 @@ netsync_connection_info::setup_for_serve(options const & opts,
                                          shared_conn_info & info)
 {
   info.reset(new netsync_connection_info(db, opts));
+  info->info_type = server_info;
   info->server.addrs = opts.bind_uris;
   info->client.conn_type = netsync_connection;
 
@@ -523,16 +528,6 @@ netsync_connection_info::setup_for_serve(options const & opts,
       E(lua.hook_persist_phrase_ok(), origin::user,
         F("need permission to store persistent passphrase "
           "(see hook persist_phrase_ok())"));
-
-      // the uri as well as the include / exclude pattern are
-      // not used directly for serve, but need to be configured
-      // in order to let keys::cache_netsync_key() call the
-      // get_netsync_key() hook properly
-      if (!opts.bind_uris.empty())
-        info->client.set_raw_uri((*opts.bind_uris.begin())());
-
-      info->client.include_pattern = globish("*", origin::internal);
-      info->client.exclude_pattern = globish("", origin::internal);
     }
   else if (!opts.bind_stdio)
     W(F("The --no-transport-auth option is usually only used "

@@ -1,6 +1,10 @@
 
 includecommon("netsync.lua")
 mtn_setup()
+
+--
+-- test get_netsync_client_key
+--
 netsync.setup()
 
 writefile("foo", "bar")
@@ -21,6 +25,7 @@ function client(what, ret)
      "--keydir=keys",
      "--db=test.db", srv.address,
      "--rcfile=client-hooks.lua",
+     "--no-workspace",
      "*"}
   for k, v in pairs(args) do
      table.insert(what, v)
@@ -34,3 +39,33 @@ client({"sync"}, 0)
 client({"pull", "--key=badkey@test.net"}, 1)
 
 srv:stop()
+
+--
+-- test get_netsync_server_key
+--
+
+get("server-hooks.lua")
+-- we send a SIGTERM to the server process to stop it, so this is also
+-- what we expect as (negated) return value
+SIGTERM=15
+
+function server(what, ret, exp_err)
+  local addr = "localhost:" .. math.random(1024, 65535)
+  args = {"--rcfile=test_hooks.lua",
+     "--keydir=keys",
+     "--db=test.db", "--bind=" .. addr,
+     "--no-workspace",
+     "serve"}
+  for k, v in pairs(args) do
+     table.insert(what, v)
+  end
+  srv = bg(raw_mtn(unpack(what)), ret, false, true)
+  srv:finish(3)
+  if exp_err ~= nil then
+    check(qgrep(exp_err, "stderr"))
+  end
+end
+
+server({}, 1, "you have multiple private keys")
+server({"--rcfile", "server-hooks.lua"}, -SIGTERM, "beginning service on localhost")
+

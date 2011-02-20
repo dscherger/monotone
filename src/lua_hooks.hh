@@ -80,12 +80,16 @@ public:
                                      map<key_id, bool> const & new_results);
 
   // network hooks
-  bool hook_get_netsync_key(utf8 const & server_address,
-                            globish const & include,
-                            globish const & exclude,
-                            key_store & keys,
-                            project_t & project,
-                            key_id & k);
+  bool hook_get_netsync_client_key(utf8 const & server_address,
+                                   globish const & include,
+                                   globish const & exclude,
+                                   key_store & keys,
+                                   project_t & project,
+                                   key_id & k);
+  bool hook_get_netsync_server_key(vector<utf8> const & server_ports,
+                                   key_store & keys,
+                                   project_t & project,
+                                   key_id & k);
   bool hook_get_netsync_connect_command(uri_t const & uri,
                                         globish const & include_pattern,
                                         globish const & exclude_pattern,

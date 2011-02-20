@@ -102,6 +102,8 @@ void sort_rev_order (future_set<revision_id> & revs,
 
 struct netsync_connection_info
 {
+  enum { client_info, server_info } info_type;
+
   class Server
   {
   public:

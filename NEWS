@@ -29,6 +29,13 @@ XXX XXX XX XX:XX:XX UTC 2011
           messages from mtn automate, regardless of the locale of the
           calling process.
 
+        - The hook 'get_netsync_key' has been split up into two separate
+          hooks, one for client usage ('get_netsync_client_key', with
+          the same arguments as the original 'get_netsync_key') and one
+          for server usage ('get_netsync_server_key', with a single table
+          argument containing all the given '--bind' options).  Please
+          review your custom hooks accordingly.
+ 
         - Short options ('-b', '-d', ...) are no longer completed.  This
           fixes an invariant failure originating from wrong option usage.
           (closes monotone issue 141)
@@ -87,6 +94,19 @@ XXX XXX XX XX:XX:XX UTC 2011
           if no database is specified for these commands.
           (fixes monotone issue 113)
 
+        - If 'mtn serve' is called with one or more '--bind' options, then
+          the arguments to these options can now be specified again
+          as follows:
+
+            '<ip-or-host>' 
+                to listen to IP or host on the default port
+            '<ip-or-host>:<port>'
+                to listen to IP or host on the specified port  - or
+            ':<port>'
+                to listen on all interfaces on the specified port
+
+          (fixes monotone issue 119)
+          
         - monotone does no longer enforce ".mtn" as file extension
           for managed databases.  Instead a new Lua hook,
           get_default_database_glob(), is used to determine a pattern
