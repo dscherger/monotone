@@ -17,7 +17,7 @@ writefile("workspace/test2", "bar")
 check(indir("workspace", mtn("add", "test2")), 0, false, false)
 writefile("workspace/test3", "baz")
 
-check(indir("workspace", {"./run-mtn-cleanup",srcdir,test.root}),
+check(indir("workspace", {"../run-mtn-cleanup",srcdir,test.root}),
       0, true, false)
 check(exists("workspace/test1"))
 xfail(exists("workspace/test2"))
