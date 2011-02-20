@@ -16,7 +16,8 @@
 ^doc/stamp-vti$
 ^doc/texinfo\.tex$
 ^doc/version\.texi$
-^html
+^extra/building/dump-test-logs.sh$
+^extra/shell/monotone.bash_completion$
 ^install-sh$
 ^m4/codeset\.m4$
 ^m4/gettext\.m4$
@@ -55,7 +56,7 @@
 ^po/insert-header\.sin$
 ^po/monotone\.pot$
 ^po/quot\.sed$
-^run_(func|tester|unit)_tests$
+^run_(extra|func|tester|unit)_tests$
 ^src/package_(full_)?revision(\.cc|\.txt|_(dist|raw)\.txt)$
 ^src/schema\.cc$
 ^src/std_hooks\.cc$
