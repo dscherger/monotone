@@ -783,23 +783,58 @@ lua_hooks::hook_use_inodeprints()
 }
 
 bool
-lua_hooks::hook_get_netsync_key(utf8 const & server_address,
-                                globish const & include,
-                                globish const & exclude,
-                                key_store & keys,
-                                project_t & project,
-                                key_id & k)
+lua_hooks::hook_get_netsync_client_key(utf8 const & server_address,
+                                       globish const & include,
+                                       globish const & exclude,
+                                       key_store & keys,
+                                       project_t & project,
+                                       key_id & k)
 {
   string name;
   bool exec_ok
     = Lua(st)
-    .func("get_netsync_key")
+    .func("get_netsync_client_key")
     .push_str(server_address())
     .push_str(include())
     .push_str(exclude())
     .call(3, 1)
     .extract_str(name)
     .ok();
+
+  if (!exec_ok || name.empty())
+    return false;
+  else
+    {
+      key_identity_info identity;
+      project.get_key_identity(keys, *this, external_key_name(name, origin::user), identity);
+      k = identity.id;
+      return true;
+    }
+}
+
+bool
+lua_hooks::hook_get_netsync_server_key(vector<utf8> const & server_ports,
+                                       key_store & keys,
+                                       project_t & project,
+                                       key_id & k)
+{
+  string name;
+  Lua ll(st);
+  ll.func("get_netsync_server_key");
+
+  ll.push_table();
+  vector<utf8>::const_iterator i;
+  int j;
+  for (i = server_ports.begin(), j = 1; i != server_ports.end(); ++i, ++j)
+    {
+      ll.push_int(j);
+      ll.push_str((*i)());
+      ll.set_table();
+    }
+
+  bool exec_ok = ll.call(1, 1)
+                   .extract_str(name)
+                   .ok();
 
   if (!exec_ok || name.empty())
     return false;
