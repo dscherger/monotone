@@ -257,6 +257,11 @@ mtnhooks_DATA = \
 mtnscriptsdir = $(monotonedir)/scripts
 dist_mtnscripts_SCRIPTS = extra/mtn-hooks/monotone-mail-notify
 
+# Some of the smaller programs do not have --help or --version,
+# make them exempt of the check for those.  NOTE: use this sparingly!
+AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = \
+	extra/bin/mtn-cleanup extra/mtn-hooks/monotone-mail-notify
+
 # flags
 
 # sets DEFS for just this object (autoconf's -DHAVE_CONFIG_H is useless)
@@ -693,7 +698,8 @@ CLEAN_SRCS = src/std_hooks.cc unit/src/testlib.cc src/schema.cc \
 
 BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
-CLEANFILES = $(bin_SCRIPTS) $(bashcomp_DATA) $(BUILT_SOURCES) $(CLEAN_SRCS) $(CLEAN_POFILES)
+CLEANFILES = $(bin_SCRIPTS) $(noinst_SCRIPTS) $(bashcomp_DATA) \
+	$(BUILT_SOURCES) $(CLEAN_SRCS) $(CLEAN_POFILES)
 
 # automake provides no nice way to build a helper program to execute
 # on the build machine, so we need our own rule.  almost all the
