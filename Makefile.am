@@ -831,7 +831,7 @@ distcheck-base.hh:
                        $(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
                        src/win32/main.cc src/unix/main.cc)
 
-man1_MANS = mtn.1 extra/bin/mtn-cleanup.1
+man1_MANS = mtn.1 src/util/mtnopt.1 extra/bin/mtn-cleanup.1
 
 # All local variants of automake-supported targets here, depending on all
 # the things we want to do.  This is to support multiple things to do in
