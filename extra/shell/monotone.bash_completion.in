@@ -281,9 +281,10 @@ _monotone() {
 		elif [ $arg_cword -ge 0 ]; then
 		    local args=( ${_monotone_command_args[$cmd_line]} )
 		    local argtype=${args[$arg_cword]}
-		    if [ "$argtype" = "..." ]; then
+		    if [ $arg_cword -ge 1 ] && [ "$argtype" = "..." ]; then
 			argtype=${args[$arg_cword-1]}
-		    elif [ -z "$argtype" -a "${args[${#args[*]}-1]}" = "..." ]; then
+		    elif [ ${#args[*]} -ge 2 ] && \
+			[ -z "$argtype" -a "${args[${#args[*]}-1]}" = "..." ]; then
 			argtype=${args[${#args[*]}-2]}
 		    fi
 		    case $argtype in
