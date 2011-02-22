@@ -4974,7 +4974,7 @@ database_path_helper::get_database_path(options const & opts,
   vector<system_path> search_paths;
 
   E(lua.hook_get_default_database_locations(search_paths) && search_paths.size() > 0,
-    origin::user, F("could not query default database locations"));
+    origin::user, F("no default database location configured"));
 
   for (vector<system_path>::const_iterator i = search_paths.begin();
      i != search_paths.end(); ++i)
