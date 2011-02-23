@@ -394,9 +394,9 @@ ALL_POFILES   := $(wildcard $(srcdir)/po/*.po)
 ALL_LINGUAS   := $(basename $(notdir $(ALL_POFILES)))
 ALL_POREADMES := $(addprefix po/README.,$(ALL_LINGUAS))
 ALL_GMOFILES  := $(addprefix po/,$(addsuffix .gmo, $(ALL_LINGUAS)))
-CLEAN_POFILES := $(ALL_GMOFILES) \
-		 $(addprefix po/,$(addsuffix .merged.po, $(ALL_LINGUAS))) \
+CLEAN_POFILES := $(addprefix po/,$(addsuffix .merged.po, $(ALL_LINGUAS))) \
 		 po/$(PACKAGE).pot
+MAINTAINERCLEAN_POFILES := $(ALL_GMOFILES)
 
 EXTRA_DIST += $(ALL_POFILES) $(ALL_POREADMES) po/LINGUAS po/README
 
@@ -701,6 +701,12 @@ BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
 CLEANFILES = $(bin_SCRIPTS) $(noinst_SCRIPTS) $(bashcomp_DATA) \
 	$(BUILT_SOURCES) $(CLEAN_SRCS) $(CLEAN_POFILES)
+
+# We make GMO files part of the source distribution.  This means we can't
+# clean them away like other files, but a maintainer might still want to
+# get rid of them to rebuild them.
+
+MAINTAINERCLEANFILES = $(MAINTAINERCLEAN_POFILES)
 
 # automake provides no nice way to build a helper program to execute
 # on the build machine, so we need our own rule.  almost all the
