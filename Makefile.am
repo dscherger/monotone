@@ -252,15 +252,19 @@ mtnhooksdir = $(monotonedir)/hooks
 mtnhooks_DATA = \
 	extra/mtn-hooks/authorize_remote_automate.lua			\
 	extra/mtn-hooks/get_passphrase_from_file.lua			\
+	extra/mtn-hooks/monotone-ciabot.lua				\
 	extra/mtn-hooks/monotone-mail-notify.lua
 
 mtnscriptsdir = $(monotonedir)/scripts
-dist_mtnscripts_SCRIPTS = extra/mtn-hooks/monotone-mail-notify
+dist_mtnscripts_SCRIPTS = \
+	extra/mtn-hooks/monotone-ciabot.py				\
+	extra/mtn-hooks/monotone-mail-notify
 
 # Some of the smaller programs do not have --help or --version,
 # make them exempt of the check for those.  NOTE: use this sparingly!
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = \
-	extra/bin/mtn-cleanup extra/mtn-hooks/monotone-mail-notify
+	extra/bin/mtn-cleanup 	extra/mtn-hooks/monotone-ciabot.py	\
+	extra/mtn-hooks/monotone-mail-notify
 
 # flags
 
