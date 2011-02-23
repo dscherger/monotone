@@ -218,25 +218,25 @@ UNIT_TEST_SUPPORT =						\
 # primaries
 
 bin_PROGRAMS = mtn
+mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
+nodist_mtn_SOURCES = src/std_hooks.cc src/schema.cc
+
 noinst_PROGRAMS = util/txt2c
+util_txt2c_SOURCES = util/txt2c.cc
+
 EXTRA_PROGRAMS =
 
 bin_SCRIPTS = mtnopt
 dist_bin_SCRIPTS = extra/bin/mtn-cleanup
 noinst_SCRIPTS = extra/building/dump-test-logs.sh
 
-mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
-nodist_mtn_SOURCES = src/std_hooks.cc src/schema.cc
-
+check_PROGRAMS = test/bin/unit_tester test/bin/tester test/bin/check_net
 test_bin_unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
 	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
-
 test_bin_tester_SOURCES = test/src/tester.cc test/src/tester-plaf.hh src/transforms.cc src/gzip.cc \
 	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) src/pcrewrap.cc \
 	src/specialized_lexical_cast.cc
 nodist_test_bin_tester_SOURCES = test/src/testlib.cc
-
-util_txt2c_SOURCES = util/txt2c.cc
 
 noinst_LIBRARIES = src/libplatform.a src/lib3rdparty.a
 src_libplatform_a_SOURCES = src/platform.hh
@@ -653,11 +653,8 @@ test/func.status : mtn$(EXEEXT) test/bin/check_net$(EXEEXT)
 
 # Creates the needed artifacts for manual test execution
 .PHONY: testers
-testers: mtn$(EXEEXT) test/bin/tester$(EXEEXT) test/bin/unit_tester$(EXEEXT) \
-	test/bin/check_net$(EXEEXT) \
+testers: mtn$(EXEEXT) $(check_PROGRAMS)
 	run_tester_tests run_func_tests run_unit_tests run_extra_tests
-
-check_PROGRAMS = test/bin/unit_tester test/bin/tester test/bin/check_net
 
 # We want the tests re-run even if the .status files already exist.
 # .PHONY does not work for that (bad interaction with pattern rules),
@@ -672,7 +669,6 @@ FORCE:
 .PHONY: mostlyclean-tests
 mostlyclean-tests:
 	rm -rf test/work
-	rm -f run_*_tests test/*.status
 	@ls test/unit/tests/*/__driver__.lua 2>/dev/null | while read d; do \
 	  echo " rm -f '$$d'"; \
 	  rm -f $$d; \
@@ -680,7 +676,9 @@ mostlyclean-tests:
 	  rmdir $${d%/*} || :; \
 	done
 
-DISTCLEANFILES = src/xgettext.opts src/pch-build.hh.gch.dep
+MOSTLYCLEANFILES = mtn.1 \
+	run_tester_tests   run_func_tests   run_unit_tests   run_extra_tests \
+	test/tester.status test/func.status test/unit.status test/extra.status
 
 # we generate some source files to copy data into the executable
 # note that the only things that should go in BUILT_SRCS are things
@@ -697,13 +695,18 @@ CLEAN_SRCS = $(nodist_mtn_SOURCES) $(nodist_test_bin_tester_SOURCES)	\
 BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
 CLEANFILES = $(bin_SCRIPTS) $(noinst_SCRIPTS) $(bashcomp_DATA) \
-	$(BUILT_SOURCES) $(CLEAN_SRCS) $(CLEAN_POFILES)
+	$(CLEAN_SRCS) $(CLEAN_POFILES)
+
+DISTCLEANFILES = src/xgettext.opts src/pch-build.hh.gch.dep
 
 # We make GMO files part of the source distribution.  This means we can't
 # clean them away like other files, but a maintainer might still want to
 # get rid of them to rebuild them.
+# The same goes for src/package_revision.txt and
+# src/package_full_revision_dist.txt
 
-MAINTAINERCLEANFILES = $(MAINTAINERCLEAN_POFILES)
+MAINTAINERCLEANFILES = $(MAINTAINERCLEAN_POFILES) \
+	src/package_revision.txt src/package_full_revision_dist.txt
 
 # automake provides no nice way to build a helper program to execute
 # on the build machine, so we need our own rule.  almost all the
