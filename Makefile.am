@@ -671,8 +671,8 @@ FORCE:
 #	 automake's man page
 .PHONY: mostlyclean-tests
 mostlyclean-tests:
-	rm -rf test/bin test/work
-	rm -f run_*_tests test/*.status test/src/testlib.cc util/txt2c
+	rm -rf test/work
+	rm -f run_*_tests test/*.status
 	@ls test/unit/tests/*/__driver__.lua 2>/dev/null | while read d; do \
 	  echo " rm -f '$$d'"; \
 	  rm -f $$d; \
@@ -680,9 +680,7 @@ mostlyclean-tests:
 	  rmdir $${d%/*} || :; \
 	done
 
-DISTCLEANFILES = src/mt-stdint.h src/xgettext.opts src/pch-build.hh.gch.dep	\
-	run_tester_tests run_unit_tests run_func_tests run_extra_tests		\
-	test/tester.status test/unit.status test/func.status test/extra.status
+DISTCLEANFILES = src/xgettext.opts src/pch-build.hh.gch.dep
 
 # we generate some source files to copy data into the executable
 # note that the only things that should go in BUILT_SRCS are things
@@ -691,11 +689,10 @@ DISTCLEANFILES = src/mt-stdint.h src/xgettext.opts src/pch-build.hh.gch.dep	\
 
 # package_revision.txt and package_full_revision_dist.txt are shipped
 # in the distribution, so don't delete them here
-CLEAN_SRCS = src/std_hooks.cc unit/src/testlib.cc src/schema.cc \
-	src/package_revision.cc src/package_full_revision.cc \
-	src/package_revision_raw.txt \
-	src/package_full_revision.txt src/package_full_revision_raw.txt \
-	mtn.1
+CLEAN_SRCS = $(nodist_mtn_SOURCES) $(nodist_test_bin_tester_SOURCES)	\
+	src/package_revision.cc src/package_full_revision.cc		\
+	src/package_revision_raw.txt					\
+	src/package_full_revision.txt src/package_full_revision_raw.txt
 
 BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
