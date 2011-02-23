@@ -40,7 +40,7 @@ void
 load_key_pair(key_store & keys, key_id const & id)
 {
   E(keys.key_pair_exists(id), origin::user,
-    F("no key pair '%s' found in key store '%s'")
+    F("no key pair %s found in key store '%s'")
     % id % keys.get_key_dir());
 }
 
@@ -85,7 +85,7 @@ namespace {
             db.get_key(chosen_key, pub_key);
             E(keys_match(name, pub_key, name, priv_key.pub),
               origin::no_fault,
-              F("The key '%s' stored in your database does\n"
+              F("The key %s stored in your database does\n"
                 "not match the version in your local key store!")
               % chosen_key);
           }

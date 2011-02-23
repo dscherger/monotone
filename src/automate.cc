@@ -129,7 +129,7 @@ CMD_AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
     {
       revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
       E(db.revision_exists(rid), origin::user,
-        F("no such revision '%s'") % rid);
+        F("no revision %s found in database") % rid);
       frontier.push_back(rid);
     }
   while (!frontier.empty())
@@ -182,7 +182,7 @@ CMD_AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"),
     {
       revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
       E(db.revision_exists(rid), origin::user,
-        F("no such revision '%s'") % rid);
+        F("no revision %s found in database") % rid);
       frontier.push_back(rid);
     }
   while (!frontier.empty())
@@ -232,7 +232,7 @@ CMD_AUTOMATE(erase_ancestors, N_("[REV1 [REV2 [REV3 [...]]]]"),
     {
       revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
       E(db.revision_exists(rid), origin::user,
-        F("no such revision '%s'") % rid);
+        F("no revision %s found in database") % rid);
       revs.insert(rid);
     }
   erase_ancestors(db, revs);
@@ -262,7 +262,7 @@ CMD_AUTOMATE(toposort, N_("[REV1 [REV2 [REV3 [...]]]]"),
     {
       revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
       E(db.revision_exists(rid), origin::user,
-        F("no such revision '%s'") % rid);
+        F("no revision %s found in database") % rid);
       revs.insert(rid);
     }
   vector<revision_id> sorted;
@@ -304,12 +304,12 @@ CMD_AUTOMATE(ancestry_difference, N_("NEW_REV [OLD_REV1 [OLD_REV2 [...]]]"),
   args_vector::const_iterator i = args.begin();
   a = decode_hexenc_as<revision_id>((*i)(), origin::user);
   E(db.revision_exists(a), origin::user,
-    F("no such revision '%s'") % a);
+    F("no revision %s found in database") % a);
   for (++i; i != args.end(); ++i)
     {
       revision_id b(decode_hexenc_as<revision_id>((*i)(), origin::user));
       E(db.revision_exists(b), origin::user,
-        F("no such revision '%s'") % b);
+        F("no revision %s found in database") % b);
       bs.insert(b);
     }
   set<revision_id> ancestors;
@@ -403,7 +403,7 @@ CMD_AUTOMATE(parents, N_("REV"),
 
   revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
   E(db.revision_exists(rid), origin::user,
-    F("no such revision '%s'") % rid);
+    F("no revision %s found in database") % rid);
   set<revision_id> parents;
   db.get_revision_parents(rid, parents);
   for (set<revision_id>::const_iterator i = parents.begin();
@@ -434,7 +434,7 @@ CMD_AUTOMATE(children, N_("REV"),
 
   revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
   E(db.revision_exists(rid), origin::user,
-    F("no such revision '%s'") % rid);
+    F("no revision %s found in database") % rid);
   set<revision_id> children;
   db.get_revision_children(rid, children);
   for (set<revision_id>::const_iterator i = children.begin();
@@ -1599,7 +1599,7 @@ CMD_AUTOMATE(packet_for_rdata, N_("REVID"),
   revision_data r_data;
 
   E(db.revision_exists(r_id), origin::user,
-    F("no such revision '%s'") % r_id);
+    F("no revision %s found in database") % r_id);
   db.get_revision(r_id, r_data);
   pw.consume_revision_data(r_id, r_data);
 }
@@ -1631,7 +1631,7 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
   vector<cert> certs;
 
   E(db.revision_exists(r_id), origin::user,
-    F("no such revision '%s'") % r_id);
+    F("no revision %s found in database") % r_id);
   project.get_revision_certs(r_id, certs);
 
   for (vector<cert>::const_iterator i = certs.begin();
@@ -1698,9 +1698,9 @@ CMD_AUTOMATE(packet_for_fdelta, N_("OLD_FILE NEW_FILE"),
   file_data f_old_data, f_new_data;
 
   E(db.file_version_exists(f_old_id), origin::user,
-    F("no such revision '%s'") % f_old_id);
+    F("no revision %s found in database") % f_old_id);
   E(db.file_version_exists(f_new_id), origin::user,
-    F("no such revision '%s'") % f_new_id);
+    F("no revision %s found in database") % f_new_id);
   db.get_file_version(f_old_id, f_old_data);
   db.get_file_version(f_new_id, f_new_data);
   delta del;
@@ -1736,7 +1736,7 @@ CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
     {
       revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
       E(db.revision_exists(rid), origin::user,
-        F("No such revision %s") % rid);
+        F("no revision %s found in database") % rid);
       revs.insert(rid);
     }
 
@@ -1948,7 +1948,7 @@ CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
 
   file_path path = file_path_external(idx(args,1));
   E(new_roster.has_node(path), origin::user,
-    F("file %s is unknown for revision %s")
+    F("file '%s' is unknown for revision %s")
     % path % ident);
 
   const_node_t node = new_roster.get_node(path);
@@ -2015,7 +2015,7 @@ CMD_AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"),
 
   file_path path = file_path_external(idx(args,1));
   E(new_roster.has_node(path), origin::user,
-    F("file %s is unknown for revision %s") % path % ident);
+    F("file '%s' is unknown for revision %s") % path % ident);
 
   const_node_t node = new_roster.get_node(path);
   basic_io::printer prt;
@@ -2172,7 +2172,7 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
   hexenc<id> hrid(idx(args, 0)(), origin::user);
   revision_id rid(decode_hexenc_as<revision_id>(hrid(), origin::user));
   E(db.revision_exists(rid), origin::user,
-    F("no such revision '%s'") % hrid);
+    F("no revision %s found in database") % hrid);
 
   cache_user_key(app.opts, project, keys, app.lua);
 
@@ -2310,7 +2310,7 @@ CMD_AUTOMATE(drop_db_variables, N_("DOMAIN [NAME]"),
       var_name name = typecast_vocab<var_name>(idx(args, 1));
       var_key  key(domain, name);
       E(db.var_exists(key), origin::user,
-        F("no var with name %s in domain %s") % name % domain);
+        F("no var with name '%s' in domain '%s'") % name % domain);
       db.clear_var(key);
     }
   else
@@ -2330,7 +2330,7 @@ CMD_AUTOMATE(drop_db_variables, N_("DOMAIN [NAME]"),
         }
 
       E(found_something, origin::user,
-        F("no variables found in domain %s") % domain);
+        F("no variables found in domain '%s'") % domain);
     }
 }
 

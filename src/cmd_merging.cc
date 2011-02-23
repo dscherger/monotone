@@ -269,7 +269,7 @@ update(app_state & app,
   // wants.
   bool switched_branch = pick_branch_for_update(app.opts, db, project, chosen_rid);
   if (switched_branch)
-    P(F("switching to branch %s") % app.opts.branch());
+    P(F("switching to branch '%s'") % app.opts.branch());
 
   // Okay, we have a target, we have a branch, let's do this merge!
 
@@ -352,7 +352,7 @@ update(app_state & app,
   work.set_options(app.opts, app.lua, true);
 
   if (switched_branch)
-    P(F("switched branch; next commit will use branch %s") % app.opts.branch());
+    P(F("switched branch; next commit will use branch '%s'") % app.opts.branch());
   P(F("updated to base revision %s") % chosen_rid);
 }
 
@@ -700,7 +700,7 @@ void perform_merge_into_dir(app_state & app,
             pth.dirname_basename(dir, base);
 
             E(right_roster.has_node(dir), origin::user,
-              F("Path %s not found in destination tree.") % pth);
+              F("Path '%s' not found in destination tree.") % pth);
             const_node_t parent = right_roster.get_node(dir);
             moved_root->parent = parent->self;
             moved_root->name = base;

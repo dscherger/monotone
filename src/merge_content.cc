@@ -273,7 +273,7 @@ content_merge_workspace_adaptor::get_version(file_id const & ident,
       read_data(i->second, tmp);
       calculate_ident(file_data(tmp), fid);
       E(fid == ident, origin::system,
-        F("file %s in workspace has id %s, wanted %s")
+        F("file '%s' in workspace has id %s, wanted %s")
         % i->second
         % fid
         % ident);

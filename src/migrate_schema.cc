@@ -576,7 +576,7 @@ migrate_to_external_privkeys(sqlite3 * db, key_store & keys)
           pub = base64<rsa_pub_key>(stmt.column_string(2),
                                     origin::database);
 
-        P(F("moving key '%s' from database to %s")
+        P(F("moving key '%s' from database to '%s'")
           % ident % keys.get_key_dir());
         keys.migrate_old_key_pair(ident,
                                   decode_base64(old_priv),
@@ -1157,16 +1157,16 @@ diagnose_unrecognized_schema(schema_mismatch_case cat,
                              system_path const & filename)
 {
   E(cat != SCHEMA_EMPTY, origin::user,
-    F("cannot use the empty sqlite database %s\n"
+    F("cannot use the empty sqlite database '%s'\n"
       "(monotone databases must be created with '%s db init')")
     % filename % prog_name);
 
   E(cat != SCHEMA_NOT_MONOTONE, origin::user,
-    F("%s does not appear to be a monotone database\n")
+    F("'%s' does not appear to be a monotone database\n")
     % filename);
 
   E(cat != SCHEMA_TOO_NEW, origin::user,
-    F("%s appears to be a monotone database, but this version of\n"
+    F("'%s' appears to be a monotone database, but this version of\n"
       "monotone does not recognize its schema.\n"
       "you probably need a newer version of monotone.")
     % filename);
@@ -1185,7 +1185,7 @@ check_sql_schema(sqlite3 * db, system_path const & filename)
   diagnose_unrecognized_schema(cat, filename);
 
   E(cat != SCHEMA_MIGRATION_NEEDED, origin::user,
-    F("database %s is laid out according to an old schema\n"
+    F("database '%s' is laid out according to an old schema\n"
       "try '%s db migrate' to upgrade\n"
       "(this is irreversible; you may want to make a backup copy first)")
     % filename % prog_name);
@@ -1338,7 +1338,7 @@ test_migration_step(sqlite3 * db, key_store & keys,
   E(m->migrator_sql || m->migrator_func, origin::user,
     F("schema %s is up to date") % schema);
 
-  L(FL("testing migration from %s to %s\n in database %s")
+  L(FL("testing migration from %s to %s\n in database '%s'")
     % schema % m[1].id % filename);
 
   if (m->migrator_sql)

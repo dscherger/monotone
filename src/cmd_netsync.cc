@@ -328,7 +328,7 @@ print_dryrun_info_cmd(protocol_role role,
       for (map<branch_name, int>::iterator i = branch_counts.begin();
            i != branch_counts.end(); ++i)
         {
-          std::cout << (F("%9d in branch %s\n") % i->second % i->first);
+          std::cout << (F("%9d in branch '%s'\n") % i->second % i->first);
         }
     }
 }
@@ -866,12 +866,12 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
         F("branch '%s' is empty") % app.opts.branch);
       if (heads.size() > 1)
         {
-          P(F("branch %s has multiple heads:") % app.opts.branch);
+          P(F("branch '%s' has multiple heads:") % app.opts.branch);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(app.opts, app.lua, project, *i));
           P(F("choose one with '%s clone -r<id> URL'") % prog_name);
-          E(false, origin::user, F("branch %s has multiple heads") % app.opts.branch);
+          E(false, origin::user, F("branch '%s' has multiple heads") % app.opts.branch);
         }
       ident = *(heads.begin());
     }
@@ -882,7 +882,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
 
       E(project.revision_is_in_branch(ident, app.opts.branch),
         origin::user,
-        F("revision %s is not a member of branch %s")
+        F("revision %s is not a member of branch '%s'")
           % ident % app.opts.branch);
     }
 

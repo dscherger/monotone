@@ -278,12 +278,12 @@ void
 read_data(any_path const & p, data & dat)
 {
   require_path_is_file(p,
-                       F("file %s does not exist") % p,
-                       F("file %s cannot be read as data; it is a directory") % p);
+                       F("file '%s' does not exist") % p,
+                       F("file '%s' cannot be read as data; it is a directory") % p);
 
   ifstream file(p.as_external().c_str(),
                 ios_base::in | ios_base::binary);
-  E(file, origin::user, F("cannot open file %s for reading") % p);
+  E(file, origin::user, F("cannot open file '%s' for reading") % p);
   unfiltered_pipe->start_msg();
   file >> *unfiltered_pipe;
   unfiltered_pipe->end_msg();

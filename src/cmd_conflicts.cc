@@ -68,7 +68,7 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
           else
             conflicts.right_roster->get_name(conflict.nid, name);
 
-          P(F("orphaned node %s") % name);
+          P(F("orphaned node '%s'") % name);
 
           switch (show_case)
             {

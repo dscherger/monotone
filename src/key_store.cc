@@ -157,21 +157,21 @@ namespace
       key_hash_code(name, kp.pub, ident);
       E(kss.put_key_pair_memory(full_key_info(ident, key_info(name, kp))),
         origin::system,
-        F("Key store has multiple copies of the key with id '%s'.") % ident);
+        F("Key store has multiple copies of the key with id %s.") % ident);
 
-      L(FL("successfully read key pair '%s' from key store") % ident);
+      L(FL("successfully read key pair %s from key store") % ident);
     }
 
     // for backward compatibility
     virtual void consume_old_private_key(key_name const & ident,
                                          old_arc4_rsa_priv_key const & k)
     {
-      W(F("converting old-format private key '%s'") % ident);
+      W(F("converting old-format private key %s") % ident);
 
       rsa_pub_key dummy;
       kss.migrate_old_key_pair(ident, k, dummy);
 
-      L(FL("successfully read key pair '%s' from key store") % ident);
+      L(FL("successfully read key pair %s from key store") % ident);
     }
   };
 }
@@ -224,7 +224,7 @@ key_store_state::maybe_read_key_dir()
       read_data(*i, dat);
       istringstream is(dat());
       if (read_packets(is, kr) == 0)
-        W(F("ignored invalid key file ('%s') in key store") % (*i) );
+        W(F("ignored invalid key file '%s' in key store") % (*i) );
     }
 }
 
@@ -439,7 +439,7 @@ struct key_delete_validator : public packet_consumer
      key_id ident;
      key_hash_code(name, kp.pub, ident);
      E(ident == expected_ident, origin::user,
-       F("expected key with id '%s' in key file '%s', got key with id '%s'")
+       F("expected key with id %s in key file '%s', got key with id %s")
          % expected_ident % file % ident);
   }
   virtual void consume_old_private_key(key_name const & ident,
@@ -564,7 +564,7 @@ key_store_state::decrypt_private_key(key_id const & id,
   keypair kp;
   key_name name;
   E(maybe_get_key_pair(id, name, kp), origin::user,
-    F("no key pair '%s' found in key store '%s'") % id % key_dir);
+    F("no key pair %s found in key store '%s'") % id % key_dir);
 
   L(FL("%d-byte private key") % kp.priv().size());
 
@@ -730,11 +730,11 @@ key_store::create_key_pair(database & db,
   // and save it.
   if (create_mode == create_verbose)
     {
-      P(F("storing key-pair '%s' in %s/") % ident % get_key_dir());
+      P(F("storing key-pair '%s' in '%s/'") % ident % get_key_dir());
     }
   else
     {
-      L(FL("storing key-pair '%s' in %s/") % ident % get_key_dir());
+      L(FL("storing key-pair '%s' in '%s/'") % ident % get_key_dir());
     }
   put_key_pair(ident, kp);
 
@@ -743,11 +743,11 @@ key_store::create_key_pair(database & db,
       guard.acquire();
       if (create_mode == create_verbose)
         {
-          P(F("storing public key '%s' in %s") % ident % db.get_filename());
+          P(F("storing public key '%s' in '%s'") % ident % db.get_filename());
         }
       else
         {
-          L(FL("storing public key '%s' in %s") % ident % db.get_filename());
+          L(FL("storing public key '%s' in '%s'") % ident % db.get_filename());
         }
       db.put_key(ident, kp.pub);
       guard.commit();
@@ -960,7 +960,7 @@ key_store::add_key_to_agent(key_id const & id)
 {
   ssh_agent & agent = s->get_agent();
   E(agent.connected(), origin::user,
-    F("no ssh-agent is available, cannot add key '%s'") % id);
+    F("no ssh-agent is available, cannot add key %s") % id);
 
   shared_ptr<RSA_PrivateKey> priv = s->decrypt_private_key(id);
 
@@ -1094,7 +1094,7 @@ key_store_state::migrate_old_key_pair
   // matches what we derived from the private key entry, but don't abort the
   // whole migration if it doesn't.
   if (!pub().empty() && !keys_match(id, pub, id, kp.pub))
-    W(F("public and private keys for %s don't match") % id);
+    W(F("public and private keys for %s do not match") % id);
 
   key_id hash;
   key_hash_code(id, kp.pub, hash);

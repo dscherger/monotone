@@ -140,7 +140,7 @@ dropkey_common(app_state & app,
       transaction_guard guard(db);
       if (db.public_key_exists(identity.id))
         {
-          P(F("dropping public key '%s' from database") % identity.id);
+          P(F("dropping public key %s from database") % identity.id);
           db.delete_public_key(identity.id);
           key_deleted = true;
         }
@@ -150,7 +150,7 @@ dropkey_common(app_state & app,
 
   if (drop_private && keys.key_pair_exists(identity.id))
     {
-      P(F("dropping key pair '%s' from keystore") % identity.id);
+      P(F("dropping key pair %s from keystore") % identity.id);
       keys.delete_key(identity.id);
       key_deleted = true;
     }

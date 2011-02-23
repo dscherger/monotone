@@ -302,7 +302,7 @@ LUAEXT(change_workspace, )
     }
   else
     {
-      i18n_format msg(F("directory %s is not a workspace") % ws);
+      i18n_format msg(F("directory '%s' is not a workspace") % ws);
       lua_pushboolean(LS, false);
       lua_pushlstring(LS, msg.str().data(), msg.str().size());
       return 2;

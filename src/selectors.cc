@@ -901,7 +901,7 @@ complete(options const & opts, lua_hooks & lua,
     {
       completions.insert(isel->get_assuming_full_length());
       E(project.db.revision_exists(*completions.begin()), origin::user,
-        F("no such revision '%s'") % *completions.begin());
+        F("no revision %s found in database") % *completions.begin());
       return;
     }
 
@@ -919,7 +919,7 @@ complete(options const & opts, lua_hooks & lua,
       // This may be impossible, but let's make sure.
       // All the callers used to do it.
       E(project.db.revision_exists(*i), origin::user,
-        F("no such revision '%s'") % *i);
+        F("no revision %s found in database") % *i);
     }
 }
 

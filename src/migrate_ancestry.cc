@@ -486,7 +486,7 @@ insert_parents_into_roster(roster_t & child_roster,
   if (child_roster.has_node(pth))
     {
       E(is_dir_t(child_roster.get_node(pth)), origin::internal,
-        F("Directory %s for path %s cannot be added, "
+        F("Directory '%s' for path '%s' cannot be added, "
           "as there is a file in the way") % pth % full);
       return;
     }
@@ -507,10 +507,10 @@ insert_into_roster(roster_t & child_roster,
     {
       const_node_t n = child_roster.get_node(pth);
       E(is_file_t(n), origin::internal,
-        F("Path %s cannot be added, as there is a directory in the way") % pth);
+        F("Path '%s' cannot be added, as there is a directory in the way") % pth);
       const_file_t f = downcast_to_file_t(n);
       E(f->content == fid, origin::internal,
-        F("Path %s added twice with differing content") % pth);
+        F("Path '%s' added twice with differing content") % pth);
       return;
     }
 

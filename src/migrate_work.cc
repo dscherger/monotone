@@ -76,7 +76,7 @@ get_workspace_format()
       catch (exception & e)
         {
           E(false, origin::system,
-            F("workspace is corrupt: %s is invalid")
+            F("workspace is corrupt: '%s' is invalid")
             % f_path);
         }
       if (format == 1)
@@ -194,7 +194,7 @@ migrate_1_to_2()
     }
   catch (exception & e)
     {
-      E(false, origin::system, F("workspace is corrupt: reading %s: %s")
+      E(false, origin::system, F("workspace is corrupt: reading '%s': %s")
         % rev_path % e.what());
     }
   revision_id base_rid(decode_hexenc_as<revision_id>(remove_ws(base_rev_data()),
@@ -216,7 +216,7 @@ migrate_1_to_2()
       catch (exception & e)
         {
           E(false, origin::system,
-            F("workspace is corrupt: reading %s: %s")
+            F("workspace is corrupt: reading '%s': %s")
             % workcs_path % e.what());
         }
 

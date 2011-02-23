@@ -124,7 +124,7 @@ read_cert(database & db, string const & in, cert & t,
   id check;
   tmp.hash_code(keyname, check);
   if (!(check == hash))
-    throw bad_decode(F("calculated cert hash '%s' does not match '%s'")
+    throw bad_decode(F("calculated cert hash %s does not match %s")
                      % check % hash);
   t = tmp;
   return true;

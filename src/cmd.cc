@@ -456,7 +456,7 @@ namespace commands {
       app.mtn_automate_allowed = false;
 
       E(ll.ok(), origin::user,
-        F("Call to user command %s (lua command: %s) failed.")
+        F("Call to user command '%s' (lua command: '%s') failed.")
         % primary_name() % f_name);
     }
   };
@@ -467,7 +467,7 @@ LUAEXT(alias_command, )
   const char *old_cmd = luaL_checkstring(LS, -2);
   const char *new_cmd = luaL_checkstring(LS, -1);
   E(old_cmd && new_cmd, origin::user,
-    F("%s called with an invalid parameter") % "alias_command");
+    F("'%s' called with an invalid parameter") % "alias_command");
 
   args_vector args;
   args.push_back(arg_type(old_cmd, origin::user));
@@ -491,7 +491,7 @@ LUAEXT(register_command, )
 
   E(cmd_name && cmd_params && cmd_abstract && cmd_desc && cmd_func,
     origin::user,
-    F("%s called with an invalid parameter") % "register_command");
+    F("'%s' called with an invalid parameter") % "register_command");
 
   // leak this - commands can't be removed anyway
   new commands::cmd_lua(cmd_name, cmd_params, cmd_abstract, cmd_desc,
@@ -535,9 +535,9 @@ CMD_NO_WORKSPACE(version, "version", "", CMD_REF(informative), "",
     print_version();
 }
 
-CMD_HIDDEN(check_globish, "check_globish", "", CMD_REF(debug),
-           "globish string",
-           N_("Check that a particular globish matches a particular string"),
+CMD_HIDDEN(check_glob, "check_glob", "", CMD_REF(debug),
+           "glob string",
+           N_("Check that a particular glob matches a particular string"),
            "",
            options::opts::none)
 {
@@ -545,7 +545,7 @@ CMD_HIDDEN(check_globish, "check_globish", "", CMD_REF(debug),
   string s(idx(args,1)());
 
   E(g.matches(s), origin::user,
-    F("Globish <%s> does not match string <%s>") % g % s);
+    F("Glob '%s' does not match string '%s'") % g % s);
 }
 
 CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),

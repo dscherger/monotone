@@ -482,7 +482,7 @@ revert(app_state & app,
                 % f->content);
 
               E(db.file_version_exists(f->content), origin::user,
-                F("no file version %s found in database for %s")
+                F("no file version %s found in database for '%s'")
                 % f->content % path);
 
               file_data dat;
@@ -496,7 +496,7 @@ revert(app_state & app,
         {
           if (!directory_exists(path))
             {
-              P(F("recreating %s/") % path);
+              P(F("recreating '%s/'") % path);
               mkdir_p(path);
             }
           else
@@ -732,7 +732,7 @@ CMD(mkdir, "mkdir", "", CMD_REF(workspace), N_("[DIRECTORY...]"),
       // project with a mkdir statement, but one never can tell...
       E(app.opts.no_ignore || !work.ignore_file(fp),
         origin::user,
-        F("ignoring directory '%s' [see .mtn-ignore]") % fp);
+        F("ignoring directory '%s' (see .mtn-ignore)") % fp);
 
       paths.insert(fp);
     }
@@ -859,7 +859,7 @@ CMD(rename, "rename", "mv", CMD_REF(workspace),
   if (src_paths.size() == 1 && dstr()[dstr().size() -1] == '/')
     if (get_path_status(*src_paths.begin()) != path::directory)
       E(get_path_status(dst_path) == path::directory, origin::user,
-        F(_("The specified target directory %s/ doesn't exist.")) % dst_path);
+        F(_("The specified target directory '%s/' doesn't exist.")) % dst_path);
 
   work.perform_rename(db, src_paths, dst_path, app.opts.bookkeep_only);
 }
@@ -1030,13 +1030,13 @@ checkout_common(app_state & app,
         F("branch '%s' is empty") % app.opts.branch);
       if (heads.size() > 1)
         {
-          P(F("branch %s has multiple heads:") % app.opts.branch);
+          P(F("branch '%s' has multiple heads:") % app.opts.branch);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(app.opts, app.lua, project, *i));
           P(F("choose one with '%s checkout -r<id>'") % prog_name);
           E(false, origin::user,
-            F("branch %s has multiple heads") % app.opts.branch);
+            F("branch '%s' has multiple heads") % app.opts.branch);
         }
       revid = *(heads.begin());
     }
@@ -1893,7 +1893,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
 
       E(project.revision_is_in_branch(ident, app.opts.branch),
         origin::user,
-        F("revision %s is not a member of branch %s")
+        F("revision %s is not a member of branch '%s'")
         % ident % app.opts.branch);
     }
   else
@@ -1907,13 +1907,13 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
                                app.opts.ignore_suspend_certs);
       if (heads.size() > 1)
         {
-          P(F("branch %s has multiple heads:") % app.opts.branch);
+          P(F("branch '%s' has multiple heads:") % app.opts.branch);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(app.opts, app.lua, project, *i));
           P(F("choose one with '%s import -r<id>'") % prog_name);
           E(false, origin::user,
-            F("branch %s has multiple heads") % app.opts.branch);
+            F("branch '%s' has multiple heads") % app.opts.branch);
         }
       if (!heads.empty())
         ident = *(heads.begin());

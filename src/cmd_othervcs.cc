@@ -57,7 +57,7 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(vcs), N_("CVSROOT"),
 
   system_path cvsroot(idx(args, 0)(), origin::user);
   require_path_is_directory(cvsroot,
-                            F("path %s does not exist") % cvsroot,
+                            F("path '%s' does not exist") % cvsroot,
                             F("'%s' is not a directory") % cvsroot);
 
   // make sure we can sign certs using the selected key; also requests

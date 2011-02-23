@@ -109,9 +109,9 @@ call_server(app_state & app,
   Netxx::Timeout timeout(static_cast<long>(constants::netsync_timeout_seconds)),
     instant(0,1);
 
-  P(F("connecting to %s") % info->client.get_uri().resource());
-  P(F("  include pattern  %s") % info->client.get_include_pattern());
-  P(F("  exclude pattern  %s") % info->client.get_exclude_pattern());
+  P(F("connecting to '%s'") % info->client.get_uri().resource());
+  P(F("  include pattern  '%s'") % info->client.get_include_pattern());
+  P(F("  exclude pattern  '%s'") % info->client.get_exclude_pattern());
 
   shared_ptr<Netxx::StreamBase> server
     = build_stream_to_server(app.opts, app.lua, info, timeout);
@@ -160,7 +160,7 @@ call_server(app_state & app,
           // error from our server (which is translated to a decode
           // exception). We call these cases E() errors.
           E(false, origin::network,
-            F("processing failure while talking to peer %s, disconnecting")
+            F("processing failure while talking to peer '%s', disconnecting")
             % sess->get_peer());
           return;
         }
@@ -168,7 +168,7 @@ call_server(app_state & app,
       bool io_ok = react.do_io();
 
       E(io_ok, origin::network,
-        F("timed out waiting for I/O with peer %s, disconnecting")
+        F("timed out waiting for I/O with peer '%s', disconnecting")
         % sess->get_peer());
 
       if (react.size() == 0)
@@ -185,19 +185,19 @@ call_server(app_state & app,
 
           if (sess->protocol_state == session_base::confirmed_state)
             {
-              P(F("successful exchange with %s")
+              P(F("successful exchange with '%s'")
                 % sess->get_peer());
               return;
             }
           else if (sess->encountered_error)
             {
-              P(F("peer %s disconnected after we informed them of error")
+              P(F("peer '%s' disconnected after we informed them of error")
                 % sess->get_peer());
               return;
             }
           else
             E(false, origin::network,
-              (F("I/O failure while talking to peer %s, disconnecting")
+              (F("I/O failure while talking to peer '%s', disconnecting")
                % sess->get_peer()));
         }
     }
@@ -216,7 +216,7 @@ session_from_server_sync_item(app_state & app,
 
   try
     {
-      P(F("connecting to %s") % info->client.get_uri().resource());
+      P(F("connecting to '%s'") % info->client.get_uri().resource());
       shared_ptr<Netxx::StreamBase> server
         = build_stream_to_server(app.opts, app.lua, info,
                                  Netxx::Timeout(constants::netsync_timeout_seconds));
@@ -357,7 +357,7 @@ serve_single_connection(project_t & project,
                         shared_ptr<session> sess)
 {
   sess->begin_service();
-  P(F("beginning service on %s") % sess->get_peer());
+  P(F("beginning service on '%s'") % sess->get_peer());
 
   transaction_guard guard(project.db);
 

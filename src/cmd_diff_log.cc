@@ -667,7 +667,7 @@ log_common (app_state & app,
         {
           revision_id rid = edge_old_revision(i);
           E(db.revision_exists(rid), origin::user,
-            F("workspace parent revision '%s' not found - "
+            F("workspace parent revision %s not found - "
               "did you specify a wrong database?") % rid);
           starting_revs.insert(rid);
           if (i == rev.edges.begin())
