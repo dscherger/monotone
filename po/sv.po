@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone\n"
 "Report-Msgid-Bugs-To: https://code.monotone.ca/p/monotone/issues/\n"
-"POT-Creation-Date: 2011-02-18 02:39+0100\n"
-"PO-Revision-Date: 2011-02-18 02:53+0100\n"
+"POT-Creation-Date: 2011-02-23 12:31+0100\n"
+"PO-Revision-Date: 2011-02-23 12:58+0100\n"
 "Last-Translator: tommyd <me@thomaskeller.biz>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: sv\n"
@@ -773,7 +773,10 @@ msgid ""
 "monotone was written originally by Graydon Hoare <graydon@pobox.com> in 2003 "
 "and has since then received numerous contributions from many individuals. A "
 "complete list of authors can be found in AUTHORS."
-msgstr "monotone skrevs ursprungligen av Graydon Hoare <graydon@pobox.com> år 2003 och har fått en hel del bidrag från många individer sen dess.  I AUTHORS finner man en komplett lista på författare."
+msgstr ""
+"monotone skrevs ursprungligen av Graydon Hoare <graydon@pobox.com> år 2003 "
+"och har fått en hel del bidrag från många individer sen dess.  I AUTHORS "
+"finner man en komplett lista på författare."
 
 #: src/cmd.cc:954
 msgid ""
@@ -792,7 +795,9 @@ msgstr "Copyright"
 msgid ""
 "monotone and this man page is Copyright (c) 2003 \\- %s by the monotone "
 "development team."
-msgstr "monotone och den här manualsidan har Copyright (c) 2003 \\- %s tillhörande 'the monotone development team'."
+msgstr ""
+"monotone och den här manualsidan har Copyright (c) 2003 \\- %s tillhörande "
+"'the monotone development team'."
 
 #: src/cmd.cc:970
 #, c-format
@@ -873,7 +878,8 @@ msgstr "fick felkod %d från andra änden"
 #: src/cmd_netsync.cc:293
 #, c-format
 msgid "would receive %d revisions, %d certs, and at least %d keys\n"
-msgstr "skulle ha tagit emot %d revisioner, %d certifikat och minst %d nycklar\n"
+msgstr ""
+"skulle ha tagit emot %d revisioner, %d certifikat och minst %d nycklar\n"
 
 #: src/cmd_netsync.cc:300
 #, c-format
@@ -1171,7 +1177,7 @@ msgstr "Visa vilka databaser som hanteras och deras kända arbetskopior"
 
 #: src/cmd_list.cc:684 src/database.cc:4977
 #, c-format
-msgid "could not query default database locations"
+msgid "no default database location configured"
 msgstr "ingen standardkatalog för databaser finns definierad"
 
 #: src/cmd_list.cc:688 src/database.cc:5055
@@ -5297,7 +5303,7 @@ msgstr ""
 msgid "branch pattern is empty and no default value could be loaded"
 msgstr "grenmönstret är tomt och inget standardmönster satt"
 
-#: src/network/connection_info.cc:426
+#: src/network/connection_info.cc:428
 #, c-format
 msgid ""
 "include / exclude pattern was given both as part of the URL and as a "
@@ -5306,7 +5312,7 @@ msgstr ""
 "mönster för inkludering eller exkludering gavs både som del av URLen och som "
 "separata argument."
 
-#: src/network/connection_info.cc:474
+#: src/network/connection_info.cc:477
 #, c-format
 msgid ""
 "no branch pattern found in URI, will try to use suitable database defaults "
@@ -5315,7 +5321,7 @@ msgstr ""
 "inget grenmönster funnet i URI, provar med passande standarder för databasen "
 "om sådan finns tillgänglig"
 
-#: src/network/connection_info.cc:496
+#: src/network/connection_info.cc:499
 #, c-format
 msgid ""
 "separate server and pattern arguments are deprecated, please consider using "
@@ -5324,7 +5330,7 @@ msgstr ""
 "separata argument för server och grenmönster är föråldrat, var god överväg "
 "att använda en URI istället"
 
-#: src/network/connection_info.cc:504
+#: src/network/connection_info.cc:508
 #, c-format
 msgid ""
 "you can specify either a query string or separate include/exclude "
@@ -5333,7 +5339,7 @@ msgstr ""
 "man kan antingen ange en söksträng i URIn eller flaggorna --include och --"
 "exclude, men inte båda samtidigt"
 
-#: src/network/connection_info.cc:524
+#: src/network/connection_info.cc:529
 #, c-format
 msgid ""
 "need permission to store persistent passphrase (see hook persist_phrase_ok())"
@@ -5341,7 +5347,7 @@ msgstr ""
 "behöver tillstånd att använda ett permanent lösenord (se lua-"
 "rutinenpersist_phrase_ok())"
 
-#: src/network/connection_info.cc:538
+#: src/network/connection_info.cc:533
 #, c-format
 msgid ""
 "The --no-transport-auth option is usually only used in combination with --"
