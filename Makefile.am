@@ -249,7 +249,7 @@ bashcomp_DATA = extra/shell/monotone.bash_completion
 monotonedir = $(datadir)/monotone
 
 mtnhooksdir = $(monotonedir)/hooks
-mtnhooks_DATA = \
+dist_mtnhooks_DATA = \
 	extra/mtn-hooks/authorize_remote_automate.lua			\
 	extra/mtn-hooks/get_passphrase_from_file.lua			\
 	extra/mtn-hooks/monotone-ciabot.lua				\
@@ -357,8 +357,7 @@ EXTRA_DIST =								\
 	HACKING INSTALL INSTALL_windows_cygwin.txt			\
 	INSTALL_windows_native.txt README.visualc8 UPGRADE		\
 	util/audit-includes util/do-editor-vars.sh			\
-	$(wildcard $(srcdir)/m4/*.m4) doc/monotone.html doc/images	\
-	doc/texinfo.css src/schema.sql src/unix/README			\
+	$(wildcard $(srcdir)/m4/*.m4) src/schema.sql src/unix/README	\
 	src/util/mtnopt.in innosetup/README.txt				\
 	innosetup/monotone.iss.in innosetup/modpath.iss 		\
 	innosetup/monotone.bmp innosetup/dlls.sh			\
@@ -376,7 +375,11 @@ EXTRA_DIST =								\
 									\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
 									\
-	mac notes visualc $(contrib_data) $(examples_data) extra
+	mac notes visualc $(contrib_data) $(examples_data)		\
+									\
+	extra/README extra/building/dump-test-logs.sh.in		\
+	extra/shell/monotone.bash_completion.in				\
+	extra/shell/monotone_gen_bash_completion_table.pl
 
 # Message translation support
 # INST_LINGUAS is set by configure, based on the po/LINGUAS file and
@@ -471,12 +474,6 @@ po/$(PACKAGE).pot: $(POTFILES)
 
 dist-nls: $(ALL_GMOFILES)
 	cp $(ALL_GMOFILES) $(distdir)/po
-# also, kill off any backup files that got pulled in by one of the
-# recursive subdirectory includes in EXTRA_DIST
-# note use of slightly non-portable "-delete" action
-	find $(distdir) \( -name '*.bak' -o -name '*.orig' -o -name '*.rej' \
-	    -o -name '*~' -o -name '#*#' -o -name '*.swp' \) -delete
-
 else
 
 po/%.gmo: $(srcdir)/po/%.gmo
@@ -732,11 +729,12 @@ test/src/testlib.cc: test/src/testlib.lua util/txt2c$(EXEEXT)
 do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),' \
 	-e 's,[@]sysconfdir[@],$(sysconfdir),'
 
-%: src/util/%.in Makefile
+mtnopt: src/util/mtnopt.in Makefile
 	$(V_subst)$(do_subst) < $< > $@ && chmod +x $@
 
 extra/shell/monotone.bash_completion: extra/shell/monotone.bash_completion.in \
-	$(bin_PROGRAMS) extra/shell/monotone_gen_bash_completion_table.pl
+	$(bin_PROGRAMS) extra/shell/monotone_gen_bash_completion_table.pl \
+	Makefile
 	$(MKDIR_P) extra/shell
 	( sed -e '/^[@]generated-command-list[@]$$/,$$d' < $<; \
 	  MTN=./mtn$(EXEEXT) \
@@ -848,11 +846,17 @@ uninstall-local: uninstall-nls \
 	uninstall-contrib-data uninstall-examples-data
 mostlyclean-local: mostlyclean-tests
 check-local: check-testers
+
 # All hooks supported by automake here, depending on all the things we want
 # to hook in.  This is to support multiple things into the same hook, as
 # dependencies.
-dist-hook: dist-nls
 distcheck-hook: distcheck-base.hh
+dist-hook: dist-nls
+# Kill off any backup files that got pulled in by one of the
+# recursive subdirectory includes in EXTRA_DIST
+# note use of slightly non-portable "-delete" action
+	find $(distdir) \( -name '*.bak' -o -name '*.orig' -o -name '*.rej' \
+	    -o -name '*~' -o -name '#*#' -o -name '*.swp' \) -delete
 
 mtn.1: mtn$(EXEEXT)
 	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
