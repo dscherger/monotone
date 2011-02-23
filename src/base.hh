@@ -16,6 +16,11 @@
 // Configuration directives
 #include "config.h"
 
+// autoconf prior to 2.64 doesn't define this
+#ifndef PACKAGE_URL
+#define PACKAGE_URL "http://www.monotone.ca"
+#endif
+
 #define BOOST_DISABLE_THREADS
 #define BOOST_SP_DISABLE_THREADS
 #define BOOST_MULTI_INDEX_DISABLE_SERIALIZATION
