@@ -4687,11 +4687,14 @@ Each time @option{--key} is given, it will be stored in
 For a non-netsync command, the Lua hook @code{@ref{get_branch_key}} is
 called.
 
-For a netsync command, the Lua hook @code{@ref{get_netsync_key}} is
-called.
+For a client-side netsync command, the Lua hook
+@code{@ref{get_netsync_client_key}} is called.
 
-If the hook returns non-nil, the return value is the name of the
-key.
+For a command that starts a monotone server, the Lua hook
+@code{@ref{get_netsync_server_key}} is used.
+
+If any of the aforementioned hooks returns non-nil, the return value
+is the name of the key.
 
 @item
 If there is only one key in the keydir, that is the key.
@@ -11426,12 +11429,12 @@ what key to use.
 
 There is no default definition for this hook; it returns nil.
 
-@anchor{get_netsync_key}@item get_netsync_key(@var{server}, @var{include}, @var{exclude})
+@anchor{get_netsync_client_key}@item get_netsync_client_key(@var{server}, @var{include}, @var{exclude})
 
-Called by the server and client when a netsync connection is being
-established, and @option{@ref{--key}} was not given. Returns a string
-which is the name or hash of the key to use to authenticate the
-netsync connection.
+Called by the client when a netsync connection is being established,
+and @option{@ref{--key}} was not given. Returns a string which is the name
+or hash of the key to use to authenticate the client side of a netsync
+connection.
 
 Note that netsync commands do not need a signing key; they only transmit
 already signed information.
@@ -11439,20 +11442,7 @@ already signed information.
 See @option{@ref{--key}} for a discussion of how monotone determines
 what key to use.
 
-Arguments, when called by the server:
-
-@table @var
-@item server
-The address monotone is listening on.
-
-@item include
-"*"
-
-@item exclude
-""
-@end table
-
-When called by the client:
+Arguments, when called:
 
 @table @var
 @item server
@@ -11464,6 +11454,31 @@ The include pattern in the URI provided on the command line.
 
 @item exclude
 The exclude pattern in the URI provided on the command line.
+
+@end table
+
+@anchor{get_netsync_server_key}@item get_netsync_server_key(@var{addresses})
+
+Called by the server when a new netsync server instance is created, and
+@option{@ref{--key}} was not given. Returns a string which is the name
+or hash of the key to use to authenticate the server side of a netsync
+connection.
+
+Note that netsync commands do not need a signing key; they only transmit
+already signed information.
+
+See @option{@ref{--key}} for a discussion of how monotone determines
+what key to use.
+
+Arguments, when called:
+
+@table @var
+@item addresses
+A table of addresses given to monotone via the @option{--bind} option that
+denote the addresses and / or ports monotone is listening on for connections.
+If the address in one of the table entries is omitted, the port must be given
+with a leading colon; in this case monotone listens on all interfaces on this
+port.
 
 @end table
 

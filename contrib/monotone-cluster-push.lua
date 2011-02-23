@@ -210,7 +210,7 @@ do
 	    end
 	    if certs_in > 0 or revs_in > 0 or keys_in > 0 then
 	       local pattern_branches =
-		  process_rcfile("not_netsync_end", MCP_rcfile, nil)
+		  process_rcfile("note_netsync_end", MCP_rcfile, nil)
 	       if pattern_branches then
 		  for pattern, servers in pairs(pattern_branches) do
 		     if globish_match(pattern, branch) then
@@ -222,7 +222,7 @@ do
 			   io.stderr:write("note_netsync_end: ",
 					   "pushing pattern \"", pattern,
 					   "\" to server ", server, "\n")
-			   server_request_sync("push", server, pattern, "")
+			   server_request_sync("push", server.."?"..pattern, "")
 			end
 		     end
 		  end
@@ -231,8 +231,6 @@ do
 	    return "continue",nil
 	 end
    }
-
-   local saved_note_mtn_startup = note_mtn_startup
 
    push_netsync_notifier(notifier)
 end

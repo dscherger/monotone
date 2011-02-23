@@ -6,7 +6,7 @@ rename("stdout", "manpage")
 -- check for a proper header line
 check(mtn("version"), 0, true, false)
 local s,e,version = string.find(readfile("stdout"), "(monotone %d+\.%d+%S*)")
-check(qgrep(".TH \"monotone\" 1 \"" .. os.date("%Y-%m-%d") .. "\" \"" .. version .. "\"", "manpage"))
+check(qgrep(".TH \"monotone\" 1 \"[0-9]{4}-[0-9]{2}-[0-9]{2}\" \"" .. version .. "\"", "manpage"))
 
 -- check required sections
 check(qgrep(".SH \"NAME\"", "manpage"))
@@ -20,6 +20,3 @@ check(qgrep(".SH \"SEE ALSO\"", "manpage"))
 check(qgrep(".SH \"BUGS\"", "manpage"))
 check(qgrep(".SH \"AUTHORS\"", "manpage"))
 check(qgrep(".SH \"COPYRIGHT\"", "manpage"))
-
--- ensure that the copyright is up-to-date
-check(qgrep("Copyright [(]c[)] 2004 - "..os.date("%Y"), "manpage"))

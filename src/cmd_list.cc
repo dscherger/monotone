@@ -681,7 +681,7 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
   vector<system_path> search_paths, files, dirs;
 
   E(app.lua.hook_get_default_database_locations(search_paths), origin::user,
-    F("could not query default database locations"));
+    F("no default database location configured"));
 
   globish file_matcher;
   E(app.lua.hook_get_default_database_glob(file_matcher), origin::user,
@@ -736,8 +736,8 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
               continue;
             }
 
-            cout << F("%s (in %s):") % db_alias % search_path << "\n";
-            print_workspace_info(db, app.lua, cout, "\t");
+          cout << F("%s (in %s):") % db_alias % search_path << "\n";
+          print_workspace_info(db, app.lua, cout, "\t");
         }
     }
 }
