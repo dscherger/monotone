@@ -48,9 +48,9 @@ info_TEXINFOS = monotone.texi
 monotone_TEXINFOS = $(top_srcdir)/src/std_hooks.lua $(TEXI_FRAGMENTS)
 
 EXTRA_DIST = \
-	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)	$(HTML_EXTRA)	\
+	$(PDF_FIGURES) $(PNG_FIGURES) $(PNG_IMAGES) $(TEXI_FRAGMENTS)	\
 	figures/monotone-logo.svg figures/oo-figures.sxd		\
-	figures/pdfcrop.pl figures/README
+	figures/pdfcrop.pl figures/README $(HTML_EXTRA)
 
 AM_MAKEINFOFLAGS= -I $(top_srcdir)/src -I $(srcdir)
 
