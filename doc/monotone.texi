@@ -1045,19 +1045,38 @@ two-at-a-time until there is only one.
 
 @subsection Branch Names
 
-The branch names used in the above section are fine for an example, but
-they would be bad to use in a real project.  The reason is, monotone
-branch names must be @emph{globally} unique, over all branches in the
-world.  Otherwise, bad things can happen.  Fortunately, we have a handy
-source of globally unique names --- the DNS system.
+The branch names used in the above section are fine for an example,
+but they would be bad to use in a real project.  The reason is,
+monotone branch names should be @emph{globally} unique, over all
+branches in the world.  Otherwise, when your branch eventually gets
+distributed, you could get name collisions with other people's
+work.
 
-When naming a branch, always prepend the reversed, fully qualified, domain
-name of a host that you control or are otherwise authorized to use.  For
-example, monotone development happens on the branch @code{net.venge.monotone},
-because @code{venge.net} belongs to monotone's original author.  The idea is
-that this way, you can coordinate with other people using a host to make sure
-there are no conflicts --- in the example, monotone's original author can
-be certain that no-one else using @code{venge.net} will start up a
+Having two separate projects with the same monotone branch names means
+those projects cannot be stored in the same database. In general,
+monotone supports storing unrelated branches in a single database,
+which simplifies servers. But that requires unique branch names, so
+ensuring globally unique branch names allows using globally accessible
+monotone servers.
+
+monotone does @emph{not} support renaming branches (because that would
+be modifying history), so choosing a good branch name up front is
+important. It is possible to work around this by propagating from your
+branch to one with a better name, but that is a painful process if
+there are many people using the original branch name.
+
+Even if you are @emph{absolutely} sure that your branch will never be
+distributed, things could change in the future!
+
+Fortunately, we have a handy source of globally unique names --- the
+DNS system. When naming a branch, always prepend the reversed, fully
+qualified, domain name of a host that you control or are otherwise
+authorized to use.  For example, monotone development happens on the
+branch @code{net.venge.monotone}, because @code{venge.net} belongs to
+monotone's original author.  The idea is that this way, you can
+coordinate with other people using a host to make sure there are no
+conflicts --- in the example, monotone's original author can be
+certain that no-one else using @code{venge.net} will start up a
 different program named @code{monotone}.  If you work for Yoyodyne,
 Inc. (owners of yoyodyne.com), then all your branch names should look
 like @code{com.yoyodyne.@emph{something}}.
@@ -4659,7 +4678,8 @@ workspace.
 
 @item --help
 Display help information. This is the same as the @command{mtn help}
-command.
+command, but note that it can be placed at the end of a command line,
+while @command{mtn help} must be the first non-option on the command line.
 
 @item --ignore-suspend-certs
 @itemx --no-ignore-suspend-certs
