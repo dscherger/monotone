@@ -68,6 +68,17 @@ _monotone_files() {
     _filedir
 }
 
+_monotone_databases() {
+    _filedir
+    COMPREPLY=(
+	"${COMPREPLY[@]}"
+	$(compgen -W "$(LANG=POSIX \
+                        ${mtn} list databases 2> /dev/null |\
+                        grep -v '^\s' |\
+                        sed -e 's/(in [^)]*):$//')" -- ${cur#*=} )
+    )
+}
+
 # Call monotone to complete key ids (private or public)
 _monotone_keys() {
     local range
