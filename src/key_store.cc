@@ -730,11 +730,11 @@ key_store::create_key_pair(database & db,
   // and save it.
   if (create_mode == create_verbose)
     {
-      P(F("storing key-pair '%s' in '%s/'") % ident % get_key_dir());
+      P(F("storing key-pair %s in '%s/'") % ident % get_key_dir());
     }
   else
     {
-      L(FL("storing key-pair '%s' in '%s/'") % ident % get_key_dir());
+      L(FL("storing key-pair %s in '%s/'") % ident % get_key_dir());
     }
   put_key_pair(ident, kp);
 
@@ -743,11 +743,11 @@ key_store::create_key_pair(database & db,
       guard.acquire();
       if (create_mode == create_verbose)
         {
-          P(F("storing public key '%s' in '%s'") % ident % db.get_filename());
+          P(F("storing public key %s in '%s'") % ident % db.get_filename());
         }
       else
         {
-          L(FL("storing public key '%s' in '%s'") % ident % db.get_filename());
+          L(FL("storing public key %s in '%s'") % ident % db.get_filename());
         }
       db.put_key(ident, kp.pub);
       guard.commit();
