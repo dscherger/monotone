@@ -37,7 +37,7 @@ check(mtn("conflicts", "resolve_first_left", "drop"), 0, nil, nil)
 check(mtn("conflicts", "resolve_first_right", "rename", "gui"), 0, nil, nil)
 
 check(mtn("merge", "--resolve-conflicts"), 1, nil, true)
-check(qgrep("misuse: can't drop gui; not empty", "stderr"))
+check(qgrep("misuse: can't drop 'gui'; not empty", "stderr"))
 
 -- Start again, use renames for both sides
 check(mtn("conflicts", "clean"), 0, nil, true)

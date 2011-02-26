@@ -32,7 +32,7 @@ check(samelines("stderr", {"mtn: 5 conflicts with supported resolutions.",
 
 -- Check suggested resolutions for orphaned directory
 check(mtn("conflicts", "show_first"), 0, nil, true)
-check(samelines("stderr", {"mtn: orphaned node stuff/dir1",
+check(samelines("stderr", {"mtn: orphaned node 'stuff/dir1'",
                            "mtn: possible resolutions:",
                            "mtn: resolve_first drop",
                            "mtn: resolve_first rename \"file_name\""}))
@@ -46,19 +46,19 @@ check(mtn("conflicts", "resolve_first", "rename", "dir1"), 0, nil, nil)
 
 -- stuff/dir2 => dropped (later gives error due to not empty)
 check(mtn("conflicts", "show_first"), 0, nil, true)
-check(qgrep("orphaned node stuff/dir2", "stderr"));
+check(qgrep("orphaned node 'stuff/dir2'", "stderr"));
 check(mtn("conflicts", "resolve_first", "drop"), 0, nil, nil)
 
 -- stuff/dir3 => dropped
 check(mtn("conflicts", "show_first"), 0, nil, true)
-check(qgrep("orphaned node stuff/dir3", "stderr"));
+check(qgrep("orphaned node 'stuff/dir3'", "stderr"));
 check(mtn("conflicts", "resolve_first", "drop"), 0, nil, nil)
 
 -- Check suggested resolutions for orphaned file
 check(mtn("conflicts", "show_first"), 0, nil, true)
 canonicalize("stderr")
 check(
-"mtn: orphaned node stuff/file2\n" ..
+"mtn: orphaned node 'stuff/file2'\n" ..
 "mtn: possible resolutions:\n" ..
 "mtn: resolve_first drop\n" ..
 "mtn: resolve_first rename \"file_name\"\n" == readfile("stderr"))
@@ -68,11 +68,11 @@ check(mtn("conflicts", "resolve_first", "rename", "file2"), 0, nil, nil)
 
 -- stuff/file3 => dropped
 check(mtn("conflicts", "show_first"), 0, nil, true)
-check(qgrep("orphaned node stuff/file3", "stderr"));
+check(qgrep("orphaned node 'stuff/file3'", "stderr"));
 check(mtn("conflicts", "resolve_first", "drop"), 0, nil, nil)
 
 check(mtn("merge", "--resolve-conflicts"), 1, nil, true)
-check(qgrep("directory stuff/dir2; it is not empty", "stderr"));
+check(qgrep("directory 'stuff/dir2'; it is not empty", "stderr"));
 
 check(mtn("drop", "stuff/dir2/file5"), 0, nil, false)
 commit("testbranch", "right 2")
@@ -83,23 +83,23 @@ check(mtn("conflicts", "store"), 0, nil, true)
 check(samelines("stderr", {"mtn: 5 conflicts with supported resolutions.",
                            "mtn: stored in '_MTN/conflicts'"}))
 check(mtn("conflicts", "show_first"), 0, nil, true)
-check(qgrep("orphaned node stuff/dir1", "stderr"));
+check(qgrep("orphaned node 'stuff/dir1'", "stderr"));
 check(mtn("conflicts", "resolve_first", "rename", "dir1"), 0, nil, nil)
 
 check(mtn("conflicts", "show_first"), 0, nil, true)
-check(qgrep("orphaned node stuff/dir2", "stderr"));
+check(qgrep("orphaned node 'stuff/dir2'", "stderr"));
 check(mtn("conflicts", "resolve_first", "drop"), 0, nil, nil)
 
 check(mtn("conflicts", "show_first"), 0, nil, true)
-check(qgrep("orphaned node stuff/dir3", "stderr"));
+check(qgrep("orphaned node 'stuff/dir3'", "stderr"));
 check(mtn("conflicts", "resolve_first", "drop"), 0, nil, nil)
 
 check(mtn("conflicts", "show_first"), 0, nil, true)
-check(qgrep("orphaned node stuff/file2", "stderr"));
+check(qgrep("orphaned node 'stuff/file2'", "stderr"));
 check(mtn("conflicts", "resolve_first", "rename", "file2"), 0, nil, nil)
 
 check(mtn("conflicts", "show_first"), 0, nil, true)
-check(qgrep("orphaned node stuff/file3", "stderr"));
+check(qgrep("orphaned node 'stuff/file3'", "stderr"));
 check(mtn("conflicts", "resolve_first", "drop"), 0, nil, nil)
 
 check(mtn("merge", "--resolve-conflicts"), 0, nil, true)

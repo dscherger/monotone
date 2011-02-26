@@ -23,6 +23,6 @@ check(qgrep("error: cannot change to directory .*/bogus", "stderr"))
 
 mkdir("other")
 check(mtn("get_branch", "other"), 0, false, true)
-check(qgrep("directory .*/other is not a workspace", "stderr"))
+check(qgrep("directory '.*/other' is not a workspace", "stderr"))
 
 -- end of file

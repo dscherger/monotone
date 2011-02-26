@@ -4,7 +4,7 @@ mtn_setup()
 
 -- empty branch
 check(mtn("automate", "log"), 1, false, true)
-check(qgrep("misuse: workspace parent revision '' not found", "stderr"))
+check(qgrep("warning: workspace has no parent revision,", "stderr"))
 
 includecommon("automate_ancestry.lua")
 includecommon("automate_stdio.lua")

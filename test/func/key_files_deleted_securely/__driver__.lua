@@ -16,7 +16,7 @@ keyid2 = string.sub(line, 29, 68)
 check(rename("keys/foobar."..keyid2, "keys/foobar"))
 
 check(mtn("dropkey", keyid1), 1, false, true)
-check(qgrep("expected key with id '" ..keyid1.."' in key file", "stderr"))
+check(qgrep("expected key with id " ..keyid1.." in key file", "stderr"))
 
 -- if the conflicting key is gone, ensure that dropkey properly deletes
 -- the old key file, even if it has no keyid suffixed

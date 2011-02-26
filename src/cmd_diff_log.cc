@@ -666,12 +666,16 @@ log_common (app_state & app,
            i != rev.edges.end(); i++)
         {
           revision_id rid = edge_old_revision(i);
-          E(db.revision_exists(rid), origin::user,
-            F("workspace parent revision %s not found - "
-              "did you specify a wrong database?") % rid);
-          starting_revs.insert(rid);
-          if (i == rev.edges.begin())
-            first_rid = rid;
+          if ((FL("%s") % rid).str().empty()) {
+            W(F("workspace has no parent revision, probably an empty branch"));
+          } else {
+            E(db.revision_exists(rid), origin::user,
+              F("workspace parent revision %s not found - "
+                "did you specify a wrong database?") % rid);
+            starting_revs.insert(rid);
+            if (i == rev.edges.begin())
+              first_rid = rid;
+          }
         }
     }
   else if (!app.opts.from.empty())

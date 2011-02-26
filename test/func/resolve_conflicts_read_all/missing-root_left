@@ -1,4 +1,4 @@
-mtn: orphaned node bar
+mtn: orphaned node 'bar'
 mtn: warning: 1 conflict with no supported resolutions.
 mtn: conflict: missing root directory
 mtn: directory 'foo' pivoted to root on the left

@@ -15,7 +15,7 @@ check(mtn_ws_opts("add", "."), 0, false, false)
 
 -- try to check the status and supply a non-existing database argument
 check(mtn_ws_opts("status", "-d", "baz"), 1, false, true)
-check(qgrep("baz does not exist", "stderr"))
+check(qgrep("baz' does not exist", "stderr"))
 
 -- this should succeed if the original database is still set
 check(mtn_ws_opts("commit", "-m", "test"), 0, false, false)
