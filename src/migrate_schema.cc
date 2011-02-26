@@ -381,7 +381,7 @@ char const migrate_merge_url_and_group[] =
   // migrate the posting_queue table
   "ALTER TABLE posting_queue RENAME TO tmp;"
   "CREATE TABLE posting_queue"
-  "  ( url not null,   -- URL we are going to send this to\n"
+  "  ( url not null,   -- URI we are going to send this to\n"
   "    content not null -- the packets we're going to send\n"
   "  );"
   "INSERT INTO posting_queue"
@@ -391,7 +391,7 @@ char const migrate_merge_url_and_group[] =
   // migrate the incoming_queue table
   "ALTER TABLE incoming_queue RENAME TO tmp;"
   "CREATE TABLE incoming_queue "
-  "  ( url not null,    -- URL we got this bundle from\n"
+  "  ( url not null,    -- URI we got this bundle from\n"
   "    content not null -- the packets we're going to read\n"
   "  );"
   "INSERT INTO incoming_queue"
@@ -401,7 +401,7 @@ char const migrate_merge_url_and_group[] =
   // migrate the sequence_numbers table
   "ALTER TABLE sequence_numbers RENAME TO tmp;"
   "CREATE TABLE sequence_numbers "
-  "  ( url primary key, -- URL to read from\n"
+  "  ( url primary key, -- URI to read from\n"
   "    major not null,  -- 0 in news servers, may be higher in depots\n"
   "    minor not null   -- last article / packet sequence number we got\n"
   "  );"

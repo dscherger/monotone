@@ -65,7 +65,7 @@ extract_client_connection_info(options & opts,
       if (args.size() == 1)
         {
           E(!opts.exclude_given, origin::user,
-            F("cannot use --exclude in URL mode"));
+            F("cannot use --exclude in URI mode"));
 
           netsync_connection_info::setup_from_uri(opts, project.db, lua, type,
                                                   idx(args, 0), info);
@@ -105,7 +105,7 @@ extract_client_connection_info(options & opts,
 }
 
 CMD_AUTOMATE_NO_STDIO(remote_stdio,
-                      N_("[URL]\n[ADDRESS[:PORTNUMBER]]"),
+                      N_("[URI]\n[ADDRESS[:PORTNUMBER]]"),
                       N_("Opens an 'automate stdio' connection to a remote server"),
                       "",
                       options::opts::max_netsync_version |
@@ -538,7 +538,7 @@ print_info_auto(protocol_role role,
 }
 
 CMD(push, "push", "", CMD_REF(network),
-    N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("[URI]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pushes branches to a netsync server"),
     N_("This will push all branches that match the pattern given in PATTERN "
        "to the netsync server at the address ADDRESS."),
@@ -561,7 +561,7 @@ CMD(push, "push", "", CMD_REF(network),
     print_dryrun_info_cmd(source_role, counts, project);
 }
 
-CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+CMD_AUTOMATE(push, N_("[URI]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Pushes branches to a netsync server"),
              "",
              options::opts::max_netsync_version |
@@ -587,7 +587,7 @@ CMD_AUTOMATE(push, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 }
 
 CMD(pull, "pull", "", CMD_REF(network),
-    N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("[URI]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pulls branches from a netsync server"),
     N_("This pulls all branches that match the pattern given in PATTERN "
        "from the netsync server at the address ADDRESS."),
@@ -622,7 +622,7 @@ CMD(pull, "pull", "", CMD_REF(network),
     }
 }
 
-CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+CMD_AUTOMATE(pull, N_("[URI]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Pulls branches from a netsync server"),
              "",
              options::opts::max_netsync_version |
@@ -648,7 +648,7 @@ CMD_AUTOMATE(pull, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 }
 
 CMD(sync, "sync", "", CMD_REF(network),
-    N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("[URI]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Synchronizes branches with a netsync server"),
     N_("This synchronizes branches that match the pattern given in PATTERN "
        "with the netsync server at the address ADDRESS."),
@@ -688,7 +688,7 @@ CMD(sync, "sync", "", CMD_REF(network),
     }
 }
 
-CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+CMD_AUTOMATE(sync, N_("[URI]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              N_("Synchronizes branches with a netsync server"),
              "",
              options::opts::max_netsync_version | options::opts::min_netsync_version |
@@ -720,7 +720,7 @@ CMD_AUTOMATE(sync, N_("[URL]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
 }
 
 CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
-                 N_("URL [DIRECTORY]\nHOST[:PORTNUMBER] BRANCH [DIRECTORY]"),
+                 N_("URI [DIRECTORY]\nHOST[:PORTNUMBER] BRANCH [DIRECTORY]"),
                  N_("Checks out a revision from a remote database into a directory"),
                  N_("If a revision is given, that's the one that will be checked out.  "
                     "Otherwise, it will be the head of the branch supplied.  "
@@ -765,7 +765,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
    if (url_arg)
     {
       E(!app.opts.exclude_given, origin::user,
-        F("cannot use --exclude in URL mode"));
+        F("cannot use --exclude in URI mode"));
 
       netsync_connection_info::setup_from_uri(app.opts, project.db, app.lua,
                                               netsync_connection, server, info);
@@ -870,7 +870,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(app.opts, app.lua, project, *i));
-          P(F("choose one with '%s clone -r<id> URL'") % prog_name);
+          P(F("choose one with '%s clone -r<id> URI'") % prog_name);
           E(false, origin::user, F("branch '%s' has multiple heads") % app.opts.branch);
         }
       ident = *(heads.begin());
