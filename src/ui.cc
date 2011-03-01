@@ -656,9 +656,9 @@ void
 user_interface::fatal(string const & fatal)
 {
   inform(F("fatal: %s\n"
-           "this is almost certainly a bug in monotone.\n"
-           "please send this error message, the output of '%s version --full',\n"
-           "and a description of what you were doing to <%s>.")
+           "This is almost certainly a bug in monotone.\n"
+           "Please report this error message, the output of '%s version --full',\n"
+           "and a description of what you were doing to '%s'.")
          % fatal % prog_name % PACKAGE_BUGREPORT);
   global_sanity.dump_buffer();
 }
@@ -669,9 +669,9 @@ void
 user_interface::fatal_db(string const & fatal)
 {
   inform(F("fatal: %s\n"
-           "this is almost certainly a bug in monotone.\n"
-           "please send this error message, the output of '%s version --full',\n"
-           "and a description of what you were doing to <%s>.\n"
+           "This is almost certainly a bug in monotone.\n"
+           "Please report this error message, the output of '%s version --full',\n"
+           "and a description of what you were doing to '%s'.\n"
            "This error appears to have been triggered by something in the\n"
            "database you were using, so please preserve it in case it can\n"
            "help in finding the bug.")

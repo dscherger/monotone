@@ -653,8 +653,8 @@ test/func.status : mtn$(EXEEXT) test/bin/check_net$(EXEEXT)
 
 # Creates the needed artifacts for manual test execution
 .PHONY: testers
-testers: mtn$(EXEEXT) $(check_PROGRAMS)
-	run_tester_tests run_func_tests run_unit_tests run_extra_tests
+testers: mtn$(EXEEXT) $(check_PROGRAMS)	\
+	 run_tester_tests run_func_tests run_unit_tests run_extra_tests
 
 # We want the tests re-run even if the .status files already exist.
 # .PHONY does not work for that (bad interaction with pattern rules),

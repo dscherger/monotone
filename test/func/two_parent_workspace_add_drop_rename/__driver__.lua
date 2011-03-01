@@ -17,12 +17,12 @@ check(mtn("merge_into_workspace", other), 0, false, false)
 writefile("fudgie", "fudgie content")
 
 check(mtn("add", "fudgie"), 0, false, true)
-check(qgrep("adding fudgie", "stderr"))
+check(qgrep("adding 'fudgie'", "stderr"))
 
 check(mtn("drop", "--bookkeep-only", "fudgie"), 0, false, true)
-check(qgrep("dropping fudgie", "stderr"))
+check(qgrep("dropping 'fudgie'", "stderr"))
 
 check(mtn("rename", "foo", "bar"), 0, false, true)
-check(qgrep("renaming foo to bar", "stderr"))
+check(qgrep("renaming 'foo' to 'bar'", "stderr"))
 
 commit()
