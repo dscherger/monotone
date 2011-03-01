@@ -1,0 +1,9 @@
+mtn: updating along branch 'testbranch'
+mtn: selected update target b221355d26015cd04668aa4587cff8068e4646a2
+mtn: [left]  a047a11aae2e43f05171d8ffd8bbfde054f8a4f5
+mtn: [right] b221355d26015cd04668aa4587cff8068e4646a2
+mtn: updating files/bar
+mtn: updating files/baz
+mtn: updating files/inter1
+mtn: updating files/inter2
+mtn: updated to base revision b221355d26015cd04668aa4587cff8068e4646a2

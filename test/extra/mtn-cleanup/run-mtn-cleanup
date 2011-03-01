@@ -1,0 +1,8 @@
+#! /bin/sh
+
+# $1	{srcdir}/test
+# $2	{builddir}/test/work/extra/mtn-cleanup
+# Current work directory should be
+# {builddir}/test/work/extra/mtn-cleanup/workspace
+
+yes | PATH=${2}/../../../..:${PATH} ${1}/../extra/bin/mtn-cleanup 

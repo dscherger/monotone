@@ -7,8 +7,7 @@ building and installation process for monotone
 
     - g++ consumes a lot of memory building monotone, due to
       monotone's liberal use of C++ features. it may be possible to
-      build on a system with 128mb of memory, but not pleasant. we are
-      working on making this situation better.
+      build on a system with 128mb of memory, but not pleasant.
 
   * software prerequisites:
 
@@ -33,16 +32,17 @@ building and installation process for monotone
 
            install the following packages:
              autoconf automake gettext g++ libboost-dev libz-dev
-             libbotan-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
+             libbotan1.7-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
              libidn11-dev libgmp3-dev libbz2-dev texinfo
 
-           (On etch, you may need to use libbotan1.7 from lenny.)
+           (monotone works with older and newer Botan versions as well, 
+            so libbotan1.6-dev or libbotan1.8-dev are also good to go.)
 
         on FreeBSD:
 
            install the following packages from the ports collection:
              databases/sqlite3 devel/automake1.9 devel/boost devel/gettext
-             devel/gmake devel/pcre lang/lua security/botan
+             devel/gmake devel/pcre lang/lua security/botan dns/libidn
 
         on Gentoo:
 
@@ -56,6 +56,13 @@ building and installation process for monotone
              autoconf automake gettext boost boost-devel zlib zlib-devel
              lua lua-devel pcre pcre-devel sqlite sqlite-devel libidn
              libidn-devel gcc-c++ texinfo texinfo-tex botan botan-devel
+ 
+        on openSUSE:
+
+            install the following extra packages with YaST or zypper:
+              autoconf automake gettext-tools gcc-g++ boost-devel zlib-devel
+              libbotan-devel sqlite3-dev pcre-devel lua-devel libidn-devel
+              libbz2-devel texinfo make
 
         on Mac OS X:
 
@@ -69,212 +76,9 @@ building and installation process for monotone
            download and extract it manually and let CXXFLAGS point to the
            include/ directory of the extracted version.
 
-        on Windows (using MinGW):
+        on Windows (using MinGW): see INSTALL_windows_native
 
-           Many tools and packages are available on the SourceForge
-           MinGW download site:
-
-           https://sourceforge.net/projects/mingw/files/
-
-           That site is organized into several hierarchical lists of
-           files. We give the hierarchy names here, rather than a
-           complete download URL, to make it easy to check for new
-           versions. The versions given here were used to build the
-           current release of monontone.
-
-           Trying a new version of Boost can be dangerous.
-
-           These instructions work on a new computer, with only
-           Windows XP installed.
-
-           Package  | Version | location
-           --------------------------
-           MingGW   | 5.1.4   | Automated MinGW Installer | MinGW 5.1.4 | MinGW-5.1.4.exe
-           MSYS     | 1.0.11  | MSYS Base System | msys-1.0.11 | MSYS-1.0.11.exe
-           msysDTK  | 1.0.1   | MSYS Supplementary Tools | msysDTK-1.0.1 | msysDTK-1.0.1.exe
-           libiconv | 1.13    | MinGW libiconv | Release 1.13 |
-                    |         |  libiconv-1.13-mingw32-bin.tar.gz
-                    |         |  libiconv-1.13-mingw32-dev.tar.gz
-                    |         |  libiconv-1.13-mingw32-dll-2.tar.gz
-           autoconf | 2.63    | MSYS autoconf | autoconf-2.63-1 | autoconf-2.63-1-msys-1.0.11-bin.tar.lzma
-           automake | 1.11    | MSYS automake | automake-1.11-1 | automake-1.11-1-msys-1.0.11-bin.tar.lzma
-           zlib     | 1.2.3   | zlib-1.2.3-1-mingw32 |
-                    |         | libz-1.2.3-1-mingw32-dev.tar.gz
-                    |         | libz-1.2.3-1-mingw32-dll-1.tar.gz
-           gcc dll  |         | GCC Version 4 | Current Release_gcc-4.4.0 | gcc-core-4.4.0-mingw32-dll.tar.gz
-           gettext  | 0.17    | MinGW gettext | gettext-0.17-1 |
-                    |         | gettext-0.17-1-mingw32-bin.tar.lzma
-                    |         | gettext-0.17-1-mingw32-dev.tar.lzma
-                    |         | libgettextpo-0.17-1-mingw32-dll-0.tar.lzma
-                    |         | libintl-0.17-1-mingw32-dll-8.tar.lzma
-           boost    | 1.34.1  | http://prdownloads.sf.net/boost/boost_1_34_1.tar.bz2?download
-           Lua      | 5.1.4   | http://www.lua.org/ | lua-5.1.4.tar.gz
-           pcre     | 7.8     | http://www.pcre.org/ | pcre-7.8.tar.bz2
-           botan    | 1.8.4   | http://botan.randombit.net/download.html | Botan-1.8.4.tbz
-           sqlite3  | 3.6.16  | http://www.sqlite.org/download.html | sqlite-amalgamation-3.6.16.tar.gz, with makefile
-           libidn   | 1.9     | ftp://ftp.gnu.org/gnu/libidn | libidn-1.9.tar.gz
-           Depends.exe|       | http://www.dependencywalker.com/ ; also comes with Visual Studio
-
-           msysDTK installs autoconf, automake, Perl, CVS, crypt, and
-           other tools needed by the autoconf tools.
-
-           However, monotone requires a newer autoconf and automake.
-           In general, there are two versions of most tools on the
-           MinGW site; mingw and msys. MinGW versions are intended to
-           be run from a DOS shell, msys versions from an Msys shell.
-           monotone configure requires the Msys shell, so we need the
-           msys versions of autoconf and automake.
-
-           Other tools will be linked with the monotone MinGW
-           executable, so we need the MinGW versions of those.
-
-           The tools listed here are sufficient to build the monotone
-           executable and html and info documentation. However, the
-           'distcheck' target also builds the documentation in
-           postscript format, which requires tools not (yet) available
-           for MinGW.
-
-           1. MinGW - run installer, accept defaults but add g++ on the package selection page (installs to c:/MinGW)
-           2. MSYS - run installer, accept defaults (installs to c:/Msys/1.0)
-           3. msysDTK - run installer, accept defaults (installs to c:/Msys/1.0)
-
-           4. libiconv
-              start the Msys shell.
-              $ cd /mingw
-              $ tar zxf libiconv-1.13-mingw32-bin.tar.gz
-              $ tar zxf libiconv-1.13-mingw32-dev.tar.gz
-              $ tar zxf libiconv-1.13-mingw32-dll-2.tar.gz
-
-           5. autoconf
-              $ cd /
-              $ tar --lzma -xf autoconf-2.63-1-msys-1.0.11-bin.tar.lzma
-
-           6. automake
-              $ cd /
-              $ tar --lzma -xf automake-1.11-1-msys-1.0.11-bin.tar.lzma
-
-           7. zlib
-              $ cd /mingw
-              $ tar zxf libz-1.2.3-1-mingw32-dev.tar.gz
-              $ tar zxf libz-1.2.3-1-mingw32-dll-1.tar.gz
-              $ cp bin/libz-1.dll bin/zlib1.dll
-
-           8. gettext
-              $ cd /mingw
-              $ tar --lzma -xf gettext-0.17-1-mingw32-bin.tar.lzma
-              $ tar --lzma -xf gettext-0.17-1-mingw32-dev.tar.lzma
-              $ tar --lzma -xf libgettextpo-0.17-1-mingw32-dll-0.tar.lzma
-              $ tar --lzma -xf libintl-0.17-1-mingw32-dll-8.tar.lzma
-              $ tar zxf gcc-core-4.4.0-mingw32-dll.tar.gz
-
-           9. boost; only need headers
-              $ cd /usr
-              $ mkdir src
-              $ cd src
-              $ tar jxf boost_1_34_1.tar.bz2
-              $ cd boost_1_34_1
-              $ cp -a boost /mingw/include
-
-           10. Lua
-               $ cd /usr/src
-               $ tar zxf lua-5.1.4.tar.gz
-               $ cd lua-5.1.4
-               $ make mingw INSTALL_TOP=/mingw
-               $ make install INSTALL_TOP=/mingw
-
-           11. pcre
-               $ cd /usr/src
-               $ tar jxf pcre-7.8.tar.bz2
-               $ cd pcre-7.8
-               $ ./configure --prefix=/mingw
-               $ make install
-
-           12. botan
-               12.1 unpack, configure:
-                    $ cd /usr/src
-                    $ tar jxf Botan-1.8.4.tbz
-                    $ cd Botan-1.8.4
-                    $ ./configure.pl --with-tr1=none
-               12.2 edit Makefile, delete -ansi from LANG_FLAGS
-               12.3 install:
-                    $ make install
-
-           13. sqlite3
-               $ cd /usr/src
-               $ tar zxf sqlite-amalgamation-3.6.16.tar.gz
-               $ cd sqlite-3.6.16
-               $ ./configure --prefix=/mingw
-               $ make install
-
-           14. libidn
-               $ cd /usr/src
-               $ tar zxf libidn-1.9.tar.gz
-               $ cd libidn-1.9
-               $ ./configure --prefix=/mingw
-               $ make install
-
-           15. Depends.exe
-               If you have Visual Studio installed, you should be able to skip this.
-               If you don't, then download the appropriate depends*.zip and
-               unpack it someplace in your %PATH%.
-               This is only used by the testsuite, in particular the empty_environment test.
-               If you just want to build monotone for your own use, you can skip this and
-               just ignore that that test fails.
-
-           16. build monotone
-               $ cd /c/.../monotone
-               $ export PATH=/bin:/mingw/bin
-               $ autoreconf -i
-               $ touch config.h.in
-               $ ./configure sqlite3_LIBS=-lsqlite3
-               $ make
-
-        on Windows (using Cygwin):
-
-           Monotone needs the following packages to compile:
-           (newer releases are usually ok)
-
-             Runtime requirements:
-               cygwin-1.7.0-60
-               libgcc1-4.3.2-2
-               libidn11-1.9-1
-               libintl8-0.17-11
-               libpcre0-7.9-1
-               libsqlite3_0-3.6.2-1
-               libstdc++6-4.3.2-2
-               lua-5.1.4-11
-               zlib0-1.2.3-10
-
-             Build requirements:
-               gcc4-4.3.2
-               binutils-2.19.51
-               boost-devel-1.33.1
-               libsqlite3-devel-3.6.2
-               libidn-devel-1.9
-               gettext-devel-0.17
-               zlib-1.2.3
-               perl-5.10.0
-               botan-1.8.2
-
-           currently every prerequisite is available as packages except
-           lua and botan which are only available in Cygwin 1.7;
-           an official Cygwin package for monotone and all its
-           dependencies is usually available soon after release.
-
-           The following is needed to succesfully configure:
-             export CXXFLAGS="-I/usr/include/boost-1_33_1/"; configure
-
-           Easiest way to create a Cygwin package is using cygport
-           (which must be installed separately as a Cygwin package)
-           and upgrade the previous version cygport file; you can fetch
-           latest version from the maintainer's own repository:
-
-           % mtn pull lapo.it it.lapo.cygwin.ports
-           % mtn checkout -b it.lapo.cygwin.ports cygwin
-           % cd cygwin
-           % mtn mv monotone-$OLD-1.cygport monotone-$NEW-1.cygport
-           proceed to change or fix the port and/or the patch as needed
-           % cygport monotone-$NEW-1 all
+        on Windows (using Cygwin): see INSTALL_windows_cygwin
 
         on other systems:
 

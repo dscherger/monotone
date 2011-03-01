@@ -1,7 +1,7 @@
 ;; Major mode for editing Lua files.
 ;; For info on Lua, see http://www.lua.org/
 ;;
-;; Copyright (C) 2007 Stephen Leake
+;; Copyright (C) 2007, 2011 Stephen Leake
 ;;
 ;; Author   : Stephen Leake <stephen.leake@gsfc.nasa.gov>
 ;; Web Site : http://www.stephe-leake.org/
@@ -130,7 +130,8 @@ Keybindings:
               (line-beginning-position) (point)))))
 
 ;;; pages
-(defconst lua-page-marker "----------" ; exactly 10 dashes
+(defconst lua-page-marker
+  "\\(----------\\|^function\\)" ; exactly 10 dashes, or a function
   "Lua page delimiter.")
 
 (defun lua-prev-page ()

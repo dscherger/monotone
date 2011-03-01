@@ -24,7 +24,7 @@ XGETTEXT_OPTIONS_NO_FLAG=--keyword=F --keyword=FP:1,2 --keyword=_ --keyword=N_
 # or entity, or to disclaim their copyright.  The empty string stands for
 # the public domain; in this case the translators are expected to disclaim
 # their copyright.
-COPYRIGHT_HOLDER = Graydon Hoare <graydon@pobox.com>
+COPYRIGHT_HOLDER = The monotone development team <http://www.monotone.ca>
 
 # This is the email address or URL to which the translators should report
 # bugs in the untranslated strings:
@@ -40,4 +40,4 @@ COPYRIGHT_HOLDER = Graydon Hoare <graydon@pobox.com>
 # It can be your email address, or a mailing list address where translators
 # can write to without being subscribed, or the URL of a web page through
 # which the translators can contact you.
-MSGID_BUGS_ADDRESS = monotone-devel@nongnu.org
+MSGID_BUGS_ADDRESS = https://code.monotone.ca/p/monotone/issues/

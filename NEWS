@@ -1,11 +1,140 @@
-xxx xxx xx xx:xx:xx UTC 2011
+XXX XXX XX XX:XX:XX UTC 2011
 
-        0.99.2 release
+        1.0 release.
 
         Changes
 
-        - French translation was brought up-to-date
-          (many thanks to Steve Petruzzello!)
+        - The database scheme was changed; please execute 'mtn db migrate'
+          on all your local and remote databases.
+
+        - In 'mtn conflicts resolve_first interactive', the result
+          file name now defaults to _MTN/resolutions/<left_path>.
+          (fixes monotone issue 103)
+
+        - The French monotone translation has been updated and is
+          now part of the main distribution again. Many thanks to
+          Steve Petruzzello <dlist@bluewin.ch> for the outstanding
+          work!
+
+        - get_netsync_(read|write)_permitted have been extended to not
+          only read the files read-permissions and write-permissions,
+          but also the files in the subdirectories read-permissions.d
+          and write-permissions.d.
+
+        - monotone now also tracks the workspaces of databases which
+          do not reside in a "managed" location.
+
+        - automate now resets the locale to "POSIX" internally.  This
+          means that all scripts can expect the same untranslated
+          messages from mtn automate, regardless of the locale of the
+          calling process.
+
+        - The hook 'get_netsync_key' has been split up into two separate
+          hooks, one for client usage ('get_netsync_client_key', with
+          the same arguments as the original 'get_netsync_key') and one
+          for server usage ('get_netsync_server_key', with a single table
+          argument containing all the given '--bind' options).  Please
+          review your custom hooks accordingly.
+ 
+        - Short options ('-b', '-d', ...) are no longer completed.  This
+          fixes an invariant failure originating from wrong option usage.
+          (closes monotone issue 141)
+
+        New Features
+
+        - 'mtn conflicts store' now outputs a count of the conflicts,
+          and the name of the conflicts file.
+          (fixes monotone issue 108)
+
+        - New 'mtn list workspaces' command which outputs all the
+          known workspaces for a specific database.
+          (closes monotone issue 129)
+
+        Bugs fixed
+
+        - The internal line merger will actually preserve your line
+          endings now, instead of changing everything to "\n".
+
+        - Improved the help and fixed the argument indexing in
+          'conflicts resolve_first' (fixes monotone issue 101)
+
+        - A regression from 0.48 prevented monotone from ordering the
+          diff output of individual files alphabetically.
+          (fixes monotone issue 102)
+
+        - 'mtn privkey' did not recognize private keys solely available
+          in the key store. This has been fixed.
+
+        - Added compatibility with Botan 1.9.9 and newer.
+          (fixes monotone issue 104)
+
+        - 'mtn pull' and 'mtn sync' would always say that your workspace
+          has not been updated.  Now, it only does that when you used
+          the '--update' option and there were no updates.
+          (fixes monotone issue 106)
+
+        - 'mtn automate remote' and 'mtn automate remote_stdio' now use
+          a given database given by an alias to read, store and validate
+          a remote server's key fingerprint (fixes monotone issue 95)
+
+        - monotone gives a proper error message now if a netsync URI
+          with the 'mtn' scheme misses the required host part
+          (fixes monotone issue 110)
+
+        - Whenever a binary file was removed and one would try to get
+          a diff using mtn diff, it would report that "/dev/null is
+          binary".  This has been changed to it reports the actual
+          name of the removed file instead.
+          (fixes monotone issue 111)
+
+        - monotone no longer wrongly falls back on a :memory: database
+          when no database option is given. It also prints out an
+          informational message for commands like 'setup' and 'clone'
+          that fall back on the configured default database, again,
+          if no database is specified for these commands.
+          (fixes monotone issue 113)
+
+        - If 'mtn serve' is called with one or more '--bind' options, then
+          the arguments to these options can now be specified again
+          as follows:
+
+            '<ip-or-host>' 
+                to listen to IP or host on the default port
+            '<ip-or-host>:<port>'
+                to listen to IP or host on the specified port  - or
+            ':<port>'
+                to listen on all interfaces on the specified port
+
+          (fixes monotone issue 119)
+          
+        - monotone does no longer enforce ".mtn" as file extension
+          for managed databases.  Instead a new Lua hook,
+          get_default_database_glob(), is used to determine a pattern
+          which matches accepted database filenames and this pattern
+          by default accept files ending with both, ".mtn" and ".db".
+          (fixes monotone issue 128)
+
+        - monotone gives now a proper error message when an incomplete
+          or partial identifier contains non-hex digits.
+          (fixes monotone issue 143)
+
+        Internal
+
+        - The source tree has been reorganized. Sources, tests and documentation
+          now reside in specific directories and many smaller improvements in
+          terms of source code cleanup, developer documentation and general build
+          infrastructure accompany this big change.
+
+        Other
+
+        - Added a new directory extra/, which contains monotone hooks and
+          related scripts that have been shown to work.  Most of these get
+          installed, usually somewhere under $(prefix)/share/monotone.
+          Please read extra/README for further information.
+
+        - Added the mtn-cleanup Perl script that returns a workspace to its
+          pristine state with the minimum amount of change. This script is
+          in the extra/bin directory.
 
 
 Sun Oct 31 21:51:16 UTC 2010
@@ -28,7 +157,7 @@ Thu Oct 28 21:07:18 UTC 2010
 
         Changes
 
-        - The database scheme was changed; please execute 'mtn db mgirate'
+        - The database scheme was changed; please execute 'mtn db migrate'
           on all your local and remote databases.
 
         - Normal and automate sync, push, and pull now take a

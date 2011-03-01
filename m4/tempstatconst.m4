@@ -30,11 +30,11 @@ AC_DEFUN([AC_CXX_TEMPLATE_STATIC_CONST_BUG],
   [
    # Autoconf doesn't make it easy to do a test involving 
    # linking two files.  This is the best way I know of.
-   AC_COMPILE_IFELSE([$codeA],
+   AC_COMPILE_IFELSE([AC_LANG_SOURCE([$codeA])],
      [mv conftest.$ac_objext conftestA.$ac_objext
       save_LIBS="$LIBS"
       LIBS=conftestA.$ac_objext
-      AC_LINK_IFELSE([$codeB],
+      AC_LINK_IFELSE([AC_LANG_SOURCE([$codeB])],
         [ac_cv_prog_cxx_template_static_const_ok=yes],
         [ac_cv_prog_cxx_template_static_const_ok=no])
       LIBS="$save_LIBS"],

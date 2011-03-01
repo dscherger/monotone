@@ -1,0 +1,32 @@
+# Functions and starter for the bash completion tests
+
+proc success {} {
+    send_user "\n<<success>>\n"
+}
+
+proc failure {str} {
+    if {$str == ""} {
+	send_user "\n<<failure>>\n"
+    } else {
+	send_user "\n<<failure when expecting $str>>\n"
+    }
+}
+
+set timeout 2
+set env(initial_dir) $initial_dir
+set env(srcdir) $srcdir
+# some user's ~/.bash_profile start xserver etc; don't do that
+spawn "bash" "--init-file" "/dev/nul" "--rcfile" "$srcdir/extra/bash_completion/bashrc"
+# If there is no completion package, it's no point trying this.
+# Make sure we do get a prompt.
+expect {
+    -timeout 20
+    "No bash completion package present." {
+	failure "No bash completion package present."; exit
+    }
+    -re "@ $"
+    timeout { failure "no prompt"; exit }
+}
+send ". $initial_dir/extra/shell/monotone.bash_completion\n"
+# Wait for the last line to be echoed
+expect "shell/monotone.bash_completion"

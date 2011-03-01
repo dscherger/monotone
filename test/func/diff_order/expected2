@@ -1,0 +1,32 @@
+#
+# old_revision [e7b993188a210fc543abb39f47b84e7971a74396]
+#
+# delete "bbb"
+# 
+# add_file "aaa"
+#  content [23dcbe46f65d262e79d2ccbb3d34efce68dfd602]
+# 
+# patch "ccc"
+#  from [e81daec0385673562ae66971d78bfd91bb92c276]
+#    to [23dcbe46f65d262e79d2ccbb3d34efce68dfd602]
+#
+============================================================
+--- /dev/null	
++++ aaa	23dcbe46f65d262e79d2ccbb3d34efce68dfd602
+@@ -0,0 +1 @@
++even newer
+\ No newline at end of file
+============================================================
+--- bbb	e81daec0385673562ae66971d78bfd91bb92c276
++++ /dev/null	
+@@ -1 +0,0 @@
+-new stuff
+\ No newline at end of file
+============================================================
+--- ccc	e81daec0385673562ae66971d78bfd91bb92c276
++++ ccc	23dcbe46f65d262e79d2ccbb3d34efce68dfd602
+@@ -1 +1 @@
+-new stuff
+\ No newline at end of file
++even newer
+\ No newline at end of file
