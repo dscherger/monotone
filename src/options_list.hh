@@ -79,7 +79,7 @@
  *   DEPRECATE(option, reason, deprecated_in, will_remove_in)
  *     Do not show the named option in help output (even with --hidden), and
  *     give a warning if it is used. The reason should be
- *     gettext_noopt("some text here") as it is translatable.
+ *     gettext_noop("some text here") as it is translatable.
  *
  *
  *   Option Strings
@@ -381,8 +381,9 @@ SIMPLE_OPTION(bookkeep_only, "bookkeep-only", bool,
 SIMPLE_OPTION(move_conflicting_paths,
               "move-conflicting-paths/no-move-conflicting-paths",
               bool,
-              gettext_noop("move conflicting, unversioned paths into _MTN/resolutions "
-                           "before proceeding with any workspace change"))
+              (F("move conflicting, unversioned paths into '%s' "
+                 "before proceeding with any workspace change") %
+                 bookkeeping_resolutions_dir).str().c_str())
 
 OPTSET_REL(globals, ssh_sign)
 SIMPLE_INITIALIZED_OPTION(ssh_sign, "ssh-sign", enum_string, "yes,no,only,check",
@@ -589,7 +590,7 @@ SIMPLE_OPTION(no_corresponding_renames, "no-corresponding-renames/corresponding-
 
 OPTSET(resolve_conflicts_opts)
 OPTVAR(resolve_conflicts_opts, bookkeeping_path,
-       resolve_conflicts_file, "_MTN/conflicts")
+       resolve_conflicts_file, bookkeeping_conflicts_file)
 
 OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-file",
        gettext_noop("use file to resolve conflicts"))
@@ -610,7 +611,7 @@ SIMPLE_OPTION(resolve_conflicts, "resolve-conflicts/no-resolve-conflicts", bool,
        gettext_noop("specify conflict resolutions in a file, instead of interactively"))
 
 OPTSET(conflicts_opts)
-OPTVAR(conflicts_opts, bookkeeping_path, conflicts_file, bookkeeping_path("_MTN/conflicts"))
+OPTVAR(conflicts_opts, bookkeeping_path, conflicts_file, bookkeeping_conflicts_file)
 
 OPTION(conflicts_opts, conflicts_file, true, "conflicts-file",
        gettext_noop("file in which to store conflicts"))

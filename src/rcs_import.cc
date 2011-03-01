@@ -711,10 +711,10 @@ test_parse_rcs_file(system_path const & filename)
   I(! filename.empty());
   assert_path_is_file(filename);
 
-  P(F("parsing RCS file %s") % filename);
+  P(F("parsing RCS file '%s'") % filename);
   rcs_file r;
   parse_rcs_file(filename.as_external(), r);
-  P(F("parsed RCS file %s OK") % filename);
+  P(F("parsed RCS file '%s' OK") % filename);
 }
 
 
@@ -903,11 +903,11 @@ public:
           }
         catch (oops const & o)
           {
-            W(F("error reading RCS file %s: %s") % file % o.what());
+            W(F("error reading RCS file '%s': %s") % file % o.what());
           }
       }
     else
-      L(FL("skipping non-RCS file %s") % file);
+      L(FL("skipping non-RCS file '%s'") % file);
   }
   virtual ~cvs_tree_walker() {}
 };
@@ -1207,8 +1207,8 @@ import_cvs_repo(project_t & project,
 
 {
   E(!directory_exists(cvsroot / "CVSROOT"), origin::user,
-    F("%s appears to be a CVS repository root directory\n"
-      "try importing a module instead, with 'cvs_import %s/<module_name>")
+    F("'%s' appears to be a CVS repository root directory\n"
+      "try importing a module instead, with 'cvs_import %s/<module_name>'")
     % cvsroot % cvsroot);
 
   cvs_history cvs;

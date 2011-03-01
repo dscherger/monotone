@@ -376,8 +376,8 @@ parse_revision(basic_io::parser & parser,
   parser.esym(syms::format_version);
   parser.str(tmp);
   E(tmp == "1", parser.tok.in.made_from,
-    F("encountered a revision with unknown format, version '%s'\n"
-      "I only know how to understand the version '1' format\n"
+    F("encountered a revision with unknown format, version %s\n"
+      "I only know how to understand the version 1 format\n"
       "a newer version of monotone is required to complete this operation")
     % tmp);
   parser.esym(syms::new_manifest);

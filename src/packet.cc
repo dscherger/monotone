@@ -332,7 +332,7 @@ namespace
         privkey_packet(args, body);
       else
         {
-          W(F("unknown packet type: '%s'") % type);
+          W(F("unknown packet type '%s'") % type);
           return;
         }
       ++count;

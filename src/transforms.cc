@@ -81,10 +81,10 @@ error_in_transform(Botan::Exception & e, origin::type caused_by)
 
       E(false, caused_by,
         F("%s\n"
-          "this may be due to a memory glitch, data corruption during\n"
+          "This may be due to a memory glitch, data corruption during\n"
           "a network transfer, corruption of your database or workspace,\n"
-          "or a bug in monotone.  if the error persists, please contact\n"
-          "%s for assistance.\n")
+          "or a bug in monotone.  If the error persists, please report\n"
+          "it to '%s'.")
         % w % PACKAGE_BUGREPORT);
     }
   else

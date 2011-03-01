@@ -1178,9 +1178,9 @@ CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
 CMD(store, "store", "", CMD_REF(conflicts),
     "[LEFT_REVID RIGHT_REVID]",
     N_("Store the conflicts from merging two revisions"),
-    N_("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
+    (F("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
        "first two heads that would be chosen by the 'merge' command. If "
-       "--conflicts-file is not given, '_MTN/conflicts' is used."),
+       "--conflicts-file is not given, '%s' is used.") % bookkeeping_conflicts_file).str(),
     options::opts::branch | options::opts::conflicts_opts)
 {
   database    db(app);

@@ -225,7 +225,7 @@ workspace::get_work_rev(revision_t & rev)
   catch(exception & e)
     {
       E(false, origin::system,
-        F("workspace is corrupt: reading %s: %s")
+        F("workspace is corrupt: reading '%s': %s")
         % rev_path % e.what());
     }
 
@@ -469,7 +469,7 @@ read_options_file(any_path const & optspath,
     }
   catch (exception & e)
     {
-      W(F("Failed to read options file %s: %s") % optspath % e.what());
+      W(F("Failed to read options file '%s': %s") % optspath % e.what());
       return;
     }
 
@@ -518,11 +518,11 @@ read_options_file(any_path const & optspath,
           opts.key_dir_given = true;
         }
       else
-        W(F("unrecognized key '%s' in options file %s - ignored")
+        W(F("unrecognized key '%s' in options file '%s' - ignored")
           % opt % optspath);
     }
   E(src.lookahead == EOF, src.made_from,
-    F("Could not parse entire options file %s") % optspath);
+    F("Could not parse entire options file '%s'") % optspath);
 }
 
 static void
@@ -557,7 +557,7 @@ write_options_file(bookkeeping_path const & optspath,
     }
   catch(exception & e)
     {
-      W(F("Failed to write options file %s: %s") % optspath % e.what());
+      W(F("Failed to write options file '%s': %s") % optspath % e.what());
     }
 }
 
@@ -1088,13 +1088,13 @@ addition_builder::add_nodes_for(file_path const & path,
   if (ros.has_node(path))
     {
       E(is_dir_t(ros.get_node(path)), origin::user,
-        F("cannot add %s, because %s is recorded as a file "
+        F("cannot add '%s', because '%s' is recorded as a file "
           "in the workspace manifest") % goal % path);
       return;
     }
 
   add_nodes_for(path.dirname(), goal);
-  P(F("adding %s to workspace manifest") % path);
+  P(F("adding '%s' to workspace manifest") % path);
 
   node_id nid = the_null_node;
   switch (get_path_status(path))
@@ -1184,14 +1184,14 @@ addition_builder::visit_file(file_path const & path)
 {
   if ((respect_ignore && work.ignore_file(path)) || db.is_dbfile(path))
     {
-      P(F("skipping ignorable file %s") % path);
+      P(F("skipping ignorable file '%s'") % path);
       return;
     }
 
   if (ros.has_node(path))
     {
       if (!path.empty())
-        P(F("skipping %s, already accounted for in workspace") % path);
+        P(F("skipping '%s', already accounted for in workspace") % path);
       return;
     }
 
@@ -1347,7 +1347,7 @@ editable_working_tree::drop_detached_node(node_id nid)
   map<bookkeeping_path, file_path>::const_iterator i
     = rename_add_drop_map.find(pth);
   I(i != rename_add_drop_map.end());
-  P(F("dropping %s") % i->second);
+  P(F("dropping '%s'") % i->second);
   safe_erase(rename_add_drop_map, pth);
   delete_file_or_dir_shallow(pth);
 }
@@ -1358,7 +1358,7 @@ editable_working_tree::create_dir_node()
   node_id nid = next_nid++;
   bookkeeping_path pth = path_for_detached_nid(nid);
   require_path_is_nonexistent(pth,
-                              F("path %s already exists") % pth);
+                              F("path '%s' already exists") % pth);
   mkdir_p(pth);
   return nid;
 }
@@ -1369,7 +1369,7 @@ editable_working_tree::create_file_node(file_id const & content)
   node_id nid = next_nid++;
   bookkeeping_path pth = path_for_detached_nid(nid);
   require_path_is_nonexistent(pth,
-                              F("path %s already exists") % pth);
+                              F("path '%s' already exists") % pth);
   file_data dat;
   source.get_version(content, dat);
   write_data(pth, dat.inner());
@@ -1387,11 +1387,11 @@ editable_working_tree::attach_node(node_id nid, file_path const & dst_pth)
   if (i != rename_add_drop_map.end())
     {
       if (messages)
-        P(F("renaming %s to %s") % i->second % dst_pth);
+        P(F("renaming '%s' to '%s'") % i->second % dst_pth);
       safe_erase(rename_add_drop_map, src_pth);
     }
   else if (messages)
-     P(F("adding %s") % dst_pth);
+     P(F("adding '%s'") % dst_pth);
 
   if (dst_pth == file_path())
     {
@@ -1428,7 +1428,7 @@ editable_working_tree::apply_delta(file_path const & pth,
   calculate_ident(pth, curr_id);
   E(curr_id == old_id, origin::system,
     F("content of file '%s' has changed, not overwriting") % pth);
-  P(F("updating %s") % pth);
+  P(F("updating '%s'") % pth);
 
   file_data dat;
   source.get_version(new_id, dat);
@@ -1603,7 +1603,7 @@ move_conflicting_paths_into_bookkeeping(set<file_path> const & leftover_paths)
   // now().as_iso_8601_extended to eliminate the colons, or some appropriate
   // format for now().as_formatted_localtime would be simple and
   // probably adequate.
-  bookkeeping_path leftover_path = bookkeeping_root / "resolutions";
+  bookkeeping_path leftover_path = bookkeeping_resolutions_dir;
 
   mkdir_p(leftover_path);
 
@@ -1624,7 +1624,7 @@ move_conflicting_paths_into_bookkeeping(set<file_path> const & leftover_paths)
       else
         I(false);
 
-      P(F("moved conflicting path %s to %s") % *i % new_path);
+      P(F("moved conflicting path '%s' to '%s'") % *i % new_path);
     }
 }
 
@@ -1889,7 +1889,7 @@ workspace::perform_deletions(database & db,
         F("unable to drop the root directory"));
 
       if (!new_roster.has_node(name))
-        P(F("skipping %s, not currently tracked") % name);
+        P(F("skipping '%s', not currently tracked") % name);
       else
         {
           const_node_t n = new_roster.get_node(name);
@@ -1899,7 +1899,7 @@ workspace::perform_deletions(database & db,
               if (!d->children.empty())
                 {
                   E(recursive, origin::user,
-                    F("cannot remove %s/, it is not empty") % name);
+                    F("cannot remove '%s/', it is not empty") % name);
                   for (dir_map::const_iterator j = d->children.begin();
                        j != d->children.end(); ++j)
                     todo.push_front(name / j->first);
@@ -1914,7 +1914,7 @@ workspace::perform_deletions(database & db,
                   if (directory_empty(name))
                     delete_file_or_dir_shallow(name);
                   else
-                    W(F("directory %s not empty - "
+                    W(F("directory '%s' not empty - "
                         "it will be dropped but not deleted") % name);
                 }
               else
@@ -1925,11 +1925,11 @@ workspace::perform_deletions(database & db,
                   if (file->content == fid)
                     delete_file_or_dir_shallow(name);
                   else
-                    W(F("file %s changed - "
+                    W(F("file '%s' changed - "
                         "it will be dropped but not deleted") % name);
                 }
             }
-          P(F("dropping %s from workspace manifest") % name);
+          P(F("dropping '%s' from workspace manifest") % name);
           new_roster.drop_detached_node(new_roster.detach_node(name));
         }
       todo.pop_front();
@@ -1973,14 +1973,14 @@ workspace::perform_rename(database & db,
         F("cannot rename the workspace root (try '%s pivot_root' instead)")
         % prog_name);
       E(new_roster.has_node(src), origin::user,
-        F("source file %s is not versioned") % src);
+        F("source file '%s' is not versioned") % src);
 
       if (src == dst || dst.is_beneath_of(src))
         {
           if (get_path_status(dst) == path::directory)
-            W(F("cannot move `%s' to a subdirectory of itself, `%s/%s'") % src % dst % src);
+            W(F("cannot move '%s' to a subdirectory of itself, '%s/%s'") % src % dst % src);
           else
-            W(F("`%s' and `%s' are the same file") % src % dst);
+            W(F("'%s' and '%s' are the same file") % src % dst);
         }
       else
         {
@@ -1996,7 +1996,7 @@ workspace::perform_rename(database & db,
           // mtn mv foo bar/foo where bar doesn't exist
           file_path parent = dst.dirname();
           E(get_path_status(parent) == path::directory, origin::user,
-            F("destination path's parent directory %s/ doesn't exist") % parent);
+            F("destination path's parent directory '%s/' doesn't exist") % parent);
 
           renames.insert(make_pair(src, dpath));
           add_parent_dirs(db, nis, *this, dpath, new_roster);
@@ -2013,7 +2013,7 @@ workspace::perform_rename(database & db,
       //    mtn mv --bookkeep-only foo bar
 
       E(get_path_status(dst) == path::directory, origin::user,
-        F("destination %s/ is not a directory") % dst);
+        F("destination '%s/' is not a directory") % dst);
 
       for (set<file_path>::const_iterator i = srcs.begin();
            i != srcs.end(); i++)
@@ -2022,7 +2022,7 @@ workspace::perform_rename(database & db,
             F("cannot rename the workspace root (try '%s pivot_root' instead)")
             % prog_name);
           E(new_roster.has_node(*i), origin::user,
-            F("source file %s is not versioned") % *i);
+            F("source file '%s' is not versioned") % *i);
 
           file_path d = dst / i->basename();
           if (bookkeep_only &&
@@ -2039,12 +2039,12 @@ workspace::perform_rename(database & db,
               d = dst / i->basename();
 
               E(!new_roster.has_node(d), origin::user,
-                F("destination %s already exists in the workspace manifest") % d);
+                F("destination '%s' already exists in the workspace manifest") % d);
             }
 
           if (*i == dst || dst.is_beneath_of(*i))
             {
-              W(F("cannot move `%s' to a subdirectory of itself, `%s/%s'")
+              W(F("cannot move '%s' to a subdirectory of itself, '%s/%s'")
                 % *i % dst % *i);
             }
           else
@@ -2062,7 +2062,7 @@ workspace::perform_rename(database & db,
     {
       node_id nid = new_roster.detach_node(i->first);
       new_roster.attach_node(nid, i->second);
-      P(F("renaming %s to %s in workspace manifest") % i->first % i->second);
+      P(F("renaming '%s' to '%s' in workspace manifest") % i->first % i->second);
     }
 
   parent_map parents;
@@ -2087,16 +2087,16 @@ workspace::perform_rename(database & db,
           }
         else if (!have_src && !have_dst)
           {
-            W(F("%s doesn't exist in workspace, skipping") % s);
+            W(F("'%s' doesn't exist in workspace, skipping") % s);
           }
         else if (have_src && have_dst)
           {
-            W(F("destination %s already exists in workspace, "
+            W(F("destination '%s' already exists in workspace, "
                 "skipping filesystem rename") % d);
           }
         else
           {
-            W(F("%s doesn't exist in workspace and %s does, "
+            W(F("'%s' doesn't exist in workspace and '%s' does, "
                 "skipping filesystem rename") % s % d);
           }
       }
@@ -2123,7 +2123,7 @@ workspace::perform_pivot_root(database & db,
     F("proposed new root directory '%s' is not a directory") % new_root);
   {
     E(!old_roster.has_node(new_root / bookkeeping_root_component), origin::user,
-      F("proposed new root directory '%s' contains illegal path %s")
+      F("proposed new root directory '%s' contains illegal path '%s'")
       % new_root % bookkeeping_root);
   }
 
@@ -2235,7 +2235,7 @@ workspace::perform_content_update(roster_t const & old_roster,
   delete_dir_shallow(detached);
 
   if (moved_conflicting)
-    P(F("moved some conflicting files into %s/%s") % bookkeeping_root % "resolutions");
+    P(F("moved some conflicting files into '%s'") % bookkeeping_resolutions_dir);
 }
 
 // Local Variables:

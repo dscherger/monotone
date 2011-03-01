@@ -22,7 +22,7 @@ do_safe_erase(T & container, typename T::key_type const & key,
 {
   if (!container.erase(key))
     global_sanity.generic_failure("safe_erase", origin::internal,
-                                  F("erasing nonexistent key from %s")
+                                  F("erasing nonexistent key from '%s'")
                                   % container_name,
                                   file, line);
 }
@@ -39,7 +39,7 @@ do_safe_insert(T & container, typename T::value_type const & val,
   std::pair<typename T::iterator, bool> r = container.insert(val);
   if (!r.second)
     global_sanity.generic_failure("safe_insert", origin::internal,
-                                  F("inserting duplicate entry into %s")
+                                  F("inserting duplicate entry into '%s'")
                                   % container_name,
                                   file, line);
   return r.first;
@@ -59,7 +59,7 @@ do_safe_insert(T & container, typename T::iterator where,
   typename T::iterator r = container.insert(where, val);
   if (pre_size == container.size())
     global_sanity.generic_failure("safe_insert", origin::internal,
-                                  F("inserting duplicate entry into %s")
+                                  F("inserting duplicate entry into '%s'")
                                   % container_name,
                                   file, line);
   return r;
@@ -77,7 +77,7 @@ do_safe_get(T & container, typename T::key_type const & key,
   typename T::const_iterator i = container.find(key);
   if (i == container.end())
     global_sanity.generic_failure("safe_get", origin::internal,
-                                  F("fetching nonexistent entry from %s")
+                                  F("fetching nonexistent entry from '%s'")
                                   % container_name,
                                   file, line);
   return i->second;
