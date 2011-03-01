@@ -3,7 +3,7 @@
 mtn_setup()
 
 -- empty branch
-check(mtn("automate", "log"), 1, false, true)
+check(mtn("automate", "log"), 0, false, true)
 check(qgrep("warning: workspace has no parent revision,", "stderr"))
 
 includecommon("automate_ancestry.lua")
