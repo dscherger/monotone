@@ -626,7 +626,8 @@ database_impl::check_format()
         E(false, origin::no_fault,
           F("database '%s' contains manifests but no revisions\n"
             "this is a very old database; it needs to be upgraded\n"
-            "please see README.changesets for details")
+            "please see 'http://wiki.monotone.ca/upgradefromchangesets/'\n"
+	    "for details")
           % filename);
     }
 }
