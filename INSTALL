@@ -60,7 +60,7 @@ building and installation process for monotone
         on openSUSE:
 
             install the following extra packages with YaST or zypper:
-              autoconf automake gettext-tools gcc-g++ boost-devel zlib-devel
+              autoconf automake gettext-tools gcc-c++ boost-devel zlib-devel
               libbotan-devel sqlite3-dev pcre-devel lua-devel libidn-devel
               libbz2-devel texinfo make
 
