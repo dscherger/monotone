@@ -988,7 +988,7 @@ process_commit_message_args(options const & opts,
 {
   // can't have both a --message and a --message-file ...
   E(!opts.message_given || !opts.msgfile_given, origin::user,
-    F("--message and --message-file are mutually exclusive"));
+    F("'--message' and '--message-file' are mutually exclusive"));
 
   if (opts.message_given)
     {

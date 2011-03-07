@@ -699,7 +699,7 @@ roster_merge_result::report_invalid_name_conflicts(roster_t const & left_roster,
       if (basic_io)
         st.push_str_pair(syms::conflict, syms::invalid_name);
       else
-        P(F("conflict: invalid name _MTN in root directory"));
+        P(F("conflict: invalid name '_MTN' in root directory"));
 
       if (left_roster.root()->self == conflict.parent_name.first)
         {

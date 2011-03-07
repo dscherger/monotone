@@ -235,7 +235,7 @@ tokenize_for_command_line(string const & from, args_vector & to)
         {
           if (type != one)
             ++i;
-          E(i != from.end(), origin::user, F("Invalid escape in --xargs file"));
+          E(i != from.end(), origin::user, F("Invalid escape in '--xargs' file"));
           cur += *i;
           have_tok = true;
         }
@@ -342,11 +342,11 @@ getopt(map<string, concrete_option> const & by_name, string & name)
           continue;
 
         if (*j == i->second.shortname)
-          err += "\n-" + *j + " (" + i->second.description + ")";
+          err += "\n'-" + *j + "' (" + i->second.description + ")";
         else if (*j == i->second.cancelname)
-          err += "\n--" + *j + " (" + (F("negation of --%s") % i->second.longname).str() + ")";
+          err += "\n'--" + *j + "' (" + (F("negation of '--%s'") % i->second.longname).str() + ")";
         else
-          err += "\n--" + *j + " (" + i->second.description + ")";
+          err += "\n'--" + *j + "' (" + i->second.description + ")";
     }
 
   E(false, origin::user, i18n_format(err));

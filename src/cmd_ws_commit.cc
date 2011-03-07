@@ -176,7 +176,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   work.load_commit_text(backup);
 
   E(backup().empty(), origin::user,
-    F("A backup from a previously failed commit exists in _MTN/commit.\n"
+    F("A backup from a previously failed commit exists in '_MTN/commit'.\n"
       "This file must be removed before commit will proceed.\n"
       "You may recover the previous message from this file if necessary."));
 
@@ -612,7 +612,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
 
       guess_branch(app.opts, project, child_rev);
       E(!app.opts.branch().empty(), origin::user,
-        F("need --branch argument for disapproval"));
+        F("need '--branch' argument for disapproval"));
 
       process_commit_message_args(app.opts, log_message_given, log_message,
                                   utf8((FL("disapproval of revision '%s'")
@@ -652,7 +652,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
 
       guess_branch(app.opts, project, child_rev);
       E(!app.opts.branch().empty(), origin::user,
-        F("need --branch argument for disapproval"));
+        F("need '--branch' argument for disapproval"));
 
       process_commit_message_args(app.opts, log_message_given, log_message,
                                   utf8((FL("disapproval of revisions "
@@ -872,7 +872,7 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
        "will be the root directory, and the directory "
        "that is currently the root "
        "directory will have name PUT_OLD.\n"
-       "Use of --bookkeep-only is NOT recommended."),
+       "Use of '--bookkeep-only' is NOT recommended."),
     options::opts::bookkeep_only | options::opts::move_conflicting_paths)
 {
   if (args.size() != 2)
@@ -1021,7 +1021,7 @@ checkout_common(app_state & app,
     {
       // use branch head revision
       E(!app.opts.branch().empty(), origin::user,
-        F("use --revision or --branch to specify what to checkout"));
+        F("use '--revision' or '--branch' to specify what to checkout"));
 
       set<revision_id> heads;
       project.get_branch_heads(app.opts.branch, heads,
@@ -1533,7 +1533,7 @@ void perform_commit(app_state & app,
           E(branchname() == "" || branchname == bn_candidate, origin::user,
             F("parent revisions of this commit are in different branches:\n"
               "'%s' and '%s'.\n"
-              "please specify a branch name for the commit, with --branch.")
+              "please specify a branch name for the commit, with '--branch'.")
             % branchname % bn_candidate);
           branchname = bn_candidate;
         }
@@ -1567,10 +1567,10 @@ void perform_commit(app_state & app,
 
   E(!(log_message_given && work.has_contents_user_log() &&
       app.opts.msgfile() != "_MTN/log"), origin::user,
-    F("_MTN/log is non-empty and log message "
+    F("'_MTN/log' is non-empty and log message "
       "was specified on command line\n"
-      "perhaps move or delete _MTN/log,\n"
-      "or remove --message/--message-file from the command line?"));
+      "perhaps move or delete '_MTN/log',\n"
+      "or remove '--message'/'--message-file' from the command line?"));
 
   date_t date;
   date_t now = date_t::now();
@@ -1827,7 +1827,7 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
     throw usage(execid);
 
   E(!app.opts.branch().empty(), origin::user,
-    F("need --branch argument for setup"));
+    F("need '--branch' argument for setup"));
 
   string dir;
   if (args.size() == 1)
@@ -1900,7 +1900,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
     {
       // use branch head revision
       E(!app.opts.branch().empty(), origin::user,
-        F("use --revision or --branch to specify the parent revision for the import"));
+        F("use '--revision' or '--branch' to specify the parent revision for the import"));
 
       set<revision_id> heads;
       project.get_branch_heads(app.opts.branch, heads,

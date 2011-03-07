@@ -799,7 +799,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
                               E(false, origin::no_fault,
                                 F("unknown attribute '%s' on path '%s'\n"
                                   "please contact %s so we can work out the right way to migrate this\n"
-                                  "(if you just want it to go away, see the switch --drop-attr, but\n"
+                                  "(if you just want it to go away, see the switch '--drop-attr', but\n"
                                   "seriously, if you'd like to keep it, we're happy to figure out how)")
                                 % key % j->first % PACKAGE_BUGREPORT);
                           }
