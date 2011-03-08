@@ -975,8 +975,8 @@ netsync_session::process_data_cmd(netcmd_item_type type,
             encode_hexenc(epoch.inner(), their_epoch);
             bool am_server = (get_voice() == server_voice);
             error(error_codes::mixing_versions,
-                  (F("mismatched epoch on branch %s."
-                     " Server has '%s', client has '%s'")
+                  (F("mismatched epoch on branch '%s'."
+                     " Server has %s, client has %s")
                    % branch
                    % (am_server ? my_epoch : their_epoch)()
                    % (am_server ? their_epoch : my_epoch)()).str());
