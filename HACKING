@@ -112,6 +112,10 @@ for messages in english:
           "Maybe you want something like --revision=h:%s")
         % app.opts.branch);
 
+  - proper names, acronyms, function names and variable names must
+    follow their proper capitalization rules.  For example, "Botan"
+    and "I/O" must be written that way.
+
   - "monotone" and "mtn" are proper names with a lower case character,
     and should always be written with a lower case first character,
     even though language rules or the rules written here would say
@@ -131,6 +135,9 @@ for messages in english:
     some inner weirdness in monotone):
 
         no default database location configured
+
+PLEASE APPLY COMMON SENSE.  There are message that will deviate from
+these rules.  They should be very few, however.
 
 For translators, their language may have a different set of rules for
 things such as quoting (in the french translation, «_ and _» are used
