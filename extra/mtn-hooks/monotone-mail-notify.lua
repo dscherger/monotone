@@ -41,6 +41,10 @@ do
    _shellscript_log = get_confdir() .. "/notify.log"
    _shellscript_errlog = get_confdir() .. "/notify.err"
 
+   function write_error(msg)
+      io.stderr:write("monotone-mail-notify.lua: " .. msg .. "\n")
+   end
+
    local function table_print(T)
       local done = {}
       local function tprint_r(T, prefix)
@@ -293,9 +297,27 @@ do
 		     --       rev_data["revision"], "to files with base",
 		     --       base .. "/" .. now .. "." .. rev_data["revision"])
 
-		     local outputFileRev = io.open(base .. "/" .. now .. "." .. rev_data["revision"] .. ".rev.txt", "w+")
-		     local outputFileHdr = io.open(base .. "/" .. now .. "." .. rev_data["revision"] .. ".hdr.txt", "w+")
-		     local outputFileDat = io.open(base .. "/" .. now .. "." .. rev_data["revision"] .. ".dat.txt", "w+")
+		     local outputFileRev, rev_errmsg =
+			io.open(base .. "/" .. now .. "." .. rev_data["revision"] .. ".rev.txt", "w+")
+		     local outputFileHdr, hdr_errmsg =
+			io.open(base .. "/" .. now .. "." .. rev_data["revision"] .. ".hdr.txt", "w+")
+		     local outputFileDat, dat_errmsg =
+			io.open(base .. "/" .. now .. "." .. rev_data["revision"] .. ".dat.txt", "w+")
+
+		     if (outputFileRev == nil) then
+			write_error(rev_errmsg)
+		     end
+		     if (outputFileHdr == nil) then
+			write_error(hdr_errmsg)
+		     end
+		     if (outputFileDat == nil) then
+			write_error(dat_errmsg)
+		     end
+		     if (outputFileRev == nil
+			 or outputFileHdr == nil
+			 or outputFileDat == nil) then
+			return "continue",nil
+		     end
 
 		     local to = ""
 		     for j,addr in pairs(rev_data["recipients"]) do
