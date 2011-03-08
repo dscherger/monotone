@@ -85,7 +85,7 @@ namespace {
             db.get_key(chosen_key, pub_key);
             E(keys_match(name, pub_key, name, priv_key.pub),
               origin::no_fault,
-              F("The key %s stored in your database does\n"
+              F("the key %s stored in your database does\n"
                 "not match the version in your local key store!")
               % chosen_key);
           }
@@ -99,11 +99,11 @@ namespace {
     vector<key_id> all_privkeys;
     keys.get_key_ids(all_privkeys);
     E(key_requiredness == key_optional || !all_privkeys.empty(), origin::user,
-      F("you have no private key to make signatures with\n"
-        "perhaps you need to 'genkey <your email>'"));
+      F("you have no private key to make signatures with.\n"
+        "Perhaps you need to 'genkey <your email>'"));
     E(key_requiredness == key_optional || all_privkeys.size() < 2, origin::user,
-      F("you have multiple private keys\n"
-        "pick one to use for signatures by adding "
+      F("you have multiple private keys.\n"
+        "Pick one to use for signatures by adding "
         "'-k<keyname>' to your command"));
 
     if (all_privkeys.size() == 1)

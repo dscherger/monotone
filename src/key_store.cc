@@ -87,7 +87,7 @@ struct key_store_state
       || app.opts.conf_dir_given
       || !app.opts.no_default_confdir,
       origin::user,
-      F("No available keystore found"));
+      F("no available keystore found"));
   }
 
   // internal methods
@@ -131,22 +131,22 @@ namespace
     keyreader(key_store_state & kss): kss(kss) {}
     virtual void consume_file_data(file_id const & ident,
                                    file_data const & dat)
-    {E(false, origin::system, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("extraneous data in key store"));}
     virtual void consume_file_delta(file_id const & id_old,
                                     file_id const & id_new,
                                     file_delta const & del)
-    {E(false, origin::system, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("extraneous data in key store"));}
 
     virtual void consume_revision_data(revision_id const & ident,
                                        revision_data const & dat)
-    {E(false, origin::system, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("extraneous data in key store"));}
     virtual void consume_revision_cert(cert const & t)
-    {E(false, origin::system, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("extraneous data in key store"));}
 
 
     virtual void consume_public_key(key_name const & ident,
                                     rsa_pub_key const & k)
-    {E(false, origin::system, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("extraneous data in key store"));}
 
     virtual void consume_key_pair(key_name const & name,
                                   keypair const & kp)
@@ -157,7 +157,7 @@ namespace
       key_hash_code(name, kp.pub, ident);
       E(kss.put_key_pair_memory(full_key_info(ident, key_info(name, kp))),
         origin::system,
-        F("Key store has multiple copies of the key with id %s.") % ident);
+        F("key store has multiple copies of the key with id %s") % ident);
 
       L(FL("successfully read key pair %s from key store") % ident);
     }
@@ -419,19 +419,19 @@ struct key_delete_validator : public packet_consumer
   virtual ~key_delete_validator() {}
   virtual void consume_file_data(file_id const & ident,
                                  file_data const & dat)
-  { E(false, origin::system, F("Invalid data in key file.")); }
+  { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_file_delta(file_id const & id_old,
                                   file_id const & id_new,
                                   file_delta const & del)
-  { E(false, origin::system, F("Invalid data in key file.")); }
+  { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_revision_data(revision_id const & ident,
                                      revision_data const & dat)
-  { E(false, origin::system, F("Invalid data in key file.")); }
+  { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_revision_cert(cert const & t)
-  { E(false, origin::system, F("Invalid data in key file.")); }
+  { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_public_key(key_name const & ident,
                                   rsa_pub_key const & k)
-  { E(false, origin::system, F("Invalid data in key file.")); }
+  { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_key_pair(key_name const & name,
                                 keypair const & kp)
   {
@@ -848,7 +848,7 @@ key_store::make_signature(database & db,
 
   //sign with ssh-agent (if connected)
   E(agent.connected() || s->ssh_sign_mode != "only", origin::user,
-    F("You have chosen to sign only with ssh-agent but ssh-agent"
+    F("you have chosen to sign only with ssh-agent but ssh-agent"
       " does not seem to be running."));
   if (s->ssh_sign_mode == "yes"
       || s->ssh_sign_mode == "check"
@@ -878,7 +878,7 @@ key_store::make_signature(database & db,
   string ssh_sig = sig_string;
 
   E(ssh_sig.length() > 0 || s->ssh_sign_mode != "only", origin::user,
-    F("You don't seem to have your monotone key imported "));
+    F("you don't seem to have your monotone key imported "));
 
   if (ssh_sig.length() <= 0
       || s->ssh_sign_mode == "check"

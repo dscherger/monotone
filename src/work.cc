@@ -1171,7 +1171,7 @@ addition_builder::visit_dir(file_path const & path)
         }
 
       if (warn)
-        W(F("Non-recursive add: Files in the directory '%s' "
+        W(F("non-recursive add: Files in the directory '%s' "
             "will not be added automatically.") % path);
     }
 
@@ -1728,7 +1728,7 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
     }
 
   E(missing_items == 0, origin::user,
-    F("%d missing items; use '%s ls missing' to view\n"
+    F("%d missing items; use '%s ls missing' to view.\n"
       "To restore consistency, on each missing item run either\n"
       " '%s drop ITEM' to remove it permanently, or\n"
       " '%s revert ITEM' to restore it.\n"
@@ -2204,7 +2204,7 @@ workspace::perform_content_update(roster_t const & old_roster,
     {
       E(move_conflicting_paths, origin::user,
         F("re-run this command with '--move-conflicting-paths' to move "
-          "conflicting paths out of the way."));
+          "conflicting paths out of the way"));
       move_conflicting_paths_into_bookkeeping(swt.get_conflicting_paths());
       moved_conflicting = true;
     }

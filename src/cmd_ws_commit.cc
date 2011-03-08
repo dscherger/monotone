@@ -176,7 +176,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   work.load_commit_text(backup);
 
   E(backup().empty(), origin::user,
-    F("A backup from a previously failed commit exists in '_MTN/commit'.\n"
+    F("a backup from a previously failed commit exists in '_MTN/commit'.\n"
       "This file must be removed before commit will proceed.\n"
       "You may recover the previous message from this file if necessary."));
 
@@ -286,7 +286,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
       if (changelog_end != string::npos)
         work.write_user_log(utf8(trim_right(full_message().substr(0, changelog_end)) + '\n', origin::user));
 
-      E(false, origin::user, F("Commit cancelled."));
+      E(false, origin::user, F("commit cancelled."));
     }
 
   // save the message in _MTN/commit so it's not lost if something fails
@@ -304,39 +304,39 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   message.read(cancel());
 
   E(message.read(instructions()), origin::user,
-    F("Commit failed. Instructions not found."));
+    F("commit failed. Instructions not found."));
 
   // Branch:
 
   E(message.read(trim_right(BRANCH())), origin::user,
-    F("Commit failed. Branch header not found."));
+    F("commit failed. Branch header not found."));
 
   string b = message.readline();
 
   E(!b.empty(), origin::user,
-    F("Commit failed. Branch value empty."));
+    F("commit failed. Branch value empty."));
 
   branch = branch_name(b, origin::user);
 
   // Author:
 
   E(message.read(trim_right(AUTHOR())), origin::user,
-    F("Commit failed. Author header not found."));
+    F("commit failed. Author header not found."));
 
   author = message.readline();
 
   E(!author.empty(), origin::user,
-    F("Commit failed. Author value empty."));
+    F("commit failed. Author value empty."));
 
   // Date:
 
   E(message.read(trim_right(DATE())), origin::user,
-    F("Commit failed. Date header not found."));
+    F("commit failed. Date header not found."));
 
   string d = message.readline();
 
   E(!d.empty(), origin::user,
-    F("Commit failed. Date value empty."));
+    F("commit failed. Date value empty."));
 
   if (!is_date_fmt_valid || date_fmt.empty())
     date = date_t(d);
@@ -859,7 +859,7 @@ CMD(rename, "rename", "mv", CMD_REF(workspace),
   if (src_paths.size() == 1 && dstr()[dstr().size() -1] == '/')
     if (get_path_status(*src_paths.begin()) != path::directory)
       E(get_path_status(dst_path) == path::directory, origin::user,
-        F(_("The specified target directory '%s/' doesn't exist.")) % dst_path);
+        F(_("the specified target directory '%s/' doesn't exist.")) % dst_path);
 
   work.perform_rename(db, src_paths, dst_path, app.opts.bookkeep_only);
 }
@@ -1160,7 +1160,7 @@ drop_attr(app_state & app, args_vector const & args)
   file_path path = file_path_external(idx(args, 0));
 
   E(old_roster.has_node(path), origin::user,
-    F("Unknown path '%s'") % path);
+    F("unknown path '%s'") % path);
 
   roster_t new_roster = old_roster;
   node_t node = new_roster.get_node_for_update(path);
@@ -1177,7 +1177,7 @@ drop_attr(app_state & app, args_vector const & args)
       I(args.size() == 2);
       attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
       E(node->attrs.find(a_key) != node->attrs.end(), origin::user,
-        F("Path '%s' does not have attribute '%s'")
+        F("path '%s' does not have attribute '%s'")
         % path % a_key);
       node->attrs[a_key] = make_pair(false, "");
     }
@@ -1228,7 +1228,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
 
   file_path path = file_path_external(idx(args, 0));
 
-  E(new_roster.has_node(path), origin::user, F("Unknown path '%s'") % path);
+  E(new_roster.has_node(path), origin::user, F("unknown path '%s'") % path);
   const_node_t node = new_roster.get_node(path);
 
   if (args.size() == 1)
@@ -1244,7 +1244,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
             has_any_live_attrs = true;
           }
       if (!has_any_live_attrs)
-        cout << F("No attributes for '%s'") % path << '\n';
+        cout << F("no attributes for '%s'") % path << '\n';
     }
   else
     {
@@ -1256,7 +1256,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
              << i->first << '='
              << i->second.second << '\n';
       else
-        cout << (F("No attribute '%s' on path '%s'")
+        cout << (F("no attribute '%s' on path '%s'")
                  % a_key % path) << '\n';
     }
 }
@@ -1278,7 +1278,7 @@ set_attr(app_state & app, args_vector const & args)
   file_path path = file_path_external(idx(args, 0));
 
   E(old_roster.has_node(path), origin::user,
-    F("Unknown path '%s'") % path);
+    F("unknown path '%s'") % path);
 
   roster_t new_roster = old_roster;
   node_t node = new_roster.get_node_for_update(path);
@@ -1359,7 +1359,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
   base = parent_roster(parents.begin());
 
   E(current.has_node(path), origin::user,
-    F("Unknown path '%s'") % path);
+    F("unknown path '%s'") % path);
 
   // create the printer
   basic_io::printer pr;
@@ -1533,7 +1533,7 @@ void perform_commit(app_state & app,
           E(branchname() == "" || branchname == bn_candidate, origin::user,
             F("parent revisions of this commit are in different branches:\n"
               "'%s' and '%s'.\n"
-              "please specify a branch name for the commit, with '--branch'.")
+              "Please specify a branch name for the commit, with '--branch'.")
             % branchname % bn_candidate);
           branchname = bn_candidate;
         }
@@ -1703,7 +1703,7 @@ void perform_commit(app_state & app,
                 else
                   // If we don't err out here, the database will later.
                   E(false, origin::no_fault,
-                    F("Your database is missing version %s of file '%s'")
+                    F("your database is missing version %s of file '%s'")
                     % old_content % path);
               }
 

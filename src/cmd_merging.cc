@@ -225,9 +225,9 @@ update(app_state & app,
                              app.opts.branch,
                              app.opts.ignore_suspend_certs);
       E(!candidates.empty(), origin::user,
-        F("your request matches no descendents of the current revision\n"
-          "in fact, it doesn't even match the current revision\n"
-          "maybe you want something like '--revision=h:%s'")
+        F("your request matches no descendents of the current revision.\n"
+          "In fact, it doesn't even match the current revision.\n"
+          "Maybe you want something like '--revision=h:%s'")
         % app.opts.branch);
       if (candidates.size() != 1)
         {

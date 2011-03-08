@@ -241,7 +241,7 @@ CMD_AUTOMATE(identify, N_("PATH"),
   utf8 path = idx(args, 0);
 
   E(path() != "-", origin::user,
-    F("Cannot read from stdin"));
+    F("cannot read from stdin"));
 
   data dat;
   read_data_for_command_line(path, dat);

@@ -25,7 +25,7 @@ using boost::shared_ptr;
 
 void revision_t::check_sane() const
 {
-  E(!null_id(new_manifest), made_from, F("Revision has no manifest id"));
+  E(!null_id(new_manifest), made_from, F("revision has no manifest id"));
 
   if (edges.size() == 1)
     {
@@ -36,11 +36,11 @@ void revision_t::check_sane() const
       // merge nodes cannot have null revisions
       for (edge_map::const_iterator i = edges.begin(); i != edges.end(); ++i)
         E(!null_id(edge_old_revision(i)), made_from,
-          F("Merge revision has a null parent"));
+          F("merge revision has a null parent"));
     }
   else
     // revisions must always have either 1 or 2 edges
-    E(false, made_from, F("Revision has %d edges, not 1 or 2") % edges.size());
+    E(false, made_from, F("revision has %d edges, not 1 or 2") % edges.size());
 
   // we used to also check that if there were multiple edges that had patches
   // for the same file, then the new hashes on each edge matched each other.
@@ -376,9 +376,9 @@ parse_revision(basic_io::parser & parser,
   parser.esym(syms::format_version);
   parser.str(tmp);
   E(tmp == "1", parser.tok.in.made_from,
-    F("encountered a revision with unknown format, version %s\n"
-      "I only know how to understand the version 1 format\n"
-      "a newer version of monotone is required to complete this operation")
+    F("encountered a revision with unknown format, version %s.\n"
+      "I only know how to understand the version 1 format.\n"
+      "A newer version of monotone is required to complete this operation")
     % tmp);
   parser.esym(syms::new_manifest);
   parser.hex(tmp);

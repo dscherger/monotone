@@ -2242,7 +2242,7 @@ CMD_AUTOMATE(get_db_variables, N_("[DOMAIN]"),
     }
 
   E(found_something, origin::user,
-    F("No variables found or invalid domain specified"));
+    F("no variables found or invalid domain specified"));
 
   // print the last stanza
   pr.print_stanza(st);

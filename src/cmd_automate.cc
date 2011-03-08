@@ -321,7 +321,7 @@ LUAEXT(mtn_automate, )
       I(app_p != NULL);
       I(app_p->lua.check_lua_state(LS));
       E(app_p->mtn_automate_allowed, origin::user,
-          F("It is illegal to call the mtn_automate() lua extension,\n"
+          F("it is illegal to call the mtn_automate() lua extension,\n"
             "unless from a command function defined by register_command()."));
 
       // don't allow recursive calls
@@ -330,7 +330,7 @@ LUAEXT(mtn_automate, )
       int n = lua_gettop(LS);
 
       E(n > 0, origin::user,
-        F("Bad input to mtn_automate() lua extension: command name is missing"));
+        F("bad input to mtn_automate() lua extension: command name is missing"));
 
       L(FL("Starting call to mtn_automate lua hook"));
 

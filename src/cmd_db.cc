@@ -219,7 +219,7 @@ CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "REVID",
             continue;
 
           E(!work.has_changes(db), origin::user,
-            F("Cannot kill revision %s,\n"
+            F("cannot kill revision %s,\n"
               "because it would leave the current workspace in an invalid\n"
               "state, from which monotone cannot recover automatically since\n"
               "the workspace contains uncommitted changes.\n"

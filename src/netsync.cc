@@ -243,7 +243,7 @@ session_from_server_sync_item(app_state & app,
     }
   catch (Netxx::NetworkException & e)
     {
-      P(F("Network error: %s") % e.what());
+      P(F("network error: %s") % e.what());
       return shared_ptr<session>();
     }
 }

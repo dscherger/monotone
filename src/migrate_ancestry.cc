@@ -486,7 +486,7 @@ insert_parents_into_roster(roster_t & child_roster,
   if (child_roster.has_node(pth))
     {
       E(is_dir_t(child_roster.get_node(pth)), origin::internal,
-        F("Directory '%s' for path '%s' cannot be added, "
+        F("directory '%s' for path '%s' cannot be added, "
           "as there is a file in the way") % pth % full);
       return;
     }
@@ -507,10 +507,10 @@ insert_into_roster(roster_t & child_roster,
     {
       const_node_t n = child_roster.get_node(pth);
       E(is_file_t(n), origin::internal,
-        F("Path '%s' cannot be added, as there is a directory in the way") % pth);
+        F("path '%s' cannot be added, as there is a directory in the way") % pth);
       const_file_t f = downcast_to_file_t(n);
       E(f->content == fid, origin::internal,
-        F("Path '%s' added twice with differing content") % pth);
+        F("path '%s' added twice with differing content") % pth);
       return;
     }
 
@@ -797,8 +797,8 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
                                                                origin::internal));
                             else
                               E(false, origin::no_fault,
-                                F("unknown attribute '%s' on path '%s'\n"
-                                  "please contact %s so we can work out the right way to migrate this\n"
+                                F("unknown attribute '%s' on path '%s'.\n"
+                                  "Please contact %s so we can work out the right way to migrate this\n"
                                   "(if you just want it to go away, see the switch '--drop-attr', but\n"
                                   "seriously, if you'd like to keep it, we're happy to figure out how)")
                                 % key % j->first % PACKAGE_BUGREPORT);

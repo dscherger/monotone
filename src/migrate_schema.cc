@@ -1168,7 +1168,7 @@ diagnose_unrecognized_schema(schema_mismatch_case cat,
   E(cat != SCHEMA_TOO_NEW, origin::user,
     F("'%s' appears to be a monotone database, but this version of\n"
       "monotone does not recognize its schema.\n"
-      "you probably need a newer version of monotone.")
+      "You probably need a newer version of monotone.")
     % filename);
 }
 
@@ -1185,8 +1185,8 @@ check_sql_schema(sqlite3 * db, system_path const & filename)
   diagnose_unrecognized_schema(cat, filename);
 
   E(cat != SCHEMA_MIGRATION_NEEDED, origin::user,
-    F("database '%s' is laid out according to an old schema\n"
-      "try '%s db migrate' to upgrade\n"
+    F("database '%s' is laid out according to an old schema.\n"
+      "Try '%s db migrate' to upgrade\n"
       "(this is irreversible; you may want to make a backup copy first)")
     % filename % prog_name);
 }

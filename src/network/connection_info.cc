@@ -426,7 +426,7 @@ netsync_connection_info::setup_from_sync_request(options const & opts,
 
   E(!(include_exclude_given && query_exists), origin::user,
     F("include / exclude pattern was given both as part of the URI "
-      "and as a separate argument."));
+      "and as a separate argument"));
 
   vector<arg_type> includes, excludes;
 

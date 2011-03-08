@@ -122,19 +122,19 @@ workspace::check_format()
 
   // Don't give user false expectations about format 0.
   E(format > 0, origin::system,
-    F("this workspace's metadata is in format 0. to use this workspace\n"
+    F("this workspace's metadata is in format 0. To use this workspace\n"
       "with this version of monotone, you must delete it and check it\n"
       "out again (migration from format 0 is not possible).\n"
-      "once you have done this, you will not be able to use the workspace\n"
+      "Once you have done this, you will not be able to use the workspace\n"
       "with versions of monotone older than %s.\n"
-      "we apologize for the inconvenience.")
+      "We apologize for the inconvenience.")
     % first_version_supporting_current_format);
 
   E(format >= current_workspace_format, origin::system,
     F("to use this workspace with this version of monotone, its metadata\n"
       "must be migrated from format %d to format %d, using the command\n"
       "'%s migrate_workspace'.\n"
-      "once you have done this, you will not be able to use the workspace\n"
+      "Once you have done this, you will not be able to use the workspace\n"
       "with versions of monotone older than %s.")
     % format % current_workspace_format % prog_name
     % first_version_supporting_current_format);
@@ -142,8 +142,8 @@ workspace::check_format()
   // keep this message in sync with the copy in migrate_format
   E(format <= current_workspace_format, origin::system,
     F("this version of monotone only understands workspace metadata\n"
-      "in formats 0 through %d.  your workspace is in format %d.\n"
-      "you need a newer version of monotone to use this workspace.")
+      "in formats 0 through %d.  Your workspace is in format %d.\n"
+      "You need a newer version of monotone to use this workspace.")
     % current_workspace_format % format);
 }
 
@@ -171,8 +171,8 @@ migrate_0_to_1()
 
   E(false, origin::system,
     F("it is not possible to migrate from workspace format 0 to any\n"
-      "later format.  you must delete this workspace and check it out\n"
-      "again.  we apologize for the inconvenience."));
+      "later format.  You must delete this workspace and check it out\n"
+      "again.  We apologize for the inconvenience."));
 }
 
 static void
@@ -264,7 +264,7 @@ workspace::migrate_format()
 
     case current_workspace_format:
       P(F("this workspace is in the current format, "
-          "no migration is necessary."));
+          "no migration is necessary"));
       break;
 
     default:
@@ -272,8 +272,8 @@ workspace::migrate_format()
       // keep this message in sync with the copy in check_format
       E(false, origin::system,
         F("this version of monotone only understands workspace metadata\n"
-          "in formats 0 through %d.  your workspace is in format %d.\n"
-          "you need a newer version of monotone to use this workspace.")
+          "in formats 0 through %d.  Your workspace is in format %d.\n"
+          "You need a newer version of monotone to use this workspace.")
         % current_workspace_format % format);
     }
 }

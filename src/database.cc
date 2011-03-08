@@ -614,19 +614,19 @@ database_impl::check_format()
       // they need to either changesetify or rosterify.  which?
       if (table_has_data("revisions"))
         E(false, origin::no_fault,
-          F("database '%s' contains old-style revisions\n"
-            "if you are a project leader or doing local testing:\n"
+          F("database '%s' contains old-style revisions.\n"
+            "If you are a project leader or doing local testing:\n"
             "  see the file UPGRADE for instructions on upgrading.\n"
-            "if you are not a project leader:\n"
+            "If you are not a project leader:\n"
             "  wait for a leader to migrate project data, and then\n"
             "  pull into a fresh database.\n"
-            "sorry about the inconvenience.")
+            "Sorry about the inconvenience.")
           % filename);
       else
         E(false, origin::no_fault,
-          F("database '%s' contains manifests but no revisions\n"
-            "this is a very old database; it needs to be upgraded\n"
-            "please see 'http://wiki.monotone.ca/upgradefromchangesets/'\n"
+          F("database '%s' contains manifests but no revisions.\n"
+            "This is a very old database; it needs to be upgraded.\n"
+            "Please see 'http://wiki.monotone.ca/upgradefromchangesets/'\n"
 	    "for details")
           % filename);
     }
@@ -647,8 +647,8 @@ database_impl::check_caches()
     }
 
   E(caches_are_filled, origin::no_fault,
-    F("database '%s' lacks some cached data\n"
-      "run '%s db regenerate_caches' to restore use of this database")
+    F("database '%s' lacks some cached data.\n"
+      "Run '%s db regenerate_caches' to restore use of this database")
     % filename % prog_name);
 }
 
@@ -3798,7 +3798,7 @@ database::put_revision_cert(cert const & cert)
       if (branch_name.find_first_of("?,;*%%+{}[]!^") != string::npos ||
           branch_name.find_first_of('-') == 0)
         {
-          W(F("The branch name\n"
+          W(F("the branch name\n"
               "  '%s'\n"
               "contains meta characters (one or more of '?,;*%%+{}[]!^') or\n"
               "starts with a dash, which might cause malfunctions when used\n"
@@ -4849,8 +4849,8 @@ database_impl::check_db_nonexistent()
   system_path journal(filename.as_internal() + "-journal", origin::internal);
   require_path_is_nonexistent(journal,
                               F("existing (possibly stale) journal file '%s' "
-                                "has same stem as new database '%s'\n"
-                                "cancelling database creation")
+                                "has same stem as new database '%s'.\n"
+                                "Cancelling database creation")
                               % journal % filename);
 
 }

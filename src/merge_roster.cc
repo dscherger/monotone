@@ -338,7 +338,7 @@ namespace
                   {
                     file_path fp;
                     parent_roster.get_name(n->self, fp);
-                    W(F("Content changes to the file '%s'\n"
+                    W(F("content changes to the file '%s'\n"
                         "will be ignored during this merge as the file has been\n"
                         "removed on one side of the merge.  Affected revisions include:") % fp);
                   }
