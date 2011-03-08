@@ -214,7 +214,7 @@ SIMPLE_OPTION(author, "author", utf8, gettext_noop("override author for commit")
 
 SIMPLE_OPTION(automate_stdio_size, "automate-stdio-size",
               restricted_long<1>,
-              gettext_noop("block size in bytes for \"automate stdio\" output"))
+              gettext_noop("block size in bytes for 'automate stdio' output"))
 
 SIMPLE_OPTION(auto_update, "update/no-update", bool,
               gettext_noop("automatically update the workspace, if it was at a head and the "
@@ -455,11 +455,11 @@ SIMPLE_OPTION(no_merges, "no-merges/merges", bool,
               gettext_noop("exclude merges when printing logs"))
 
 #ifdef WIN32
-# define NORC_TEXT gettext_noop("do not load %APPDATA%\\monotone\\monotonerc or " \
-                                "_MTN\\monotonerc lua files")
+# define NORC_TEXT gettext_noop("do not load '%APPDATA%\\monotone\\monotonerc' or " \
+                                "'_MTN\\monotonerc' lua files")
 #else
-# define NORC_TEXT gettext_noop("do not load ~/.monotone/monotonerc or " \
-                                "_MTN/monotonerc lua files")
+# define NORC_TEXT gettext_noop("do not load '~/.monotone/monotonerc' or " \
+                                "'_MTN/monotonerc' lua files")
 #endif
 GROUPED_SIMPLE_OPTION(globals, norc, "no-standard-rcfiles/standard-rcfiles", bool, NORC_TEXT)
 #undef NORC_TEXT
@@ -467,15 +467,15 @@ GROUPED_SIMPLE_OPTION(globals, norc, "no-standard-rcfiles/standard-rcfiles", boo
 GROUPED_SIMPLE_OPTION(globals, nostd, "no-builtin-rcfile/builtin-rcfile", bool,
                      gettext_noop("do not load the built-in lua file with the default hooks"))
 
-DEPRECATE(old_norc, gettext_noop("please use --no-standard-rcfiles instead"), 1.0, 2.0)
+DEPRECATE(old_norc, gettext_noop("please use '--no-standard-rcfiles' instead"), 1.0, 2.0)
 OPTION(globals, old_norc, false, "norc",
-       gettext_noop("old version of --no-standard-rcfiles"))
+       gettext_noop("old version of '--no-standard-rcfiles'"))
 #ifdef option_bodies
 { norc = true; }
 #endif
-DEPRECATE(old_nostd, gettext_noop("please use --no-builtin-rcfile instead"), 1.0, 2.0)
+DEPRECATE(old_nostd, gettext_noop("please use '--no-builtin-rcfile' instead"), 1.0, 2.0)
 OPTION(globals, old_nostd, false, "nostd",
-       gettext_noop("old version of --no-builtin-rcfile"))
+       gettext_noop("old version of '--no-builtin-rcfile'"))
 #ifdef option_bodies
 { nostd = true; }
 #endif
@@ -491,7 +491,7 @@ OPTSET_REL(globals, verbosity)
 OPTVAR(verbosity, int, verbosity, 0)
 
 OPTION(verbosity, quiet, false, "quiet,q",
-     gettext_noop("decrease verbosity (undo previous -v, then disable informational output, then disable warnings)"))
+     gettext_noop("decrease verbosity (undo previous '-v', then disable informational output, then disable warnings)"))
 #ifdef option_bodies
 {
   --verbosity;
@@ -500,7 +500,7 @@ OPTION(verbosity, quiet, false, "quiet,q",
 }
 #endif
 OPTION(verbosity, verbose, false, "verbose,v",
-       gettext_noop("increase verbosity (undo previous -q, and then enable debug output)"))
+       gettext_noop("increase verbosity (undo previous '-q', and then enable debug output)"))
 #ifdef option_bodies
 {
   ++verbosity;
@@ -510,7 +510,7 @@ OPTION(verbosity, verbose, false, "verbose,v",
 #endif
 
 DEPRECATE(debug,
-          gettext_noop("please us -v (or -v -v -v if there are previous -q options)"),
+          gettext_noop("please us '-v' (or '-v -v -v' if there are previous '-q' options)"),
           1.0, 2.0)
 OPTION(globals, debug, false, "debug",
        gettext_noop("print debug log to stderr while running"))
@@ -520,7 +520,7 @@ OPTION(globals, debug, false, "debug",
 }
 #endif
 
-DEPRECATE(reallyquiet, gettext_noop("please use -q -q"), 1.0, 2.0)
+DEPRECATE(reallyquiet, gettext_noop("please use '-q -q'"), 1.0, 2.0)
 OPTION(verbosity, reallyquiet, false, "reallyquiet",
      gettext_noop("suppress warning, verbose, informational and progress messages"))
 #ifdef option_bodies
@@ -600,7 +600,7 @@ OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-
   // here, because we haven't found the workspace yet.
   E(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg, origin::user)),
     origin::user,
-    F("conflicts file must be under _MTN"));
+    F("conflicts file must be under '_MTN'"));
   resolve_conflicts_file = bookkeeping_path(arg, origin::user);
   resolve_conflicts = true;
 }
@@ -621,7 +621,7 @@ OPTION(conflicts_opts, conflicts_file, true, "conflicts-file",
   // here, because we haven't found the workspace yet.
   E(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg, origin::user)),
     origin::user,
-    F("conflicts file must be under _MTN"));
+    F("conflicts file must be under '_MTN'"));
   conflicts_file = bookkeeping_path(arg, origin::user);
 }
 #endif

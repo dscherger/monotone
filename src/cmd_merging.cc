@@ -174,7 +174,7 @@ pick_branch_for_update(options & opts, database & db,
             branch_list += "\n  " + (*i)();
           E(false, origin::user,
             F("target revision is in multiple branches:%s\n\n"
-              "try again with explicit --branch") % branch_list);
+              "try again with explicit '--branch'") % branch_list);
         }
       else if (branches.size() == 1)
         {
@@ -185,7 +185,7 @@ pick_branch_for_update(options & opts, database & db,
       else
         {
           W(F("target revision not in any branch\n"
-              "next commit will use branch %s")
+              "next commit will use branch '%s'")
             % opts.branch);
         }
     }
@@ -227,7 +227,7 @@ update(app_state & app,
       E(!candidates.empty(), origin::user,
         F("your request matches no descendents of the current revision\n"
           "in fact, it doesn't even match the current revision\n"
-          "maybe you want something like --revision=h:%s")
+          "maybe you want something like '--revision=h:%s'")
         % app.opts.branch);
       if (candidates.size() != 1)
         {
@@ -525,7 +525,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     throw usage(execid);
 
   E(!app.opts.branch().empty(), origin::user,
-    F("please specify a branch, with --branch=BRANCH"));
+    F("please specify a branch, with '--branch=BRANCH'"));
 
   set<revision_id> heads;
   project.get_branch_heads(app.opts.branch, heads,
@@ -1118,7 +1118,7 @@ static void get_conflicts_rids(args_vector const & args,
     {
       // get ids from heads
       E(!app.opts.branch().empty(), origin::user,
-        F("please specify a branch, with --branch=BRANCH"));
+        F("please specify a branch, with '--branch=BRANCH'"));
 
       set<revision_id> heads;
       project.get_branch_heads(app.opts.branch, heads,
@@ -1180,14 +1180,14 @@ CMD(store, "store", "", CMD_REF(conflicts),
     N_("Store the conflicts from merging two revisions"),
     (F("If no arguments are given, LEFT_REVID and RIGHT_REVID default to the "
        "first two heads that would be chosen by the 'merge' command. If "
-       "--conflicts-file is not given, '%s' is used.") % bookkeeping_conflicts_file).str(),
+       "'--conflicts-file' is not given, '%s' is used.") % bookkeeping_conflicts_file).str(),
     options::opts::branch | options::opts::conflicts_opts)
 {
   database    db(app);
   project_t   project(db);
   revision_id left_id, right_id;
 
-  workspace::require_workspace(F("conflicts file must be under _MTN"));
+  workspace::require_workspace(F("conflicts file must be under '_MTN'"));
 
   get_conflicts_rids(args, db, project, app, left_id, right_id);
 
@@ -1288,7 +1288,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
       E(parents.size() == 1, origin::user,
         F("revision %s is a merge\n"
           "to apply the changes relative to one of its parents, use:\n"
-          "  %s pluck -r PARENT -r %s")
+          "  '%s pluck -r PARENT -r %s'")
         % to_rid
         % prog_name
         % to_rid);
@@ -1459,7 +1459,7 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
     throw usage(execid);
 
   E(!app.opts.branch().empty(), origin::user,
-    F("please specify a branch, with --branch=BRANCH"));
+    F("please specify a branch, with '--branch=BRANCH'"));
 
   database db(app);
   project_t project(db);

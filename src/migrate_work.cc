@@ -81,7 +81,7 @@ get_workspace_format()
         }
       if (format == 1)
         {
-          W(F("_MTN/format should not exist in a format 1 workspace; corrected"));
+          W(F("'_MTN/format' should not exist in a format 1 workspace; corrected"));
           delete_file(f_path);
         }
     }

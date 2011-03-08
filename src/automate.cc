@@ -905,7 +905,7 @@ inventory_determine_states(workspace & work, file_path const & fs_path,
           // file that is ignored but not in an ignored directory.
           if (work.ignore_file(fs_path))
             W(F("'%s' is both known and ignored; "
-              "it will be shown as 'missing'. Check .mtn-ignore.")
+              "it will be shown as 'missing'. Check '.mtn-ignore'.")
             % fs_path);
         }
     }

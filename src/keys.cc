@@ -141,7 +141,7 @@ get_user_key(options const & opts, lua_hooks & lua,
       else
         {
           E(false, origin::user,
-            F("a key is required for this operation, but the --key option "
+            F("a key is required for this operation, but the '--key' option "
               "was given with an empty argument"));
         }
     }

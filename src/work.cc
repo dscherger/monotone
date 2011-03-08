@@ -2203,7 +2203,7 @@ workspace::perform_content_update(roster_t const & old_roster,
   if (swt.has_conflicting_paths())
     {
       E(move_conflicting_paths, origin::user,
-        F("re-run this command with --move-conflicting-paths to move "
+        F("re-run this command with '--move-conflicting-paths' to move "
           "conflicting paths out of the way."));
       move_conflicting_paths_into_bookkeeping(swt.get_conflicting_paths());
       moved_conflicting = true;

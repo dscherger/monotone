@@ -65,7 +65,7 @@ extract_client_connection_info(options & opts,
       if (args.size() == 1)
         {
           E(!opts.exclude_given, origin::user,
-            F("cannot use --exclude in URI mode"));
+            F("cannot use '--exclude' in URI mode"));
 
           netsync_connection_info::setup_from_uri(opts, project.db, lua, type,
                                                   idx(args, 0), info);
@@ -741,7 +741,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
     throw usage(execid);
 
   E(url_arg || (host_branch_arg && !app.opts.branch_given), origin::user,
-    F("the --branch option is only valid with an URI to clone"));
+    F("the '--branch' option is only valid with an URI to clone"));
 
   // we create the database before anything else, but we
   // do not clean newly created databases up if the clone fails
@@ -765,7 +765,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
    if (url_arg)
     {
       E(!app.opts.exclude_given, origin::user,
-        F("cannot use --exclude in URI mode"));
+        F("cannot use '--exclude' in URI mode"));
 
       netsync_connection_info::setup_from_uri(app.opts, project.db, app.lua,
                                               netsync_connection, server, info);
