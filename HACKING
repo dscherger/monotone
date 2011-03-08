@@ -60,8 +60,19 @@ quite enough, and we have developed an extended set of rules to follow
 for messages in english:
 
   - put single quotes ('') aroung file names and paths, option names,
-    tag names and branch names, as well as any %s that would be
-    expanded to one of those.
+    tag names, branch names, command names and commands, as well as
+    any %s that would be expanded to one of those.
+    There is an exception, though: if the quoted item is cited after a
+    colon, either as the last part of the message or on its own line.
+    For example, the following doesn't look very good:
+
+        To apply the changes relative to one of its parents, use:
+          'mtn pluck -r PARENT -r 06c3...'
+
+    The following looks better
+
+        To apply the changes relative to one of its parents, use:
+          mtn pluck -r PARENT -r 06c3...
 
   - use a Capital first letter in command abstract and description
     strings.  Do not put a period at the end of the abstract, but do
