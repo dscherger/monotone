@@ -174,7 +174,7 @@ pick_branch_for_update(options & opts, database & db,
             branch_list += "\n  " + (*i)();
           E(false, origin::user,
             F("target revision is in multiple branches:%s\n\n"
-              "try again with explicit '--branch'") % branch_list);
+              "Try again with explicit '--branch'") % branch_list);
         }
       else if (branches.size() == 1)
         {
@@ -184,8 +184,8 @@ pick_branch_for_update(options & opts, database & db,
         }
       else
         {
-          W(F("target revision not in any branch\n"
-              "next commit will use branch '%s'")
+          W(F("target revision not in any branch.\n"
+              "Next commit will use branch '%s'")
             % opts.branch);
         }
     }
@@ -1286,9 +1286,9 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
       std::set<revision_id> parents;
       db.get_revision_parents(to_rid, parents);
       E(parents.size() == 1, origin::user,
-        F("revision %s is a merge\n"
-          "to apply the changes relative to one of its parents, use:\n"
-          "  '%s pluck -r PARENT -r %s'")
+        F("revision %s is a merge.\n"
+          "To apply the changes relative to one of its parents, use:\n"
+          "  %s pluck -r PARENT -r %s")
         % to_rid
         % prog_name
         % to_rid);

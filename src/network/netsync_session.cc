@@ -976,7 +976,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
             bool am_server = (get_voice() == server_voice);
             error(error_codes::mixing_versions,
                   (F("mismatched epoch on branch %s."
-                     " Server has '%s', client has '%s'.")
+                     " Server has '%s', client has '%s'")
                    % branch
                    % (am_server ? my_epoch : their_epoch)()
                    % (am_server ? their_epoch : my_epoch)()).str());
@@ -1018,7 +1018,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
             if (!matched)
               {
                 W(F("dropping incoming cert which claims to be signed by key\n"
-                    "'%s' (name '%s'), but has a bad signature")
+                    "%s (name '%s'), but has a bad signature")
                   % c.key % keyname);
               }
           }

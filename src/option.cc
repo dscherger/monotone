@@ -235,7 +235,7 @@ tokenize_for_command_line(string const & from, args_vector & to)
         {
           if (type != one)
             ++i;
-          E(i != from.end(), origin::user, F("Invalid escape in '--xargs' file"));
+          E(i != from.end(), origin::user, F("invalid escape in '--xargs' file"));
           cur += *i;
           have_tok = true;
         }

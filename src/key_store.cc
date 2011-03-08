@@ -849,7 +849,7 @@ key_store::make_signature(database & db,
   //sign with ssh-agent (if connected)
   E(agent.connected() || s->ssh_sign_mode != "only", origin::user,
     F("you have chosen to sign only with ssh-agent but ssh-agent"
-      " does not seem to be running."));
+      " does not seem to be running"));
   if (s->ssh_sign_mode == "yes"
       || s->ssh_sign_mode == "check"
       || s->ssh_sign_mode == "only")

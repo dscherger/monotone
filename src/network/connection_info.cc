@@ -530,7 +530,7 @@ netsync_connection_info::setup_for_serve(options const & opts,
           "(see hook persist_phrase_ok())"));
     }
   else if (!opts.bind_stdio)
-    W(F("The '--no-transport-auth' option is usually only used "
+    W(F("the '--no-transport-auth' option is usually only used "
         "in combination with '--stdio'"));
 }
 

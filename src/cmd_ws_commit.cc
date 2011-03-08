@@ -1568,8 +1568,8 @@ void perform_commit(app_state & app,
   E(!(log_message_given && work.has_contents_user_log() &&
       app.opts.msgfile() != "_MTN/log"), origin::user,
     F("'_MTN/log' is non-empty and log message "
-      "was specified on command line\n"
-      "perhaps move or delete '_MTN/log',\n"
+      "was specified on command line.\n"
+      "Perhaps move or delete '_MTN/log',\n"
       "or remove '--message'/'--message-file' from the command line?"));
 
   date_t date;
