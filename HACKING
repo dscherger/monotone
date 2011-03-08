@@ -54,19 +54,21 @@ everywhere.
 Formatting messages
 -------------------
 
-For short error messages, we follow the GNU coding standards.
-However, those are not quite enough, and we have developed an
-extended set of rules to follow for messages in english:
+For short messages (single sentence error, warning, info and progress
+messages), we follow the GNU coding standards.  However, those are not
+quite enough, and we have developed an extended set of rules to follow
+for messages in english:
 
   - put single quotes ('') aroung file names and paths, option names,
     tag names and branch names, as well as any %s that would be
     expanded to one of those.
 
   - use a Capital first letter in command abstract and description
-    strings.  The following would be very wrong:
+    strings.  Do not put a period at the end of the abstract, but do
+    so with the description.  The following would be very wrong:
 
         CMD(foo, "foo", "", CMD_REF(foos), "",
-            N_("does the foo thing"),
+            N_("does the foo thing."),
             N_("in order to do the foo thing, this allows you to join "
                "the foo fighters"),
 
@@ -75,20 +77,21 @@ extended set of rules to follow for messages in english:
         CMD(foo, "foo", "", CMD_REF(foos), "",
             N_("Does the foo thing"),
             N_("In order to do the foo thing, this allows you to join "
-               "the foo fighters"),
+               "the foo fighters."),
 
-  - use a lowercase first letter in descriptions of options.  The
+  - just as with error messages, use a lowercase first letter in
+    descriptions of options and do not end it with a period.  The
     following would be wrong:
 
         SIMPLE_OPTION(bar, "bar", bool,
                       gettext_noop("Have the remaining figures go to "
-                                   the nearest bar"))
+                                   "the nearest bar."))
 
     The following is better:
 
         SIMPLE_OPTION(bar, "bar", bool,
                       gettext_noop("have the remaining figures go to "
-                                   the nearest bar"))
+                                   "the nearest bar"))
 
   - for multi-sentence error messages, use a lowercase first letter,
     but have the second sentence and on start with a Capital letter,
