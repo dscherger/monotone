@@ -60,7 +60,7 @@ bool is_executable(const char *path)
     {
       const int err = errno;
       E(false, origin::user,
-        F("error getting status of file %s: %s") % path % os_strerror(err));
+        F("error getting status of file '%s': %s") % path % os_strerror(err));
     }
 
   return (s.st_mode & S_IXUSR) && !(s.st_mode & S_IFDIR);
@@ -84,7 +84,7 @@ int change_xbits(const char *path, const bool set)
     {
       const int err = errno;
       E(false, origin::user,
-        F("error opening file %s: %s") % path % os_strerror(err));
+        F("error opening file '%s': %s") % path % os_strerror(err));
     }
   if (fstat(fd, &s))
     return -1;
@@ -100,13 +100,13 @@ int change_xbits(const char *path, const bool set)
     {
       if (set)
         {
-          P(F("setting execute permission on %s") % path);
-          L(FL("setting execute permission on %s with mode %s") % path % new_mode);
+          P(F("setting execute permission on '%s'") % path);
+          L(FL("setting execute permission on '%s' with mode %s") % path % new_mode);
         }
       else
         {
-          P(F("clearing execute permission on %s") % path);
-          L(FL("clearing execute permission on %s with mode %s") % path % new_mode);
+          P(F("clearing execute permission on '%s'") % path);
+          L(FL("clearing execute permission on '%s' with mode %s") % path % new_mode);
         }
 
       status = fchmod(fd, new_mode);
@@ -116,7 +116,7 @@ int change_xbits(const char *path, const bool set)
     {
       const int err = errno;
       E(false, origin::system,
-        F("error closing file %s: %s") % path % os_strerror(err));
+        F("error closing file '%s': %s") % path % os_strerror(err));
     }
 
   return status;

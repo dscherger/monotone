@@ -214,7 +214,7 @@ SIMPLE_OPTION(author, "author", utf8, gettext_noop("override author for commit")
 
 SIMPLE_OPTION(automate_stdio_size, "automate-stdio-size",
               restricted_long<1>,
-              gettext_noop("block size in bytes for \"automate stdio\" output"))
+              gettext_noop("block size in bytes for 'automate stdio' output"))
 
 SIMPLE_OPTION(auto_update, "update/no-update", bool,
               gettext_noop("automatically update the workspace, if it was at a head and the "

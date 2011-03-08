@@ -537,7 +537,7 @@ revert(app_state & app,
 
 CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
     N_("Reverts files and/or directories"),
-    N_("In order to revert the entire workspace, specify \".\" as the "
+    N_("In order to revert the entire workspace, specify '.' as the "
        "file name."),
     options::opts::depth | options::opts::exclude | options::opts::missing)
 {
@@ -732,7 +732,7 @@ CMD(mkdir, "mkdir", "", CMD_REF(workspace), N_("[DIRECTORY...]"),
       // project with a mkdir statement, but one never can tell...
       E(app.opts.no_ignore || !work.ignore_file(fp),
         origin::user,
-        F("ignoring directory '%s' (see .mtn-ignore)") % fp);
+        F("ignoring directory '%s' (see '.mtn-ignore')") % fp);
 
       paths.insert(fp);
     }

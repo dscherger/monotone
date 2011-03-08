@@ -39,7 +39,7 @@ void
 change_current_working_dir(std::string const & to)
 {
   E(!chdir(to.c_str()), origin::system,
-    F("cannot change to directory %s: %s") % to % strerror(errno));
+    F("cannot change to directory '%s': %s") % to % strerror(errno));
 }
 
 std::string
@@ -141,7 +141,7 @@ get_path_status(std::string const & path)
          || err == ERROR_BAD_NETPATH)
         return path::nonexistent;
 
-          E(false, origin::system, F("%s: GetFileAttributes error: %s") % path % os_strerror(err));
+          E(false, origin::system, F("'%s': GetFileAttributes error: %s") % path % os_strerror(err));
     }
   else if (attrs & FILE_ATTRIBUTE_DIRECTORY)
     return path::directory;
@@ -448,7 +448,7 @@ make_temp_file(std::string const & dir, std::string & name)
       // GetLastError() value is a plain error.  (Presumably, just as for
       // Unix, there are values that would represent bugs.)
       E(GetLastError() == ERROR_ALREADY_EXISTS, origin::system,
-        F("cannot create temp file %s: %s")
+        F("cannot create temp file '%s': %s")
         % tmp % os_strerror(GetLastError()));
 
       // This increment is relatively prime to any power of two, therefore
@@ -483,7 +483,7 @@ write_data_worker(std::string const & fname,
   // might be recyclable to the purpose. ]
 
   if (user_private)
-    W(F("%s will be accessible to all users of this computer\n") % fname);
+    W(F("'%s' will be accessible to all users of this computer\n") % fname);
 
   struct auto_closer
   {
@@ -509,16 +509,16 @@ write_data_worker(std::string const & fname,
         DWORD written;
         E(WriteFile(h, (LPCVOID)ptr, remaining, &written, (LPOVERLAPPED)0),
           origin::system,
-          F("error writing to temp file %s: %s")
+          F("error writing to temp file '%s': %s")
           % tmp % os_strerror(GetLastError()));
 
         if (written == 0)
           {
             deadcycles++;
             E(deadcycles < 4, origin::system,
-              FP("giving up after four zero-length writes to %s "
+              FP("giving up after four zero-length writes to '%s' "
                  "(%d byte written, %d left)",
-                 "giving up after four zero-length writes to %s "
+                 "giving up after four zero-length writes to '%s' "
                  "(%d bytes written, %d left)",
                  ptr - dat.data())
               % tmp % (ptr - dat.data()) % remaining);
