@@ -139,11 +139,27 @@ for messages in english:
 PLEASE APPLY COMMON SENSE.  There are message that will deviate from
 these rules.  They should be very few, however.
 
+
+Translation
+-----------
+
 For translators, their language may have a different set of rules for
 things such as quoting (in the french translation, «_ and _» are used
 instead of single quotes, for example) and capitalization.  Please use
 your best judgement and be consistent.  Still, do not capitalize
 "monotone" or "mtn".
+
+When working on your languages, please do not update any language file
+but your own, as it can be quite annoying for other translators to
+have to deal with merging the changes generated with their current
+work.  The best way to deal with this is by updating your language
+files using one of the following methods:
+
+    make ALL_LINGUAS={lang} update-po update-gmo
+
+    make po/{lang}.po-update po/{lang}.gmo
+
+(replace {lang} with your language code)
 
 
 Dialect issues
