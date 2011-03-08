@@ -51,6 +51,91 @@ to be a minimal set of declarations that really do need to be visible
 everywhere.
 
 
+Formatting messages
+-------------------
+
+For short error messages, we follow the GNU coding standards.
+However, those are not quite enough, and we have developed an
+extended set of rules to follow for messages in english:
+
+  - put single quotes ('') aroung file names and paths, option names,
+    tag names and branch names, as well as any %s that would be
+    expanded to one of those.
+
+  - use a Capital first letter in command abstract and description
+    strings.  The following would be very wrong:
+
+        CMD(foo, "foo", "", CMD_REF(foos), "",
+            N_("does the foo thing"),
+            N_("in order to do the foo thing, this allows you to join "
+               "the foo fighters"),
+
+    The following is what it's supposed to look like:
+
+        CMD(foo, "foo", "", CMD_REF(foos), "",
+            N_("Does the foo thing"),
+            N_("In order to do the foo thing, this allows you to join "
+               "the foo fighters"),
+
+  - use a lowercase first letter in descriptions of options.  The
+    following would be wrong:
+
+        SIMPLE_OPTION(bar, "bar", bool,
+                      gettext_noop("Have the remaining figures go to "
+                                   the nearest bar"))
+
+    The following is better:
+
+        SIMPLE_OPTION(bar, "bar", bool,
+                      gettext_noop("have the remaining figures go to "
+                                   the nearest bar"))
+
+  - for multi-sentence error messages, use a lowercase first letter,
+    but have the second sentence and on start with a Capital letter,
+    and punctuate between sentences.  The following is an example that
+    does not follow this rule, and is quite unreadable:
+
+      E(!candidates.empty(), origin::user,
+        F("your request matches no descendents of the current revision\n"
+          "in fact, it doesn't even match the current revision\n"
+          "maybe you want something like --revision=h:%s")
+        % app.opts.branch);
+
+    The proper way to write this message is:
+
+      E(!candidates.empty(), origin::user,
+        F("your request matches no descendents of the current revision.\n"
+          "In fact, it doesn't even match the current revision.\n"
+          "Maybe you want something like --revision=h:%s")
+        % app.opts.branch);
+
+  - "monotone" and "mtn" are proper names with a lower case character,
+    and should always be written with a lower case first character,
+    even though language rules or the rules written here would say
+    otherwise.  If you find that troublesome, you might want to
+    consider rephrasing so the sentence doesn't start with "monotone"
+    or "mtn".
+
+  - Please consider that the user has to understand the messages, even
+    though they might not know all the inner details of how monotone
+    works, and might not have a programmer's mind.  For example, the
+    following message was hard to understand:
+
+        could not query default database locations
+
+    It has been replaced with the following (which will at least make
+    it clear that this is likely to be a configuration problem and not
+    some inner weirdness in monotone):
+
+        no default database location configured
+
+For translators, their language may have a different set of rules for
+things such as quoting (in the french translation, «_ and _» are used
+instead of single quotes, for example) and capitalization.  Please use
+your best judgement and be consistent.  Still, do not capitalize
+"monotone" or "mtn".
+
+
 Dialect issues
 --------------
 
