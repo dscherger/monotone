@@ -1,4 +1,4 @@
--- Copyright (c) 2007 by Richard Levitte <richard@levitte.org>
+-- Copyright (c) 2007, 2011 by Richard Levitte <richard@levitte.org>
 -- All rights reserved.
 --
 -- Redistribution and use in source and binary forms, with or without
@@ -34,46 +34,43 @@
 --
 --	include("/PATH/TO/monotone-cluster-push.lua")
 --
---    You may want to change the following variables:
+--    You may want to set up the following variables:
 --
 --	MCP_rcfile
 --			The absolute path to the configuration file used
---			by this script.  It contains basio stanza with the
---			following keys:
+--			by this script.
+--			Default: {confdir}/cluster-push.rc
 --
---				pattern		Branch pattern, as in
---						read-permissions.  MUST
---						come first in each stanza.
---				server		Server address or address:port
---						to which this pattern should
---						be pushed.  There may be many
---						of these.
+--    The configuration file must contain basic-io stanzas with the
+--    following keys:
 --
---			The default is cluster-push.rc located in the server's
---			configuration directory.
+--    pattern		Branch pattern, as in read-permissions.  It MUST
+--			come first in each stanza.
+--    server		Server address or address:port to which this
+--			pattern should be pushed.  There may be many of
+--			these in each stanza.
 -------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- Variables
--------------------------------------------------------------------------------
-MCP_default_rcfile = get_confdir() .. "/cluster-push.rc"
-
-
-if not MCP_rcfile then MCP_rcfile = MCP_default_rcfile end
 
 -------------------------------------------------------------------------------
 -- Local hack of the note_netsync_* functions
 -------------------------------------------------------------------------------
 do
+   -- initialise rcfile with a default, or use MCP_rcfile if it's set
+   local rcfile = get_confdir() .. "/cluster-push.rc"
+   if MCP_rcfile then rcfile = MCP_rcfile end
+
    local debug = false
-   local quiet_startup = true
+   if MCP_debug then debug = true end
+
+   local verbose_startup = false
+   if MCP_verbose_startup then verbose_startup = true end
 
    local branches = {}
 
-   -- returns false if the rcfile wasn't parseable, otherwise true.
-   -- if it was parseable, run the callback with each item as argument
+   -- returns false if the rcfile wasn't parseable, otherwise a table of
+   -- patterns with the servers they each should be pushed to.
    local process_rcfile =
-      function (_hook_name, _rcfile, _callback)
+      function (_hook_name, _rcfile)
 	 if debug then
 	    io.stderr:write(_hook_name, ": reading ", _rcfile,
 			    "\n")
@@ -135,15 +132,18 @@ do
       startup =
 	 function(...)
 	    local pattern_branches =
-	       process_rcfile("note_mtn_startup", MCP_rcfile, nil)
+	       process_rcfile("monotone-cluster-push: startup", rcfile)
 	    if pattern_branches then
 	       for pattern, servers in pairs(pattern_branches) do
 		  for _,server in pairs(servers) do
-		     if not quiet_startup then
-			io.stderr:write("note_mtn_startup: pushing pattern \"",
-					pattern, "\" to server ", server, "\n")
+		     if not verbose_startup then
+			io.stderr:write("monotone-cluster-push: startup: ",
+					"pushing pattern \"", pattern,
+					"\" to server ", server, "\n")
 		     end
-		     server_request_sync("push", server, pattern, "")
+		     server_request_sync("push",
+					 "mtn://"..server.."?"..pattern,
+					 "", "")
 		  end
 	       end
 	    end
@@ -153,7 +153,8 @@ do
       start =
 	 function (nonce, ...)
 	    if debug then
-	       io.stderr:write("note_netsync_start: initialise branches\n")
+	       io.stderr:write("monotone-cluster-push: start: ",
+			       "initialise branches\n")
 	    end
 	    branches[nonce] = {}
 	    return "continue",nil
@@ -167,8 +168,8 @@ do
 	    end
 	    if name == "branch" then
 	       if debug then
-		  io.stderr:write("note_netsync_cert_received: branch ",
-				  value, " identified\n")
+		  io.stderr:write("monotone-cluster-push: cert_received: ",
+				  "branch ", value, " identified\n")
 	       end
 	       branches[nonce][value] = true
 	    end
@@ -180,14 +181,14 @@ do
 	    for _, item in pairs(certs)
 	    do
 	       if debug then
-		  io.stderr:write("note_netsync_revision_received: cert ",
-				  item.name, " with value ",
+		  io.stderr:write("monotone-cluster-push: revision_received: ",
+				  "cert ", item.name, " with value ",
 				  item.value, " received\n")
 	       end
 	       if item.name == "branch" then
 		  if debug then
-		     io.stderr:write("note_netsync_revision_received: branch ",
-				     item.value, " identified\n")
+		     io.stderr:write("monotone-cluster-push: revision_received: ",
+				     "branch ", item.value, " identified\n")
 		  end
 		  branches[nonce][item.value] = true
 	       end
@@ -203,26 +204,35 @@ do
 		   keys_in, keys_out,
 		   ...)
 	    if debug then
-	       io.stderr:write("note_netsync_end: ",
+	       io.stderr:write("monotone-cluster-push: end: ",
 			       string.format("%d certs, %d revs, %d keys",
 					     certs_in, revs_in, keys_in),
 			       "\n")
 	    end
 	    if certs_in > 0 or revs_in > 0 or keys_in > 0 then
 	       local pattern_branches =
-		  process_rcfile("note_netsync_end", MCP_rcfile, nil)
+		  process_rcfile("monotone-cluster-push: end", rcfile, nil)
 	       if pattern_branches then
 		  for pattern, servers in pairs(pattern_branches) do
-		     if globish_match(pattern, branch) then
+		     for branch, _ in pairs(branches[nonce]) do
 			if debug then
-			   io.stderr:write("note_netsync_end: it matches branch ",
-					   branch, "\n")
+			   io.stderr:write("monotone-cluster-push: end: ",
+					   "trying pattern ", pattern,
+					   " with branch ", branch, "\n")
 			end
-			for _,server in pairs(servers) do
-			   io.stderr:write("note_netsync_end: ",
-					   "pushing pattern \"", pattern,
-					   "\" to server ", server, "\n")
-			   server_request_sync("push", server.."?"..pattern, "")
+			if globish.match(pattern, branch) then
+			   if debug then
+			      io.stderr:write("monotone-cluster-push: end: ",
+					      "it matches\n")
+			   end
+			   for _,server in pairs(servers) do
+			      io.stderr:write("monotone-cluster-push: end: ",
+					      "pushing pattern \"", pattern,
+					      "\" to server ", server, "\n")
+			      server_request_sync("push",
+						  "mtn://"..server.."?"..pattern,
+						  "", "")
+			   end
 			end
 		     end
 		  end
