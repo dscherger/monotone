@@ -69,7 +69,7 @@ _monotone_files() {
 }
 
 _monotone_databases() {
-    _filedir
+    _filedir mtn
     COMPREPLY=(
 	"${COMPREPLY[@]}"
 	$(compgen -W "$(LANG=POSIX \
@@ -160,6 +160,16 @@ _monotone_command_words() {
 	    fi
 	    pw="${w%%?(\\)=*}"
 	    w="${w#*=}"
+	# if the current word is '-oval', split it up into '-o' and 'val'
+	elif [[ "$w" == -[a-z]?* ]]; then
+	    if [[ "$pw" == -* \
+		&& " ${_monotone_options_noarg[*]} " != *\ $pw\ * ]]; then
+		# Current word is an argument to an earlier option,
+		# so we skip past it
+		continue
+	    fi
+	    pw="${w:0:2}"
+	    w="${w:2}"
 	elif [[ "$w" == -* ]]; then
 	    continue
 	fi
@@ -203,28 +213,45 @@ _monotone() {
     local i cmdi argi
     local x
 
+    local debug
+    debug=${DEBUG_MONOTONE_BASH_COMPLETIONS:-false}
+
     if [[ $- == *v* ]]; then
 	original_v_value="-v"
     else
 	original_v_value="+v"
     fi
-    #set -v
     if [[ $- == *x* ]]; then
 	original_x_value="-x"
     else
 	original_x_value="+x"
     fi
-    #set -x
 
+    if $debug; then
+	echo "COMP_WORDS:" "${COMP_WORDS[@]}"
+	echo "COMP_CWORD:" "$COMP_CWORD"
+    fi
 
     COMPREPLY=()
     _get_comp_words_by_ref -n := cur prev words cword
     _split_longopt
     _monotone_command_words
+    if [[ "$cur" == -[a-z]?* ]]; then
+	if ! [[ "$prev" == -* \
+	    && " ${_monotone_options_noarg[*]} " != *\ $prev\ * ]]; then
+	    prev="${cur:0:2}"
+	    cur="${cur:2}"
+	fi
+    fi
+
+    if $debug; then
+	echo "words:" "${words[@]}"
+	echo "cword:" "$cword"
+    fi
 
     mtn=${words[0]}
     for w in ${words[@]} ; do
-	if [[ "$w" == --db=* ]] ; then
+	if [[ "$w" == --db=* || "$w" == -d?* ]] ; then
 	    mono_db="$w" ; break
 	fi
     done
@@ -238,6 +265,16 @@ _monotone() {
 	done
     fi
 
+    if $debug; then
+	echo "db: $mono_db"
+	echo "prev: $prev"
+	echo "cur: $cur"
+    fi
+
+    if $debug; then
+	set -x
+	set -v
+    fi
     case $cur in
 	*/a:!(*/[[:alpha:]]:*) | *=a:!(*/[[:alpha:]]:*) | a:!(*/[[:alpha:]]:*) )
             cur="${cur##*a:}"
@@ -300,13 +337,13 @@ _monotone() {
 		    fi
 		    case $argtype in
 			*PATH | PATHS | *FILENAME | *FILE | SRC | SRC[0-9] | FILE[0-9] )
-			    _filedir
+			    _monotone_files
 			    ;;
 			*REVISION | REV* | NEW_REV* | OLD_REV* | *REVID | FROM | TO )
 			    _monotone_revisions
 			    ;;
 			DIR* | *ROOT | DEST_DIR | WORKSPACE_PATH )
-			    _filedir -d
+			    _monotone_dirs
 			    ;;
 			KEY* )
 			    _monotone_public_keys
@@ -332,13 +369,30 @@ _monotone() {
 		fi
 	    fi
     esac
-
     set $original_v_value
     unset original_v_value
     set $original_x_value
     unset original_x_value
 
+    # I copied this code from http://willcode4beer.com/tips.jsp?set=tabMaven
+    # -- Richard Levitte
+    ############################################################
+    # Work-around bash_completion issue where bash interprets a colon
+    # as a separator.
+    # Work-around borrowed from the darcs work-around for the same
+    # issue.
+    colonprefixes=${cur%"${cur##*:}"}
+    local i=${#COMPREPLY[*]}
+    while [ $((--i)) -ge 0 ]; do
+	COMPREPLY[$i]=${COMPREPLY[$i]#"$colonprefixes"}
+    done
+    ############################################################
+
+    if $debug; then
+	echo "COMPREPLY: ${COMPREPLY[@]}"
+    fi
+
     return 0
 }
 
-complete -F _monotone -o filenames mtn
+complete -F _monotone mtn
