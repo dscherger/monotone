@@ -21,11 +21,11 @@ spawn "bash" "--init-file" "/dev/nul" "--rcfile" "$srcdir/extra/bash_completion/
 # Make sure we do get a prompt.
 expect {
     -timeout 20
+    timeout { failure "no prompt"; exit }
     "No bash completion package present." {
 	failure "No bash completion package present."; exit
     }
     -re "@ $"
-    timeout { failure "no prompt"; exit }
 }
 send ". $initial_dir/extra/shell/monotone.bash_completion\n"
 # Wait for the last line to be echoed
