@@ -317,11 +317,22 @@ if WIN32_PLATFORM
   test_bin_check_net_SOURCES = test/src/win32/tester-check-net.cc
   AM_CPPFLAGS += -DWIN32
   LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
+
+  # Msys configure produces c:/ syntax for absolute paths, but Msys
+  # bash requires /c/ syntax. Fix that here. This fails if current
+  # drive is not c, but that just means checktest won't be found, and
+  # the network sync tests not run.
+  fix_abs_builddir := $(subst c:,/c,$(abs_builddir))
+
 else
   src_libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += src/unix/main.cc
   test_bin_tester_SOURCES += test/src/unix/tester-plaf.cc
   test_bin_check_net_SOURCES = test/src/unix/tester-check-net.cc
+
+  # Cygwin configure also produces c:/ syntax, but that works for
+  # Cygwin bash
+  fix_abs_builddir := $(abs_builddir)
 endif
 
 if MISSING_INET_PTON
@@ -640,7 +651,7 @@ check-testers: test/tester.status test/unit.status test/func.status test/extra.s
 run_%_tests: Makefile
 	$(AM_V_GEN){ echo '#!/bin/sh';						  	\
 	  echo 'export LANG=C';							  	\
-	  echo 'PATH=$(abs_builddir):$(abs_builddir)/test/bin:$$PATH';		  	\
+	  echo 'PATH=$(fix_abs_builddir):$(fix_abs_builddir)/test/bin:$$PATH';	  	\
 	  echo '$(top_builddir)/test/bin/tester $(srcdir)/test/$*-testsuite.lua "$$@"';	\
 	  echo 'echo $$? > $(top_builddir)/test/$*.status';		  	  	\
 	  echo 'exit 0'; } > $@ && \

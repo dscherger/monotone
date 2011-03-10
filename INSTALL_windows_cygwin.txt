@@ -33,7 +33,7 @@ an official Cygwin package for monotone and all its
 dependencies is usually available soon after release.
 
 The following is needed to succesfully configure:
- export CXXFLAGS="-I/usr/include/boost-1_33_1/"; configure
+ export CXXFLAGS="-I/usr/include/boost-1_33_1/ -g -O2"; configure
 
 Easiest way to create a Cygwin package is using cygport
 (which must be installed separately as a Cygwin package)
