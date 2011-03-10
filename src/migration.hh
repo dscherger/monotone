@@ -38,7 +38,7 @@ class migration_status {
   regen_cache_type _regen_type;
   std::string _flag_day_name;
 public:
-  migration_status(){}
+  migration_status() : _regen_type(regen_none), _flag_day_name("") {}
   explicit migration_status(regen_cache_type type, std::string flag_day_name = "")
     : _regen_type(type),
       _flag_day_name(flag_day_name)
