@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: monotone\n"
 "Report-Msgid-Bugs-To: https://code.monotone.ca/p/monotone/issues/\n"
 "POT-Creation-Date: 2011-03-08 12:33+0100\n"
-"PO-Revision-Date: 2011-03-08 12:35+0100\n"
+"PO-Revision-Date: 2011-03-10 09:16+0100\n"
 "Last-Translator: tommyd <me@thomaskeller.biz>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: sv\n"
@@ -4177,7 +4177,7 @@ msgstr ""
 "ursäkta besväret."
 
 #: src/database.cc:627
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "database %s contains manifests but no revisions\n"
 "this is a very old database; it needs to be upgraded\n"
