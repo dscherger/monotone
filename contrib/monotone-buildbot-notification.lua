@@ -21,7 +21,7 @@
 --
 
 do
-   local buildbot_bin = "/usr/bin/buildbot"
+   local buildbot_bin = "buildbot"
    if MBN_buildbot_bin then buildbot_bin = MBN_buildbot_bin end
 
    local buildbot_master = "localhost:9989"
