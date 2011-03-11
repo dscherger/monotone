@@ -11,56 +11,81 @@
 --
 -- License: GPL
 --
+----------------------------------------------------------------------
+-- To configure this hooks, use the following variables:
+--
+-- MBN_buildbot_bin	The buildbot binary.
+--                      Defaults to "buildbot"
+-- MBN_buildbot_master	The address:port to the buildbot master
+--                      Defaults to "localhost:9989"
+--
 
-_buildbot_bin = "/usr/bin/buildbot"
-_buildbot_addr = "localhost:9989"
+do
+   local buildbot_bin = "/usr/bin/buildbot"
+   if MBN_buildbot_bin then buildbot_bin = MBN_buildbot_bin end
 
-function notify_buildbot(rev_id, revision, certs)
-    local author = ""
-    local changelog = ""
-    local branch = ""
-    for i,cert in pairs(certs) do 
-        if cert["name"] == "changelog" then
-            changelog = changelog .. cert["value"] .. "\n"
-	elseif cert["name"] == "author" then
-	    -- we simply override the author, in case there are multiple
-	    -- author certs.
-	    author = cert["value"]
-	elseif cert["name"] == "branch" then
-	    -- likewise with the branch cert, which probably isn't that
-	    -- clever...
-	    branch = cert["value"]
-	end
-    end
+   local buildbot_master = "localhost:9989"
+   if MBN_buildbot_master then buildbot_master = MBN_buildbot_master end
+   
 
-    local touched_files = ""
-    for i,row in ipairs(parse_basic_io(revision)) do
-        local key = row["name"]
-	if (key == 'delete') or (key == 'add_dir') or (key == 'add_file') or
-	   (key == 'patch') then
-	    local filename = row["values"][1]
-	    touched_files = touched_files .. filename .. " "
-	end
-    end
-
-    execute(_buildbot_bin, "sendchange",
-	    "--master", _buildbot_addr,
-	    "--username", author,
-	    "--revision", rev_id,
-	    "--comments", changelog,
-	    "--branch", branch,
-	    touched_files)
-end
-
-function note_commit (new_id, revision, certs)
-    notify_buildbot(new_id, revision, certs)
-end
-
-push_hook_functions(
-   {
-      revision_received =
-	 function (new_id, revision, certs, session_id)
-	    notify_buildbot(new_id, revision, certs)
-	    return "continue",nil
+   local notify_buildbot =
+      function (rev_id, revision, certs)
+	 local author = ""
+	 local changelog = ""
+	 local branch = ""
+	 for i,cert in pairs(certs) do 
+	    if cert["name"] == "changelog" then
+	       changelog = changelog .. cert["value"] .. "\n"
+	    elseif cert["name"] == "author" then
+	       -- we simply override the author, in case there are multiple
+	       -- author certs.
+	       author = cert["value"]
+	    elseif cert["name"] == "branch" then
+	       -- likewise with the branch cert, which probably isn't that
+	       -- clever...
+	       branch = cert["value"]
+	    end
 	 end
-   })
+
+	 local touched_files = ""
+	 for i,row in ipairs(parse_basic_io(revision)) do
+	    local key = row["name"]
+	    if ((key == 'delete') or (key == 'add_dir')
+	        or (key == 'add_file') or (key == 'patch')) then
+	       local filename = row["values"][1]
+	       touched_files = touched_files .. filename .. " "
+	    end
+	 end
+
+	 print(monotone-buildbot-notification: Running script:",
+	       buildbot_bin, "sendchange",
+	       "--master", buildbot_master,
+	       "--username", author,
+	       "--revision", rev_id,
+	       "--comments", changelog,
+	       "--branch", branch,
+	       touched_files)
+	 execute(buildbot_bin, "sendchange",
+		 "--master", buildbot_master,
+		 "--username", author,
+		 "--revision", rev_id,
+		 "--comments", changelog,
+		 "--branch", branch,
+		 touched_files)
+      end
+
+   local old_node_commit = note_commit
+   function note_commit (new_id, revision, certs)
+      old_note_commit(new_id, revision, certs)
+      notify_buildbot(new_id, revision, certs)
+   end
+
+   push_hook_functions(
+      {
+	 revision_received =
+	    function (new_id, revision, certs, session_id)
+	       notify_buildbot(new_id, revision, certs)
+	       return "continue",nil
+	    end
+      })
+end
