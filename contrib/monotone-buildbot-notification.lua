@@ -66,9 +66,9 @@ do
 	       touched_files)
 	 execute(buildbot_bin, "sendchange",
 		 "--master", buildbot_master,
-		 "--username", author,
+		 "--username", "'".author."'",
 		 "--revision", rev_id,
-		 "--comments", changelog,
+		 "--comments", "'".changelog."'",
 		 "--branch", branch,
 		 touched_files)
       end
