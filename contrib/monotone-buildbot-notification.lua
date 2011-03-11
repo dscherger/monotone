@@ -27,7 +27,6 @@ do
    local buildbot_master = "localhost:9989"
    if MBN_buildbot_master then buildbot_master = MBN_buildbot_master end
    
-
    local notify_buildbot =
       function (rev_id, revision, certs)
 	 local author = ""
@@ -57,7 +56,7 @@ do
 	    end
 	 end
 
-	 print(monotone-buildbot-notification: Running script:",
+	 print("monotone-buildbot-notification: Running script:",
 	       buildbot_bin, "sendchange",
 	       "--master", buildbot_master,
 	       "--username", author,
