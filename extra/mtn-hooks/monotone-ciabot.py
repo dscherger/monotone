@@ -110,9 +110,10 @@ class config:
 
     def __init__(self, config_file):
         s = ""
-        with open(config_file) as f:
-            for line in f:
-                s = s + line
+        f = open(config_file)
+        for line in f:
+            s = s + line
+        f.close()
         previous_key = ""
         current_patterns = []
         for key, value in parse_basic_io(s):
