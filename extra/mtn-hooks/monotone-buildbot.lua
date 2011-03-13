@@ -8,24 +8,26 @@
 -- 
 -- 0.1 (2007-07-10) Markus Schiltknecht <markus@bluegap.ch>
 --     - initial version
+-- 0.2 (2011-03-11) Richard Levitte <richard@levitte.org>
+--     - updated to have things more protected
 --
 -- License: GPL
 --
 ----------------------------------------------------------------------
 -- To configure this hooks, use the following variables:
 --
--- MBN_buildbot_bin	The buildbot binary.
+-- MB_buildbot_bin	The buildbot binary.
 --                      Defaults to "buildbot"
--- MBN_buildbot_master	The address:port to the buildbot master
+-- MB_buildbot_master	The address:port to the buildbot master
 --                      Defaults to "localhost:9989"
 --
 
 do
    local buildbot_bin = "buildbot"
-   if MBN_buildbot_bin then buildbot_bin = MBN_buildbot_bin end
+   if MB_buildbot_bin then buildbot_bin = MB_buildbot_bin end
 
    local buildbot_master = "localhost:9989"
-   if MBN_buildbot_master then buildbot_master = MBN_buildbot_master end
+   if MB_buildbot_master then buildbot_master = MB_buildbot_master end
    
    local notify_buildbot =
       function (rev_id, revision, certs)
@@ -75,7 +77,9 @@ do
 
    local old_node_commit = note_commit
    function note_commit (new_id, revision, certs)
-      old_note_commit(new_id, revision, certs)
+      if old_note_commit then
+	 old_note_commit(new_id, revision, certs)
+      end
       notify_buildbot(new_id, revision, certs)
    end
 
