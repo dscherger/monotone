@@ -22,6 +22,6 @@ check(mtn("merge"), 0, false, true)
 
 -- check that we're warned about the changes being dropped...
 
-check(qgrep("Content changes to the file", "stderr"))
+check(qgrep("content changes to the file", "stderr"))
 check(qgrep(left, "stderr"))
 

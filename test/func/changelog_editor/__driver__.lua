@@ -19,7 +19,7 @@ check(not exists("_MTN/commit"))
 
 writefile("_MTN/log", "cancel hint removed")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Commit cancelled.", "stderr"))
+check(qgrep("commit cancelled.", "stderr"))
 check(not exists("_MTN/commit"))
 check(readfile("_MTN/log") == "changelog modified, cancel hint removed\n")
 

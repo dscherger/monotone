@@ -73,7 +73,7 @@ check_basic_io_line (3, parsed[3], "ancestor", base_2)
 
 --  Check error message when outside workspace when branch not specified
 check(indir(non_ws_dir, mtn_outside_ws("automate", "show_conflicts")), 1, false, true)
-check(qgrep("misuse: please specify a branch, with --branch=BRANCH", "stderr"))
+check(qgrep("misuse: please specify a branch, with '--branch=BRANCH'", "stderr"))
 
 --  Check error message for wrong arg count
 check(indir(non_ws_dir, mtn_outside_ws("automate", "show_conflicts", "rev1")), 1, false, true)

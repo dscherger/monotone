@@ -10,10 +10,10 @@ writefile("file1", "1: data 2\n")
 
 -- illegal --reverse option
 check(mtn("diff", "--reverse"), 1, false, true)
-check(qgrep("--reverse only allowed with exactly one revision", "stderr"))
+check(qgrep("'--reverse' only allowed with exactly one revision", "stderr"))
 
 check(mtn("diff", "--reverse", rev, rev), 1, false, true)
-check(qgrep("--reverse only allowed with exactly one revision", "stderr"))
+check(qgrep("'--reverse' only allowed with exactly one revision", "stderr"))
 
 -- no --reverse option
 check(mtn("diff", "--revision=" .. rev), 0, true, false)
