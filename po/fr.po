@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: monotone\n"
 "Report-Msgid-Bugs-To: https://code.monotone.ca/p/monotone/issues/\n"
 "POT-Creation-Date: 2011-03-14 08:25+0100\n"
-"PO-Revision-Date: 2011-03-14 10:18+0100\n"
+"PO-Revision-Date: 2011-03-14 12:42+0100\n"
 "Last-Translator: tommyd <me@thomaskeller.biz>\n"
 "Language-Team: Benoît Dejean <benoit@placenet.org>\n"
 "Language: fr\n"
@@ -3716,7 +3716,7 @@ msgstr ""
 "Cela peut être dû à une faille mémoire, une corruption de données\n"
 "pendant une transmission réseau, une corruption de votre base de\n"
 "données ou de votre espace de travail, ou a un bogue dans monotone.\n"
-"Si l'erreur persiste, veuillez faire en rapport sur « %s ».\n"
+"Si l'erreur persiste, veuillez faire en rapport sur « %s »."
 
 #: src/update.cc:74
 #, c-format
@@ -6693,7 +6693,7 @@ msgstr "le sélecteur de certificat c: ne peut pas être vide"
 #: src/selectors.cc:152
 #, c-format
 msgid "selector '%s' is not a valid date"
-msgstr "le sélecteur « %s » ne correspond pas à une date valide\n"
+msgstr "le sélecteur « %s » ne correspond pas à une date valide"
 
 #: src/selectors.cc:168
 #, c-format
