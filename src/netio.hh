@@ -33,7 +33,7 @@ require_bytes(std::string const & str,
   if (len == 0)
     return;
   if (str.size() < pos + len)
-    throw bad_decode(F("need %d bytes to decode %s at %d, only have %d")
+    throw bad_decode(F("need %d bytes to decode '%s' at %d, only have %d")
                      % len % name % pos % (str.size() - pos));
 }
 
@@ -51,7 +51,7 @@ require_bytes(string_queue const & str,
   if (len == 0)
     return;
   if (str.size() < pos + len)
-    throw bad_decode(F("need %d bytes to decode %s at %d, only have %d")
+    throw bad_decode(F("need %d bytes to decode '%s' at %d, only have %d")
                      % len % name % pos % (str.size() - pos));
 }
 
@@ -325,7 +325,7 @@ assert_end_of_buffer(std::string const & str,
                      std::string const & name)
 {
   if (str.size() != pos)
-    throw bad_decode(F("expected %s to end at %d, have %d bytes")
+    throw bad_decode(F("expected '%s' to end at %d, have %d bytes")
                      % name % pos % str.size());
 }
 

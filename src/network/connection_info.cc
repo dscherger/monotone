@@ -425,8 +425,8 @@ netsync_connection_info::setup_from_sync_request(options const & opts,
   bool query_exists = !info->client.uri.query.empty();
 
   E(!(include_exclude_given && query_exists), origin::user,
-    F("include / exclude pattern was given both as part of the URL "
-      "and as a separate argument."));
+    F("include / exclude pattern was given both as part of the URI "
+      "and as a separate argument"));
 
   vector<arg_type> includes, excludes;
 
@@ -530,8 +530,8 @@ netsync_connection_info::setup_for_serve(options const & opts,
           "(see hook persist_phrase_ok())"));
     }
   else if (!opts.bind_stdio)
-    W(F("The --no-transport-auth option is usually only used "
-        "in combination with --stdio"));
+    W(F("the '--no-transport-auth' option is usually only used "
+        "in combination with '--stdio'"));
 }
 
 // Local Variables:

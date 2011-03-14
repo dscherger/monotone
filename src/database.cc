@@ -614,19 +614,19 @@ database_impl::check_format()
       // they need to either changesetify or rosterify.  which?
       if (table_has_data("revisions"))
         E(false, origin::no_fault,
-          F("database %s contains old-style revisions\n"
-            "if you are a project leader or doing local testing:\n"
+          F("database '%s' contains old-style revisions.\n"
+            "If you are a project leader or doing local testing:\n"
             "  see the file UPGRADE for instructions on upgrading.\n"
-            "if you are not a project leader:\n"
+            "If you are not a project leader:\n"
             "  wait for a leader to migrate project data, and then\n"
             "  pull into a fresh database.\n"
-            "sorry about the inconvenience.")
+            "Sorry about the inconvenience.")
           % filename);
       else
         E(false, origin::no_fault,
-          F("database %s contains manifests but no revisions\n"
-            "this is a very old database; it needs to be upgraded\n"
-            "please see http://wiki.monotone.ca/upgradefromchangesets/\n"
+          F("database '%s' contains manifests but no revisions.\n"
+            "This is a very old database; it needs to be upgraded.\n"
+            "Please see 'http://wiki.monotone.ca/upgradefromchangesets/'\n"
             "for details")
           % filename);
     }
@@ -647,8 +647,8 @@ database_impl::check_caches()
     }
 
   E(caches_are_filled, origin::no_fault,
-    F("database %s lacks some cached data\n"
-      "run '%s db regenerate_caches' to restore use of this database")
+    F("database '%s' lacks some cached data.\n"
+      "Run '%s db regenerate_caches' to restore use of this database")
     % filename % prog_name);
 }
 
@@ -2992,9 +2992,9 @@ database::put_revision(revision_id const & new_id,
       if (!edge_old_revision(i).inner()().empty()
           && !revision_exists(edge_old_revision(i)))
         {
-          W(F("missing prerequisite revision '%s'")
+          W(F("missing prerequisite revision %s")
             % edge_old_revision(i));
-          W(F("dropping revision '%s'") % new_id);
+          W(F("dropping revision %s") % new_id);
           return false;
         }
 
@@ -3004,8 +3004,8 @@ database::put_revision(revision_id const & new_id,
         {
           if (! file_version_exists(a->second))
             {
-              W(F("missing prerequisite file '%s'") % a->second);
-              W(F("dropping revision '%s'") % new_id);
+              W(F("missing prerequisite file %s") % a->second);
+              W(F("dropping revision %s") % new_id);
               return false;
             }
         }
@@ -3019,17 +3019,17 @@ database::put_revision(revision_id const & new_id,
 
           if (! file_version_exists(delta_entry_src(d)))
             {
-              W(F("missing prerequisite file pre-delta '%s'")
+              W(F("missing prerequisite file pre-delta %s")
                 % delta_entry_src(d));
-              W(F("dropping revision '%s'") % new_id);
+              W(F("dropping revision %s") % new_id);
               return false;
             }
 
           if (! file_version_exists(delta_entry_dst(d)))
             {
-              W(F("missing prerequisite file post-delta '%s'")
+              W(F("missing prerequisite file post-delta %s")
                 % delta_entry_dst(d));
-              W(F("dropping revision '%s'") % new_id);
+              W(F("dropping revision %s") % new_id);
               return false;
             }
         }
@@ -3625,7 +3625,7 @@ database_impl::oldstyle_results_to_certs(results const & res,
           k_id = key_id(key_res[0][0], origin::database);
         else
           E(false, origin::database,
-            F("Your database contains multiple keys named %s") % k_name);
+            F("Your database contains multiple keys named '%s'") % k_name);
       }
 
       rsa_sha1_signature sig(res[i][4], origin::database);
@@ -3786,7 +3786,7 @@ database::put_revision_cert(cert const & cert)
 
   if (!revision_exists(revision_id(cert.ident)))
     {
-      W(F("cert revision '%s' does not exist in db")
+      W(F("cert revision %s does not exist in db")
         % cert.ident);
       W(F("dropping cert"));
       return false;
@@ -3798,7 +3798,7 @@ database::put_revision_cert(cert const & cert)
       if (branch_name.find_first_of("?,;*%%+{}[]!^") != string::npos ||
           branch_name.find_first_of('-') == 0)
         {
-          W(F("The branch name\n"
+          W(F("the branch name\n"
               "  '%s'\n"
               "contains meta characters (one or more of '?,;*%%+{}[]!^') or\n"
               "starts with a dash, which might cause malfunctions when used\n"
@@ -4122,7 +4122,7 @@ namespace {
               {
                 W(F("ignoring unknown signature by '%s' on '%s'") % *u % txt);
               }
-            W(F("trust function disliked %d signers of %s cert on revision %s")
+            W(F("trust function disliked %d signers of '%s' cert on revision %s")
               % i->second.good_sigs.size()
               % get<1>(i->first)
               % get<0>(i->first));
@@ -4823,7 +4823,7 @@ database_impl::check_db_exists()
       return;
 
     case path::nonexistent:
-      E(false, origin::user, F("database %s does not exist") % filename);
+      E(false, origin::user, F("database '%s' does not exist") % filename);
 
     case path::directory:
       if (directory_is_workspace(filename))
@@ -4831,11 +4831,11 @@ database_impl::check_db_exists()
           options opts;
           workspace::get_options(filename, opts);
           E(opts.dbname.as_internal().empty(), origin::user,
-            F("%s is a workspace, not a database\n"
-              "(did you mean %s?)") % filename % opts.dbname);
+            F("'%s' is a workspace, not a database\n"
+              "(did you mean '%s'?)") % filename % opts.dbname);
         }
       E(false, origin::user,
-        F("%s is a directory, not a database") % filename);
+        F("'%s' is a directory, not a database") % filename);
     }
 }
 
@@ -4843,14 +4843,14 @@ void
 database_impl::check_db_nonexistent()
 {
   require_path_is_nonexistent(filename,
-                              F("database %s already exists")
+                              F("database '%s' already exists")
                               % filename);
 
   system_path journal(filename.as_internal() + "-journal", origin::internal);
   require_path_is_nonexistent(journal,
                               F("existing (possibly stale) journal file '%s' "
-                                "has same stem as new database '%s'\n"
-                                "cancelling database creation")
+                                "has same stem as new database '%s'.\n"
+                                "Cancelling database creation")
                               % journal % filename);
 
 }

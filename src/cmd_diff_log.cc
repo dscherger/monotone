@@ -247,7 +247,7 @@ prepare_diff(app_state & app,
     F("more than two revisions given"));
 
   E(!app.opts.reverse || app.opts.revision.size() == 1, origin::user,
-    F("--reverse only allowed with exactly one revision"));
+    F("'--reverse' only allowed with exactly one revision"));
 
   if (app.opts.revision.empty())
     {
@@ -261,7 +261,7 @@ prepare_diff(app_state & app,
       // With no arguments, which parent should we diff against?
       E(parents.size() == 1, origin::user,
         F("this workspace has more than one parent\n"
-          "(specify a revision to diff against with --revision)"));
+          "(specify a revision to diff against with '--revision')"));
 
       old_rid = parent_id(parents.begin());
       left_roster = parent_roster(parents.begin());
@@ -426,8 +426,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
 {
   if (app.opts.external_diff_args_given)
     E(app.opts.diff_format == external_diff, origin::user,
-      F("--diff-args requires --external\n"
-        "try adding --external or removing --diff-args?"));
+      F("'--diff-args' requires '--external'; try adding '--external' or remove '--diff-args'"));
 
   roster_t old_roster, new_roster;
   std::string revs;
@@ -641,7 +640,7 @@ log_common (app_state & app,
   log_direction direction = log_reverse;
 
   E(last == -1 || next == -1, origin::user,
-    F("only one of --last/--next allowed"));
+    F("only one of '--last'/'--next' allowed"));
 
   if (next >= 0)
     direction = log_forward;
@@ -658,7 +657,7 @@ log_common (app_state & app,
   if (app.opts.from.empty() && app.opts.revision.empty())
     {
       // only set default --from revs if no --revision selectors were specified
-      workspace work(app, F("try passing a --from revision to start at"));
+      workspace work(app, F("try passing a '--from' revision to start at"));
 
       revision_t rev;
       work.get_work_rev(rev);
@@ -666,12 +665,16 @@ log_common (app_state & app,
            i != rev.edges.end(); i++)
         {
           revision_id rid = edge_old_revision(i);
-          E(db.revision_exists(rid), origin::user,
-            F("workspace parent revision '%s' not found - "
-              "did you specify a wrong database?") % rid);
-          starting_revs.insert(rid);
-          if (i == rev.edges.begin())
-            first_rid = rid;
+          if ((FL("%s") % rid).str().empty()) {
+            W(F("workspace has no parent revision, probably an empty branch"));
+          } else {
+            E(db.revision_exists(rid), origin::user,
+              F("workspace parent revision %s not found - "
+                "did you specify a wrong database?") % rid);
+            starting_revs.insert(rid);
+            if (i == rev.edges.begin())
+              first_rid = rid;
+          }
         }
     }
   else if (!app.opts.from.empty())

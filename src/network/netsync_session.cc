@@ -753,7 +753,7 @@ netsync_session::process_refine_cmd(refinement_type ty, merkle_node const & node
   switch (node.type)
     {
     case file_item:
-      W(F("Unexpected 'refine' command on non-refined item type"));
+      W(F("unexpected 'refine' command on non-refined item type"));
       break;
 
     case key_item:
@@ -785,7 +785,7 @@ netsync_session::process_done_cmd(netcmd_item_type type, size_t n_items)
   switch (type)
     {
     case file_item:
-      W(F("Unexpected 'done' command on non-refined item type"));
+      W(F("unexpected 'done' command on non-refined item type"));
       break;
 
     case key_item:
@@ -975,8 +975,8 @@ netsync_session::process_data_cmd(netcmd_item_type type,
             encode_hexenc(epoch.inner(), their_epoch);
             bool am_server = (get_voice() == server_voice);
             error(error_codes::mixing_versions,
-                  (F("Mismatched epoch on branch %s."
-                     " Server has '%s', client has '%s'.")
+                  (F("mismatched epoch on branch '%s'."
+                     " Server has %s, client has %s")
                    % branch
                    % (am_server ? my_epoch : their_epoch)()
                    % (am_server ? their_epoch : my_epoch)()).str());
@@ -1003,7 +1003,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
           counts->keys_in.add_item(key_id(item));
         else
           error(error_codes::partial_transfer,
-                (F("Received duplicate key %s") % keyid).str());
+                (F("received duplicate key %s") % keyid).str());
       }
       break;
 
@@ -1017,8 +1017,8 @@ netsync_session::process_data_cmd(netcmd_item_type type,
             matched = cert::read_cert(project.db, dat, c, keyname);
             if (!matched)
               {
-                W(F("Dropping incoming cert which claims to be signed by key\n"
-                    "'%s' (name '%s'), but has a bad signature")
+                W(F("dropping incoming cert which claims to be signed by key\n"
+                    "%s (name '%s'), but has a bad signature")
                   % c.key % keyname);
               }
           }
@@ -1027,9 +1027,9 @@ netsync_session::process_data_cmd(netcmd_item_type type,
             matched = cert::read_cert_v6(project.db, dat, c, keyname);
             if (!matched)
               {
-                W(F("dropping incoming cert which was signed by a key we don't have\n"
-                    "you probably need to obtain this key from a more recent netsync peer\n"
-                    "the name of the key involved is '%s', but note that there are multiple\n"
+                W(F("dropping incoming cert which was signed by a key we don't have.\n"
+                    "You probably need to obtain this key from a more recent netsync peer.\n"
+                    "The name of the key involved is '%s', but note that there are multiple\n"
                     "keys with this name and we don't know which one it is") % keyname);
               }
           }

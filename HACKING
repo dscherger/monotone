@@ -51,6 +51,128 @@ to be a minimal set of declarations that really do need to be visible
 everywhere.
 
 
+Formatting messages
+-------------------
+
+For short messages (single sentence error, warning, info and progress
+messages), we follow the GNU coding standards.  However, those are not
+quite enough, and we have developed an extended set of rules to follow
+for messages in english:
+
+  - put single quotes ('') aroung file names and paths, option names,
+    tag names, branch names, command names and commands, as well as
+    any %s that would be expanded to one of those.
+    There is an exception, though: if the quoted item is cited after a
+    colon, either as the last part of the message or on its own line.
+    For example, the following doesn't look very good:
+
+        To apply the changes relative to one of its parents, use:
+          'mtn pluck -r PARENT -r 06c3...'
+
+    The following looks better
+
+        To apply the changes relative to one of its parents, use:
+          mtn pluck -r PARENT -r 06c3...
+
+  - use a Capital first letter in command abstract and description
+    strings.  Do not put a period at the end of the abstract, but do
+    so with the description.  The following would be very wrong:
+
+        CMD(foo, "foo", "", CMD_REF(foos), "",
+            N_("does the foo thing."),
+            N_("in order to do the foo thing, this allows you to join "
+               "the foo fighters"),
+
+    The following is what it's supposed to look like:
+
+        CMD(foo, "foo", "", CMD_REF(foos), "",
+            N_("Does the foo thing"),
+            N_("In order to do the foo thing, this allows you to join "
+               "the foo fighters."),
+
+  - just as with error messages, use a lowercase first letter in
+    descriptions of options and do not end it with a period.  The
+    following would be wrong:
+
+        SIMPLE_OPTION(bar, "bar", bool,
+                      gettext_noop("Have the remaining figures go to "
+                                   "the nearest bar."))
+
+    The following is better:
+
+        SIMPLE_OPTION(bar, "bar", bool,
+                      gettext_noop("have the remaining figures go to "
+                                   "the nearest bar"))
+
+  - for multi-sentence error messages, use a lowercase first letter,
+    but have the second sentence and on start with a Capital letter,
+    and punctuate between sentences.  The following is an example that
+    does not follow this rule, and is quite unreadable:
+
+      E(!candidates.empty(), origin::user,
+        F("your request matches no descendents of the current revision\n"
+          "in fact, it doesn't even match the current revision\n"
+          "maybe you want something like --revision=h:%s")
+        % app.opts.branch);
+
+    The proper way to write this message is:
+
+      E(!candidates.empty(), origin::user,
+        F("your request matches no descendents of the current revision.\n"
+          "In fact, it doesn't even match the current revision.\n"
+          "Maybe you want something like --revision=h:%s")
+        % app.opts.branch);
+
+  - proper names, acronyms, function names and variable names must
+    follow their proper capitalization rules.  For example, "Botan"
+    and "I/O" must be written that way.
+
+  - "monotone" and "mtn" are proper names with a lower case character,
+    and should always be written with a lower case first character,
+    even though language rules or the rules written here would say
+    otherwise.  If you find that troublesome, you might want to
+    consider rephrasing so the sentence doesn't start with "monotone"
+    or "mtn".
+
+  - Please consider that the user has to understand the messages, even
+    though they might not know all the inner details of how monotone
+    works, and might not have a programmer's mind.  For example, the
+    following message was hard to understand:
+
+        could not query default database locations
+
+    It has been replaced with the following (which will at least make
+    it clear that this is likely to be a configuration problem and not
+    some inner weirdness in monotone):
+
+        no default database location configured
+
+PLEASE APPLY COMMON SENSE.  There are message that will deviate from
+these rules.  They should be very few, however.
+
+
+Translation
+-----------
+
+For translators, their language may have a different set of rules for
+things such as quoting (in the french translation, «_ and _» are used
+instead of single quotes, for example) and capitalization.  Please use
+your best judgement and be consistent.  Still, do not capitalize
+"monotone" or "mtn".
+
+When working on your languages, please do not update any language file
+but your own, as it can be quite annoying for other translators to
+have to deal with merging the changes generated with their current
+work.  The best way to deal with this is by updating your language
+files using one of the following methods:
+
+    make ALL_LINGUAS={lang} update-po update-gmo
+
+    make po/{lang}.po-update po/{lang}.gmo
+
+(replace {lang} with your language code)
+
+
 Dialect issues
 --------------
 

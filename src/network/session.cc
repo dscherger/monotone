@@ -196,15 +196,15 @@ bool session::do_work(transaction_guard & guard)
                 if (msg().size())
                   {
                     if (msg()[0] == '!')
-                      P(F("Received warning from usher: %s") % msg().substr(1));
+                      P(F("received warning from usher: %s") % msg().substr(1));
                     else
-                      L(FL("Received greeting from usher: %s") % msg().substr(1));
+                      L(FL("received greeting from usher: %s") % msg().substr(1));
                   }
                 netcmd cmdout(version);
                 cmdout.write_usher_reply_cmd(utf8(peer_id, origin::internal),
                                              wrapped->usher_reply_data());
                 write_netcmd(cmdout);
-                L(FL("Sent reply."));
+                L(FL("sent reply."));
                 return true;
               }
             case usher_reply_cmd:
@@ -280,8 +280,8 @@ bool session::do_work(transaction_guard & guard)
                                 "@ WARNING: SERVER IDENTIFICATION HAS CHANGED              @\n"
                                 "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
                                 "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY\n"
-                                "it is also possible that the server key has just been changed\n"
-                                "remote host sent key %s\n"
+                                "It is also possible that the server key has just been changed.\n"
+                                "Remote host sent key %s,\n"
                                 "I expected %s\n"
                                 "'%s unset %s %s' overrides this check")
                               % printable_key_hash
@@ -292,7 +292,7 @@ bool session::do_work(transaction_guard & guard)
                       }
                     else
                       {
-                        P(F("first time connecting to server %s\n"
+                        P(F("first time connecting to server %s.\n"
                             "I'll assume it's really them, but you might want to double-check\n"
                             "their key's fingerprint: %s")
                           % get_peer()

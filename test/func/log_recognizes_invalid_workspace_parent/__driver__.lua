@@ -15,7 +15,7 @@ writefile("_MTN/revision", rev)
 
 check(mtn("log"), 1, false, true)
 check(qgrep(
-    "workspace parent revision '0000000000000000000000000000000000000002' not found",
+    "workspace parent revision 0000000000000000000000000000000000000002 not found",
     "stderr"
 ))
 

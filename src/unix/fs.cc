@@ -58,7 +58,7 @@ change_current_working_dir(string const & to)
     {
       const int err = errno;
       E(false, origin::system,
-        F("cannot change to directory %s: %s") % to % os_strerror(err));
+        F("cannot change to directory '%s': %s") % to % os_strerror(err));
     }
 }
 
@@ -113,7 +113,7 @@ tilde_expand(string const & in)
   // filesystem charset)
   pw = getpwnam(user.c_str());
   E(pw != NULL, origin::user,
-    F("could not find home directory for user %s") % user);
+    F("could not find home directory for user '%s'") % user);
 
   return string(pw->pw_dir) + after;
 }
@@ -131,7 +131,7 @@ get_path_status(string const & path)
         return path::nonexistent;
       else
         E(false, origin::system,
-          F("error accessing file %s: %s") % path % os_strerror(err));
+          F("error accessing file '%s': %s") % path % os_strerror(err));
     }
   if (S_ISREG(buf.st_mode))
     return path::file;
@@ -140,7 +140,7 @@ get_path_status(string const & path)
   else
     {
       // fifo or device or who knows what...
-      E(false, origin::system, F("cannot handle special file %s") % path);
+      E(false, origin::system, F("cannot handle special file '%s'") % path);
     }
 }
 
@@ -453,7 +453,7 @@ make_temp_file(string const & dir, string & name, mode_t mode)
       // diagnostics from this E() than we would from an I().)
 
       E(err == EEXIST, origin::system,
-        F("cannot create temp file %s: %s") % tmp % os_strerror(err));
+        F("cannot create temp file '%s': %s") % tmp % os_strerror(err));
 
       // This increment is relatively prime to 'limit', therefore 'value'
       // will visit every number in its range.
@@ -504,14 +504,14 @@ write_data_worker(string const & fname,
         ssize_t written = write(fd, ptr, remaining);
         const int err = errno;
         E(written >= 0, origin::system,
-          F("error writing to temp file %s: %s") % tmp % os_strerror(err));
+          F("error writing to temp file '%s': %s") % tmp % os_strerror(err));
         if (written == 0)
           {
             deadcycles++;
             E(deadcycles < 4, origin::system,
-              FP("giving up after four zero-length writes to %s "
+              FP("giving up after four zero-length writes to '%s' "
                  "(%d byte written, %d left)",
-                 "giving up after four zero-length writes to %s "
+                 "giving up after four zero-length writes to '%s' "
                  "(%d bytes written, %d left)",
                  ptr - dat.data())
               % tmp % (ptr - dat.data()) % remaining);

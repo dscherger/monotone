@@ -9,7 +9,7 @@ writefile("foo/\\", "invalid path")
 
 check(mtn("add", "--recursive", "foo"), 0, false, true)
 check(qgrep("skipping file 'foo/\\\\' with unsupported name", "stderr"))
-check(qgrep("adding foo to workspace manifest", "stderr"))
+check(qgrep("adding 'foo' to workspace manifest", "stderr"))
 
 check(mtn("add", "foo/\\"), 1, false, true)
 check(qgrep("misuse: path 'foo/\\\\' is invalid", "stderr"))

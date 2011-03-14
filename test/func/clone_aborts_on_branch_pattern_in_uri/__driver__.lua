@@ -13,7 +13,7 @@ check(qgrep("you must specify an unambiguous branch to clone", "stderr"))
 
 -- the branch option is invalid in non-URI mode
 check(nodb_mtn("clone", "some-server", "mybranch", "--branch=mybranch"), 1, false, true)
-check(qgrep("the --branch option is only valid with an URI to clone", "stderr"))
+check(qgrep("the '--branch' option is only valid with an URI to clone", "stderr"))
 
 -- finally, this should succeed
 check(nodb_mtn("clone", testURI, "--branch=mybranch"), 0, false, false)

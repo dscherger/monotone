@@ -187,11 +187,11 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
 
   // find the version of the file requested
   E(roster.has_node(file), origin::user,
-    F("no such file '%s' in revision '%s'")
+    F("no such file '%s' in revision %s")
       % file % rid);
   const_node_t node = roster.get_node(file);
   E(is_file_t(node), origin::user,
-    F("'%s' in revision '%s' is not a file")
+    F("'%s' in revision %s is not a file")
       % file % rid);
 
   const_file_t file_node = downcast_to_file_t(node);
@@ -241,7 +241,7 @@ CMD_AUTOMATE(identify, N_("PATH"),
   utf8 path = idx(args, 0);
 
   E(path() != "-", origin::user,
-    F("Cannot read from stdin"));
+    F("cannot read from stdin"));
 
   data dat;
   read_data_for_command_line(path, dat);
@@ -267,7 +267,7 @@ static void
 dump_file(database & db, std::ostream & output, revision_id rid, utf8 filename)
 {
   E(db.revision_exists(rid), origin::user,
-    F("no such revision '%s'") % rid);
+    F("no revision %s found in database") % rid);
 
   // Paths are interpreted as standard external ones when we're in a
   // workspace, but as project-rooted external ones otherwise.
@@ -277,11 +277,11 @@ dump_file(database & db, std::ostream & output, revision_id rid, utf8 filename)
   marking_map marks;
   db.get_roster(rid, roster, marks);
   E(roster.has_node(fp), origin::user,
-    F("no file '%s' found in revision '%s'") % fp % rid);
+    F("no file '%s' found in revision %s") % fp % rid);
 
   const_node_t node = roster.get_node(fp);
   E((!null_node(node->self) && is_file_t(node)), origin::user,
-    F("no file '%s' found in revision '%s'") % fp % rid);
+    F("no file '%s' found in revision %s") % fp % rid);
 
   const_file_t file_node = downcast_to_file_t(node);
   dump_file(db, output, file_node->content);

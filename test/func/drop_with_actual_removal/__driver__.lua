@@ -77,7 +77,7 @@ check(exists("file1"))
 -- drop of changed committed file
 -- it remains and a warning is printed
 check(mtn("drop", "file2"), 0, false, true)
-check(qgrep("file file2 changed", "stderr"))
+check(qgrep("file 'file2' changed", "stderr"))
 check(exists("file2"))
 
 -- drop of changed committed file --bookkeep-only

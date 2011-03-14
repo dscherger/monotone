@@ -216,7 +216,7 @@ pcre_compile_error(int errcode, char const * err,
     case 52: // internal error: overran compiling workspace
     case 53: // internal error: previously-checked referenced subpattern
              // not found
-      throw oops((F("while compiling regex \"%s\": %s") % pattern % err)
+      throw oops((F("while compiling regex '%s': %s") % pattern % err)
                  .str().c_str());
 
     default:
@@ -225,9 +225,9 @@ pcre_compile_error(int errcode, char const * err,
       // position-ful variant for all errors, but I'm leaving the == -1 check
       // here in case PCRE gets fixed.
       E(false, caused_by, (erroff == -1
-                           ? (F("error in regex \"%s\": %s")
+                           ? (F("error in regex '%s': %s")
                               % pattern % err)
-                           : (F("error near char %d of regex \"%s\": %s")
+                           : (F("error near char %d of regex '%s': %s")
                               % (erroff + 1) % pattern % err)
                            ));
     }
@@ -242,7 +242,7 @@ pcre_study_error(char const * err, char const * pattern,
   if (!std::strcmp(err, "failed to get memory"))
     throw std::bad_alloc();
   else
-    throw oops((F("while studying regex \"%s\": %s") % pattern % err)
+    throw oops((F("while studying regex '%s': %s") % pattern % err)
                .str().c_str());
 }
 

@@ -87,7 +87,7 @@ struct key_store_state
       || app.opts.conf_dir_given
       || !app.opts.no_default_confdir,
       origin::user,
-      F("No available keystore found"));
+      F("no available keystore found"));
   }
 
   // internal methods
@@ -131,22 +131,22 @@ namespace
     keyreader(key_store_state & kss): kss(kss) {}
     virtual void consume_file_data(file_id const & ident,
                                    file_data const & dat)
-    {E(false, origin::system, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("extraneous data in key store"));}
     virtual void consume_file_delta(file_id const & id_old,
                                     file_id const & id_new,
                                     file_delta const & del)
-    {E(false, origin::system, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("extraneous data in key store"));}
 
     virtual void consume_revision_data(revision_id const & ident,
                                        revision_data const & dat)
-    {E(false, origin::system, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("extraneous data in key store"));}
     virtual void consume_revision_cert(cert const & t)
-    {E(false, origin::system, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("extraneous data in key store"));}
 
 
     virtual void consume_public_key(key_name const & ident,
                                     rsa_pub_key const & k)
-    {E(false, origin::system, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("extraneous data in key store"));}
 
     virtual void consume_key_pair(key_name const & name,
                                   keypair const & kp)
@@ -157,21 +157,21 @@ namespace
       key_hash_code(name, kp.pub, ident);
       E(kss.put_key_pair_memory(full_key_info(ident, key_info(name, kp))),
         origin::system,
-        F("Key store has multiple copies of the key with id '%s'.") % ident);
+        F("key store has multiple copies of the key with id %s") % ident);
 
-      L(FL("successfully read key pair '%s' from key store") % ident);
+      L(FL("successfully read key pair %s from key store") % ident);
     }
 
     // for backward compatibility
     virtual void consume_old_private_key(key_name const & ident,
                                          old_arc4_rsa_priv_key const & k)
     {
-      W(F("converting old-format private key '%s'") % ident);
+      W(F("converting old-format private key %s") % ident);
 
       rsa_pub_key dummy;
       kss.migrate_old_key_pair(ident, k, dummy);
 
-      L(FL("successfully read key pair '%s' from key store") % ident);
+      L(FL("successfully read key pair %s from key store") % ident);
     }
   };
 }
@@ -224,7 +224,7 @@ key_store_state::maybe_read_key_dir()
       read_data(*i, dat);
       istringstream is(dat());
       if (read_packets(is, kr) == 0)
-        W(F("ignored invalid key file ('%s') in key store") % (*i) );
+        W(F("ignored invalid key file '%s' in key store") % (*i) );
     }
 }
 
@@ -419,19 +419,19 @@ struct key_delete_validator : public packet_consumer
   virtual ~key_delete_validator() {}
   virtual void consume_file_data(file_id const & ident,
                                  file_data const & dat)
-  { E(false, origin::system, F("Invalid data in key file.")); }
+  { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_file_delta(file_id const & id_old,
                                   file_id const & id_new,
                                   file_delta const & del)
-  { E(false, origin::system, F("Invalid data in key file.")); }
+  { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_revision_data(revision_id const & ident,
                                      revision_data const & dat)
-  { E(false, origin::system, F("Invalid data in key file.")); }
+  { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_revision_cert(cert const & t)
-  { E(false, origin::system, F("Invalid data in key file.")); }
+  { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_public_key(key_name const & ident,
                                   rsa_pub_key const & k)
-  { E(false, origin::system, F("Invalid data in key file.")); }
+  { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_key_pair(key_name const & name,
                                 keypair const & kp)
   {
@@ -439,7 +439,7 @@ struct key_delete_validator : public packet_consumer
      key_id ident;
      key_hash_code(name, kp.pub, ident);
      E(ident == expected_ident, origin::user,
-       F("expected key with id '%s' in key file '%s', got key with id '%s'")
+       F("expected key with id %s in key file '%s', got key with id %s")
          % expected_ident % file % ident);
   }
   virtual void consume_old_private_key(key_name const & ident,
@@ -564,7 +564,7 @@ key_store_state::decrypt_private_key(key_id const & id,
   keypair kp;
   key_name name;
   E(maybe_get_key_pair(id, name, kp), origin::user,
-    F("no key pair '%s' found in key store '%s'") % id % key_dir);
+    F("no key pair %s found in key store '%s'") % id % key_dir);
 
   L(FL("%d-byte private key") % kp.priv().size());
 
@@ -730,11 +730,11 @@ key_store::create_key_pair(database & db,
   // and save it.
   if (create_mode == create_verbose)
     {
-      P(F("storing key-pair '%s' in %s/") % ident % get_key_dir());
+      P(F("storing key-pair %s in '%s/'") % ident % get_key_dir());
     }
   else
     {
-      L(FL("storing key-pair '%s' in %s/") % ident % get_key_dir());
+      L(FL("storing key-pair %s in '%s/'") % ident % get_key_dir());
     }
   put_key_pair(ident, kp);
 
@@ -743,11 +743,11 @@ key_store::create_key_pair(database & db,
       guard.acquire();
       if (create_mode == create_verbose)
         {
-          P(F("storing public key '%s' in %s") % ident % db.get_filename());
+          P(F("storing public key %s in '%s'") % ident % db.get_filename());
         }
       else
         {
-          L(FL("storing public key '%s' in %s") % ident % db.get_filename());
+          L(FL("storing public key %s in '%s'") % ident % db.get_filename());
         }
       db.put_key(ident, kp.pub);
       guard.commit();
@@ -848,8 +848,8 @@ key_store::make_signature(database & db,
 
   //sign with ssh-agent (if connected)
   E(agent.connected() || s->ssh_sign_mode != "only", origin::user,
-    F("You have chosen to sign only with ssh-agent but ssh-agent"
-      " does not seem to be running."));
+    F("you have chosen to sign only with ssh-agent but ssh-agent"
+      " does not seem to be running"));
   if (s->ssh_sign_mode == "yes"
       || s->ssh_sign_mode == "check"
       || s->ssh_sign_mode == "only")
@@ -878,7 +878,7 @@ key_store::make_signature(database & db,
   string ssh_sig = sig_string;
 
   E(ssh_sig.length() > 0 || s->ssh_sign_mode != "only", origin::user,
-    F("You don't seem to have your monotone key imported "));
+    F("you don't seem to have your monotone key imported "));
 
   if (ssh_sig.length() <= 0
       || s->ssh_sign_mode == "check"
@@ -960,7 +960,7 @@ key_store::add_key_to_agent(key_id const & id)
 {
   ssh_agent & agent = s->get_agent();
   E(agent.connected(), origin::user,
-    F("no ssh-agent is available, cannot add key '%s'") % id);
+    F("no ssh-agent is available, cannot add key %s") % id);
 
   shared_ptr<RSA_PrivateKey> priv = s->decrypt_private_key(id);
 
@@ -1094,7 +1094,7 @@ key_store_state::migrate_old_key_pair
   // matches what we derived from the private key entry, but don't abort the
   // whole migration if it doesn't.
   if (!pub().empty() && !keys_match(id, pub, id, kp.pub))
-    W(F("public and private keys for %s don't match") % id);
+    W(F("public and private keys for %s do not match") % id);
 
   key_id hash;
   key_hash_code(id, kp.pub, hash);

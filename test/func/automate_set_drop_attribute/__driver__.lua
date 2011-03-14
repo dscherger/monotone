@@ -13,9 +13,9 @@ check(mtn("automate", "drop_attribute", "too", "many", "args"), 1, false, true)
 check(qgrep("wrong argument count", "stderr"))
 
 check(mtn("automate", "set_attribute", "unknown_path", "foo", "bar"), 1, false, true)
-check(qgrep("Unknown path", "stderr"))
+check(qgrep("unknown path", "stderr"))
 check(mtn("automate", "drop_attribute", "unknown_path"), 1, false, true)
-check(qgrep("Unknown path", "stderr"))
+check(qgrep("unknown path", "stderr"))
 
 -- check if we can add an attribute
 addfile("testfile", "foo")

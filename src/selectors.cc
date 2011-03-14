@@ -149,7 +149,7 @@ string preprocess_date_for_selector(string sel, lua_hooks & lua, bool equals)
   if (lua.hook_exists("expand_date"))
     {
       E(lua.hook_expand_date(sel, tmp), origin::user,
-        F("selector '%s' is not a valid date\n") % sel);
+        F("selector '%s' is not a valid date") % sel);
     }
   else
     {
@@ -165,11 +165,11 @@ string preprocess_date_for_selector(string sel, lua_hooks & lua, bool equals)
   else if (tmp.size()<11 && !equals)
     tmp += "T00:00:00";
   E(tmp.size()==19 || equals, origin::user,
-    F("selector '%s' is not a valid date (%s)") % sel % tmp);
+    F("selector '%s' is not a valid date (internally completed to '%s')") % sel % tmp);
 
   if (sel != tmp)
     {
-      P (F ("expanded date '%s' -> '%s'\n") % sel % tmp);
+      P(F("expanded date '%s' -> '%s'") % sel % tmp);
       sel = tmp;
     }
   if (equals && sel.size() < 19)
@@ -835,7 +835,7 @@ shared_ptr<selector> selector::create(options const & opts,
               shared_ptr<selector> lhs = idx(items, items.size() - 3).sel;
               shared_ptr<selector> rhs = idx(items, items.size() - 1).sel;
               E(lhs, origin::user,
-                F("selector '%s is invalid, because there is a '%s' someplace it shouldn't be")
+                F("selector '%s' is invalid, because there is a '%s' someplace it shouldn't be")
                 % orig % op);
               shared_ptr<or_selector> lhs_as_or = boost::dynamic_pointer_cast<or_selector>(lhs);
               shared_ptr<and_selector> lhs_as_and = boost::dynamic_pointer_cast<and_selector>(lhs);
@@ -901,7 +901,7 @@ complete(options const & opts, lua_hooks & lua,
     {
       completions.insert(isel->get_assuming_full_length());
       E(project.db.revision_exists(*completions.begin()), origin::user,
-        F("no such revision '%s'") % *completions.begin());
+        F("no revision %s found in database") % *completions.begin());
       return;
     }
 
@@ -919,7 +919,7 @@ complete(options const & opts, lua_hooks & lua,
       // This may be impossible, but let's make sure.
       // All the callers used to do it.
       E(project.db.revision_exists(*i), origin::user,
-        F("no such revision '%s'") % *i);
+        F("no revision %s found in database") % *i);
     }
 }
 

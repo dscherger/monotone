@@ -219,7 +219,7 @@ CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "REVID",
             continue;
 
           E(!work.has_changes(db), origin::user,
-            F("Cannot kill revision %s,\n"
+            F("cannot kill revision %s,\n"
               "because it would leave the current workspace in an invalid\n"
               "state, from which monotone cannot recover automatically since\n"
               "the workspace contains uncommitted changes.\n"
@@ -404,7 +404,7 @@ CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
     throw usage(execid);
 
   E(idx(args, 1)().size() == constants::epochlen, origin::user,
-    F("The epoch must be %s characters") % constants::epochlen);
+    F("The epoch must be %d characters") % constants::epochlen);
 
   epoch_data ed(decode_hexenc_as<epoch_data>(idx(args, 1)(), origin::user));
   database db(app);
@@ -447,7 +447,7 @@ CMD(unset, "unset", "", CMD_REF(variables), N_("DOMAIN NAME"),
 
   database db(app);
   E(db.var_exists(k), origin::user,
-    F("no var with name %s in domain %s") % n % d);
+    F("no var with name '%s' in domain '%s'") % n % d);
   db.clear_var(k);
 }
 
@@ -618,7 +618,7 @@ CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
   revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
   database db(app);
   E(db.revision_exists(rid), origin::user,
-    F("no such revision '%s'") % rid);
+    F("no revision %s found in database") % rid);
   rev_height height;
   db.get_rev_height(rid, height);
   P(F("cached height: %s") % height);

@@ -140,7 +140,7 @@ dropkey_common(app_state & app,
       transaction_guard guard(db);
       if (db.public_key_exists(identity.id))
         {
-          P(F("dropping public key '%s' from database") % identity.id);
+          P(F("dropping public key %s from database") % identity.id);
           db.delete_public_key(identity.id);
           key_deleted = true;
         }
@@ -150,7 +150,7 @@ dropkey_common(app_state & app,
 
   if (drop_private && keys.key_pair_exists(identity.id))
     {
-      P(F("dropping key pair '%s' from keystore") % identity.id);
+      P(F("dropping key pair %s from keystore") % identity.id);
       keys.delete_key(identity.id);
       key_deleted = true;
     }
@@ -411,7 +411,7 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
   E(!app.opts.branch().empty(), origin::user,
-    F("need --branch argument for approval"));
+    F("need '--branch' argument for approval"));
 
   cache_user_key(app.opts, project, keys, app.lua);
   project.put_revision_in_branch(keys, r, app.opts.branch);
@@ -437,7 +437,7 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
   E(!app.opts.branch().empty(), origin::user,
-    F("need --branch argument to suspend"));
+    F("need '--branch' argument to suspend"));
 
   cache_user_key(app.opts, project, keys, app.lua);
   project.suspend_revision_in_branch(keys, r, app.opts.branch);

@@ -68,7 +68,7 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
           else
             conflicts.right_roster->get_name(conflict.nid, name);
 
-          P(F("orphaned node %s") % name);
+          P(F("orphaned node '%s'") % name);
 
           switch (show_case)
             {
@@ -374,7 +374,7 @@ set_first_conflict(database & db,
                       {
                         file_path left_path;
                         conflicts.left_roster->get_name(conflict.nid, left_path);
-                        result_path = bookkeeping_path("_MTN/resolutions", origin::internal) / left_path;
+                        result_path = bookkeeping_resolutions_dir / left_path;
                       }
                       break;
 
@@ -519,14 +519,11 @@ CMD(clean, "clean", "", CMD_REF(conflicts),
     "",
     options::opts::none)
 {
-  bookkeeping_path conflicts_file("_MTN/conflicts");
-  bookkeeping_path resolutions_dir("_MTN/resolutions");
+  if (path_exists(bookkeeping_conflicts_file))
+    delete_file(bookkeeping_conflicts_file);
 
-  if (path_exists(conflicts_file))
-    delete_file(conflicts_file);
-
-  if (path_exists(resolutions_dir))
-    delete_dir_recursive(resolutions_dir);
+  if (path_exists(bookkeeping_resolutions_dir))
+    delete_dir_recursive(bookkeeping_resolutions_dir);
 }
 
 // Local Variables:

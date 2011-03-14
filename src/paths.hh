@@ -97,7 +97,7 @@
 //
 //       all this means that when you want to print out a path, you usually
 //       want to just say:
-//           F("my path is %s") % my_path
+//           F("my path is '%s'") % my_path
 //       i.e., nothing fancy necessary, for purposes of F() just treat it like
 //       it were a string
 
@@ -351,6 +351,8 @@ private:
 
 #define bookkeeping_root (bookkeeping_path("_MTN"))
 #define bookkeeping_root_component (path_component("_MTN"))
+#define bookkeeping_conflicts_file (bookkeeping_path("_MTN/conflicts"))
+#define bookkeeping_resolutions_dir (bookkeeping_path("_MTN/resolutions"))
 // for migration
 #define old_bookkeeping_root_component (path_component("MT"))
 

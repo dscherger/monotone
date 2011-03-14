@@ -699,7 +699,7 @@ roster_merge_result::report_invalid_name_conflicts(roster_t const & left_roster,
       if (basic_io)
         st.push_str_pair(syms::conflict, syms::invalid_name);
       else
-        P(F("conflict: invalid name _MTN in root directory"));
+        P(F("conflict: invalid name '_MTN' in root directory"));
 
       if (left_roster.root()->self == conflict.parent_name.first)
         {
@@ -2282,9 +2282,9 @@ attach_node (lua_hooks & lua,
   I(!target_path.empty());
 
   E(!new_roster.has_node(target_path), origin::user,
-    F("%s already exists") % target_path.as_external());
+    F("'%s' already exists") % target_path.as_external());
   E(new_roster.has_node(target_path.dirname()), origin::user,
-    F("directory %s does not exist or is unknown") % target_path.dirname());
+    F("directory '%s' does not exist or is unknown") % target_path.dirname());
 
   new_roster.attach_node (nid, target_path);
 
@@ -2334,27 +2334,27 @@ roster_merge_result::resolve_orphaned_node_conflicts(lua_hooks & lua,
           if (is_dir_t(roster.get_node(conflict.nid)))
             {
               E(downcast_to_dir_t(roster.get_node(conflict.nid))->children.empty(), origin::user,
-                F("can't drop directory %s; it is not empty") % name);
+                F("can't drop directory '%s'; it is not empty") % name);
             }
 
-          P(F("dropping %s") % name);
+          P(F("dropping '%s'") % name);
           roster.drop_detached_node(conflict.nid);
           break;
 
         case resolve_conflicts::rename:
-          P(F("renaming %s to %s") % name % *conflict.resolution.second);
+          P(F("renaming '%s' to '%s'") % name % *conflict.resolution.second);
           attach_node
             (lua, roster, conflict.nid, file_path_internal (conflict.resolution.second->as_internal()));
           break;
 
         case resolve_conflicts::none:
           E(false, origin::user,
-            F("no resolution provided for orphaned_node %s") % name);
+            F("no resolution provided for orphaned_node '%s'") % name);
           break;
 
         default:
           E(false, origin::user,
-            F("invalid resolution for orphaned_node %s") % name);
+            F("invalid resolution for orphaned_node '%s'") % name);
         }
     } // end for
 
@@ -2378,9 +2378,9 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
         E(other_resolution.first == resolve_conflicts::drop ||
           other_resolution.first == resolve_conflicts::rename,
           origin::user,
-          F("inconsistent left/right resolutions for %s") % name);
+          F("inconsistent left/right resolutions for '%s'") % name);
 
-        P(F("replacing content of %s with %s") % name % resolution.second->as_external());
+        P(F("replacing content of '%s' with '%s'") % name % resolution.second->as_external());
 
         file_id result_fid;
         file_data parent_data, result_data;
@@ -2402,12 +2402,12 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
       break;
 
     case resolve_conflicts::drop:
-      P(F("dropping %s") % name);
+      P(F("dropping '%s'") % name);
 
       if (is_dir_t(result_roster.get_node(nid)))
         {
           const_dir_t n = downcast_to_dir_t(result_roster.get_node(nid));
-          E(n->children.empty(), origin::user, F("can't drop %s; not empty") % name);
+          E(n->children.empty(), origin::user, F("can't drop '%s'; not empty") % name);
         }
       result_roster.drop_detached_node(nid);
       break;
@@ -2416,26 +2416,26 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
       E(other_resolution.first == resolve_conflicts::drop ||
         other_resolution.first == resolve_conflicts::rename,
         origin::user,
-        F("inconsistent left/right resolutions for %s") % name);
+        F("inconsistent left/right resolutions for '%s'") % name);
 
-      P(F("keeping %s") % name);
+      P(F("keeping '%s'") % name);
       attach_node (lua, result_roster, nid, name);
       break;
 
     case resolve_conflicts::rename:
-      P(F("renaming %s to %s") % name % *resolution.second);
+      P(F("renaming '%s' to '%s'") % name % *resolution.second);
       attach_node
         (lua, result_roster, nid, file_path_internal (resolution.second->as_internal()));
       break;
 
     case resolve_conflicts::none:
       E(false, origin::user,
-        F("no resolution provided for duplicate_name %s") % name);
+        F("no resolution provided for duplicate_name '%s'") % name);
       break;
 
     case resolve_conflicts::content_internal:
       E(false, origin::user,
-        F("invalid resolution for duplicate_name %s") % name);
+        F("invalid resolution for duplicate_name '%s'") % name);
       break;
 
     default:
@@ -2535,9 +2535,9 @@ roster_merge_result::resolve_file_content_conflicts(lua_hooks & lua,
               E(resolve_conflicts::do_auto_merge(lua, conflict, adaptor, left_roster,
                                                  right_roster, this->roster, merged_id),
                 origin::user,
-                F("merge of %s, %s failed") % left_name % right_name);
+                F("merge of '%s', '%s' failed") % left_name % right_name);
 
-              P(F("merged %s, %s") % left_name % right_name);
+              P(F("merged '%s', '%s'") % left_name % right_name);
 
               file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.nid));
               result_node->content = merged_id;
@@ -2546,7 +2546,7 @@ roster_merge_result::resolve_file_content_conflicts(lua_hooks & lua,
 
           case resolve_conflicts::content_user:
             {
-              P(F("replacing content of %s, %s with %s") %
+              P(F("replacing content of '%s', '%s' with '%s'") %
                 left_name % right_name % conflict.resolution.second->as_external());
 
               file_id result_id;

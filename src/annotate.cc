@@ -426,9 +426,9 @@ annotate_context::build_revisions_to_annotations
       // for both reasons we change the output slightly so that no unwanted
       // spaces pop up
       if (!author.empty() && !date.empty())
-        result = (F("%s.. by %s %s: ") % hex_rev_str.substr(0, 8) % author % date).str();
+        result = (F("%s.. by '%s' %s: ") % hex_rev_str.substr(0, 8) % author % date).str();
       else if (!author.empty())
-        result = (F("%s.. by %s: ") % hex_rev_str.substr(0, 8) % author).str();
+        result = (F("%s.. by '%s': ") % hex_rev_str.substr(0, 8) % author).str();
       else if (!date.empty())
         result = (F("%s.. %s: ") % hex_rev_str.substr(0, 8) % date).str();
       else

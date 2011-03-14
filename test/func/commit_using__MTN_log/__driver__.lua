@@ -12,7 +12,7 @@ check(mtn("add", "input.txt"), 0, false, false)
 -- this should now fail, given that the log file has content and the cancel line
 -- has been removed
 check(mtn("--branch=testbranch", "--rcfile=commit_cancelled.lua", "commit"), 1, false, true)
-check(qgrep('Commit cancelled.', "stderr"))
+check(qgrep('commit cancelled.', "stderr"))
 
 check(exists("_MTN/log"))
 check(fsize("_MTN/log") > 0)

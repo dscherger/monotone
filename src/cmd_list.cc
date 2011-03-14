@@ -126,7 +126,7 @@ CMD(certs, "certs", "", CMD_REF(list), "REVID",
       {
         if (checked.find(idx(certs, i).key) == checked.end() &&
             !db.public_key_exists(idx(certs, i).key))
-          P(F("no public key '%s' found in database")
+          P(F("no public key %s found in database")
             % idx(certs, i).key);
         checked.insert(idx(certs, i).key);
       }
@@ -445,7 +445,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
         }
       if (have_keystore_only_key)
         {
-          cout << (F("(*) - only in %s/")
+          cout << (F("(*) - only in '%s/'")
                    % keys.get_key_dir()) << '\n';
         }
       cout << "\n";
@@ -524,7 +524,7 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
         {
           map<branch_name, epoch_data>::const_iterator j =
             epochs.find(typecast_vocab<branch_name>((*i)));
-          E(j != epochs.end(), origin::user, F("no epoch for branch %s") % *i);
+          E(j != epochs.end(), origin::user, F("no epoch for branch '%s'") % *i);
           cout << encode_hexenc(j->second.inner()(),
                                 j->second.inner().made_from)
                << ' ' << j->first << '\n';
@@ -656,7 +656,7 @@ print_workspace_info(database & db, lua_hooks & lua,
       if (!workspace_opts.branch_given)
         workspace_branch = _("<no branch set>");
 
-      out << indent << F("%s (in %s)") % workspace_branch % workspace_path << '\n';
+      out << indent << F("%s (in '%s')") % workspace_branch % workspace_path << '\n';
     }
 
     if (!has_valid_workspaces)
@@ -1031,7 +1031,7 @@ CMD_AUTOMATE(certs, N_("REV"),
   revision_id rid(decode_hexenc_as<revision_id>(hrid(), origin::user));
 
   E(db.revision_exists(rid), origin::user,
-    F("no such revision '%s'") % hrid);
+    F("no revision %s found in database") % hrid);
 
   vector<cert> ts;
   // FIXME_PROJECTS: after projects are implemented,
@@ -1047,7 +1047,7 @@ CMD_AUTOMATE(certs, N_("REV"),
       {
         if (checked.find(idx(certs, i).key) == checked.end() &&
             !db.public_key_exists(idx(certs, i).key))
-          W(F("no public key '%s' found in database")
+          W(F("no public key %s found in database")
             % idx(certs, i).key);
         checked.insert(idx(certs, i).key);
       }

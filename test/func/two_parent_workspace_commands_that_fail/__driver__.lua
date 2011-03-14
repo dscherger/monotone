@@ -27,7 +27,7 @@ check(not qgrep("ancestor", "testfile"))
 
 diag = "mtn: misuse: this command can only be used in a single-parent workspace\n"
 diffdiag = ("mtn: misuse: this workspace has more than one parent\n"..
-        "mtn: misuse: (specify a revision to diff against with --revision)\n")
+        "mtn: misuse: (specify a revision to diff against with '--revision')\n")
 
 check(mtn("merge_into_workspace", anc), 1, nil, true)
 check(grep("-v", "detected at", "stderr"), 0, diag)
