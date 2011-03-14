@@ -266,7 +266,7 @@ dist_mtnscripts_SCRIPTS = \
 # Some of the smaller programs do not have --help or --version,
 # make them exempt of the check for those.  NOTE: use this sparingly!
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = \
-	extra/bin/mtn-cleanup 	extra/mtn-hooks/monotone-ciabot.py	\
+	extra/bin/mtn-cleanup extra/mtn-hooks/monotone-ciabot.py \
 	extra/mtn-hooks/monotone-mail-notify
 
 # flags
