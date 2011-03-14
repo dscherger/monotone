@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env perl
 ##############################################################################
 #
 #   File Name    - mtn-cleanup
@@ -45,6 +45,7 @@ require 5.008005;
 use strict;
 use English;
 use integer;
+use warnings;
 
 # ***** REQUIRED PACKAGES *****
 
