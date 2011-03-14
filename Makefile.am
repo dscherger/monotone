@@ -252,6 +252,7 @@ mtnhooksdir = $(monotonedir)/hooks
 dist_mtnhooks_DATA = \
 	extra/mtn-hooks/authorize_remote_automate.lua			\
 	extra/mtn-hooks/get_passphrase_from_file.lua			\
+	extra/mtn-hooks/monotone-buildbot.lua				\
 	extra/mtn-hooks/monotone-ciabot.lua				\
 	extra/mtn-hooks/monotone-cluster-push.lua			\
 	extra/mtn-hooks/monotone-cvs-ignore.lua				\
