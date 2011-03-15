@@ -264,7 +264,15 @@ dist_mtnscripts_SCRIPTS = \
 	extra/mtn-hooks/monotone-mail-notify
 
 # Some of the smaller programs do not have --help or --version,
-# make them exempt of the check for those.  NOTE: use this sparingly!
+# make them exempt of the check for those.  This specially applies
+# to programs intended to be called by mtn hooks, for which these
+# options aren't necessary.
+# NOTE: in the expansion of this variable, each filename MUST be
+# surrounded by one space before and after.  Having a tab between
+# two file names will guarantee that they won't be exempt.  This
+# is really a small but serious bug in the automake templates.
+# backslash+newline+whitespace will be reinterpreted as whitespace
+# by make.
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = \
 	extra/bin/mtn-cleanup extra/mtn-hooks/monotone-ciabot.py \
 	extra/mtn-hooks/monotone-mail-notify
