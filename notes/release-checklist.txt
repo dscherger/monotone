@@ -19,7 +19,7 @@ How to release a new version of monotone
 
     Unix : doc/monotone.pdf doc/monotone.ps distcheck dist distclean
 
-    Win32: win32_installer
+    Win32: win32-installer
 
 
 2) Write user-readable release notes at the top of the NEWS file,
