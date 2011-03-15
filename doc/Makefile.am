@@ -36,10 +36,10 @@ PNG_FIGURES=$(PDF_FIGURES:.pdf=.png)
 EPS_FIGURES=$(PDF_FIGURES:.pdf=.eps)
 
 # See the rules further down that does the work.
-PDF_FIGURES_copied = $(addprefix $(abs_builddir)/,$(PDF_FIGURES))
-PNG_FIGURES_copied = $(addprefix $(abs_builddir)/,$(PNG_FIGURES))
-PNG_IMAGES_copied = $(addprefix $(abs_builddir)/,$(PNG_IMAGES))
-HTML_EXTRA_copied = $(addprefix $(abs_builddir)/,$(HTML_EXTRA))
+PDF_FIGURES_copied = $(addprefix $(fix_abs_builddir)/,$(PDF_FIGURES))
+PNG_FIGURES_copied = $(addprefix $(fix_abs_builddir)/,$(PNG_FIGURES))
+PNG_IMAGES_copied = $(addprefix $(fix_abs_builddir)/,$(PNG_IMAGES))
+HTML_EXTRA_copied = $(addprefix $(fix_abs_builddir)/,$(HTML_EXTRA))
 
 TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
@@ -66,19 +66,19 @@ figures/%.ps: figures/%.pdf
 	$(MKDIR_P) figures
 	pdftops $< $@
 
-$(abs_builddir)/figures/%.pdf: figures/%.pdf
+$(fix_abs_builddir)/figures/%.pdf: figures/%.pdf
 	$(MKDIR_P) figures
 	cmp -s $< $@ || cp $< $@
 
-$(abs_builddir)/figures/%.png: figures/%.png
+$(fix_abs_builddir)/figures/%.png: figures/%.png
 	$(MKDIR_P) figures
 	cmp -s $< $@ || cp $< $@
 
-$(abs_builddir)/images/%.png: images/%.png
+$(fix_abs_builddir)/images/%.png: images/%.png
 	$(MKDIR_P) images
 	cmp -s $< $@ || cp $< $@
 
-$(abs_builddir)/texinfo.css: texinfo.css
+$(fix_abs_builddir)/texinfo.css: texinfo.css
 	cmp -s $< $@ || cp $< $@
 
 # Stealing code from automake and adapting, we want a HTML file tree as well
