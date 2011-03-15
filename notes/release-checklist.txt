@@ -15,11 +15,9 @@ How to release a new version of monotone
 
    Also check that the following Makefile targets work:
 
-    Unix and Win32: all check 
+    Unix: all doc/monotone.pdf doc/monotone.ps distcheck
 
-    Unix : doc/monotone.pdf doc/monotone.ps distcheck dist distclean
-
-    Win32: win32_installer
+    Win32: all check win32_installer
 
 
 2) Write user-readable release notes at the top of the NEWS file,
