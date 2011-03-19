@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: monotone\n"
 "Report-Msgid-Bugs-To: https://code.monotone.ca/p/monotone/issues/\n"
 "POT-Creation-Date: 2011-03-14 08:25+0100\n"
-"PO-Revision-Date: 2011-03-14 12:42+0100\n"
+"PO-Revision-Date: 2011-03-19 13:08+0100\n"
 "Last-Translator: tommyd <me@thomaskeller.biz>\n"
 "Language-Team: Benoît Dejean <benoit@placenet.org>\n"
 "Language: fr\n"
@@ -414,6 +414,11 @@ msgid ""
 "Please report this error message, the output of '%s version --full',\n"
 "and a description of what you were doing to '%s'."
 msgstr ""
+"erreur fatale: %s\n"
+"Ceçi est presque sûrement une erreur dans monotone.\n"
+"Veuillez rapporter ce message çi, ce que vous recevez de\n"
+"'%s --version --full' et une déscription de ce que vous\n"
+"avez fait sur '%s'."
 
 #: src/ui.cc:671
 #, c-format
@@ -426,6 +431,14 @@ msgid ""
 "database you were using, so please preserve it in case it can\n"
 "help in finding the bug."
 msgstr ""
+"erreur fatale: %s\n"
+"Ceçi est presque sûrement une erreur dans monotone.\n"
+"Veuillez rapporter ce message çi, ce que vous recevez de\n"
+"'%s --version --full' et une déscription de ce que vous\n"
+"avez fait sur '%s'.\n"
+"Cette erreur semble avoir été provoqué par quelquechose dans la base\n"
+"de données que vous employiez.  Préservez-la au cas où eller peut\n"
+"aider à trouver l'erreur."
 
 #: src/ui.cc:713
 msgid "error: memory exhausted"
@@ -782,7 +795,7 @@ msgid ""
 "monotone was written originally by Graydon Hoare <graydon@pobox.com> in 2003 "
 "and has since then received numerous contributions from many individuals. A "
 "complete list of authors can be found in AUTHORS."
-msgstr ""
+msgstr "monotone est originellement écrit par Graydon Hoare <graydon@pobox.com> en 2003, et a depuis reçu des contributions nombreuses par un grand nombre d'individus.  La liste complète des auteurs se trouve dans AUTHORS."
 
 #: src/cmd.cc:954
 msgid ""
@@ -844,6 +857,9 @@ msgid ""
 "we can't verify the server key, because we have no record of\n"
 "what it should be."
 msgstr ""
+"Aucune base de données spécifiée; la base de données '%s' sera\n"
+"employée.  Comme conséquence, la clef du serveur ne pourra pas être\n"
+"vérfié, car elle n'a pas encore été notée."
 
 #: src/cmd_netsync.cc:212
 msgid "COMMAND [ARGS]"
@@ -1191,17 +1207,17 @@ msgstr "Liste les bases de données gérées et leurs espaces de travail connus.
 #: src/cmd_list.cc:684 src/database.cc:4978
 #, c-format
 msgid "no default database location configured"
-msgstr "locations pour des bases de données introuvable"
+msgstr "les location par default pour des bases de données ne sont pas configurés"
 
 #: src/cmd_list.cc:688 src/database.cc:5056
 #, c-format
 msgid "could not query default database glob"
-msgstr ""
+msgstr "le motif pour trouver les bases de données n'est pas configuré"
 
 #: src/cmd_list.cc:735
 #, c-format
 msgid "ignoring database '%s'"
-msgstr "Ignore la base de données « %s »"
+msgstr "ignore la base de données « %s »"
 
 #: src/cmd_list.cc:739
 #, c-format
@@ -3806,7 +3822,7 @@ msgstr "L'enregistrement du fichier d'options « %s » a échoué : %s"
 #: src/work.cc:669
 #, c-format
 msgid "could not unregister workspace from old database '%s'"
-msgstr ""
+msgstr "ne pouvait pas supprimer l'espace de travail de la vielle base de données « %s »"
 
 #: src/work.cc:733
 #, c-format
