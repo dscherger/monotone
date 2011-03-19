@@ -1540,7 +1540,7 @@ msgid "target revision is not in current branch"
 msgstr "Ziel-Revision befindet sich nicht im derzeitigen Zweig"
 
 #: src/cmd_merging.cc:176
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "target revision is in multiple branches:%s\n"
 "\n"
@@ -1548,16 +1548,16 @@ msgid ""
 msgstr ""
 "Ziel-Revision befindet sich in mehreren Zweigen:%s\n"
 "\n"
-"versuchen Sie es noch einmal mit der expliziten Angabe von '--branch'"
+"Versuchen Sie es noch einmal mit der expliziten Angabe von '--branch'"
 
 #: src/cmd_merging.cc:187
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "target revision not in any branch.\n"
 "Next commit will use branch '%s'"
 msgstr ""
-"Ziel-Revision befindet sich in keinem Zweig\n"
-"beim nächsten Einpflegen wird der Zweig '%s' genutzt"
+"Ziel-Revision befindet sich in keinem Zweig.\n"
+"Beim nächsten Einpflegen wird der Zweig '%s' genutzt"
 
 #: src/cmd_merging.cc:209 src/cmd_merging.cc:824 src/cmd_ws_commit.cc:370
 #: src/cmd_ws_commit.cc:1358 src/cmd_ws_commit.cc:2042
@@ -1585,7 +1585,7 @@ msgid "updating along branch '%s'"
 msgstr "aktualisiere vorwärts auf dem Zweig '%s'"
 
 #: src/cmd_merging.cc:228
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "your request matches no descendents of the current revision.\n"
 "In fact, it doesn't even match the current revision.\n"
@@ -1974,16 +1974,16 @@ msgstr ""
 "der ersten und der zweiten Revision gemacht wurden, angewendet."
 
 #: src/cmd_merging.cc:1289
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "revision %s is a merge.\n"
 "To apply the changes relative to one of its parents, use:\n"
 "  %s pluck -r PARENT -r %s"
 msgstr ""
-"Revision %s ist eine Vereinigung\n"
+"Revision %s ist eine Vereinigung.\n"
 "Um die Änderungen relativ auf eine der Elternrevisionen anzuwenden, benutzen "
 "Sie:\n"
-" %s pluck -r ELTERNREVISION -r %s"
+"  %s pluck -r ELTERNREVISION -r %s"
 
 #: src/cmd_merging.cc:1305
 #, c-format
@@ -2159,7 +2159,7 @@ msgid "revision %s already has children. We cannot kill it."
 msgstr "Die Revision %s hat bereits Nachfahren"
 
 #: src/cmd_db.cc:222
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "cannot kill revision %s,\n"
 "because it would leave the current workspace in an invalid\n"
@@ -2541,7 +2541,7 @@ msgid "Lists the selected revision history"
 msgstr "Listet die ausgewählte Revisionshistorie"
 
 #: src/cmd_ws_commit.cc:179
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "a backup from a previously failed commit exists in '_MTN/commit'.\n"
 "This file must be removed before commit will proceed.\n"
@@ -2614,42 +2614,42 @@ msgid "edit of log message failed"
 msgstr "Bearbeiten der Logmeldung fehlgeschlagen"
 
 #: src/cmd_ws_commit.cc:289
-#, fuzzy, c-format
+#, c-format
 msgid "commit cancelled."
-msgstr "Einpflegen abgebrochen"
+msgstr "Einpflegen abgebrochen."
 
 #: src/cmd_ws_commit.cc:307
-#, fuzzy, c-format
+#, c-format
 msgid "commit failed. Instructions not found."
 msgstr "Einpflegen fehlgeschlagen. Anleitung nicht gefunden."
 
 #: src/cmd_ws_commit.cc:312
-#, fuzzy, c-format
+#, c-format
 msgid "commit failed. Branch header not found."
 msgstr "Einpflegen fehlgeschlagen. Zweig-Kopfzeile nicht gefunden."
 
 #: src/cmd_ws_commit.cc:317
-#, fuzzy, c-format
+#, c-format
 msgid "commit failed. Branch value empty."
 msgstr "Einpflegen fehlgeschlagen. Wert der Zweig-Kopfzeile ist leer."
 
 #: src/cmd_ws_commit.cc:324
-#, fuzzy, c-format
+#, c-format
 msgid "commit failed. Author header not found."
 msgstr "Einpflegen fehlgeschlagen. Autor-Kopfzeile nicht gefunden."
 
 #: src/cmd_ws_commit.cc:329
-#, fuzzy, c-format
+#, c-format
 msgid "commit failed. Author value empty."
 msgstr "Einpflegen fehlgeschlagen. Wert der Autor-Kopfzeile ist leer."
 
 #: src/cmd_ws_commit.cc:334
-#, fuzzy, c-format
+#, c-format
 msgid "commit failed. Date header not found."
 msgstr "Einpflegen fehlgeschlagen. Datum-Kopfzeile nicht gefunden."
 
 #: src/cmd_ws_commit.cc:339
-#, fuzzy, c-format
+#, c-format
 msgid "commit failed. Date value empty."
 msgstr "Einpflegen fehlgeschlagen. Wert der Datum-Kopfzeile ist leer."
 
@@ -2657,7 +2657,7 @@ msgstr "Einpflegen fehlgeschlagen. Wert der Datum-Kopfzeile ist leer."
 #, c-format
 msgid "you must pass at least one path to 'revert' (perhaps '.')"
 msgstr ""
-"Sie müssen mindestens einen Pfad an 'revert' übergeben (vielleicht '.')."
+"Sie müssen mindestens einen Pfad an 'revert' übergeben (vielleicht '.')"
 
 #: src/cmd_ws_commit.cc:394
 #, c-format
@@ -2793,7 +2793,7 @@ msgid "Renames entries in the workspace"
 msgstr "Benennt Einträge im Arbeitsbereich um"
 
 #: src/cmd_ws_commit.cc:862
-#, fuzzy, c-format
+#, c-format
 msgid "the specified target directory '%s/' doesn't exist."
 msgstr "Das angegebene Ziel-Verzeichnis '%s/' existiert nicht."
 
@@ -2890,12 +2890,12 @@ msgstr ""
 
 #: src/cmd_ws_commit.cc:1163 src/cmd_ws_commit.cc:1231
 #: src/cmd_ws_commit.cc:1281 src/cmd_ws_commit.cc:1362
-#, fuzzy, c-format
+#, c-format
 msgid "unknown path '%s'"
-msgstr "Unbekannter Pfad '%s'"
+msgstr "unbekannter Pfad '%s'"
 
 #: src/cmd_ws_commit.cc:1180
-#, fuzzy, c-format
+#, c-format
 msgid "path '%s' does not have attribute '%s'"
 msgstr "Pfad '%s' hat kein Attribut '%s'"
 
@@ -2932,14 +2932,14 @@ msgstr ""
 "übergebenen Attributs ausgegeben."
 
 #: src/cmd_ws_commit.cc:1247
-#, fuzzy, c-format
+#, c-format
 msgid "no attributes for '%s'"
-msgstr "Keine Attribute für '%s'"
+msgstr "keine Attribute für '%s'"
 
 #: src/cmd_ws_commit.cc:1259
-#, fuzzy, c-format
+#, c-format
 msgid "no attribute '%s' on path '%s'"
-msgstr "Kein Attribut für '%s' auf Pfad '%s'"
+msgstr "kein Attribut für '%s' auf Pfad '%s'"
 
 #: src/cmd_ws_commit.cc:1305
 msgid "PATH ATTR VALUE"
@@ -2986,7 +2986,7 @@ msgid "no changes to commit"
 msgstr "keine Änderungen zum Einpflegen"
 
 #: src/cmd_ws_commit.cc:1534
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "parent revisions of this commit are in different branches:\n"
 "'%s' and '%s'.\n"
@@ -3003,7 +3003,7 @@ msgid "changes rejected by hook: %s"
 msgstr "Änderungen durch Hook zurückgewiesen: %s"
 
 #: src/cmd_ws_commit.cc:1570
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "'_MTN/log' is non-empty and log message was specified on command line.\n"
 "Perhaps move or delete '_MTN/log',\n"
@@ -3041,7 +3041,7 @@ msgid "file '%s' modified during commit, aborting"
 msgstr "Datei '%s' wurde während des Einpflegens geändert, breche ab"
 
 #: src/cmd_ws_commit.cc:1706
-#, fuzzy, c-format
+#, c-format
 msgid "your database is missing version %s of file '%s'"
 msgstr "Ihrer Datenbank fehlt die Version %s der Datei '%s'"
 
@@ -3397,20 +3397,20 @@ msgid "directory '%s' is not a workspace"
 msgstr "Das Verzeichnis '%s' ist kein Arbeitsbereich"
 
 #: src/cmd_automate.cc:324
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "it is illegal to call the mtn_automate() lua extension,\n"
 "unless from a command function defined by register_command()."
 msgstr ""
-"Es ist verboten, die 'mtn_automate()'-Lua-Erweiterung\n"
-"in einer Funktion aufzurufen, die nicht in 'register_command()'\n"
+"Es ist verboten, die mtn_automate()-Lua-Erweiterung\n"
+"in einer Funktion aufzurufen, die nicht in register_command()\n"
 "definiert ist."
 
 #: src/cmd_automate.cc:333
-#, fuzzy, c-format
+#, c-format
 msgid "bad input to mtn_automate() lua extension: command name is missing"
 msgstr ""
-"Falsche Eingabe für 'mtn_automate()'-Lua-Erweiterung: Kommandoname fehlt."
+"falsche Eingabe für mtn_automate()-Lua-Erweiterung: Kommandoname fehlt"
 
 #: src/cmd_files.cc:39
 msgid "Loads a file's contents into the database"
@@ -3515,9 +3515,9 @@ msgid "Prints the file identifier of a file"
 msgstr "Gibt die Identität (ID) einer Datei aus"
 
 #: src/cmd_files.cc:244
-#, fuzzy, c-format
+#, c-format
 msgid "cannot read from stdin"
-msgstr "Kann nicht von stdin lesen"
+msgstr "kann nicht von stdin lesen"
 
 #: src/cmd_files.cc:258 src/cmd_files.cc:367 src/automate.cc:2070
 #, c-format
@@ -3873,12 +3873,12 @@ msgid "adding '%s' to workspace manifest"
 msgstr "füge '%s' dem Arbeitsbereich-Manifest hinzu"
 
 #: src/work.cc:1174
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "non-recursive add: Files in the directory '%s' will not be added "
 "automatically."
 msgstr ""
-"Nicht-rekursives Hinzufügen: Dateien im Verzeichnis '%s' werden nicht "
+"nicht-rekursives Hinzufügen: Dateien im Verzeichnis '%s' werden nicht "
 "automatisch hinzugefügt."
 
 #: src/work.cc:1187
@@ -3975,7 +3975,7 @@ msgid "not a file '%s'"
 msgstr "'%s' ist keine Datei"
 
 #: src/work.cc:1731
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "%d missing items; use '%s ls missing' to view.\n"
 "To restore consistency, on each missing item run either\n"
@@ -3985,14 +3985,14 @@ msgid ""
 " '%s drop --missing' or\n"
 " '%s revert --missing'"
 msgstr ""
-"%d fehlende Elemente; benutzen Sie '%s ls missing' zur Anzeige\n"
+"%d fehlende Elemente; benutzen Sie '%s ls missing' zur Anzeige.\n"
 "Um die Konsistenz wiederherzustellen, muss auf jede Datei entweder\n"
 " '%s drop ELEMENT' zum permanenten Löschen oder\n"
 " '%s revert ELEMENT' zur Wiederherstellung des vorherigen Zustands\n"
 "ausgeführt werden.\n"
 "Um alle Elemente auf einmal zu behandeln, nutzen Sie\n"
-" '%s drop --missing' bzw.\n"
-" '%s revert --missing'."
+" '%s drop --missing' oder\n"
+" '%s revert --missing'"
 
 #: src/work.cc:1889
 #, c-format
@@ -4131,13 +4131,13 @@ msgstr ""
 "Sie müssen das Verzeichnis %s aufräumen und entfernen."
 
 #: src/work.cc:2206
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "re-run this command with '--move-conflicting-paths' to move conflicting "
 "paths out of the way"
 msgstr ""
-"Führen Sie dieses Kommando mit '--move-conflicting-paths' erneut aus, um in "
-"Konflikt stehende Pfade aus den Weg zu räumen."
+"führen Sie dieses Kommando mit '--move-conflicting-paths' erneut aus, um in "
+"Konflikt stehende Pfade aus den Weg zu räumen"
 
 #: src/work.cc:2238
 #, c-format
@@ -4157,7 +4157,7 @@ msgstr ""
 "korrigiert"
 
 #: src/migrate_work.cc:125
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "this workspace's metadata is in format 0. To use this workspace\n"
 "with this version of monotone, you must delete it and check it\n"
@@ -4166,15 +4166,16 @@ msgid ""
 "with versions of monotone older than %s.\n"
 "We apologize for the inconvenience."
 msgstr ""
-"Die Metadaten dieses Arbeitsbereiches haben die Formatversion 0.\n"
+"die Metadaten dieses Arbeitsbereiches haben die Formatversion 0.\n"
 "Um diesen Arbeitsbereich mit dieser Version von monotone zu nutzen,\n"
 "müssen Sie ihn löschen und neu auschecken (eine Migration vom\n"
 "Format 0 ist nicht möglich).\n"
 "Nachdem dies durchgeführt wurde, können Sie diesen Arbeitsbereich\n"
-"nicht mehr mit Versionen von monotone nutzen, die älter als %s sind."
+"nicht mehr mit Versionen von monotone nutzen, die älter als %s sind.\n"
+"Wir entschuldigen uns für die Unannehmlichkeiten."
 
 #: src/migrate_work.cc:134
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "to use this workspace with this version of monotone, its metadata\n"
 "must be migrated from format %d to format %d, using the command\n"
@@ -4182,36 +4183,35 @@ msgid ""
 "Once you have done this, you will not be able to use the workspace\n"
 "with versions of monotone older than %s."
 msgstr ""
-"Um diesen Arbeitsbereich mit dieser Version von monotone nutzen\n"
+"um diesen Arbeitsbereich mit dieser Version von monotone nutzen\n"
 "zu können, müssen dessen Metadaten vom Format %d zum Format %d\n"
-"mit dem Kommando\n"
-" '%s migrate_workspace'\n"
-"migriert werden.\n"
+"mit dem Kommando '%s migrate_workspace' migriert werden.\n"
 "Nachdem dies durchgeführt wurde, können Sie diesen Arbeitsbereich\n"
 "nicht mehr mit Versionen von monotone nutzen, die älter als %s sind."
 
 #: src/migrate_work.cc:144 src/migrate_work.cc:274
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "this version of monotone only understands workspace metadata\n"
 "in formats 0 through %d.  Your workspace is in format %d.\n"
 "You need a newer version of monotone to use this workspace."
 msgstr ""
-"Diese Version von monotone versteht lediglich Metadaten von\n"
+"diese Version von monotone versteht lediglich Metadaten von\n"
 "Arbeitsbereichen der Versionen 0 bis %d.  Ihr Arbeitsbereich hat\n"
 "die Formatversion %d.  Sie benötigen eine neuere Version von\n"
 "monotone, um diesen Arbeitsbereich nutzen zu können."
 
 #: src/migrate_work.cc:173
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "it is not possible to migrate from workspace format 0 to any\n"
 "later format.  You must delete this workspace and check it out\n"
 "again.  We apologize for the inconvenience."
 msgstr ""
-"Es ist nicht möglich, den Arbeitsbereich vom Format 0 zu einem\n"
+"es ist nicht möglich, den Arbeitsbereich vom Format 0 zu einem\n"
 "beliebigen späteren Format zu migrieren.  Sie müssen diesen\n"
-"Arbeitsbereich löschen und neu auschecken."
+"Arbeitsbereich löschen und neu auschecken.  Wir entschuldigen uns\n"
+"für die Unannehmlichkeiten."
 
 #: src/migrate_work.cc:227
 #, c-format
@@ -4220,10 +4220,10 @@ msgstr ""
 "Arbeitsbereich ist beschädigt: %s existiert, ist aber keine reguläre Datei"
 
 #: src/migrate_work.cc:266
-#, fuzzy, c-format
+#, c-format
 msgid "this workspace is in the current format, no migration is necessary"
 msgstr ""
-"Der Arbeitsbereich hat bereits das neueste Format, keine Migration notwendig."
+"der Arbeitsbereich hat bereits das neueste Format, keine Migration notwendig"
 
 #: src/cert.cc:127
 #, c-format
@@ -4304,7 +4304,7 @@ msgid "this database already contains rosters"
 msgstr "diese Datenbank enthält bereits Kataloge"
 
 #: src/database.cc:617
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "database '%s' contains old-style revisions.\n"
 "If you are a project leader or doing local testing:\n"
@@ -4316,14 +4316,14 @@ msgid ""
 msgstr ""
 "Datenbank '%s' beinhaltet ein altes Revisionsformat.\n"
 "Wenn Sie der Projektleiter sind oder lokale Tests durchführen:\n"
-"  Die Datei UPGRADE beinhaltet Anweisungen zum Upgrade.\n"
+"  sehen Sie in die Datei UPGRADE für Anweisungen zum Upgrade.\n"
 "Wenn Sie nicht der Projektleiter sind:\n"
-"  Warten Sie bitte, bis ein Projektleiter die Projektdaten migriert hat\n"
+"  warten Sie bitte, bis ein Projektleiter die Projektdaten migriert hat\n"
 "  und holen Sie sich dann eine aktualisierte Kopie.\n"
 "Wir bitten die Unannehmlichkeiten zu entschuldigen."
 
 #: src/database.cc:627
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "database '%s' contains manifests but no revisions.\n"
 "This is a very old database; it needs to be upgraded.\n"
@@ -4332,17 +4332,17 @@ msgid ""
 msgstr ""
 "Datenbank '%s' beinhaltet Manifeste, aber keine Revisionen\n"
 "Dies ist eine sehr alte Datenbank, die erneuert werden muss.\n"
-"Bitte konsultieren Sie die Datei README.changesets für Details."
+"Bitte konsultieren Sie 'http://wiki.monotone.ca/upgradefromchangesets/' für Details"
 
 #: src/database.cc:650
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "database '%s' lacks some cached data.\n"
 "Run '%s db regenerate_caches' to restore use of this database"
 msgstr ""
-"Der Datenbank '%s' fehlen einige Cache-Daten.\n"
+"der Datenbank '%s' fehlen einige Cache-Daten.\n"
 "Führen Sie '%s db regenerate_caches' aus, um diese Datenbank wieder "
-"benutzbar zu machen."
+"benutzbar zu machen"
 
 #: src/database.cc:953
 msgid "sqlite error: "
@@ -4615,7 +4615,7 @@ msgid "dropping cert"
 msgstr "entferne Zertifikat"
 
 #: src/database.cc:3801
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "the branch name\n"
 "  '%s'\n"
@@ -4627,7 +4627,7 @@ msgid ""
 "'%s local kill_certs' command to delete the particular branch\n"
 "cert and re-add a valid one."
 msgstr ""
-"Der Zweigname\n"
+"der Zweigname\n"
 "  '%s'\n"
 "beinhaltet Meta-Zeichen (eine oder mehrere Vorkommnisse von '?,;*%%+{}[]!"
 "^')\n"
@@ -4685,14 +4685,14 @@ msgid "database '%s' already exists"
 msgstr "Datenbank '%s' existiert bereits"
 
 #: src/database.cc:4851
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "existing (possibly stale) journal file '%s' has same stem as new database "
 "'%s'.\n"
 "Cancelling database creation"
 msgstr ""
-"Existierende Journal-Datei '%s' hat denselben Stamm wie die neue Datenbank "
-"'%s'\n"
+"existierende Journal-Datei '%s' hat denselben Stamm wie die neue Datenbank "
+"'%s'.\n"
 "Datenbankerstellung abgebrochen"
 
 #: src/database.cc:5013
@@ -4726,20 +4726,20 @@ msgid "invalid database alias '%s': does contain invalid characters"
 msgstr "ungültiger Datenbankalias '%s': beinhaltet ungültige Zeichen"
 
 #: src/key_store.cc:90
-#, fuzzy, c-format
+#, c-format
 msgid "no available keystore found"
-msgstr "Kein verfügbarer Schlüsselbund gefunden"
+msgstr "kein verfügbarer Schlüsselbund gefunden"
 
 #: src/key_store.cc:134 src/key_store.cc:138 src/key_store.cc:142
 #: src/key_store.cc:144 src/key_store.cc:149
-#, fuzzy, c-format
+#, c-format
 msgid "extraneous data in key store"
-msgstr "Belanglose Daten im Schlüsselbund"
+msgstr "belanglose Daten im Schlüsselbund"
 
 #: src/key_store.cc:160
-#, fuzzy, c-format
+#, c-format
 msgid "key store has multiple copies of the key with id %s"
-msgstr "Der Schlüsselbund hat mehrere Kopien des Schlüssels mit der ID %s."
+msgstr "der Schlüsselbund hat mehrere Kopien des Schlüssels mit der ID %s"
 
 #: src/key_store.cc:169
 #, c-format
@@ -4753,7 +4753,7 @@ msgstr "ignoriere ungültige Schlüsseldatei '%s' im Schlüsselbund"
 
 #: src/key_store.cc:422 src/key_store.cc:426 src/key_store.cc:429
 #: src/key_store.cc:431 src/key_store.cc:434
-#, fuzzy, c-format
+#, c-format
 msgid "invalid data in key file"
 msgstr "ungültige Daten in Schlüsseldatei"
 
@@ -4845,18 +4845,18 @@ msgid "Botan error decrypting data: '%s'"
 msgstr "Botan-Fehler beim Entschlüsseln von Daten: '%s'"
 
 #: src/key_store.cc:851
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "you have chosen to sign only with ssh-agent but ssh-agent does not seem to "
 "be running"
 msgstr ""
 "Sie haben ausgewählt, nur mit ssh-agent zu signieren, aber derzeit scheint "
-"ssh-agent nicht zu laufen."
+"ssh-agent nicht zu laufen"
 
 #: src/key_store.cc:881
-#, fuzzy, c-format
+#, c-format
 msgid "you don't seem to have your monotone key imported "
-msgstr "Anscheinend haben Sie Ihren monotone-Schlüssel nicht importiert "
+msgstr "anscheinend haben Sie Ihren monotone-Schlüssel nicht importiert"
 
 #: src/key_store.cc:935
 #, c-format
@@ -4973,32 +4973,32 @@ msgid "ssh_agent: packet type (%u) != 6"
 msgstr "ssh_agent: Paket-Type (%u) != 6"
 
 #: src/keys.cc:88
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "the key %s stored in your database does\n"
 "not match the version in your local key store!"
 msgstr ""
-"Der in der Datenbank gespeicherte Schlüssel %s\n"
+"der in der Datenbank gespeicherte Schlüssel %s\n"
 "passt nicht auf die Version im lokalen Schlüsselbund!"
 
 #: src/keys.cc:102
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "you have no private key to make signatures with.\n"
 "Perhaps you need to 'genkey <your email>'"
 msgstr ""
 "Sie haben keinen geheimen Schlüssel, um Signaturen zu erstellen.\n"
-"Eventuell müssen Sie 'genkey <ihre_email_adresse>' ausführen."
+"Eventuell müssen Sie 'genkey <ihre_email_adresse>' ausführen"
 
 #: src/keys.cc:105
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "you have multiple private keys.\n"
 "Pick one to use for signatures by adding '-k<keyname>' to your command"
 msgstr ""
 "Sie haben mehrere geheime Schlüssel.\n"
 "Um einen davon für die Erstellung von Signaturen auszuwählen, fügen Sie '-"
-"k<schluessel_name>' Ihrem Befehl hinzu."
+"k<schluessel_name>' Ihrem Befehl hinzu"
 
 #: src/keys.cc:144
 #, c-format
@@ -5165,7 +5165,7 @@ msgid ""
 "(monotone databases must be created with '%s db init')"
 msgstr ""
 "Kann die leere sqlite-Datenbank '%s' nicht benutzen.\n"
-"(Monotone-Datenbanken müssen mit '%s db init' erzeugt werden.)"
+"(monotone-Datenbanken müssen mit '%s db init' erzeugt werden.)"
 
 #: src/migrate_schema.cc:1165
 #, c-format
@@ -5173,7 +5173,7 @@ msgid "'%s' does not appear to be a monotone database\n"
 msgstr "'%s' scheint keine monotone-Datenbank zu sein.\n"
 
 #: src/migrate_schema.cc:1169
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "'%s' appears to be a monotone database, but this version of\n"
 "monotone does not recognize its schema.\n"
@@ -5184,16 +5184,16 @@ msgstr ""
 "Sie benötigen wahrscheinlich eine neuere Version von monotone."
 
 #: src/migrate_schema.cc:1188
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "database '%s' is laid out according to an old schema.\n"
 "Try '%s db migrate' to upgrade\n"
 "(this is irreversible; you may want to make a backup copy first)"
 msgstr ""
-"Die Datenbank '%s' besitzt ein altes Schema.\n"
-"Versuchen Sie '%s db migrate', um das Schema zu erneuern.\n"
-"(Dieser Vorgang ist nicht umkehrbar; Sie sollten vorher eine Sicherung "
-"machen.)"
+"die Datenbank '%s' besitzt ein altes Schema.\n"
+"Versuchen Sie '%s db migrate', um das Schema zu erneuern\n"
+"(dieser Vorgang ist nicht umkehrbar; Sie sollten vorher eine Sicherung "
+"machen)"
 
 #: src/migrate_schema.cc:1218
 #, c-format
@@ -5261,26 +5261,26 @@ msgid "rebuilding %d nodes"
 msgstr "erneuere %d Knoten"
 
 #: src/migrate_ancestry.cc:489
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "directory '%s' for path '%s' cannot be added, as there is a file in the way"
 msgstr ""
-"Das Verzeichnis '%s' kann für den Pfad '%s' nicht hinzugefügt werden, da "
-"eine Datei im Weg ist."
+"das Verzeichnis '%s' kann für den Pfad '%s' nicht hinzugefügt werden, da "
+"eine Datei im Weg ist"
 
 #: src/migrate_ancestry.cc:510
-#, fuzzy, c-format
+#, c-format
 msgid "path '%s' cannot be added, as there is a directory in the way"
 msgstr ""
-"Der Pfad '%s' kann nicht hinzugefügt werden, da ein Verzeichnis im Weg ist"
+"der Pfad '%s' kann nicht hinzugefügt werden, da ein Verzeichnis im Weg ist"
 
 #: src/migrate_ancestry.cc:513
-#, fuzzy, c-format
+#, c-format
 msgid "path '%s' added twice with differing content"
-msgstr "Der Pfad '%s' wurde zweimal mit unterschiedlichem Inhalt hinzugefügt."
+msgstr "der Pfad '%s' wurde zweimal mit unterschiedlichem Inhalt hinzugefügt"
 
 #: src/migrate_ancestry.cc:800
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "unknown attribute '%s' on path '%s'.\n"
 "Please contact %s so we can work out the right way to migrate this\n"
@@ -5288,12 +5288,10 @@ msgid ""
 "seriously, if you'd like to keep it, we're happy to figure out how)"
 msgstr ""
 "unbekanntes Attribut '%s' an Pfad '%s'\n"
-"bitte kontaktieren Sie %s, damit wir herausfinden können, wie dies migriert "
-"werden kann\n"
-"(wenn Ihnen das Attribut nicht wichtig ist, können Sie es über '--drop-attr' "
-"entfernen,\n"
-"nichtsdestotrotz würden wir gerne darüber Bescheid wissen, um es dennoch "
-"migrierbar zu machen)"
+"bitte kontaktieren Sie %s, damit wir herausfinden können, wie dies migriert\n"
+"werden kann (wenn Ihnen das Attribut nicht wichtig ist, können Sie es über\n"
+"'--drop-attr' entfernen, nichtsdestotrotz würden wir gerne darüber Bescheid\n"
+"wissen, um es dennoch migrierbar zu machen)"
 
 #: src/migrate_ancestry.cc:907
 #, c-format
@@ -5471,13 +5469,13 @@ msgid "branch pattern is empty and no default value could be loaded"
 msgstr "Zweigmuster ist leer und kein Standardmuster konnte geladen werden"
 
 #: src/network/connection_info.cc:428
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "include / exclude pattern was given both as part of the URI and as a "
 "separate argument"
 msgstr ""
-"Ein Einschluss-/Ausschluss-Muster wurde sowohl als Teil der URI als auch als "
-"separates Argument übergeben."
+"ein Einschluss-/Ausschluss-Muster wurde sowohl als Teil der URI als auch als "
+"separates Argument übergeben"
 
 #: src/network/connection_info.cc:477
 #, c-format
@@ -5515,13 +5513,13 @@ msgstr ""
 "persist_phrase_ok())"
 
 #: src/network/connection_info.cc:533
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "the '--no-transport-auth' option is usually only used in combination with '--"
 "stdio'"
 msgstr ""
-"Die Option '--no-transport-auth' wird gewöhnlich nur in Verbindung mit der "
-"Option '--stdio' genutzt."
+"die Option '--no-transport-auth' wird gewöhnlich nur in Verbindung mit der "
+"Option '--stdio' genutzt"
 
 #: src/network/listener_base.cc:47
 #, c-format
@@ -5579,14 +5577,14 @@ msgid "underflow on count of %s items to receive"
 msgstr "Unterlauf bei Zählung von %s Elementen zum Empfangen"
 
 #: src/network/netsync_session.cc:756
-#, fuzzy, c-format
+#, c-format
 msgid "unexpected 'refine' command on non-refined item type"
-msgstr "Unerwartetes 'refine'-Kommando auf nicht verfeinerbarem Elementtyp"
+msgstr "unerwartetes 'refine'-Kommando auf nicht verfeinerbarem Elementtyp"
 
 #: src/network/netsync_session.cc:788
-#, fuzzy, c-format
+#, c-format
 msgid "unexpected 'done' command on non-refined item type"
-msgstr "Unerwartetes 'done'-Kommando auf nicht verfeinerbarem Elementtyp"
+msgstr "unerwartetes 'done'-Kommando auf nicht verfeinerbarem Elementtyp"
 
 #: src/network/netsync_session.cc:856
 #, c-format
@@ -5594,10 +5592,10 @@ msgid "%s with hash '%s' does not exist in our database"
 msgstr "%s mit der Prüfsumme '%s' existiert nicht in unserer Datenbank"
 
 #: src/network/netsync_session.cc:978
-#, fuzzy, c-format
+#, c-format
 msgid "mismatched epoch on branch '%s'. Server has %s, client has %s"
 msgstr ""
-"Falsch zugeordneter Zeitraum in Zweig %s.  Server hat '%s', Client hat '%s'."
+"falsch zugeordneter Zeitraum in Zweig %s.  Server hat '%s', Client hat '%s'"
 
 #: src/network/netsync_session.cc:997
 #, c-format
@@ -5607,35 +5605,33 @@ msgstr ""
 "benötigte '%s', bekam '%s'"
 
 #: src/network/netsync_session.cc:1006
-#, fuzzy, c-format
+#, c-format
 msgid "received duplicate key %s"
-msgstr "Erhielt doppelten Schlüssel %s"
+msgstr "erhielt doppelten Schlüssel %s"
 
 #: src/network/netsync_session.cc:1020
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "dropping incoming cert which claims to be signed by key\n"
 "%s (name '%s'), but has a bad signature"
 msgstr ""
-"Lösche eingehendes Zertifikat, welches glaubhaft macht,\n"
+"lösche eingehendes Zertifikat, welches glaubhaft macht,\n"
 "dass es vom Schlüssel '%s' (Name '%s') unterschrieben wurde,\n"
-"aber eine ungültige Unterschrift aufweist."
+"aber eine ungültige Unterschrift aufweist"
 
 #: src/network/netsync_session.cc:1030
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "dropping incoming cert which was signed by a key we don't have.\n"
 "You probably need to obtain this key from a more recent netsync peer.\n"
 "The name of the key involved is '%s', but note that there are multiple\n"
 "keys with this name and we don't know which one it is"
 msgstr ""
-"Entferne eingehendes Zertifkat, welches von einem Schlüssel unterschrieben\n"
-"wurden, den wir nicht haben.\n"
-"Sie müssen wahrscheinlich diesen Schlüssel von einem neueren netsync-Peer "
-"holen.\n"
-"Der Name des Schlüssels ist '%s', aber beachten Sie, dass es mehrere "
-"Schlüssel\n"
-"mit diesem Namen gibt und wir nicht wissen, welcher das ist."
+"entferne eingehendes Zertifkat, welches von einem Schlüssel unterschrieben\n"
+"wurden, den wir nicht haben.  Sie müssen wahrscheinlich diesen Schlüssel von\n"
+"einem neueren netsync-Peer holen.  Der Name des Schlüssels ist '%s', aber\n"
+"beachten Sie, dass es mehrere Schlüssel mit diesem Namen gibt und wir nicht\n"
+"wissen, welcher das ist"
 
 #: src/network/netsync_session.cc:1045
 #, c-format
@@ -5728,12 +5724,12 @@ msgid "peer %s has been idle too long, disconnecting"
 msgstr "Peer %s war zu lange untätig, trenne Verbindung"
 
 #: src/network/session.cc:199
-#, fuzzy, c-format
+#, c-format
 msgid "received warning from usher: %s"
-msgstr "Erhielt Warnung von 'usher': %s"
+msgstr "erhielt Warnung von 'usher': %s"
 
 #: src/network/session.cc:279
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
 "@ WARNING: SERVER IDENTIFICATION HAS CHANGED              @\n"
@@ -5752,7 +5748,7 @@ msgstr ""
 "hat.\n"
 "Der entfernte Rechner hat den Schlüssel %s gesendet,\n"
 "es wurde %s erwartet\n"
-"'%s unset %s %s' übergeht diese Prüfung."
+"'%s unset %s %s' übergeht diese Prüfung"
 
 #: src/network/session.cc:290
 #, c-format
@@ -5760,15 +5756,15 @@ msgid "server key changed"
 msgstr "Server-Schlüssel hat sich geändert"
 
 #: src/network/session.cc:295
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "first time connecting to server %s.\n"
 "I'll assume it's really them, but you might want to double-check\n"
 "their key's fingerprint: %s"
 msgstr ""
-"Das ist das erste Mal, dass Sie sich mit dem Server %s verbinden.\n"
+"das ist das erste Mal, dass Sie sich mit dem Server %s verbinden.\n"
 "Es wird angenommen, dass Sie die Serveridentität verifiziert haben.\n"
-"Sie können jedoch nochmal den Fingerprint des Schlüssels prüfen: %s"
+"Sie können jedoch nochmal den Fingerabdruck des Schlüssels prüfen: %s"
 
 #: src/network/session.cc:308
 #, c-format
@@ -6048,17 +6044,17 @@ msgid "invalid git author '%s' from monotone author value '%s'"
 msgstr "ungültiger git-Autor '%s' von monotone Autor-Wert '%s'"
 
 #: src/revision.cc:28
-#, fuzzy, c-format
+#, c-format
 msgid "revision has no manifest id"
 msgstr "Revision hat keine manifest id"
 
 #: src/revision.cc:39
-#, fuzzy, c-format
+#, c-format
 msgid "merge revision has a null parent"
 msgstr "Vereinigungs-Revision hat ein Null-Elternteil"
 
 #: src/revision.cc:43
-#, fuzzy, c-format
+#, c-format
 msgid "revision has %d edges, not 1 or 2"
 msgstr "Revision hat %d Kanten, nicht 1 oder 2"
 
@@ -6070,17 +6066,16 @@ msgstr ""
 "Revisionen eingeschränkt werden."
 
 #: src/revision.cc:379
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "encountered a revision with unknown format, version %s.\n"
 "I only know how to understand the version 1 format.\n"
 "A newer version of monotone is required to complete this operation"
 msgstr ""
-"Es wurde eine Revision mit unbekannten Format gefunden (Version %s).\n"
-"Diese Version von monotone kann lediglich das Format der Version 1 "
-"verstehen.\n"
-"Eine neuere Version von monotone wird benötigt, um die Operation vollständig "
-"durchzuführen."
+"es wurde eine Revision mit unbekannten Format gefunden, Version %s.\n"
+"Diese Version von monotone kann lediglich das Format der Version 1\n"
+"verstehen.  Eine neuere Version von monotone wird benötigt, um die\n"
+"Operation vollständig durchzuführen"
 
 #: src/revision.cc:402
 #, c-format
@@ -6222,13 +6217,13 @@ msgid "Lists the revisions that match a selector"
 msgstr "Gibt die Revisionen aus, die auf einem Selektor passen"
 
 #: src/automate.cc:907
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "'%s' is both known and ignored; it will be shown as 'missing'. Check '.mtn-"
 "ignore'"
 msgstr ""
-"'%s' ist bekannt, wird aber gleichzeitig ignoriert; der Eintrag wird daher "
-"als 'fehlend' gekennzeichnet. Überpüfen Sie die Datei '.mtn-ignore'."
+"'%s' ist bekannt, wird aber gleichzeitig ignoriert und wird daher "
+"als 'fehlend' gekennzeichnet. Überpüfen Sie die Datei '.mtn-ignore'"
 
 #: src/automate.cc:1020
 msgid "Prints a summary of files found in the workspace"
@@ -6385,9 +6380,9 @@ msgid "Retrieve database variables"
 msgstr "Gibt Datenbankvariablen zurück"
 
 #: src/automate.cc:2245
-#, fuzzy, c-format
+#, c-format
 msgid "no variables found or invalid domain specified"
-msgstr "Keine Variablen gefunden oder ungültige Domäne angegeben"
+msgstr "keine Variablen gefunden oder ungültige Domäne angegeben"
 
 #: src/automate.cc:2296
 msgid "DOMAIN [NAME]"
@@ -6998,7 +6993,7 @@ msgid "note: your workspace has not been updated"
 msgstr "Hinweis: Ihr Arbeitsbereich wurde nicht aktualisiert."
 
 #: src/merge_roster.cc:341
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "content changes to the file '%s'\n"
 "will be ignored during this merge as the file has been\n"
@@ -7784,9 +7779,9 @@ msgid "bad argument '%s' to option '%s': %s"
 msgstr "falsches Argument '%s' zu Option '%s': %s"
 
 #: src/option.cc:238
-#, fuzzy, c-format
+#, c-format
 msgid "invalid escape in '--xargs' file"
-msgstr "Ungültige Escape-Sequenz in '--xargs'-Datei"
+msgstr "ungültige Escape-Sequenz in '--xargs'-Datei"
 
 #: src/option.cc:332
 #, c-format
@@ -8542,19 +8537,19 @@ msgid "'%s' will be accessible to all users of this computer\n"
 msgstr "'%s' wird für alle Benutzer dieses Computers zugänglich sein\n"
 
 #: src/win32/ssh_agent_platform.cc:82
-#, fuzzy, c-format
+#, c-format
 msgid "asked to write more than %u to pageant"
-msgstr "Erhielt Anfrage, mehr als %u Bytes zu pageant zu schreiben"
+msgstr "erhielt Anfrage, mehr als %u Bytes zu pageant zu schreiben"
 
 #: src/win32/ssh_agent_platform.cc:91
-#, fuzzy, c-format
+#, c-format
 msgid "error sending message to pageant (%d)"
 msgstr "Fehler beim Senden der Nachricht an pageant (%d)"
 
 #: src/win32/ssh_agent_platform.cc:105
-#, fuzzy, c-format
+#, c-format
 msgid "asked to read more than %u from pageant"
-msgstr "Erhielt Anfrage, mehr als %u Bytes von pageant zu lesen"
+msgstr "erhielt Anfrage, mehr als %u Bytes von pageant zu lesen"
 
 #: src/win32/parse_date.cc:21
 #, c-format
@@ -8569,44 +8564,44 @@ msgstr ""
 "Ausnahme geworfen"
 
 #: src/monotone.cc:143
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires at least SQLite 3.3.8 to run"
-msgstr "Dieses monotone benötigt mindestens SQLite 3.3.8 zum ausführen"
+msgstr "dieses monotone benötigt mindestens SQLite 3.3.8, um ausgeführt zu werden"
 
 #: src/monotone.cc:146
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires at least SQLite 3.3.14 to run"
-msgstr "Dieses monotone benötigt mindestens SQLite 3.3.14 zum ausführen"
+msgstr "dieses monotone benötigt mindestens SQLite 3.3.14, um ausgeführt zu werden"
 
 #: src/monotone.cc:157
-#, fuzzy, c-format
+#, c-format
 msgid "monotone does not support Botan 1.7.14"
-msgstr "Monotone unterstüzt Botan 1.7.14 nicht"
+msgstr "monotone unterstüzt Botan 1.7.14 nicht"
 
 #: src/monotone.cc:161
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires Botan 1.6.3 or newer"
-msgstr "Dieses monotone benötigt Botan 1.6.3 oder neuer"
+msgstr "dieses monotone benötigt Botan 1.6.3 oder neuer"
 
 #: src/monotone.cc:163
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary does not work with Botan newer than 1.7.6"
-msgstr "Dieses monotone arbeitet nicht mit Botan >1.7.6 zusammen"
+msgstr "dieses monotone arbeitet nicht mit Botan >1.7.6 zusammen"
 
 #: src/monotone.cc:166
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires Botan 1.7.7 or newer"
-msgstr "Dieses monotone benötigt Botan 1.7.7 oder neuer"
+msgstr "dieses monotone benötigt Botan 1.7.7 oder neuer"
 
 #: src/monotone.cc:172 src/monotone.cc:177
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary does not work with Botan 1.9.x"
-msgstr "Dieses monotone arbeitet nicht mit Botan 1.9.x zusammen"
+msgstr "dieses monotone arbeitet nicht mit Botan 1.9.x zusammen"
 
 #: src/monotone.cc:175
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires Botan 1.7.22 or newer"
-msgstr "Dieses monotone benötigt Botan 1.7.22 oder neuer"
+msgstr "dieses monotone benötigt Botan 1.7.22 oder neuer"
 
 #: src/std_hooks.lua:56
 msgid "Press enter"
