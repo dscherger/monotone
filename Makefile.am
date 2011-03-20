@@ -373,18 +373,26 @@ contrib_data = $(shell cd $(srcdir); find $(contrib_prefix) | sed -e 's,^\./,,')
 
 examplesdir = $(docdir)/examples
 examples_prefix = examples
-examples_data = $(shell cd $(srcdir); find $(examples_prefix) | sed -e 's,^\./,,')
+examples_data =								\
+	examples/000README.txt						\
+	examples/mirror.rc examples/push.rc examples/read-permissions	\
+	examples/write-permissions					\
+									\
+	examples/server-setup/README examples/server-setup/serverrc	\
+	examples/server-setup/monotone.init				\
+	examples/server-setup/monotone.run				\
+									\
+	examples/user-setup/README examples/user-setup/monotonerc
 
 EXTRA_DIST =								\
 	HACKING INSTALL INSTALL_windows_cygwin.txt			\
 	INSTALL_windows_native.txt README.visualc8 UPGRADE		\
 	util/audit-includes util/do-editor-vars.sh			\
-	$(wildcard $(srcdir)/m4/*.m4) src/schema.sql src/unix/README	\
-	src/util/mtnopt.in innosetup/README.txt				\
-	innosetup/monotone.iss.in innosetup/modpath.iss 		\
-	innosetup/monotone.bmp innosetup/dlls.sh			\
+	$(wildcard $(srcdir)/m4/*.m4)					\
 									\
-	src/std_hooks.lua						\
+	src/schema.sql src/unix/README src/std_hooks.lua		\
+	src/util/mtnopt.in						\
+									\
 	test/common							\
 	test/func test/func-testsuite.lua				\
 	test/tester test/tester-testsuite.lua				\
@@ -397,11 +405,35 @@ EXTRA_DIST =								\
 									\
 	src/package_revision.txt src/package_full_revision_dist.txt	\
 									\
-	mac notes visualc $(contrib_data) $(examples_data)		\
-									\
 	extra/README extra/building/dump-test-logs.sh.in		\
 	extra/shell/monotone.bash_completion.in				\
-	extra/shell/monotone_gen_bash_completion_table.pl
+	extra/shell/monotone_gen_bash_completion_table.pl		\
+									\
+	innosetup/README.txt						\
+	innosetup/monotone.iss.in innosetup/modpath.iss 		\
+	innosetup/monotone.bmp innosetup/dlls.sh			\
+									\
+	mac/readme-mac.txt mac/package-intro.rtf			\
+	mac/monotone.pmproj mac/monotone-pkg-logo.gif			\
+									\
+	cygport/README.txt						\
+	cygport/monotone-1.0-1.cygwin.patch				\
+	cygport/monotone-1.0-1.cygport					\
+									\
+	notes/release-checklist.txt					\
+	notes/README.testing notes/tester.txt notes/testsuite.txt	\
+									\
+	visualc/monotone.sln						\
+	visualc/monotone.vcproj visualc/botan.vcproj visualc/lua.vcproj	\
+	visualc/netxx.vcproj visualc/pcre.vcproj visualc/sqlite3.vcproj	\
+	visualc/stringprep.vcproj visualc/txt2c.vcproj			\
+	visualc/tester.vcproj visualc/unit_tester.vcproj		\
+	visualc/runtests.bat						\
+	visualc/config.h visualc/mt-stdint.h visualc/stdint.h		\
+	visualc/unistd.h						\
+	visualc/unknown_package.txt					\
+									\
+	$(contrib_data) $(examples_data)
 
 # Message translation support
 # INST_LINGUAS is set by configure, based on the po/LINGUAS file and
@@ -516,6 +548,11 @@ _install_data = \
 	    echo " $(MKDIR_P) '$(DESTDIR)$(3)/$$dest'"; \
 	    $(MKDIR_P) "$(DESTDIR)$(3)/$$dest" || exit $$?; \
 	  else \
+	    destd="`dirname $$dest`"; \
+	    if ! test -d "$(DESTDIR)$(3)/$$destd"; then \
+	      echo " $(MKDIR_P) '$(DESTDIR)$(3)/$$destd'"; \
+	      $(MKDIR_P) "$(DESTDIR)$(3)/$$destd" || exit $$?; \
+	    fi; \
 	    echo " $(INSTALL_DATA) $$src '$(DESTDIR)$(3)/$$dest'"; \
 	    $(INSTALL_DATA) $$src "$(DESTDIR)$(3)/$$dest" || exit $$?; \
 	  fi; \
