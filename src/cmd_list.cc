@@ -860,7 +860,6 @@ CMD(changed, "changed", "", CMD_REF(list), "[PATH...]",
   roster_t new_roster;
   temp_node_id_source nis;
   work.get_current_roster_shape(db, nis, new_roster);
-  work.update_current_roster_from_filesystem(new_roster);
 
   work.get_parent_rosters(db, parents);
 
@@ -869,6 +868,7 @@ CMD(changed, "changed", "", CMD_REF(list), "[PATH...]",
                         app.opts.depth,
                         parents, new_roster, ignored_file(work));
 
+  work.update_current_roster_from_filesystem(new_roster, mask);
   revision_t rrev;
   make_restricted_revision(parents, new_roster, mask, rrev);
 
