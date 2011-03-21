@@ -35,24 +35,11 @@ HTML_EXTRA = texinfo.css
 PNG_FIGURES=$(PDF_FIGURES:.pdf=.png)
 EPS_FIGURES=$(PDF_FIGURES:.pdf=.eps)
 
-# Copied from the main Makefile.am
-if WIN32_PLATFORM
-  # Msys configure produces c:/ syntax for absolute paths, but Msys
-  # bash requires /c/ syntax. Fix that here. This fails if current
-  # drive is not c, but that just means checktest won't be found, and
-  # the network sync tests not run.
-  fix_abs_builddir := $(subst c:,/c,$(abs_builddir))
-else
-  # Cygwin configure also produces c:/ syntax, but that works for
-  # Cygwin bash
-  fix_abs_builddir := $(abs_builddir)
-endif
-
 # See the rules further down that does the work.
-PDF_FIGURES_copied = $(addprefix $(fix_abs_builddir)/,$(PDF_FIGURES))
-PNG_FIGURES_copied = $(addprefix $(fix_abs_builddir)/,$(PNG_FIGURES))
-PNG_IMAGES_copied = $(addprefix $(fix_abs_builddir)/,$(PNG_IMAGES))
-HTML_EXTRA_copied = $(addprefix $(fix_abs_builddir)/,$(HTML_EXTRA))
+PDF_FIGURES_copied = $(addprefix $(abs_builddir)/,$(PDF_FIGURES))
+PNG_FIGURES_copied = $(addprefix $(abs_builddir)/,$(PNG_FIGURES))
+PNG_IMAGES_copied = $(addprefix $(abs_builddir)/,$(PNG_IMAGES))
+HTML_EXTRA_copied = $(addprefix $(abs_builddir)/,$(HTML_EXTRA))
 
 TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
@@ -79,19 +66,19 @@ figures/%.ps: figures/%.pdf
 	$(MKDIR_P) figures
 	pdftops $< $@
 
-$(fix_abs_builddir)/figures/%.pdf: figures/%.pdf
+$(abs_builddir)/figures/%.pdf: figures/%.pdf
 	$(MKDIR_P) figures
 	cmp -s $< $@ || cp $< $@
 
-$(fix_abs_builddir)/figures/%.png: figures/%.png
+$(abs_builddir)/figures/%.png: figures/%.png
 	$(MKDIR_P) figures
 	cmp -s $< $@ || cp $< $@
 
-$(fix_abs_builddir)/images/%.png: images/%.png
+$(abs_builddir)/images/%.png: images/%.png
 	$(MKDIR_P) images
 	cmp -s $< $@ || cp $< $@
 
-$(fix_abs_builddir)/texinfo.css: texinfo.css
+$(abs_builddir)/texinfo.css: texinfo.css
 	cmp -s $< $@ || cp $< $@
 
 # Stealing code from automake and adapting, we want a HTML file tree as well

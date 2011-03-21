@@ -12,6 +12,7 @@ $ mtn mv monotone-$OLD-1.cygwin.patch monotone-$NEW-1.cygwin.patch
 $ cd ../monotone-build_cygwin; make dist-gzip
 $ cp ../monotone-build_cygwin/monotone-$NEW.tar.gz .
 $ cygport monotone-$NEW-1 all
+$ cp monotone-$NEW-1/spkg/monotone-$NEW-1.cygwin.patch .
 
 If cygport hangs, it may be due to a parallel make bug. Try the
 following:
