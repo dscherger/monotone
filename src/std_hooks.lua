@@ -1523,12 +1523,20 @@ function get_man_page_formatter_command()
    --
    -- On MinGW, 'popen' runs 'cmd.exe' with the inherited path. MinGW
    -- does not (currently) provide nroff or equivalent. So we assume
-   -- sh, nroff and less are also installed, from Cygwin or some other
-   -- toolset.
+   -- sh, nroff, locale and less are also installed, from Cygwin or
+   -- some other toolset.
+   --
+   -- GROFF_ENCODING is an environment variable that, when set, tells
+   -- groff (called by nroff where applicable) to use preconv to convert
+   -- the input from the given encoding to something groff understands.
+   -- For example, groff doesn NOT understand raw UTF-8 as input, but
+   -- it does understand unicode, which preconv will happily provide.
+   -- This doesn't help people that don't use groff, unfortunately.
+   -- Patches are welcome!
    if string.sub(get_ostype(), 1, 7) == "Windows" then
-      return string.format("sh -c 'nroff -man -rLL=%dn' | less -R", term_width)
+      return string.format("sh -c 'GROFF_ENCODING=`locale charmap` nroff -man -rLL=%dn' | less -R", term_width)
    else
-      return string.format("nroff -man -rLL=%dn | less -R", term_width)
+      return string.format("GROFF_ENCODING=`locale charmap` nroff -man -rLL=%dn | less -R", term_width)
    end
 end
 
