@@ -406,8 +406,8 @@ EXTRA_DIST =								\
 	mac/monotone.pmproj mac/monotone-pkg-logo.gif			\
 									\
 	cygport/README.txt						\
-	cygport/monotone-1.0-1.cygwin.patch				\
-	cygport/monotone-1.0-1.cygport					\
+	cygport/monotone.cygwin.patch					\
+	cygport/monotone.cygport					\
 									\
 	notes/release-checklist.txt					\
 	notes/README.testing notes/tester.txt notes/testsuite.txt	\
