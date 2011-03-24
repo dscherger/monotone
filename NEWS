@@ -118,6 +118,9 @@ XXX XXX XX XX:XX:XX UTC 2011
           or partial identifier contains non-hex digits.
           (fixes monotone issue 143)
 
+        - Performance of "mtn ls changed" has been improved and is now
+          comparable to "mtn status". (fixes monotone issue 120)
+
         Internal
 
         - The source tree has been reorganized. Sources, tests and documentation
