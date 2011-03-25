@@ -36,4 +36,11 @@ The following is needed to succesfully configure:
 
  export CXXFLAGS="-I/usr/include/boost-1_33_1/ -g -O2"; configure
 
+There is a bug in the bash builtin 'pwd' in bash 4.1; it can return
+'c:/' syntax for absolute paths in some circumstances. See
+http://sourceware.org/ml/cygwin/2002-11/msg01111.html. In particular,
+this happens when starting a bash shell under Emacs, which results in
+configure creating Makefiles with some problems. A work-around is to
+put 'cd `/bin/pwd`' in your ~/.emacs_bash.
+
 See ../cygport/README for building a Cygwin package.
