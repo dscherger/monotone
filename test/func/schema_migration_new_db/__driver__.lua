@@ -9,4 +9,5 @@ mtn_setup()
 
 check(get("expected-stderr.txt"))
 check(mtn("db", "migrate"), 0, false, true)
+canonicalize("stderr")
 check(samefile("stderr", "expected-stderr.txt"))
