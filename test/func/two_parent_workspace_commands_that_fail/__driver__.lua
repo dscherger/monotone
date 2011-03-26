@@ -26,6 +26,7 @@ check(qgrep("right", "testfile"))
 check(not qgrep("ancestor", "testfile"))
 
 diag = "mtn: misuse: this command can only be used in a single-parent workspace\n"
+revertdiag = "mtn: misuse: this workspace has multiple parents. specify which parent to use with -r\n"
 diffdiag = ("mtn: misuse: this workspace has more than one parent\n"..
         "mtn: misuse: (specify a revision to diff against with '--revision')\n")
 
@@ -52,7 +53,7 @@ check(mtn("automate", "get_file_of", "-r", right, "testfile"), 0, false, nil)
 
 -- revert and update: to where?
 check(mtn("revert", "."), 1, nil, true)
-check(grep("-v", "detected at", "stderr"), 0, diag)
+check(grep("-v", "detected at", "stderr"), 0, revertdiag)
 check(mtn("update"), 1, nil, true)
 check(grep("-v", "detected at", "stderr"), 0, diag)
 

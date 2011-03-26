@@ -363,12 +363,47 @@ revert(app_state & app,
 
   database db(app);
   workspace work(app);
+  project_t project(db);
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
-  E(parents.size() == 1, origin::user,
-    F("this command can only be used in a single-parent workspace"));
-  old_roster = parent_roster(parents.begin());
+
+  if (parents.size() == 1)
+    {
+      // TODO: Should we error out here, or just check if they have passed
+      // a revision id through that it's actually the parent of the
+      // workspace.
+      E(app.opts.revision.empty(), origin::user,
+        F("this workspace only has 1 parent"));
+
+      old_roster = parent_roster(parents.begin());
+    }
+  else
+    {
+      E(app.opts.revision.size() == 1, origin::user,
+        F("this workspace has multiple parents. specify which parent to "
+          "use with -r"));
+
+      revision_id wanted_parent_id;
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(),
+               wanted_parent_id);
+
+      bool found_wanted_parent = false;
+      for (parent_map::const_iterator i = parents.begin();
+           i != parents.end(); i++)
+        {
+          if (i->first == wanted_parent_id)
+            {
+              found_wanted_parent = true;
+              old_roster = parent_roster(i);
+              break;
+            }
+        }
+
+      E(found_wanted_parent, origin::user,
+        F("the specified revision is not a parent of the current "
+          "workspace"));
+    }
 
   {
     temp_node_id_source nis;
@@ -539,7 +574,8 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
     N_("Reverts files and/or directories"),
     N_("In order to revert the entire workspace, specify '.' as the "
        "file name."),
-    options::opts::depth | options::opts::exclude | options::opts::missing)
+    options::opts::depth | options::opts::exclude | options::opts::missing
+    | options::opts::revision)
 {
   revert(app, args, false);
 }
