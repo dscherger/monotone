@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010 - 2011 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -555,7 +555,7 @@ any_path::dirname() const
   // dirname() of a direct child of the root is the root
   if (sep == 0 || (sep == 1 && s[1] == '/')
 #ifdef WIN32
-      || (sep == 1 || sep == 2 && s[1] == ':')
+      || (sep == 1 || (sep == 2 && s[1] == ':'))
 #endif
       )
     return any_path(s, 0, sep+1);
@@ -593,7 +593,7 @@ system_path::dirname() const
   // dirname() of a direct child of the root is the root
   if (sep == 0 || (sep == 1 && s[1] == '/')
 #ifdef WIN32
-      || (sep == 1 || sep == 2 && s[1] == ':')
+      || (sep == 1 || (sep == 2 && s[1] == ':'))
 #endif
       )
     return system_path(s, 0, sep+1);

@@ -16,7 +16,7 @@
 struct table_entry
 {
   unsigned long key;
-  char *val;
+  const char *val;
 };
 
 void key_to_string(unsigned long key,
