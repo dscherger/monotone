@@ -140,19 +140,19 @@ Uploading, tagging and syncing
     # The rest is done via monotone.
     #
     $ mtn -d DATABASE co -b net.venge.monotone.web.mainsite {WEBDIR}
-    $ cp monotone-{NEW VERSION}/NEWS	{WEBDIR}
-    $ cp monotone-{NEW VERSION}/INSTALL	{WEBDIR}
-    $ cp monotone-{NEW VERSION}/UPGRADE	{WEBDIR}
-    $ cp monotone-{NEW VERSION}/monotone.pdf	{WEBDIR}
-    $ cp monotone-{NEW VERSION}/monotone.html	{WEBDIR}
+    $ cp monotone-{NEW VERSION}/NEWS			{WEBDIR}
+    $ cp monotone-{NEW VERSION}/INSTALL			{WEBDIR}
+    $ cp monotone-{NEW VERSION}/UPGRADE			{WEBDIR}
+    $ cp monotone-{NEW VERSION}/doc/monotone.pdf	{WEBDIR}
+    $ cp monotone-{NEW VERSION}/doc/monotone.html	{WEBDIR}
     $ rm -rf {WEBDIR}/docs
-    $ cp -r monotone-{NEW VERSION}/html {WEBDIR}/docs
+    $ cp -r monotone-{NEW VERSION}/doc/html		{WEBDIR}/docs
 
-    Open {WEBDIR}/monotone.html, change the CSS include from "texinfo.css" to
-    "docs/texinfo.css" and hit save.
+    Open {WEBDIR}/monotone.html, change the CSS include from
+    "texinfo.css" to "docs/texinfo.css" and hit save.
 
     $ rm {WEBDIR}/figures/*
-    $ cp monotone-{NEW VERSION}/figures/*.png {WEBDIR}/figures/
+    $ cp monotone-{NEW VERSION}/doc/figures/*.png	{WEBDIR}/figures/
     $ cd {WEBDIR}
     $ mtn drop --missing
     $ mtn add --unknown
