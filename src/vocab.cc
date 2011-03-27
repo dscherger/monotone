@@ -106,7 +106,7 @@ verify(netsync_session_key & val)
 
   E(val().size() == constants::netsync_session_key_length_in_bytes,
     val.made_from,
-    F("Invalid key length of %d bytes") % val().length());
+    F("invalid key length of %d bytes") % val().length());
 }
 
 inline void
@@ -120,7 +120,7 @@ verify(netsync_hmac_value & val)
 
   E(val().size() == constants::netsync_hmac_value_length_in_bytes,
     val.made_from,
-    F("Invalid hmac length of %d bytes") % val().length());
+    F("invalid hmac length of %d bytes") % val().length());
 }
 
 

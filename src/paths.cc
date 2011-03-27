@@ -457,7 +457,7 @@ file_path::file_path(file_path::source_type type, utf8 const & path,
   : any_path(path.made_from)
 {
   MM(path);
-  E(utf8_validate(path), made_from, F("Invalid utf8"));
+  E(utf8_validate(path), made_from, F("invalid utf8"));
   if (type == external)
     {
       string normalized;
@@ -481,9 +481,9 @@ bookkeeping_path::bookkeeping_path(char const * const path)
 
 bookkeeping_path::bookkeeping_path(string const & path, origin::type made_from)
 {
-  E(fully_normalized_path(path), made_from, F("Path is not normalized"));
+  E(fully_normalized_path(path), made_from, F("path is not normalized"));
   E(in_bookkeeping_dir(path), made_from,
-    F("Bookkeeping path is not in bookkeeping dir"));
+    F("bookkeeping path is not in bookkeeping directory"));
   data = path;
 }
 

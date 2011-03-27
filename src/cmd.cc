@@ -456,7 +456,7 @@ namespace commands {
       app.mtn_automate_allowed = false;
 
       E(ll.ok(), origin::user,
-        F("Call to user command '%s' (lua command: '%s') failed.")
+        F("call to user command '%s' (lua command: '%s') failed.")
         % primary_name() % f_name);
     }
   };

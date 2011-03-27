@@ -147,10 +147,10 @@ urldecode(string const & in, origin::type made_from)
         {
           char d1, d2;
           ++i;
-          E(i != in.end(), made_from, F("Bad URLencoded string '%s'") % in);
+          E(i != in.end(), made_from, F("bad URLencoded string '%s'") % in);
           d1 = *i;
           ++i;
-          E(i != in.end(), made_from, F("Bad URLencoded string '%s'") % in);
+          E(i != in.end(), made_from, F("bad URLencoded string '%s'") % in);
           d2 = *i;
 
           char c = 0;
@@ -172,7 +172,7 @@ urldecode(string const & in, origin::type made_from)
             case 'd': case 'D': c += 13; break;
             case 'e': case 'E': c += 14; break;
             case 'f': case 'F': c += 15; break;
-            default: E(false, made_from, F("Bad URLencoded string '%s'") % in);
+            default: E(false, made_from, F("bad URLencoded string '%s'") % in);
             }
           c *= 16;
           switch(d2)
@@ -193,7 +193,7 @@ urldecode(string const & in, origin::type made_from)
             case 'd': case 'D': c += 13; break;
             case 'e': case 'E': c += 14; break;
             case 'f': case 'F': c += 15; break;
-            default: E(false, made_from, F("Bad URLencoded string '%s'") % in);
+            default: E(false, made_from, F("bad URLencoded string '%s'") % in);
             }
           out += c;
         }

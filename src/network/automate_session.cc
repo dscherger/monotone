@@ -127,7 +127,7 @@ public:
     E(app.lua.hook_get_remote_automate_permitted(remote_identity,
                                                  cmdline, params),
       origin::user,
-      F("Sorry, you aren't allowed to do that."));
+      F("sorry, you aren't allowed to do that."));
   }
 };
 class remote_stdio_log_fn {
