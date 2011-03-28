@@ -10,7 +10,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT([monotone], [1.1dev], [https://code.monotone.ca/p/monotone/issues/], ,
+AC_INIT([monotone], [1.0.90], [https://code.monotone.ca/p/monotone/issues/], ,
 	[http://www.monotone.ca])
 AM_INIT_AUTOMAKE([1.9 tar-ustar dist-bzip2 no-dist-gzip std-options])
 AC_CONFIG_SRCDIR([src/app_state.cc])
