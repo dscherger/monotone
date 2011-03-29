@@ -21,9 +21,8 @@ commit()
 right = base_revision()
 
 check(mtn("merge_into_workspace", left), 0, false, false)
-check(qgrep("left", "testfile"))
-check(qgrep("right", "testfile"))
-check(not qgrep("ancestor", "testfile"))
+check(samelines("testfile", { "left", "right" } ))
+check(samelines("otherfile", { "modified too" } ))
 
 diag = "mtn: misuse: this command can only be used in a single-parent workspace\n"
 diffdiag = ("mtn: misuse: this workspace has more than one parent\n"..

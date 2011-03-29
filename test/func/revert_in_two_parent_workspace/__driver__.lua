@@ -19,9 +19,8 @@ commit()
 right = base_revision()
 
 check(mtn("merge_into_workspace", left), 0, false, false)
-check(qgrep("left", "testfile"))
-check(qgrep("right", "testfile"))
-check(not qgrep("ancestor", "testfile"))
+check(samelines("testfile", { "left", "right" } ))
+check(samelines("otherfile", { "modified too" } ))
 
 -- we now have workspace with 2 parents, so lets try a revert
 -- without specifying a revision - mtn should throw an error
