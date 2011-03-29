@@ -40,13 +40,15 @@ check(grep("-v", "detected at", "stderr"), 0, incorrect_parent_diag)
 
 -- now lets revert back to a proper revision - and check the workspace
 -- contents
-check(mtn("revert", ".", "-r", left), 0, nil, true)
+check(mtn("revert", ".", "-r", left), 0, nil, "mtn: reverting testfile\n")
 check(samelines("testfile", { "left", "ancestor" } ))
 check(samelines("otherfile", { "modified too" } ))
 
--- TODO: file contents are fine - now lets check if the book keeping is
--- correct by running "mtn status" and "mtn ls changed" - there should
+-- file contents are fine - now lets check if the book keeping is
+-- correct by running "mtn ls changed" - there should
 -- be no changes
+check(mtn("au", "get_base_revision_id"), 0, left .. "\n", false)
+check(mtn("ls", "changed"), 0, nil, false)
 
 
 
