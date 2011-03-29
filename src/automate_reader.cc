@@ -43,7 +43,7 @@ bool automate_reader::get_string(string & out)
       read(&c, 1);
     }
   E(c == ':', origin::user,
-    F("Bad input to automate stdio: expected ':' after string size"));
+    F("bad input to automate stdio: expected ':' after string size"));
   char *str = new char[size];
   size_t got = 0;
   while(got < size)
@@ -63,7 +63,7 @@ streamsize automate_reader::read(char *buf, size_t nbytes, bool eof_ok)
   rv = in.rdbuf()->sgetn(buf, nbytes);
 
   E(eof_ok || rv > 0, origin::user,
-    F("Bad input to automate stdio: unexpected EOF"));
+    F("bad input to automate stdio: unexpected EOF"));
   return rv;
 }
 void automate_reader::go_to_next_item()
@@ -91,7 +91,7 @@ void automate_reader::go_to_next_item()
     case 'l': loc = cmd; break;
     default:
       E(false, origin::user,
-        F("Bad input to automate stdio: unknown start token '%c'") % c);
+        F("bad input to automate stdio: unknown start token '%c'") % c);
     }
 }
 automate_reader::automate_reader(istream & is) : in(is), loc(none)
@@ -113,14 +113,14 @@ bool automate_reader::get_command(vector<pair<string, string> > & params,
       go_to_next_item();
     }
   E(loc == cmd, origin::user,
-    F("Bad input to automate stdio: expected '%c' token") % cmd);
+    F("bad input to automate stdio: expected '%c' token") % cmd);
   string item;
   while (get_string(item))
     {
       cmdline.push_back(item);
     }
   E(cmdline.size() > 0, origin::user,
-    F("Bad input to automate stdio: command name is missing"));
+    F("bad input to automate stdio: command name is missing"));
   return true;
 }
 void automate_reader::reset()

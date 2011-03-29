@@ -461,7 +461,7 @@ CMD(register_workspace, "register_workspace",  "", CMD_REF(variables),
     throw usage(execid);
 
   E(args.size() == 1 || workspace::found, origin::user,
-    F("No workspace given"));
+    F("no workspace given"));
 
   system_path workspace;
   if (args.size() == 1)
@@ -483,7 +483,7 @@ CMD(unregister_workspace, "unregister_workspace", "", CMD_REF(variables),
     throw usage(execid);
 
   E(args.size() == 1 || workspace::found, origin::user,
-    F("No workspace given"));
+    F("no workspace given"));
 
   system_path workspace;
   if (args.size() == 1)
@@ -627,7 +627,7 @@ CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
 // loading revisions is relatively fast
 
 CMD_HIDDEN(load_revisions, "load_revisions", "", CMD_REF(db), "",
-    N_("load all revisions from the database"),
+    N_("Load all revisions from the database"),
     N_("This command loads all revisions from the database and is "
        "intended to be used for timing revision loading performance."),
     options::opts::none)
@@ -656,7 +656,7 @@ CMD_HIDDEN(load_revisions, "load_revisions", "", CMD_REF(db), "",
 // loading rosters is slow compared with files, revisions or certs
 
 CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), "",
-    N_("load all roster versions from the database"),
+    N_("Load all roster versions from the database"),
     N_("This command loads all roster versions from the database and is "
        "intended to be used for timing roster reconstruction performance."),
     options::opts::none)
@@ -684,7 +684,7 @@ CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), "",
 // loading files is slower than revisions but faster than rosters
 
 CMD_HIDDEN(load_files, "load_files", "", CMD_REF(db), "",
-    N_("load all file versions from the database"),
+    N_("Load all file versions from the database"),
     N_("This command loads all files versions from the database and is "
        "intended to be used for timing file reconstruction performance."),
     options::opts::none)
@@ -710,7 +710,7 @@ CMD_HIDDEN(load_files, "load_files", "", CMD_REF(db), "",
 // loading certs is fast
 
 CMD_HIDDEN(load_certs, "load_certs", "", CMD_REF(db), "",
-    N_("load all certs from the database"),
+    N_("Load all certs from the database"),
     N_("This command loads all certs from the database and is "
        "intended to be used for timing cert loading performance."),
     options::opts::none)

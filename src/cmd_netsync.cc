@@ -119,7 +119,7 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
 
   if (!app.opts.dbname_given)
     {
-      W(F("No database given; assuming '%s' database. This means that\n"
+      W(F("no database given; assuming '%s' database. This means that\n"
           "we can't verify the server key, because we have no record of\n"
           "what it should be.")
           % memory_db_identifier);
@@ -222,7 +222,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   if (!app.opts.dbname_given)
     {
-      W(F("No database given; assuming '%s' database. This means that\n"
+      W(F("no database given; assuming '%s' database. This means that\n"
           "we can't verify the server key, because we have no record of\n"
           "what it should be.")
           % memory_db_identifier);

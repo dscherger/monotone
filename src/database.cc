@@ -2527,7 +2527,7 @@ database::put_file_version(file_id const & old_id,
                            delta_direction() == "both");
   if (!make_reverse_deltas && !make_forward_deltas)
     {
-      W(F("Unknown delta direction '%s'; assuming 'reverse'. Valid "
+      W(F("unknown delta direction '%s'; assuming 'reverse'. Valid "
           "values are 'reverse', 'forward', 'both'.") % delta_direction);
       make_reverse_deltas = true;
     }
@@ -3486,7 +3486,7 @@ database::check_signature(key_id const & id,
         = boost::shared_dynamic_cast<RSA_PublicKey>(x509_key);
 
       E(pub_key, id.inner().made_from,
-        F("Failed to get RSA verifying key for %s") % id);
+        F("failed to get RSA verifying key for %s") % id);
 
       verifier.reset(get_pk_verifier(*pub_key, "EMSA3(SHA-1)"));
 
@@ -3625,7 +3625,7 @@ database_impl::oldstyle_results_to_certs(results const & res,
           k_id = key_id(key_res[0][0], origin::database);
         else
           E(false, origin::database,
-            F("Your database contains multiple keys named '%s'") % k_name);
+            F("your database contains multiple keys named '%s'") % k_name);
       }
 
       rsa_sha1_signature sig(res[i][4], origin::database);

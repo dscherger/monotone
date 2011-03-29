@@ -300,7 +300,7 @@ read_data_stdin(data & dat)
 {
   static bool have_consumed_stdin = false;
   E(!have_consumed_stdin, origin::user,
-    F("Cannot read standard input multiple times"));
+    F("cannot read standard input multiple times"));
   have_consumed_stdin = true;
   unfiltered_pipe->start_msg();
   cin >> *unfiltered_pipe;

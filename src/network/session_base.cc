@@ -253,7 +253,7 @@ session_base::do_io(Netxx::Probe::ready_type what)
     }
   catch (Netxx::Exception & e)
     {
-      P(F("Network error on peer %s, disconnecting")
+      P(F("network error on peer %s, disconnecting")
         % peer_id);
       ok = false;
     }

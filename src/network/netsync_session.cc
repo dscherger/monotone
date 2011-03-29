@@ -1464,7 +1464,7 @@ netsync_session::rebuild_merkle_trees(set<branch_name> const & branchnames)
               if (keys.maybe_get_key_pair(*key, name, kp))
                 project.db.put_key(name, kp.pub);
               else
-                W(F("Cannot find key '%s'") % *key);
+                W(F("cannot find key '%s'") % *key);
             }
           inserted_keys.insert(*key);
           L(FL("including key %s by special request") % *key);

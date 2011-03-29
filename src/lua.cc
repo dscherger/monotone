@@ -589,7 +589,7 @@ run_directory(lua_State * st, char const * pathstr, char const * pattern)
   switch (get_path_status(path))
     {
     case path::nonexistent:
-      E(false, origin::user, F("Directory '%s' does not exist") % pathstr);
+      E(false, origin::user, F("directory '%s' does not exist") % pathstr);
     case path::file:
       E(false, origin::user, F("'%s' is not a directory") % pathstr);
     case path::directory:

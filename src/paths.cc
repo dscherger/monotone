@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010 - 2011 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -457,7 +457,7 @@ file_path::file_path(file_path::source_type type, utf8 const & path,
   : any_path(path.made_from)
 {
   MM(path);
-  E(utf8_validate(path), made_from, F("Invalid utf8"));
+  E(utf8_validate(path), made_from, F("invalid utf8"));
   if (type == external)
     {
       string normalized;
@@ -481,9 +481,9 @@ bookkeeping_path::bookkeeping_path(char const * const path)
 
 bookkeeping_path::bookkeeping_path(string const & path, origin::type made_from)
 {
-  E(fully_normalized_path(path), made_from, F("Path is not normalized"));
+  E(fully_normalized_path(path), made_from, F("path is not normalized"));
   E(in_bookkeeping_dir(path), made_from,
-    F("Bookkeeping path is not in bookkeeping dir"));
+    F("bookkeeping path is not in bookkeeping directory"));
   data = path;
 }
 
@@ -555,7 +555,7 @@ any_path::dirname() const
   // dirname() of a direct child of the root is the root
   if (sep == 0 || (sep == 1 && s[1] == '/')
 #ifdef WIN32
-      || (sep == 1 || sep == 2 && s[1] == ':')
+      || (sep == 1 || (sep == 2 && s[1] == ':'))
 #endif
       )
     return any_path(s, 0, sep+1);
@@ -593,7 +593,7 @@ system_path::dirname() const
   // dirname() of a direct child of the root is the root
   if (sep == 0 || (sep == 1 && s[1] == '/')
 #ifdef WIN32
-      || (sep == 1 || sep == 2 && s[1] == ':')
+      || (sep == 1 || (sep == 2 && s[1] == ':'))
 #endif
       )
     return system_path(s, 0, sep+1);

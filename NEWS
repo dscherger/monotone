@@ -1,4 +1,8 @@
-XXX XXX XX XX:XX:XX UTC 2011
+XXX XXX XX XX:XX:XX UTC 201X
+
+        1.1 release.
+
+Sat Mar 26 10:53:47 UTC 2011
 
         1.0 release.
 
@@ -94,9 +98,9 @@ XXX XXX XX XX:XX:XX UTC 2011
           if no database is specified for these commands.
           (fixes monotone issue 113)
 
-        - If 'mtn serve' is called with one or more '--bind' options, then
-          the arguments to these options can now be specified again
-          as follows:
+        - If 'mtn serve' is called with one or more '--bind' options,
+          then the arguments to these options can now be specified
+          again as follows:
 
             '<ip-or-host>' 
                 to listen to IP or host on the default port
@@ -107,14 +111,14 @@ XXX XXX XX XX:XX:XX UTC 2011
 
           (fixes monotone issue 119)
           
-        - monotone does no longer enforce ".mtn" as file extension
-          for managed databases.  Instead a new Lua hook,
-          get_default_database_glob(), is used to determine a pattern
-          which matches accepted database filenames and this pattern
-          by default accept files ending with both, ".mtn" and ".db".
+        - monotone no longer enforces ".mtn" as file extension for
+          managed databases.  A new Lua hook, get_default_database_glob(),
+          is used instead to determine a pattern which matches
+          accepted database filenames and this pattern by default
+          accept files ending with both, ".mtn" and ".db".
           (fixes monotone issue 128)
 
-        - monotone gives now a proper error message when an incomplete
+        - monotone now gives a proper error message when an incomplete
           or partial identifier contains non-hex digits.
           (fixes monotone issue 143)
 
@@ -123,10 +127,11 @@ XXX XXX XX XX:XX:XX UTC 2011
 
         Internal
 
-        - The source tree has been reorganized. Sources, tests and documentation
-          now reside in specific directories and many smaller improvements in
-          terms of source code cleanup, developer documentation and general build
-          infrastructure accompany this big change.
+        - The source tree has been reorganized. Sources, tests and
+          documentation now reside in specific directories and many
+          smaller improvements in terms of source code cleanup,
+          developer documentation and general build infrastructure
+          accompany this big change.
 
         Other
 
