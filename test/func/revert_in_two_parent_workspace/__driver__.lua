@@ -42,12 +42,8 @@ check(grep("-v", "detected at", "stderr"), 0, incorrect_parent_diag)
 -- now lets revert back to a proper revision - and check the workspace
 -- contents
 check(mtn("revert", ".", "-r", left), 0, nil, true)
--- TODO: don't know how to check for left\nancestor
-check(qgrep("left", "testfile"))
-check(qgrep("ancestor", "testfile"))
-check(not qgrep("right", "testfile"))
-
-check(qgrep("modified too", "otherfile"))
+check(samelines("testfile", { "left", "ancestor" } ))
+check(samelines("otherfile", { "modified too" } ))
 
 -- TODO: file contents are fine - now lets check if the book keeping is
 -- correct by running "mtn status" and "mtn ls changed" - there should
@@ -56,10 +52,6 @@ check(qgrep("modified too", "otherfile"))
 
 
 -- TODO: perform revert to right as well
--- TODO: check for ancestor\nancestor
---check(qgrep("ancestor", "testfile"))
---check(not qgrep("left", "testfile"))
---check(not qgrep("right", "testfile"))
-
---check(qgrep("blah blah", "otherfile"))
+-- check(samelines("testfile", { "ancestor", "right" } )
+-- check(samelines("otherfile", { "blah blah" } )
 
