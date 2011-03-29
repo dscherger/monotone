@@ -173,6 +173,9 @@ public:
 
   bool hook_get_man_page_formatter_command(string & command);
 
+  bool hook_get_output_color(string const purpose, string & fg,
+                             string & bg, string & style);
+
   // notification hooks
   bool hook_note_commit(revision_id const & new_id,
                         revision_data const & rdat,

@@ -11,13 +11,14 @@
 #define __ASCIIK_HH__
 
 #include <set>
+#include "colorizer.hh"
 #include "vector.hh"
 #include "vocab.hh"
 
 class asciik
 {
 public:
-  asciik(std::ostream & os, size_t min_width = 0);
+  asciik(std::ostream & os, colorizer const & color, size_t min_width = 0);
   // Prints an ASCII-k chunk using the given revisions.
   // Multiple lines are supported in annotation (the graph will stretch
   // accordingly); empty newlines at the end will be removed.
@@ -41,6 +42,7 @@ private:
   // internal state
   size_t width;
   std::ostream & output;
+  colorizer const & color;
   std::vector<revision_id> curr_row;
 };
 
