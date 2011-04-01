@@ -15,7 +15,7 @@ server = netsync.start({"--rcfile=deny-automate.lua"})
 local errors = run_remote_stdio(server, "l17:interface_versione", 1, 0, "e")
 check(
     table.maxn(errors) == 1 and
-    errors[1] == "misuse: Sorry, you aren't allowed to do that."
+    errors[1] == "misuse: sorry, you aren't allowed to do that."
 )
 
 server:stop()
