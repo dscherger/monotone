@@ -23,8 +23,8 @@ template<typename From, typename To>
 void typecast_vocab_container(From const & from, To & to)
 {
   std::transform(from.begin(), from.end(), std::inserter(to, to.end()),
-                 &typecast_vocab<typename To::value_type,
-                 typename From::value_type>);
+                 &typecast_vocab < typename To::value_type,
+                 typename From::value_type > );
 }
 
 // You won't use this directly either.
@@ -40,8 +40,8 @@ template<typename From, typename To>
 void add_decoration_to_container(From const & from, To & to)
 {
   std::transform(from.begin(), from.end(), std::inserter(to, to.end()),
-                 &add_decoration<typename To::value_type,
-                 typename From::value_type>);
+                 &add_decoration < typename To::value_type,
+                 typename From::value_type > );
 }
 
 template<typename From, typename To>

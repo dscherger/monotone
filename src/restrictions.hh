@@ -57,28 +57,28 @@
 namespace restricted_path
 {
   enum status
-    {
-      included,
-      excluded,
-      required,
-      included_required,
-      excluded_required
-    };
+  {
+    included,
+    excluded,
+    required,
+    included_required,
+    excluded_required
+  };
 }
 
 class restriction
 {
- public:
+public:
   bool empty() const
   { return included_paths.empty() && excluded_paths.empty(); }
 
   enum include_rules
-    {
-      explicit_includes,
-      implicit_includes
-    };
+  {
+    explicit_includes,
+    implicit_includes
+  };
 
- protected:
+protected:
   restriction() : depth(-1) {}
 
   restriction(std::vector<file_path> const & includes,
@@ -91,7 +91,7 @@ class restriction
 
 class node_restriction : public restriction
 {
- public:
+public:
   node_restriction() : restriction() {}
 
   node_restriction(std::vector<file_path> const & includes,
@@ -132,14 +132,14 @@ class node_restriction : public restriction
     return *this;
   }
 
- private:
+private:
   std::set<file_path> known_paths;
   std::map<node_id, restricted_path::status> node_map;
 };
 
 class path_restriction : public restriction
 {
- public:
+public:
   enum skip_check_t { skip_check };
 
   path_restriction() : restriction() {}
@@ -158,7 +158,7 @@ class path_restriction : public restriction
 
   bool includes(file_path const & sp) const;
 
- private:
+private:
   std::map<file_path, restricted_path::status> path_map;
 };
 

@@ -111,7 +111,7 @@ class my_iprint_calc : public inodeprint_calculator
   std::string res;
   Botan::SHA_160 hash;
   bool too_close;
-  void add_item(void *dat, size_t size)
+  void add_item(void * dat, size_t size)
   {
     hash.update(reinterpret_cast<Botan::byte const *>(&size),
                 sizeof(size));

@@ -18,9 +18,9 @@
 
 typedef std::pair<file_path const, hexenc<inodeprint> > inodeprint_entry;
 
-typedef std::map<file_path, hexenc<inodeprint>,
-                 std::less<file_path>,
-                 QA(inodeprint_entry) > inodeprint_map;
+typedef std::map < file_path, hexenc<inodeprint>,
+        std::less<file_path>,
+        QA(inodeprint_entry) > inodeprint_map;
 
 std::ostream & operator<<(std::ostream & out, inodeprint_entry const & e);
 
@@ -40,9 +40,9 @@ inodeprint_unchanged(inodeprint_map const & ipm, file_path const & path)
     {
       hexenc<inodeprint> ip;
       if (inodeprint_file(path, ip) && ip == old_ip->second)
-          return true; // unchanged
+        return true; // unchanged
       else
-          return false; // changed or unavailable
+        return false; // changed or unavailable
     }
   else
     return false; // unavailable

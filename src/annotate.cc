@@ -238,7 +238,7 @@ shared_ptr<annotate_lineage_mapping>
 annotate_context::initial_lineage() const
 {
   shared_ptr<annotate_lineage_mapping>
-    res(new annotate_lineage_mapping(file_lines));
+  res(new annotate_lineage_mapping(file_lines));
   return res;
 }
 
@@ -317,7 +317,7 @@ annotate_context::annotate_equivalent_lines()
 {
   revision_id null_id;
 
-  for (size_t i=0; i<annotations.size(); i++)
+  for (size_t i = 0; i < annotations.size(); i++)
     {
       if (annotations[i] == null_id)
         {
@@ -379,10 +379,10 @@ cert_date_value(vector<cert> const & certs,
                 bool from_start, bool from_end,
                 string const & fmt)
 {
-    string certval = cert_string_value(certs, name, from_start, from_end, "");
-    if (fmt.empty() || certval.empty())
-        return certval;
-    return date_t(certval).as_formatted_localtime(fmt);
+  string certval = cert_string_value(certs, name, from_start, from_end, "");
+  if (fmt.empty() || certval.empty())
+    return certval;
+  return date_t(certval).as_formatted_localtime(fmt);
 }
 
 void
@@ -543,7 +543,7 @@ annotate_lineage_mapping::init_with_lines(vector<string> const & lines)
 
   int count;
   vector<string>::const_iterator i;
-  for (count=0, i = lines.begin(); i != lines.end(); i++, count++)
+  for (count = 0, i = lines.begin(); i != lines.end(); i++, count++)
     {
       file_interned.push_back(in.intern(*i));
       mapping.push_back(count);
@@ -560,7 +560,7 @@ annotate_lineage_mapping::build_parent_lineage
 {
   bool verbose = false;
   shared_ptr<annotate_lineage_mapping>
-    parent_lineage(new annotate_lineage_mapping(parent_data));
+  parent_lineage(new annotate_lineage_mapping(parent_data));
 
   vector<long, QA(long)> lcs;
   back_insert_iterator< vector<long, QA(long)> > bii(lcs);
@@ -660,7 +660,7 @@ annotate_lineage_mapping::merge(annotate_lineage_mapping const & other,
   I(mapping.size() == other.mapping.size());
   //I(equal_interned(other)); // expensive check
 
-  for (size_t i=0; i<mapping.size(); i++)
+  for (size_t i = 0; i < mapping.size(); i++)
     {
       if (mapping[i] == -1 && other.mapping[i] >= 0)
         mapping[i] = other.mapping[i];
@@ -686,7 +686,7 @@ annotate_lineage_mapping::credit_mapped_lines
 (shared_ptr<annotate_context> acp) const
 {
   vector<int>::const_iterator i;
-  for (i=mapping.begin(); i != mapping.end(); i++)
+  for (i = mapping.begin(); i != mapping.end(); i++)
     {
       acp->set_touched(*i);
     }
@@ -697,7 +697,7 @@ annotate_lineage_mapping::set_copied_all_mapped
 (shared_ptr<annotate_context> acp) const
 {
   vector<int>::const_iterator i;
-  for (i=mapping.begin(); i != mapping.end(); i++)
+  for (i = mapping.begin(); i != mapping.end(); i++)
     {
       acp->set_copied(*i);
     }
@@ -784,9 +784,9 @@ do_annotate_node(database & db,
           L(FL("building parent lineage for parent file %s")
             % file_in_parent);
           parent_lineage
-            = work_unit.lineage->build_parent_lineage(work_unit.annotations,
-                                                      parent_revision,
-                                                      data);
+          = work_unit.lineage->build_parent_lineage(work_unit.annotations,
+                                                    parent_revision,
+                                                    data);
         }
 
       // If this parent has not yet been queued for processing, create the
@@ -849,10 +849,10 @@ do_annotate (app_state & app, project_t & project, const_file_t file_node,
     % file_node->self % file_node->content % rid);
 
   shared_ptr<annotate_context>
-    acp(new annotate_context(app, project, file_node->content));
+  acp(new annotate_context(app, project, file_node->content));
 
   shared_ptr<annotate_lineage_mapping> lineage
-    = acp->initial_lineage();
+  = acp->initial_lineage();
 
   work_units work_units;
   {

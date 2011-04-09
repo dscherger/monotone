@@ -39,30 +39,32 @@ dump_stack(lua_State * st)
   string out;
   int i;
   int top = lua_gettop(st);
-  for (i = 1; i <= top; i++) {  /* repeat for each level */
-    int t = lua_type(st, i);
-    switch (t) {
-    case LUA_TSTRING:  /* strings */
-      out += '`';
-      out += string(lua_tostring(st, i), lua_strlen(st, i));
-      out += '\'';
-      break;
+  for (i = 1; i <= top; i++)    /* repeat for each level */
+    {
+      int t = lua_type(st, i);
+      switch (t)
+        {
+        case LUA_TSTRING:  /* strings */
+          out += '`';
+          out += string(lua_tostring(st, i), lua_strlen(st, i));
+          out += '\'';
+          break;
 
-    case LUA_TBOOLEAN:  /* booleans */
-      out += (lua_toboolean(st, i) ? "true" : "false");
-      break;
+        case LUA_TBOOLEAN:  /* booleans */
+          out += (lua_toboolean(st, i) ? "true" : "false");
+          break;
 
-    case LUA_TNUMBER:  /* numbers */
-      out += (FL("%g") % lua_tonumber(st, i)).str();
-      break;
+        case LUA_TNUMBER:  /* numbers */
+          out += (FL("%g") % lua_tonumber(st, i)).str();
+          break;
 
-    default:  /* other values */
-      out += std::string(lua_typename(st, t));
-      break;
+        default:  /* other values */
+          out += std::string(lua_typename(st, t));
+          break;
 
+        }
+      out += "  ";  /* put a separator */
     }
-    out += "  ";  /* put a separator */
-  }
   return out;
 }
 
@@ -358,7 +360,7 @@ Lua::set_table(int idx)
 }
 
 Lua &
-Lua::set_field(const string& key, int idx)
+Lua::set_field(const string & key, int idx)
 {
   if (failed) return *this;
   lua_setfield(st, idx, key.c_str());
@@ -480,7 +482,7 @@ void add_functions(lua_State * st)
 
 LUAEXT(include, )
 {
-  const char *path = luaL_checkstring(LS, -1);
+  const char * path = luaL_checkstring(LS, -1);
   E(path, origin::user,
     F("%s called with an invalid parameter") % "Include");
 
@@ -492,7 +494,7 @@ LUAEXT(include, )
 
 LUAEXT(includedir, )
 {
-  const char *pathstr = luaL_checkstring(LS, -1);
+  const char * pathstr = luaL_checkstring(LS, -1);
   E(pathstr, origin::user,
     F("%s called with an invalid parameter") % "IncludeDir");
 
@@ -503,8 +505,8 @@ LUAEXT(includedir, )
 
 LUAEXT(includedirpattern, )
 {
-  const char *pathstr = luaL_checkstring(LS, -2);
-  const char *pattern = luaL_checkstring(LS, -1);
+  const char * pathstr = luaL_checkstring(LS, -2);
+  const char * pattern = luaL_checkstring(LS, -1);
   E(pathstr && pattern, origin::user,
     F("%s called with an invalid parameter") % "IncludeDirPattern");
 
@@ -515,23 +517,26 @@ LUAEXT(includedirpattern, )
 
 LUAEXT(search, regex)
 {
-  const char *re = luaL_checkstring(LS, -2);
-  const char *str = luaL_checkstring(LS, -1);
+  const char * re = luaL_checkstring(LS, -2);
+  const char * str = luaL_checkstring(LS, -1);
 
   bool result = false;
-  try {
-    result = pcre::regex(re, origin::user).match(str, origin::user);
-  } catch (recoverable_failure & e) {
-    lua_pushstring(LS, e.what());
-    return lua_error(LS);
-  }
+  try
+    {
+      result = pcre::regex(re, origin::user).match(str, origin::user);
+    }
+  catch (recoverable_failure & e)
+    {
+      lua_pushstring(LS, e.what());
+      return lua_error(LS);
+    }
   lua_pushboolean(LS, result);
   return 1;
 }
 
 LUAEXT(gettext, )
 {
-  const char *msgid = luaL_checkstring(LS, -1);
+  const char * msgid = luaL_checkstring(LS, -1);
   lua_pushstring(LS, gettext(msgid));
   return 1;
 }
@@ -543,7 +548,7 @@ run_string(lua_State * st, char const * str, char const * identity)
   return
     Lua(st)
     .loadstring(str, identity)
-    .call(0,1)
+    .call(0, 1)
     .ok();
 }
 
@@ -554,7 +559,7 @@ run_file(lua_State * st, char const * filename)
   return
     Lua(st)
     .loadfile(filename)
-    .call(0,1)
+    .call(0, 1)
     .ok();
 }
 
@@ -606,13 +611,13 @@ run_directory(lua_State * st, char const * pathstr, char const * pattern)
   }
 
   sort(arr.begin(), arr.end());
-  for (vector<string>::iterator i= arr.begin(); i != arr.end(); ++i)
+  for (vector<string>::iterator i = arr.begin(); i != arr.end(); ++i)
     {
       L(FL("opening rcfile '%s'") % *i);
       bool res = Lua(st)
-        .loadfile(i->c_str())
-        .call(0,1)
-        .ok();
+                 .loadfile(i->c_str())
+                 .call(0, 1)
+                 .ok();
       E(res, origin::user, F("lua error while loading rcfile '%s'") % *i);
       L(FL("'%s' is ok") % *i);
     }

@@ -11,7 +11,8 @@
 #define __HASHMAP_HH
 
 #include <functional>
-namespace hashmap {
+namespace hashmap
+{
 
   template<typename T>
   class equal_to : public std::equal_to<T>
@@ -56,7 +57,8 @@ namespace hashmap {
 #include <tr1/unordered_map>
 #include <tr1/unordered_set>
 
-namespace hashmap {
+namespace hashmap
+{
   template<>
   struct hash<std::string>
   {
@@ -67,24 +69,24 @@ namespace hashmap {
   };
 
   template<typename _Key, typename _Value>
-  class hash_map : public std::tr1::unordered_map<_Key,
-                                                  _Value,
-                                                  hash<_Key>,
-                                                  equal_to<_Key> >
-  {};
+  class hash_map : public std::tr1::unordered_map < _Key,
+    _Value,
+    hash<_Key>,
+    equal_to<_Key> >
+{};
 
   template<typename _Key>
-  class hash_set : public std::tr1::unordered_set<_Key,
-                                                  hash<_Key>,
-                                                  equal_to<_Key> >
-  {};
+  class hash_set : public std::tr1::unordered_set < _Key,
+    hash<_Key>,
+    equal_to<_Key> >
+{};
 
   template<typename _Key, typename _Value>
-  class hash_multimap : public std::tr1::unordered_multimap<_Key,
-                                                            _Value,
-                                                            hash<_Key>,
-                                                            equal_to<_Key> >
-  {};
+  class hash_multimap : public std::tr1::unordered_multimap < _Key,
+    _Value,
+    hash<_Key>,
+    equal_to<_Key> >
+{};
 }
 
 #elif defined(HAVE_GNUCXX_HASHMAP)
@@ -92,7 +94,8 @@ namespace hashmap {
 #include <ext/hash_map>
 #include <ext/hash_set>
 
-namespace hashmap {
+namespace hashmap
+{
   template<>
   struct hash<std::string>
   {
@@ -103,24 +106,24 @@ namespace hashmap {
   };
 
   template<typename _Key, typename _Value>
-  class hash_map : public __gnu_cxx::hash_map<_Key,
-                                              _Value,
-                                              hash<_Key>,
-                                              equal_to<_Key> >
-  {};
+  class hash_map : public __gnu_cxx::hash_map < _Key,
+    _Value,
+    hash<_Key>,
+    equal_to<_Key> >
+{};
 
   template<typename _Key>
-  class hash_set : public __gnu_cxx::hash_set<_Key,
-                                              hash<_Key>,
-                                              equal_to<_Key> >
-  {};
+  class hash_set : public __gnu_cxx::hash_set < _Key,
+    hash<_Key>,
+    equal_to<_Key> >
+{};
 
   template<typename _Key, typename _Value>
-  class hash_multimap : public __gnu_cxx::hash_multimap<_Key,
-                                                        _Value,
-                                                        hash<_Key>,
-                                                        equal_to<_Key> >
-  {};
+  class hash_multimap : public __gnu_cxx::hash_multimap < _Key,
+    _Value,
+    hash<_Key>,
+    equal_to<_Key> >
+{};
 
 
 }
@@ -130,39 +133,40 @@ namespace hashmap {
 #include <hash_map>
 #include <hash_set>
 
-namespace hashmap {
+namespace hashmap
+{
   template<>
   struct hash<std::string>
   {
     size_t operator()(std::string const & s) const
     {
-      const char* s2=s.c_str();
+      const char * s2 = s.c_str();
       unsigned long h = 0;
       for ( ; *s2; ++s2)
-        h = 5*h + *s2;
+        h = 5 * h + *s2;
       return size_t(h);
     }
   };
 
   template<typename _Key, typename _Value>
-  class hash_map : public std::hash_map<_Key,
-                                        _Value,
-                                        hash<_Key>,
-                                        equal_to<_Key> >
-  {};
+  class hash_map : public std::hash_map < _Key,
+    _Value,
+    hash<_Key>,
+    equal_to<_Key> >
+{};
 
   template<typename _Key>
-  class hash_set : public std::hash_set<_Key,
-                                        hash<_Key>,
-                                        equal_to<_Key> >
-  {};
+  class hash_set : public std::hash_set < _Key,
+    hash<_Key>,
+    equal_to<_Key> >
+{};
 
   template<typename _Key, typename _Value>
-  class hash_multimap : public std::hash_multimap<_Key,
-                                                  _Value,
-                                                  hash<_Key>,
-                                                  equal_to<_Key> >
-  {};
+  class hash_multimap : public std::hash_multimap < _Key,
+    _Value,
+    hash<_Key>,
+    equal_to<_Key> >
+{};
 }
 
 #elif _MSC_VER
@@ -177,10 +181,10 @@ namespace hashmap
   {
     size_t operator()(std::string const & s) const
     {
-      const char* s2=s.c_str();
+      const char * s2 = s.c_str();
       unsigned long h = 0;
       for ( ; *s2; ++s2)
-        h = 5*h + *s2;
+        h = 5 * h + *s2;
       return size_t(h);
     }
   };
@@ -204,18 +208,18 @@ namespace hashmap
     }
   };
   template <typename _Key, typename _Value>
-  struct hash_map : public stdext::hash_map<_Key,
-                                            _Value,
-                                            hash_traits<_Key> >
+  struct hash_map : public stdext::hash_map < _Key,
+    _Value,
+    hash_traits<_Key> >
   {};
   template <typename _Key, typename _Value>
-  struct hash_multimap : public stdext::hash_multimap<_Key,
-                                                      _Value,
-                                                      hash_traits<_Key> >
+  struct hash_multimap : public stdext::hash_multimap < _Key,
+    _Value,
+    hash_traits<_Key> >
   {};
   template <typename _Key>
-  struct hash_set : public stdext::hash_set<_Key,
-                                            hash_traits<_Key> >
+  struct hash_set : public stdext::hash_set < _Key,
+    hash_traits<_Key> >
   {};
 }
 #endif

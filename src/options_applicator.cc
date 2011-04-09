@@ -25,7 +25,7 @@ public:
 };
 
 options_applicator::options_applicator(options const & opts,
-				       options_applicator::for_what what)
+                                       options_applicator::for_what what)
   : _impl(new options_applicator_impl())
 {
   _impl->what = what;
@@ -47,15 +47,15 @@ options_applicator::options_applicator(options const & opts,
   else
     {
       if (opts.ticker == "none")
-	ui.set_tick_write_nothing();
+        ui.set_tick_write_nothing();
       else if (opts.ticker == "dot")
-	ui.set_tick_write_dot();
+        ui.set_tick_write_dot();
       else if (opts.ticker == "count")
-	ui.set_tick_write_count();
+        ui.set_tick_write_count();
       else if (opts.ticker == "stdio")
-	ui.set_tick_write_stdio();
+        ui.set_tick_write_stdio();
       else
-	I(opts.ticker.empty());
+        I(opts.ticker.empty());
     }
 }
 

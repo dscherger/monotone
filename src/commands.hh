@@ -19,7 +19,8 @@ class utf8;
 // possibly from the command line and possibly internal scripting if we ever
 // bind tcl or lua or something in here
 
-namespace commands {
+namespace commands
+{
   typedef std::vector< utf8 > command_id;
   class command;
   class automate;

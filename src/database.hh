@@ -182,7 +182,7 @@ public:
   void get_reverse_ancestry(rev_ancestry_map & graph);
 
   void get_revision_parents(revision_id const & ident,
-                           std::set<revision_id> & parents);
+                            std::set<revision_id> & parents);
 
   void get_revision_children(revision_id const & ident,
                              std::set<revision_id> & children);
@@ -302,18 +302,18 @@ public:
   void record_as_branch_leaf(cert_value const & branch, revision_id const & rev);
 
   // this variant has to be rather coarse and fast, for netsync's use
-  outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<revision_id,
-                              std::pair<revision_id, key_id> > > & idx);
+  outdated_indicator get_revision_cert_nobranch_index(std::vector < std::pair < revision_id,
+                                                      std::pair<revision_id, key_id> > > & idx);
 
   // Only used by database_check.cc
   outdated_indicator get_revision_certs(std::vector<cert> & certs);
 
   outdated_indicator get_revision_certs(cert_name const & name,
-                          std::vector<cert> & certs);
+                                        std::vector<cert> & certs);
 
   outdated_indicator get_revision_certs(revision_id const & ident,
-                          cert_name const & name,
-                          std::vector<cert> & certs);
+                                        cert_name const & name,
+                                        std::vector<cert> & certs);
 
   // Only used by get_branch_certs (project.cc)
   outdated_indicator get_revision_certs(cert_name const & name,
@@ -322,14 +322,14 @@ public:
 
   // Only used by revision_is_in_branch (project.cc)
   outdated_indicator get_revision_certs(revision_id const & ident,
-                          cert_name const & name,
-                          cert_value const & value,
-                          std::vector<cert> & certs);
+                                        cert_name const & name,
+                                        cert_value const & value,
+                                        std::vector<cert> & certs);
 
   // Only used by get_branch_heads (project.cc)
   outdated_indicator get_revisions_with_cert(cert_name const & name,
-                               cert_value const & value,
-                               std::set<revision_id> & revisions);
+                                             cert_value const & value,
+                                             std::set<revision_id> & revisions);
 
   // Used by get_branch_heads (project.cc)
   // Will also be needed by daggy-refinement, if/when implemented
@@ -343,18 +343,18 @@ public:
 
   // Used through project.cc
   outdated_indicator get_revision_certs(revision_id const & ident,
-                          std::vector<cert> & certs);
+                                        std::vector<cert> & certs);
 
   // Used through get_revision_cert_hashes (project.cc)
   outdated_indicator get_revision_certs(revision_id const & ident,
-                          std::vector<id> & hashes);
+                                        std::vector<id> & hashes);
 
   void get_revision_cert(id const & hash, cert & c);
 
-  typedef boost::function<bool(std::set<key_id> const &,
-                               id const &,
-                               cert_name const &,
-                               cert_value const &)> cert_trust_checker;
+  typedef boost::function < bool(std::set<key_id> const &,
+                                 id const &,
+                                 cert_name const &,
+                                 cert_value const &) > cert_trust_checker;
   // this takes a project_t so it can translate key names for the trust hook
   void erase_bogus_certs(project_t const & project, std::vector<cert> & certs);
   // permit alternative trust functions
@@ -402,8 +402,8 @@ public:
   //
 public:
   void prefix_matching_constraint(std::string const & colname,
-                                   std::string const & prefix,
-                                   std::string & constraint);
+                                  std::string const & prefix,
+                                  std::string & constraint);
 
   void complete(std::string const & partial,
                 std::set<revision_id> & completions);
@@ -574,9 +574,9 @@ class conditional_transaction_guard
   bool acquired;
   bool const exclusive;
 public:
-  conditional_transaction_guard(database & db, bool exclusive=true,
-                                size_t checkpoint_batch_size=1000,
-                                size_t checkpoint_batch_bytes=0xfffff)
+  conditional_transaction_guard(database & db, bool exclusive = true,
+                                size_t checkpoint_batch_size = 1000,
+                                size_t checkpoint_batch_bytes = 0xfffff)
     : db(db),
       checkpoint_batch_size(checkpoint_batch_size),
       checkpoint_batch_bytes(checkpoint_batch_bytes),
@@ -595,9 +595,9 @@ public:
 class transaction_guard : public conditional_transaction_guard
 {
 public:
-  transaction_guard(database & d, bool exclusive=true,
-                    size_t checkpoint_batch_size=1000,
-                    size_t checkpoint_batch_bytes=0xfffff)
+  transaction_guard(database & d, bool exclusive = true,
+                    size_t checkpoint_batch_size = 1000,
+                    size_t checkpoint_batch_bytes = 0xfffff)
     : conditional_transaction_guard(d, exclusive, checkpoint_batch_size,
                                     checkpoint_batch_bytes)
   {

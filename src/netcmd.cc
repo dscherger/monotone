@@ -58,17 +58,17 @@ size_t netcmd::encoded_size() const
   string tmp;
   insert_datum_uleb128<size_t>(payload.size(), tmp);
   return 1 // netsync version
-       + 1 // command code
-       + tmp.size() + payload.size() // payload as vstring
-       + constants::netsync_hmac_value_length_in_bytes; // hmac
+         + 1 // command code
+         + tmp.size() + payload.size() // payload as vstring
+         + constants::netsync_hmac_value_length_in_bytes; // hmac
 }
 
 bool
 netcmd::operator==(netcmd const & other) const
 {
   return version == other.version &&
-    cmd_code == other.cmd_code &&
-    payload == other.payload;
+         cmd_code == other.cmd_code &&
+         payload == other.payload;
 }
 
 // note: usher_reply_cmd does not get included in the hmac.
@@ -129,7 +129,7 @@ netcmd::read(u8 min_version, u8 max_version,
       // error immediately after this switch.
       if (!too_old && !too_new)
         throw bad_decode(F("unknown netcmd code 0x%x")
-                          % widen<u32,u8>(cmd_byte));
+                         % widen<u32, u8>(cmd_byte));
     }
   // check that the version is reasonable
   if (cmd_code != usher_cmd)
@@ -138,10 +138,10 @@ netcmd::read(u8 min_version, u8 max_version,
         {
           throw bad_decode(F("protocol version mismatch: wanted between '%d' and '%d' got '%d' (netcmd code %d)\n"
                              "%s")
-                           % widen<u32,u8>(min_version)
-                           % widen<u32,u8>(max_version)
-                           % widen<u32,u8>(extracted_ver)
-                           % widen<u32,u8>(cmd_code)
+                           % widen<u32, u8>(min_version)
+                           % widen<u32, u8>(max_version)
+                           % widen<u32, u8>(extracted_ver)
+                           % widen<u32, u8>(cmd_code)
                            % ((max_version < extracted_ver)
                               ? _("the remote side has a newer, incompatible version of monotone")
                               : _("the remote side has an older, incompatible version of monotone")));
@@ -152,8 +152,8 @@ netcmd::read(u8 min_version, u8 max_version,
   // check to see if we have even enough bytes for a complete uleb128
   size_t payload_len = 0;
   if (!try_extract_datum_uleb128<size_t>(inbuf, pos, "netcmd payload length",
-      payload_len))
-      return false;
+                                         payload_len))
+    return false;
 
   // they might have given us a bogus size
   if (payload_len > constants::netcmd_payload_limit)
@@ -298,7 +298,7 @@ netcmd::read_anonymous_cmd(protocol_role & role,
   if (role_byte != static_cast<u8>(source_role)
       && role_byte != static_cast<u8>(sink_role)
       && role_byte != static_cast<u8>(source_and_sink_role))
-    throw bad_decode(F("unknown role specifier %d") % widen<u32,u8>(role_byte));
+    throw bad_decode(F("unknown role specifier %d") % widen<u32, u8>(role_byte));
   role = static_cast<protocol_role>(role_byte);
   string pattern_string;
   extract_variable_length_string(payload, pattern_string, pos,
@@ -344,7 +344,7 @@ netcmd::read_auth_cmd(protocol_role & role,
   if (role_byte != static_cast<u8>(source_role)
       && role_byte != static_cast<u8>(sink_role)
       && role_byte != static_cast<u8>(source_and_sink_role))
-    throw bad_decode(F("unknown role specifier %d") % widen<u32,u8>(role_byte));
+    throw bad_decode(F("unknown role specifier %d") % widen<u32, u8>(role_byte));
   role = static_cast<protocol_role>(role_byte);
   string pattern_string;
   extract_variable_length_string(payload, pattern_string, pos,
@@ -413,9 +413,9 @@ netcmd::read_refine_cmd(refinement_type & ty, merkle_node & node) const
   // syntax is: <u8: refinement type> <node: a merkle tree node>
   size_t pos = 0;
   ty = static_cast<refinement_type>
-    (extract_datum_lsb<u8>
-     (payload, pos,
-      "refine netcmd, refinement type"));
+       (extract_datum_lsb<u8>
+        (payload, pos,
+         "refine netcmd, refinement type"));
   read_node(payload, pos, node);
   assert_end_of_buffer(payload, pos, "refine cmd");
 }
@@ -468,14 +468,14 @@ netcmd::read_data_cmd(netcmd_item_type & type,
   u8 compressed_p = extract_datum_lsb<u8>(payload, pos,
                                           "data netcmd, compression flag");
   extract_variable_length_string(payload, dat, pos,
-                                  "data netcmd, data payload");
+                                 "data netcmd, data payload");
   if (compressed_p == 1)
-  {
-    gzip<data> zdat(dat, origin::network);
-    data tdat;
-    decode_gzip(zdat, tdat);
-    dat = tdat();
-  }
+    {
+      gzip<data> zdat(dat, origin::network);
+      data tdat;
+      decode_gzip(zdat, tdat);
+      dat = tdat();
+    }
   assert_end_of_buffer(payload, pos, "data netcmd payload");
 }
 
@@ -640,7 +640,7 @@ netcmd::read_automate_headers_reply_cmd(vector<pair<string, string> > & headers)
 {
   size_t pos = 0;
   size_t nheaders = extract_datum_uleb128<size_t>(payload, pos,
-                                               "automate headers reply netcmd, count");
+                                                  "automate headers reply netcmd, count");
   headers.clear();
   for (size_t i = 0; i < nheaders; ++i)
     {
@@ -736,7 +736,7 @@ netcmd::read_automate_packet_cmd(int & command_num,
   command_num = int(extract_datum_uleb128<size_t>(payload, pos,
                                                   "automate_packet netcmd, command_num"));
   stream = char(extract_datum_uleb128<size_t>(payload, pos,
-                                        "automate_packet netcmd, stream"));
+                                              "automate_packet netcmd, stream"));
   extract_variable_length_string(payload, packet_data, pos,
                                  "automate_packet netcmd, packet_data");
   assert_end_of_buffer(payload, pos, "automate_packet netcmd payload");

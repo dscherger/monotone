@@ -23,7 +23,7 @@ struct lua_State;
 // destructed, so no need to pop values when you're done.
 
 struct
-Lua
+  Lua
 {
   lua_State * st;
   bool failed;
@@ -80,9 +80,9 @@ void add_functions(lua_State * st);
 
 namespace luaext
 {
-  typedef std::map<std::string, int (*)(lua_State*)> fmap;
+  typedef std::map<std::string, int ( *)(lua_State *)> fmap;
   typedef std::map<std::string, fmap> ftmap;
-  extern ftmap *fns;
+  extern ftmap * fns;
   struct extfn
   {
     extfn(std::string const & name, std::string const & table,

@@ -161,7 +161,7 @@ dump_diffs(lua_hooks & lua,
               // right_id is null
 
               path_node_data.insert(make_pair(dat.left_path, dat));
-          }
+            }
           break;
 
         case parallel::in_right:
@@ -200,7 +200,7 @@ dump_diffs(lua_hooks & lua,
     }
 
   for (std::multimap<file_path, diff_node_data>::iterator i = path_node_data.begin();
-         i != path_node_data.end(); ++i)
+       i != path_node_data.end(); ++i)
     {
       diff_node_data & dat = (*i).second;
       data left_data, right_data;
@@ -537,19 +537,19 @@ struct rev_cmp
   }
 };
 
-typedef priority_queue<pair<rev_height, revision_id>,
-                       vector<pair<rev_height, revision_id> >,
-                       rev_cmp> frontier_t;
+typedef priority_queue < pair<rev_height, revision_id>,
+        vector<pair<rev_height, revision_id> >,
+        rev_cmp > frontier_t;
 
 void
-log_print_rev (app_state &      app,
-               database &       db,
-               project_t &      project,
+log_print_rev (app_state    &   app,
+               database    &    db,
+               project_t    &   project,
                revision_id      rid,
-               revision_t &     rev,
+               revision_t   &   rev,
                string           date_fmt,
                node_restriction mask,
-               ostream &        out)
+               ostream     &    out)
 {
   cert_name const author_name(author_cert_name);
   cert_name const date_name(date_cert_name);
@@ -665,16 +665,19 @@ log_common (app_state & app,
            i != rev.edges.end(); i++)
         {
           revision_id rid = edge_old_revision(i);
-          if ((FL("%s") % rid).str().empty()) {
-            W(F("workspace has no parent revision, probably an empty branch"));
-          } else {
-            E(db.revision_exists(rid), origin::user,
-              F("workspace parent revision %s not found - "
-                "did you specify a wrong database?") % rid);
-            starting_revs.insert(rid);
-            if (i == rev.edges.begin())
-              first_rid = rid;
-          }
+          if ((FL("%s") % rid).str().empty())
+            {
+              W(F("workspace has no parent revision, probably an empty branch"));
+            }
+          else
+            {
+              E(db.revision_exists(rid), origin::user,
+                F("workspace parent revision %s not found - "
+                  "did you specify a wrong database?") % rid);
+              starting_revs.insert(rid);
+              if (i == rev.edges.begin())
+                first_rid = rid;
+            }
         }
     }
   else if (!app.opts.from.empty())
@@ -880,7 +883,7 @@ log_common (app_state & app,
                   marked_revs.insert(marks->parent_name.begin(),
                                      marks->parent_name.end());
                   for (map<attr_key, set<revision_id> >::const_iterator
-                         a = marks->attrs.begin(); a != marks->attrs.end(); ++a)
+                       a = marks->attrs.begin(); a != marks->attrs.end(); ++a)
                     marked_revs.insert(a->second.begin(), a->second.end());
                 }
             }
@@ -910,7 +913,7 @@ log_common (app_state & app,
       if (app.opts.no_merges && rev.is_merge_node())
         print_this = false;
       else if (!app.opts.revision.empty() &&
-          selected_revs.find(rid) == selected_revs.end())
+               selected_revs.find(rid) == selected_revs.end())
         print_this = false;
 
       set<revision_id> interesting;
@@ -994,10 +997,10 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
 CMD_AUTOMATE(log, N_("[PATH] ..."),
              N_("Lists the selected revision history"),
              "",
-    options::opts::last | options::opts::next |
-    options::opts::from | options::opts::to |
-    options::opts::depth | options::opts::exclude |
-    options::opts::no_merges)
+             options::opts::last | options::opts::next |
+             options::opts::from | options::opts::to |
+             options::opts::depth | options::opts::exclude |
+             options::opts::no_merges)
 {
   log_common (app, args, true, output);
 }

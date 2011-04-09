@@ -24,7 +24,7 @@ class project_t;
 // used for sending sections of the revision graph through netsync.
 
 struct
-enumerator_callbacks
+  enumerator_callbacks
 {
   // Your callback will be asked whether you want the details of each rev
   // or cert, in order; you should return true for any rev or cert you want
@@ -42,7 +42,7 @@ enumerator_callbacks
 };
 
 struct
-enumerator_item
+  enumerator_item
 {
   enum { fdata, fdelta, rev, cert } tag;
   id ident_a;
@@ -50,7 +50,7 @@ enumerator_item
 };
 
 class
-revision_enumerator
+  revision_enumerator
 {
   project_t & project;
   enumerator_callbacks & cb;
@@ -65,7 +65,7 @@ revision_enumerator
   bool all_parents_enumerated(revision_id const & child);
   void files_for_revision(revision_id const & r,
                           std::set<file_id> & full_files,
-                          std::set<std::pair<file_id,file_id> > & del_files);
+                          std::set<std::pair<file_id, file_id> > & del_files);
   void get_revision_certs(revision_id const & rid,
                           std::vector<id> & certs);
 

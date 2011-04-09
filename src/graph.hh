@@ -35,7 +35,7 @@ get_reconstruction_path(id const & start,
                         reconstruction_path & path);
 
 void toposort_rev_ancestry(rev_ancestry_map const & graph,
-                          std::vector<revision_id> & revisions);
+                           std::vector<revision_id> & revisions);
 
 struct rev_graph
 {

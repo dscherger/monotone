@@ -148,7 +148,7 @@ refiner::note_subtree_shared_with_peer(merkle_node const & our_node, size_t slot
 {
   prefix pref;
   our_node.extended_raw_prefix(slot, pref);
-  collect_items_in_subtree(table, pref, our_node.level+1, peer_items);
+  collect_items_in_subtree(table, pref, our_node.level + 1, peer_items);
 }
 
 refiner::refiner(netcmd_item_type type, protocol_voice voice, refiner_callbacks & cb)

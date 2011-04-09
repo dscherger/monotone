@@ -21,13 +21,13 @@ bool
 cert::operator<(cert const & other) const
 {
   return (ident < other.ident)
-    || ((ident == other.ident) && name < other.name)
-    || (((ident == other.ident) && name == other.name)
-        && value < other.value)
-    || ((((ident == other.ident) && name == other.name)
-         && value == other.value) && key < other.key)
-    || (((((ident == other.ident) && name == other.name)
-          && value == other.value) && key == other.key) && sig < other.sig);
+         || ((ident == other.ident) && name < other.name)
+         || (((ident == other.ident) && name == other.name)
+             && value < other.value)
+         || ((((ident == other.ident) && name == other.name)
+              && value == other.value) && key < other.key)
+         || (((((ident == other.ident) && name == other.name)
+               && value == other.value) && key == other.key) && sig < other.sig);
 }
 
 bool
@@ -54,7 +54,7 @@ read_cert(database & db, string const & in, cert & t,
                                  "cert hash"),
                origin::network);
   revision_id ident = revision_id(extract_substring(in, pos,
-                                  constants::merkle_hash_length_in_bytes,
+                                                    constants::merkle_hash_length_in_bytes,
                                                     "cert ident"),
                                   origin::network);
   string name, val, key, sig;
@@ -76,44 +76,44 @@ read_cert(database & db, string const & in, cert & t,
   switch(ver)
     {
     case read_cert_v6:
-      {
-        keyname = key_name(key, origin::network);
-        bool found = false;
-        std::vector<key_id> all_keys;
-        db.get_key_ids(all_keys);
-        for (std::vector<key_id>::const_iterator i = all_keys.begin();
-             i != all_keys.end(); ++i)
-          {
-            key_name i_keyname;
-            rsa_pub_key pub;
-            db.get_pubkey(*i, i_keyname, pub);
-            if (i_keyname() == key)
-              {
-                if(db.check_signature(*i, signable, tmp.sig) == cert_ok)
-                  {
-                    tmp.key = *i;
-                    found = true;
-                    break;
-                  }
-              }
-          }
-        if (!found)
-          {
-            return false;
-          }
-      }
-      break;
+    {
+      keyname = key_name(key, origin::network);
+      bool found = false;
+      std::vector<key_id> all_keys;
+      db.get_key_ids(all_keys);
+      for (std::vector<key_id>::const_iterator i = all_keys.begin();
+           i != all_keys.end(); ++i)
+        {
+          key_name i_keyname;
+          rsa_pub_key pub;
+          db.get_pubkey(*i, i_keyname, pub);
+          if (i_keyname() == key)
+            {
+              if(db.check_signature(*i, signable, tmp.sig) == cert_ok)
+                {
+                  tmp.key = *i;
+                  found = true;
+                  break;
+                }
+            }
+        }
+      if (!found)
+        {
+          return false;
+        }
+    }
+    break;
     case read_cert_current:
-      {
-        rsa_pub_key pub;
-        tmp.key = key_id(key, origin::network);
-        db.get_pubkey(tmp.key, keyname, pub);
-        if (db.check_signature(tmp.key, signable, tmp.sig) != cert_ok)
-          {
-            return false;
-          }
-      }
-      break;
+    {
+      rsa_pub_key pub;
+      tmp.key = key_id(key, origin::network);
+      db.get_pubkey(tmp.key, keyname, pub);
+      if (db.check_signature(tmp.key, signable, tmp.sig) != cert_ok)
+        {
+          return false;
+        }
+    }
+    break;
     default:
       I(false);
     }

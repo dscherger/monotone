@@ -92,9 +92,9 @@ public:
 
     size_t len = eol - offset;
     string line = message.substr(offset, len);
-    offset = eol+1;
+    offset = eol + 1;
 
-    if (message[eol] == '\r' && message.length() > eol+1 &&
+    if (message[eol] == '\r' && message.length() > eol + 1 &&
         message[eol+1] == '\n')
       offset++;
 
@@ -671,7 +671,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
 
   edge_entry const & old_edge (*rev.edges.begin());
   db.get_revision_manifest(edge_old_revision(old_edge),
-                               rev_inverse.new_manifest);
+                           rev_inverse.new_manifest);
   {
     roster_t old_roster, new_roster;
     db.get_roster(edge_old_revision(old_edge), old_roster);
@@ -698,11 +698,12 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
 
   project.get_branch_heads(app.opts.branch, heads,
                            app.opts.ignore_suspend_certs);
-  if (heads.size() > old_head_size && old_head_size > 0) {
-    P(F("note: this revision creates divergence\n"
-        "note: you may (or may not) wish to run '%s merge'")
-      % prog_name);
-  }
+  if (heads.size() > old_head_size && old_head_size > 0)
+    {
+      P(F("note: this revision creates divergence\n"
+          "note: you may (or may not) wish to run '%s merge'")
+        % prog_name);
+    }
   updater.maybe_do_update();
 }
 
@@ -725,7 +726,7 @@ CMD(mkdir, "mkdir", "", CMD_REF(workspace), N_("[DIRECTORY...]"),
     {
       file_path fp = file_path_external(*i);
       require_path_is_nonexistent
-        (fp, F("directory '%s' already exists") % fp);
+      (fp, F("directory '%s' already exists") % fp);
 
       // we'll treat this as a user (fatal) error.  it really wouldn't make
       // sense to add a dir to .mtn-ignore and then try to add it to the
@@ -765,7 +766,7 @@ void perform_add(app_state & app,
       work.find_unknown_and_ignored(db, mask, roots, paths, ignored);
 
       work.perform_additions(db, ignored,
-                                 add_recursive, !app.opts.no_ignore);
+                             add_recursive, !app.opts.no_ignore);
     }
   else
     paths = set<file_path>(roots.begin(), roots.end());
@@ -813,7 +814,7 @@ void perform_drop(app_state & app,
     }
 
   work.perform_deletions(db, paths,
-                             app.opts.recursive, app.opts.bookkeep_only);
+                         app.opts.recursive, app.opts.bookkeep_only);
 }
 CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
     N_("Drops files from the workspace"),
@@ -847,7 +848,7 @@ CMD(rename, "rename", "mv", CMD_REF(workspace),
   file_path dst_path = file_path_external(dstr);
 
   set<file_path> src_paths;
-  for (size_t i = 0; i < args.size()-1; i++)
+  for (size_t i = 0; i < args.size() - 1; i++)
     {
       file_path s = file_path_external(idx(args, i));
       src_paths.insert(s);
@@ -1081,7 +1082,7 @@ checkout_common(app_state & app,
 
     if (!checkout_dot)
       require_path_is_nonexistent
-        (dir, F("checkout directory '%s' already exists") % dir);
+      (dir, F("checkout directory '%s' already exists") % dir);
   }
 
   workspace::create_workspace(app.opts, app.lua, dir);
@@ -1123,12 +1124,12 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
 }
 
 CMD_AUTOMATE(checkout, N_("[DIRECTORY]"),
-    N_("Checks out a revision from the database into a directory"),
-    N_("If a revision is given, that's the one that will be checked out.  "
-       "Otherwise, it will be the head of the branch (given or implicit).  "
-       "If no directory is given, the branch name will be used as directory."),
-    options::opts::branch | options::opts::revision |
-    options::opts::move_conflicting_paths)
+             N_("Checks out a revision from the database into a directory"),
+             N_("If a revision is given, that's the one that will be checked out.  "
+                "Otherwise, it will be the head of the branch (given or implicit).  "
+                "If no directory is given, the branch name will be used as directory."),
+             options::opts::branch | options::opts::revision |
+             options::opts::move_conflicting_paths)
 {
   E(args.size() < 2, origin::user,
     F("wrong argument count"));
@@ -1345,7 +1346,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
   workspace work(app);
 
   // retrieve the path
-  file_path path = file_path_external(idx(args,0));
+  file_path path = file_path_external(idx(args, 0));
 
   roster_t base, current;
   parent_map parents;
@@ -1368,70 +1369,70 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
   const_node_t n = current.get_node(path);
   for (attr_map_t::const_iterator i = n->attrs.begin();
        i != n->attrs.end(); ++i)
-  {
-    std::string value(i->second.second());
-    std::string state;
+    {
+      std::string value(i->second.second());
+      std::string state;
 
-    // if if the first value of the value pair is false this marks a
-    // dropped attribute
-    if (!i->second.first)
-      {
-        // if the attribute is dropped, we should have a base roster
-        // with that node. we need to check that for the attribute as well
-        // because if it is dropped there as well it was already deleted
-        // in any previous revision
-        I(base.has_node(path));
+      // if if the first value of the value pair is false this marks a
+      // dropped attribute
+      if (!i->second.first)
+        {
+          // if the attribute is dropped, we should have a base roster
+          // with that node. we need to check that for the attribute as well
+          // because if it is dropped there as well it was already deleted
+          // in any previous revision
+          I(base.has_node(path));
 
-        const_node_t prev_node = base.get_node(path);
+          const_node_t prev_node = base.get_node(path);
 
-        // find the attribute in there
-        attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
-        I(j != prev_node->attrs.end());
+          // find the attribute in there
+          attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
+          I(j != prev_node->attrs.end());
 
-        // was this dropped before? then ignore it
-        if (!j->second.first) { continue; }
+          // was this dropped before? then ignore it
+          if (!j->second.first) { continue; }
 
-        state = "dropped";
-        // output the previous (dropped) value later
-        value = j->second.second();
-      }
-    // this marks either a new or an existing attribute
-    else
-      {
-        if (base.has_node(path))
-          {
-            const_node_t prev_node = base.get_node(path);
-            attr_map_t::const_iterator j =
-              prev_node->attrs.find(i->first);
+          state = "dropped";
+          // output the previous (dropped) value later
+          value = j->second.second();
+        }
+      // this marks either a new or an existing attribute
+      else
+        {
+          if (base.has_node(path))
+            {
+              const_node_t prev_node = base.get_node(path);
+              attr_map_t::const_iterator j =
+                prev_node->attrs.find(i->first);
 
-            // the attribute is new if it either hasn't been found
-            // in the previous roster or has been deleted there
-            if (j == prev_node->attrs.end() || !j->second.first)
-              {
-                state = "added";
-              }
-            // check if the attribute's value has been changed
-            else if (i->second.second() != j->second.second())
-              {
-                state = "changed";
-              }
-            else
-              {
-                state = "unchanged";
-              }
-          }
-        // its added since the whole node has been just added
-        else
-          {
-            state = "added";
-          }
-      }
+              // the attribute is new if it either hasn't been found
+              // in the previous roster or has been deleted there
+              if (j == prev_node->attrs.end() || !j->second.first)
+                {
+                  state = "added";
+                }
+              // check if the attribute's value has been changed
+              else if (i->second.second() != j->second.second())
+                {
+                  state = "changed";
+                }
+              else
+                {
+                  state = "unchanged";
+                }
+            }
+          // its added since the whole node has been just added
+          else
+            {
+              state = "added";
+            }
+        }
 
-    basic_io::stanza st;
-    st.push_str_triple(basic_io::syms::attr, i->first(), value);
-    st.push_str_pair(symbol("state"), state);
-    pr.print_stanza(st);
-  }
+      basic_io::stanza st;
+      st.push_str_triple(basic_io::syms::attr, i->first(), value);
+      st.push_str_pair(symbol("state"), state);
+      pr.print_stanza(st);
+    }
 
   // print the output
   output.write(pr.buf.data(), pr.buf.size());
@@ -1474,7 +1475,7 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
              "",
              options::opts::none)
 {
-  E(args.size() ==1 || args.size() == 2, origin::user,
+  E(args.size() == 1 || args.size() == 2, origin::user,
     F("wrong argument count"));
 
   drop_attr(app, args);
@@ -1664,7 +1665,7 @@ void perform_commit(app_state & app,
             cset const & cs = edge_changes(edge);
 
             for (map<file_path, pair<file_id, file_id> >::const_iterator
-                   i = cs.deltas_applied.begin();
+                 i = cs.deltas_applied.begin();
                  i != cs.deltas_applied.end(); ++i)
               {
                 file_path path = i->first;
@@ -1697,8 +1698,8 @@ void perform_commit(app_state & app,
                     delta del;
                     diff(old_data.inner(), new_data, del);
                     db.put_file_version(old_content,
-                                            new_content,
-                                            file_delta(del));
+                                        new_content,
+                                        file_delta(del));
                   }
                 else
                   // If we don't err out here, the database will later.
@@ -1708,7 +1709,7 @@ void perform_commit(app_state & app,
               }
 
             for (map<file_path, file_id>::const_iterator
-                   i = cs.files_added.begin();
+                 i = cs.files_added.begin();
                  i != cs.files_added.end(); ++i)
               {
                 file_path path = i->first;
@@ -1767,11 +1768,12 @@ void perform_commit(app_state & app,
 
   project.get_branch_heads(app.opts.branch, heads,
                            app.opts.ignore_suspend_certs);
-  if (heads.size() > old_head_size && old_head_size > 0) {
-    P(F("note: this revision creates divergence\n"
-        "note: you may (or may not) wish to run '%s merge'")
-      % prog_name);
-  }
+  if (heads.size() > old_head_size && old_head_size > 0)
+    {
+      P(F("note: this revision creates divergence\n"
+          "note: you may (or may not) wish to run '%s merge'")
+        % prog_name);
+    }
 
   work.maybe_update_inodeprints(db);
 
@@ -1819,9 +1821,9 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 }
 
 CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
-    N_("Sets up a new workspace directory"),
-    N_("If no directory is specified, uses the current directory."),
-    options::opts::branch)
+                 N_("Sets up a new workspace directory"),
+                 N_("If no directory is specified, uses the current directory."),
+                 options::opts::branch)
 {
   if (args.size() > 1)
     throw usage(execid);
@@ -1831,16 +1833,16 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
 
   string dir;
   if (args.size() == 1)
-      dir = idx(args,0)();
+    dir = idx(args, 0)();
   else
-      dir = ".";
+    dir = ".";
 
   system_path workspace_dir(dir, origin::user);
   system_path _MTN_dir(workspace_dir / bookkeeping_root_component);
 
   require_path_is_nonexistent
-    (_MTN_dir, F("bookkeeping directory already exists in '%s'")
-     % workspace_dir);
+  (_MTN_dir, F("bookkeeping directory already exists in '%s'")
+   % workspace_dir);
 
   // only try to remove the complete workspace directory
   // if we're about to create it anyways
@@ -1866,13 +1868,13 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
 }
 
 CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
-  N_("Imports the contents of a directory into a branch"),
-  "",
-  options::opts::branch | options::opts::revision |
-  options::opts::messages |
-  options::opts::dryrun |
-  options::opts::no_ignore | options::opts::exclude |
-  options::opts::author | options::opts::date)
+                 N_("Imports the contents of a directory into a branch"),
+                 "",
+                 options::opts::branch | options::opts::revision |
+                 options::opts::messages |
+                 options::opts::dryrun |
+                 options::opts::no_ignore | options::opts::exclude |
+                 options::opts::author | options::opts::date)
 {
   revision_id ident;
   system_path dir;
@@ -1921,14 +1923,14 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
 
   dir = system_path(idx(args, 0));
   require_path_is_directory
-    (dir,
-     F("import directory '%s' doesn't exists") % dir,
-     F("import directory '%s' is a file") % dir);
+  (dir,
+   F("import directory '%s' doesn't exists") % dir,
+   F("import directory '%s' is a file") % dir);
 
   system_path _MTN_dir = dir / path_component("_MTN");
 
   require_path_is_nonexistent
-    (_MTN_dir, F("bookkeeping directory already exists in '%s'") % dir);
+  (_MTN_dir, F("bookkeeping directory already exists in '%s'") % dir);
 
   directory_cleanup_helper remove_on_fail(_MTN_dir);
 
@@ -1961,9 +1963,9 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   // commit
   if (!app.opts.dryrun)
     {
-        perform_commit(app, db, work, project,
-                       make_command_id("workspace commit"),
-                       vector<file_path>());
+      perform_commit(app, db, work, project,
+                     make_command_id("workspace commit"),
+                     vector<file_path>());
       remove_on_fail.commit();
     }
   else
@@ -1975,10 +1977,10 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
 }
 
 CMD_NO_WORKSPACE(migrate_workspace, "migrate_workspace", "", CMD_REF(tree),
-  N_("[DIRECTORY]"),
-  N_("Migrates a workspace directory's metadata to the latest format"),
-  N_("If no directory is given, defaults to the current workspace."),
-  options::opts::none)
+                 N_("[DIRECTORY]"),
+                 N_("Migrates a workspace directory's metadata to the latest format"),
+                 N_("If no directory is given, defaults to the current workspace."),
+                 options::opts::none)
 {
   if (args.size() > 1)
     throw usage(execid);
@@ -2252,8 +2254,8 @@ operator<<(std::ostream & os,
       // update command to rerun a selection and update based on current
       // bisect information
       I(false);
-    break;
-  }
+      break;
+    }
   return os;
 }
 

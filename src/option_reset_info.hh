@@ -14,7 +14,8 @@
 
 #include "option.hh"
 
-namespace commands {
+namespace commands
+{
   class command;
 }
 

@@ -70,10 +70,10 @@ charset_convert(string const & src_charset,
 
       E(converted != NULL, whence,
         F("failed to convert string from %s to %s: '%s'")
-         % src_charset % dst_charset % src);
+        % src_charset % dst_charset % src);
       dst = string(converted);
       if (converted != src.c_str())
-        free(const_cast<char*>(converted));
+        free(const_cast<char *>(converted));
     }
 }
 
@@ -255,55 +255,55 @@ utf8_validate(utf8 const & utf)
 
   for (string::const_iterator i = utf().begin();
        i != utf().end(); ++i, --left)
-  {
-    u8 c = *i;
-    if (c < 128)
-      continue;
-    if ((c & 0xe0) == 0xc0)
     {
-      if (left < 2)
-        return false;
-      if ((c & 0x1e) == 0)
-        return false;
-      ++i; --left; c = *i;
-      if ((c & 0xc0) != 0x80)
-        return false;
-    }
-    else
-    {
-      if ((c & 0xf0) == 0xe0)
-      {
-        if (left < 3)
-          return false;
-        min = 1 << 11;
-        val = c & 0x0f;
-        goto two_remaining;
-      }
-      else if ((c & 0xf8) == 0xf0)
-      {
-        if (left < 4)
-          return false;
-        min = 1 << 16;
-        val = c & 0x07;
-      }
+      u8 c = *i;
+      if (c < 128)
+        continue;
+      if ((c & 0xe0) == 0xc0)
+        {
+          if (left < 2)
+            return false;
+          if ((c & 0x1e) == 0)
+            return false;
+          ++i; --left; c = *i;
+          if ((c & 0xc0) != 0x80)
+            return false;
+        }
       else
-        return false;
-      ++i; --left; c = *i;
-      if (!utf8_consume_continuation_char(c, val))
-        return false;
+        {
+          if ((c & 0xf0) == 0xe0)
+            {
+              if (left < 3)
+                return false;
+              min = 1 << 11;
+              val = c & 0x0f;
+              goto two_remaining;
+            }
+          else if ((c & 0xf8) == 0xf0)
+            {
+              if (left < 4)
+                return false;
+              min = 1 << 16;
+              val = c & 0x07;
+            }
+          else
+            return false;
+          ++i; --left; c = *i;
+          if (!utf8_consume_continuation_char(c, val))
+            return false;
 two_remaining:
-      ++i; --left; c = *i;
-      if (!utf8_consume_continuation_char(c, val))
-        return false;
-      ++i; --left; c = *i;
-      if (!utf8_consume_continuation_char(c, val))
-        return false;
-      if (val < min)
-        return false;
-      if (!is_valid_unicode_char(val))
-        return false;
+          ++i; --left; c = *i;
+          if (!utf8_consume_continuation_char(c, val))
+            return false;
+          ++i; --left; c = *i;
+          if (!utf8_consume_continuation_char(c, val))
+            return false;
+          if (val < min)
+            return false;
+          if (!is_valid_unicode_char(val))
+            return false;
+        }
     }
-  }
   return true;
 }
 
@@ -330,7 +330,7 @@ decode_idna_error(int err)
 void
 ace_to_utf8(string const & a, utf8 & utf, origin::type whence)
 {
-  char *out = NULL;
+  char * out = NULL;
   L(FL("converting %d bytes from IDNA ACE to UTF-8") % a.size());
   int res = idna_to_unicode_8z8z(a.c_str(), &out, IDNA_USE_STD3_ASCII_RULES);
   E(res == IDNA_SUCCESS || res == IDNA_NO_ACE_PREFIX, whence,
@@ -344,7 +344,7 @@ ace_to_utf8(string const & a, utf8 & utf, origin::type whence)
 void
 utf8_to_ace(utf8 const & utf, string & a)
 {
-  char *out = NULL;
+  char * out = NULL;
   L(FL("converting %d bytes from UTF-8 to IDNA ACE") % utf().size());
   int res = idna_to_ascii_8z(utf().c_str(), &out, IDNA_USE_STD3_ASCII_RULES);
   E(res == IDNA_SUCCESS, utf.made_from,

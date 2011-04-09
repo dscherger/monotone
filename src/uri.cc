@@ -78,8 +78,7 @@ parse_uri(string const & in, uri_t & uri, origin::type made_from)
           uri.host.assign(hostlike_matches[4]);
 
         }
-      else
-      if (!hostlike_matches[5].empty())
+      else if (!hostlike_matches[5].empty())
         {
           // for IPv6 we discard the square brackets
           uri.host.assign(hostlike_matches[5]);
@@ -140,8 +139,7 @@ urldecode(string const & in, origin::type made_from)
     {
       if (*i == '+')
         out += ' ';
-      else
-      if (*i != '%')
+      else if (*i != '%')
         out += *i;
       else
         {

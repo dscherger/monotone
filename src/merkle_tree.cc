@@ -83,10 +83,10 @@ raw_sha1(string const & in)
 
 
 merkle_node::merkle_node() : level(0), pref(0),
-                             total_num_leaves(0),
-                             bitmap(constants::merkle_bitmap_length_in_bits),
-                             slots(constants::merkle_num_slots),
-                             type(revision_item)
+  total_num_leaves(0),
+  bitmap(constants::merkle_bitmap_length_in_bits),
+  slots(constants::merkle_num_slots),
+  type(revision_item)
 {}
 
 bool
@@ -174,7 +174,7 @@ merkle_node::get_slot_state(size_t n) const
 {
   check_invariants();
   I(n < constants::merkle_num_slots);
-  I(2*n + 1 < bitmap.size());
+  I(2 * n + 1 < bitmap.size());
   if (bitmap[2*n])
     {
       if (bitmap[2*n+1])
@@ -193,13 +193,13 @@ merkle_node::set_slot_state(size_t n, slot_state st)
 {
   check_invariants();
   I(n < constants::merkle_num_slots);
-  I(2*n + 1 < bitmap.size());
-  bitmap.reset(2*n);
-  bitmap.reset(2*n+1);
+  I(2 * n + 1 < bitmap.size());
+  bitmap.reset(2 * n);
+  bitmap.reset(2 * n + 1);
   if (st == subtree_state || st == leaf_state)
-    bitmap.set(2*n);
+    bitmap.set(2 * n);
   if (st == subtree_state)
-    bitmap.set(2*n+1);
+    bitmap.set(2 * n + 1);
 }
 
 
@@ -270,8 +270,8 @@ read_node(string const & inbuf, size_t & pos, merkle_node & out)
 
   if (out.level >= constants::merkle_num_tree_levels)
     throw bad_decode(F("node level is %d, exceeds maximum %d")
-                     % widen<u32,u8>(out.level)
-                     % widen<u32,u8>(constants::merkle_num_tree_levels));
+                     % widen<u32, u8>(out.level)
+                     % widen<u32, u8>(constants::merkle_num_tree_levels));
 
   size_t prefixsz = prefix_length_in_bytes(out.level);
   require_bytes(inbuf, pos, prefixsz, "node prefix");
@@ -366,7 +366,7 @@ recalculate_merkle_codes(merkle_table & tab,
             {
               prefix extended;
               node->extended_raw_prefix(slotnum, extended);
-              slotval = recalculate_merkle_codes(tab, extended, level+1);
+              slotval = recalculate_merkle_codes(tab, extended, level + 1);
               node->set_raw_slot(slotnum, slotval);
             }
         }
@@ -402,7 +402,7 @@ collect_items_in_subtree(merkle_table & tab,
 
             case subtree_state:
               node->extended_raw_prefix(slot, ext);
-              collect_items_in_subtree(tab, ext, level+1, items);
+              collect_items_in_subtree(tab, ext, level + 1, items);
               break;
             }
         }
@@ -472,23 +472,23 @@ insert_into_merkle_tree(merkle_table & tab,
       switch (st)
         {
         case leaf_state:
-          {
-            id slotval;
-            node->get_raw_slot(slotnum, slotval);
-            if (slotval == leaf)
-              {
-                // Do nothing, it's already present
-              }
-            else
-              {
-                insert_into_merkle_tree(tab, type, slotval, level+1);
-                insert_into_merkle_tree(tab, type, leaf, level+1);
-                id empty_subtree_hash;
-                node->set_raw_slot(slotnum, empty_subtree_hash);
-                node->set_slot_state(slotnum, subtree_state);
-              }
-          }
-          break;
+        {
+          id slotval;
+          node->get_raw_slot(slotnum, slotval);
+          if (slotval == leaf)
+            {
+              // Do nothing, it's already present
+            }
+          else
+            {
+              insert_into_merkle_tree(tab, type, slotval, level + 1);
+              insert_into_merkle_tree(tab, type, leaf, level + 1);
+              id empty_subtree_hash;
+              node->set_raw_slot(slotnum, empty_subtree_hash);
+              node->set_slot_state(slotnum, subtree_state);
+            }
+        }
+        break;
 
         case empty_state:
           node->total_num_leaves++;
@@ -497,13 +497,13 @@ insert_into_merkle_tree(merkle_table & tab,
           break;
 
         case subtree_state:
-          {
-            insert_into_merkle_tree(tab, type, leaf, level+1);
-            id empty_subtree_hash;
-            node->set_raw_slot(slotnum, empty_subtree_hash);
-            node->set_slot_state(slotnum, subtree_state);
-          }
-          break;
+        {
+          insert_into_merkle_tree(tab, type, leaf, level + 1);
+          id empty_subtree_hash;
+          node->set_raw_slot(slotnum, empty_subtree_hash);
+          node->set_slot_state(slotnum, subtree_state);
+        }
+        break;
         }
     }
   else

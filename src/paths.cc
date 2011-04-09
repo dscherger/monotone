@@ -132,7 +132,7 @@ has_bad_chars(string const & path)
     {
       // char is often a signed type; convert to unsigned to ensure that
       // bytes 0x80-0xff are considered > 0x1f.
-      u8 x = (u8)*c;
+      u8 x = (u8) * c;
       // 0x5c is '\\'; we use the hex constant to make the dependency on
       // ASCII encoding explicit.
       if (UNLIKELY(x <= 0x1f || x == 0x5c || x == 0x7f))
@@ -149,7 +149,7 @@ has_bad_component_chars(string const & pc)
     {
       // char is often a signed type; convert to unsigned to ensure that
       // bytes 0x80-0xff are considered > 0x1f.
-      u8 x = (u8)*c;
+      u8 x = (u8) * c;
       // 0x2f is '/' and 0x5c is '\\'; we use hex constants to make the
       // dependency on ASCII encoding explicit.
       if (UNLIKELY(x <= 0x1f || x == 0x2f || x == 0x5c || x == 0x7f))
@@ -524,7 +524,7 @@ any_path::basename() const
   string const & s = data;
   string::size_type sep = s.rfind('/');
 #ifdef WIN32
-  if (sep == string::npos && s.size()>= 2 && s[1] == ':')
+  if (sep == string::npos && s.size() >= 2 && s[1] == ':')
     sep = 1;
 #endif
   if (sep == string::npos)
@@ -542,7 +542,7 @@ any_path::dirname() const
   string const & s = data;
   string::size_type sep = s.rfind('/');
 #ifdef WIN32
-  if (sep == string::npos && s.size()>= 2 && s[1] == ':')
+  if (sep == string::npos && s.size() >= 2 && s[1] == ':')
     sep = 1;
 #endif
   if (sep == string::npos)
@@ -557,8 +557,8 @@ any_path::dirname() const
 #ifdef WIN32
       || (sep == 1 || (sep == 2 && s[1] == ':'))
 #endif
-      )
-    return any_path(s, 0, sep+1);
+     )
+    return any_path(s, 0, sep + 1);
 
   return any_path(s, 0, sep);
 }
@@ -581,7 +581,7 @@ system_path::dirname() const
   string const & s = data;
   string::size_type sep = s.rfind('/');
 #ifdef WIN32
-  if (sep == string::npos && s.size()>= 2 && s[1] == ':')
+  if (sep == string::npos && s.size() >= 2 && s[1] == ':')
     sep = 1;
 #endif
   I(sep != string::npos);
@@ -595,8 +595,8 @@ system_path::dirname() const
 #ifdef WIN32
       || (sep == 1 || (sep == 2 && s[1] == ':'))
 #endif
-      )
-    return system_path(s, 0, sep+1);
+     )
+    return system_path(s, 0, sep + 1);
 
   return system_path(s, 0, sep);
 }
@@ -976,7 +976,7 @@ find_bookdir(system_path const & root, path_component const & bookdir,
     }
   return false;
 
- found:
+found:
   // check for _MTN/. and _MTN/.. to see if mt dir is readable
   try
     {
@@ -1022,7 +1022,7 @@ find_and_go_to_workspace(string const & search_root)
         }
       else if (cur_str.size() > 1 && cur_str[1] == ':')
         {
-          root = system_path(cur_str.substr(0,2) + "/", origin::system);
+          root = system_path(cur_str.substr(0, 2) + "/", origin::system);
         }
       else I(false);
 #else
@@ -1035,8 +1035,8 @@ find_and_go_to_workspace(string const & search_root)
       L(FL("limiting search for workspace to %s") % root);
 
       require_path_is_directory(root,
-                               F("search root '%s' does not exist") % root,
-                               F("search root '%s' is not a directory") % root);
+                                F("search root '%s' does not exist") % root,
+                                F("search root '%s' is not a directory") % root);
     }
 
   // first look for the current name of the bookkeeping directory.

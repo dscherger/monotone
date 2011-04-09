@@ -23,8 +23,8 @@ struct cycle_detector
 
   typedef std::vector< T > edge_vec;
   typedef std::vector <edge_vec > edge_map;
-  typedef std::pair <typename edge_vec::const_iterator,
-                     typename edge_vec::const_iterator> state;
+  typedef std::pair < typename edge_vec::const_iterator,
+          typename edge_vec::const_iterator > state;
   typedef std::stack <state > edge_stack;
 
   edge_map edges;
@@ -48,13 +48,13 @@ struct cycle_detector
   bool edge_makes_cycle(T const & src, T const & dst)
   {
     if (src == dst)
-        return true;
+      return true;
 
     if (dst >= edges.size() || edges.at(dst).empty())
-        return false;
+      return false;
 
     if (global_in_edges.find(src) == global_in_edges.end())
-        return false;
+      return false;
 
     while (!stk.empty())
       stk.pop();
@@ -83,7 +83,7 @@ struct cycle_detector
               }
           }
         if (!pushed)
-            stk.pop();
+          stk.pop();
       }
     return false;
   }

@@ -76,7 +76,7 @@ get_full_version(string & out)
          % Botan::version_major() % Botan::version_minor() % Botan::version_patch()
          % BOTAN_VERSION_MAJOR % BOTAN_VERSION_MINOR % BOTAN_VERSION_PATCH
          % string(package_full_revision_constant))
-    .str();
+        .str();
 }
 
 void

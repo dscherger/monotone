@@ -99,7 +99,8 @@ CMD_GROUP(user, "user", "", CMD_REF(__root__),
           N_("Commands defined by the user"),
           "");
 
-namespace commands {
+namespace commands
+{
 
   void remove_command_name_from_args(command_id const & ident,
                                      args_vector & args,
@@ -131,7 +132,7 @@ namespace commands {
     cmd->preset_options(app.opts);
 
     option::concrete_option_set optset
-      = (options::opts::globals() | cmd->opts())
+    = (options::opts::globals() | cmd->opts())
       .instantiate(&app.opts);
 
     optset.from_command_line(app.reset_info.default_args);
@@ -142,8 +143,8 @@ namespace commands {
         app.lua.hook_get_default_command_options(subcmd_full_ident,
                                                  subcmd_defaults);
         (options::opts::globals() | subcmd->opts())
-          .instantiate(&app.opts)
-          .from_command_line(subcmd_defaults);
+        .instantiate(&app.opts)
+        .from_command_line(subcmd_defaults);
       }
 
     // at this point we process the data from _MTN/options if
@@ -160,7 +161,7 @@ namespace commands {
       {
         app.opts.args.clear();
         option::concrete_option_set subcmd_optset
-          = (options::opts::globals() | subcmd->opts())
+        = (options::opts::globals() | subcmd->opts())
           .instantiate(&app.opts);
         if (!separate_params)
           {
@@ -275,7 +276,7 @@ namespace commands {
           continue;
 
         size_t len = display_width(join_words(child->names(), ", ")) +
-            display_width(utf8("    "));
+                     display_width(utf8("    "));
         if (colabstract < len)
           colabstract = len;
 
@@ -391,14 +392,14 @@ namespace commands {
                          out);
         out << '\n'
             << format_text(F("For information on a specific command, type "
-                           "'mtn help <command_name> [subcommand_name ...]'."))
+                             "'mtn help <command_name> [subcommand_name ...]'."))
             << "\n\n"
             << format_text(F("To see more details about the commands of a "
-                           "particular group, type 'mtn help <group_name>'."))
+                             "particular group, type 'mtn help <group_name>'."))
             << "\n\n"
             << format_text(F("Note that you can always abbreviate a command "
-                           "name as long as it does not conflict with other "
-                           "names."))
+                             "name as long as it does not conflict with other "
+                             "names."))
             << "\n";
       }
     else
@@ -414,19 +415,19 @@ namespace commands {
   // Lua-defined user commands.
   class cmd_lua : public command
   {
-    lua_State *st;
+    lua_State * st;
     std::string const f_name;
   public:
     cmd_lua(std::string const & primary_name,
-                   std::string const & params,
-                   std::string const & abstract,
-                   std::string const & desc,
-                   lua_State *L_st,
-                   std::string const & func_name) :
-         command(primary_name, "", CMD_REF(user), false, false, params,
-                 abstract, desc, true,
-                 options::options_type() | options::opts::none, true),
-                 st(L_st), f_name(func_name)
+            std::string const & params,
+            std::string const & abstract,
+            std::string const & desc,
+            lua_State * L_st,
+            std::string const & func_name) :
+      command(primary_name, "", CMD_REF(user), false, false, params,
+              abstract, desc, true,
+              options::options_type() | options::opts::none, true),
+      st(L_st), f_name(func_name)
     {
       // because user commands are inserted after the normal
       // initialisation process
@@ -439,7 +440,7 @@ namespace commands {
       I(st);
       I(app.lua.check_lua_state(st));
 
-      app_state* app_p = get_app_state(st);
+      app_state * app_p = get_app_state(st);
       I(app_p == & app);
 
       Lua ll(st);
@@ -451,7 +452,7 @@ namespace commands {
 
       app.mtn_automate_allowed = true;
 
-      ll.call(args.size(),0);
+      ll.call(args.size(), 0);
 
       app.mtn_automate_allowed = false;
 
@@ -464,15 +465,15 @@ namespace commands {
 
 LUAEXT(alias_command, )
 {
-  const char *old_cmd = luaL_checkstring(LS, -2);
-  const char *new_cmd = luaL_checkstring(LS, -1);
+  const char * old_cmd = luaL_checkstring(LS, -2);
+  const char * new_cmd = luaL_checkstring(LS, -1);
   E(old_cmd && new_cmd, origin::user,
     F("'%s' called with an invalid parameter") % "alias_command");
 
   args_vector args;
   args.push_back(arg_type(old_cmd, origin::user));
   commands::command_id id = commands::complete_command(args);
-  commands::command *old_cmd_p = CMD_REF(__root__)->find_command(id);
+  commands::command * old_cmd_p = CMD_REF(__root__)->find_command(id);
 
   old_cmd_p->add_alias(utf8(new_cmd));
 
@@ -483,11 +484,11 @@ LUAEXT(alias_command, )
 
 LUAEXT(register_command, )
 {
-  const char *cmd_name = luaL_checkstring(LS, -5);
-  const char *cmd_params = luaL_checkstring(LS, -4);
-  const char *cmd_abstract = luaL_checkstring(LS, -3);
-  const char *cmd_desc = luaL_checkstring(LS, -2);
-  const char *cmd_func = luaL_checkstring(LS, -1);
+  const char * cmd_name = luaL_checkstring(LS, -5);
+  const char * cmd_params = luaL_checkstring(LS, -4);
+  const char * cmd_abstract = luaL_checkstring(LS, -3);
+  const char * cmd_desc = luaL_checkstring(LS, -2);
+  const char * cmd_func = luaL_checkstring(LS, -1);
 
   E(cmd_name && cmd_params && cmd_abstract && cmd_desc && cmd_func,
     origin::user,
@@ -506,9 +507,9 @@ LUAEXT(register_command, )
 
 CMD_NO_WORKSPACE(help, "help", "", CMD_REF(informative),
                  N_("command [ARGS...]"),
-    N_("Displays help about commands and options"),
-    "",
-    options::opts::show_hidden_commands)
+                 N_("Displays help about commands and options"),
+                 "",
+                 options::opts::show_hidden_commands)
 {
   if (args.size() < 1)
     {
@@ -522,9 +523,9 @@ CMD_NO_WORKSPACE(help, "help", "", CMD_REF(informative),
 }
 
 CMD_NO_WORKSPACE(version, "version", "", CMD_REF(informative), "",
-    N_("Shows the program version"),
-    "",
-    options::opts::full)
+                 N_("Shows the program version"),
+                 "",
+                 options::opts::full)
 {
   E(args.empty(), origin::user,
     F("no arguments allowed"));
@@ -541,8 +542,8 @@ CMD_HIDDEN(check_glob, "check_glob", "", CMD_REF(debug),
            "",
            options::opts::none)
 {
-  globish g = typecast_vocab<globish>(idx(args,0));
-  string s(idx(args,1)());
+  globish g = typecast_vocab<globish>(idx(args, 0));
+  string s(idx(args, 1)());
 
   E(g.matches(s), origin::user,
     F("Glob '%s' does not match string '%s'") % g % s);
@@ -557,15 +558,15 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
   if (args.size() != 1)
     throw usage(execid);
   bool spoon_exists(false);
-  if (idx(args,0)() == "N")
+  if (idx(args, 0)() == "N")
     E(spoon_exists, origin::user, i18n_format("There is no spoon."));
-  else if (idx(args,0)() == "E")
+  else if (idx(args, 0)() == "E")
     E(spoon_exists, origin::system, i18n_format("There is no spoon."));
-  else if (idx(args,0)() == "I")
+  else if (idx(args, 0)() == "I")
     {
       I(spoon_exists);
     }
-  else if (idx(args,0)() == "double-throw")
+  else if (idx(args, 0)() == "double-throw")
     {
       // This code is rather picky, for example I(false) in the destructor
       // won't always work like it should; see http://bugs.debian.org/516862
@@ -602,7 +603,7 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
 #ifndef _WIN32
       try
         {
-          int signo = boost::lexical_cast<int>(idx(args,0)());
+          int signo = boost::lexical_cast<int>(idx(args, 0)());
           if (0 < signo && signo <= 15)
             {
               raise(signo);
@@ -610,8 +611,9 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
               I(!"crash: raise returned");
             }
         }
-      catch (boost::bad_lexical_cast&)
-        { // fall through and throw usage
+      catch (boost::bad_lexical_cast &)
+        {
+          // fall through and throw usage
         }
 #endif
       throw usage(execid);
@@ -680,7 +682,7 @@ man_definition(vector<string> const & labels, string const & content, int width 
     }
   out += man_hyphens(content);
   if (content.rfind('\n') != (content.size() - 1))
-     out += "\n";
+    out += "\n";
 
   return out;
 }
@@ -714,7 +716,7 @@ man_section(string const & content)
 static string
 man_title(string const & title)
 {
-  return ".TH \"" + title + "\" 1 "+
+  return ".TH \"" + title + "\" 1 " +
          "\"" + BUILD_DATE + "\" " +
          "\"" + PACKAGE_STRING + "\"\n";
 }
@@ -809,7 +811,7 @@ get_commands(options & opts, commands::command const * group)
         {
           vector<string> full_ident;
           for (vector<utf8>::const_iterator j = main_ident.begin() + 1;
-                j < main_ident.end() - 1;  ++j)
+               j < main_ident.end() - 1;  ++j)
             {
               full_ident.push_back((*j)());
             }
@@ -888,8 +890,8 @@ get_command_groups(options & opts)
     {
       commands::command const * group = *i;
       out += man_subsection(
-        (F("command group '%s'") % group->primary_name()).str()
-      );
+               (F("command group '%s'") % group->primary_name()).str()
+             );
       out += group->desc() + "\n";
 
       out += get_commands(opts, group);
@@ -900,12 +902,12 @@ get_command_groups(options & opts)
 
 CMD_PRESET_OPTIONS(manpage)
 {
-    opts.formatted = isatty(STDOUT_FILENO);
+  opts.formatted = isatty(STDOUT_FILENO);
 }
 CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
-    N_("Generate a manual page from monotone's command help"),
-    "",
-    options::opts::show_hidden_commands | options::opts::formatted)
+                 N_("Generate a manual page from monotone's command help"),
+                 "",
+                 options::opts::show_hidden_commands | options::opts::formatted)
 {
   stringstream ss;
   ss << man_title("monotone");
@@ -925,11 +927,11 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
           "interface for scripting purposes and thorough documentation.")
      << "\n\n";
   ss << (F("For more information on monotone, visit %s.")
-          % man_bold(PACKAGE_URL)).str()
+         % man_bold(PACKAGE_URL)).str()
      << "\n\n";
   ss << (F("The complete documentation, including a tutorial for a quick start "
            "with the system, can be found online on %s.")
-          % man_bold(PACKAGE_URL "/docs")).str() << "\n";
+         % man_bold(PACKAGE_URL "/docs")).str() << "\n";
 
   ss << man_section(_("Global Options"));
   ss << get_options_string(options::opts::globals(), app.opts, 25) << "\n";
@@ -939,11 +941,11 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
 
   ss << man_section(_("See Also"));
   ss << (F("info %s and the documentation on %s")
-          % prog_name % man_bold(PACKAGE_URL "/docs")).str() << "\n";
+         % prog_name % man_bold(PACKAGE_URL "/docs")).str() << "\n";
 
   ss << man_section(_("Bugs"));
   ss << (F("Please report bugs to %s.")
-          % man_bold(PACKAGE_BUGREPORT)).str()<< "\n";
+         % man_bold(PACKAGE_BUGREPORT)).str() << "\n";
 
   ss << man_section(_("Authors"));
   ss << _("monotone was written originally by Graydon Hoare "
@@ -957,7 +959,7 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
   ss << man_section(_("Copyright"));
   ss << (F("monotone and this man page is Copyright (c) 2003 \\- %s by "
            "the monotone development team.")
-           % string(BUILD_DATE).substr(0, 4)).str() << "\n";
+         % string(BUILD_DATE).substr(0, 4)).str() << "\n";
 
   if (!app.opts.formatted)
     {
@@ -972,7 +974,7 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
   FILE * fp = popen(cmd.c_str(), "w");
   E(fp != NULL, origin::system,
     F("could not execute man page formatter command '%s': %s")
-      % cmd % strerror(errno));
+    % cmd % strerror(errno));
 
   fprintf(fp, ss.str().c_str());
   pclose(fp);

@@ -417,7 +417,7 @@ extern void report_failed_path_composition(any_path const & p,
                                            char const * s, bool isdir);
 
 template <class T>
-bool safe_compose(T const & p, char const * s, T & result, bool isdir=false)
+bool safe_compose(T const & p, char const * s, T & result, bool isdir = false)
 {
   try
     {

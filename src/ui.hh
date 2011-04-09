@@ -35,7 +35,7 @@ struct ticker
   std::string shortname;
   size_t count_size;
   ticker(std::string const & n, std::string const & s, size_t mod = 64,
-      bool kilocount=false, bool skip_display=false);
+         bool kilocount = false, bool skip_display = false);
   void set_total(size_t tot) { use_total = true; total = tot; }
   void set_count_size(size_t csiz) { count_size = csiz; }
   void operator++();
@@ -66,7 +66,7 @@ public:
   int fatal_exception();
   void set_tick_trailer(std::string const & trailer);
 
-  enum ticker_type { count=1, dot, stdio, none };
+  enum ticker_type { count = 1, dot, stdio, none };
   void set_tick_write_dot();
   void set_tick_write_count();
   void set_tick_write_stdio();

@@ -70,10 +70,10 @@ read_mappings(system_path const & path, map<string, string> & mappings)
     {
       string line = trim(*i);
       size_t index = line.find('=');
-      if (index != string::npos || index < line.length()-1)
+      if (index != string::npos || index < line.length() - 1)
         {
           string key = trim(line.substr(0, index));
-          string value = trim(line.substr(index+1));
+          string value = trim(line.substr(index + 1));
           mappings[key] = value;
         }
       else if (!line.empty())
@@ -85,7 +85,7 @@ void
 validate_author_mappings(lua_hooks & lua,
                          map<string, string> const & authors)
 {
-  for (map<string, string>::const_iterator i = authors.begin(); 
+  for (map<string, string>::const_iterator i = authors.begin();
        i != authors.end(); ++i)
     {
       E(lua.hook_validate_git_author(i->second), origin::user,
@@ -124,7 +124,7 @@ import_marks(system_path const & marks_file,
       E(c == '\n', origin::user, F("incomplete line in marks file"));
 
       marked_revs[revid] = mark;
-      if (mark > mark_id) mark_id = mark+1;
+      if (mark > mark_id) mark_id = mark + 1;
       marks.peek();
     }
 }
@@ -136,7 +136,7 @@ export_marks(system_path const & marks_file,
 {
   ostringstream marks;
   for (map<revision_id, size_t>::const_iterator
-         i = marked_revs.begin(); i != marked_revs.end(); ++i)
+       i = marked_revs.begin(); i != marked_revs.end(); ++i)
     marks << ":" << i->second << " " << i->first << "\n";
 
   data mark_data(marks.str(), origin::internal);
@@ -168,7 +168,7 @@ load_changes(database & db,
   loaded.set_total(revisions.size());
 
   for (vector<revision_id>::const_reverse_iterator
-         r = revisions.rbegin(); r != revisions.rend(); ++r)
+       r = revisions.rbegin(); r != revisions.rend(); ++r)
     {
       revision_t revision;
       db.get_revision(*r, revision);
@@ -227,7 +227,7 @@ export_changes(database & db, lua_hooks & lua,
   map<string, string> valid_authors(author_map);
 
   for (vector<revision_id>::const_iterator
-         r = revisions.begin(); r != revisions.end(); ++r)
+       r = revisions.begin(); r != revisions.end(); ++r)
     {
       revnum++;
 
@@ -293,7 +293,7 @@ export_changes(database & db, lua_hooks & lua,
       //
       // all keys that have signed author certs:
       //
-      // 'select distinct public_keys.name 
+      // 'select distinct public_keys.name
       //  from public_keys
       //  left join revision_certs on revision_certs.keypair_id = public_keys.id
       //  where revision_certs.name = "author"'
@@ -405,7 +405,7 @@ export_changes(database & db, lua_hooks & lua,
       // emit file data blobs for modified and added files
 
       for (add_iterator
-             i = change.additions.begin(); i != change.additions.end(); ++i)
+           i = change.additions.begin(); i != change.additions.end(); ++i)
         {
           if (marked_files.find(i->content) == marked_files.end())
             {
@@ -443,7 +443,7 @@ export_changes(database & db, lua_hooks & lua,
             message << "Monotone-Date: " << date->value() << "\n";
 
           for (cert_iterator
-                 branch = branches.begin() ; branch != branches.end(); ++branch)
+               branch = branches.begin() ; branch != branches.end(); ++branch)
             message << "Monotone-Branch: " << branch->value() << "\n";
 
           for (cert_iterator tag = tags.begin(); tag != tags.end(); ++tag)
@@ -469,17 +469,17 @@ export_changes(database & db, lua_hooks & lua,
         cout << "merge :" << marked_revs[parent2] << "\n";
 
       for (delete_iterator
-             i = change.deletions.begin(); i != change.deletions.end(); ++i)
+           i = change.deletions.begin(); i != change.deletions.end(); ++i)
         cout << "D " << quote_path(*i) << "\n";
 
       for (rename_iterator
-             i = reordered_renames.begin(); i != reordered_renames.end(); ++i)
+           i = reordered_renames.begin(); i != reordered_renames.end(); ++i)
         cout << "R "
              << quote_path(i->first) << " "
              << quote_path(i->second) << "\n";
 
       for (add_iterator
-             i = change.additions.begin(); i != change.additions.end(); ++i)
+           i = change.additions.begin(); i != change.additions.end(); ++i)
         cout << "M " << i->mode << " :"
              << marked_files[i->content] << " "
              << quote_path(i->path) << "\n";
@@ -522,20 +522,20 @@ export_rev_refs(vector<revision_id> const & revisions,
                 map<revision_id, size_t> & marked_revs)
 {
   for (vector<revision_id>::const_iterator
-         i = revisions.begin(); i != revisions.end(); ++i)
+       i = revisions.begin(); i != revisions.end(); ++i)
     cout << "reset refs/mtn/revs/" << *i << "\n"
          << "from :" << marked_revs[*i] << "\n";
 }
 
 void
 export_root_refs(database & db,
-                map<revision_id, size_t> & marked_revs)
+                 map<revision_id, size_t> & marked_revs)
 {
   set<revision_id> roots;
   revision_id nullid;
   db.get_revision_children(nullid, roots);
   for (set<revision_id>::const_iterator
-         i = roots.begin(); i != roots.end(); ++i)
+       i = roots.begin(); i != roots.end(); ++i)
     cout << "reset refs/mtn/roots/" << *i << "\n"
          << "from :" << marked_revs[*i] << "\n";
 }
@@ -547,7 +547,7 @@ export_leaf_refs(database & db,
   set<revision_id> leaves;
   db.get_leaves(leaves);
   for (set<revision_id>::const_iterator
-         i = leaves.begin(); i != leaves.end(); ++i)
+       i = leaves.begin(); i != leaves.end(); ++i)
     cout << "reset refs/mtn/leaves/" << *i << "\n"
          << "from :" << marked_revs[*i] << "\n";
 }

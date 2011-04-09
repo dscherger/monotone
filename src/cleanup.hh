@@ -14,7 +14,8 @@
 // from our helper C libraries are deallocated when we leave a scope.
 
 template <typename T, typename R>
-struct cleanup_ptr {
+struct cleanup_ptr
+{
   T ptr;
   R (* cleanup)(T);
   explicit cleanup_ptr(T p, R (*c)(T)) : ptr(p), cleanup(c) {}

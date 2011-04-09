@@ -46,7 +46,7 @@ struct rcs_file
   void push_delta(rcs_delta const & d)
   {
     boost::shared_ptr<rcs_delta> dp(new rcs_delta(d));
-    deltas.insert(make_pair(dp->num,dp));
+    deltas.insert(make_pair(dp->num, dp));
   }
   void push_deltatext(rcs_deltatext const & dt)
   {

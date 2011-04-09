@@ -435,12 +435,12 @@ struct key_delete_validator : public packet_consumer
   virtual void consume_key_pair(key_name const & name,
                                 keypair const & kp)
   {
-     L(FL("reading key pair '%s' from key store for validation") % name);
-     key_id ident;
-     key_hash_code(name, kp.pub, ident);
-     E(ident == expected_ident, origin::user,
-       F("expected key with id %s in key file '%s', got key with id %s")
-         % expected_ident % file % ident);
+    L(FL("reading key pair '%s' from key store for validation") % name);
+    key_id ident;
+    key_hash_code(name, kp.pub, ident);
+    E(ident == expected_ident, origin::user,
+      F("expected key with id %s in key file '%s', got key with id %s")
+      % expected_ident % file % ident);
   }
   virtual void consume_old_private_key(key_name const & ident,
                                        old_arc4_rsa_priv_key const & k)
@@ -457,20 +457,20 @@ key_store::delete_key(key_id const & ident)
       system_path file;
       s->get_key_file(ident, i->second.first, file);
       if (!file_exists(file))
-          s->get_old_key_file(i->second.first, file);
+        s->get_old_key_file(i->second.first, file);
 
       // sanity: if we read the key originally from a file which did not
       // follow the NAME.IDENT scheme and have another key pair with NAME
       // in the key dir, we could accidentially drop the wrong private key
       // here, so validate if the file really contains the key with the
       // ID we want to delete, before going mad
-        {
-          key_delete_validator val(ident, file);
-          data dat;
-          read_data(file, dat);
-          istringstream is(dat());
-          I(read_packets(is, val));
-        }
+      {
+        key_delete_validator val(ident, file);
+        data dat;
+        read_data(file, dat);
+        istringstream is(dat());
+        I(read_packets(is, val));
+      }
 
       delete_file(file);
 
@@ -557,7 +557,7 @@ key_store_state::decrypt_private_key(key_id const & id,
 {
   // See if we have this key in the decrypted key cache.
   map<key_id, shared_ptr<RSA_PrivateKey> >::const_iterator
-    cpk = privkey_cache.find(id);
+  cpk = privkey_cache.find(id);
   if (cpk != privkey_cache.end())
     return cpk->second;
 
@@ -723,7 +723,7 @@ key_store::create_key_pair(database & db,
 
   // convert to storage format
   L(FL("generated %d-byte public key\n"
-      "generated %d-byte (encrypted) private key\n")
+       "generated %d-byte (encrypted) private key\n")
     % kp.pub().size()
     % kp.priv().size());
 
@@ -814,12 +814,12 @@ key_store::decrypt_rsa(key_id const & id,
       shared_ptr<RSA_PrivateKey> priv_key = s->decrypt_private_key(id);
 
       shared_ptr<PK_Decryptor>
-        decryptor(get_pk_decryptor(*priv_key, "EME1(SHA-1)"));
+      decryptor(get_pk_decryptor(*priv_key, "EME1(SHA-1)"));
 
       SecureVector<Botan::byte> plain =
         decryptor->decrypt(reinterpret_cast<Botan::byte const *>(ciphertext().data()),
                            ciphertext().size());
-      plaintext = string(reinterpret_cast<char const*>(plain.begin()),
+      plaintext = string(reinterpret_cast<char const *>(plain.begin()),
                          plain.size());
     }
   catch (Botan::Exception & ex)
@@ -854,22 +854,23 @@ key_store::make_signature(database & db,
       || s->ssh_sign_mode == "check"
       || s->ssh_sign_mode == "only")
     {
-      if (agent.connected()) {
-        //grab the monotone public key as an RSA_PublicKey
-        SecureVector<Botan::byte> pub_block;
-        pub_block.set(reinterpret_cast<Botan::byte const *>(key.pub().data()),
-                      key.pub().size());
-        L(FL("make_signature: building %d-byte pub key") % pub_block.size());
-        shared_ptr<X509_PublicKey> x509_key =
-          shared_ptr<X509_PublicKey>(Botan::X509::load_key(pub_block));
-        shared_ptr<RSA_PublicKey> pub_key = shared_dynamic_cast<RSA_PublicKey>(x509_key);
+      if (agent.connected())
+        {
+          //grab the monotone public key as an RSA_PublicKey
+          SecureVector<Botan::byte> pub_block;
+          pub_block.set(reinterpret_cast<Botan::byte const *>(key.pub().data()),
+                        key.pub().size());
+          L(FL("make_signature: building %d-byte pub key") % pub_block.size());
+          shared_ptr<X509_PublicKey> x509_key =
+            shared_ptr<X509_PublicKey>(Botan::X509::load_key(pub_block));
+          shared_ptr<RSA_PublicKey> pub_key = shared_dynamic_cast<RSA_PublicKey>(x509_key);
 
-        if (!pub_key)
-          throw recoverable_failure(origin::system,
-                                    "Failed to get monotone RSA public key");
+          if (!pub_key)
+            throw recoverable_failure(origin::system,
+                                      "Failed to get monotone RSA public key");
 
-        agent.sign_data(*pub_key, tosign, sig_string);
-      }
+          agent.sign_data(*pub_key, tosign, sig_string);
+        }
       if (sig_string.length() <= 0)
         L(FL("make_signature: monotone and ssh-agent keys do not match, will"
              " use monotone signing"));
@@ -904,10 +905,11 @@ key_store::make_signature(database & db,
           priv_key = s->decrypt_private_key(id);
           if (agent.connected()
               && s->ssh_sign_mode != "only"
-              && s->ssh_sign_mode != "no") {
-            L(FL("make_signature: adding private key (%s) to ssh-agent") % id);
-            agent.add_identity(*priv_key, name());
-          }
+              && s->ssh_sign_mode != "no")
+            {
+              L(FL("make_signature: adding private key (%s) to ssh-agent") % id);
+              agent.add_identity(*priv_key, name());
+            }
           signer = shared_ptr<PK_Signer>(get_pk_signer(*priv_key, "EMSA3(SHA-1)"));
 
           /* If persist_phrase is true, the RSA_PrivateKey object is
@@ -919,14 +921,14 @@ key_store::make_signature(database & db,
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
       sig = signer->sign_message(
-        reinterpret_cast<Botan::byte const *>(tosign.data()),
-        tosign.size(), lazy_rng::get());
+              reinterpret_cast<Botan::byte const *>(tosign.data()),
+              tosign.size(), lazy_rng::get());
 #else
       sig = signer->sign_message(
-        reinterpret_cast<Botan::byte const *>(tosign.data()),
-        tosign.size());
+              reinterpret_cast<Botan::byte const *>(tosign.data()),
+              tosign.size());
 #endif
-      sig_string = string(reinterpret_cast<char const*>(sig.begin()), sig.size());
+      sig_string = string(reinterpret_cast<char const *>(sig.begin()), sig.size());
     }
 
   if (s->ssh_sign_mode == "check" && ssh_sig.length() > 0)
@@ -1008,9 +1010,9 @@ key_store::export_key_for_agent(key_id const & id,
 
 void
 key_store_state::migrate_old_key_pair
-    (key_name const & id,
-     old_arc4_rsa_priv_key const & old_priv,
-     rsa_pub_key const & pub)
+(key_name const & id,
+ old_arc4_rsa_priv_key const & old_priv,
+ rsa_pub_key const & pub)
 {
   keypair kp;
   SecureVector<Botan::byte> arc4_key;
@@ -1103,9 +1105,9 @@ key_store_state::migrate_old_key_pair
 
 void
 key_store::migrate_old_key_pair
-    (key_name const & id,
-     old_arc4_rsa_priv_key const & old_priv,
-     rsa_pub_key const & pub)
+(key_name const & id,
+ old_arc4_rsa_priv_key const & old_priv,
+ rsa_pub_key const & pub)
 {
   s->migrate_old_key_pair(id, old_priv, pub);
 }

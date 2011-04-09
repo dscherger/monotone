@@ -51,14 +51,15 @@ LUAEXT(parse_basic_io, )
       while (tt != basic_io::TOK_NONE);
     }
   catch (recoverable_failure & e)
-    {// there was a syntax error in our string
+    {
+      // there was a syntax error in our string
       lua_pushnil(LS);
       return 1;
     }
   lua_newtable(LS);
   int n = 1;
   for (vector<pair<string, vector<string> > >::const_iterator i = res.begin();
-        i != res.end(); ++i)
+       i != res.end(); ++i)
     {
       lua_newtable(LS);
       lua_pushstring(LS, i->first.c_str());
@@ -66,7 +67,7 @@ LUAEXT(parse_basic_io, )
       lua_newtable(LS);
       int m = 1;
       for (vector<string>::const_iterator j = i->second.begin();
-            j != i->second.end(); ++j)
+           j != i->second.end(); ++j)
         {
           lua_pushstring(LS, j->c_str());
           lua_rawseti(LS, -2, m++);

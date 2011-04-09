@@ -31,7 +31,8 @@
 #include "vocab.hh"
 
 // The types to represent the command line's parameters.
-class arg_type : public utf8 {
+class arg_type : public utf8
+{
 public:
   explicit arg_type(void) : utf8() {}
   arg_type(std::string const & s, origin::type f) : utf8(s, f) {}
@@ -41,7 +42,8 @@ template <>
 inline void dump(arg_type const & a, std::string & out) { out = a(); }
 typedef std::vector< arg_type > args_vector;
 
-namespace option {
+namespace option
+{
   // Base for errors thrown by this code.
   struct option_error : public std::invalid_argument
   {
@@ -226,10 +228,10 @@ namespace option {
   struct binder_only
   {
     T * obj;
-    boost::function<void(T*)> fun;
-    binder_only(boost::function<void(T*)> const & f, T * o)
+    boost::function<void(T *)> fun;
+    binder_only(boost::function<void(T *)> const & f, T * o)
       : obj(o), fun(f)
-      {}
+    {}
     void operator()()
     {
       fun(obj);
@@ -244,8 +246,8 @@ namespace option {
     char const * description;
     char const * names;
     bool has_arg;
-    boost::function<void (T*, std::string)> setter;
-    boost::function<void (T*)> resetter;
+    boost::function<void (T *, std::string)> setter;
+    boost::function<void (T *)> resetter;
     bool hidden;
     char const * deprecated;
 
@@ -299,7 +301,7 @@ namespace option {
   struct option_set
   {
     std::set<option<T> > options;
-    option_set(){}
+    option_set() {}
     option_set(option_set<T> const & other)
       : options(other.options)
     {}

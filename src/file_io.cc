@@ -122,11 +122,14 @@ directory_empty(any_path const & path)
   };
 
   directory_empty_helper h;
-  try {
-    read_directory(path, h, h, h);
-  } catch (directory_not_empty_exception) {
-    return false;
-  }
+  try
+    {
+      read_directory(path, h, h, h);
+    }
+  catch (directory_not_empty_exception)
+    {
+      return false;
+    }
   return true;
 }
 
@@ -149,8 +152,9 @@ directory_empty(any_path const & path)
 
 bool guess_binary(string const & s)
 {
-  static const bool char_is_binary[256] = {
-  //_0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _A _B _C _D _E _F
+  static const bool char_is_binary[256] =
+  {
+    //_0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _A _B _C _D _E _F
     1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, // 0_
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 1_
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2_
@@ -465,7 +469,7 @@ calculate_ident(file_path const & file,
 {
   // no conversions necessary, use streaming form
   static cached_botan_pipe
-    p(new Botan::Pipe(new Botan::Hash_Filter("SHA-160")));
+  p(new Botan::Pipe(new Botan::Hash_Filter("SHA-160")));
 
   // Best to be safe and check it isn't a dir.
   assert_path_is_file(file);

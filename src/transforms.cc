@@ -68,7 +68,7 @@ error_in_transform(Botan::Exception & e, origin::type caused_by)
       // "botan: TYPE: " part...
       string w(e.what());
       string::size_type pos = w.find(':');
-      pos = w.find(':', pos+1);
+      pos = w.find(':', pos + 1);
       w = string(w.begin() + pos + 2, w.end());
 
       // ... downcase the rest of it and replace underscores with spaces.
@@ -122,11 +122,11 @@ template<> string xform<Botan::Hex_Encoder>(string const & in,
                                             origin::type made_from)
 {
   string out;
-  out.reserve(in.size()<<1);
+  out.reserve(in.size() << 1);
   for (string::const_iterator i = in.begin();
        i != in.end(); ++i)
     {
-      int h = (*i>>4) & 0x0f;
+      int h = (*i >> 4) & 0x0f;
       if (h < 10)
         out.push_back(h + '0');
       else
@@ -144,7 +144,7 @@ template<> string xform<Botan::Hex_Decoder>(string const & in,
                                             origin::type made_from)
 {
   string out;
-  out.reserve(in.size()>>1);
+  out.reserve(in.size() >> 1);
   bool high(true);
   int o = 0;
   for (string::const_iterator i = in.begin();
@@ -190,7 +190,8 @@ template<> string xform<Botan::Hex_Decoder>(string const & in,
       high = !high;
     }
   if (!high)
-    { // Hex string wasn't a whole number of bytes
+    {
+      // Hex string wasn't a whole number of bytes
       //I(false); // Drop the last char (!!)
     }
   return out;

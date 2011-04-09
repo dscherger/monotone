@@ -241,8 +241,8 @@ SIMPLE_OPTION(min_netsync_version, "min-netsync-version", u8,
                            "if you want to prevent use of older protocol versions"))
 
 SIMPLE_OPTION(remote_stdio_host, "remote-stdio-host", arg_type,
-    gettext_noop("sets the host (and optionally the port) for a "
-                 "remote netsync action"))
+              gettext_noop("sets the host (and optionally the port) for a "
+                           "remote netsync action"))
 
 SIMPLE_OPTION(branch, "branch,b", branch_name,
               gettext_noop("select branch cert for operation"))
@@ -265,7 +265,7 @@ OPTION(globals, conf_dir, true, "confdir",
 #endif
 
 GROUPED_SIMPLE_OPTION(globals, no_default_confdir, "no-default-confdir/allow-default-confdir", bool,
-                     gettext_noop("forbid use of the default confdir"))
+                      gettext_noop("forbid use of the default confdir"))
 
 SIMPLE_OPTION(date, "date", date_t,
               gettext_noop("override date/time for commit"))
@@ -311,8 +311,8 @@ OPTION(globals, dbname, true, "db,d", gettext_noop("set name of database"))
 
 HIDE(roster_cache_performance_log)
 GROUPED_SIMPLE_OPTION(globals, roster_cache_performance_log, "roster-cache-performance-log",
-                     system_path,
-                     gettext_noop("log roster cache statistic to the given file"))
+                      system_path,
+                      gettext_noop("log roster cache statistic to the given file"))
 
 SIMPLE_OPTION(depth, "depth", restricted_long<0>,
               gettext_noop("limit the number of levels of directories to descend"))
@@ -323,25 +323,25 @@ OPTSET(au_diff_options)
 OPTSET_REL(diff_options, au_diff_options)
 
 GROUPED_SIMPLE_OPTION(diff_options, external_diff_args, "diff-args", std::string,
-        gettext_noop("argument to pass external diff hook"))
+                      gettext_noop("argument to pass external diff hook"))
 GROUPED_SIMPLE_OPTION(au_diff_options, reverse, "reverse", bool,
-        gettext_noop("reverse order of diff"))
+                      gettext_noop("reverse order of diff"))
 GROUPED_SIMPLE_OPTION(diff_options, no_show_encloser, "no-show-encloser/show-encloser", bool,
-     gettext_noop("do not show the function containing each block of changes"))
+                      gettext_noop("do not show the function containing each block of changes"))
 OPTSET_REL(au_diff_options, with_header)
 SIMPLE_OPTION(with_header, "with-header/without-header", bool,
               gettext_noop("show the matching cset in the diff header"))
 
 OPTVAR(diff_options, diff_type, diff_format, unified_diff)
 OPTION(diff_options, diff_context, false, "context",
-        gettext_noop("use context diff format"))
+       gettext_noop("use context diff format"))
 #ifdef option_bodies
 {
   diff_format = context_diff;
 }
 #endif
 OPTION(diff_options, diff_external, false, "external",
-        gettext_noop("use external diff hook for generating diffs"))
+       gettext_noop("use external diff hook for generating diffs"))
 #ifdef option_bodies
 {
   diff_format = external_diff;
@@ -368,30 +368,30 @@ SIMPLE_OPTION(drop_bad_certs, "drop-bad-certs", bool,
               gettext_noop("drop certs signed by keys we don't know about"))
 
 GROUPED_SIMPLE_OPTION(globals, dump, "dump", system_path,
-        gettext_noop("file to dump debugging log to, on failure"))
+                      gettext_noop("file to dump debugging log to, on failure"))
 
 SIMPLE_OPTION(exclude, "exclude", args_vector,
               gettext_noop("leave out anything described by its argument"))
 SIMPLE_OPTION(include, "include", args_vector,
-        gettext_noop("include anything described by its argument"))
+              gettext_noop("include anything described by its argument"))
 
 SIMPLE_OPTION(bookkeep_only, "bookkeep-only", bool,
-        gettext_noop("only update monotone's internal bookkeeping, not the filesystem"))
+              gettext_noop("only update monotone's internal bookkeeping, not the filesystem"))
 
 SIMPLE_OPTION(move_conflicting_paths,
               "move-conflicting-paths/no-move-conflicting-paths",
               bool,
               (F("move conflicting, unversioned paths into '%s' "
                  "before proceeding with any workspace change") %
-                 bookkeeping_resolutions_dir).str().c_str())
+               bookkeeping_resolutions_dir).str().c_str())
 
 OPTSET_REL(globals, ssh_sign)
 SIMPLE_INITIALIZED_OPTION(ssh_sign, "ssh-sign", enum_string, "yes,no,only,check",
-     gettext_noop("controls use of ssh-agent.  valid arguments are: "
-                  "'yes' to use ssh-agent to make signatures if possible, "
-                  "'no' to force use of monotone's internal code, "
-                  "'only' to force use of ssh-agent, "
-                  "'check' to sign with both and compare"))
+                          gettext_noop("controls use of ssh-agent.  valid arguments are: "
+                                       "'yes' to use ssh-agent to make signatures if possible, "
+                                       "'no' to force use of monotone's internal code, "
+                                       "'only' to force use of ssh-agent, "
+                                       "'check' to sign with both and compare"))
 
 SIMPLE_OPTION(force_duplicate_key, "force-duplicate-key", bool,
               gettext_noop("force genkey to not error out when the named key "
@@ -404,14 +404,14 @@ SIMPLE_OPTION(show_hidden_commands, "hidden/no-hidden", bool,
               gettext_noop("show hidden commands and options"))
 
 GROUPED_SIMPLE_OPTION(globals, ignore_suspend_certs, "ignore-suspend-certs/no-ignore-suspend-certs", bool,
-                     gettext_noop("do not ignore revisions marked as suspended"))
+                      gettext_noop("do not ignore revisions marked as suspended"))
 
 GROUPED_SIMPLE_OPTION(globals, non_interactive, "non-interactive/interactive", bool,
-                     gettext_noop("do not prompt the user for input"))
+                      gettext_noop("do not prompt the user for input"))
 
 GROUPED_SIMPLE_OPTION(globals, key, "key,k/use-default-key", external_key_name,
-       gettext_noop("sets the key for signatures, using either the key "
-                    "name or the key hash"))
+                      gettext_noop("sets the key for signatures, using either the key "
+                                   "name or the key hash"))
 
 OPTSET_REL(globals, key_dir)
 SIMPLE_INITIALIZED_OPTION(key_dir, "keydir", system_path,
@@ -419,22 +419,22 @@ SIMPLE_INITIALIZED_OPTION(key_dir, "keydir", system_path,
                           gettext_noop("set location of key store"))
 
 SIMPLE_OPTION(keys_to_push, "key-to-push", std::vector<external_key_name>,
-        gettext_noop("push the specified key even if it hasn't signed anything"))
+              gettext_noop("push the specified key even if it hasn't signed anything"))
 
 SIMPLE_OPTION(last, "last", restricted_long<1>,
               gettext_noop("limit log output to the last number of entries"))
 
 GROUPED_SIMPLE_OPTION(globals, log, "log", system_path,
-                     gettext_noop("file to write the log to"))
+                      gettext_noop("file to write the log to"))
 
 OPTSET(messages)
 GROUPED_SIMPLE_OPTION(messages, message, "message,m", std::vector<std::string>,
-        gettext_noop("set commit changelog message"))
+                      gettext_noop("set commit changelog message"))
 GROUPED_SIMPLE_OPTION(messages, msgfile, "message-file", utf8,
-        gettext_noop("set filename containing commit changelog message"))
+                      gettext_noop("set filename containing commit changelog message"))
 HIDE(no_prefix)
 GROUPED_SIMPLE_OPTION(messages, no_prefix, "no-prefix", bool,
-        gettext_noop("no prefix to message"))
+                      gettext_noop("no prefix to message"))
 
 SIMPLE_OPTION(missing, "missing", bool,
               gettext_noop("perform the operations for files missing from workspace"))
@@ -465,7 +465,7 @@ GROUPED_SIMPLE_OPTION(globals, norc, "no-standard-rcfiles/standard-rcfiles", boo
 #undef NORC_TEXT
 
 GROUPED_SIMPLE_OPTION(globals, nostd, "no-builtin-rcfile/builtin-rcfile", bool,
-                     gettext_noop("do not load the built-in lua file with the default hooks"))
+                      gettext_noop("do not load the built-in lua file with the default hooks"))
 
 DEPRECATE(old_norc, gettext_noop("please use '--no-standard-rcfiles' instead"), 1.0, 2.0)
 OPTION(globals, old_norc, false, "norc",
@@ -481,7 +481,7 @@ OPTION(globals, old_nostd, false, "nostd",
 #endif
 
 GROUPED_SIMPLE_OPTION(globals, extra_rcfiles, "rcfile/clear-rcfiles", args_vector,
-                     gettext_noop("load extra lua file"))
+                      gettext_noop("load extra lua file"))
 
 SIMPLE_OPTION(pidfile, "pid-file/no-pid-file", system_path,
               gettext_noop("record process id of server"))
@@ -491,7 +491,7 @@ OPTSET_REL(globals, verbosity)
 OPTVAR(verbosity, int, verbosity, 0)
 
 OPTION(verbosity, quiet, false, "quiet,q",
-     gettext_noop("decrease verbosity (undo previous '-v', then disable informational output, then disable warnings)"))
+       gettext_noop("decrease verbosity (undo previous '-v', then disable informational output, then disable warnings)"))
 #ifdef option_bodies
 {
   --verbosity;
@@ -522,7 +522,7 @@ OPTION(globals, debug, false, "debug",
 
 DEPRECATE(reallyquiet, gettext_noop("please use '-q -q'"), 1.0, 2.0)
 OPTION(verbosity, reallyquiet, false, "reallyquiet",
-     gettext_noop("suppress warning, verbose, informational and progress messages"))
+       gettext_noop("suppress warning, verbose, informational and progress messages"))
 #ifdef option_bodies
 {
   verbosity = -2;
@@ -530,7 +530,7 @@ OPTION(verbosity, reallyquiet, false, "reallyquiet",
 #endif
 
 SIMPLE_OPTION(full, "full/concise", bool,
-       gettext_noop("print detailed information"))
+              gettext_noop("print detailed information"))
 
 SIMPLE_OPTION(formatted, "formatted/plain", bool,
               gettext_noop("automatically run the output through nroff (default if the output is a terminal)"))
@@ -542,8 +542,8 @@ GROUPED_SIMPLE_OPTION(globals, timestamps, "timestamps", bool,
 SIMPLE_OPTION(recursive, "recursive,R/no-recursive", bool,
               gettext_noop("also operate on the contents of any listed directories"))
 
-SIMPLE_OPTION(revision, "revision,r",args_vector,
-     gettext_noop("select revision id for operation"))
+SIMPLE_OPTION(revision, "revision,r", args_vector,
+              gettext_noop("select revision id for operation"))
 
 GROUPED_SIMPLE_OPTION(globals, root, "root", std::string,
                       gettext_noop("limit search for workspace to specified root"))
@@ -578,7 +578,7 @@ OPTSET_REL(automate_inventory_opts, no_ignored)
 SIMPLE_OPTION(no_ignored, "no-ignored/ignored", bool,
               gettext_noop("don't output ignored files"))
 OPTSET_REL(automate_inventory_opts, no_unknown)
-SIMPLE_OPTION(no_unknown, "no-unknown/unknown",bool,
+SIMPLE_OPTION(no_unknown, "no-unknown/unknown", bool,
               gettext_noop("don't output unknown files"))
 OPTSET_REL(automate_inventory_opts, no_unchanged)
 SIMPLE_OPTION(no_unchanged, "no-unchanged/unchanged", bool,
@@ -608,7 +608,7 @@ OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-
 
 OPTSET_REL(resolve_conflicts_opts, resolve_conflicts)
 SIMPLE_OPTION(resolve_conflicts, "resolve-conflicts/no-resolve-conflicts", bool,
-       gettext_noop("specify conflict resolutions in a file, instead of interactively"))
+              gettext_noop("specify conflict resolutions in a file, instead of interactively"))
 
 OPTSET(conflicts_opts)
 OPTVAR(conflicts_opts, bookkeeping_path, conflicts_file, bookkeeping_conflicts_file)

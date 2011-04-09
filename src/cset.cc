@@ -39,7 +39,7 @@ check_normalized(cset const & cs)
   {
     map<file_path, file_id>::const_iterator a = cs.files_added.begin();
     map<file_path, pair<file_id, file_id> >::const_iterator
-      d = cs.deltas_applied.begin();
+    d = cs.deltas_applied.begin();
     while (a != cs.files_added.end() && d != cs.deltas_applied.end())
       {
         // SPEEDUP?: should this use lower_bound instead of ++?  it should
@@ -58,7 +58,7 @@ check_normalized(cset const & cs)
   {
     set<pair<file_path, attr_key> >::const_iterator c = cs.attrs_cleared.begin();
     map<pair<file_path, attr_key>, attr_value>::const_iterator
-      s = cs.attrs_set.begin();
+    s = cs.attrs_set.begin();
     while (c != cs.attrs_cleared.end() && s != cs.attrs_set.end())
       {
         if (*c < s->first)
@@ -97,7 +97,7 @@ cset::clear()
 }
 
 struct
-detach
+  detach
 {
   detach(file_path const & src)
     : src_path(src),
@@ -125,7 +125,7 @@ detach
 };
 
 struct
-attach
+  attach
 {
   attach(node_id n,
          file_path const & p)

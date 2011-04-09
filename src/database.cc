@@ -129,7 +129,8 @@ namespace
       {
         I(*i >= 10 && *i < 127);
       }
-    query_param q = {
+    query_param q =
+    {
       query_param::text,
       txt,
       0,
@@ -140,7 +141,8 @@ namespace
   query_param
   blob(string const & blb)
   {
-    query_param q = {
+    query_param q =
+    {
       query_param::blob,
       blb,
       0,
@@ -151,7 +153,8 @@ namespace
   query_param
   int64(u64 const & num)
   {
-    query_param q = {
+    query_param q =
+    {
       query_param::int64,
       "",
       num,
@@ -184,7 +187,7 @@ namespace
   {
     statement() : count(0), stmt(0, sqlite3_finalize) {}
     int count;
-    cleanup_ptr<sqlite3_stmt*, int> stmt;
+    cleanup_ptr<sqlite3_stmt *, int> stmt;
   };
 
   struct roster_size_estimator
@@ -207,15 +210,16 @@ namespace
   enum open_mode { normal_mode = 0,
                    schema_bypass_mode,
                    format_bypass_mode,
-                   cache_bypass_mode };
+                   cache_bypass_mode
+                 };
 
   typedef hashmap::hash_map<revision_id, set<revision_id> > parent_id_map;
   typedef hashmap::hash_map<revision_id, rev_height> height_map;
 
-  typedef hashmap::hash_map<key_id,
-                            pair<shared_ptr<Botan::PK_Verifier>,
-                                 shared_ptr<Botan::RSA_PublicKey> >
-                            > verifier_cache;
+  typedef hashmap::hash_map < key_id,
+          pair < shared_ptr<Botan::PK_Verifier>,
+          shared_ptr<Botan::RSA_PublicKey> >
+          > verifier_cache;
 
 } // anonymous namespace
 
@@ -269,8 +273,8 @@ private:
   //
   string count(string const & table);
   string space(string const & table,
-                    string const & concatenated_columns,
-                    u64 & total);
+               string const & concatenated_columns,
+               u64 & total);
   unsigned int page_size();
   unsigned int cache_size();
 
@@ -290,9 +294,9 @@ private:
     roster_writeback_manager(database_impl & imp) : imp(imp) {}
     void writeout(revision_id const &, cached_roster const &);
   };
-  LRUWritebackCache<revision_id, cached_roster,
-                    roster_size_estimator, roster_writeback_manager>
-    roster_cache;
+  LRUWritebackCache < revision_id, cached_roster,
+                    roster_size_estimator, roster_writeback_manager >
+                    roster_cache;
 
   bool have_delayed_file(file_id const & id);
   void load_delayed_file(file_id const & id, file_data & dat);
@@ -448,7 +452,7 @@ private:
 #ifdef SUPPORT_SQLITE_BEFORE_3003014
 // SQLite versions up to and including 3.3.12 didn't have the hex() function
 void
-sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
+sqlite3_hex_fn(sqlite3_context * f, int nargs, sqlite3_value ** args)
 {
   if (nargs != 1)
     {
@@ -462,7 +466,7 @@ sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
   try
     {
       decoded = encode_hexenc(reinterpret_cast<char const *>(
-        sqlite3_value_text(args[0])), origin::database);
+                                sqlite3_value_text(args[0])), origin::database);
     }
   catch (recoverable_failure & e)
     {
@@ -537,8 +541,8 @@ database::init()
     {
       L(FL("creating new database_impl instance for %s") % dbpath);
       dbcache.insert(make_pair(dbpath, boost::shared_ptr<database_impl>(
-        new database_impl(dbpath, opts.dbname_type, opts.roster_cache_performance_log)
-      )));
+                                 new database_impl(dbpath, opts.dbname_type, opts.roster_cache_performance_log)
+                               )));
     }
 
   imp = dbcache[dbpath];
@@ -653,7 +657,7 @@ database_impl::check_caches()
 }
 
 static void
-sqlite3_gunzip_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
+sqlite3_gunzip_fn(sqlite3_context * f, int nargs, sqlite3_value ** args)
 {
   if (nargs != 1)
     {
@@ -661,9 +665,9 @@ sqlite3_gunzip_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
       return;
     }
   data unpacked;
-  const char *val = (const char*) sqlite3_value_blob(args[0]);
+  const char * val = (const char *) sqlite3_value_blob(args[0]);
   int bytes = sqlite3_value_bytes(args[0]);
-  decode_gzip(gzip<data>(string(val,val+bytes), origin::database), unpacked);
+  decode_gzip(gzip<data>(string(val, val + bytes), origin::database), unpacked);
   sqlite3_result_blob(f, unpacked().c_str(), unpacked().size(), SQLITE_TRANSIENT);
 }
 
@@ -715,7 +719,7 @@ database::initialize()
   imp->check_db_nonexistent();
   imp->open();
 
-  sqlite3 *sql = imp->__sql;
+  sqlite3 * sql = imp->__sql;
 
   sqlite3_exec(sql, schema_constant, NULL, NULL, NULL);
   assert_sqlite3_ok(sql);
@@ -731,15 +735,15 @@ database::initialize()
 }
 
 struct
-dump_request
+  dump_request
 {
   dump_request() : sql(), out() {};
-  struct sqlite3 *sql;
-  ostream *out;
+  struct sqlite3 * sql;
+  ostream * out;
 };
 
 static void
-dump_row(ostream &out, sqlite3_stmt *stmt, string const& table_name)
+dump_row(ostream & out, sqlite3_stmt * stmt, string const & table_name)
 {
   out << FL("INSERT INTO %s VALUES(") % table_name;
   unsigned n = sqlite3_data_count(stmt);
@@ -751,20 +755,20 @@ dump_row(ostream &out, sqlite3_stmt *stmt, string const& table_name)
       if (sqlite3_column_type(stmt, i) == SQLITE_BLOB)
         {
           out << "X'";
-          const char *val = (const char*) sqlite3_column_blob(stmt, i);
+          const char * val = (const char *) sqlite3_column_blob(stmt, i);
           int bytes = sqlite3_column_bytes(stmt, i);
-          out << encode_hexenc(string(val,val+bytes), origin::internal);
+          out << encode_hexenc(string(val, val + bytes), origin::internal);
           out << '\'';
         }
       else
         {
-          const unsigned char *val = sqlite3_column_text(stmt, i);
+          const unsigned char * val = sqlite3_column_text(stmt, i);
           if (val == NULL)
             out << "NULL";
           else
             {
               out << '\'';
-              for (const unsigned char *cp = val; *cp; ++cp)
+              for (const unsigned char * cp = val; *cp; ++cp)
                 {
                   if (*cp == '\'')
                     out << "''";
@@ -779,9 +783,9 @@ dump_row(ostream &out, sqlite3_stmt *stmt, string const& table_name)
 }
 
 static int
-dump_table_cb(void *data, int n, char **vals, char **cols)
+dump_table_cb(void * data, int n, char ** vals, char ** cols)
 {
-  dump_request *dump = reinterpret_cast<dump_request *>(data);
+  dump_request * dump = reinterpret_cast<dump_request *>(data);
   I(dump != NULL);
   I(dump->sql != NULL);
   I(vals != NULL);
@@ -793,7 +797,7 @@ dump_table_cb(void *data, int n, char **vals, char **cols)
   *(dump->out) << vals[2] << ";\n";
   string table_name(vals[0]);
   string query = "SELECT * FROM " + table_name;
-  sqlite3_stmt *stmt = 0;
+  sqlite3_stmt * stmt = 0;
   sqlite3_prepare_v2(dump->sql, query.c_str(), -1, &stmt, NULL);
   assert_sqlite3_ok(dump->sql);
 
@@ -813,9 +817,9 @@ dump_table_cb(void *data, int n, char **vals, char **cols)
 }
 
 static int
-dump_index_cb(void *data, int n, char **vals, char **cols)
+dump_index_cb(void * data, int n, char ** vals, char ** cols)
 {
-  dump_request *dump = reinterpret_cast<dump_request *>(data);
+  dump_request * dump = reinterpret_cast<dump_request *>(data);
   I(dump != NULL);
   I(dump->sql != NULL);
   I(vals != NULL);
@@ -829,9 +833,9 @@ dump_index_cb(void *data, int n, char **vals, char **cols)
 }
 
 static int
-dump_user_version_cb(void *data, int n, char **vals, char **cols)
+dump_user_version_cb(void * data, int n, char ** vals, char ** cols)
 {
-  dump_request *dump = reinterpret_cast<dump_request *>(data);
+  dump_request * dump = reinterpret_cast<dump_request *>(data);
   I(dump != NULL);
   I(dump->sql != NULL);
   I(vals != NULL);
@@ -854,17 +858,17 @@ database::dump(ostream & out)
     out << "BEGIN EXCLUSIVE;\n";
     int res;
     res = sqlite3_exec(req.sql,
-                          "SELECT name, type, sql FROM sqlite_master "
-                          "WHERE type='table' AND sql NOT NULL "
-                          "AND name not like 'sqlite_stat%' "
-                          "ORDER BY name",
-                          dump_table_cb, &req, NULL);
+                       "SELECT name, type, sql FROM sqlite_master "
+                       "WHERE type='table' AND sql NOT NULL "
+                       "AND name not like 'sqlite_stat%' "
+                       "ORDER BY name",
+                       dump_table_cb, &req, NULL);
     assert_sqlite3_ok(req.sql);
     res = sqlite3_exec(req.sql,
-                          "SELECT name, type, sql FROM sqlite_master "
-                          "WHERE type='index' AND sql NOT NULL "
-                          "ORDER BY name",
-                          dump_index_cb, &req, NULL);
+                       "SELECT name, type, sql FROM sqlite_master "
+                       "WHERE type='index' AND sql NOT NULL "
+                       "ORDER BY name",
+                       dump_index_cb, &req, NULL);
     assert_sqlite3_ok(req.sql);
     res = sqlite3_exec(req.sql,
                        "PRAGMA user_version;",
@@ -1030,7 +1034,7 @@ database::info(ostream & out, bool analyze)
     try
       {
         imp->fetch(res, one_col, any_rows,
-              query("SELECT node FROM next_roster_node_number"));
+                   query("SELECT node FROM next_roster_node_number"));
         if (res.empty())
           counts.push_back("0");
         else
@@ -1050,25 +1054,25 @@ database::info(ostream & out, bool analyze)
   {
     u64 total = 0;
     bytes.push_back(imp->space("rosters",
-                          "length(id) + length(checksum) + length(data)",
-                          total));
+                               "length(id) + length(checksum) + length(data)",
+                               total));
     bytes.push_back(imp->space("roster_deltas",
-                          "length(id) + length(checksum)"
-                          "+ length(base) + length(delta)", total));
+                               "length(id) + length(checksum)"
+                               "+ length(base) + length(delta)", total));
     bytes.push_back(imp->space("files", "length(id) + length(data)", total));
     bytes.push_back(imp->space("file_deltas",
-                          "length(id) + length(base) + length(delta)", total));
+                               "length(id) + length(base) + length(delta)", total));
     bytes.push_back(imp->space("file_sizes",
-                          "length(id) + length(size)", total));
+                               "length(id) + length(size)", total));
     bytes.push_back(imp->space("revisions", "length(id) + length(data)", total));
     bytes.push_back(imp->space("revision_ancestry",
-                          "length(parent) + length(child)", total));
+                               "length(parent) + length(child)", total));
     bytes.push_back(imp->space("revision_certs",
-                          "length(hash) + length(revision_id) + length(name)"
-                          "+ length(value) + length(keypair_id)"
-                          "+ length(signature)", total));
+                               "length(hash) + length(revision_id) + length(name)"
+                               "+ length(value) + length(keypair_id)"
+                               "+ length(signature)", total));
     bytes.push_back(imp->space("heights", "length(revision) + length(height)",
-                          total));
+                               total));
     bytes.push_back((F("%u") % total).str());
   }
 
@@ -1076,7 +1080,7 @@ database::info(ostream & out, bool analyze)
   // same length
   {
     string::size_type width
-      = max_element(counts.begin(), counts.end(), longest_number)->length();
+    = max_element(counts.begin(), counts.end(), longest_number)->length();
     for(vector<string>::iterator i = counts.begin(); i != counts.end(); i++)
       if (width > i->length() && (*i)[0] != '[')
         i->insert(0U, width - i->length(), ' ');
@@ -1114,7 +1118,7 @@ database::info(ostream & out, bool analyze)
       "database:\n"
       "  page size       : %s\n"
       "  cache size      : %s"
-      );
+     );
 
   form = form % format_creator_code(ccode);
   form = form % describe_sql_schema(imp->__sql);
@@ -1257,7 +1261,7 @@ database::info(ostream & out, bool analyze)
       "  90th percentile : %s sec\n"
       "  95th percentile : %s sec\n"
       "  99th percentile : %s sec\n"
-      );
+     );
 
   form = form % correct % equal % incorrect % root_anc % missing;
 
@@ -1267,17 +1271,17 @@ database::info(ostream & out, bool analyze)
   // calculate mean time difference, output that, min and max
   s64 mean = accumulate(diffs.begin(), diffs.end(), 0);
   mean /= diffs.size();
-  s64 median = *(diffs.begin() + diffs.size()/2);
+  s64 median = *(diffs.begin() + diffs.size() / 2);
   form = form % mean % *diffs.begin() % *diffs.rbegin()
-    % *(diffs.begin() + int(diffs.size() * 0.01))
-    % *(diffs.begin() + int(diffs.size() * 0.05))
-    % *(diffs.begin() + int(diffs.size() * 0.10))
-    % *(diffs.begin() + int(diffs.size() * 0.25))
-    % *(diffs.begin() + int(diffs.size() * 0.50))
-    % *(diffs.begin() + int(diffs.size() * 0.75))
-    % *(diffs.begin() + int(diffs.size() * 0.90))
-    % *(diffs.begin() + int(diffs.size() * 0.95))
-    % *(diffs.begin() + int(diffs.size() * 0.99));
+         % *(diffs.begin() + int(diffs.size() * 0.01))
+         % *(diffs.begin() + int(diffs.size() * 0.05))
+         % *(diffs.begin() + int(diffs.size() * 0.10))
+         % *(diffs.begin() + int(diffs.size() * 0.25))
+         % *(diffs.begin() + int(diffs.size() * 0.50))
+         % *(diffs.begin() + int(diffs.size() * 0.75))
+         % *(diffs.begin() + int(diffs.size() * 0.90))
+         % *(diffs.begin() + int(diffs.size() * 0.95))
+         % *(diffs.begin() + int(diffs.size() * 0.99));
 
   // output the string, with some newlines out of translation
   out << '\n' << '\n' << form.str() << '\n';
@@ -1426,9 +1430,9 @@ database_impl::execute(query const & query)
 
 void
 database_impl::fetch(results & res,
-                      int const want_cols,
-                      int const want_rows,
-                      query const & query)
+                     int const want_cols,
+                     int const want_rows,
+                     query const & query)
 {
   int nrow;
   int ncol;
@@ -1504,19 +1508,19 @@ database_impl::fetch(results & res,
                             SQLITE_STATIC);
           break;
         case query_param::blob:
-          {
-            string const & data = idx(query.args, param - 1).string_data;
-            sqlite3_bind_blob(i->second.stmt(), param,
-                              data.data(), data.size(),
-                              SQLITE_STATIC);
-          }
-          break;
+        {
+          string const & data = idx(query.args, param - 1).string_data;
+          sqlite3_bind_blob(i->second.stmt(), param,
+                            data.data(), data.size(),
+                            SQLITE_STATIC);
+        }
+        break;
         case query_param::int64:
-          {
-            u64 data = idx(query.args, param - 1).int_data;
-            sqlite3_bind_int64(i->second.stmt(), param, data);
-          }
-          break;
+        {
+          u64 data = idx(query.args, param - 1).int_data;
+          sqlite3_bind_int64(i->second.stmt(), param, data);
+        }
+        break;
         default:
           I(false);
         }
@@ -1537,15 +1541,18 @@ database_impl::fetch(results & res,
           int const datatype = sqlite3_column_type(i->second.stmt(), col);
           E(datatype != SQLITE_NULL, origin::database,
             F("null result in query: %s") % query.sql_cmd);
-          const char * value = (const char*)sqlite3_column_blob(i->second.stmt(), col);
+          const char * value = (const char *)sqlite3_column_blob(i->second.stmt(), col);
           int bytes = sqlite3_column_bytes(i->second.stmt(), col);
-          if (value) {
-            row.push_back(string(value, value + bytes));
-          } else {
-            // sqlite3_column_blob() returns null for zero-length
-            I(bytes == 0);
-            row.push_back(string());
-          }
+          if (value)
+            {
+              row.push_back(string(value, value + bytes));
+            }
+          else
+            {
+              // sqlite3_column_blob() returns null for zero-length
+              I(bytes == 0);
+              row.push_back(string());
+            }
         }
       res.push_back(row);
     }
@@ -1851,7 +1858,7 @@ database_impl::get_file_or_manifest_base_unchecked(id const & ident,
 
   gzip<data> rdata(res[0][0], origin::database);
   data rdata_unpacked;
-  decode_gzip(rdata,rdata_unpacked);
+  decode_gzip(rdata, rdata_unpacked);
 
   dat = rdata_unpacked;
 }
@@ -1927,7 +1934,7 @@ database_impl::get_roster_delta(id const & ident,
 
 void
 database_impl::write_delayed_file(file_id const & ident,
-                                   file_data const & dat)
+                                  file_data const & dat)
 {
   gzip<data> dat_packed;
   encode_gzip(dat.inner(), dat_packed);
@@ -1946,8 +1953,8 @@ database_impl::write_delayed_file(file_id const & ident,
 
 void
 database_impl::write_delayed_roster(revision_id const & ident,
-                                     roster_t const & roster,
-                                     marking_map const & marking)
+                                    roster_t const & roster,
+                                    marking_map const & marking)
 {
   roster_data dat;
   write_roster_and_marking(roster, marking, dat);
@@ -2000,8 +2007,8 @@ database_impl::put_file_size(file_id const & ident,
 
 void
 database_impl::put_roster_delta(revision_id const & ident,
-                                 revision_id const & base,
-                                 roster_delta const & del)
+                                revision_id const & base,
+                                roster_delta const & del)
 {
   gzip<delta> del_packed;
   encode_gzip(del.inner(), del_packed);
@@ -2031,7 +2038,7 @@ struct file_and_manifest_reconstruction_graph : public reconstruction_graph
   virtual bool is_base(id const & node) const
   {
     return imp.vcache.exists(node)
-      || imp.file_or_manifest_base_exists(node, data_table);
+           || imp.file_or_manifest_base_exists(node, data_table);
   }
   virtual void get_next(id const & from, set<id> & next) const
   {
@@ -2228,7 +2235,7 @@ database_impl::extract_from_deltas(revision_id const & ident, extractor & x)
           if (found)
             return;
         }
-      if (i == path_length-1)
+      if (i == path_length - 1)
         {
           // last iteration, we have reached a roster base
           roster_t roster;
@@ -2344,7 +2351,7 @@ bool
 database::file_version_exists(file_id const & id)
 {
   return delta_exists(id.inner(), "file_deltas")
-    || imp->file_or_manifest_base_exists(id.inner(), "files");
+         || imp->file_or_manifest_base_exists(id.inner(), "files");
 }
 
 bool
@@ -2357,7 +2364,7 @@ bool
 database::roster_version_exists(revision_id const & id)
 {
   return delta_exists(id.inner(), "roster_deltas")
-    || imp->roster_base_available(id);
+         || imp->roster_base_available(id);
 }
 
 bool
@@ -2450,32 +2457,32 @@ database::get_file_sizes(roster_t const & roster,
       results res;
 
       size_t variables = all_file_ids.size() - i > max_variables
-        ? max_variables
-        : all_file_ids.size() - i;
+                         ? max_variables
+                         : all_file_ids.size() - i;
       I(variables > 0);
 
       query q;
       string placeholders = "";
-      for (size_t j=i; j< i + variables; ++j)
+      for (size_t j = i; j < i + variables; ++j)
         {
           placeholders += "?,";
           q.args.push_back(blob(all_file_ids[j].inner()()));
         }
 
       q.sql_cmd = "SELECT id, size FROM file_sizes "
-                  "WHERE id IN(" + placeholders +"null)";
+                  "WHERE id IN(" + placeholders + "null)";
 
       imp->fetch(res, 2, any_rows, q);
       I(!res.empty());
 
-      for (size_t k=0; k<res.size(); ++k)
+      for (size_t k = 0; k < res.size(); ++k)
         {
           file_id ident(res[k][0], origin::database);
           u64 size = lexical_cast<u64>(res[k][1]);
           sizes.insert(make_pair(ident, size));
         }
 
-      i+= variables;
+      i += variables;
     }
 }
 
@@ -2703,7 +2710,7 @@ database::get_revision_children(revision_id const & id,
   children.clear();
   imp->fetch(res, one_col, any_rows,
              query("SELECT child FROM revision_ancestry WHERE parent = ?")
-        % blob(id.inner()()));
+             % blob(id.inner()()));
   for (size_t i = 0; i < res.size(); ++i)
     children.insert(revision_id(res[i][0], origin::database));
 }
@@ -2725,7 +2732,7 @@ database::get_leaves(set<revision_id> & leaves)
 
 void
 database::get_revision_manifest(revision_id const & rid,
-                               manifest_id & mid)
+                                manifest_id & mid)
 {
   revision_t rev;
   get_revision(rid, rev);
@@ -2770,8 +2777,8 @@ database::get_common_ancestors(std::set<revision_id> const & revs,
         {
           set<revision_id> common;
           set_intersection(ancestors.begin(), ancestors.end(),
-                         all_common_ancestors.begin(), all_common_ancestors.end(),
-                         inserter(common, common.begin()));
+                           all_common_ancestors.begin(), all_common_ancestors.end(),
+                           inserter(common, common.begin()));
           all_common_ancestors = common;
         }
     }
@@ -2853,7 +2860,7 @@ database::get_revision(revision_id const & id,
   I(res.size() == 1);
   gzip<data> gzdata(res[0][0], origin::database);
   data rdat;
-  decode_gzip(gzdata,rdat);
+  decode_gzip(gzdata, rdat);
 
   // verify that we got a revision with the right id
   {
@@ -2938,7 +2945,7 @@ database::deltify_revision(revision_id const & rid)
          i != rev.edges.end(); ++i)
       {
         for (map<file_path, pair<file_id, file_id> >::const_iterator
-               j = edge_changes(i).deltas_applied.begin();
+             j = edge_changes(i).deltas_applied.begin();
              j != edge_changes(i).deltas_applied.end(); ++j)
           {
             file_id old_id(delta_entry_src(j));
@@ -2999,7 +3006,7 @@ database::put_revision(revision_id const & new_id,
         }
 
       for (map<file_path, file_id>::const_iterator a
-             = edge_changes(i).files_added.begin();
+           = edge_changes(i).files_added.begin();
            a != edge_changes(i).files_added.end(); ++a)
         {
           if (! file_version_exists(a->second))
@@ -3011,7 +3018,7 @@ database::put_revision(revision_id const & new_id,
         }
 
       for (map<file_path, pair<file_id, file_id> >::const_iterator d
-             = edge_changes(i).deltas_applied.begin();
+           = edge_changes(i).deltas_applied.begin();
            d != edge_changes(i).deltas_applied.end(); ++d)
         {
           I(!delta_entry_src(d).inner()().empty());
@@ -3101,9 +3108,9 @@ database::put_height_for_revision(revision_id const & new_id,
       rev_height parent; MM(parent);
       get_rev_height(edge_old_revision(e), parent);
       if (parent > highest_parent)
-      {
-        highest_parent = parent;
-      }
+        {
+          highest_parent = parent;
+        }
     }
 
   // ... then find the first unused child
@@ -3431,24 +3438,24 @@ database::encrypt_rsa(key_id const & pub_id,
 
   shared_ptr<X509_PublicKey> x509_key(Botan::X509::load_key(pub_block));
   shared_ptr<RSA_PublicKey> pub_key
-    = shared_dynamic_cast<RSA_PublicKey>(x509_key);
+  = shared_dynamic_cast<RSA_PublicKey>(x509_key);
   if (!pub_key)
     throw recoverable_failure(origin::system,
                               "Failed to get RSA encrypting key");
 
   shared_ptr<PK_Encryptor>
-    encryptor(get_pk_encryptor(*pub_key, "EME1(SHA-1)"));
+  encryptor(get_pk_encryptor(*pub_key, "EME1(SHA-1)"));
 
   SecureVector<Botan::byte> ct;
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   ct = encryptor->encrypt(
-          reinterpret_cast<Botan::byte const *>(plaintext.data()),
-          plaintext.size(), lazy_rng::get());
+         reinterpret_cast<Botan::byte const *>(plaintext.data()),
+         plaintext.size(), lazy_rng::get());
 #else
   ct = encryptor->encrypt(
-          reinterpret_cast<Botan::byte const *>(plaintext.data()),
-          plaintext.size());
+         reinterpret_cast<Botan::byte const *>(plaintext.data()),
+         plaintext.size());
 #endif
   ciphertext = rsa_oaep_sha_data(string(reinterpret_cast<char const *>(ct.begin()),
                                         ct.size()),
@@ -3483,7 +3490,7 @@ database::check_signature(key_id const & id,
       L(FL("building verifier for %d-byte pub key") % pub_block.size());
       shared_ptr<X509_PublicKey> x509_key(Botan::X509::load_key(pub_block));
       shared_ptr<RSA_PublicKey> pub_key
-        = boost::shared_dynamic_cast<RSA_PublicKey>(x509_key);
+      = boost::shared_dynamic_cast<RSA_PublicKey>(x509_key);
 
       E(pub_key, id.inner().made_from,
         F("failed to get RSA verifying key for %s") % id);
@@ -3501,9 +3508,9 @@ database::check_signature(key_id const & id,
   L(FL("checking %d-byte signature") % signature().size());
 
   if (verifier->verify_message(
-        reinterpret_cast<Botan::byte const*>(alleged_text.data()),
+        reinterpret_cast<Botan::byte const *>(alleged_text.data()),
         alleged_text.size(),
-        reinterpret_cast<Botan::byte const*>(signature().data()),
+        reinterpret_cast<Botan::byte const *>(signature().data()),
         signature().size()))
     return cert_ok;
   else
@@ -3530,11 +3537,11 @@ database_impl::cert_exists(cert const & t,
                   "AND value = ? "
                   "AND keypair_id = ? "
                   "AND signature = ?")
-    % blob(t.ident.inner()())
-    % text(t.name())
-    % blob(t.value())
-    % blob(t.key.inner()())
-    % blob(t.sig());
+            % blob(t.ident.inner()())
+            % text(t.name())
+            % blob(t.value())
+            % blob(t.key.inner()())
+            % blob(t.sig());
 
   fetch(res, 1, any_rows, q);
 
@@ -3646,9 +3653,9 @@ database_impl::install_functions()
 
   // register any functions we're going to use
   I(sqlite3_create_function(sql(), "gunzip", -1,
-                           SQLITE_UTF8, NULL,
-                           &sqlite3_gunzip_fn,
-                           NULL, NULL) == 0);
+                            SQLITE_UTF8, NULL,
+                            &sqlite3_gunzip_fn,
+                            NULL, NULL) == 0);
 }
 
 void
@@ -3727,7 +3734,7 @@ database_impl::get_certs(id const & ident,
 
   fetch(res, 5, any_rows,
         q % blob(ident())
-          % text(name()));
+        % text(name()));
   results_to_certs(res, certs);
 }
 
@@ -3743,7 +3750,7 @@ database_impl::get_certs(cert_name const & name,
 
   fetch(res, 6, any_rows,
         q % text(name())
-          % blob(val()));
+        % blob(val()));
   results_to_certs(res, certs);
 }
 
@@ -3761,8 +3768,8 @@ database_impl::get_certs(id const & ident,
 
   fetch(res, 5, any_rows,
         q % blob(ident())
-          % text(name())
-          % blob(value()));
+        % text(name())
+        % blob(value()));
   results_to_certs(res, certs);
 }
 
@@ -3899,7 +3906,7 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
 }
 
 outdated_indicator
-database::get_revision_cert_nobranch_index(vector< pair<revision_id,
+database::get_revision_cert_nobranch_index(vector < pair < revision_id,
                                            pair<revision_id, key_id> > > & idx)
 {
   // share some storage
@@ -3930,7 +3937,7 @@ database::get_revision_certs(vector<cert> & certs)
 
 outdated_indicator
 database::get_revision_certs(cert_name const & name,
-                            vector<cert> & certs)
+                             vector<cert> & certs)
 {
   imp->get_certs(name, certs, "revision_certs");
   return imp->cert_stamper.get_indicator();
@@ -4047,7 +4054,8 @@ database::revision_cert_exists(revision_id const & hash)
 
 // FIXME: the bogus-cert family of functions is ridiculous
 // and needs to be replaced, or at least factored.
-namespace {
+namespace
+{
   struct trust_value
   {
     set<key_id> good_sigs;
@@ -4226,10 +4234,10 @@ database_impl::add_prefix_matching_constraint(string const & colname,
   else
     {
       for (string::const_iterator i = prefix.begin(); i != prefix.end(); ++i)
-       {
-         E(is_xdigit(*i), origin::user,
-           F("bad character '%c' in id name '%s'") % *i % prefix);
-       }
+        {
+          E(is_xdigit(*i), origin::user,
+            F("bad character '%c' in id name '%s'") % *i % prefix);
+        }
 
       string lower_hex = prefix;
       if (lower_hex.size() < constants::idlen)
@@ -4509,8 +4517,8 @@ database::get_var(var_key const & key, var_value & value)
   imp->fetch(res, one_col, any_rows,
              query("SELECT value FROM db_vars "
                    "WHERE domain = ? AND name = ?")
-                   % text(key.first())
-                   % blob(key.second()));
+             % text(key.first())
+             % blob(key.second()));
   I(res.size() == 1);
   var_value dbvalue(res[0][0], origin::database);
   value = dbvalue;
@@ -4525,8 +4533,8 @@ database::var_exists(var_key const & key)
                    "WHERE EXISTS("
                    "  SELECT 1 FROM db_vars "
                    "  WHERE domain = ? AND name = ?)")
-                   % text(key.first())
-                   % blob(key.second()));
+             % text(key.first())
+             % blob(key.second()));
   return ! res.empty();
 }
 
@@ -4643,31 +4651,31 @@ database::set_registered_workspaces(vector<system_path> const & workspaces)
 outdated_indicator
 database::get_branches(vector<string> & names)
 {
-    results res;
-    query q("SELECT DISTINCT branch FROM branch_leaves");
-    string cert_name = "branch";
-    imp->fetch(res, one_col, any_rows, q);
-    for (size_t i = 0; i < res.size(); ++i)
-      {
-        names.push_back(res[i][0]);
-      }
-    return imp->cert_stamper.get_indicator();
+  results res;
+  query q("SELECT DISTINCT branch FROM branch_leaves");
+  string cert_name = "branch";
+  imp->fetch(res, one_col, any_rows, q);
+  for (size_t i = 0; i < res.size(); ++i)
+    {
+      names.push_back(res[i][0]);
+    }
+  return imp->cert_stamper.get_indicator();
 }
 
 outdated_indicator
 database::get_branches(globish const & glob,
                        vector<string> & names)
 {
-    results res;
-    query q("SELECT DISTINCT value FROM revision_certs WHERE name = ?");
-    string cert_name = "branch";
-    imp->fetch(res, one_col, any_rows, q % text(cert_name));
-    for (size_t i = 0; i < res.size(); ++i)
-      {
-        if (glob.matches(res[i][0]))
-          names.push_back(res[i][0]);
-      }
-    return imp->cert_stamper.get_indicator();
+  results res;
+  query q("SELECT DISTINCT value FROM revision_certs WHERE name = ?");
+  string cert_name = "branch";
+  imp->fetch(res, one_col, any_rows, q % text(cert_name));
+  for (size_t i = 0; i < res.size(); ++i)
+    {
+      if (glob.matches(res[i][0]))
+        names.push_back(res[i][0]);
+    }
+  return imp->cert_stamper.get_indicator();
 }
 
 void
@@ -4978,7 +4986,7 @@ database_path_helper::get_database_path(options const & opts,
     origin::user, F("no default database location configured"));
 
   for (vector<system_path>::const_iterator i = search_paths.begin();
-     i != search_paths.end(); ++i)
+       i != search_paths.end(); ++i)
     {
       if (file_exists((*i) / basename))
         {
@@ -4995,7 +5003,7 @@ database_path_helper::get_database_path(options const & opts,
     {
       path = (*search_paths.begin()) / basename;
       L(FL("no path expansions found for '%s', using '%s'")
-          % opts.dbname_alias % path);
+        % opts.dbname_alias % path);
       return;
     }
 
@@ -5003,7 +5011,7 @@ database_path_helper::get_database_path(options const & opts,
     {
       path = (*candidates.begin());
       L(FL("one path expansion found for '%s': '%s'")
-          % opts.dbname_alias % path);
+        % opts.dbname_alias % path);
       return;
     }
 
@@ -5025,8 +5033,8 @@ void
 database_path_helper::maybe_set_default_alias(options & opts)
 {
   if (opts.dbname_given && (
-       !opts.dbname.as_internal().empty() ||
-       !opts.dbname_alias.empty()))
+        !opts.dbname.as_internal().empty() ||
+        !opts.dbname_alias.empty()))
     {
       return;
     }

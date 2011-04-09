@@ -44,11 +44,11 @@ inline bool is_alnum(char x)
 inline bool is_space(char x)
 {
   return (x == ' ')
-    || (x == '\n')
-    || (x == '\t')
-    || (x == '\r')
-    || (x == '\v')
-    || (x == '\f');
+         || (x == '\n')
+         || (x == '\t')
+         || (x == '\r')
+         || (x == '\v')
+         || (x == '\f');
 }
 
 inline bool is_upper(char x)

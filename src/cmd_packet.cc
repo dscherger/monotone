@@ -76,7 +76,7 @@ CMD_AUTOMATE(put_public_key, N_("KEY-PACKET-DATA"),
   key_store keys(app);
   key_packet_db_writer dbw(db, keys);
 
-  istringstream ss(idx(args,0)());
+  istringstream ss(idx(args, 0)());
   read_key_packets(ss, dbw);
 }
 
@@ -126,9 +126,9 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("KEY_NAME_OR_HASH"),
 }
 
 CMD_AUTOMATE(get_public_key, N_("KEY_NAME_OR_HASH"),
-    N_("Prints a public key packet"),
-    "",
-    options::opts::none)
+             N_("Prints a public key packet"),
+             "",
+             options::opts::none)
 {
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
@@ -257,7 +257,7 @@ CMD_AUTOMATE(read_packets, N_("PACKET-DATA"),
   key_store keys(app);
   packet_db_writer dbw(db, keys);
 
-  istringstream ss(idx(args,0)());
+  istringstream ss(idx(args, 0)());
   read_packets(ss, dbw);
 }
 

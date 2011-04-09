@@ -39,23 +39,23 @@
 // refiner.{cc,hh} for more details.
 
 typedef enum
-  {
-    file_item = 2,
-    key_item = 3,
-    revision_item = 4,
-    cert_item = 5,
-    epoch_item = 6
-  }
+{
+  file_item = 2,
+  key_item = 3,
+  revision_item = 4,
+  cert_item = 5,
+  epoch_item = 6
+}
 netcmd_item_type;
 
 void netcmd_item_type_to_string(netcmd_item_type t, std::string & typestr);
 
 typedef enum
-  {
-    empty_state,
-    leaf_state,
-    subtree_state
-  }
+{
+  empty_state,
+  leaf_state,
+  subtree_state
+}
 slot_state;
 
 struct merkle_node
@@ -87,15 +87,16 @@ struct merkle_node
 
 typedef boost::shared_ptr<merkle_node> merkle_ptr;
 
-typedef std::pair<prefix,size_t> merkle_node_id;
-namespace hashmap {
+typedef std::pair<prefix, size_t> merkle_node_id;
+namespace hashmap
+{
   template<>
   struct hash<merkle_node_id>
   {
     hash<std::string> sh;
     size_t operator()(merkle_node_id const & m) const
     {
-     return sh(m.first()) + m.second;
+      return sh(m.first()) + m.second;
     }
   };
 }

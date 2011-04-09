@@ -72,7 +72,7 @@ typedef unsigned long cvs_tag;
 struct cvs_history;
 
 struct
-cvs_commit
+  cvs_commit
 {
   cvs_commit(rcs_file const & r,
              string const & rcs_version,
@@ -95,7 +95,7 @@ cvs_commit
 };
 
 struct
-cvs_branch
+  cvs_branch
 {
   bool has_a_branchpoint;
   bool has_a_commit;
@@ -158,7 +158,7 @@ cvs_branch
 };
 
 struct
-cvs_history
+  cvs_history
 {
 
   interner<unsigned long> branch_interner;
@@ -263,12 +263,12 @@ cvs_commit::cvs_commit(rcs_file const & r,
     I(strptime(dp, "%Y.%m.%d.%H.%M.%S", &t) != NULL);
 #else
   I(sscanf(dp, "%d.%d.%d.%d.%d.%d", &(t.tm_year), &(t.tm_mon),
-           &(t.tm_mday), &(t.tm_hour), &(t.tm_min), &(t.tm_sec))==6);
+           &(t.tm_mday), &(t.tm_hour), &(t.tm_min), &(t.tm_sec)) == 6);
   t.tm_mon--;
   // Apparently some RCS files have 2 digit years, others four; tm always
   // wants a 2 (or 3) digit year (years since 1900).
   if (t.tm_year > 1900)
-    t.tm_year-=1900;
+    t.tm_year -= 1900;
 #endif
   time = mktime(&t);
   L(FL("= %i") % time);
@@ -285,8 +285,8 @@ cvs_commit::cvs_commit(rcs_file const & r,
   path = cvs.curr_file_interned;
   version = cvs.file_version_interner.intern(ident.inner()());
 
-  typedef multimap<string,string>::const_iterator ity;
-  pair<ity,ity> range = r.admin.symbols.equal_range(rcs_version);
+  typedef multimap<string, string>::const_iterator ity;
+  pair<ity, ity> range = r.admin.symbols.equal_range(rcs_version);
   for (ity i = range.first; i != range.second; ++i)
     {
       if (i->first == rcs_version)
@@ -304,7 +304,7 @@ cvs_commit::cvs_commit(rcs_file const & r,
 struct piece;
 
 struct
-piece_store
+  piece_store
 {
   vector< shared_ptr<rcs_deltatext> > texts;
   void index_deltatext(shared_ptr<rcs_deltatext> const & dt,
@@ -321,7 +321,7 @@ static piece_store global_pieces;
 
 
 struct
-piece
+  piece
 {
   piece(string::size_type p, string::size_type l, unsigned long id) :
     pos(p), len(l), string_id(id) {}
@@ -387,7 +387,7 @@ process_one_hunk(vector< piece > const & source,
       char code;
       int pos, len;
       if (sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len) != 3)
-              throw oops("illformed directive '" + directive + "'");
+        throw oops("illformed directive '" + directive + "'");
 
       if (code == 'a')
         {
@@ -589,21 +589,21 @@ process_branch(database & db,
       string next_version = r.deltas.find(curr_version)->second->next;
 
       if (! next_version.empty())
-      {
-         L(FL("following RCS edge %s -> %s") % curr_version % next_version);
+        {
+          L(FL("following RCS edge %s -> %s") % curr_version % next_version);
 
-         construct_version(*curr_lines, next_version, *next_lines, r);
-         L(FL("constructed RCS version %s, inserting into database") %
-           next_version);
+          construct_version(*curr_lines, next_version, *next_lines, r);
+          L(FL("constructed RCS version %s, inserting into database") %
+            next_version);
 
-         insert_into_db(db, curr_data, curr_id,
-                        *next_lines, next_data, next_id);
-      }
+          insert_into_db(db, curr_data, curr_id,
+                         *next_lines, next_data, next_id);
+        }
 
       // mark the beginning-of-branch time and state of this file if
       // we're at a branchpoint
-      typedef multimap<string,string>::const_iterator ity;
-      pair<ity,ity> range = cvs.branchpoints.equal_range(curr_version);
+      typedef multimap<string, string>::const_iterator ity;
+      pair<ity, ity> range = cvs.branchpoints.equal_range(curr_version);
       if (range.first != cvs.branchpoints.end()
           && range.first->first == curr_version)
         {
@@ -761,10 +761,10 @@ cvs_history::set_filename(string const & file,
   ui.set_tick_trailer(ss);
   ss.resize(ss.size() - 2);
   // remove Attic/ if present
-  string::size_type last_slash=ss.rfind('/');
-  if (last_slash!=string::npos && last_slash>=5
-        && ss.substr(last_slash-5,6)=="Attic/")
-     ss.erase(last_slash-5,6);
+  string::size_type last_slash = ss.rfind('/');
+  if (last_slash != string::npos && last_slash >= 5
+      && ss.substr(last_slash - 5, 6) == "Attic/")
+    ss.erase(last_slash - 5, 6);
   curr_file = file_path_internal(ss);
   curr_file_interned = path_interner.intern(ss);
 }
@@ -814,9 +814,9 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
 
           first_entry_components = components;
           first_entry_components[first_entry_components.size() - 2]
-            = first_entry_components[first_entry_components.size() - 1];
+          = first_entry_components[first_entry_components.size() - 1];
           first_entry_components[first_entry_components.size() - 1]
-            = string("1");
+          = string("1");
 
           branchpoint_components = components;
           branchpoint_components.erase(branchpoint_components.end() - 2,
@@ -882,7 +882,7 @@ cvs_history::pop_branch()
 
 
 class
-cvs_tree_walker
+  cvs_tree_walker
   : public tree_walker
 {
   cvs_history & cvs;
@@ -972,7 +972,7 @@ public:
 // the *latest* beginning time.
 
 struct
-cvs_cluster
+  cvs_cluster
 {
   time_t first_time;
   cvs_author author;
@@ -1005,7 +1005,7 @@ cvs_cluster
 
 
 struct
-cluster_consumer
+  cluster_consumer
 {
   cvs_history & cvs;
   key_store & keys;
@@ -1055,7 +1055,7 @@ typedef shared_ptr<cvs_cluster>
 cluster_ptr;
 
 struct
-cluster_ptr_lt
+  cluster_ptr_lt
 {
   bool operator()(cluster_ptr const & a,
                   cluster_ptr const & b) const
@@ -1350,7 +1350,7 @@ cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
        i != p.tags.end(); ++i)
     {
       map<unsigned long, pair<time_t, revision_id> >::const_iterator j
-        = cvs.resolved_tags.find(*i);
+      = cvs.resolved_tags.find(*i);
 
       if (j != cvs.resolved_tags.end())
         {

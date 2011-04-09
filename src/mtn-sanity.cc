@@ -33,7 +33,7 @@ mtn_sanity::initialize(int argc, char ** argv, char const * lc_all)
 }
 
 void
-mtn_sanity::inform_log(std::string const &msg)
+mtn_sanity::inform_log(std::string const & msg)
 {
   if (debug_p())
     {
@@ -42,19 +42,19 @@ mtn_sanity::inform_log(std::string const &msg)
 }
 
 void
-mtn_sanity::inform_message(std::string const &msg)
+mtn_sanity::inform_message(std::string const & msg)
 {
   ui.inform(msg);
 }
 
 void
-mtn_sanity::inform_warning(std::string const &msg)
+mtn_sanity::inform_warning(std::string const & msg)
 {
   ui.warn(msg);
 }
 
 void
-mtn_sanity::inform_error(std::string const &msg)
+mtn_sanity::inform_error(std::string const & msg)
 {
   ui.inform(msg);
 }

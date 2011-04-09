@@ -16,7 +16,7 @@
 
 template <typename T>
 struct
-interner
+  interner
 {
   typedef typename hashmap::hash_map<std::string, T> hmap;
 

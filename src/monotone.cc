@@ -118,7 +118,8 @@ cpp_main(int argc, char ** argv)
       unfiltered_pipe = new Botan::Pipe;
       new (unfiltered_pipe_cleanup_mem) cached_botan_pipe(unfiltered_pipe);
 
-      class _DbCacheEmptier {
+      class _DbCacheEmptier
+      {
       public:
         _DbCacheEmptier() { }
         ~_DbCacheEmptier() { database::reset_cache(); }
@@ -148,32 +149,32 @@ cpp_main(int argc, char ** argv)
 
       // check the botan library version we got linked against.
       u32 linked_botan_version = BOTAN_VERSION_CODE_FOR(
-        Botan::version_major(), Botan::version_minor(),
-        Botan::version_patch());
+                                   Botan::version_major(), Botan::version_minor(),
+                                   Botan::version_patch());
 
       // Botan 1.7.14 has an incompatible API change, which got reverted
       // again in 1.7.15. Thus we do not care to support 1.7.14.
-      E(linked_botan_version != BOTAN_VERSION_CODE_FOR(1,7,14), origin::system,
+      E(linked_botan_version != BOTAN_VERSION_CODE_FOR(1, 7, 14), origin::system,
         F("monotone does not support Botan 1.7.14"));
 
 #if BOTAN_VERSION_CODE <= BOTAN_VERSION_CODE_FOR(1,7,6)
-      E(linked_botan_version >= BOTAN_VERSION_CODE_FOR(1,6,3), origin::system,
+      E(linked_botan_version >= BOTAN_VERSION_CODE_FOR(1, 6, 3), origin::system,
         F("this monotone binary requires Botan 1.6.3 or newer"));
-      E(linked_botan_version <= BOTAN_VERSION_CODE_FOR(1,7,6), origin::system,
+      E(linked_botan_version <= BOTAN_VERSION_CODE_FOR(1, 7, 6), origin::system,
         F("this monotone binary does not work with Botan newer than 1.7.6"));
 #elif BOTAN_VERSION_CODE <= BOTAN_VERSION_CODE_FOR(1,7,22)
-      E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,6), origin::system,
+      E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1, 7, 6), origin::system,
         F("this monotone binary requires Botan 1.7.7 or newer"));
       // While compiling against 1.7.22 or newer is recommended, because
       // it enables new features of Botan, the monotone binary compiled
       // against Botan 1.7.21 and before should still work with newer Botan
       // versions, including all of the stable branch 1.8.x.
-      E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0), origin::system,
+      E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1, 9, 0), origin::system,
         F("this monotone binary does not work with Botan 1.9.x"));
 #else
-      E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,22), origin::system,
+      E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1, 7, 22), origin::system,
         F("this monotone binary requires Botan 1.7.22 or newer"));
-      E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0), origin::system,
+      E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1, 9, 0), origin::system,
         F("this monotone binary does not work with Botan 1.9.x"));
 #endif
 
@@ -185,8 +186,8 @@ cpp_main(int argc, char ** argv)
           app.reset_info.cmdline_args = args;
 
           options::opts::all_options().instantiate(&app.opts)
-            .from_command_line(app.reset_info.cmdline_args,
-                               option::concrete_option_set::preparse);
+          .from_command_line(app.reset_info.cmdline_args,
+                             option::concrete_option_set::preparse);
 
           if (app.opts.version_given)
             {

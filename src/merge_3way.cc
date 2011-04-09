@@ -71,11 +71,11 @@ struct conflict {};
 
 typedef enum { preserved = 0, deleted = 1, changed = 2 } edit_t;
 static const char etab[3][10] =
-  {
-    "preserved",
-    "deleted",
-    "changed"
-  };
+{
+  "preserved",
+  "deleted",
+  "changed"
+};
 
 struct extent
 {
@@ -169,97 +169,97 @@ void normalize_extents(vector<extent> & a_b_map,
   for (size_t i = 0; i < a_b_map.size(); ++i)
     {
       if (i > 0)
-      {
-        size_t j = i;
-        while (j > 0
-               && (a_b_map.at(j-1).type == preserved)
-               && (a_b_map.at(j).type == changed)
-               && (a.at(j) == b.at(a_b_map.at(j).pos + a_b_map.at(j).len - 1)))
-          {
-            // This is implied by (a_b_map.at(j-1).type == preserved)
-            I(a.at(j-1) == b.at(a_b_map.at(j-1).pos));
+        {
+          size_t j = i;
+          while (j > 0
+                 && (a_b_map.at(j - 1).type == preserved)
+                 && (a_b_map.at(j).type == changed)
+                 && (a.at(j) == b.at(a_b_map.at(j).pos + a_b_map.at(j).len - 1)))
+            {
+              // This is implied by (a_b_map.at(j-1).type == preserved)
+              I(a.at(j - 1) == b.at(a_b_map.at(j - 1).pos));
 
-            // Coming into loop we have:
-            //                     i
-            //  z   --pres-->  z   0
-            //  o   --pres-->  o   1
-            //  a   --chng-->  a   2   The important thing here is that 'a' in
-            //                 t       the LHS matches with ...
-            //                 u
-            //                 v
-            //                 a       ... the a on the RHS here. Hence we can
-            //  q  --pres-->   q   3   'shift' the entire 'changed' block
-            //  e  --chng-->   d   4   upwards, leaving a 'preserved' line
-            //  g  --pres-->   g   5   'a'->'a'
-            //
-            //  Want to end up with:
-            //                     i
-            //  z   --pres-->  z   0
-            //  o   --chng-->  o   1
-            //                 a
-            //                 t
-            //                 u
-            //                 v
-            //  a  --pres-->   a   2
-            //  q  --pres-->   q   3
-            //  e  --chng-->   d   4
-            //  g  --pres-->   g   5
-            //
-            // Now all the 'changed' extents are normalised to the
-            // earliest possible position.
+              // Coming into loop we have:
+              //                     i
+              //  z   --pres-->  z   0
+              //  o   --pres-->  o   1
+              //  a   --chng-->  a   2   The important thing here is that 'a' in
+              //                 t       the LHS matches with ...
+              //                 u
+              //                 v
+              //                 a       ... the a on the RHS here. Hence we can
+              //  q  --pres-->   q   3   'shift' the entire 'changed' block
+              //  e  --chng-->   d   4   upwards, leaving a 'preserved' line
+              //  g  --pres-->   g   5   'a'->'a'
+              //
+              //  Want to end up with:
+              //                     i
+              //  z   --pres-->  z   0
+              //  o   --chng-->  o   1
+              //                 a
+              //                 t
+              //                 u
+              //                 v
+              //  a  --pres-->   a   2
+              //  q  --pres-->   q   3
+              //  e  --chng-->   d   4
+              //  g  --pres-->   g   5
+              //
+              // Now all the 'changed' extents are normalised to the
+              // earliest possible position.
 
-            L(FL("exchanging preserved extent [%d+%d] with changed extent [%d+%d]")
-              % a_b_map.at(j-1).pos
-              % a_b_map.at(j-1).len
-              % a_b_map.at(j).pos
-              % a_b_map.at(j).len);
+              L(FL("exchanging preserved extent [%d+%d] with changed extent [%d+%d]")
+                % a_b_map.at(j - 1).pos
+                % a_b_map.at(j - 1).len
+                % a_b_map.at(j).pos
+                % a_b_map.at(j).len);
 
-            swap(a_b_map.at(j-1).len, a_b_map.at(j).len);
-            swap(a_b_map.at(j-1).type, a_b_map.at(j).type);
+              swap(a_b_map.at(j - 1).len, a_b_map.at(j).len);
+              swap(a_b_map.at(j - 1).type, a_b_map.at(j).type);
 
-            // Adjust position of the later, preserved extent. It should
-            // better point to the second 'a' in the above example.
-            a_b_map.at(j).pos = a_b_map.at(j-1).pos + a_b_map.at(j-1).len;
+              // Adjust position of the later, preserved extent. It should
+              // better point to the second 'a' in the above example.
+              a_b_map.at(j).pos = a_b_map.at(j - 1).pos + a_b_map.at(j - 1).len;
 
-            --j;
-          }
-      }
+              --j;
+            }
+        }
     }
 
   for (size_t i = 0; i < a_b_map.size(); ++i)
     {
       if (i > 0)
-      {
-        size_t j = i;
-        while (j > 0
-               && a_b_map.at(j).type == changed
-               && a_b_map.at(j-1).type == changed
-               && a_b_map.at(j).len > 1
-               && a_b_map.at(j-1).pos + a_b_map.at(j-1).len == a_b_map.at(j).pos)
-          {
-            // step 1: move a chunk from this insert extent to its
-            // predecessor
-            size_t piece = a_b_map.at(j).len - 1;
-            //      L(FL("moving change piece of len %d from pos %d to pos %d")
-            //        % piece
-            //        % a_b_map.at(j).pos
-            //        % a_b_map.at(j-1).pos);
-            a_b_map.at(j).len = 1;
-            a_b_map.at(j).pos += piece;
-            a_b_map.at(j-1).len += piece;
+        {
+          size_t j = i;
+          while (j > 0
+                 && a_b_map.at(j).type == changed
+                 && a_b_map.at(j - 1).type == changed
+                 && a_b_map.at(j).len > 1
+                 && a_b_map.at(j - 1).pos + a_b_map.at(j - 1).len == a_b_map.at(j).pos)
+            {
+              // step 1: move a chunk from this insert extent to its
+              // predecessor
+              size_t piece = a_b_map.at(j).len - 1;
+              //      L(FL("moving change piece of len %d from pos %d to pos %d")
+              //        % piece
+              //        % a_b_map.at(j).pos
+              //        % a_b_map.at(j-1).pos);
+              a_b_map.at(j).len = 1;
+              a_b_map.at(j).pos += piece;
+              a_b_map.at(j - 1).len += piece;
 
-            // step 2: if this extent (now of length 1) has become a "changed"
-            // extent identical to its previous state, switch it to a "preserved"
-            // extent.
-            if (b.at(a_b_map.at(j).pos) == a.at(j))
-              {
-                //              L(FL("changing normalized 'changed' extent at %d to 'preserved'")
-                //                % a_b_map.at(j).pos);
-                a_b_map.at(j).type = preserved;
-              }
-            --j;
-          }
-      }
+              // step 2: if this extent (now of length 1) has become a "changed"
+              // extent identical to its previous state, switch it to a "preserved"
+              // extent.
+              if (b.at(a_b_map.at(j).pos) == a.at(j))
+                {
+                  //              L(FL("changing normalized 'changed' extent at %d to 'preserved'")
+                  //                % a_b_map.at(j).pos);
+                  a_b_map.at(j).type = preserved;
+                }
+              --j;
+            }
+        }
     }
 }
 
@@ -449,7 +449,7 @@ bool merge3(vector<string> const & ancestor,
             vector<string> & merged)
 {
   try
-   {
+    {
       merge_via_edit_scripts(ancestor, left, right, merged);
     }
   catch(conflict &)

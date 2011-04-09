@@ -17,7 +17,7 @@
 
 using boost::lexical_cast;
 
-template<typename _CharT, typename _Traits = std::char_traits<_CharT> >
+template < typename _CharT, typename _Traits = std::char_traits<_CharT> >
 class basic_automate_streambuf : public std::basic_streambuf<_CharT, _Traits>
 {
   typedef _Traits traits_type;
@@ -30,7 +30,7 @@ public:
   basic_automate_streambuf(std::ostream & o, size_t bufsize)
     : std::basic_streambuf<_CharT, _Traits>(), _bufsize(bufsize), out(&o), cmdnum(0)
   {
-    _CharT *inbuf = new _CharT[_bufsize];
+    _CharT * inbuf = new _CharT[_bufsize];
     this->setp(inbuf, inbuf + _bufsize);
   }
 
@@ -66,7 +66,7 @@ public:
         (*out) << cmdnum << ':'
                << 'm' << ':'
                << num << ':'
-               << std::basic_string<_CharT,_Traits>(this->pbase(), num);
+               << std::basic_string<_CharT, _Traits>(this->pbase(), num);
         this->setp(this->pbase(), this->pbase() + _bufsize);
         out->flush();
       }
@@ -77,17 +77,18 @@ public:
     unsigned chunksize = _bufsize;
     size_t length = data.size(), offset = 0;
     do
-    {
-      if (offset+chunksize>length)
-        chunksize = length-offset;
-      (*out) << cmdnum << ':' << type << ':' << chunksize
-             << ':' << data.substr(offset, chunksize);
-      offset+= chunksize;
-    } while (offset<length);
+      {
+        if (offset + chunksize > length)
+          chunksize = length - offset;
+        (*out) << cmdnum << ':' << type << ':' << chunksize
+               << ':' << data.substr(offset, chunksize);
+        offset += chunksize;
+      }
+    while (offset < length);
     out->flush();
   }
 
-  void write_headers(std::vector<std::pair<std::string,std::string> > const & headers)
+  void write_headers(std::vector<std::pair<std::string, std::string> > const & headers)
   {
     for (std::vector<std::pair<std::string, std::string> >::const_iterator h = headers.begin();
          h != headers.end(); ++h)
@@ -107,17 +108,17 @@ public:
   }
 };
 
-template<typename _CharT, typename _Traits = std::char_traits<_CharT> >
+template < typename _CharT, typename _Traits = std::char_traits<_CharT> >
 struct basic_automate_ostream : public std::basic_ostream<_CharT, _Traits>
 {
   typedef basic_automate_streambuf<_CharT, _Traits> streambuf_type;
   streambuf_type _M_autobuf;
 
   basic_automate_ostream(std::basic_ostream<_CharT, _Traits> &out,
-                   size_t blocksize)
+                         size_t blocksize)
     : std::basic_ostream<_CharT, _Traits>(&_M_autobuf),
       _M_autobuf(out, blocksize)
-  { /* this->init(&_M_autobuf); */ }
+{ /* this->init(&_M_autobuf); */ }
 
 protected:
   basic_automate_ostream() { }
@@ -136,7 +137,7 @@ public:
   virtual void write_out_of_band(char type, std::string const & data)
   { _M_autobuf.write_out_of_band(type, data); }
 
-  virtual void write_headers(std::vector<std::pair<std::string,std::string> > const & headers)
+  virtual void write_headers(std::vector<std::pair<std::string, std::string> > const & headers)
   { _M_autobuf.write_headers(headers); }
 };
 

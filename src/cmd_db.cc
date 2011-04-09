@@ -225,7 +225,7 @@ CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "REVID",
               "the workspace contains uncommitted changes.\n"
               "Consider updating your workspace to another revision first,\n"
               "before you try to kill this revision again.")
-              % revid);
+            % revid);
 
           P(F("applying changes from %s on the current workspace")
             % revid);
@@ -256,8 +256,8 @@ CMD(db_kill_certs_locally, "kill_certs", "", CMD_REF(db_local),
   if (args.size() < 2 || args.size() > 3)
     throw usage(execid);
 
-  string selector = idx(args,0)();
-  cert_name name = typecast_vocab<cert_name>(idx(args,1));
+  string selector = idx(args, 0)();
+  cert_name name = typecast_vocab<cert_name>(idx(args, 1));
 
   database db(app);
   project_t project(db);
@@ -291,7 +291,7 @@ CMD(db_kill_certs_locally, "kill_certs", "", CMD_REF(db_local),
     }
   else
     {
-      cert_value value = typecast_vocab<cert_value>(idx(args,2));
+      cert_value value = typecast_vocab<cert_value>(idx(args, 2));
       L(FL("deleting all certs with name '%s' and value '%s' on %d revisions")
         % name % value % revisions.size());
       for (set<revision_id>::const_iterator r = revisions.begin();
@@ -384,9 +384,9 @@ CMD(db_regenerate_caches, "regenerate_caches", "", CMD_REF(db), "",
 }
 
 CMD_HIDDEN(clear_epoch, "clear_epoch", "", CMD_REF(db), "BRANCH",
-    N_("Clears the branch's epoch"),
-    "",
-    options::opts::none)
+           N_("Clears the branch's epoch"),
+           "",
+           options::opts::none)
 {
   if (args.size() != 1)
     throw usage(execid);
@@ -530,7 +530,7 @@ CMD(cleanup_workspace_list, "cleanup_workspace_list", "", CMD_REF(variables), ""
         {
           L(FL("ignoring workspace '%s', expected database %s, "
                "but has %s configured in _MTN/options")
-              % workspace_path % db.get_filename() % workspace_db_path);
+            % workspace_path % db.get_filename() % workspace_db_path);
           continue;
         }
 
@@ -604,7 +604,7 @@ CMD_HIDDEN(test_migration_step, "test_migration_step", "", CMD_REF(db),
 
   if (args.size() != 1)
     throw usage(execid);
-  db.test_migration_step(keys, idx(args,0)());
+  db.test_migration_step(keys, idx(args, 0)());
 }
 
 CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
@@ -627,10 +627,10 @@ CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
 // loading revisions is relatively fast
 
 CMD_HIDDEN(load_revisions, "load_revisions", "", CMD_REF(db), "",
-    N_("Load all revisions from the database"),
-    N_("This command loads all revisions from the database and is "
-       "intended to be used for timing revision loading performance."),
-    options::opts::none)
+           N_("Load all revisions from the database"),
+           N_("This command loads all revisions from the database and is "
+              "intended to be used for timing revision loading performance."),
+           options::opts::none)
 {
   database db(app);
   set<revision_id> ids;
@@ -656,10 +656,10 @@ CMD_HIDDEN(load_revisions, "load_revisions", "", CMD_REF(db), "",
 // loading rosters is slow compared with files, revisions or certs
 
 CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), "",
-    N_("Load all roster versions from the database"),
-    N_("This command loads all roster versions from the database and is "
-       "intended to be used for timing roster reconstruction performance."),
-    options::opts::none)
+           N_("Load all roster versions from the database"),
+           N_("This command loads all roster versions from the database and is "
+              "intended to be used for timing roster reconstruction performance."),
+           options::opts::none)
 {
   database db(app);
   set<revision_id> ids;
@@ -684,10 +684,10 @@ CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), "",
 // loading files is slower than revisions but faster than rosters
 
 CMD_HIDDEN(load_files, "load_files", "", CMD_REF(db), "",
-    N_("Load all file versions from the database"),
-    N_("This command loads all files versions from the database and is "
-       "intended to be used for timing file reconstruction performance."),
-    options::opts::none)
+           N_("Load all file versions from the database"),
+           N_("This command loads all files versions from the database and is "
+              "intended to be used for timing file reconstruction performance."),
+           options::opts::none)
 {
   database db(app);
   set<file_id> files;
@@ -710,10 +710,10 @@ CMD_HIDDEN(load_files, "load_files", "", CMD_REF(db), "",
 // loading certs is fast
 
 CMD_HIDDEN(load_certs, "load_certs", "", CMD_REF(db), "",
-    N_("Load all certs from the database"),
-    N_("This command loads all certs from the database and is "
-       "intended to be used for timing cert loading performance."),
-    options::opts::none)
+           N_("Load all certs from the database"),
+           N_("This command loads all certs from the database and is "
+              "intended to be used for timing cert loading performance."),
+           options::opts::none)
 {
   database db(app);
   vector<cert> certs;

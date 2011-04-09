@@ -76,14 +76,14 @@ build_stream_to_server(options & opts, lua_hooks & lua,
       string cmd = args[0];
       args.erase(args.begin());
       return shared_ptr<Netxx::StreamBase>
-        (new Netxx::PipeStream(cmd, args));
+             (new Netxx::PipeStream(cmd, args));
     }
   else
     {
 #ifdef USE_IPV6
-      bool use_ipv6=true;
+      bool use_ipv6 = true;
 #else
-      bool use_ipv6=false;
+      bool use_ipv6 = false;
 #endif
       string host(info->client.get_uri().host);
       I(!host.empty());
@@ -91,7 +91,7 @@ build_stream_to_server(options & opts, lua_hooks & lua,
                           info->client.get_port(),
                           use_ipv6);
       return shared_ptr<Netxx::StreamBase>
-        (new Netxx::Stream(addr, timeout));
+             (new Netxx::Stream(addr, timeout));
     }
 }
 
@@ -107,14 +107,14 @@ call_server(app_state & app,
   transaction_guard guard(project.db);
 
   Netxx::Timeout timeout(static_cast<long>(constants::netsync_timeout_seconds)),
-    instant(0,1);
+        instant(0, 1);
 
   P(F("connecting to '%s'") % info->client.get_uri().resource());
   P(F("  include pattern  '%s'") % info->client.get_include_pattern());
   P(F("  exclude pattern  '%s'") % info->client.get_exclude_pattern());
 
   shared_ptr<Netxx::StreamBase> server
-    = build_stream_to_server(app.opts, app.lua, info, timeout);
+  = build_stream_to_server(app.opts, app.lua, info, timeout);
 
   // 'false' here means not to revert changes when the SockOpt
   // goes out of scope.
@@ -218,8 +218,8 @@ session_from_server_sync_item(app_state & app,
     {
       P(F("connecting to '%s'") % info->client.get_uri().resource());
       shared_ptr<Netxx::StreamBase> server
-        = build_stream_to_server(app.opts, app.lua, info,
-                                 Netxx::Timeout(constants::netsync_timeout_seconds));
+      = build_stream_to_server(app.opts, app.lua, info,
+                               Netxx::Timeout(constants::netsync_timeout_seconds));
 
       // 'false' here means not to revert changes when
       // the SockOpt goes out of scope.
@@ -227,17 +227,17 @@ session_from_server_sync_item(app_state & app,
       socket_options.set_non_blocking();
 
       shared_ptr<session>
-        sess(new session(app, project, keys,
-                         client_voice,
-                         info->client.get_uri().resource(), server));
+      sess(new session(app, project, keys,
+                       client_voice,
+                       info->client.get_uri().resource(), server));
       shared_ptr<wrapped_session>
-        wrapped(new netsync_session(sess.get(),
-                                    app.opts, app.lua, project,
-                                    keys, request.role,
-                                    info->client.get_include_pattern(),
-                                    info->client.get_exclude_pattern(),
-                                    connection_counts::create(),
-                                    true));
+      wrapped(new netsync_session(sess.get(),
+                                  app.opts, app.lua, project,
+                                  keys, request.role,
+                                  info->client.get_include_pattern(),
+                                  info->client.get_exclude_pattern(),
+                                  connection_counts::create(),
+                                  true));
       sess->set_inner(wrapped);
       return sess;
     }
@@ -277,9 +277,9 @@ serve_connections(app_state & app,
                   std::vector<utf8> const & addresses)
 {
 #ifdef USE_IPV6
-  bool use_ipv6=true;
+  bool use_ipv6 = true;
 #else
-  bool use_ipv6=false;
+  bool use_ipv6 = false;
 #endif
 
   shared_ptr<transaction_guard> guard(new transaction_guard(project.db));
@@ -296,7 +296,7 @@ serve_connections(app_state & app,
     {
       if (!guard)
         guard = shared_ptr<transaction_guard>
-          (new transaction_guard(project.db));
+                (new transaction_guard(project.db));
       I(guard);
 
       react.ready(*guard);
@@ -304,11 +304,11 @@ serve_connections(app_state & app,
       while (!server_initiated_sync_requests.empty())
         {
           server_initiated_sync_request request
-            = server_initiated_sync_requests.front();
+          = server_initiated_sync_requests.front();
           server_initiated_sync_requests.pop_front();
           shared_ptr<session> sess
-            = session_from_server_sync_item(app,  project, keys,
-                                            request);
+          = session_from_server_sync_item(app,  project, keys,
+                                          request);
 
           if (sess)
             {
@@ -394,12 +394,12 @@ run_netsync_protocol(app_state & app,
         {
           if (opts.bind_stdio)
             {
-              shared_ptr<Netxx::PipeStream> str(new Netxx::PipeStream(0,1));
+              shared_ptr<Netxx::PipeStream> str(new Netxx::PipeStream(0, 1));
 
               shared_ptr<session>
-                sess(new session(app, project, keys,
-                                 server_voice,
-                                 "stdio", str));
+              sess(new session(app, project, keys,
+                               server_voice,
+                               "stdio", str));
               serve_single_connection(project, sess);
             }
           else

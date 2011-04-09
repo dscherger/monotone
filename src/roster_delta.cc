@@ -36,17 +36,17 @@ namespace
   struct roster_delta_t
   {
     typedef std::set<node_id> nodes_deleted_t;
-    typedef std::map<pair<node_id, path_component>,
-                     node_id> dirs_added_t;
-    typedef std::map<pair<node_id, path_component>,
-                     pair<node_id, file_id> > files_added_t;
-    typedef std::map<node_id,
-                     pair<node_id, path_component> > nodes_renamed_t;
+    typedef std::map < pair<node_id, path_component>,
+            node_id > dirs_added_t;
+    typedef std::map < pair<node_id, path_component>,
+            pair<node_id, file_id> > files_added_t;
+    typedef std::map < node_id,
+            pair<node_id, path_component> > nodes_renamed_t;
     typedef std::map<node_id, file_id> deltas_applied_t;
     typedef std::set<pair<node_id, attr_key> > attrs_cleared_t;
-    typedef std::set<pair<node_id,
-                          pair<attr_key,
-                               pair<bool, attr_value> > > > attrs_changed_t;
+    typedef std::set < pair < node_id,
+            pair < attr_key,
+            pair<bool, attr_value> > > > attrs_changed_t;
     typedef std::map<node_id, const_marking_t> markings_changed_t;
 
     nodes_deleted_t nodes_deleted;
@@ -70,58 +70,58 @@ namespace
   {
     // Detach everything that should be detached.
     for (nodes_deleted_t::const_iterator
-           i = nodes_deleted.begin(); i != nodes_deleted.end(); ++i)
+         i = nodes_deleted.begin(); i != nodes_deleted.end(); ++i)
       roster.detach_node(*i);
     for (nodes_renamed_t::const_iterator
-           i = nodes_renamed.begin(); i != nodes_renamed.end(); ++i)
+         i = nodes_renamed.begin(); i != nodes_renamed.end(); ++i)
       roster.detach_node(i->first);
 
     // Delete the delete-able things.
     for (nodes_deleted_t::const_iterator
-           i = nodes_deleted.begin(); i != nodes_deleted.end(); ++i)
+         i = nodes_deleted.begin(); i != nodes_deleted.end(); ++i)
       roster.drop_detached_node(*i);
 
     // Add the new things.
     for (dirs_added_t::const_iterator
-           i = dirs_added.begin(); i != dirs_added.end(); ++i)
+         i = dirs_added.begin(); i != dirs_added.end(); ++i)
       roster.create_dir_node(i->second);
     for (files_added_t::const_iterator
-           i = files_added.begin(); i != files_added.end(); ++i)
+         i = files_added.begin(); i != files_added.end(); ++i)
       roster.create_file_node(i->second.second, i->second.first);
 
     // Attach everything.
     for (dirs_added_t::const_iterator
-           i = dirs_added.begin(); i != dirs_added.end(); ++i)
+         i = dirs_added.begin(); i != dirs_added.end(); ++i)
       roster.attach_node(i->second, i->first.first, i->first.second);
     for (files_added_t::const_iterator
-           i = files_added.begin(); i != files_added.end(); ++i)
+         i = files_added.begin(); i != files_added.end(); ++i)
       roster.attach_node(i->second.first, i->first.first, i->first.second);
     for (nodes_renamed_t::const_iterator
-           i = nodes_renamed.begin(); i != nodes_renamed.end(); ++i)
+         i = nodes_renamed.begin(); i != nodes_renamed.end(); ++i)
       roster.attach_node(i->first, i->second.first, i->second.second);
 
     // Okay, all the tricky tree-rearranging is done, just have to do some
     // individual node edits now.
     for (deltas_applied_t::const_iterator
-           i = deltas_applied.begin(); i != deltas_applied.end(); ++i)
+         i = deltas_applied.begin(); i != deltas_applied.end(); ++i)
       roster.set_content(i->first, i->second);
 
     for (attrs_cleared_t::const_iterator
-           i = attrs_cleared.begin(); i != attrs_cleared.end(); ++i)
+         i = attrs_cleared.begin(); i != attrs_cleared.end(); ++i)
       roster.erase_attr(i->first, i->second);
 
     for (attrs_changed_t::const_iterator
-           i = attrs_changed.begin(); i != attrs_changed.end(); ++i)
+         i = attrs_changed.begin(); i != attrs_changed.end(); ++i)
       roster.set_attr_unknown_to_dead_ok(i->first, i->second.first, i->second.second);
 
     // And finally, update the marking map.
     for (nodes_deleted_t::const_iterator
-           i = nodes_deleted.begin(); i != nodes_deleted.end(); ++i)
+         i = nodes_deleted.begin(); i != nodes_deleted.end(); ++i)
       {
         markings.remove_marking(*i);
       }
     for (markings_changed_t::const_iterator
-           i = markings_changed.begin(); i != markings_changed.end(); ++i)
+         i = markings_changed.begin(); i != markings_changed.end(); ++i)
       {
         markings.put_or_replace_marking(i->first, i->second);
       }
@@ -424,27 +424,27 @@ namespace
     string contents;
 
     for (roster_delta_t::nodes_deleted_t::const_iterator
-           i = d.nodes_deleted.begin(); i != d.nodes_deleted.end(); ++i)
+         i = d.nodes_deleted.begin(); i != d.nodes_deleted.end(); ++i)
       {
         push_nid(syms::deleted, *i, contents, 7);
         contents += "\n";
       }
     for (roster_delta_t::nodes_renamed_t::const_iterator
-           i = d.nodes_renamed.begin(); i != d.nodes_renamed.end(); ++i)
+         i = d.nodes_renamed.begin(); i != d.nodes_renamed.end(); ++i)
       {
         push_nid(syms::rename, i->first, contents, 8);
         push_loc(i->second, contents, 8);
         contents += "\n";
       }
     for (roster_delta_t::dirs_added_t::const_iterator
-           i = d.dirs_added.begin(); i != d.dirs_added.end(); ++i)
+         i = d.dirs_added.begin(); i != d.dirs_added.end(); ++i)
       {
         push_nid(syms::add_dir, i->second, contents, 8);
         push_loc(i->first, contents, 8);
         contents += "\n";
       }
     for (roster_delta_t::files_added_t::const_iterator
-           i = d.files_added.begin(); i != d.files_added.end(); ++i)
+         i = d.files_added.begin(); i != d.files_added.end(); ++i)
       {
         push_nid(syms::add_file, i->second.first, contents, 8);
         push_loc(i->first, contents, 8);
@@ -453,7 +453,7 @@ namespace
         contents.append("]\n\n");
       }
     for (roster_delta_t::deltas_applied_t::const_iterator
-           i = d.deltas_applied.begin(); i != d.deltas_applied.end(); ++i)
+         i = d.deltas_applied.begin(); i != d.deltas_applied.end(); ++i)
       {
         push_nid(syms::delta, i->first, contents, 7);
         contents.append("content [");
@@ -461,7 +461,7 @@ namespace
         contents.append("]\n\n");
       }
     for (roster_delta_t::attrs_cleared_t::const_iterator
-           i = d.attrs_cleared.begin(); i != d.attrs_cleared.end(); ++i)
+         i = d.attrs_cleared.begin(); i != d.attrs_cleared.end(); ++i)
       {
         push_nid(syms::attr_cleared, i->first, contents, 12);
         contents.append("        attr \"");
@@ -469,7 +469,7 @@ namespace
         contents.append("\"\n\n");
       }
     for (roster_delta_t::attrs_changed_t::const_iterator
-           i = d.attrs_changed.begin(); i != d.attrs_changed.end(); ++i)
+         i = d.attrs_changed.begin(); i != d.attrs_changed.end(); ++i)
       {
         push_nid(syms::attr_changed, i->first, contents, 12);
         contents.append("        attr \"");
@@ -481,7 +481,7 @@ namespace
         contents.append("\"\n\n");
       }
     for (roster_delta_t::markings_changed_t::const_iterator
-           i = d.markings_changed.begin(); i != d.markings_changed.end(); ++i)
+         i = d.markings_changed.begin(); i != d.markings_changed.end(); ++i)
       {
         bool is_file = !i->second->file_content.empty();
         int symbol_length = (is_file ? 12 : 9);
@@ -673,8 +673,8 @@ try_get_markings_from_roster_delta(roster_delta const & del,
 // -- in this case content is left undefined.
 bool
 try_get_content_from_roster_delta(roster_delta const & del,
-                              node_id const & nid,
-                              file_id & content)
+                                  node_id const & nid,
+                                  file_id & content)
 {
   roster_delta_t d;
   read_roster_delta(del, d);

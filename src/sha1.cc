@@ -18,8 +18,8 @@
 // own timer and measures botan's different SHA1 providers, instead of
 // only measuring one.
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,23)
-  #include <botan/libstate.h>
-  #include <botan/benchmark.h>
+#include <botan/libstate.h>
+#include <botan/benchmark.h>
 #endif
 
 #include "sanity.hh"
@@ -40,7 +40,7 @@ CMD_HIDDEN(benchmark_sha1, "benchmark_sha1", "", CMD_REF(debug), "",
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,23)
 
   Botan::AutoSeeded_RNG rng;
-  Botan::Algorithm_Factory& af =
+  Botan::Algorithm_Factory & af =
     Botan::global_state().algorithm_factory();
 
   const int milliseconds = 5000;

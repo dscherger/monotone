@@ -124,14 +124,14 @@ static u32
 get_long(char const * buf)
 {
   L((FL("ssh_agent: get_long: %u %u %u %u")
-     % widen<u32,char>(buf[0])
-     % widen<u32,char>(buf[1])
-     % widen<u32,char>(buf[2])
-     % widen<u32,char>(buf[3])));
-  return ((widen<u32,char>(buf[0]) << 24)
-          | (widen<u32,char>(buf[1]) << 16)
-          | (widen<u32,char>(buf[2]) << 8)
-          | widen<u32,char>(buf[3]));
+     % widen<u32, char>(buf[0])
+     % widen<u32, char>(buf[1])
+     % widen<u32, char>(buf[2])
+     % widen<u32, char>(buf[3])));
+  return ((widen<u32, char>(buf[0]) << 24)
+          | (widen<u32, char>(buf[1]) << 16)
+          | (widen<u32, char>(buf[2]) << 8)
+          | widen<u32, char>(buf[3]));
 }
 
 static u32
@@ -399,7 +399,7 @@ ssh_agent::has_key(const keypair & key)
 
   vector<RSA_PublicKey> ssh_keys = get_keys();
   for (vector<RSA_PublicKey>::const_iterator
-         si = ssh_keys.begin(); si != ssh_keys.end(); ++si)
+       si = ssh_keys.begin(); si != ssh_keys.end(); ++si)
     {
       if ((*pub_key).get_e() == (*si).get_e()
           && (*pub_key).get_n() == (*si).get_n())

@@ -24,30 +24,30 @@ struct pcre_extra;
 namespace pcre
 {
   enum flags
-    {
-      // flags usable with both pcre_compile and pcre_exec
-      DEFAULT         = 0x0000,                    // no special behavior
-      NEWLINE_CR      = 0x0001,                    // newline is \r
-      NEWLINE_LF      = 0x0002,                    // newline is \n
-      NEWLINE_CRLF    = (NEWLINE_CR|NEWLINE_LF),   // newline is \r\n
-      ANCHORED        = 0x0004,                    // match only at beginning
-                                                   // of string (\A in pat)
-      // flags usable only with pcre_exec
-      NOTBOL          = 0x0008, // beginning of string isn't beginning of line
-      NOTEOL          = 0x0010, // end of string isn't end of line
-      NOTEMPTY        = 0x0020, // an empty match is a match failure
+  {
+    // flags usable with both pcre_compile and pcre_exec
+    DEFAULT         = 0x0000,                    // no special behavior
+    NEWLINE_CR      = 0x0001,                    // newline is \r
+    NEWLINE_LF      = 0x0002,                    // newline is \n
+    NEWLINE_CRLF    = (NEWLINE_CR | NEWLINE_LF), // newline is \r\n
+    ANCHORED        = 0x0004,                    // match only at beginning
+    // of string (\A in pat)
+    // flags usable only with pcre_exec
+    NOTBOL          = 0x0008, // beginning of string isn't beginning of line
+    NOTEOL          = 0x0010, // end of string isn't end of line
+    NOTEMPTY        = 0x0020, // an empty match is a match failure
 
-      // flags usable only with pcre_compile
-      CASELESS        = 0x0040, // case insensitive match (?i)
-      DOLLAR_ENDONLY  = 0x0080, // only in !MULTILINE mode, $ equiv to \Z
-      DOTALL          = 0x0100, // dot matches newline (?s)
-      DUPNAMES        = 0x0200, // permit duplicate names for named captures
-      EXTENDED        = 0x0400, // whitespace permitted in syntax (?x)
-      FIRSTLINE       = 0x0800, // match must begin before first newline
-      MULTILINE       = 0x1000, // ^ and $ match at internal newlines (?m)
-      UNGREEDY        = 0x4000, // quantifiers aren't greedy unless
-                                // followed with ? (opposite of default)
-    };
+    // flags usable only with pcre_compile
+    CASELESS        = 0x0040, // case insensitive match (?i)
+    DOLLAR_ENDONLY  = 0x0080, // only in !MULTILINE mode, $ equiv to \Z
+    DOTALL          = 0x0100, // dot matches newline (?s)
+    DUPNAMES        = 0x0200, // permit duplicate names for named captures
+    EXTENDED        = 0x0400, // whitespace permitted in syntax (?x)
+    FIRSTLINE       = 0x0800, // match must begin before first newline
+    MULTILINE       = 0x1000, // ^ and $ match at internal newlines (?m)
+    UNGREEDY        = 0x4000, // quantifiers aren't greedy unless
+    // followed with ? (opposite of default)
+  };
 
   // A regex object is the compiled form of a PCRE regular expression.
   struct regex

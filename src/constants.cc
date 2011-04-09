@@ -27,41 +27,41 @@ namespace constants
   // base64-encoded data.  note that botan doesn't count \v or \f as
   // whitespace (unlike <ctype.h>) and so neither do we.
   char const legal_base64_bytes[] =
-  // base64 data characters
-  "abcdefghijklmnopqrstuvwxyz"
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  "0123456789+/="
-  // whitespace
-  " \r\n\t"
-  ;
+    // base64 data characters
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "0123456789+/="
+    // whitespace
+    " \r\n\t"
+    ;
 
   // all the ASCII characters (bytes) which are legal in a SHA1 hex id
   char const legal_id_bytes[] =
-  "0123456789abcdef"
-  ;
+    "0123456789abcdef"
+    ;
 
   // all the ASCII characters (bytes) which can occur in cert names
   char const legal_cert_name_bytes[] =
-  // LDH characters
-  "abcdefghijklmnopqrstuvwxyz"
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  "0123456789"
-  "-"
-  ;
+    // LDH characters
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "0123456789"
+    "-"
+    ;
 
   // all the ASCII characters (bytes) which can occur in key names
   char const legal_key_name_bytes[] =
-  // LDH characters
-  "abcdefghijklmnopqrstuvwxyz"
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  "0123456789"
-  "-"
-  // label and component separators
-  ".@"
-  // other non-shell, non-selector metacharacters allowed in (unquoted) local
-  // parts by RFC2821/RFC2822.  The full list is !#$%&'*+-/=?^_`|{}~.
-  "+_"
-  ;
+    // LDH characters
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "0123456789"
+    "-"
+    // label and component separators
+    ".@"
+    // other non-shell, non-selector metacharacters allowed in (unquoted) local
+    // parts by RFC2821/RFC2822.  The full list is !#$%&'*+-/=?^_`|{}~.
+    "+_"
+    ;
 
   // merkle tree / netcmd / netsync related stuff
   char const netsync_key_initializer[netsync_session_key_length_in_bytes]

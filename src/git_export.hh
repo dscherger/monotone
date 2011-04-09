@@ -14,8 +14,8 @@ void read_mappings(system_path const & path,
                    std::map<std::string, std::string> & mappings);
 
 void validate_author_mappings(lua_hooks & lua,
-                              std::map<std::string,
-                                       std::string> const & authors);
+                              std::map < std::string,
+                              std::string > const & authors);
 
 void import_marks(system_path const & marks_file,
                   std::map<revision_id, size_t> & marked_revs);
@@ -39,10 +39,10 @@ void export_rev_refs(std::vector<revision_id> const & revisions,
                      std::map<revision_id, size_t> & marked_revs);
 
 void export_root_refs(database & db,
-                     std::map<revision_id, size_t> & marked_revs);
+                      std::map<revision_id, size_t> & marked_revs);
 
 void export_leaf_refs(database & db,
-                     std::map<revision_id, size_t> & marked_revs);
+                      std::map<revision_id, size_t> & marked_revs);
 
 #endif // __GIT_EXPORT_HH__
 

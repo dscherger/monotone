@@ -132,7 +132,7 @@ verify(netsync_hmac_value & val)
 // of making the ATOMIC(foo) values constructed within a symbol table
 // scope share string storage.
 struct
-symtab_impl
+  symtab_impl
 {
   typedef hashmap::hash_set<string> hset;
   hset vals;
@@ -190,7 +190,7 @@ template void dump(manifest_id const & r, string &);
 template void dump(file_id const & r, string &);
 template void dump(hexenc<id> const & r, string &);
 template void dump(key_id const & r, string &);
-template void dump(rsa_pub_key const&, string &);
+template void dump(rsa_pub_key const &, string &);
 template void dump(roster_data const & d, string &);
 template void dump(roster_delta const & d, string &);
 template void dump(manifest_data const & d, string &);

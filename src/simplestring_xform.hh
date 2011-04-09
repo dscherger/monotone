@@ -17,7 +17,8 @@ std::string lowercase(std::string const & in);
 
 namespace split_flags
 {
-  enum split_flags {
+  enum split_flags
+  {
     none = 0,
     diff_compat = 1,
     keep_endings = 2
@@ -74,7 +75,7 @@ std::vector< T > split_into_words(T const & in)
 
   while (end != std::string::npos && end >= begin)
     {
-      out.push_back(from_string<T>(instr.substr(begin, end-begin),
+      out.push_back(from_string<T>(instr.substr(begin, end - begin),
                                    get_made_from(in)));
       begin = end + 1;
       if (begin >= instr.size())

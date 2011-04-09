@@ -105,7 +105,7 @@ namespace legacy
             parser.esym(syms::to);
             parser.str(to_str);
             renames[old_rev][file_path_internal(to_str)]
-              = file_path_internal(from_str);
+            = file_path_internal(from_str);
           }
         else if (parser.symp(syms::patch))
           {

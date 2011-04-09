@@ -112,7 +112,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), (""),
 
   // remove marked revs from the set to be exported
   for (map<revision_id, size_t>::const_iterator
-         i = marked_revs.begin(); i != marked_revs.end(); ++i)
+       i = marked_revs.begin(); i != marked_revs.end(); ++i)
     revision_set.erase(i->first);
 
   vector<revision_id> revisions;

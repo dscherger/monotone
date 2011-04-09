@@ -123,7 +123,7 @@ public:
   ~directory_cleanup_helper()
   {
     if (!committed && directory_exists(dir))
-       {
+      {
         // This is probably happening in the middle of another exception.
         // Do not let anything that delete_dir_recursive throws escape, or
         // the runtime will call std::terminate...

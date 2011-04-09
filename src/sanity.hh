@@ -27,12 +27,14 @@
 // message to make it to the user, not a diagnostic error indicating
 // internal failure but a suggestion that they do something differently.
 
-namespace origin {
+namespace origin
+{
   std::string type_to_string(type t);
 }
 
 // An error that may have had an external source.
-class recoverable_failure : public std::runtime_error {
+class recoverable_failure : public std::runtime_error
+{
   origin::type _caused_by;
 public:
   recoverable_failure(origin::type o, std::string const & s)
@@ -43,7 +45,8 @@ public:
 
 // An error that indicates either an immediate logic bug or
 // a corrupt database. You don't want to catch these.
-class unrecoverable_failure : public std::logic_error {
+class unrecoverable_failure : public std::logic_error
+{
   origin::type _caused_by;
 public:
   unrecoverable_failure(origin::type o, std::string const & s)
@@ -58,7 +61,8 @@ class format_base;
 struct plain_format;
 struct i18n_format;
 
-struct sanity {
+struct sanity
+{
   sanity();
   virtual ~sanity();
   virtual void initialize(int, char **, char const *);
@@ -72,12 +76,12 @@ struct sanity {
 
   // set out of band handler (e.g. for automate stdio)
   void set_out_of_band_handler(void (*out_of_band_function)(char channel,
-                                                            std::string const& text,
-                                                            void *opaque)=NULL,
-                               void *opaque_data=NULL);
+                                                            std::string const & text,
+                                                            void * opaque) = NULL,
+                               void * opaque_data = NULL);
 
   // if such an out of band handler is set, this directly writes to it
-  bool maybe_write_to_out_of_band_handler(char channel, std::string const& str);
+  bool maybe_write_to_out_of_band_handler(char channel, std::string const & str);
 
   // A couple of places need to look at the debug flag to avoid doing
   // expensive logging if it's off.
@@ -94,13 +98,13 @@ struct sanity {
                                 i18n_format const & explain,
                                 char const * file, int line));
   NORETURN(void index_failure(char const * vec_expr,
-                     char const * idx_expr,
-                     unsigned long sz,
-                     unsigned long idx,
-                     char const * file, int line));
+                              char const * idx_expr,
+                              unsigned long sz,
+                              unsigned long idx,
+                              char const * file, int line));
   void gasp();
-  void push_musing(MusingI const *musing);
-  void pop_musing(MusingI const *musing);
+  void push_musing(MusingI const * musing);
+  void pop_musing(MusingI const * musing);
 
   // debugging aid, see DUMP() below
   void print_var(std::string const & value,
@@ -112,10 +116,10 @@ struct sanity {
 private:
   std::string do_format(format_base const & fmt,
                         char const * file, int line);
-  virtual void inform_log(std::string const &msg) = 0;
-  virtual void inform_message(std::string const &msg) = 0;
-  virtual void inform_warning(std::string const &msg) = 0;
-  virtual void inform_error(std::string const &msg) = 0;
+  virtual void inform_log(std::string const & msg) = 0;
+  virtual void inform_message(std::string const & msg) = 0;
+  virtual void inform_warning(std::string const & msg) = 0;
+  virtual void inform_error(std::string const & msg) = 0;
 
   struct impl;
   impl * imp;
@@ -132,11 +136,11 @@ typedef std::runtime_error oops;
 // implement a single very small formatter.
 
 class
-format_base
+  format_base
 {
 protected:
   struct impl;
-  impl *pimpl;
+  impl * pimpl;
 
   format_base() : pimpl(NULL) {}
   ~format_base();
@@ -166,7 +170,7 @@ public:
 
 
 struct
-plain_format
+  plain_format
   : public format_base
 {
   plain_format()
@@ -242,7 +246,7 @@ ALL_CONST_VARIANTS(plain_format, double, double)
 
 
 struct
-i18n_format
+  i18n_format
   : public format_base
 {
   i18n_format()
@@ -351,7 +355,8 @@ do { \
 #define UNLIKELY(zz) (zz)
 #endif
 
-struct bad_decode {
+struct bad_decode
+{
   bad_decode(i18n_format const & fmt) : what(fmt.str()) {}
   std::string what;
 };
@@ -414,12 +419,14 @@ protected:
 
 // remove_reference is a workaround for C++ defect #106.
 template <typename T>
-struct remove_reference {
+struct remove_reference
+{
   typedef T type;
 };
 
 template <typename T>
-struct remove_reference <T &> {
+struct remove_reference <T &>
+{
   typedef typename remove_reference<T>::type type;
 };
 
@@ -484,7 +491,7 @@ Musing<T>::gasp(std::string & out) const
 // debugging utility to dump out vars like MM but without requiring a crash
 
 template <typename T> void
-dump(T const & t, char const *var,
+dump(T const & t, char const * var,
      char const * file, int const line, char const * func)
 {
   std::string value;

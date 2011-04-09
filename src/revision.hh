@@ -47,7 +47,7 @@ class path_restriction;
 enum made_for { made_for_nobody, made_for_workspace, made_for_database };
 
 struct
-revision_t : public origin_aware
+  revision_t : public origin_aware
 {
   void check_sane() const;
   bool is_merge_node() const;
@@ -68,7 +68,7 @@ revision_t : public origin_aware
 
 class graph_loader
 {
- public:
+public:
   graph_loader(database & db) : db(db) {}
 
   void load_parents(revision_id const rid, std::set<revision_id> & parents);
@@ -76,7 +76,7 @@ class graph_loader
   void load_ancestors(std::set<revision_id> & revs);
   void load_descendants(std::set<revision_id> & revs);
 
- private:
+private:
   database & db;
   enum load_direction { ancestors, descendants };
 

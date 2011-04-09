@@ -101,7 +101,7 @@ get_reconstruction_path(id const & start,
               // Replicate the path if there's a fork.
               bool first = true;
               for (set<id>::const_iterator j = next.begin();
-                    j != next.end(); ++j)
+                   j != next.end(); ++j)
                 {
                   if (global_sanity.debug_p())
                     L(FL("considering %s -> %s") % tip % *j);
@@ -167,7 +167,7 @@ void toposort_rev_ancestry(rev_ancestry_map const & graph,
   // find the set of graph roots
   list<revision_id> roots;
   for (pi i = pcount.begin(); i != pcount.end(); ++i)
-    if(i->second==0)
+    if(i->second == 0)
       roots.push_back(i->first);
 
   while (!roots.empty())
@@ -200,16 +200,16 @@ advance_frontier(set<height_rev_pair> & frontier,
   set<revision_id> parents;
   rg.get_parents(node, parents);
   for (set<revision_id>::const_iterator r = parents.begin();
-        r != parents.end(); r++)
-  {
-    if (seen.find(*r) == seen.end())
+       r != parents.end(); r++)
     {
-      rev_height h;
-      rg.get_height(*r, h);
-      frontier.insert(make_pair(h, *r));
-      seen.insert(*r);
+      if (seen.find(*r) == seen.end())
+        {
+          rev_height h;
+          rg.get_height(*r, h);
+          frontier.insert(make_pair(h, *r));
+          seen.insert(*r);
+        }
     }
-  }
 }
 
 void
@@ -242,54 +242,54 @@ get_uncommon_ancestors(revision_id const & a,
   b_seen.insert(b);
 
   while (!a_frontier.empty() || !b_frontier.empty())
-  {
-    // We take the leaf-most (ie highest) height entry from any frontier.
-    // Note: the default height is the lowest possible.
-    rev_height a_height, b_height, common_height;
-    if (!a_frontier.empty())
-      a_height = a_frontier.rbegin()->first;
-    if (!b_frontier.empty())
-      b_height = b_frontier.rbegin()->first;
-    if (!common_frontier.empty())
-      common_height = common_frontier.rbegin()->first;
+    {
+      // We take the leaf-most (ie highest) height entry from any frontier.
+      // Note: the default height is the lowest possible.
+      rev_height a_height, b_height, common_height;
+      if (!a_frontier.empty())
+        a_height = a_frontier.rbegin()->first;
+      if (!b_frontier.empty())
+        b_height = b_frontier.rbegin()->first;
+      if (!common_frontier.empty())
+        common_height = common_frontier.rbegin()->first;
 
-    if (a_height > b_height && a_height > common_height)
-      {
-        a_uncommon_ancs.insert(a_frontier.rbegin()->second);
-        advance_frontier(a_frontier, a_seen, rg);
-      }
-    else if (b_height > a_height && b_height > common_height)
-      {
-        b_uncommon_ancs.insert(b_frontier.rbegin()->second);
-        advance_frontier(b_frontier, b_seen, rg);
-      }
-    else if (common_height > a_height && common_height > b_height)
-      {
-        advance_frontier(common_frontier, common_seen, rg);
-      }
-    else if (a_height == b_height) // may or may not also == common_height
-      {
-        // if both frontiers are the same, then we can safely say that
-        // we've found all uncommon ancestors. This stopping condition
-        // can result in traversing more nodes than required, but is simple.
-        if (a_frontier == b_frontier)
-          break;
+      if (a_height > b_height && a_height > common_height)
+        {
+          a_uncommon_ancs.insert(a_frontier.rbegin()->second);
+          advance_frontier(a_frontier, a_seen, rg);
+        }
+      else if (b_height > a_height && b_height > common_height)
+        {
+          b_uncommon_ancs.insert(b_frontier.rbegin()->second);
+          advance_frontier(b_frontier, b_seen, rg);
+        }
+      else if (common_height > a_height && common_height > b_height)
+        {
+          advance_frontier(common_frontier, common_seen, rg);
+        }
+      else if (a_height == b_height) // may or may not also == common_height
+        {
+          // if both frontiers are the same, then we can safely say that
+          // we've found all uncommon ancestors. This stopping condition
+          // can result in traversing more nodes than required, but is simple.
+          if (a_frontier == b_frontier)
+            break;
 
-        common_frontier.insert(*a_frontier.rbegin());
-        a_frontier.erase(*a_frontier.rbegin());
-        b_frontier.erase(*b_frontier.rbegin());
-      }
-    else if (a_height == common_height)
-      {
-        a_frontier.erase(*a_frontier.rbegin());
-      }
-    else if (b_height == common_height)
-      {
-        b_frontier.erase(*b_frontier.rbegin());
-      }
-    else
-      I(false);
-  }
+          common_frontier.insert(*a_frontier.rbegin());
+          a_frontier.erase(*a_frontier.rbegin());
+          b_frontier.erase(*b_frontier.rbegin());
+        }
+      else if (a_height == common_height)
+        {
+          a_frontier.erase(*a_frontier.rbegin());
+        }
+      else if (b_height == common_height)
+        {
+          b_frontier.erase(*b_frontier.rbegin());
+        }
+      else
+        I(false);
+    }
 }
 
 

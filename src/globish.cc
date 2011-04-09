@@ -29,7 +29,8 @@ using std::back_insert_iterator;
 // control-character range.  This is why bytes <= 0x1f are not allowed in the
 // pattern.
 
-enum metachar {
+enum metachar
+{
   META_STAR = 1,   // *
   META_QUES,       // ?
   META_CC_BRA,     // [
@@ -73,7 +74,7 @@ compile_charclass(string const & pat, string::const_iterator p,
       // A dash at the beginning or end of the pattern is literal.
       else if (*p == '-'
                && !in_class.empty()
-               && p+1 != pat.end()
+               && p + 1 != pat.end()
                && p[1] != ']')
         {
           p++;
@@ -103,7 +104,7 @@ compile_charclass(string const & pat, string::const_iterator p,
               "in classes") % pat);
 
           L(FL("expanding range from %X (%c) to %X (%c)")
-            % (start+1) % (char)(start+1) % stop % (char)stop);
+            % (start + 1) % (char)(start + 1) % stop % (char)stop);
 
           for (unsigned int r = start + 1; r < stop; r++)
             in_class.push_back((char)r);
@@ -301,7 +302,7 @@ decode(string::const_iterator p, string::const_iterator end, bool escaped = true
       case META_CC_BRA:     s.push_back('['); break;
       case META_CC_KET:     s.push_back(']'); break;
       case META_CC_INV_BRA: s.push_back('[');
-                            s.push_back('!'); break;
+        s.push_back('!'); break;
 
       case META_ALT_BRA:    s.push_back('{'); break;
       case META_ALT_KET:    s.push_back('}'); break;
@@ -348,7 +349,7 @@ globish::contains_meta_chars() const
       case META_ALT_BRA:
       case META_ALT_KET:
       case META_ALT_OR:
-          return true;
+        return true;
       }
   return false;
 }
@@ -367,8 +368,8 @@ std::ostream & operator<<(std::ostream & o, globish const & g)
 
 static string::const_iterator
 find_next_subpattern(string::const_iterator p,
-                       string::const_iterator pe,
-                       bool want_alternatives)
+                     string::const_iterator pe,
+                     bool want_alternatives)
 {
   L(FL("Finding subpattern in '%s'") % decode(p, pe));
   unsigned int depth = 1;
@@ -385,12 +386,12 @@ find_next_subpattern(string::const_iterator p,
       case META_ALT_KET:
         depth--;
         if (depth == 0)
-          return p+1;
+          return p + 1;
         break;
 
       case META_ALT_OR:
         if (depth == 1 && want_alternatives)
-          return p+1;
+          return p + 1;
         break;
       }
 
@@ -405,7 +406,7 @@ do_match(string::const_iterator sb, string::const_iterator se,
   unsigned int sc, pc;
   string::const_iterator s(sb);
 
-  L(FL("subpattern: '%s' against '%s'") % string(s,se) % decode(p,pe));
+  L(FL("subpattern: '%s' against '%s'") % string(s, se) % decode(p, pe));
 
   while (p < pe)
     {
@@ -414,11 +415,14 @@ do_match(string::const_iterator sb, string::const_iterator se,
       pc = widen<unsigned int, char>(*p++);
       // sc will be the current string character
       // s will point to sc
-      if(s < se) {
-        sc = widen<unsigned int, char>(*s);
-      } else {
-        sc = 0;
-      }
+      if(s < se)
+        {
+          sc = widen<unsigned int, char>(*s);
+        }
+      else
+        {
+          sc = 0;
+        }
       switch (pc)
         {
         default:           // literal
@@ -432,23 +436,23 @@ do_match(string::const_iterator sb, string::const_iterator se,
           break;
 
         case META_CC_BRA:  // any of these characters
-          {
-            bool matched = false;
-            I(p < pe);
-            I(*p != META_CC_KET);
-            do
-              {
-                if (widen<unsigned int, char>(*p) == sc)
-                  matched = true;
-                p++;
-                I(p < pe);
-              }
-            while (*p != META_CC_KET);
-            if (!matched)
-              return false;
-          }
-          p++;
-          break;
+        {
+          bool matched = false;
+          I(p < pe);
+          I(*p != META_CC_KET);
+          do
+            {
+              if (widen<unsigned int, char>(*p) == sc)
+                matched = true;
+              p++;
+              I(p < pe);
+            }
+          while (*p != META_CC_KET);
+          if (!matched)
+            return false;
+        }
+        p++;
+        break;
 
         case META_CC_INV_BRA:  // any but these characters
           I(p < pe);
@@ -500,36 +504,36 @@ do_match(string::const_iterator sb, string::const_iterator se,
           return false;
 
         case META_ALT_BRA:
-          {
-            string::const_iterator prest, psub, pnext;
-            string::const_iterator srest;
+        {
+          string::const_iterator prest, psub, pnext;
+          string::const_iterator srest;
 
-            prest = find_next_subpattern(p, pe, false);
-            psub = p;
-            // [ psub ... prest ) is the current bracket pair
-            // (including the *closing* braket, but not the opening braket)
-            do
-              {
-                pnext = find_next_subpattern(psub, pe, true);
-                // pnext points just after a comma or the closing braket
-                // [ psub ... pnext ) is one branch with trailing delimiter
-                srest = (prest == pe ? se : s);
-                for (; srest < se; srest++)
-                  {
-                    if (do_match(s, srest, psub, pnext - 1)
-                        && do_match(srest, se, prest, pe))
-                      return true;
-                  }
-                // try the empty target too
-                if (do_match(s, srest, psub, pnext - 1)
-                    && do_match(srest, se, prest, pe))
-                  return true;
+          prest = find_next_subpattern(p, pe, false);
+          psub = p;
+          // [ psub ... prest ) is the current bracket pair
+          // (including the *closing* braket, but not the opening braket)
+          do
+            {
+              pnext = find_next_subpattern(psub, pe, true);
+              // pnext points just after a comma or the closing braket
+              // [ psub ... pnext ) is one branch with trailing delimiter
+              srest = (prest == pe ? se : s);
+              for (; srest < se; srest++)
+                {
+                  if (do_match(s, srest, psub, pnext - 1)
+                      && do_match(srest, se, prest, pe))
+                    return true;
+                }
+              // try the empty target too
+              if (do_match(s, srest, psub, pnext - 1)
+                  && do_match(srest, se, prest, pe))
+                return true;
 
-                psub = pnext;
-              }
-            while (pnext < prest);
-            return false;
-          }
+              psub = pnext;
+            }
+          while (pnext < prest);
+          return false;
+        }
         }
       if (s < se)
         {

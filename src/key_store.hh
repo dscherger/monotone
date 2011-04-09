@@ -35,7 +35,7 @@ struct keypair
   {}
   keypair(rsa_pub_key const & a,
           rsa_priv_key const & b)
-   : pub(a), priv(b)
+    : pub(a), priv(b)
   {}
 };
 

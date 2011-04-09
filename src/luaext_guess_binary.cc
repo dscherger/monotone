@@ -20,7 +20,7 @@ using std::string;
 
 LUAEXT(guess_binary_file_contents, )
 {
-  const char *path = luaL_checkstring(LS, 1);
+  const char * path = luaL_checkstring(LS, 1);
 
   ifstream file(path, ios_base::binary);
   if (!file)

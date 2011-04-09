@@ -79,7 +79,7 @@ namespace pcre
     if (!basedat)
       pcre_compile_error(errcode, err, erroff, pattern, made_from);
 
-    pcre_extra *ed = pcre_study(basedat, 0, &err);
+    pcre_extra * ed = pcre_study(basedat, 0, &err);
     if (err)
       pcre_study_error(err, pattern, made_from);
     if (!ed)
@@ -155,8 +155,9 @@ namespace pcre
 
     // "int ovector[worksize]" is C99 only (not valid C++, but allowed by gcc/clang)
     // boost::shared_array is I think not plannned to be part of C++0x
-    class xyzzy {
-      int *data;
+    class xyzzy
+    {
+      int * data;
     public:
       xyzzy(int len) : data(new int[len]) {}
       ~xyzzy() { delete[] data; }
@@ -176,7 +177,7 @@ namespace pcre
     else if (rc < 0)
       pcre_exec_error(rc, made_from, subject_origin); // throws
 
-    for (int i=0; i < cap_count; ++i)
+    for (int i = 0; i < cap_count; ++i)
       {
         string match;
         // not an empty match
@@ -215,7 +216,7 @@ pcre_compile_error(int errcode, char const * err,
     case 50: // [code allegedly not in use]
     case 52: // internal error: overran compiling workspace
     case 53: // internal error: previously-checked referenced subpattern
-             // not found
+      // not found
       throw oops((F("while compiling regex '%s': %s") % pattern % err)
                  .str().c_str());
 
@@ -229,7 +230,7 @@ pcre_compile_error(int errcode, char const * err,
                               % pattern % err)
                            : (F("error near char %d of regex '%s': %s")
                               % (erroff + 1) % pattern % err)
-                           ));
+                          ));
     }
 }
 

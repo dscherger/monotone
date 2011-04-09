@@ -75,7 +75,7 @@ key_packet_writer::consume_old_private_key(key_name const & ident,
 namespace
 {
   struct
-  feed_key_packet_consumer : public origin_aware
+    feed_key_packet_consumer : public origin_aware
   {
     size_t & count;
     key_packet_consumer & cons;
@@ -116,7 +116,7 @@ namespace
         {
           E(false, origin::user,
             F("malformed key_packet: invalid public key data for '%s': %s")
-              % name % e.what());
+            % name % e.what());
         }
     }
     void validate_private_key_data(string const & name, string const & keydata) const
@@ -135,7 +135,7 @@ namespace
         {
           E(false, origin::user,
             F("malformed key_packet: invalid private key data for '%s': %s")
-              % name % e.what());
+            % name % e.what());
         }
       // since we do not want to prompt for a password to decode it finally,
       // we ignore all other exceptions
@@ -149,7 +149,7 @@ namespace
         F("malformed key_packet: too many arguments in header"));
     }
 
-    static void read_rest(istream& in, string& dest)
+    static void read_rest(istream & in, string & dest)
     {
 
       while (true)
@@ -176,7 +176,7 @@ namespace
       L(FL("read keypair key_packet"));
       string::size_type hashpos = body.find('#');
       string pub(body, 0, hashpos);
-      string priv(body, hashpos+1);
+      string priv(body, hashpos + 1);
 
       validate_key(args);
       validate_base64(pub);
@@ -226,7 +226,8 @@ extract_key_packets(string const & s, key_packet_consumer & cons)
 
   string::const_iterator p, tbeg, tend, abeg, aend, bbeg, bend;
 
-  enum extract_state {
+  enum extract_state
+  {
     skipping, open_bracket, scanning_type, found_type,
     scanning_args, found_args, scanning_body,
     end_1, end_2, end_3, end_4, end_5
@@ -295,7 +296,7 @@ extract_key_packets(string const & s, key_packet_consumer & cons)
 // this is same as rfind, but search area is haystack[start:] (from start to end of string)
 // haystack is searched, needle is pattern
 static size_t
-rfind_in_substr(std::string const& haystack, size_t start, std::string const& needle)
+rfind_in_substr(std::string const & haystack, size_t start, std::string const & needle)
 {
   I(start <= haystack.size());
   const std::string::const_iterator result =
@@ -319,7 +320,7 @@ read_key_packets(istream & in, key_packet_consumer & cons)
   while(in)
     {
       size_t const next_search_pos = (accum.size() >= end.size())
-                                      ? accum.size() - end.size() : 0;
+                                     ? accum.size() - end.size() : 0;
       in.read(buf, bufsz);
       accum.append(buf, in.gcount());
       string::size_type endpos = string::npos;
@@ -330,7 +331,7 @@ read_key_packets(istream & in, key_packet_consumer & cons)
           string tmp = accum.substr(0, endpos);
           count += extract_key_packets(tmp, cons);
           if (endpos < accum.size() - 1)
-            accum = accum.substr(endpos+1);
+            accum = accum.substr(endpos + 1);
           else
             accum.clear();
         }

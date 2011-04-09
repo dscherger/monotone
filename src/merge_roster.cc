@@ -158,7 +158,7 @@ bool
 roster_merge_result::is_clean() const
 {
   return !has_non_content_conflicts()
-    && !has_content_conflicts();
+         && !has_content_conflicts();
 }
 
 bool
@@ -171,30 +171,30 @@ bool
 roster_merge_result::has_non_content_conflicts() const
 {
   return missing_root_conflict
-    || !invalid_name_conflicts.empty()
-    || !directory_loop_conflicts.empty()
-    || !orphaned_node_conflicts.empty()
-    || !multiple_name_conflicts.empty()
-    || !duplicate_name_conflicts.empty()
-    || !attribute_conflicts.empty();
+         || !invalid_name_conflicts.empty()
+         || !directory_loop_conflicts.empty()
+         || !orphaned_node_conflicts.empty()
+         || !multiple_name_conflicts.empty()
+         || !duplicate_name_conflicts.empty()
+         || !attribute_conflicts.empty();
 }
 
 int
 roster_merge_result::count_supported_resolution() const
 {
   return orphaned_node_conflicts.size()
-    + file_content_conflicts.size()
-    + duplicate_name_conflicts.size();
+         + file_content_conflicts.size()
+         + duplicate_name_conflicts.size();
 }
 
 int
 roster_merge_result::count_unsupported_resolution() const
 {
   return (missing_root_conflict ? 1 : 0)
-    + invalid_name_conflicts.size()
-    + directory_loop_conflicts.size()
-    + multiple_name_conflicts.size()
-    + attribute_conflicts.size();
+         + invalid_name_conflicts.size()
+         + directory_loop_conflicts.size()
+         + multiple_name_conflicts.size()
+         + attribute_conflicts.size();
 }
 
 static void
@@ -202,7 +202,7 @@ dump_conflicts(roster_merge_result const & result, string & out)
 {
   if (result.missing_root_conflict)
     out += (FL("missing_root_conflict: root directory has been removed\n"))
-      .str();
+           .str();
 
   dump(result.invalid_name_conflicts, out);
   dump(result.directory_loop_conflicts, out);
@@ -547,114 +547,114 @@ roster_merge(roster_t const & left_parent,
             I(false);
 
           case parallel::in_left:
-            {
-              node_t const & left_n = i.left_data();
-              // we skip nodes that aren't in the result roster (were
-              // deleted in the lifecycles step above)
-              if (result.roster.has_node(left_n->self))
-                {
-                  // attach this node from the left roster. this may cause
-                  // a name collision with the previously attached node from
-                  // the other side of the merge.
-                  copy_node_forward(result, new_i->second, left_n, left_side);
-                  ++new_i;
-                }
-              ++left_mi;
-              break;
-            }
+          {
+            node_t const & left_n = i.left_data();
+            // we skip nodes that aren't in the result roster (were
+            // deleted in the lifecycles step above)
+            if (result.roster.has_node(left_n->self))
+              {
+                // attach this node from the left roster. this may cause
+                // a name collision with the previously attached node from
+                // the other side of the merge.
+                copy_node_forward(result, new_i->second, left_n, left_side);
+                ++new_i;
+              }
+            ++left_mi;
+            break;
+          }
 
           case parallel::in_right:
-            {
-              node_t const & right_n = i.right_data();
-              // we skip nodes that aren't in the result roster
-              if (result.roster.has_node(right_n->self))
-                {
-                  // attach this node from the right roster. this may cause
-                  // a name collision with the previously attached node from
-                  // the other side of the merge.
-                  copy_node_forward(result, new_i->second, right_n, right_side);
-                  ++new_i;
-                }
-              ++right_mi;
-              break;
-            }
+          {
+            node_t const & right_n = i.right_data();
+            // we skip nodes that aren't in the result roster
+            if (result.roster.has_node(right_n->self))
+              {
+                // attach this node from the right roster. this may cause
+                // a name collision with the previously attached node from
+                // the other side of the merge.
+                copy_node_forward(result, new_i->second, right_n, right_side);
+                ++new_i;
+              }
+            ++right_mi;
+            break;
+          }
 
           case parallel::in_both:
+          {
+            I(new_i->first == i.left_key());
+            I(left_mi->first == i.left_key());
+            I(right_mi->first == i.right_key());
+            node_t const & left_n = i.left_data();
+            marking_t const & left_marking = left_mi->second;
+            node_t const & right_n = i.right_data();
+            marking_t const & right_marking = right_mi->second;
+            node_t const & new_n = new_i->second;
+            // merge name
             {
-              I(new_i->first == i.left_key());
-              I(left_mi->first == i.left_key());
-              I(right_mi->first == i.right_key());
-              node_t const & left_n = i.left_data();
-              marking_t const & left_marking = left_mi->second;
-              node_t const & right_n = i.right_data();
-              marking_t const & right_marking = right_mi->second;
-              node_t const & new_n = new_i->second;
-              // merge name
+              pair<node_id, path_component> left_name, right_name, new_name;
+              multiple_name_conflict conflict(new_n->self);
+              left_name = make_pair(left_n->parent, left_n->name);
+              right_name = make_pair(right_n->parent, right_n->name);
+              if (merge_scalar(left_name,
+                               left_marking->parent_name,
+                               left_uncommon_ancestors,
+                               right_name,
+                               right_marking->parent_name,
+                               right_uncommon_ancestors,
+                               new_name, conflict))
+                {
+                  side_t winning_side;
+
+                  if (new_name == left_name)
+                    winning_side = left_side;
+                  else if (new_name == right_name)
+                    winning_side = right_side;
+                  else
+                    I(false);
+
+                  // attach this node from the winning side of the merge. if
+                  // there is a name collision the previously attached node
+                  // (which is blocking this one) must come from the other
+                  // side of the merge.
+                  assign_name(result, new_n->self,
+                              new_name.first, new_name.second, winning_side);
+
+                }
+              else
+                {
+                  // unsuccessful merge; leave node detached and save
+                  // conflict object
+                  result.multiple_name_conflicts.push_back(conflict);
+                }
+            }
+            // if a file, merge content
+            if (is_file_t(new_n))
               {
-                pair<node_id, path_component> left_name, right_name, new_name;
-                multiple_name_conflict conflict(new_n->self);
-                left_name = make_pair(left_n->parent, left_n->name);
-                right_name = make_pair(right_n->parent, right_n->name);
-                if (merge_scalar(left_name,
-                                 left_marking->parent_name,
+                file_content_conflict conflict(new_n->self);
+                if (merge_scalar(downcast_to_file_t(left_n)->content,
+                                 left_marking->file_content,
                                  left_uncommon_ancestors,
-                                 right_name,
-                                 right_marking->parent_name,
+                                 downcast_to_file_t(right_n)->content,
+                                 right_marking->file_content,
                                  right_uncommon_ancestors,
-                                 new_name, conflict))
+                                 downcast_to_file_t(new_n)->content,
+                                 conflict))
                   {
-                    side_t winning_side;
-
-                    if (new_name == left_name)
-                      winning_side = left_side;
-                    else if (new_name == right_name)
-                      winning_side = right_side;
-                    else
-                      I(false);
-
-                    // attach this node from the winning side of the merge. if
-                    // there is a name collision the previously attached node
-                    // (which is blocking this one) must come from the other
-                    // side of the merge.
-                    assign_name(result, new_n->self,
-                                new_name.first, new_name.second, winning_side);
-
+                    // successful merge
                   }
                 else
                   {
-                    // unsuccessful merge; leave node detached and save
-                    // conflict object
-                    result.multiple_name_conflicts.push_back(conflict);
+                    downcast_to_file_t(new_n)->content = file_id();
+                    result.file_content_conflicts.push_back(conflict);
                   }
               }
-              // if a file, merge content
-              if (is_file_t(new_n))
-                {
-                  file_content_conflict conflict(new_n->self);
-                  if (merge_scalar(downcast_to_file_t(left_n)->content,
-                                   left_marking->file_content,
-                                   left_uncommon_ancestors,
-                                   downcast_to_file_t(right_n)->content,
-                                   right_marking->file_content,
-                                   right_uncommon_ancestors,
-                                   downcast_to_file_t(new_n)->content,
-                                   conflict))
-                    {
-                      // successful merge
-                    }
-                  else
-                    {
-                      downcast_to_file_t(new_n)->content = file_id();
-                      result.file_content_conflicts.push_back(conflict);
-                    }
-                }
-              // merge attributes
-              {
-                attr_map_t::const_iterator left_ai = left_n->attrs.begin();
-                attr_map_t::const_iterator right_ai = right_n->attrs.begin();
-                parallel::iter<attr_map_t> attr_i(left_n->attrs,
-                                                  right_n->attrs);
-                while(attr_i.next())
+            // merge attributes
+            {
+              attr_map_t::const_iterator left_ai = left_n->attrs.begin();
+              attr_map_t::const_iterator right_ai = right_n->attrs.begin();
+              parallel::iter<attr_map_t> attr_i(left_n->attrs,
+                                                right_n->attrs);
+              while(attr_i.next())
                 {
                   switch (attr_i.state())
                     {
@@ -685,7 +685,7 @@ roster_merge(roster_t const & left_parent,
                           // successful merge
                           safe_insert(new_n->attrs,
                                       make_pair(attr_i.left_key(),
-                                                     new_value));
+                                                new_value));
                         }
                       else
                         {
@@ -698,12 +698,12 @@ roster_merge(roster_t const & left_parent,
                     }
 
                 }
-              }
             }
-            ++left_mi;
-            ++right_mi;
-            ++new_i;
-            break;
+          }
+          ++left_mi;
+          ++right_mi;
+          ++new_i;
+          break;
           }
       }
     I(left_mi == left_markings.end());

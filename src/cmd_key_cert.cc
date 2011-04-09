@@ -178,9 +178,9 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
 }
 
 CMD_AUTOMATE(drop_public_key, N_("KEY_NAME_OR_HASH"),
-    N_("Drops a public key"),
-    "",
-    options::opts::none)
+             N_("Drops a public key"),
+             "",
+             options::opts::none)
 {
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
@@ -340,16 +340,16 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
        ostream_iterator<key_identity_info>(all_signers, " "));
 
   cout << (F("if a cert on: %s\n"
-            "with key: %s\n"
-            "and value: %s\n"
-            "was signed by: %s\n"
-            "it would be: %s")
-    % ident
-    % cname
-    % value
-    % all_signers.str()
-    % (trusted ? _("trusted") : _("UNtrusted")))
-    << '\n'; // final newline is kept out of the translation
+             "with key: %s\n"
+             "and value: %s\n"
+             "was signed by: %s\n"
+             "it would be: %s")
+           % ident
+           % cname
+           % value
+           % all_signers.str()
+           % (trusted ? _("trusted") : _("UNtrusted")))
+       << '\n'; // final newline is kept out of the translation
 }
 
 CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),

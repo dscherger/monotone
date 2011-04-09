@@ -63,7 +63,8 @@ load_key_pair(key_store & keys,
   keys.get_key_pair(id, name, kp);
 }
 
-namespace {
+namespace
+{
   void check_and_save_chosen_key(database & db,
                                  key_store & keys,
                                  key_id const & chosen_key)

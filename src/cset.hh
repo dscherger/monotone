@@ -69,13 +69,13 @@ struct cset
   bool operator==(cset const & other) const
   {
     return nodes_deleted == other.nodes_deleted
-      && dirs_added == other.dirs_added
-      && files_added == other.files_added
-      && nodes_renamed == other.nodes_renamed
-      && deltas_applied == other.deltas_applied
-      && attrs_cleared == other.attrs_cleared
-      && attrs_set == other.attrs_set
-      ;
+           && dirs_added == other.dirs_added
+           && files_added == other.files_added
+           && nodes_renamed == other.nodes_renamed
+           && deltas_applied == other.deltas_applied
+           && attrs_cleared == other.attrs_cleared
+           && attrs_set == other.attrs_set
+           ;
   }
 
   void apply_to(editable_tree & t) const;

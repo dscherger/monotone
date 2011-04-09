@@ -70,7 +70,7 @@ try_extract_datum_uleb128(std::string const & in,
     {
       if (pos >= in.size())
         return false;
-      T curr = widen<T,u8>(in[pos]);
+      T curr = widen<T, u8>(in[pos]);
       ++pos;
       out |= ((static_cast<u8>(curr)
                & static_cast<u8>(0x7f)) << shift);
@@ -105,7 +105,7 @@ try_extract_datum_uleb128(string_queue const & in,
     {
       if (pos >= in.size())
         return false;
-      T curr = widen<T,u8>(in[pos]);
+      T curr = widen<T, u8>(in[pos]);
       ++pos;
       out |= ((static_cast<u8>(curr)
                & static_cast<u8>(0x7f)) << shift);
@@ -204,7 +204,7 @@ extract_datum_lsb(std::string const & in,
 
   while (nbytes > 0)
     {
-      out |= widen<T,u8>(in[pos++]) << shift;
+      out |= widen<T, u8>(in[pos++]) << shift;
       shift += 8;
       --nbytes;
     }
@@ -225,7 +225,7 @@ extract_datum_lsb(string_queue const & in,
 
   while (nbytes > 0)
     {
-      out |= widen<T,u8>(in[pos++]) << shift;
+      out |= widen<T, u8>(in[pos++]) << shift;
       shift += 8;
       --nbytes;
     }
@@ -243,7 +243,7 @@ insert_datum_lsb(T in, std::string & out)
       tmp[i] = static_cast<u8>(in) & static_cast<u8>(0xff);
       in >>= 8;
     }
-  out.append(std::string(tmp, tmp+nbytes));
+  out.append(std::string(tmp, tmp + nbytes));
 }
 
 template <typename T>
@@ -257,7 +257,7 @@ insert_datum_lsb(T in, string_queue & out)
       tmp[i] = static_cast<u8>(in) & static_cast<u8>(0xff);
       in >>= 8;
     }
-  out.append(std::string(tmp, tmp+nbytes));
+  out.append(std::string(tmp, tmp + nbytes));
 }
 
 inline void

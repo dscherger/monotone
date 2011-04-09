@@ -63,10 +63,10 @@ options::children()
   return val;
 }
 
-std::map<options::static_options_fun, std::list<void(options::*)()> > &
+std::map<options::static_options_fun, std::list<void(options:: *)()> > &
 options::var_membership()
 {
-  static map<static_options_fun, std::list<void(options::*)()> > val;
+  static map<static_options_fun, std::list<void(options:: *)()> > val;
   static bool first(true);
   if (first)
     {
@@ -210,8 +210,8 @@ collect_children(options::static_options_fun opt)
 
 void options::reset_optset(options::static_options_fun opt)
 {
-  list<void(options::*)()> const & vars = var_membership()[opt];
-  for (list<void(options::*)()>::const_iterator i = vars.begin();
+  list<void(options:: *)()> const & vars = var_membership()[opt];
+  for (list<void(options:: *)()>::const_iterator i = vars.begin();
        i != vars.end(); ++i)
     {
       (this->*(*i))();

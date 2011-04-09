@@ -41,7 +41,7 @@ void cache_logger::log_exists(bool exists, int position,
 {
   if (_impl)
     {
-      _impl->stream << "Exists: " << (exists?"ok":"missing")
+      _impl->stream << "Exists: " << (exists ? "ok" : "missing")
                     << "; position: " << position
                     << "; count: " << item_count
                     << "; size: " << est_size << " of " << max_size
@@ -54,7 +54,7 @@ void cache_logger::log_touch(bool exists, int position,
 {
   if (_impl)
     {
-      _impl->stream << "Touch: " << (exists?"ok":"missing")
+      _impl->stream << "Touch: " << (exists ? "ok" : "missing")
                     << "; position: " << position
                     << "; count: " << item_count
                     << "; size: " << est_size << " of " << max_size
@@ -67,7 +67,7 @@ void cache_logger::log_fetch(bool exists, int position,
 {
   if (_impl)
     {
-      _impl->stream << "Fetch: " << (exists?"ok":"missing")
+      _impl->stream << "Fetch: " << (exists ? "ok" : "missing")
                     << "; position: " << position
                     << "; count: " << item_count
                     << "; size: " << est_size << " of " << max_size
@@ -76,7 +76,7 @@ void cache_logger::log_fetch(bool exists, int position,
 }
 
 void cache_logger::log_insert(int items_removed,
-                             int item_count, int est_size) const
+                              int item_count, int est_size) const
 {
   if (_impl)
     {

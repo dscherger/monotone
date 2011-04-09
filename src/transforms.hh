@@ -17,7 +17,8 @@
 // transforms.cc for the implementations (most of which are delegations to
 // crypto++ and librsync)
 
-namespace Botan {
+namespace Botan
+{
   class Base64_Encoder;
   class Base64_Decoder;
   class Hex_Encoder;
@@ -33,7 +34,8 @@ template<typename XFM> std::string
 xform(std::string const & in, origin::type made_from)
 {
   enum dummy { d = (sizeof(struct xform_must_be_specialized_for_this_type)
-                    == sizeof(XFM)) };
+                    == sizeof(XFM))
+             };
   return in; // avoid warnings about no return statement
 }
 
@@ -99,7 +101,7 @@ inline std::string decode_hexenc(std::string const & in,
                                  origin::type made_from)
 { return xform<Botan::Hex_Decoder>(in, made_from); }
 template<typename T> T decode_hexenc_as(std::string const & in,
-                                               origin::type made_from)
+                                        origin::type made_from)
 { return T(decode_hexenc(in, made_from), made_from); }
 
 

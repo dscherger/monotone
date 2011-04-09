@@ -20,7 +20,8 @@
 // defined in cmd_merging.cc
 void update(app_state & app, args_vector const & args);
 
-namespace {
+namespace
+{
   enum updatability { is_head, is_not_head, not_updatable };
   updatability get_updatability(app_state & app, project_t & project)
   {
@@ -35,7 +36,7 @@ namespace {
     work.get_options(workspace_opts);
     std::set<revision_id> heads;
     project.get_branch_heads(workspace_opts.branch, heads, false);
-    
+
     revision_id parent = edge_old_revision(rev.edges.begin());
     if (heads.find(parent) != heads.end())
       return is_head;
