@@ -45,7 +45,7 @@ revision_enumerator::get_revision_parents(revision_id const & child,
 {
   parents.clear();
   typedef multimap<revision_id, revision_id>::const_iterator ci;
-  pair<ci,ci> range = inverse_graph.equal_range(child);
+  pair<ci, ci> range = inverse_graph.equal_range(child);
   for (ci i = range.first; i != range.second; ++i)
     {
       if (i->first == child)
@@ -59,7 +59,7 @@ bool
 revision_enumerator::all_parents_enumerated(revision_id const & child)
 {
   typedef multimap<revision_id, revision_id>::const_iterator ci;
-  pair<ci,ci> range = inverse_graph.equal_range(child);
+  pair<ci, ci> range = inverse_graph.equal_range(child);
   for (ci i = range.first; i != range.second; ++i)
     {
       if (i->first == child)
@@ -80,7 +80,7 @@ revision_enumerator::done() const
 void
 revision_enumerator::files_for_revision(revision_id const & r,
                                         set<file_id> & full_files,
-                                        set<pair<file_id,file_id> > & del_files)
+                                        set<pair<file_id, file_id> > & del_files)
 {
   // when we're sending a merge, we have to be careful if we
   // want to send as little data as possible. see bug #15846
@@ -116,7 +116,7 @@ revision_enumerator::files_for_revision(revision_id const & r,
 
       // Queue up all the file-deltas
       for (map<file_path, pair<file_id, file_id> >::const_iterator fd
-             = cs.deltas_applied.begin();
+           = cs.deltas_applied.begin();
            fd != cs.deltas_applied.end(); ++fd)
         {
           file_deltas[fd->second.second] = fd->second.first;
@@ -175,7 +175,7 @@ revision_enumerator::get_revision_certs(revision_id const & rid,
   hashes.clear();
   bool found_one = false;
   typedef multimap<revision_id, id>::const_iterator ci;
-  pair<ci,ci> range = revision_certs.equal_range(rid);
+  pair<ci, ci> range = revision_certs.equal_range(rid);
   for (ci i = range.first; i != range.second; ++i)
     {
       found_one = true;
@@ -210,7 +210,7 @@ revision_enumerator::step()
           if (terminal_nodes.find(r) == terminal_nodes.end())
             {
               typedef multimap<revision_id, revision_id>::const_iterator ci;
-              pair<ci,ci> range = graph.equal_range(r);
+              pair<ci, ci> range = graph.equal_range(r);
               for (ci i = range.first; i != range.second; ++i)
                 {
                   // We push_front here rather than push_back in order

@@ -121,7 +121,7 @@ namespace commands
   command::allow_completion() const
   {
     return m_allow_completion &&
-      (m_parent?m_parent->allow_completion():true);
+           (m_parent ? m_parent->allow_completion() : true);
   }
 
   command_id
@@ -152,7 +152,7 @@ namespace commands
   }
 
   void
-  command::add_alias(const utf8 &new_name)
+  command::add_alias(const utf8 & new_name)
   {
     m_names.insert(new_name);
   }
@@ -192,7 +192,7 @@ namespace commands
   command::desc() const
   {
     if (m_desc().empty())
-        return abstract() + ".";
+      return abstract() + ".";
     return abstract() + ".\n" + safe_gettext(m_desc().c_str());
   }
 
@@ -202,7 +202,7 @@ namespace commands
     names_set set;
     init_children();
     for (children_set::const_iterator i = m_children.begin();
-      i != m_children.end(); i++)
+         i != m_children.end(); i++)
       {
         if ((*i)->hidden() && !hidden)
           continue;
@@ -321,7 +321,7 @@ namespace commands
   map< command_id, command * >
   command::find_completions(utf8 const & prefix, command_id const & completed,
                             bool completion_ok)
-    const
+  const
   {
     map< command_id, command * > matches;
 
@@ -354,8 +354,8 @@ namespace commands
             // while we list hidden commands with a special option,
             // we never want to give them as possible completions
             if (!child->hidden() &&
-                     prefix().length() < (*iter2)().length() &&
-                     allow_completion() && completion_ok)
+                prefix().length() < (*iter2)().length() &&
+                allow_completion() && completion_ok)
               {
                 string temp((*iter2)(), 0, prefix().length());
                 utf8 p(temp, origin::internal);
@@ -382,9 +382,9 @@ namespace commands
     command_id remaining(id.begin() + 1, id.end());
 
     map< command_id, command * >
-      m2 = find_completions(component,
-                            completed,
-                            allow_completion() && completion_ok);
+    m2 = find_completions(component,
+                          completed,
+                          allow_completion() && completion_ok);
     for (map< command_id, command * >::const_iterator iter = m2.begin();
          iter != m2.end(); iter++)
       {
@@ -504,7 +504,7 @@ namespace commands
         I(matches.size() > 1);
         string err =
           (F("'%s' is ambiguous; possible completions are:") %
-             join_words(id)()).str();
+           join_words(id)()).str();
         for (set< command_id >::const_iterator iter = matches.begin();
              iter != matches.end(); iter++)
           err += '\n' + join_words(*iter)();

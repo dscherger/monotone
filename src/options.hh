@@ -121,7 +121,7 @@ struct options
   typedef options_type const & (*static_options_fun)();
 
   static std::map<static_options_fun, std::set<static_options_fun> > &children();
-  static std::map<static_options_fun, std::list<void(options::*)()> > &var_membership();
+  static std::map<static_options_fun, std::list<void(options:: *)()> > &var_membership();
   static std::map<static_options_fun, bool> &hidden();
   static std::map<static_options_fun, char const *> &deprecated();
 

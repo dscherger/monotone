@@ -121,61 +121,62 @@ is_ancestor(database & db,
   return is_ancestor(ancestor_id, descendent_id, graph);
 }
 
-namespace {
-
-struct anc_graph
+namespace
 {
-  anc_graph(bool existing, database & db, key_store & keys,
-            project_t & project) :
-    existing_graph(existing),
-    db(db),
-    keys(keys),
-    project(project),
-    max_node(0),
-    n_nodes("nodes", "n", 1),
-    n_certs_in("certs in", "c", 1),
-    n_revs_out("revs out", "r", 1),
-    n_certs_out("certs out", "C", 1)
-  {}
 
-  bool existing_graph;
-  database & db;
-  key_store & keys;
-  project_t & project;
-  u64 max_node;
+  struct anc_graph
+  {
+    anc_graph(bool existing, database & db, key_store & keys,
+              project_t & project) :
+      existing_graph(existing),
+      db(db),
+      keys(keys),
+      project(project),
+      max_node(0),
+      n_nodes("nodes", "n", 1),
+      n_certs_in("certs in", "c", 1),
+      n_revs_out("revs out", "r", 1),
+      n_certs_out("certs out", "C", 1)
+    {}
 
-  ticker n_nodes;
-  ticker n_certs_in;
-  ticker n_revs_out;
-  ticker n_certs_out;
+    bool existing_graph;
+    database & db;
+    key_store & keys;
+    project_t & project;
+    u64 max_node;
 
-  map<u64,manifest_id> node_to_old_man;
-  map<manifest_id,u64> old_man_to_node;
+    ticker n_nodes;
+    ticker n_certs_in;
+    ticker n_revs_out;
+    ticker n_certs_out;
 
-  map<u64,revision_id> node_to_old_rev;
-  map<revision_id,u64> old_rev_to_node;
+    map<u64, manifest_id> node_to_old_man;
+    map<manifest_id, u64> old_man_to_node;
 
-  map<u64,revision_id> node_to_new_rev;
-  map<revision_id,u64> new_rev_to_node;
+    map<u64, revision_id> node_to_old_rev;
+    map<revision_id, u64> old_rev_to_node;
 
-  map<u64, legacy::renames_map> node_to_renames;
+    map<u64, revision_id> node_to_new_rev;
+    map<revision_id, u64> new_rev_to_node;
 
-  multimap<u64, pair<cert_name, cert_value> > certs;
-  multimap<u64, u64> ancestry;
-  set<string> branches;
+    map<u64, legacy::renames_map> node_to_renames;
 
-  void add_node_ancestry(u64 child, u64 parent);
-  void write_certs();
-  void kluge_for_bogus_merge_edges();
-  void rebuild_ancestry(set<string> const & attrs_to_drop);
-  void get_node_manifest(u64 node, manifest_id & man);
-  u64 add_node_for_old_manifest(manifest_id const & man);
-  u64 add_node_for_oldstyle_revision(revision_id const & rev);
-  void construct_revisions_from_ancestry(set<string> const & attrs_to_drop);
-  void fixup_node_identities(parent_roster_map const & parent_rosters,
-                             roster_t & child_roster,
-                             legacy::renames_map const & renames);
-};
+    multimap<u64, pair<cert_name, cert_value> > certs;
+    multimap<u64, u64> ancestry;
+    set<string> branches;
+
+    void add_node_ancestry(u64 child, u64 parent);
+    void write_certs();
+    void kluge_for_bogus_merge_edges();
+    void rebuild_ancestry(set<string> const & attrs_to_drop);
+    void get_node_manifest(u64 node, manifest_id & man);
+    u64 add_node_for_old_manifest(manifest_id const & man);
+    u64 add_node_for_oldstyle_revision(revision_id const & rev);
+    void construct_revisions_from_ancestry(set<string> const & attrs_to_drop);
+    void fixup_node_identities(parent_roster_map const & parent_rosters,
+                               roster_t & child_roster,
+                               legacy::renames_map const & renames);
+  };
 
 }
 
@@ -187,7 +188,7 @@ void anc_graph::add_node_ancestry(u64 child, u64 parent)
 
 void anc_graph::get_node_manifest(u64 node, manifest_id & man)
 {
-  map<u64,manifest_id>::const_iterator i = node_to_old_man.find(node);
+  map<u64, manifest_id>::const_iterator i = node_to_old_man.find(node);
   I(i != node_to_old_man.end());
   man = i->second;
 }
@@ -202,7 +203,7 @@ void anc_graph::write_certs()
         char buf[constants::epochlen_bytes];
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
         lazy_rng::get().randomize(reinterpret_cast<Botan::byte *>(buf),
-                                 constants::epochlen_bytes);
+                                  constants::epochlen_bytes);
 #else
         Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
                                      constants::epochlen_bytes);
@@ -218,12 +219,12 @@ void anc_graph::write_certs()
 
   typedef multimap<u64, pair<cert_name, cert_value> >::const_iterator ci;
 
-  for (map<u64,revision_id>::const_iterator i = node_to_new_rev.begin();
+  for (map<u64, revision_id>::const_iterator i = node_to_new_rev.begin();
        i != node_to_new_rev.end(); ++i)
     {
       revision_id rev(i->second);
 
-      pair<ci,ci> range = certs.equal_range(i->first);
+      pair<ci, ci> range = certs.equal_range(i->first);
 
       for (ci j = range.first; j != range.second; ++j)
         {
@@ -260,10 +261,10 @@ anc_graph::kluge_for_bogus_merge_edges()
 
   P(F("scanning for bogus merge edges"));
 
-  multimap<u64,u64> parent_to_child_map;
-    for (multimap<u64, u64>::const_iterator i = ancestry.begin();
-         i != ancestry.end(); ++i)
-      parent_to_child_map.insert(make_pair(i->second, i->first));
+  multimap<u64, u64> parent_to_child_map;
+  for (multimap<u64, u64>::const_iterator i = ancestry.begin();
+       i != ancestry.end(); ++i)
+    parent_to_child_map.insert(make_pair(i->second, i->first));
 
   map<u64, u64> edges_to_kill;
   for (multimap<u64, u64>::const_iterator i = ancestry.begin();
@@ -462,7 +463,7 @@ not_dead_yet(node_id nid, u64 birth_rev,
                   return false;
                 }
               typedef multimap<u64, u64>::const_iterator ci;
-              pair<ci,ci> range = child_to_parents.equal_range(curr);
+              pair<ci, ci> range = child_to_parents.equal_range(curr);
               for (ci i = range.first; i != range.second; ++i)
                 {
                   if (i->first != curr)
@@ -613,7 +614,7 @@ anc_graph::fixup_node_identities(parent_roster_map const & parent_rosters,
 }
 
 struct
-current_rev_debugger
+  current_rev_debugger
 {
   u64 node;
   anc_graph const & agraph;
@@ -627,7 +628,7 @@ template <> void
 dump(current_rev_debugger const & d, string & out)
 {
   typedef multimap<u64, pair<cert_name, cert_value> >::const_iterator ci;
-  pair<ci,ci> range = d.agraph.certs.equal_range(d.node);
+  pair<ci, ci> range = d.agraph.certs.equal_range(d.node);
   for(ci i = range.first; i != range.second; ++i)
     {
       if (i->first == d.node)
@@ -651,8 +652,8 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
   // need to worry about one side of the frontier advancing faster than
   // another.
 
-  typedef multimap<u64,u64>::const_iterator ci;
-  multimap<u64,u64> parent_to_child_map;
+  typedef multimap<u64, u64>::const_iterator ci;
+  multimap<u64, u64> parent_to_child_map;
   deque<u64> work;
   set<u64> done;
 
@@ -666,7 +667,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
         parent_to_child_map.insert(make_pair(i->second, i->first));
         children.insert(i->first);
       }
-    for (map<u64,manifest_id>::const_iterator i = node_to_old_man.begin();
+    for (map<u64, manifest_id>::const_iterator i = node_to_old_man.begin();
          i != node_to_old_man.end(); ++i)
       {
         all.insert(i->first);
@@ -690,22 +691,22 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
       if (done.find(child) != done.end())
         continue;
 
-      pair<ci,ci> parent_range = ancestry.equal_range(child);
+      pair<ci, ci> parent_range = ancestry.equal_range(child);
       set<u64> parents;
       bool parents_all_done = true;
       for (ci i = parent_range.first; parents_all_done && i != parent_range.second; ++i)
-      {
-        if (i->first != child)
-          continue;
-        u64 parent = i->second;
-        if (done.find(parent) == done.end())
-          {
-            work.push_back(child);
-            parents_all_done = false;
-          }
-        else
-          parents.insert(parent);
-      }
+        {
+          if (i->first != child)
+            continue;
+          u64 parent = i->second;
+          if (done.find(parent) == done.end())
+            {
+              work.push_back(child);
+              parents_all_done = false;
+            }
+          else
+            parents.insert(parent);
+        }
 
       if (parents_all_done
           && (node_to_new_rev.find(child) == node_to_new_rev.end()))
@@ -779,9 +780,9 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
                     if (child_roster.has_node(j->first))
                       {
                         map<string, string> const &
-                          fattrs = j->second;
+                        fattrs = j->second;
                         for (map<string, string>::const_iterator
-                               k = fattrs.begin();
+                             k = fattrs.begin();
                              k != fattrs.end(); ++k)
                           {
                             string key = k->first;
@@ -884,7 +885,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
           safe_insert(done, child);
 
           // Extend the work queue with all the children of this child
-          pair<ci,ci> grandchild_range = parent_to_child_map.equal_range(child);
+          pair<ci, ci> grandchild_range = parent_to_child_map.equal_range(child);
           for (ci i = grandchild_range.first;
                i != grandchild_range.second; ++i)
             {

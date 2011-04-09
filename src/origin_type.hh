@@ -11,8 +11,10 @@
 #define __ORIGIN_TYPE_HH__
 
 // sanity.cc:type_to_string(type t) will need to match this
-namespace origin {
-  enum type {
+namespace origin
+{
+  enum type
+  {
     internal,
     network,
     database,

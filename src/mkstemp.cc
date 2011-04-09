@@ -63,22 +63,22 @@
 #include <unistd.h>
 
 #ifdef _MSC_VER  // bleh, is this really necessary?
- #undef open
- #define open(p, f, m) _open(p, f, m)
- #undef close
- #define close(f) _close(f)
- #undef O_RDWR
- #define O_RDWR _O_RDWR
- #undef O_CREAT
- #define O_CREAT _O_CREAT
- #undef O_EXCL
- #define O_EXCL _O_EXCL
- #undef O_BINARY
- #define O_BINARY _O_BINARY
+#undef open
+#define open(p, f, m) _open(p, f, m)
+#undef close
+#define close(f) _close(f)
+#undef O_RDWR
+#define O_RDWR _O_RDWR
+#undef O_CREAT
+#define O_CREAT _O_CREAT
+#undef O_EXCL
+#define O_EXCL _O_EXCL
+#undef O_BINARY
+#define O_BINARY _O_BINARY
 #endif
 
 #ifndef O_BINARY
- #define O_BINARY 0
+#define O_BINARY 0
 #endif
 
 using std::string;
@@ -155,7 +155,7 @@ monotone_mkstemp(string & tmpl)
           x /= NLETTERS;
         }
 
-      int fd = open(&buf[0], O_RDWR|O_CREAT|O_EXCL|O_BINARY, 0600);
+      int fd = open(&buf[0], O_RDWR | O_CREAT | O_EXCL | O_BINARY, 0600);
       if (fd >= 0)
         {
           close(fd);

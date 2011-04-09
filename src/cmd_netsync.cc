@@ -57,8 +57,8 @@ extract_client_connection_info(options & opts,
 {
   if (opts.remote_stdio_host_given)
     {
-       netsync_connection_info::setup_from_uri(opts, project.db, lua, type,
-                                               opts.remote_stdio_host, info);
+      netsync_connection_info::setup_from_uri(opts, project.db, lua, type,
+                                              opts.remote_stdio_host, info);
     }
   else
     {
@@ -75,8 +75,8 @@ extract_client_connection_info(options & opts,
           arg_type server = idx(args, 0);
           vector<arg_type> include;
           include.insert(include.begin(),
-                                  args.begin() + 1,
-                                  args.end());
+                         args.begin() + 1,
+                         args.end());
           vector<arg_type> exclude = opts.exclude;
 
           netsync_connection_info::setup_from_server_and_pattern(opts, project.db,
@@ -86,13 +86,13 @@ extract_client_connection_info(options & opts,
                                                                  info);
         }
       else
-       {
-         // if no argument has been given and the --remote_stdio_host
-         // option has been left out, try to load the database defaults
-         // at least
-         netsync_connection_info::setup_default(opts, project.db,
-                                                lua, type, info);
-       }
+        {
+          // if no argument has been given and the --remote_stdio_host
+          // option has been left out, try to load the database defaults
+          // at least
+          netsync_connection_info::setup_default(opts, project.db,
+                                                 lua, type, info);
+        }
     }
 
   opts.no_transport_auth =
@@ -122,7 +122,7 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
       W(F("no database given; assuming '%s' database. This means that\n"
           "we can't verify the server key, because we have no record of\n"
           "what it should be.")
-          % memory_db_identifier);
+        % memory_db_identifier);
       app.opts.dbname_type = memory_db;
       app.opts.dbname_given = true;
     }
@@ -158,7 +158,7 @@ parse_options_from_args(args_vector & args,
       string name;
       arg_type arg;
 
-      if (idx(args,i)() == "--" || seen_dashdash)
+      if (idx(args, i)() == "--" || seen_dashdash)
         {
           if (!seen_dashdash)
             {
@@ -167,34 +167,34 @@ parse_options_from_args(args_vector & args,
           ++i;
           continue;
         }
-      else if (idx(args,i)().substr(0,2) == "--")
+      else if (idx(args, i)().substr(0, 2) == "--")
         {
-          string::size_type equals = idx(args,i)().find('=');
+          string::size_type equals = idx(args, i)().find('=');
           bool has_arg;
           if (equals == string::npos)
             {
-              name = idx(args,i)().substr(2);
+              name = idx(args, i)().substr(2);
               has_arg = false;
             }
           else
             {
-              name = idx(args,i)().substr(2, equals-2);
+              name = idx(args, i)().substr(2, equals - 2);
               has_arg = true;
             }
 
           if (has_arg)
             {
-              arg = arg_type(idx(args,i)().substr(equals+1), origin::user);
+              arg = arg_type(idx(args, i)().substr(equals + 1), origin::user);
             }
         }
-      else if (idx(args,i)().substr(0,1) == "-")
+      else if (idx(args, i)().substr(0, 1) == "-")
         {
-          name = idx(args,i)().substr(1,1);
-          bool has_arg = idx(args,i)().size() > 2;
+          name = idx(args, i)().substr(1, 1);
+          bool has_arg = idx(args, i)().size() > 2;
 
           if (has_arg)
             {
-              arg = arg_type(idx(args,i)().substr(2), origin::user);
+              arg = arg_type(idx(args, i)().substr(2), origin::user);
             }
         }
       else
@@ -225,7 +225,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
       W(F("no database given; assuming '%s' database. This means that\n"
           "we can't verify the server key, because we have no record of\n"
           "what it should be.")
-          % memory_db_identifier);
+        % memory_db_identifier);
       app.opts.dbname_type = memory_db;
       app.opts.dbname_given = true;
     }
@@ -246,7 +246,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
   if (opts.size() > 0)
     {
       ss << 'o';
-      for (unsigned int i=0; i < opts.size(); ++i)
+      for (unsigned int i = 0; i < opts.size(); ++i)
         {
           ss << opts.at(i).first.size()  << ':' << opts.at(i).first;
           ss << opts.at(i).second().size() << ':' << opts.at(i).second();
@@ -255,11 +255,11 @@ CMD_AUTOMATE_NO_STDIO(remote,
     }
 
   ss << 'l';
-  for (args_vector::size_type i=0; i<cleaned_args.size(); ++i)
-  {
+  for (args_vector::size_type i = 0; i < cleaned_args.size(); ++i)
+    {
       std::string arg = idx(cleaned_args, i)();
       ss << arg.size() << ':' << arg;
-  }
+    }
   ss << 'e';
 
   L(FL("stdio input: %s") % ss.str());
@@ -291,28 +291,28 @@ print_dryrun_info_cmd(protocol_role role,
       if (counts->keys_in.can_have_more_than_min)
         {
           std::cout << (F("would receive %d revisions, %d certs, and at least %d keys\n")
-            % counts->revs_in.min_count
-            % counts->certs_in.min_count
-            % counts->keys_in.min_count);
+                        % counts->revs_in.min_count
+                        % counts->certs_in.min_count
+                        % counts->keys_in.min_count);
         }
       else
         {
           std::cout << (F("would receive %d revisions, %d certs, and %d keys\n")
-            % counts->revs_in.min_count
-            % counts->certs_in.min_count
-            % counts->keys_in.min_count);
+                        % counts->revs_in.min_count
+                        % counts->certs_in.min_count
+                        % counts->keys_in.min_count);
         }
     }
   if (role != sink_role)
     {
       std::cout << (F("would send %d certs and %d keys\n")
-        % counts->certs_out.min_count
-        % counts->keys_out.min_count);
+                    % counts->certs_out.min_count
+                    % counts->keys_out.min_count);
       std::cout <<
-        (FP("would send %d revisions\n", // 0 revisions; nothing following, so no trailing colon
-           "would send %d revisions:\n",
-           counts->revs_out.min_count + 1)
-        % counts->revs_out.min_count);
+                (FP("would send %d revisions\n", // 0 revisions; nothing following, so no trailing colon
+                    "would send %d revisions:\n",
+                    counts->revs_out.min_count + 1)
+                 % counts->revs_out.min_count);
       map<branch_name, int> branch_counts;
       for (vector<revision_id>::const_iterator i = counts->revs_out.items.begin();
            i != counts->revs_out.items.end(); ++i)
@@ -704,11 +704,11 @@ CMD_AUTOMATE(sync, N_("[URI]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
                                  netsync_connection, args, info);
 
   if (app.opts.set_default && workspace::found)
-  {
-    // Write workspace options, including key; this is the simplest way to
-    // fix a "found multiple keys" error reported by sync.
-    workspace::set_options(app.opts, app.lua);
-  }
+    {
+      // Write workspace options, including key; this is the simplest way to
+      // fix a "found multiple keys" error reported by sync.
+      workspace::set_options(app.opts, app.lua);
+    }
 
   shared_conn_counts counts = connection_counts::create();
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
@@ -762,7 +762,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
   arg_type server = idx(args, 0);
   arg_type workspace_arg;
 
-   if (url_arg)
+  if (url_arg)
     {
       E(!app.opts.exclude_given, origin::user,
         F("cannot use '--exclude' in URI mode"));
@@ -821,16 +821,16 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
   if (!target_is_current_dir)
     {
       require_path_is_nonexistent
-        (workspace_dir,
-         F("clone destination directory '%s' already exists")
-         % workspace_dir);
+      (workspace_dir,
+       F("clone destination directory '%s' already exists")
+       % workspace_dir);
     }
 
   system_path _MTN_dir = workspace_dir / path_component("_MTN");
 
   require_path_is_nonexistent
-    (_MTN_dir, F("bookkeeping directory already exists in '%s'")
-     % workspace_dir);
+  (_MTN_dir, F("bookkeeping directory already exists in '%s'")
+   % workspace_dir);
 
   directory_cleanup_helper remove_on_fail(
     target_is_current_dir ? _MTN_dir : workspace_dir
@@ -883,7 +883,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
       E(project.revision_is_in_branch(ident, app.opts.branch),
         origin::user,
         F("revision %s is not a member of branch '%s'")
-          % ident % app.opts.branch);
+        % ident % app.opts.branch);
     }
 
   roster_t empty_roster, current_roster;
@@ -928,10 +928,11 @@ struct pid_file
       return;
     pid_t pid;
     ifstream(path.as_external().c_str()) >> pid;
-    if (pid == get_process_id()) {
-      file.close();
-      delete_file(path);
-    }
+    if (pid == get_process_id())
+      {
+        file.close();
+        delete_file(path);
+      }
   }
 
 private:

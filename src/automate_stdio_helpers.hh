@@ -26,7 +26,7 @@ public:
   static void
   automate_stdio_shared_setup(app_state & app,
                               std::vector<std::string> const & cmdline,
-                              std::vector<std::pair<std::string,std::string> >
+                              std::vector<std::pair<std::string, std::string> >
                               const * const params,
                               commands::command_id & id,
                               /* reference-to-pointer here is intentional */
@@ -35,7 +35,7 @@ public:
   static std::pair<int, std::string>
   automate_stdio_shared_body(app_state & app,
                              std::vector<std::string> const & cmdline,
-                             std::vector<std::pair<std::string,std::string> >
+                             std::vector<std::pair<std::string, std::string> >
                              const & params,
                              std::ostream & os,
                              boost::function<void()> init_fn,

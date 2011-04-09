@@ -47,7 +47,8 @@ void dump(T const &, std::string &)
   // also we get better diagnostics this way (the error tells you what is
   // wrong, not just that there's an assertion failure).
   enum dummy { d = (sizeof(struct dump_must_be_specialized_for_this_type)
-                    == sizeof(T)) };
+                    == sizeof(T))
+             };
 }
 
 template <> void dump(std::string const & obj, std::string & out);

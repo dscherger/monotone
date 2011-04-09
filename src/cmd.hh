@@ -71,7 +71,7 @@ namespace commands
 
     utf8 const & primary_name(void) const;
     names_set const & names(void) const;
-    void add_alias(const utf8 &new_name);
+    void add_alias(const utf8 & new_name);
     command * parent(void) const;
     bool is_group(void) const;
     bool hidden(void) const;
@@ -98,9 +98,9 @@ namespace commands
     command const * find_command(command_id const & id) const;
     command * find_command(command_id const & id);
     std::set< command_id >
-      complete_command(command_id const & id,
-                       command_id completed = command_id(),
-                       bool completion_ok = true) const;
+    complete_command(command_id const & id,
+                     command_id completed = command_id(),
+                     bool completion_ok = true) const;
   };
 
   class cmdpreset
@@ -197,7 +197,7 @@ namespace commands { \
     cmdpreset_ ## C C ## _cmdpreset;                            \
   }                                                             \
   void commands::cmdpreset_ ## C ::preset(options & opts) const
-  
+
 
 #define _CMD2(C, name, aliases, parent, hidden, params, abstract, desc, opts) \
 namespace commands {                                                 \

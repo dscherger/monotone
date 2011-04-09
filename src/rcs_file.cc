@@ -42,7 +42,7 @@ using std::string;
 
 #ifdef HAVE_MMAP
 struct
-file_handle
+  file_handle
 {
   string const & filename;
   off_t length;
@@ -51,20 +51,20 @@ file_handle
     filename(fn),
     length(0),
     fd(-1)
-    {
-      struct stat st;
-      if (stat(fn.c_str(), &st) == -1)
-        throw oops("stat of " + filename + " failed");
-      length = st.st_size;
-      fd = open(filename.c_str(), O_RDONLY);
-      if (fd == -1)
-        throw oops("open of " + filename + " failed");
-    }
+  {
+    struct stat st;
+    if (stat(fn.c_str(), &st) == -1)
+      throw oops("stat of " + filename + " failed");
+    length = st.st_size;
+    fd = open(filename.c_str(), O_RDONLY);
+    if (fd == -1)
+      throw oops("open of " + filename + " failed");
+  }
   ~file_handle()
-    {
-      if (close(fd) == -1)
-        throw oops("close of " + filename + " failed");
-    }
+  {
+    if (close(fd) == -1)
+      throw oops("close of " + filename + " failed");
+  }
 };
 struct file_source
 {
@@ -112,7 +112,7 @@ struct file_source
 };
 #elif defined(WIN32)
 struct
-file_handle
+  file_handle
 {
   string const & filename;
   off_t length;
@@ -121,31 +121,31 @@ file_handle
     filename(fn),
     length(0),
     fd(NULL)
-    {
-      struct stat st;
-      if (stat(fn.c_str(), &st) == -1)
-        throw oops("stat of " + filename + " failed");
-      length = st.st_size;
-      fd = CreateFile(fn.c_str(),
-                      GENERIC_READ,
-                      FILE_SHARE_READ,
-                      NULL,
-                      OPEN_EXISTING, 0, NULL);
-      if (fd == NULL)
-        throw oops("open of " + filename + " failed");
-    }
+  {
+    struct stat st;
+    if (stat(fn.c_str(), &st) == -1)
+      throw oops("stat of " + filename + " failed");
+    length = st.st_size;
+    fd = CreateFile(fn.c_str(),
+                    GENERIC_READ,
+                    FILE_SHARE_READ,
+                    NULL,
+                    OPEN_EXISTING, 0, NULL);
+    if (fd == NULL)
+      throw oops("open of " + filename + " failed");
+  }
   ~file_handle()
-    {
-      if (CloseHandle(fd)==0)
-        throw oops("close of " + filename + " failed");
-    }
+  {
+    if (CloseHandle(fd) == 0)
+      throw oops("close of " + filename + " failed");
+  }
 };
 
 struct
-file_source
+  file_source
 {
   string const & filename;
-  HANDLE fd,map;
+  HANDLE fd, map;
   off_t length;
   off_t pos;
   void * mapping;
@@ -177,17 +177,17 @@ file_source
     mapping(NULL)
   {
     map = CreateFileMapping(fd, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (map==NULL)
+    if (map == NULL)
       throw oops("CreateFileMapping of " + filename + " failed");
     mapping = MapViewOfFile(map, FILE_MAP_READ, 0, 0, len);
-    if (mapping==NULL)
+    if (mapping == NULL)
       throw oops("MapViewOfFile of " + filename + " failed");
   }
   ~file_source()
   {
-    if (UnmapViewOfFile(mapping)==0)
+    if (UnmapViewOfFile(mapping) == 0)
       throw oops("UnmapViewOfFile of " + filename + " failed");
-    if (CloseHandle(map)==0)
+    if (CloseHandle(map) == 0)
       throw oops("CloseHandle of " + filename + " failed");
   }
 };
@@ -197,14 +197,14 @@ typedef istream file_source;
 #endif
 
 typedef enum
-  {
-    TOK_STRING,
-    TOK_SYMBOL,
-    TOK_NUM,
-    TOK_SEMI,
-    TOK_COLON,
-    TOK_NONE
-  }
+{
+  TOK_STRING,
+  TOK_SYMBOL,
+  TOK_NUM,
+  TOK_SEMI,
+  TOK_COLON,
+  TOK_NONE
+}
 token_type;
 
 static inline void
@@ -489,14 +489,14 @@ void
 parse_rcs_file(string const & filename, rcs_file & r)
 {
 #if defined(HAVE_MMAP) || defined(WIN32)
-      file_handle handle(filename);
-      file_source ifs(filename, handle.fd, handle.length);
+  file_handle handle(filename);
+  file_source ifs(filename, handle.fd, handle.length);
 #else
-      ifstream ifs(filename.c_str());
-      ifs.unsetf(ios_base::skipws);
+  ifstream ifs(filename.c_str());
+  ifs.unsetf(ios_base::skipws);
 #endif
-      parser p(ifs, r);
-      p.parse_file();
+  parser p(ifs, r);
+  p.parse_file();
 }
 
 

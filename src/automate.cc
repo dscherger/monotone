@@ -136,19 +136,20 @@ CMD_AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
     {
       revision_id rid = frontier.back();
       frontier.pop_back();
-      if(!null_id(rid)) {
-        set<revision_id> parents;
-        db.get_revision_parents(rid, parents);
-        for (set<revision_id>::const_iterator i = parents.begin();
-             i != parents.end(); ++i)
-          {
-            if (ancestors.find(*i) == ancestors.end())
-              {
-                frontier.push_back(*i);
-                ancestors.insert(*i);
-              }
-          }
-      }
+      if(!null_id(rid))
+        {
+          set<revision_id> parents;
+          db.get_revision_parents(rid, parents);
+          for (set<revision_id>::const_iterator i = parents.begin();
+               i != parents.end(); ++i)
+            {
+              if (ancestors.find(*i) == ancestors.end())
+                {
+                  frontier.push_back(*i);
+                  ancestors.insert(*i);
+                }
+            }
+        }
     }
   for (set<revision_id>::const_iterator i = ancestors.begin();
        i != ancestors.end(); ++i)
@@ -378,7 +379,7 @@ CMD_AUTOMATE(roots, "",
   db.get_revision_children(nullid, roots);
   for (set<revision_id>::const_iterator i = roots.begin();
        i != roots.end(); ++i)
-      output << *i << '\n';
+    output << *i << '\n';
 }
 
 // Name: parents
@@ -408,8 +409,8 @@ CMD_AUTOMATE(parents, N_("REV"),
   db.get_revision_parents(rid, parents);
   for (set<revision_id>::const_iterator i = parents.begin();
        i != parents.end(); ++i)
-      if (!null_id(*i))
-          output << *i << '\n';
+    if (!null_id(*i))
+      output << *i << '\n';
 }
 
 // Name: children
@@ -439,8 +440,8 @@ CMD_AUTOMATE(children, N_("REV"),
   db.get_revision_children(rid, children);
   for (set<revision_id>::const_iterator i = children.begin();
        i != children.end(); ++i)
-      if (!null_id(*i))
-          output << *i << '\n';
+    if (!null_id(*i))
+      output << *i << '\n';
 }
 
 // Name: graph
@@ -486,13 +487,13 @@ CMD_AUTOMATE(graph, "",
       if (null_id(i->second))
         continue;
       map<revision_id, set<revision_id> >::iterator
-        j = child_to_parents.find(i->first);
+      j = child_to_parents.find(i->first);
       I(j->first == i->first);
       j->second.insert(i->second);
     }
 
   for (map<revision_id, set<revision_id> >::const_iterator
-         i = child_to_parents.begin();
+       i = child_to_parents.begin();
        i != child_to_parents.end(); ++i)
     {
       output << i->first;
@@ -693,7 +694,7 @@ inventory_determine_corresponding_paths(roster_t const & old_roster,
                                         vector<file_path> & additional_excludes)
 {
   // at first check the includes vector
-  for (int i=0, s=includes.size(); i<s; i++)
+  for (int i = 0, s = includes.size(); i < s; i++)
     {
       file_path fp = includes.at(i);
 
@@ -730,7 +731,7 @@ inventory_determine_corresponding_paths(roster_t const & old_roster,
 
   // and now the excludes vector
   vector<file_path> new_excludes;
-  for (int i=0, s=excludes.size(); i<s; i++)
+  for (int i = 0, s = excludes.size(); i < s; i++)
     {
       file_path fp = excludes.at(i);
 
@@ -864,19 +865,19 @@ inventory_determine_states(workspace & work, file_path const & fs_path,
       item.new_node.exists &&
       item.old_node.id != item.new_node.id)
     {
-        if (new_roster.has_node(item.old_node.id))
-          states.push_back("rename_source");
-        else
-          states.push_back("dropped");
+      if (new_roster.has_node(item.old_node.id))
+        states.push_back("rename_source");
+      else
+        states.push_back("dropped");
 
-        if (old_roster.has_node(item.new_node.id))
-          states.push_back("rename_target");
-        else
-          states.push_back("added");
+      if (old_roster.has_node(item.new_node.id))
+        states.push_back("rename_target");
+      else
+        states.push_back("added");
     }
   // this can be either a drop or a renamed item
   else if (item.old_node.exists &&
-          !item.new_node.exists)
+           !item.new_node.exists)
     {
       if (new_roster.has_node(item.old_node.id))
         states.push_back("rename_source");
@@ -885,7 +886,7 @@ inventory_determine_states(workspace & work, file_path const & fs_path,
     }
   // this can be either an add or a renamed item
   else if (!item.old_node.exists &&
-            item.new_node.exists)
+           item.new_node.exists)
     {
       if (old_roster.has_node(item.new_node.id))
         states.push_back("rename_target");
@@ -905,8 +906,8 @@ inventory_determine_states(workspace & work, file_path const & fs_path,
           // file that is ignored but not in an ignored directory.
           if (work.ignore_file(fs_path))
             W(F("'%s' is both known and ignored; "
-              "it will be shown as 'missing'. Check '.mtn-ignore'")
-            % fs_path);
+                "it will be shown as 'missing'. Check '.mtn-ignore'")
+              % fs_path);
         }
     }
   else // exists on filesystem
@@ -1744,7 +1745,7 @@ CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
 
   for (set<revision_id>::const_iterator i = common_ancestors.begin();
        i != common_ancestors.end(); ++i)
-      output << *i << "\n";
+    output << *i << "\n";
 }
 
 // Name: branches
@@ -1824,10 +1825,11 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
   globish incl("*", origin::internal);
   bool filtering(false);
 
-  if (args.size() == 1) {
-    incl = globish(idx(args, 0)(), origin::user);
-    filtering = true;
-  }
+  if (args.size() == 1)
+    {
+      incl = globish(idx(args, 0)(), origin::user);
+      filtering = true;
+    }
 
   basic_io::printer prt;
 
@@ -1946,7 +1948,7 @@ CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
     F("no revision %s found in database") % ident);
   db.get_roster(ident, new_roster, mm);
 
-  file_path path = file_path_external(idx(args,1));
+  file_path path = file_path_external(idx(args, 1));
   E(new_roster.has_node(path), origin::user,
     F("file '%s' is unknown for revision %s")
     % path % ident);
@@ -1962,7 +1964,7 @@ CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
       st.push_binary_pair(basic_io::syms::content_mark, i->inner());
       prt.print_stanza(st);
     }
-    output.write(prt.buf.data(), prt.buf.size());
+  output.write(prt.buf.data(), prt.buf.size());
 }
 
 // Name: get_corresponding_path
@@ -2013,7 +2015,7 @@ CMD_AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"),
     F("no revision %s found in database") % old_ident);
   db.get_roster(old_ident, old_roster);
 
-  file_path path = file_path_external(idx(args,1));
+  file_path path = file_path_external(idx(args, 1));
   E(new_roster.has_node(path), origin::user,
     F("file '%s' is unknown for revision %s") % path % ident);
 
@@ -2385,7 +2387,7 @@ CMD_AUTOMATE(lua, "LUA_FUNCTION [ARG1 [ARG2 [...]]]",
   std::vector<std::string> func_args;
   if (args.size() > 1)
     {
-      for (unsigned int i=1; i<args.size(); i++)
+      for (unsigned int i = 1; i < args.size(); i++)
         {
           func_args.push_back(idx(args, i)());
         }
@@ -2476,7 +2478,7 @@ automate_stdio_shared_setup(app_state & app,
 std::pair<int, string> automate_stdio_helpers::
 automate_stdio_shared_body(app_state & app,
                            std::vector<std::string> const & cmdline,
-                           std::vector<std::pair<std::string,std::string> >
+                           std::vector<std::pair<std::string, std::string> >
                            const & params,
                            std::ostream & os,
                            boost::function<void()> init_fn,

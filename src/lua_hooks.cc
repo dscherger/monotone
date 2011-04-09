@@ -49,14 +49,14 @@ static int panic_thrower(lua_State * st)
 // the command line (and so known only to the app_state), and still be
 // available to lua
 // please *don't* use it for complex things that can throw errors
-static map<lua_State*, app_state*> map_of_lua_to_app;
+static map<lua_State *, app_state *> map_of_lua_to_app;
 
 extern "C"
 {
   static int
-  monotone_get_confdir_for_lua(lua_State *LS)
+  monotone_get_confdir_for_lua(lua_State * LS)
   {
-    map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(LS);
+    map<lua_State *, app_state *>::iterator i = map_of_lua_to_app.find(LS);
     if (i != map_of_lua_to_app.end())
       {
         if (i->second->opts.conf_dir_given
@@ -75,7 +75,7 @@ extern "C"
   }
   // taken from http://medek.wordpress.com/2009/02/03/wrapping-lua-errors-and-print-function/
   static int
-  monotone_message(lua_State *LS)
+  monotone_message(lua_State * LS)
   {
     int nArgs = lua_gettop(LS);
     lua_getglobal(LS, "tostring");
@@ -83,15 +83,15 @@ extern "C"
     string ret;
     for (int i = 1; i <= nArgs; ++i)
       {
-        const char *s;
+        const char * s;
         lua_pushvalue(LS, -1);
         lua_pushvalue(LS, i);
         lua_call(LS, 1, 1);
         s = lua_tostring(LS, -1);
         if (s == NULL)
           return luaL_error(
-            LS, LUA_QL("tostring") " must return a string to ", LUA_QL("print")
-          );
+                   LS, LUA_QL("tostring") " must return a string to ", LUA_QL("print")
+                 );
 
         if (i > 1)
           ret.append("\t");
@@ -108,28 +108,29 @@ extern "C"
 }
 
 app_state*
-get_app_state(lua_State *LS)
+get_app_state(lua_State * LS)
 {
-  map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(LS);
+  map<lua_State *, app_state *>::iterator i = map_of_lua_to_app.find(LS);
   if (i != map_of_lua_to_app.end())
     return i->second;
   else
     return NULL;
 }
 
-namespace {
+namespace
+{
   Lua & push_key_identity_info(Lua & ll,
                                key_identity_info const & info)
   {
     hexenc<id> hexid;
     encode_hexenc(info.id.inner(), hexid);
     ll.push_table()
-      .push_str(hexid())
-      .set_field("id")
-      .push_str(info.given_name())
-      .set_field("given_name")
-      .push_str(info.official_name())
-      .set_field("name");
+    .push_str(hexid())
+    .set_field("id")
+    .push_str(info.given_name())
+    .set_field("given_name")
+    .push_str(info.official_name())
+    .set_field("name");
     return ll;
   }
 }
@@ -157,8 +158,8 @@ lua_hooks::lua_hooks(app_state * app)
     " error(\"io.popen disabled for security reasons.  Try spawn_pipe().\") "
     "end ";
 
-    if (!run_string(st, disable_dangerous,
-                    "<disabled dangerous functions>"))
+  if (!run_string(st, disable_dangerous,
+                  "<disabled dangerous functions>"))
     throw oops("lua error while disabling existing functions");
 
   // redirect output to internal message handler which calls into
@@ -172,8 +173,8 @@ lua_hooks::lua_hooks(app_state * app)
     "  message(...) "
     "end ";
 
-    if (!run_string(st, redirect_output,
-                    "<redirect output>"))
+  if (!run_string(st, redirect_output,
+                  "<redirect output>"))
     throw oops("lua error while redirecting output");
 
   map_of_lua_to_app.insert(make_pair(st, app));
@@ -181,7 +182,7 @@ lua_hooks::lua_hooks(app_state * app)
 
 lua_hooks::~lua_hooks()
 {
-  map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(st);
+  map<lua_State *, app_state *>::iterator i = map_of_lua_to_app.find(st);
   if (st)
     lua_close (st);
   if (i != map_of_lua_to_app.end())
@@ -282,8 +283,8 @@ bool
 lua_hooks::hook_exists(string const & func_name)
 {
   return Lua(st)
-    .func(func_name)
-    .ok();
+         .func(func_name)
+         .ok();
 }
 
 // concrete hooks
@@ -297,8 +298,8 @@ lua_hooks::hook_get_passphrase(key_identity_info const & identity,
   Lua ll(st);
   ll.func("get_passphrase");
   push_key_identity_info(ll, identity);
-  ll.call(1,1)
-    .extract_classified_str(phrase);
+  ll.call(1, 1)
+  .extract_classified_str(phrase);
   return ll.ok();
 }
 
@@ -310,7 +311,7 @@ lua_hooks::hook_get_local_key_name(key_identity_info & info)
   ll.func("get_local_key_name");
   push_key_identity_info(ll, info);
   ll.call(1, 1)
-    .extract_str(local_name);
+  .extract_str(local_name);
   if (ll.ok())
     {
       info.official_name = key_name(local_name, origin::user);
@@ -325,10 +326,10 @@ lua_hooks::hook_persist_phrase_ok()
 {
   bool persist_ok = false;
   bool executed_ok = Lua(st)
-    .func("persist_phrase_ok")
-    .call(0,1)
-    .extract_bool(persist_ok)
-    .ok();
+                     .func("persist_phrase_ok")
+                     .call(0, 1)
+                     .extract_bool(persist_ok)
+                     .ok();
   return executed_ok && persist_ok;
 }
 
@@ -337,11 +338,11 @@ lua_hooks::hook_expand_selector(string const & sel,
                                 string & exp)
 {
   return Lua(st)
-    .func("expand_selector")
-    .push_str(sel)
-    .call(1,1)
-    .extract_str(exp)
-    .ok();
+         .func("expand_selector")
+         .push_str(sel)
+         .call(1, 1)
+         .extract_str(exp)
+         .ok();
 }
 
 bool
@@ -349,12 +350,12 @@ lua_hooks::hook_expand_date(string const & sel,
                             string & exp)
 {
   exp.clear();
-  bool res= Lua(st)
-    .func("expand_date")
-    .push_str(sel)
-    .call(1,1)
-    .extract_str(exp)
-    .ok();
+  bool res = Lua(st)
+             .func("expand_date")
+             .push_str(sel)
+             .call(1, 1)
+             .extract_str(exp)
+             .ok();
   return res && exp.size();
 }
 
@@ -366,11 +367,11 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
 {
   string key;
   bool ok = Lua(st)
-    .func("get_branch_key")
-    .push_str(branchname())
-    .call(1,1)
-    .extract_str(key)
-    .ok();
+            .func("get_branch_key")
+            .push_str(branchname())
+            .call(1, 1)
+            .extract_str(key)
+            .ok();
 
   if (!ok || key.empty())
     return false;
@@ -390,11 +391,11 @@ lua_hooks::hook_get_author(branch_name const & branchname,
 {
   Lua ll(st);
   ll.func("get_author")
-    .push_str(branchname());
+  .push_str(branchname());
   push_key_identity_info(ll, identity);
-  return ll.call(2,1)
-    .extract_str(author)
-    .ok();
+  return ll.call(2, 1)
+         .extract_str(author)
+         .ok();
 }
 
 bool
@@ -403,11 +404,11 @@ lua_hooks::hook_edit_comment(external const & user_log_message,
 {
   string result_str;
   bool is_ok = Lua(st)
-                 .func("edit_comment")
-                 .push_str(user_log_message())
-                 .call(1,1)
-                 .extract_str(result_str)
-                 .ok();
+               .func("edit_comment")
+               .push_str(user_log_message())
+               .call(1, 1)
+               .extract_str(result_str)
+               .ok();
   result = external(result_str, origin::user);
   return is_ok;
 }
@@ -417,11 +418,11 @@ lua_hooks::hook_ignore_file(file_path const & p)
 {
   bool ignore_it = false;
   bool exec_ok = Lua(st)
-    .func("ignore_file")
-    .push_str(p.as_external())
-    .call(1,1)
-    .extract_bool(ignore_it)
-    .ok();
+                 .func("ignore_file")
+                 .push_str(p.as_external())
+                 .call(1, 1)
+                 .extract_bool(ignore_it)
+                 .ok();
   return exec_ok && ignore_it;
 }
 
@@ -430,15 +431,16 @@ lua_hooks::hook_ignore_branch(branch_name const & branch)
 {
   bool ignore_it = false;
   bool exec_ok = Lua(st)
-    .func("ignore_branch")
-    .push_str(branch())
-    .call(1,1)
-    .extract_bool(ignore_it)
-    .ok();
+                 .func("ignore_branch")
+                 .push_str(branch())
+                 .call(1, 1)
+                 .extract_bool(ignore_it)
+                 .ok();
   return exec_ok && ignore_it;
 }
 
-namespace {
+namespace
+{
   template<typename ID>
   Lua & push_key_ident(Lua & ll, ID const & ident)
   {
@@ -478,12 +480,12 @@ namespace {
     hexenc<id> hid(encode_hexenc(hash(), hash.made_from), hash.made_from);
     bool ok;
     bool exec_ok = ll
-      .push_str(hid())
-      .push_str(name())
-      .push_str(val())
-      .call(4, 1)
-      .extract_bool(ok)
-      .ok();
+                   .push_str(hid())
+                   .push_str(name())
+                   .push_str(val())
+                   .call(4, 1)
+                   .extract_bool(ok)
+                   .ok();
 
     return exec_ok && ok;
   }
@@ -491,9 +493,9 @@ namespace {
 
 bool
 lua_hooks::hook_get_revision_cert_trust(std::set<key_identity_info> const & signers,
-                                       id const & hash,
-                                       cert_name const & name,
-                                       cert_value const & val)
+                                        id const & hash,
+                                        cert_name const & name,
+                                        cert_value const & val)
 {
   Lua ll(st);
   ll.func("get_revision_cert_trust");
@@ -517,8 +519,8 @@ lua_hooks::hook_accept_testresult_change(map<key_id, bool> const & old_results,
 {
   Lua ll(st);
   ll
-    .func("accept_testresult_change")
-    .push_table();
+  .func("accept_testresult_change")
+  .push_table();
 
   for (map<key_id, bool>::const_iterator i = old_results.begin();
        i != old_results.end(); ++i)
@@ -540,9 +542,9 @@ lua_hooks::hook_accept_testresult_change(map<key_id, bool> const & old_results,
 
   bool ok;
   bool exec_ok = ll
-    .call(2, 1)
-    .extract_bool(ok)
-    .ok();
+                 .call(2, 1)
+                 .extract_bool(ok)
+                 .ok();
 
   return exec_ok && ok;
 }
@@ -561,17 +563,17 @@ lua_hooks::hook_merge3(file_path const & anc_path,
 {
   string res;
   bool ok = Lua(st)
-    .func("merge3")
-    .push_str(anc_path.as_external())
-    .push_str(left_path.as_external())
-    .push_str(right_path.as_external())
-    .push_str(merged_path.as_external())
-    .push_str(ancestor())
-    .push_str(left())
-    .push_str(right())
-    .call(7,1)
-    .extract_str(res)
-    .ok();
+            .func("merge3")
+            .push_str(anc_path.as_external())
+            .push_str(left_path.as_external())
+            .push_str(right_path.as_external())
+            .push_str(merged_path.as_external())
+            .push_str(ancestor())
+            .push_str(left())
+            .push_str(right())
+            .call(7, 1)
+            .extract_str(res)
+            .ok();
   result = data(res, origin::user);
   return ok;
 }
@@ -589,8 +591,8 @@ lua_hooks::hook_external_diff(file_path const & path,
   Lua ll(st);
 
   ll
-    .func("external_diff")
-    .push_str(path.as_external());
+  .func("external_diff")
+  .push_str(path.as_external());
 
   if (oldrev.length() != 0)
     ll.push_str(data_old());
@@ -609,7 +611,7 @@ lua_hooks::hook_external_diff(file_path const & path,
   ll.push_str(oldrev);
   ll.push_str(newrev);
 
-  return ll.call(7,0).ok();
+  return ll.call(7, 0).ok();
 }
 
 bool
@@ -617,7 +619,7 @@ lua_hooks::hook_get_encloser_pattern(file_path const & path,
                                      string & pattern)
 {
   bool exec_ok
-    = Lua(st)
+  = Lua(st)
     .func("get_encloser_pattern")
     .push_str(path.as_external())
     .call(1, 1)
@@ -671,7 +673,7 @@ lua_hooks::hook_get_date_format_spec(date_format_spec in, string & out)
 {
   string in_spec;
   switch (in)
-  {
+    {
     case date_long:         in_spec = "date_long"; break;
     case date_short:        in_spec = "date_short"; break;
     case time_long:         in_spec = "time_long"; break;
@@ -679,10 +681,10 @@ lua_hooks::hook_get_date_format_spec(date_format_spec in, string & out)
     case date_time_long:    in_spec = "date_time_long"; break;
     case date_time_short:   in_spec = "date_time_short"; break;
     default: I(false);
-  }
+    }
 
   bool exec_ok
-    = Lua(st)
+  = Lua(st)
     .func("get_date_format_spec")
     .push_str(in_spec)
     .call(1, 1)
@@ -697,12 +699,12 @@ lua_hooks::hook_get_date_format_spec(date_format_spec in, string & out)
 
 bool lua_hooks::hook_get_default_database_alias(string & alias)
 {
-   bool exec_ok
-     = Lua(st)
-     .func("get_default_database_alias")
-     .call(0, 1)
-     .extract_str(alias)
-     .ok();
+  bool exec_ok
+  = Lua(st)
+    .func("get_default_database_alias")
+    .call(0, 1)
+    .extract_str(alias)
+    .ok();
 
   return exec_ok;
 }
@@ -725,13 +727,13 @@ bool lua_hooks::hook_get_default_database_locations(vector<system_path> & out)
 
 bool lua_hooks::hook_get_default_database_glob(globish & out)
 {
-   string glob;
-   bool exec_ok
-     = Lua(st)
-     .func("get_default_database_glob")
-     .call(0, 1)
-     .extract_str(glob)
-     .ok();
+  string glob;
+  bool exec_ok
+  = Lua(st)
+    .func("get_default_database_glob")
+    .call(0, 1)
+    .extract_str(glob)
+    .ok();
 
   out = globish(glob, origin::user);
   return exec_ok;
@@ -743,10 +745,10 @@ bool lua_hooks::hook_hook_wrapper(string const & func_name,
 {
   Lua ll(st);
   ll.func("hook_wrapper")
-    .push_str(func_name);
+  .push_str(func_name);
 
   for (vector<string>::const_iterator i = args.begin();
-        i != args.end(); ++i)
+       i != args.end(); ++i)
     {
       ll.push_str(*i);
     }
@@ -760,11 +762,11 @@ bool
 lua_hooks::hook_get_man_page_formatter_command(string & command)
 {
   bool exec_ok
-     = Lua(st)
-     .func("get_man_page_formatter_command")
-     .call(0, 1)
-     .extract_str(command)
-     .ok();
+  = Lua(st)
+    .func("get_man_page_formatter_command")
+    .call(0, 1)
+    .extract_str(command)
+    .ok();
 
   return exec_ok;
 }
@@ -775,10 +777,10 @@ lua_hooks::hook_use_inodeprints()
   bool use = false, exec_ok = false;
 
   exec_ok = Lua(st)
-    .func("use_inodeprints")
-    .call(0, 1)
-    .extract_bool(use)
-    .ok();
+            .func("use_inodeprints")
+            .call(0, 1)
+            .extract_bool(use)
+            .ok();
   return use && exec_ok;
 }
 
@@ -792,7 +794,7 @@ lua_hooks::hook_get_netsync_client_key(utf8 const & server_address,
 {
   string name;
   bool exec_ok
-    = Lua(st)
+  = Lua(st)
     .func("get_netsync_client_key")
     .push_str(server_address())
     .push_str(include())
@@ -833,8 +835,8 @@ lua_hooks::hook_get_netsync_server_key(vector<utf8> const & server_ports,
     }
 
   bool exec_ok = ll.call(1, 1)
-                   .extract_str(name)
-                   .ok();
+                 .extract_str(name)
+                 .ok();
 
   if (!exec_ok || name.empty())
     return false;
@@ -938,7 +940,7 @@ lua_hooks::hook_get_netsync_connect_command(uri_t const & uri,
       ll.set_table();
     }
 
-  ll.call(2,1);
+  ll.call(2, 1);
 
   ll.begin();
 
@@ -960,7 +962,7 @@ lua_hooks::hook_use_transport_auth(uri_t const & uri)
   Lua ll(st);
   ll.func("use_transport_auth");
   push_uri(uri, ll);
-  ll.call(1,1);
+  ll.call(1, 1);
   ll.extract_bool(use_auth);
 
   // NB: we want to return *true* here if there's a failure.
@@ -976,11 +978,11 @@ lua_hooks::hook_get_netsync_read_permitted(string const & branch,
 
   Lua ll(st);
   ll.func("get_netsync_read_permitted")
-    .push_str(branch);
+  .push_str(branch);
   push_key_identity_info(ll, identity);
-  exec_ok = ll.call(2,1)
-    .extract_bool(permitted)
-    .ok();
+  exec_ok = ll.call(2, 1)
+            .extract_bool(permitted)
+            .ok();
 
   return exec_ok && permitted;
 }
@@ -992,12 +994,12 @@ lua_hooks::hook_get_netsync_read_permitted(string const & branch)
   bool permitted = false, exec_ok = false;
 
   exec_ok = Lua(st)
-    .func("get_netsync_read_permitted")
-    .push_str(branch)
-    .push_nil()
-    .call(2,1)
-    .extract_bool(permitted)
-    .ok();
+            .func("get_netsync_read_permitted")
+            .push_str(branch)
+            .push_nil()
+            .call(2, 1)
+            .extract_bool(permitted)
+            .ok();
 
   return exec_ok && permitted;
 }
@@ -1010,9 +1012,9 @@ lua_hooks::hook_get_netsync_write_permitted(key_identity_info const & identity)
   Lua ll(st);
   ll.func("get_netsync_write_permitted");
   push_key_identity_info(ll, identity);
-  exec_ok = ll.call(1,1)
-    .extract_bool(permitted)
-    .ok();
+  exec_ok = ll.call(1, 1)
+            .extract_bool(permitted)
+            .ok();
 
   return exec_ok && permitted;
 }
@@ -1072,8 +1074,8 @@ lua_hooks::hook_init_attributes(file_path const & filename,
   Lua ll(st);
 
   ll
-    .push_str("attr_init_functions")
-    .get_tab();
+  .push_str("attr_init_functions")
+  .get_tab();
 
   L(FL("calling attr_init_function for %s") % filename);
   ll.begin();
@@ -1110,14 +1112,14 @@ lua_hooks::hook_set_attribute(string const & attr,
                               string const & value)
 {
   return Lua(st)
-    .push_str("attr_functions")
-    .get_tab()
-    .push_str(attr)
-    .get_fn(-2)
-    .push_str(filename.as_external())
-    .push_str(value)
-    .call(2,0)
-    .ok();
+         .push_str("attr_functions")
+         .get_tab()
+         .push_str(attr)
+         .get_fn(-2)
+         .push_str(filename.as_external())
+         .push_str(value)
+         .call(2, 0)
+         .ok();
 }
 
 bool
@@ -1125,14 +1127,14 @@ lua_hooks::hook_clear_attribute(string const & attr,
                                 file_path const & filename)
 {
   return Lua(st)
-    .push_str("attr_functions")
-    .get_tab()
-    .push_str(attr)
-    .get_fn(-2)
-    .push_str(filename.as_external())
-    .push_nil()
-    .call(2,0)
-    .ok();
+         .push_str("attr_functions")
+         .get_tab()
+         .push_str(attr)
+         .get_fn(-2)
+         .push_str(filename.as_external())
+         .push_nil()
+         .call(2, 0)
+         .ok();
 }
 
 bool
@@ -1143,15 +1145,15 @@ lua_hooks::hook_validate_changes(revision_data const & new_rev,
 {
   validated = true;
   return Lua(st)
-    .func("validate_changes")
-    .push_str(new_rev.inner()())
-    .push_str(branchname())
-    .call(2, 2)
-    .extract_str(reason)
-    // XXX When validated, the extra returned string is superfluous.
-    .pop()
-    .extract_bool(validated)
-    .ok();
+         .func("validate_changes")
+         .push_str(new_rev.inner()())
+         .push_str(branchname())
+         .call(2, 2)
+         .extract_str(reason)
+         // XXX When validated, the extra returned string is superfluous.
+         .pop()
+         .extract_bool(validated)
+         .ok();
 }
 
 bool
@@ -1163,16 +1165,16 @@ lua_hooks::hook_validate_commit_message(utf8 const & message,
 {
   validated = true;
   return Lua(st)
-    .func("validate_commit_message")
-    .push_str(message())
-    .push_str(new_rev.inner()())
-    .push_str(branchname())
-    .call(3, 2)
-    .extract_str(reason)
-    // XXX When validated, the extra returned string is superfluous.
-    .pop()
-    .extract_bool(validated)
-    .ok();
+         .func("validate_commit_message")
+         .push_str(message())
+         .push_str(new_rev.inner()())
+         .push_str(branchname())
+         .call(3, 2)
+         .extract_str(reason)
+         // XXX When validated, the extra returned string is superfluous.
+         .pop()
+         .extract_bool(validated)
+         .ok();
 }
 
 bool
@@ -1182,9 +1184,9 @@ lua_hooks::hook_note_commit(revision_id const & new_id,
 {
   Lua ll(st);
   ll
-    .func("note_commit")
-    .push_str(encode_hexenc(new_id.inner()(), new_id.inner().made_from))
-    .push_str(rdat.inner()());
+  .func("note_commit")
+  .push_str(encode_hexenc(new_id.inner()(), new_id.inner().made_from))
+  .push_str(rdat.inner()());
 
   ll.push_table();
 
@@ -1225,30 +1227,30 @@ lua_hooks::hook_note_netsync_start(size_t session_id, string my_role,
     }
   Lua ll(st);
   ll.func("note_netsync_start")
-    .push_int(session_id)
-    .push_str(my_role)
-    .push_str(type)
-    .push_str(remote_host);
+  .push_int(session_id)
+  .push_str(my_role)
+  .push_str(type)
+  .push_str(remote_host);
   push_key_identity_info(ll, remote_key);
   return ll.push_str(include_pattern())
-    .push_str(exclude_pattern())
-    .call(7, 0)
-    .ok();
+         .push_str(exclude_pattern())
+         .call(7, 0)
+         .ok();
 }
 
 bool
 lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
                                                revision_data const & rdat,
-                                               std::set<pair<key_identity_info,
-                                               pair<cert_name,
-                                               cert_value> > > const & certs,
+                                               std::set < pair < key_identity_info,
+                                               pair < cert_name,
+                                               cert_value > > > const & certs,
                                                size_t session_id)
 {
   Lua ll(st);
   ll
-    .func("note_netsync_revision_received")
-    .push_str(encode_hexenc(new_id.inner()(), new_id.inner().made_from))
-    .push_str(rdat.inner()());
+  .func("note_netsync_revision_received")
+  .push_str(encode_hexenc(new_id.inner()(), new_id.inner().made_from))
+  .push_str(rdat.inner()());
 
   ll.push_table();
 
@@ -1276,16 +1278,16 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
 bool
 lua_hooks::hook_note_netsync_revision_sent(revision_id const & new_id,
                                            revision_data const & rdat,
-                                           std::set<pair<key_identity_info,
-                                           pair<cert_name,
-                                           cert_value> > > const & certs,
+                                           std::set < pair < key_identity_info,
+                                           pair < cert_name,
+                                           cert_value > > > const & certs,
                                            size_t session_id)
 {
   Lua ll(st);
   ll
-    .func("note_netsync_revision_sent")
-    .push_str(encode_hexenc(new_id.inner()(), new_id.inner().made_from))
-    .push_str(rdat.inner()());
+  .func("note_netsync_revision_sent")
+  .push_str(encode_hexenc(new_id.inner()(), new_id.inner().made_from))
+  .push_str(rdat.inner()());
 
   ll.push_table();
 
@@ -1316,7 +1318,7 @@ lua_hooks::hook_note_netsync_pubkey_received(key_identity_info const & identity,
 {
   Lua ll(st);
   ll
-    .func("note_netsync_pubkey_received");
+  .func("note_netsync_pubkey_received");
   push_key_identity_info(ll, identity);
   ll.push_int(session_id);
 
@@ -1330,7 +1332,7 @@ lua_hooks::hook_note_netsync_pubkey_sent(key_identity_info const & identity,
 {
   Lua ll(st);
   ll
-    .func("note_netsync_pubkey_sent");
+  .func("note_netsync_pubkey_sent");
   push_key_identity_info(ll, identity);
   ll.push_int(session_id);
 
@@ -1347,12 +1349,12 @@ lua_hooks::hook_note_netsync_cert_received(revision_id const & rid,
 {
   Lua ll(st);
   ll
-    .func("note_netsync_cert_received")
-    .push_str(encode_hexenc(rid.inner()(), rid.inner().made_from));
+  .func("note_netsync_cert_received")
+  .push_str(encode_hexenc(rid.inner()(), rid.inner().made_from));
   push_key_identity_info(ll, identity);
   ll.push_str(name())
-    .push_str(value())
-    .push_int(session_id);
+  .push_str(value())
+  .push_int(session_id);
 
   ll.call(5, 0);
   return ll.ok();
@@ -1367,12 +1369,12 @@ lua_hooks::hook_note_netsync_cert_sent(revision_id const & rid,
 {
   Lua ll(st);
   ll
-    .func("note_netsync_cert_sent")
-    .push_str(encode_hexenc(rid.inner()(), rid.inner().made_from));
+  .func("note_netsync_cert_sent")
+  .push_str(encode_hexenc(rid.inner()(), rid.inner().made_from));
   push_key_identity_info(ll, identity);
   ll.push_str(name())
-    .push_str(value())
-    .push_int(session_id);
+  .push_str(value())
+  .push_int(session_id);
 
   ll.call(5, 0);
   return ll.ok();
@@ -1387,19 +1389,19 @@ lua_hooks::hook_note_netsync_end(size_t session_id, int status,
 {
   Lua ll(st);
   return ll
-    .func("note_netsync_end")
-    .push_int(session_id)
-    .push_int(status)
-    .push_int(bytes_in)
-    .push_int(bytes_out)
-    .push_int(certs_in)
-    .push_int(certs_out)
-    .push_int(revs_in)
-    .push_int(revs_out)
-    .push_int(keys_in)
-    .push_int(keys_out)
-    .call(10, 0)
-    .ok();
+         .func("note_netsync_end")
+         .push_int(session_id)
+         .push_int(status)
+         .push_int(bytes_in)
+         .push_int(bytes_out)
+         .push_int(certs_in)
+         .push_int(certs_out)
+         .push_int(revs_in)
+         .push_int(revs_out)
+         .push_int(keys_in)
+         .push_int(keys_out)
+         .call(10, 0)
+         .ok();
 }
 
 bool
@@ -1420,11 +1422,11 @@ bool
 lua_hooks::hook_unmapped_git_author(string const & unmapped_author, string & fixed_author)
 {
   return Lua(st)
-    .func("unmapped_git_author")
-    .push_str(unmapped_author)
-    .call(1,1)
-    .extract_str(fixed_author)
-    .ok();
+         .func("unmapped_git_author")
+         .push_str(unmapped_author)
+         .call(1, 1)
+         .extract_str(fixed_author)
+         .ok();
 }
 
 bool
@@ -1432,11 +1434,11 @@ lua_hooks::hook_validate_git_author(string const & author)
 {
   bool valid = false, exec_ok = false;
   exec_ok = Lua(st)
-    .func("validate_git_author")
-    .push_str(author)
-    .call(1,1)
-    .extract_bool(valid)
-    .ok();
+            .func("validate_git_author")
+            .push_str(author)
+            .call(1, 1)
+            .extract_bool(valid)
+            .ok();
   return valid && exec_ok;
 }
 

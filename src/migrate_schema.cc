@@ -62,7 +62,7 @@ assert_sqlite3_ok(sqlite3 * db)
   // do this to avoid corrupting sqlite's internal state.)  If it is,
   // rethrow it rather than feeding it to E(), lest we get "error:
   // sqlite error: error: " ugliness.
-  char const *pfx = _("error: ");
+  char const * pfx = _("error: ");
   if (!std::strncmp(errmsg, pfx, strlen(pfx)))
     throw recoverable_failure(origin::database, errmsg);
 
@@ -82,8 +82,8 @@ assert_sqlite3_ok(sqlite3 * db)
     case SQLITE_CANTOPEN:
     case SQLITE_PROTOCOL:
       auxiliary_message
-        = _("make sure database and containing directory are writeable\n"
-            "and you have not run out of disk space");
+      = _("make sure database and containing directory are writeable\n"
+          "and you have not run out of disk space");
       break;
 
       // These error codes may indicate someone is trying to load a database
@@ -92,9 +92,9 @@ assert_sqlite3_ok(sqlite3 * db)
     case SQLITE_CORRUPT:
     case SQLITE_NOTADB:
       auxiliary_message
-        = _("(if this is a database last used by monotone 0.16 or older,\n"
-            "you must follow a special procedure to make it usable again.\n"
-            "see the file UPGRADE, in the distribution, for instructions.)");
+      = _("(if this is a database last used by monotone 0.16 or older,\n"
+          "you must follow a special procedure to make it usable again.\n"
+          "see the file UPGRADE, in the distribution, for instructions.)");
 
     default:
       break;
@@ -110,7 +110,7 @@ namespace
 {
   struct sql
   {
-    sql(sqlite3 * db, int cols, char const *cmd, char const **afterp = 0)
+    sql(sqlite3 * db, int cols, char const * cmd, char const ** afterp = 0)
       : stmt(0), ncols(cols)
     {
       sqlite3_stmt * s;
@@ -258,8 +258,8 @@ inline bool is_ws(char c)
 }
 
 static void
-sqlite3_sha1_fn_body(sqlite3_context *f, int nargs, sqlite3_value ** args,
-                    bool strip_whitespace)
+sqlite3_sha1_fn_body(sqlite3_context * f, int nargs, sqlite3_value ** args,
+                     bool strip_whitespace)
 {
   if (nargs <= 1)
     {
@@ -290,7 +290,7 @@ sqlite3_sha1_fn_body(sqlite3_context *f, int nargs, sqlite3_value ** args,
             }
           else
             {
-              tmp.append(s, end+1);
+              tmp.append(s, end + 1);
             }
         }
     }
@@ -301,19 +301,19 @@ sqlite3_sha1_fn_body(sqlite3_context *f, int nargs, sqlite3_value ** args,
 }
 
 static void
-sqlite3_sha1_nows_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
+sqlite3_sha1_nows_fn(sqlite3_context * f, int nargs, sqlite3_value ** args)
 {
   sqlite3_sha1_fn_body(f, nargs, args, true);
 }
 
 static void
-sqlite3_sha1_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
+sqlite3_sha1_fn(sqlite3_context * f, int nargs, sqlite3_value ** args)
 {
   sqlite3_sha1_fn_body(f, nargs, args, false);
 }
 
 static void
-sqlite3_unbase64_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
+sqlite3_unbase64_fn(sqlite3_context * f, int nargs, sqlite3_value ** args)
 {
   if (nargs != 1)
     {
@@ -338,7 +338,7 @@ sqlite3_unbase64_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
 }
 
 static void
-sqlite3_unhex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
+sqlite3_unhex_fn(sqlite3_context * f, int nargs, sqlite3_value ** args)
 {
   if (nargs != 1)
     {
@@ -704,14 +704,14 @@ char const migrate_to_binary_hashes[] =
   // table completely.
   "ALTER TABLE revision_certs RENAME TO tmp;\n"
   "CREATE TABLE revision_certs"
-        "  ( hash not null unique,   -- hash of remaining fields separated by \":\"\n"
-        "    id not null,            -- joins with revisions.id\n"
-        "    name not null,          -- opaque string chosen by user\n"
-        "    value not null,         -- opaque blob\n"
-        "    keypair not null,       -- joins with public_keys.id\n"
-        "    signature not null,     -- RSA/SHA1 signature of \"[name@id:val]\"\n"
-        "    unique(name, value, id, keypair, signature)\n"
-        "  );"
+  "  ( hash not null unique,   -- hash of remaining fields separated by \":\"\n"
+  "    id not null,            -- joins with revisions.id\n"
+  "    name not null,          -- opaque string chosen by user\n"
+  "    value not null,         -- opaque blob\n"
+  "    keypair not null,       -- joins with public_keys.id\n"
+  "    signature not null,     -- RSA/SHA1 signature of \"[name@id:val]\"\n"
+  "    unique(name, value, id, keypair, signature)\n"
+  "  );"
   "INSERT INTO revision_certs SELECT unhex(hash), unhex(id), name, value, keypair, signature FROM tmp;"
   "DROP TABLE tmp;"
   "CREATE INDEX revision_certs__id ON revision_certs (id);"
@@ -721,10 +721,10 @@ char const migrate_to_binary_hashes[] =
   // schema hash to upgrade to.
   "ALTER TABLE branch_epochs RENAME TO tmp;"
   "CREATE TABLE branch_epochs"
-        "  ( hash not null unique,         -- hash of remaining fields separated by \":\"\n"
-        "    branch not null unique,       -- joins with revision_certs.value\n"
-        "    epoch not null                -- random binary id\n"
-        "  );"
+  "  ( hash not null unique,         -- hash of remaining fields separated by \":\"\n"
+  "    branch not null unique,       -- joins with revision_certs.value\n"
+  "    epoch not null                -- random binary id\n"
+  "  );"
   "INSERT INTO branch_epochs SELECT unhex(hash), branch, unhex(epoch) FROM tmp;"
   "DROP TABLE tmp;"
 
@@ -772,7 +772,8 @@ char const migrate_better_cert_indexing[] =
   "CREATE INDEX revision_certs__revnameval ON revision_certs (revision_id,\n"
   "       name, value, keypair_id, signature);";
 
-namespace {
+namespace
+{
   struct branch_leaf_finder_info
   {
     std::set<string> parents;
@@ -843,9 +844,9 @@ migrate_add_branch_leaf_cache(sqlite3 * db, key_store & keys)
             continue;
           string q = string("insert into branch_leaves(branch, revision_id) "
                             "values(X'")
-            + encode_hexenc(*b, origin::internal) + "', X'"
-            + encode_hexenc(rev, origin::internal) + "')";
-            sql::exec(db, q.c_str());
+                     + encode_hexenc(*b, origin::internal) + "', X'"
+                     + encode_hexenc(rev, origin::internal) + "')";
+          sql::exec(db, q.c_str());
         }
       for (std::set<string>::iterator p = my_info.parents.begin();
            p != my_info.parents.end(); ++p)
@@ -869,22 +870,22 @@ migrate_add_branch_leaf_cache(sqlite3 * db, key_store & keys)
 }
 
 char const migrate_add_file_sizes[] =
-    "CREATE TABLE file_sizes\n"
-    "        (\n"
-    "        id primary key,     -- joins with files.id or file_deltas.id\n"
-    "        size not null       -- the size of the file in byte\n"
-    "        );";
+  "CREATE TABLE file_sizes\n"
+  "        (\n"
+  "        id primary key,     -- joins with files.id or file_deltas.id\n"
+  "        size not null       -- the size of the file in byte\n"
+  "        );";
 
 
 // these must be listed in order so that ones listed earlier override ones
 // listed later
 enum upgrade_regime
-  {
-    upgrade_changesetify,
-    upgrade_rosterify,
-    upgrade_regen_caches,
-    upgrade_none,
-  };
+{
+  upgrade_changesetify,
+  upgrade_rosterify,
+  upgrade_regen_caches,
+  upgrade_none,
+};
 static void
 dump(enum upgrade_regime const & regime, string & out)
 {
@@ -915,60 +916,97 @@ struct migration_event
 // also add a new migration test for the new schema version.  See
 // tests/schema_migration for details.
 
-const migration_event migration_events[] = {
-  { "edb5fa6cef65bcb7d0c612023d267c3aeaa1e57a",
-    migrate_merge_url_and_group, 0, upgrade_none, regen_none},
+const migration_event migration_events[] =
+{
+  {
+    "edb5fa6cef65bcb7d0c612023d267c3aeaa1e57a",
+    migrate_merge_url_and_group, 0, upgrade_none, regen_none
+  },
 
-  { "f042f3c4d0a4f98f6658cbaf603d376acf88ff4b",
-    migrate_add_hashes_and_merkle_trees, 0, upgrade_none, regen_none },
+  {
+    "f042f3c4d0a4f98f6658cbaf603d376acf88ff4b",
+    migrate_add_hashes_and_merkle_trees, 0, upgrade_none, regen_none
+  },
 
-  { "8929e54f40bf4d3b4aea8b037d2c9263e82abdf4",
-    migrate_to_revisions, 0, upgrade_changesetify, regen_none },
+  {
+    "8929e54f40bf4d3b4aea8b037d2c9263e82abdf4",
+    migrate_to_revisions, 0, upgrade_changesetify, regen_none
+  },
 
-  { "c1e86588e11ad07fa53e5d294edc043ce1d4005a",
-    migrate_to_epochs, 0, upgrade_none, regen_none },
+  {
+    "c1e86588e11ad07fa53e5d294edc043ce1d4005a",
+    migrate_to_epochs, 0, upgrade_none, regen_none
+  },
 
-  { "40369a7bda66463c5785d160819ab6398b9d44f4",
-    migrate_to_vars, 0, upgrade_none, regen_none },
+  {
+    "40369a7bda66463c5785d160819ab6398b9d44f4",
+    migrate_to_vars, 0, upgrade_none, regen_none
+  },
 
-  { "e372b508bea9b991816d1c74680f7ae10d2a6d94",
-    migrate_add_indexes, 0, upgrade_none, regen_none },
+  {
+    "e372b508bea9b991816d1c74680f7ae10d2a6d94",
+    migrate_add_indexes, 0, upgrade_none, regen_none
+  },
 
-  { "1509fd75019aebef5ac3da3a5edf1312393b70e9",
-    0, migrate_to_external_privkeys, upgrade_none, regen_none },
+  {
+    "1509fd75019aebef5ac3da3a5edf1312393b70e9",
+    0, migrate_to_external_privkeys, upgrade_none, regen_none
+  },
 
-  { "bd86f9a90b5d552f0be1fa9aee847ea0f317778b",
-    migrate_add_rosters, 0, upgrade_rosterify, regen_none },
+  {
+    "bd86f9a90b5d552f0be1fa9aee847ea0f317778b",
+    migrate_add_rosters, 0, upgrade_rosterify, regen_none
+  },
 
-  { "1db80c7cee8fa966913db1a463ed50bf1b0e5b0e",
-    migrate_files_BLOB, 0, upgrade_none, regen_none },
+  {
+    "1db80c7cee8fa966913db1a463ed50bf1b0e5b0e",
+    migrate_files_BLOB, 0, upgrade_none, regen_none
+  },
 
-  { "9d2b5d7b86df00c30ac34fe87a3c20f1195bb2df",
-    migrate_rosters_no_hash, 0, upgrade_regen_caches, regen_rosters },
+  {
+    "9d2b5d7b86df00c30ac34fe87a3c20f1195bb2df",
+    migrate_rosters_no_hash, 0, upgrade_regen_caches, regen_rosters
+  },
 
-  { "ae196843d368d042f475e3dadfed11e9d7f9f01e",
-    migrate_add_heights, 0, upgrade_regen_caches, regen_heights },
+  {
+    "ae196843d368d042f475e3dadfed11e9d7f9f01e",
+    migrate_add_heights, 0, upgrade_regen_caches, regen_heights
+  },
 
-  { "48fd5d84f1e5a949ca093e87e5ac558da6e5956d",
-    0, migrate_add_ccode, upgrade_none, regen_none },
+  {
+    "48fd5d84f1e5a949ca093e87e5ac558da6e5956d",
+    0, migrate_add_ccode, upgrade_none, regen_none
+  },
 
-  { "fe48b0804e0048b87b4cea51b3ab338ba187bdc2",
-    migrate_add_heights_index, 0, upgrade_none, regen_none },
+  {
+    "fe48b0804e0048b87b4cea51b3ab338ba187bdc2",
+    migrate_add_heights_index, 0, upgrade_none, regen_none
+  },
 
-  { "7ca81b45279403419581d7fde31ed888a80bd34e",
-    migrate_to_binary_hashes, 0, upgrade_none, regen_none },
+  {
+    "7ca81b45279403419581d7fde31ed888a80bd34e",
+    migrate_to_binary_hashes, 0, upgrade_none, regen_none
+  },
 
-  { "212dd25a23bfd7bfe030ab910e9d62aa66aa2955",
-    migrate_certs_to_key_hash, 0, upgrade_none, regen_none },
+  {
+    "212dd25a23bfd7bfe030ab910e9d62aa66aa2955",
+    migrate_certs_to_key_hash, 0, upgrade_none, regen_none
+  },
 
-  { "9c8d5a9ea8e29c69be6459300982a68321b0ec12",
-    0, migrate_add_branch_leaf_cache, upgrade_none, regen_branches },
+  {
+    "9c8d5a9ea8e29c69be6459300982a68321b0ec12",
+    0, migrate_add_branch_leaf_cache, upgrade_none, regen_branches
+  },
 
-  { "0c956abae3e52522e4e0b7c5cbe7868f5047153e",
-    migrate_add_file_sizes, 0, upgrade_regen_caches, regen_file_sizes },
+  {
+    "0c956abae3e52522e4e0b7c5cbe7868f5047153e",
+    migrate_add_file_sizes, 0, upgrade_regen_caches, regen_file_sizes
+  },
 
-  { "1f60cec1b0f6c8c095dc6d0ffeff2bd0af971ce1",
-    migrate_better_cert_indexing, 0, upgrade_none, regen_none },
+  {
+    "1f60cec1b0f6c8c095dc6d0ffeff2bd0af971ce1",
+    migrate_better_cert_indexing, 0, upgrade_none, regen_none
+  },
 
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
@@ -1061,7 +1099,7 @@ find_migration(sqlite3 * db)
   string id;
   calculate_schema_id(db, id);
 
-  for (migration_event const *m = migration_events + n_migration_events - 1;
+  for (migration_event const * m = migration_events + n_migration_events - 1;
        m >= migration_events; m--)
     if (m->id == id)
       return m;
@@ -1072,13 +1110,13 @@ find_migration(sqlite3 * db)
 // This enumerates the possible mismatches between the monotone executable
 // and its database.
 enum schema_mismatch_case
-  {
-    SCHEMA_MATCHES = 0,
-    SCHEMA_MIGRATION_NEEDED,
-    SCHEMA_TOO_NEW,
-    SCHEMA_NOT_MONOTONE,
-    SCHEMA_EMPTY
-  };
+{
+  SCHEMA_MATCHES = 0,
+  SCHEMA_MIGRATION_NEEDED,
+  SCHEMA_TOO_NEW,
+  SCHEMA_NOT_MONOTONE,
+  SCHEMA_EMPTY
+};
 static void dump(schema_mismatch_case const & cat, std::string & out)
 {
   switch (cat)
@@ -1193,7 +1231,7 @@ check_sql_schema(sqlite3 * db, system_path const & filename)
 
 #ifdef SUPPORT_SQLITE_BEFORE_3003014
 // import the hex function for old sqlite libraries from database.cc
-void sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args);
+void sqlite3_hex_fn(sqlite3_context * f, int nargs, sqlite3_value ** args);
 #endif
 
 
@@ -1217,7 +1255,7 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
 
     P(F("calculating migration..."));
 
-    migration_event const *m; MM(m);
+    migration_event const * m; MM(m);
     schema_mismatch_case cat; MM(cat);
     m = find_migration(db);
     cat = classify_schema(db, m);
@@ -1284,12 +1322,12 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
     {
     case upgrade_changesetify:
     case upgrade_rosterify:
-      {
-        string command_str = (regime == upgrade_changesetify
-                              ? "changesetify" : "rosterify");
-        return migration_status(regen_none, command_str);
-      }
-      break;
+    {
+      string command_str = (regime == upgrade_changesetify
+                            ? "changesetify" : "rosterify");
+      return migration_status(regen_none, command_str);
+    }
+    break;
     case upgrade_regen_caches:
       I(regen_type != regen_none);
       return migration_status(regen_type);
@@ -1326,7 +1364,7 @@ test_migration_step(sqlite3 * db, key_store & keys,
 
   transaction guard(db);
 
-  migration_event const *m;
+  migration_event const * m;
   for (m = migration_events + n_migration_events - 1;
        m >= migration_events; m--)
     if (schema == m->id)

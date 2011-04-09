@@ -19,19 +19,19 @@
 
 void read_password(std::string const & prompt, char * buf, size_t bufsz);
 void get_system_flavour(std::string & ident);
-bool is_executable(const char *path);
+bool is_executable(const char * path);
 
 // For LUA
-int existsonpath(const char *exe);
-int set_executable(const char *path);
-int clear_executable(const char *path);
+int existsonpath(const char * exe);
+int set_executable(const char * path);
+int clear_executable(const char * path);
 pid_t process_spawn(const char * const argv[]);
 pid_t process_spawn_redirected(char const * in,
                                char const * out,
                                char const * err,
                                char const * const argv[]);
-pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out);
-int process_wait(pid_t pid, int *res, int timeout = -1);// default infinite
+pid_t process_spawn_pipe(char const * const argv[], FILE ** in, FILE ** out);
+int process_wait(pid_t pid, int * res, int timeout = -1); // default infinite
 int process_kill(pid_t pid, int signal);
 int process_sleep(unsigned int seconds);
 
@@ -39,7 +39,7 @@ int process_sleep(unsigned int seconds);
 void make_io_binary();
 
 #ifdef WIN32
-std::string munge_argv_into_cmdline(const char* const argv[]);
+std::string munge_argv_into_cmdline(const char * const argv[]);
 #endif
 // for term selection
 bool have_smart_terminal();
@@ -92,7 +92,7 @@ public:
   virtual void note_nowish(bool f = true) = 0;
   virtual ~inodeprint_calculator() {};
 protected:
-  virtual void add_item(void *dat, size_t size) = 0;
+  virtual void add_item(void * dat, size_t size) = 0;
 };
 bool inodeprint_file(std::string const & file, inodeprint_calculator & calc);
 
@@ -169,7 +169,7 @@ std::string get_locale_dir();
 // throws on failure.
 //
 // This is strptime on Unix, something else on MinGW.
-void parse_date(const std::string s, const std::string fmt, struct tm *tp);
+void parse_date(const std::string s, const std::string fmt, struct tm * tp);
 
 #endif // __PLATFORM_HH__
 

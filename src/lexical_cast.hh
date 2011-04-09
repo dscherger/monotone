@@ -20,7 +20,8 @@
 // the generic template for the types we specialize here).  This is not
 // a theoretical problem; the Windows linker will fail.
 
-namespace boost {
+namespace boost
+{
   template<>
   std::string lexical_cast<std::string, unsigned int>(unsigned int const & _i);
 

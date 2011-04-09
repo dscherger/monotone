@@ -136,9 +136,9 @@ void walk_hunk_consumer(vector<long, QA(long)> const & lcs,
             continue;
 
           cons.advance_to(a);
-          while (idx(lines1,a) != *i)
-              cons.delete_at(a++);
-          while (idx(lines2,b) != *i)
+          while (idx(lines1, a) != *i)
+            cons.delete_at(a++);
+          while (idx(lines2, b) != *i)
             cons.insert_at(b++);
         }
       if (a < lines1.size())
@@ -171,7 +171,7 @@ struct unidiff_hunk_writer : public hunk_consumer
                       size_t ctx,
                       ostream & ost,
                       string const & encloser_pattern)
-  : hunk_consumer(a, b, ctx, ost, encloser_pattern)
+    : hunk_consumer(a, b, ctx, ost, encloser_pattern)
   {}
 };
 
@@ -205,7 +205,7 @@ void unidiff_hunk_writer::flush_hunk(size_t pos)
         ost << "@@ -0,0";
       else
         {
-          ost << "@@ -" << a_begin+1;
+          ost << "@@ -" << a_begin + 1;
           if (a_len > 1)
             ost << ',' << a_len;
         }
@@ -214,7 +214,7 @@ void unidiff_hunk_writer::flush_hunk(size_t pos)
         ost << " +0,0";
       else
         {
-          ost << " +" << b_begin+1;
+          ost << " +" << b_begin + 1;
           if (b_len > 1)
             ost << ',' << b_len;
         }
@@ -298,8 +298,8 @@ struct cxtdiff_hunk_writer : public hunk_consumer
                       size_t ctx,
                       ostream & ost,
                       string const & encloser_pattern)
-  : hunk_consumer(a, b, ctx, ost, encloser_pattern),
-    have_insertions(false), have_deletions(false)
+    : hunk_consumer(a, b, ctx, ost, encloser_pattern),
+      have_insertions(false), have_deletions(false)
   {}
 };
 
@@ -504,7 +504,7 @@ make_diff(string const & filename1,
        i != lines2.end(); ++i)
     right_interned.push_back(in.intern(*i));
 
-  lcs.reserve(min(lines1.size(),lines2.size()));
+  lcs.reserve(min(lines1.size(), lines2.size()));
   longest_common_subsequence(left_interned.begin(), left_interned.end(),
                              right_interned.begin(), right_interned.end(),
                              back_inserter(lcs));
@@ -567,34 +567,34 @@ make_diff(string const & filename1,
   //      if the new file name is "/dev/null", nothing else.
   switch (type)
     {
-      case unified_diff:
-      {
-        ost << "--- " << filename1 << '\t'
-            << id1 << '\n';
-        ost << "+++ " << filename2 << '\t'
-            << id2 << '\n';
+    case unified_diff:
+    {
+      ost << "--- " << filename1 << '\t'
+          << id1 << '\n';
+      ost << "+++ " << filename2 << '\t'
+          << id2 << '\n';
 
-        unidiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
-        walk_hunk_consumer(lcs, left_interned, right_interned, hunks);
-        break;
-      }
-      case context_diff:
-      {
-        ost << "*** " << filename1 << '\t'
-            << id1 << '\n';
-        ost << "--- " << filename2 << '\t'
-            << id2 << '\n';
+      unidiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
+      walk_hunk_consumer(lcs, left_interned, right_interned, hunks);
+      break;
+    }
+    case context_diff:
+    {
+      ost << "*** " << filename1 << '\t'
+          << id1 << '\n';
+      ost << "--- " << filename2 << '\t'
+          << id2 << '\n';
 
-        cxtdiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
-        walk_hunk_consumer(lcs, left_interned, right_interned, hunks);
-        break;
-      }
-      default:
-      {
-        // should never reach this; the external_diff type is not
-        // handled by this function.
-        I(false);
-      }
+      cxtdiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
+      walk_hunk_consumer(lcs, left_interned, right_interned, hunks);
+      break;
+    }
+    default:
+    {
+      // should never reach this; the external_diff type is not
+      // handled by this function.
+      I(false);
+    }
     }
 }
 

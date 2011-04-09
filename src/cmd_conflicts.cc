@@ -40,11 +40,11 @@ struct conflicts_t
   };
 
   void write (database & db, lua_hooks & lua, bookkeeping_path const & file)
-    {
-      result.write_conflict_file
-        (db, lua, file, ancestor_rid, left_rid, right_rid,
-         left_roster, left_marking, right_roster, right_marking);
-    };
+  {
+    result.write_conflict_file
+    (db, lua, file, ancestor_rid, left_rid, right_rid,
+     left_roster, left_marking, right_roster, right_marking);
+  };
 };
 
 typedef enum {first, remaining} show_conflicts_case_t;
@@ -154,44 +154,44 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
   switch (show_case)
     {
     case first:
-      {
-        int const count = conflicts.result.count_unsupported_resolution();
-        if (count > 0)
-            P(FP("warning: %d conflict with no supported resolutions.",
-                 "warning: %d conflicts with no supported resolutions.",
-                 count) % count);
-        else
-          P(F("all conflicts resolved"));
-      }
-      break;
+    {
+      int const count = conflicts.result.count_unsupported_resolution();
+      if (count > 0)
+        P(FP("warning: %d conflict with no supported resolutions.",
+             "warning: %d conflicts with no supported resolutions.",
+             count) % count);
+      else
+        P(F("all conflicts resolved"));
+    }
+    break;
 
     case remaining:
-      {
-        int const count = conflicts.result.count_unsupported_resolution();
-        if (count > 0)
-          {
-            P(FP("warning: %d conflict with no supported resolutions.",
-                 "warning: %d conflicts with no supported resolutions.",
-                 count) % count);
+    {
+      int const count = conflicts.result.count_unsupported_resolution();
+      if (count > 0)
+        {
+          P(FP("warning: %d conflict with no supported resolutions.",
+               "warning: %d conflicts with no supported resolutions.",
+               count) % count);
 
-            content_merge_database_adaptor adaptor
-              (db, conflicts.left_rid, conflicts.right_rid, conflicts.left_marking, conflicts.right_marking);
+          content_merge_database_adaptor adaptor
+          (db, conflicts.left_rid, conflicts.right_rid, conflicts.left_marking, conflicts.right_marking);
 
-            conflicts.result.report_missing_root_conflicts
-              (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
-            conflicts.result.report_invalid_name_conflicts
-              (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
-            conflicts.result.report_directory_loop_conflicts
-              (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
-            conflicts.result.report_orphaned_node_conflicts
-              (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
-            conflicts.result.report_multiple_name_conflicts
-              (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
-            conflicts.result.report_attribute_conflicts
-              (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
-          }
-      }
-      break;
+          conflicts.result.report_missing_root_conflicts
+          (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
+          conflicts.result.report_invalid_name_conflicts
+          (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
+          conflicts.result.report_directory_loop_conflicts
+          (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
+          conflicts.result.report_orphaned_node_conflicts
+          (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
+          conflicts.result.report_multiple_name_conflicts
+          (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
+          conflicts.result.report_attribute_conflicts
+          (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
+        }
+    }
+    break;
     }
 
 } // show_conflicts
@@ -264,7 +264,7 @@ set_duplicate_name_conflict(resolve_conflicts::file_resolution_t & resolution,
     {
       E(args.size() == 2, origin::user, F("wrong number of arguments"));
       resolution.first  = resolve_conflicts::rename;
-      resolution.second = resolve_conflicts::new_file_path(idx(args,1)());
+      resolution.second = resolve_conflicts::new_file_path(idx(args, 1)());
     }
   else if ("user" == idx(args, 0)())
     {
@@ -276,11 +276,11 @@ set_duplicate_name_conflict(resolve_conflicts::file_resolution_t & resolution,
         F("other resolution must be 'drop' or 'rename'"));
 
       resolution.first  = resolve_conflicts::content_user;
-      resolution.second = new_optimal_path(idx(args,1)(), false);
+      resolution.second = new_optimal_path(idx(args, 1)(), false);
     }
   else
     E(false, origin::user,
-      F(conflict_resolution_not_supported_msg) % idx(args,0) % "duplicate_name");
+      F(conflict_resolution_not_supported_msg) % idx(args, 0) % "duplicate_name");
 
 } //set_duplicate_name_conflict
 
@@ -333,23 +333,23 @@ set_first_conflict(database & db,
 
           if (conflict.resolution.first == resolve_conflicts::none)
             {
-              if ("drop" == idx(args,0)())
+              if ("drop" == idx(args, 0)())
                 {
                   E(args.size() == 1, origin::user, F("wrong number of arguments"));
 
                   conflict.resolution.first  = resolve_conflicts::drop;
                 }
-              else if ("rename" == idx(args,0)())
+              else if ("rename" == idx(args, 0)())
                 {
                   E(args.size() == 2, origin::user, F("wrong number of arguments"));
 
                   conflict.resolution.first  = resolve_conflicts::rename;
-                  conflict.resolution.second = new_optimal_path(idx(args,1)(), false);
+                  conflict.resolution.second = new_optimal_path(idx(args, 1)(), false);
                 }
               else
                 {
                   E(false, origin::user,
-                    F(conflict_resolution_not_supported_msg) % idx(args,0) % "orphaned_node");
+                    F(conflict_resolution_not_supported_msg) % idx(args, 0) % "orphaned_node");
                 }
               return;
             }
@@ -363,7 +363,7 @@ set_first_conflict(database & db,
 
           if (conflict.resolution.first == resolve_conflicts::none)
             {
-              if ("interactive" == idx(args,0)())
+              if ("interactive" == idx(args, 0)())
                 {
                   bookkeeping_path result_path;
 
@@ -371,23 +371,23 @@ set_first_conflict(database & db,
                     {
                     case 1:
                       // use default path for resolution file
-                      {
-                        file_path left_path;
-                        conflicts.left_roster->get_name(conflict.nid, left_path);
-                        result_path = bookkeeping_resolutions_dir / left_path;
-                      }
-                      break;
+                    {
+                      file_path left_path;
+                      conflicts.left_roster->get_name(conflict.nid, left_path);
+                      result_path = bookkeeping_resolutions_dir / left_path;
+                    }
+                    break;
 
                     case 2:
                       // user path for resolution file
-                      {
-                        string normalized;
-                        normalize_external_path(idx(args,1)(),
-                                                normalized,
-                                                false); // to_workspace_root
-                        result_path = bookkeeping_path(normalized, origin::user);
-                      }
-                      break;
+                    {
+                      string normalized;
+                      normalize_external_path(idx(args, 1)(),
+                                              normalized,
+                                              false); // to_workspace_root
+                      result_path = bookkeeping_path(normalized, origin::user);
+                    }
+                    break;
 
                     default:
                       E(false, origin::user, F("wrong number of arguments"));
@@ -403,19 +403,19 @@ set_first_conflict(database & db,
                   else
                     P(F("interactive merge failed."));
                 }
-              else if ("user" == idx(args,0)())
+              else if ("user" == idx(args, 0)())
                 {
                   E(args.size() == 2, origin::user, F("wrong number of arguments"));
 
                   conflict.resolution.first  = resolve_conflicts::content_user;
-                  conflict.resolution.second = new_optimal_path(idx(args,1)(), false);
+                  conflict.resolution.second = new_optimal_path(idx(args, 1)(), false);
                 }
               else
                 {
                   // We don't allow the user to specify 'resolved_internal'; that
                   // is only done by automate show_conflicts.
                   E(false, origin::user,
-                    F(conflict_resolution_not_supported_msg) % idx(args,0) % "file_content");
+                    F(conflict_resolution_not_supported_msg) % idx(args, 0) % "file_content");
                 }
               return;
             }

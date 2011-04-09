@@ -21,7 +21,7 @@ struct roster_merge_result;
 struct options;
 
 struct
-content_merge_adaptor
+  content_merge_adaptor
 {
   virtual void record_merge(file_id const & left_ident,
                             file_id const & right_ident,
@@ -47,7 +47,7 @@ content_merge_adaptor
 };
 
 struct
-content_merge_database_adaptor
+  content_merge_database_adaptor
   : public content_merge_adaptor
 {
   database & db;
@@ -86,7 +86,7 @@ content_merge_database_adaptor
 };
 
 struct
-content_merge_workspace_adaptor
+  content_merge_workspace_adaptor
   : public content_merge_adaptor
 {
   std::map<file_id, file_data> temporary_store;
@@ -131,7 +131,7 @@ content_merge_workspace_adaptor
 };
 
 struct
-content_merge_checkout_adaptor
+  content_merge_checkout_adaptor
   : public content_merge_adaptor
 {
   database & db;
@@ -162,7 +162,7 @@ content_merge_checkout_adaptor
 
 
 struct
-content_merge_empty_adaptor
+  content_merge_empty_adaptor
   : public content_merge_adaptor
 {
   void record_merge(file_id const & left_ident,

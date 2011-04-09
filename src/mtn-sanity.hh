@@ -19,10 +19,10 @@ struct mtn_sanity : public sanity
   void initialize(int, char **, char const *);
 
 private:
-  void inform_log(std::string const &msg);
-  void inform_message(std::string const &msg);
-  void inform_warning(std::string const &msg);
-  void inform_error(std::string const &msg);
+  void inform_log(std::string const & msg);
+  void inform_message(std::string const & msg);
+  void inform_warning(std::string const & msg);
+  void inform_error(std::string const & msg);
 };
 
 #endif

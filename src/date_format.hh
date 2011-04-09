@@ -17,8 +17,8 @@
 
 inline std::string
 get_date_format(options const & opts,
-		lua_hooks & lua,
-		date_format_spec spec)
+                lua_hooks & lua,
+                date_format_spec spec)
 {
   std::string date_fmt;
   if (!opts.no_format_dates)

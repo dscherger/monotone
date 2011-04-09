@@ -35,16 +35,16 @@ revision_header(revision_id const rid, revision_t const & rev,
 {
   vector<cert> certs;
   key_id empty_key;
-  certs.push_back(cert(rid, author_cert_name, 
+  certs.push_back(cert(rid, author_cert_name,
                        cert_value(author, origin::user), empty_key));
-  certs.push_back(cert(rid, date_cert_name, 
+  certs.push_back(cert(rid, date_cert_name,
                        cert_value(date.as_iso_8601_extended(), origin::user),
                        empty_key));
-  certs.push_back(cert(rid, branch_cert_name, 
+  certs.push_back(cert(rid, branch_cert_name,
                        cert_value(branch(), origin::user), empty_key));
 
   if (!changelog().empty())
-    certs.push_back(cert(rid, changelog_cert_name, 
+    certs.push_back(cert(rid, changelog_cert_name,
                          cert_value(changelog(), origin::user), empty_key));
 
   revision_header(rid, rev, certs, date_fmt, header);
@@ -147,29 +147,29 @@ revision_summary(revision_t const & rev, utf8 & summary)
         out << _("no changes") << '\n';
 
       for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
-            i != cs.nodes_deleted.end(); ++i)
-        out << (F("  dropped  %s") %*i) << '\n';
+           i != cs.nodes_deleted.end(); ++i)
+        out << (F("  dropped  %s") % *i) << '\n';
 
       for (map<file_path, file_path>::const_iterator
-            i = cs.nodes_renamed.begin();
-            i != cs.nodes_renamed.end(); ++i)
+           i = cs.nodes_renamed.begin();
+           i != cs.nodes_renamed.end(); ++i)
         out << (F("  renamed  %s\n"
                   "       to  %s") % i->first % i->second) << '\n';
 
       for (set<file_path>::const_iterator i = cs.dirs_added.begin();
-            i != cs.dirs_added.end(); ++i)
+           i != cs.dirs_added.end(); ++i)
         out << (F("  added    %s") % *i) << '\n';
 
       for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
-            i != cs.files_added.end(); ++i)
+           i != cs.files_added.end(); ++i)
         out << (F("  added    %s") % i->first) << '\n';
 
       for (map<file_path, pair<file_id, file_id> >::const_iterator
-              i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
+           i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
         out << (F("  patched  %s") % i->first) << '\n';
 
       for (map<pair<file_path, attr_key>, attr_value >::const_iterator
-             i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
+           i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
         out << (F("  attr on  %s\n"
                   "      set  %s\n"
                   "       to  %s")
@@ -179,10 +179,10 @@ revision_summary(revision_t const & rev, utf8 & summary)
       // the cset calls it attrs_cleared
       // the command is attr drop
       // here it is called unset
-      // the revision text uses attr clear 
+      // the revision text uses attr clear
 
       for (set<pair<file_path, attr_key> >::const_iterator
-             i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
+           i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
         out << (F("  attr on  %s\n"
                   "    unset  %s") % i->first % i->second) << '\n';
 

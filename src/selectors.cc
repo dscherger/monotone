@@ -160,11 +160,11 @@ string preprocess_date_for_selector(string sel, lua_hooks & lua, bool equals)
   // for searching a specific date cert this makes no sense
   // FIXME: this is highly speculative if expand_date wasn't called
   // beforehand - tmp could be _anything_ but a partial date string
-  if (tmp.size()<8 && !equals)
+  if (tmp.size() < 8 && !equals)
     tmp += "-01T00:00:00";
-  else if (tmp.size()<11 && !equals)
+  else if (tmp.size() < 11 && !equals)
     tmp += "T00:00:00";
-  E(tmp.size()==19 || equals, origin::user,
+  E(tmp.size() == 19 || equals, origin::user,
     F("selector '%s' is not a valid date (internally completed to '%s')") % sel % tmp);
 
   if (sel != tmp)
@@ -496,7 +496,7 @@ diagnose_wrong_arg_count(string const & func, int expected, int actual)
     FP("the '%s' function takes %d argument, not %d",
        "the '%s' function takes %d arguments, not %d",
        expected)
-      % func % expected % actual);
+    % func % expected % actual);
 }
 
 class fn_selector : public selector
@@ -656,7 +656,7 @@ selector::create_simple_selector(options const & opts,
   if (sel.size() < 2 || sel[1] != ':')
     return shared_ptr<selector>(new unknown_selector(sel));
   char sel_type = sel[0];
-  sel.erase(0,2);
+  sel.erase(0, 2);
   switch (sel_type)
     {
     case 'a':
@@ -729,7 +729,7 @@ shared_ptr<selector> selector::create(options const & opts,
           I(!val2.empty());
           E(special_chars.find(val2) != string::npos, origin::user,
             F("selector '%s' is invalid, it contains an unknown escape sequence '%s%s'")
-            % val % '\\' % val2.substr(0,1));
+            % val % '\\' % val2.substr(0, 1));
           splitted.back().append(val2);
 
           ++iter;
@@ -758,73 +758,84 @@ shared_ptr<selector> selector::create(options const & opts,
     {
       L(FL("Processing token number %d: '%s'") % tok_num % *tok);
       ++tok_num;
-      if (*tok == "(") {
-        items.push_back(parse_item(*tok));
-      } else if (*tok == ")") {
-        unsigned int lparen_pos = 1;
-        while (lparen_pos <= items.size() && idx(items, items.size() - lparen_pos).str != "(")
-          {
-            ++lparen_pos;
-          }
-        E(lparen_pos < items.size(), origin::user,
-          F("selector '%s' is invalid, unmatched ')'") % orig);
-        I(idx(items, items.size() - lparen_pos).str == "(");
-        unsigned int name_idx = items.size() - lparen_pos - 1;
-        if (lparen_pos < items.size() && !idx(items, name_idx).str.empty()
-            && special_chars.find(idx(items, name_idx).str) == string::npos)
-          {
-            // looks like a function call
-            shared_ptr<fn_selector> to_add(new fn_selector(idx(items, name_idx).str));
-            L(FL("found function-like selector '%s' at stack position %d of %d")
-              % items[name_idx].str % name_idx % items.size());
-            // note the closing paren is not on the item stack
-            for (unsigned int i = items.size() - lparen_pos + 1;
-                 i < items.size(); i += 2)
-              {
-                L(FL("        found argument at stack position %d") % i);
-                shared_ptr<selector> arg = idx(items,i).sel;
-                E(i == items.size() - 1 || idx(items,i+1).str == ";", origin::user,
-                  F("selector '%s' is invalid, function argument doesn't look like an arg-list"));
-                to_add->add(arg);
-              }
-            while (name_idx < items.size())
-              items.pop_back();
-            items.push_back(parse_item(to_add));
-          }
-        else
-          {
-            // just parentheses for grouping, closing paren is not on the item stack
-            E(lparen_pos == 2 && idx(items, items.size() - 1).sel, origin::user,
-              F("selector '%s' is invalid, grouping parentheses contain something that "
-                "doesn't look like an expr") % orig);
-            shared_ptr<selector> to_add(new nested_selector(idx(items, items.size() - 1).sel));
-            items.pop_back();
-            items.pop_back();
-            items.push_back(parse_item(to_add));
-          }
-      } else if (*tok == ";") {
-        items.push_back(parse_item(*tok));
-      } else if (*tok == "/") {
-        E(!items.empty(), origin::user,
-          F("selector '%s' is invalid, because it starts with a '/'") % orig);
-        items.push_back(parse_item(*tok));
-      } else if (*tok == "|") {
-        E(!items.empty(), origin::user,
-          F("selector '%s' is invalid, because it starts with a '|'") % orig);
-        items.push_back(parse_item(*tok));
-      } else {
-        vector<string>::const_iterator next = tok;
-        ++next;
-        bool next_is_oparen = false;
-        if (next != splitted.end())
-          next_is_oparen = (*next == "(");
-        if (next_is_oparen)
+      if (*tok == "(")
+        {
           items.push_back(parse_item(*tok));
-        else
-          items.push_back(parse_item(create_simple_selector(opts, lua,
-                                                            project,
-                                                            *tok)));
-      }
+        }
+      else if (*tok == ")")
+        {
+          unsigned int lparen_pos = 1;
+          while (lparen_pos <= items.size() && idx(items, items.size() - lparen_pos).str != "(")
+            {
+              ++lparen_pos;
+            }
+          E(lparen_pos < items.size(), origin::user,
+            F("selector '%s' is invalid, unmatched ')'") % orig);
+          I(idx(items, items.size() - lparen_pos).str == "(");
+          unsigned int name_idx = items.size() - lparen_pos - 1;
+          if (lparen_pos < items.size() && !idx(items, name_idx).str.empty()
+              && special_chars.find(idx(items, name_idx).str) == string::npos)
+            {
+              // looks like a function call
+              shared_ptr<fn_selector> to_add(new fn_selector(idx(items, name_idx).str));
+              L(FL("found function-like selector '%s' at stack position %d of %d")
+                % items[name_idx].str % name_idx % items.size());
+              // note the closing paren is not on the item stack
+              for (unsigned int i = items.size() - lparen_pos + 1;
+                   i < items.size(); i += 2)
+                {
+                  L(FL("        found argument at stack position %d") % i);
+                  shared_ptr<selector> arg = idx(items, i).sel;
+                  E(i == items.size() - 1 || idx(items, i + 1).str == ";", origin::user,
+                    F("selector '%s' is invalid, function argument doesn't look like an arg-list"));
+                  to_add->add(arg);
+                }
+              while (name_idx < items.size())
+                items.pop_back();
+              items.push_back(parse_item(to_add));
+            }
+          else
+            {
+              // just parentheses for grouping, closing paren is not on the item stack
+              E(lparen_pos == 2 && idx(items, items.size() - 1).sel, origin::user,
+                F("selector '%s' is invalid, grouping parentheses contain something that "
+                  "doesn't look like an expr") % orig);
+              shared_ptr<selector> to_add(new nested_selector(idx(items, items.size() - 1).sel));
+              items.pop_back();
+              items.pop_back();
+              items.push_back(parse_item(to_add));
+            }
+        }
+      else if (*tok == ";")
+        {
+          items.push_back(parse_item(*tok));
+        }
+      else if (*tok == "/")
+        {
+          E(!items.empty(), origin::user,
+            F("selector '%s' is invalid, because it starts with a '/'") % orig);
+          items.push_back(parse_item(*tok));
+        }
+      else if (*tok == "|")
+        {
+          E(!items.empty(), origin::user,
+            F("selector '%s' is invalid, because it starts with a '|'") % orig);
+          items.push_back(parse_item(*tok));
+        }
+      else
+        {
+          vector<string>::const_iterator next = tok;
+          ++next;
+          bool next_is_oparen = false;
+          if (next != splitted.end())
+            next_is_oparen = (*next == "(");
+          if (next_is_oparen)
+            items.push_back(parse_item(*tok));
+          else
+            items.push_back(parse_item(create_simple_selector(opts, lua,
+                                                              project,
+                                                              *tok)));
+        }
 
       // may have an infix operator to reduce
       if (items.size() >= 3 && items.back().sel)

@@ -59,16 +59,16 @@ struct user_interface::impl
 
   bool some_tick_is_dirty;    // At least one tick needs being printed
   bool last_write_was_a_tick;
-  map<string,ticker *> tickers;
+  map<string, ticker *> tickers;
   tick_writer * t_writer;
   string tick_trailer;
 
   impl() : some_tick_is_dirty(false), last_write_was_a_tick(false),
-           t_writer(0) {}
+    t_writer(0) {}
 };
 
 ticker::ticker(string const & tickname, string const & s, size_t mod,
-    bool kilocount, bool skip_display) :
+               bool kilocount, bool skip_display) :
   ticks(0),
   mod(mod),
   total(0),
@@ -153,7 +153,7 @@ public:
   void write_ticks();
   void clear_line();
 private:
-  std::map<std::string,size_t> last_ticks;
+  std::map<std::string, size_t> last_ticks;
   unsigned int chars_on_line;
 };
 
@@ -165,7 +165,7 @@ public:
   void write_ticks();
   void clear_line();
 private:
-  std::map<std::string,size_t> last_ticks;
+  std::map<std::string, size_t> last_ticks;
 };
 
 struct tick_write_nothing : virtual public tick_writer
@@ -183,7 +183,7 @@ tick_write_count::~tick_write_count()
 {
 }
 
-static string compose_count(ticker *tick, size_t ticks=0)
+static string compose_count(ticker * tick, size_t ticks = 0)
 {
   string count;
 
@@ -196,7 +196,7 @@ static string compose_count(ticker *tick, size_t ticks=0)
     {
       // automatic unit conversion is enabled
       float div = 1.0;
-      const char *message;
+      const char * message;
 
       if (ticks >= 1073741824)
         {
@@ -245,7 +245,7 @@ void tick_write_count::write_ticks()
   vector<string> tick_count_strings;
 
   I(ui.imp);
-  for (map<string,ticker *>::const_iterator i = ui.imp->tickers.begin();
+  for (map<string, ticker *>::const_iterator i = ui.imp->tickers.begin();
        i != ui.imp->tickers.end(); ++i)
     {
       ticker * tick = i->second;
@@ -404,10 +404,10 @@ void tick_write_dot::write_ticks()
       chars_on_line = tickline_prefix.size();
     }
 
-  for (map<string,ticker *>::const_iterator i = ui.imp->tickers.begin();
+  for (map<string, ticker *>::const_iterator i = ui.imp->tickers.begin();
        i != ui.imp->tickers.end(); ++i)
     {
-      map<string,size_t>::const_iterator old = last_ticks.find(i->first);
+      map<string, size_t>::const_iterator old = last_ticks.find(i->first);
 
       if (!ui.imp->last_write_was_a_tick)
         {
@@ -460,11 +460,11 @@ void tick_write_stdio::write_ticks()
   I(ui.imp);
   string headers, sizes, tickline;
 
-  for (map<string,ticker *>::const_iterator i = ui.imp->tickers.begin();
+  for (map<string, ticker *>::const_iterator i = ui.imp->tickers.begin();
        i != ui.imp->tickers.end(); ++i)
     {
       std::map<std::string, size_t>::iterator it =
-            last_ticks.find(i->second->shortname);
+        last_ticks.find(i->second->shortname);
 
       // we output each explanation stanza just once and every time the
       // total count has been changed
@@ -474,8 +474,7 @@ void tick_write_stdio::write_ticks()
           sizes   += i->second->shortname + "=" +  lexical_cast<string>(i->second->total) + ";";
           last_ticks[i->second->shortname] = i->second->total;
         }
-      else
-      if (it->second != i->second->total)
+      else if (it->second != i->second->total)
         {
           sizes   += i->second->shortname + "=" +  lexical_cast<string>(i->second->total) + ";";
           last_ticks[i->second->shortname] = i->second->total;
@@ -503,9 +502,9 @@ void tick_write_stdio::clear_line()
   std::string out;
 
   for (it = last_ticks.begin(); it != last_ticks.end(); it++)
-  {
-    out += it->first + ";";
-  }
+    {
+      out += it->first + ";";
+    }
 
   global_sanity.maybe_write_to_out_of_band_handler('t', out);
   last_ticks.clear();
@@ -746,7 +745,7 @@ user_interface::fatal_exception(std::exception const & ex)
 int
 user_interface::fatal_exception()
 {
-  std::type_info *type = get_current_exception_type();
+  std::type_info * type = get_current_exception_type();
   if (type)
     {
       char const * name = type->name();
@@ -765,37 +764,41 @@ user_interface::output_prefix()
 {
   std::string prefix;
 
-  if (timestamps_enabled) {
-    try {
-      // To prevent possible infinite loops from a spurious log being
-      // made down the line from the call to .as_formatted_localtime,
-      // we temporarly turn off timestamping.  Not by fiddling with
-      // timestamp_enabled, though, since that one might be looked at
-      // by some other code.
-      static int do_timestamp = 0;
+  if (timestamps_enabled)
+    {
+      try
+        {
+          // To prevent possible infinite loops from a spurious log being
+          // made down the line from the call to .as_formatted_localtime,
+          // we temporarly turn off timestamping.  Not by fiddling with
+          // timestamp_enabled, though, since that one might be looked at
+          // by some other code.
+          static int do_timestamp = 0;
 
-      if (++do_timestamp == 1) {
-        // FIXME: with no app pointer around we have no access to
-        // app.lua.get_date_format_spec() here, so we use the same format
-        // which f.e. also Apache uses for its log output
-        prefix = "[" +
-          date_t::now().as_formatted_localtime("%a %b %d %H:%M:%S %Y") +
-          "] ";
-      }
-      --do_timestamp;
+          if (++do_timestamp == 1)
+            {
+              // FIXME: with no app pointer around we have no access to
+              // app.lua.get_date_format_spec() here, so we use the same format
+              // which f.e. also Apache uses for its log output
+              prefix = "[" +
+                       date_t::now().as_formatted_localtime("%a %b %d %H:%M:%S %Y") +
+                       "] ";
+            }
+          --do_timestamp;
+        }
+      // ensure that we do not throw an exception because we could not
+      // create the timestamp prefix above
+      catch (...) {}
     }
-    // ensure that we do not throw an exception because we could not
-    // create the timestamp prefix above
-    catch (...) {}
-  }
 
-  if (prog_name.empty()) {
-    prefix += "?: ";
-  }
+  if (prog_name.empty())
+    {
+      prefix += "?: ";
+    }
   else
-  {
-    prefix += prog_name + ": ";
-  }
+    {
+      prefix += prog_name + ": ";
+    }
 
   return prefix;
 }
@@ -979,7 +982,8 @@ format_text(i18n_format const & text, size_t const col,
   return format_text(text.str(), col, curcol, indent_first_line);
 }
 
-namespace {
+namespace
+{
   class option_text
   {
     string names;
@@ -999,8 +1003,8 @@ namespace {
           return full_len;
         }
 
-      formatted_names.push_back(names.substr(0, slash-1));
-      formatted_names.push_back(" " + names.substr(slash-1));
+      formatted_names.push_back(names.substr(0, slash - 1));
+      formatted_names.push_back(" " + names.substr(slash - 1));
 
       size_t ret = 0;
       for (vector<string>::const_iterator i = formatted_names.begin();
@@ -1029,10 +1033,10 @@ namespace {
             right = &formatted_desc.at(i);
 
           ret += string(pre_indent, ' ')
-            + *left + string(namelen - left->size(), ' ')
-            + string(space, ' ')
-            + *right
-            + "\n";
+                 + *left + string(namelen - left->size(), ' ')
+                 + string(space, ' ')
+                 + *right
+                 + "\n";
         }
       return ret;
     }
@@ -1113,7 +1117,7 @@ user_interface::inform_usage(usage const & u, options & opts)
                                           u.which.end()))();
 
   usage_stream << F("Usage: %s [OPTION...] command [ARG...]") %
-    prog_name << "\n\n";
+               prog_name << "\n\n";
 
   if (u.which.empty())
     usage_stream << get_usage_str(options::opts::globals(), opts);
@@ -1125,10 +1129,10 @@ user_interface::inform_usage(usage const & u, options & opts)
   if (!cmd_options.empty())
     {
       usage_stream
-        << F("Options specific to '%s %s' "
-             "(run '%s help' to see global options):")
-        % prog_name % visibleid % prog_name
-        << "\n\n";
+          << F("Options specific to '%s %s' "
+               "(run '%s help' to see global options):")
+          % prog_name % visibleid % prog_name
+          << "\n\n";
       usage_stream << get_usage_str(cmd_options, opts);
     }
 

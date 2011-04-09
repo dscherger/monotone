@@ -51,9 +51,9 @@ template <typename Key, typename Data> struct NullManager
  *
  */
 // Manager is a concept with a writeout(Key, Data) method
-template <typename Key, typename Data,
-          typename Sizefn = WritebackCountfn<Data>,
-          typename Manager = NullManager<Key, Data> >
+template < typename Key, typename Data,
+         typename Sizefn = WritebackCountfn<Data>,
+         typename Manager = NullManager<Key, Data> >
 class LRUWritebackCache
 {
 public:

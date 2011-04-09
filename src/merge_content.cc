@@ -39,10 +39,10 @@ using boost::shared_ptr;
 ///////////////////////////////////////////////////////////////////////////
 
 content_merge_database_adaptor::content_merge_database_adaptor(database & db,
-                                                               revision_id const & left,
-                                                               revision_id const & right,
-                                                               marking_map const & left_mm,
-                                                               marking_map const & right_mm)
+    revision_id const & left,
+    revision_id const & right,
+    marking_map const & left_mm,
+    marking_map const & right_mm)
   : db(db), left_rid (left), right_rid (right), left_mm(left_mm), right_mm(right_mm)
 {
   // FIXME: possibly refactor to run this lazily, as we don't
@@ -255,7 +255,7 @@ void
 content_merge_workspace_adaptor::get_version(file_id const & ident,
                                              file_data & dat) const
 {
-  map<file_id,file_data>::const_iterator i = temporary_store.find(ident);
+  map<file_id, file_data>::const_iterator i = temporary_store.find(ident);
   if (i != temporary_store.end())
     dat = i->second;
   else if (db.file_version_exists(ident))

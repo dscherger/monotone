@@ -146,9 +146,9 @@ struct work_vec
 
 vector<long, QA(long)> work_vec::vec;
 
-template <typename A,
-          typename B,
-          typename LCS>
+template < typename A,
+         typename B,
+         typename LCS >
 struct jaffer_edit_calculator
 {
 
@@ -183,9 +183,9 @@ struct jaffer_edit_calculator
     inline vt const & operator[](size_t idx) const
     {
       if (end < start)
-          return *(base + (start - (idx + 1)));
+        return *(base + (start - (idx + 1)));
       else
-          return *(base + (start + idx));
+        return *(base + (start + idx));
     }
   };
 
@@ -194,10 +194,10 @@ struct jaffer_edit_calculator
                   subarray<B> const & b, long b_len,
                   cost_vec & CC, long p)
   {
-    long cost = k + 2*p;
+    long cost = k + 2 * p;
 
     // do the run
-    long y = max(fp[k-1]+1, fp[k+1]);
+    long y = max(fp[k-1] + 1, fp[k+1]);
     long x = y - k;
 
     I(y >= 0);
@@ -231,7 +231,7 @@ struct jaffer_edit_calculator
                       bool full_scan = true)
   {
     long const delta = len_b - len_a;
-    long lo = -(len_a+1), hi = (1+len_b);
+    long lo = -(len_a + 1), hi = (1 + len_b);
     if (full_scan)
       {
         lo = -(p_lim + 1);
@@ -260,7 +260,7 @@ struct jaffer_edit_calculator
           break;
       }
 
-    return delta + 2*p;
+    return delta + 2 * p;
   }
 
   // This splits the edit graph into a top half and a bottom half, calculates
@@ -353,16 +353,16 @@ struct jaffer_edit_calculator
                         cost_vec const & cc,
                         long cost)
   {
-    long cdx = 1 + n/2;
-    long rdx = n/2;
+    long cdx = 1 + n / 2;
+    long rdx = n / 2;
     while (true)
       {
         I (rdx >= 0);
 
         if (cost == (cc[rdx] + rr[n-rdx]))
-            return rdx;
+          return rdx;
         if (cost == (cc[cdx] + rr[n-cdx]))
-            return cdx;
+          return cdx;
         --rdx;
         ++cdx;
       }
@@ -474,12 +474,12 @@ struct jaffer_edit_calculator
     long delta = (new_last_b - new_start_b) - (new_last_a - new_start_a);
 
     if (delta < 0)
-      return diff_to_ez (b, new_start_b, new_last_b+1,
-                         a, new_start_a, new_last_a+1,
+      return diff_to_ez (b, new_start_b, new_last_b + 1,
+                         a, new_start_a, new_last_a + 1,
                          edits, edx, -polarity, delta + p_lim);
     else
-      return diff_to_ez (a, new_start_a, new_last_a+1,
-                         b, new_start_b, new_last_b+1,
+      return diff_to_ez (a, new_start_a, new_last_a + 1,
+                         b, new_start_b, new_last_b + 1,
                          edits, edx, polarity, p_lim);
   }
 
@@ -526,7 +526,7 @@ struct jaffer_edit_calculator
                 for (long idx = bdx, edx = edx0;
                      idx < end_b;
                      ++idx, ++edx)
-                  edits[edx] = polarity * (idx+1);
+                  edits[edx] = polarity * (idx + 1);
 
                 return len_b - len_a;
               }
@@ -537,7 +537,7 @@ struct jaffer_edit_calculator
               }
             else
               {
-                edits[edx0] = polarity * (bdx+1);
+                edits[edx0] = polarity * (bdx + 1);
                 ++bdx; ++edx0;
               }
           }
@@ -609,15 +609,15 @@ struct jaffer_edit_calculator
 };
 
 
-template <typename A,
-          typename B,
-          typename LCS>
+template < typename A,
+         typename B,
+         typename LCS >
 void _edit_script(A begin_a, A end_a,
                   B begin_b, B end_b,
                   vector<long, QA(long)> & edits_out,
                   LCS ignored_out)
 {
-  typedef jaffer_edit_calculator<A,B,LCS> calc_t;
+  typedef jaffer_edit_calculator<A, B, LCS> calc_t;
   long len_a = end_a - begin_a;
   long len_b = end_b - begin_b;
   typename calc_t::edit_vec edits, ordered;
@@ -644,14 +644,14 @@ void _edit_script(A begin_a, A end_a,
 }
 
 
-template <typename A,
-          typename B,
-          typename LCS>
+template < typename A,
+         typename B,
+         typename LCS >
 void _longest_common_subsequence(A begin_a, A end_a,
                                  B begin_b, B end_b,
                                  LCS out)
 {
-  typedef jaffer_edit_calculator<A,B,LCS> calc_t;
+  typedef jaffer_edit_calculator<A, B, LCS> calc_t;
   long len_a = end_a - begin_a;
   long len_b = end_b - begin_b;
   typename calc_t::edit_vec edits, ordered;

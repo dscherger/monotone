@@ -35,7 +35,7 @@ using std::perror;
 using std::strerror;
 
 Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
-    :
+  :
 #ifdef WIN32
   child(INVALID_HANDLE_VALUE),
   bytes_available(0),
@@ -174,11 +174,11 @@ Netxx::PipeStream::PipeStream (const string & cmd,
   // a vector<string> as argument.
 
   const unsigned newsize = 64;
-  const char *newargv[newsize];
+  const char * newargv[newsize];
   I(args.size() < (sizeof(newargv) / sizeof(newargv[0])));
 
   unsigned newargc = 0;
-  newargv[newargc++]=cmd.c_str();
+  newargv[newargc++] = cmd.c_str();
   for (vector<string>::const_iterator i = args.begin();
        i != args.end(); ++i)
     newargv[newargc++] = i->c_str();
@@ -195,8 +195,8 @@ Netxx::PipeStream::PipeStream (const string & cmd,
 
   static unsigned long serial = 0;
   string pipename = (FL("\\\\.\\pipe\\netxx_pipe_%ld_%d")
-                          % GetCurrentProcessId()
-                          % (++serial)).str();
+                     % GetCurrentProcessId()
+                     % (++serial)).str();
 
   // Create the parent's handle to the named pipe.
 
@@ -216,15 +216,15 @@ Netxx::PipeStream::PipeStream (const string & cmd,
   // Open the child's handle to the named pipe.
 
   SECURITY_ATTRIBUTES inherit;
-  memset(&inherit,0,sizeof inherit);
-  inherit.nLength=sizeof inherit;
+  memset(&inherit, 0, sizeof inherit);
+  inherit.nLength = sizeof inherit;
   inherit.bInheritHandle = TRUE;
 
   HANDLE hpipe = CreateFile(pipename.c_str(),
-                            GENERIC_READ|GENERIC_WRITE, 0,
+                            GENERIC_READ | GENERIC_WRITE, 0,
                             &inherit,
                             OPEN_EXISTING,
-                            FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,0);
+                            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0);
 
   E(hpipe != INVALID_HANDLE_VALUE, origin::system,
     F("CreateFile(%s,...) call failed: %s")
@@ -248,7 +248,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
   L(FL("Subprocess command line: '%s'") % cmdline);
 
   BOOL started = CreateProcess(NULL, // Application name
-                               const_cast<CHAR*>(cmdline.c_str()),
+                               const_cast<CHAR *>(cmdline.c_str()),
                                NULL, // Process attributes
                                NULL, // Thread attributes
                                TRUE, // Inherit handles
@@ -293,7 +293,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
 // Non blocking read.
 
 Netxx::signed_size_type
-Netxx::PipeStream::read (void *buffer, size_type length)
+Netxx::PipeStream::read (void * buffer, size_type length)
 {
 #ifdef WIN32
 
@@ -304,7 +304,7 @@ Netxx::PipeStream::read (void *buffer, size_type length)
     {
       memcpy(buffer, readbuf, length);
       if (length < bytes_available)
-        memmove(readbuf, readbuf+length, bytes_available-length);
+        memmove(readbuf, readbuf + length, bytes_available - length);
       bytes_available -= length;
     }
 
@@ -315,7 +315,7 @@ Netxx::PipeStream::read (void *buffer, size_type length)
 }
 
 Netxx::signed_size_type
-Netxx::PipeStream::write(const void *buffer, size_type length)
+Netxx::PipeStream::write(const void * buffer, size_type length)
 {
 #ifdef WIN32
   DWORD written = 0;
@@ -353,7 +353,7 @@ Netxx::PipeStream::close (void)
   writefd = -1;
 
   if (child)
-    while (waitpid(child,0,0) == -1 && errno == EINTR) ;
+    while (waitpid(child, 0, 0) == -1 && errno == EINTR) ;
   child = 0;
 #endif
 }
@@ -379,17 +379,18 @@ Netxx::PipeStream::get_probe_info (void) const
 static string
 status_name(DWORD wstatus)
 {
-  switch (wstatus) {
-  case WAIT_TIMEOUT: return "WAIT_TIMEOUT";
-  case WAIT_OBJECT_0: return "WAIT_OBJECT_0";
-  case WAIT_FAILED: return "WAIT_FAILED";
-  case WAIT_OBJECT_0+1: return "WAIT_OBJECT_0+1";
-  default: return "UNKNOWN";
-  }
+  switch (wstatus)
+    {
+    case WAIT_TIMEOUT: return "WAIT_TIMEOUT";
+    case WAIT_OBJECT_0: return "WAIT_OBJECT_0";
+    case WAIT_FAILED: return "WAIT_FAILED";
+    case WAIT_OBJECT_0+1: return "WAIT_OBJECT_0+1";
+    default: return "UNKNOWN";
+    }
 }
 
 Netxx::Probe::result_type
-Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
+Netxx::PipeCompatibleProbe::ready(const Timeout & timeout, ready_type rt)
 {
   if (!is_pipe)
     return Probe::ready(timeout, rt);
@@ -492,7 +493,7 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
 }
 
 void
-Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
+Netxx::PipeCompatibleProbe::add(PipeStream & ps, ready_type rt)
 {
   assert(!is_pipe);
   assert(!pipe);
@@ -502,7 +503,7 @@ Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
 }
 
 void
-Netxx::PipeCompatibleProbe::add(StreamBase const &sb, ready_type rt)
+Netxx::PipeCompatibleProbe::add(StreamBase const & sb, ready_type rt)
 {
   // FIXME: This is *still* an unfortunate way of performing a
   // downcast, though slightly less awful than the old way, which
@@ -510,50 +511,50 @@ Netxx::PipeCompatibleProbe::add(StreamBase const &sb, ready_type rt)
   //
   // Perhaps we should twiddle the caller-visible API.
 
-  StreamBase const *sbp = &sb;
-  PipeStream const *psp = dynamic_cast<PipeStream const *>(sbp);
+  StreamBase const * sbp = &sb;
+  PipeStream const * psp = dynamic_cast<PipeStream const *>(sbp);
   if (psp)
-    add(const_cast<PipeStream&>(*psp),rt);
+    add(const_cast<PipeStream &>(*psp), rt);
   else
     {
       assert(!is_pipe);
-      Probe::add(sb,rt);
+      Probe::add(sb, rt);
     }
 }
 
 void
-Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
+Netxx::PipeCompatibleProbe::add(const StreamServer & ss, ready_type rt)
 {
   assert(!is_pipe);
-  Probe::add(ss,rt);
+  Probe::add(ss, rt);
 }
 #else // unix
 void
-Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
-  {
-    if (rt == ready_none || rt & ready_read)
-      add_socket(ps.get_readfd(), ready_read);
-    if (rt == ready_none || rt & ready_write)
-      add_socket(ps.get_writefd(), ready_write);
-  }
+Netxx::PipeCompatibleProbe::add(PipeStream & ps, ready_type rt)
+{
+  if (rt == ready_none || rt & ready_read)
+    add_socket(ps.get_readfd(), ready_read);
+  if (rt == ready_none || rt & ready_write)
+    add_socket(ps.get_writefd(), ready_write);
+}
 
 void
-Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
+Netxx::PipeCompatibleProbe::add(const StreamBase & sb, ready_type rt)
 {
   try
     {
-      add(const_cast<PipeStream&>(dynamic_cast<const PipeStream&>(sb)),rt);
+      add(const_cast<PipeStream &>(dynamic_cast<const PipeStream &>(sb)), rt);
     }
   catch (...)
     {
-      Probe::add(sb,rt);
+      Probe::add(sb, rt);
     }
 }
 
 void
-Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
+Netxx::PipeCompatibleProbe::add(const StreamServer & ss, ready_type rt)
 {
-  Probe::add(ss,rt);
+  Probe::add(ss, rt);
 }
 #endif
 

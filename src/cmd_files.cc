@@ -64,9 +64,9 @@ CMD(fmerge, "fmerge", "", CMD_REF(debug),
     throw usage(execid);
 
   file_id
-    anc_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user)),
-    left_id(decode_hexenc_as<file_id>(idx(args, 1)(), origin::user)),
-    right_id(decode_hexenc_as<file_id>(idx(args, 2)(), origin::user));
+  anc_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user)),
+         left_id(decode_hexenc_as<file_id>(idx(args, 1)(), origin::user)),
+         right_id(decode_hexenc_as<file_id>(idx(args, 2)(), origin::user));
 
   file_data anc, left, right;
 
@@ -104,12 +104,12 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
     throw usage(execid);
 
   string const
-    & src_name = idx(args, 0)(),
+  & src_name = idx(args, 0)(),
     & dst_name = idx(args, 1)();
 
   file_id
-    src_id(decode_hexenc_as<file_id>(idx(args, 2)(), origin::user)),
-    dst_id(decode_hexenc_as<file_id>(idx(args, 3)(), origin::user));
+  src_id(decode_hexenc_as<file_id>(idx(args, 2)(), origin::user)),
+         dst_id(decode_hexenc_as<file_id>(idx(args, 3)(), origin::user));
 
   file_data src, dst;
 
@@ -188,11 +188,11 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
   // find the version of the file requested
   E(roster.has_node(file), origin::user,
     F("no such file '%s' in revision %s")
-      % file % rid);
+    % file % rid);
   const_node_t node = roster.get_node(file);
   E(is_file_t(node), origin::user,
     F("'%s' in revision %s is not a file")
-      % file % rid);
+    % file % rid);
 
   const_file_t file_node = downcast_to_file_t(node);
   L(FL("annotate for file_id %s") % file_node->self);

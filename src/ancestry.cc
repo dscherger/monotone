@@ -179,7 +179,7 @@ calculate_ancestors_from_graph(interner<ctx> & intern,
       ctx us = stk.top();
       revision_id rev(intern.lookup(us), origin::internal);
 
-      pair<gi,gi> parents = graph.equal_range(rev);
+      pair<gi, gi> parents = graph.equal_range(rev);
       bool pushed = false;
 
       // first make sure all parents are done
@@ -305,9 +305,9 @@ erase_ancestors_and_failures(database & db,
   if (inverse_graph_cache_ptr == NULL)
     inverse_graph_cache_ptr = &inverse_graph;
   if (inverse_graph_cache_ptr->empty())
-  {
-    db.get_reverse_ancestry(*inverse_graph_cache_ptr);
-  }
+    {
+      db.get_reverse_ancestry(*inverse_graph_cache_ptr);
+    }
 
   // Keep a set of all ancestors that we've traversed -- to avoid
   // combinatorial explosion.
@@ -420,14 +420,14 @@ ancestry_difference(database & db, revision_id const & a,
   *au -= *u;
 
   for (unsigned int i = 0; i != au->size(); ++i)
-  {
-    if (au->test(i))
-      {
-        revision_id rid(intern.lookup(i), origin::internal);
-        if (!null_id(rid))
-          new_stuff.insert(rid);
-      }
-  }
+    {
+      if (au->test(i))
+        {
+          revision_id rid(intern.lookup(i), origin::internal);
+          if (!null_id(rid))
+            new_stuff.insert(rid);
+        }
+    }
 }
 
 void
@@ -450,13 +450,14 @@ select_nodes_modified_by_rev(database & db,
                                     edge_nodes_modified);
 
       copy(edge_nodes_modified.begin(), edge_nodes_modified.end(),
-                inserter(nodes_modified, nodes_modified.begin()));
+           inserter(nodes_modified, nodes_modified.begin()));
     }
 }
 
 // These functions create new ancestry!
 
-namespace {
+namespace
+{
   struct true_node_id_source
     : public node_id_source
   {
@@ -553,14 +554,14 @@ make_roster_for_revision(database & db,
 
 void
 graph_loader::load_parents(revision_id const rid,
-                          set<revision_id> & parents)
+                           set<revision_id> & parents)
 {
   db.get_revision_parents(rid, parents);
 }
 
 void
 graph_loader::load_children(revision_id const rid,
-                           set<revision_id> & children)
+                            set<revision_id> & children)
 {
   db.get_revision_children(rid, children);
 }
@@ -579,7 +580,7 @@ graph_loader::load_descendants(set<revision_id> & revs)
 
 void
 graph_loader::load_revs(load_direction const direction,
-                       set<revision_id> & revs)
+                        set<revision_id> & revs)
 {
   std::deque<revision_id> next(revs.begin(), revs.end());
 

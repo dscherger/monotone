@@ -20,11 +20,11 @@ typedef std::pair<file_path, file_path> git_rename;
 
 struct git_add
 {
-    file_path path;
-    file_id content;
-    std::string mode;
-    git_add(file_path path, file_id content, std::string mode) :
-        path(path), content(content), mode(mode) {}
+  file_path path;
+  file_id content;
+  std::string mode;
+  git_add(file_path path, file_id content, std::string mode) :
+    path(path), content(content), mode(mode) {}
 };
 
 typedef std::vector<git_delete>::const_iterator delete_iterator;
@@ -33,9 +33,9 @@ typedef std::vector<git_add>::const_iterator add_iterator;
 
 struct git_change
 {
-    std::vector<git_delete> deletions;
-    std::vector<git_rename> renames;
-    std::vector<git_add> additions;
+  std::vector<git_delete> deletions;
+  std::vector<git_rename> renames;
+  std::vector<git_add> additions;
 };
 
 void get_change(roster_t const & left, roster_t const & right,

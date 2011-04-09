@@ -97,7 +97,7 @@ namespace parallel
             {
               I(left_->first == right_->first);
               state_ = in_both;
-          }
+            }
         }
       return !finished_;
     }

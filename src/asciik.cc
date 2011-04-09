@@ -282,7 +282,7 @@ asciik::try_draw(vector<revision_id> const & next_row,
           if (found != next_row.end())
             {
               size_t j = distance(next_row.begin(), found);
-              size_t d = i>j ? i-j : j-i;
+              size_t d = i > j ? i - j : j - i;
               if (d > 1)
                 return false;
               if (d != 0)
@@ -299,9 +299,9 @@ asciik::try_draw(vector<revision_id> const & next_row,
       {
         size_t i = curr_loc;
         size_t j = distance(next_row.begin(),
-          find(next_row.begin(), next_row.end(), *p));
+                            find(next_row.begin(), next_row.end(), *p));
         I(j < next_items);
-        size_t d = i>j ? i-j : j-i;
+        size_t d = i > j ? i - j : j - i;
         if ((d > 1) && have_shift)
           return false;
         parent_links.insert(pair<size_t, size_t>(i, j));
@@ -319,7 +319,7 @@ asciik::try_draw(vector<revision_id> const & next_row,
 
   set<pair<size_t, size_t> > links(preservation_links);
   copy(parent_links.begin(), parent_links.end(),
-    insert_iterator<set<pair<size_t, size_t> > >(links, links.begin()));
+       insert_iterator<set<pair<size_t, size_t> > >(links, links.begin()));
   draw(curr_items, next_items, curr_loc, links, curr_ghosts, annotation);
   return true;
 }
@@ -332,7 +332,7 @@ asciik::print(revision_id const & rev,
   if (find(curr_row.begin(), curr_row.end(), rev) == curr_row.end())
     curr_row.push_back(rev);
   size_t curr_loc = distance(curr_row.begin(),
-    find(curr_row.begin(), curr_row.end(), rev));
+                             find(curr_row.begin(), curr_row.end(), rev));
   // it must be found as either it was there already or we just added it
   I(curr_loc < curr_row.size());
 
@@ -352,7 +352,7 @@ asciik::print(revision_id const & rev,
   // ghost handling has been done.
   vector<revision_id> no_ghost(next_row);
   vector<revision_id>::iterator first_ghost = find(no_ghost.begin(),
-    no_ghost.end(), ghost);
+                                                   no_ghost.end(), ghost);
   if (first_ghost != no_ghost.end())
     no_ghost.erase(first_ghost);
 

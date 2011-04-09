@@ -81,7 +81,7 @@ void basic_io::stanza::push_hex_pair(symbol const & k, hexenc<id> const & v)
 {
   entries.push_back(make_pair(k, ""));
   string const & s(v());
-  entries.back().second.reserve(s.size()+2);
+  entries.back().second.reserve(s.size() + 2);
   entries.back().second.push_back('[');
   entries.back().second.append(s);
   entries.back().second.push_back(']');

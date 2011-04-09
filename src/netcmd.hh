@@ -32,7 +32,8 @@ class options;
 
 class app_state;
 
-namespace error_codes {
+namespace error_codes
+{
   static const int no_error = 200;
   static const int partial_transfer = 211;
   static const int no_transfer = 212;
@@ -49,62 +50,62 @@ namespace error_codes {
 }
 
 typedef enum
-  {
-    server_voice,
-    client_voice
-  }
+{
+  server_voice,
+  client_voice
+}
 protocol_voice;
 
 typedef enum
-  {
-    source_role = 1,
-    sink_role = 2,
-    source_and_sink_role = 3
-  }
+{
+  source_role = 1,
+  sink_role = 2,
+  source_and_sink_role = 3
+}
 protocol_role;
 
 typedef enum
-  {
-    refinement_query = 0,
-    refinement_response = 1
-  }
+{
+  refinement_query = 0,
+  refinement_response = 1
+}
 refinement_type;
 
 typedef enum
-  {
-    // general commands
-    error_cmd = 0,
-    bye_cmd = 1,
+{
+  // general commands
+  error_cmd = 0,
+  bye_cmd = 1,
 
-    // authentication commands
-    hello_cmd = 2,
-    anonymous_cmd = 3,
-    auth_cmd = 4,
-    confirm_cmd = 5,
+  // authentication commands
+  hello_cmd = 2,
+  anonymous_cmd = 3,
+  auth_cmd = 4,
+  confirm_cmd = 5,
 
-    // refinement commands
-    refine_cmd = 6,
-    done_cmd = 7,
+  // refinement commands
+  refine_cmd = 6,
+  done_cmd = 7,
 
-    // transmission commands
-    data_cmd = 8,
-    delta_cmd = 9,
+  // transmission commands
+  data_cmd = 8,
+  delta_cmd = 9,
 
-    // automation commands
-    automate_cmd = 10,
-    automate_headers_request_cmd = 11,
-    automate_headers_reply_cmd = 12,
-    automate_command_cmd = 13,
-    automate_packet_cmd = 14,
+  // automation commands
+  automate_cmd = 10,
+  automate_headers_request_cmd = 11,
+  automate_headers_reply_cmd = 12,
+  automate_command_cmd = 13,
+  automate_packet_cmd = 14,
 
-    // usher commands
-    // usher_cmd is sent either by a proxy that needs to know where
-    // to forward a connection (the reply gives the desired hostname and
-    // include pattern), or by a server performing protocol
-    // version negotiation.
-    usher_cmd = 100,
-    usher_reply_cmd = 101
-  }
+  // usher commands
+  // usher_cmd is sent either by a proxy that needs to know where
+  // to forward a connection (the reply gives the desired hostname and
+  // include pattern), or by a server performing protocol
+  // version negotiation.
+  usher_cmd = 100,
+  usher_reply_cmd = 101
+}
 netcmd_code;
 
 class netcmd
@@ -128,7 +129,8 @@ public:
             string_queue & inbuf,
             chained_hmac & hmac);
   bool read_string(std::string & inbuf,
-                   chained_hmac & hmac) {
+                   chained_hmac & hmac)
+  {
     // this is here only for the regression tests because they want to
     // read and write to the same type, but we want to have reads from
     // a string queue so that when data is read in from the network it
@@ -137,7 +139,7 @@ public:
     tmp.append(inbuf);
     // allow any version
     bool ret = read(0, 255, tmp, hmac);
-    inbuf = tmp.substr(0,tmp.size());
+    inbuf = tmp.substr(0, tmp.size());
     return ret;
   }
   // i/o functions for each type of command payload

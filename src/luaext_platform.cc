@@ -30,28 +30,28 @@ LUAEXT(get_ostype, )
 
 LUAEXT(existsonpath, )
 {
-  const char *exe = luaL_checkstring(LS, -1);
+  const char * exe = luaL_checkstring(LS, -1);
   lua_pushnumber(LS, existsonpath(exe));
   return 1;
 }
 
 LUAEXT(is_executable, )
 {
-  const char *path = luaL_checkstring(LS, -1);
+  const char * path = luaL_checkstring(LS, -1);
   lua_pushboolean(LS, is_executable(path));
   return 1;
 }
 
 LUAEXT(set_executable, )
 {
-  const char *path = luaL_checkstring(LS, -1);
+  const char * path = luaL_checkstring(LS, -1);
   lua_pushnumber(LS, set_executable(path));
   return 1;
 }
 
 LUAEXT(clear_executable, )
 {
-  const char *path = luaL_checkstring(LS, -1);
+  const char * path = luaL_checkstring(LS, -1);
   lua_pushnumber(LS, clear_executable(path));
   return 1;
 }
@@ -59,14 +59,14 @@ LUAEXT(clear_executable, )
 LUAEXT(spawn, )
 {
   int n = lua_gettop(LS);
-  const char *path = luaL_checkstring(LS, 1);
-  char **argv = (char**)malloc((n+1)*sizeof(char*));
+  const char * path = luaL_checkstring(LS, 1);
+  char ** argv = (char **)malloc((n + 1) * sizeof(char *));
   int i;
   pid_t ret;
-  if (argv==NULL)
+  if (argv == NULL)
     return 0;
-  argv[0] = (char*)path;
-  for (i=1; i<n; i++) argv[i] = (char*)luaL_checkstring(LS, i+1);
+  argv[0] = (char *)path;
+  for (i = 1; i < n; i++) argv[i] = (char *)luaL_checkstring(LS, i + 1);
   argv[i] = NULL;
   ret = process_spawn(argv);
   free(argv);
@@ -80,15 +80,15 @@ LUAEXT(spawn_redirected, )
   char const * infile = luaL_checkstring(LS, 1);
   char const * outfile = luaL_checkstring(LS, 2);
   char const * errfile = luaL_checkstring(LS, 3);
-  const char *path = luaL_checkstring(LS, 4);
+  const char * path = luaL_checkstring(LS, 4);
   n -= 3;
-  char **argv = (char**)malloc((n+1)*sizeof(char*));
+  char ** argv = (char **)malloc((n + 1) * sizeof(char *));
   int i;
   pid_t ret;
-  if (argv==NULL)
+  if (argv == NULL)
     return 0;
-  argv[0] = (char*)path;
-  for (i=1; i<n; i++) argv[i] = (char*)luaL_checkstring(LS,  i+4);
+  argv[0] = (char *)path;
+  for (i = 1; i < n; i++) argv[i] = (char *)luaL_checkstring(LS,  i + 4);
   argv[i] = NULL;
   ret = process_spawn_redirected(infile, outfile, errfile, argv);
   free(argv);
@@ -103,16 +103,18 @@ LUAEXT(spawn_redirected, )
 
 #define topfile(LS)     ((FILE **)luaL_checkudata(LS, 1, LUA_FILEHANDLE))
 
-static int io_fclose (lua_State *LS) {
-  FILE **p = topfile(LS);
+static int io_fclose (lua_State * LS)
+{
+  FILE ** p = topfile(LS);
   int ok = (fclose(*p) == 0);
   *p = NULL;
   lua_pushboolean(LS, ok);
   return 1;
 }
 
-static FILE **newfile (lua_State *LS) {
-  FILE **pf = (FILE **)lua_newuserdata(LS, sizeof(FILE *));
+static FILE ** newfile (lua_State * LS)
+{
+  FILE ** pf = (FILE **)lua_newuserdata(LS, sizeof(FILE *));
   *pf = NULL;  /* file handle is currently `closed' */
   luaL_getmetatable(LS, LUA_FILEHANDLE);
   lua_setmetatable(LS, -2);
@@ -126,20 +128,20 @@ static FILE **newfile (lua_State *LS) {
 LUAEXT(spawn_pipe, )
 {
   int n = lua_gettop(LS);
-  char **argv = (char**)malloc((n+1)*sizeof(char*));
+  char ** argv = (char **)malloc((n + 1) * sizeof(char *));
   int i;
   pid_t pid;
-  if (argv==NULL)
+  if (argv == NULL)
     return 0;
-  if (n<1)
+  if (n < 1)
     return 0;
-  for (i=0; i<n; i++) argv[i] = (char*)luaL_checkstring(LS,  i+1);
+  for (i = 0; i < n; i++) argv[i] = (char *)luaL_checkstring(LS,  i + 1);
   argv[i] = NULL;
 
   int infd;
-  FILE **inpf = newfile(LS);
+  FILE ** inpf = newfile(LS);
   int outfd;
-  FILE **outpf = newfile(LS);
+  FILE ** outpf = newfile(LS);
 
   pid = process_spawn_pipe(argv, inpf, outpf);
   free(argv);
@@ -165,7 +167,7 @@ LUAEXT(kill, )
   int n = lua_gettop(LS);
   pid_t pid = static_cast<pid_t>(luaL_checknumber(LS, -2));
   int sig;
-  if (n>1)
+  if (n > 1)
     sig = static_cast<int>(luaL_checknumber(LS, -1));
   else
     sig = SIGTERM;
@@ -251,7 +253,7 @@ namespace
     {
       lua_newtable(st);
     }
-    virtual void consume(const char *s)
+    virtual void consume(const char * s)
     {
       lua_pushstring(st, s);
       lua_rawseti(st, -2, n);

@@ -83,8 +83,8 @@ struct sanity::impl
   bool already_dumping;
   std::vector<MusingI const *> musings;
 
-  void (*out_of_band_function)(char channel, std::string const& text, void *opaque);
-  void *out_of_band_opaque;
+  void (*out_of_band_function)(char channel, std::string const & text, void * opaque);
+  void * out_of_band_opaque;
 
   impl() :
     verbosity(0), is_debug(false), logbuf(0xffff),
@@ -146,7 +146,7 @@ sanity::initialize(int argc, char ** argv, char const * lc_all)
       av0.erase(av0.size() - 4);
     string::size_type last_slash = av0.find_last_of("/\\");
     if (last_slash != string::npos)
-      av0.erase(0, last_slash+1);
+      av0.erase(0, last_slash + 1);
     imp->real_prog_name = av0;
     prog_name_ptr = &imp->real_prog_name;
   }
@@ -179,8 +179,8 @@ sanity::dump_buffer()
           copy(imp->gasp_dump.begin(), imp->gasp_dump.end(),
                ostream_iterator<char>(out));
           inform_message((FL("wrote debugging log to %s\n"
-                        "if reporting a bug, please include this file")
-                       % imp->filename).str());
+                             "if reporting a bug, please include this file")
+                          % imp->filename).str());
         }
       else
         inform_message((FL("failed to write debugging log to %s")
@@ -250,9 +250,9 @@ sanity::do_format(format_base const & fmt, char const * file, int line)
   catch (exception & e)
     {
       inform_error((F("fatal: formatter failed on %s:%d: %s")
-                % file
-                % line
-                % e.what()).str());
+                    % file
+                    % line
+                    % e.what()).str());
       throw;
     }
 }
@@ -262,7 +262,7 @@ sanity::debug_p()
 {
   if (!imp)
     throw std::logic_error("sanity::debug_p called "
-                            "before sanity::initialize");
+                           "before sanity::initialize");
   return imp->is_debug;
 }
 
@@ -376,10 +376,10 @@ sanity::index_failure(char const * vec_expr,
                       char const * file, int line)
 {
   char const * pattern
-    = N_("%s:%d: index '%s' = %d overflowed vector '%s' with size %d");
+  = N_("%s:%d: index '%s' = %d overflowed vector '%s' with size %d");
   if (!imp)
     throw std::logic_error("sanity::index_failure occured "
-                            "before sanity::initialize");
+                           "before sanity::initialize");
   if (debug_p())
     log(FL(pattern) % file % line % idx_expr % idx % vec_expr % sz,
         file, line);
@@ -391,7 +391,7 @@ sanity::index_failure(char const * vec_expr,
 // Last gasp dumps
 
 void
-sanity::push_musing(MusingI const *musing)
+sanity::push_musing(MusingI const * musing)
 {
   I(imp);
   if (!imp->already_dumping)
@@ -399,7 +399,7 @@ sanity::push_musing(MusingI const *musing)
 }
 
 void
-sanity::pop_musing(MusingI const *musing)
+sanity::pop_musing(MusingI const * musing)
 {
   I(imp);
   if (!imp->already_dumping)
@@ -426,7 +426,7 @@ sanity::gasp()
   out << (F("Current work set: %i items") % imp->musings.size())
       << '\n'; // final newline is kept out of the translation
   for (vector<MusingI const *>::const_iterator
-         i = imp->musings.begin(); i != imp->musings.end(); ++i)
+       i = imp->musings.begin(); i != imp->musings.end(); ++i)
     {
       string tmp;
       try
@@ -457,13 +457,13 @@ sanity::gasp()
   imp->already_dumping = false;
 }
 
-void sanity::set_out_of_band_handler(void (*out_of_band_function)(char, std::string const&, void *), void *opaque_data)
+void sanity::set_out_of_band_handler(void (*out_of_band_function)(char, std::string const &, void *), void * opaque_data)
 {
-  imp->out_of_band_function= out_of_band_function;
-  imp->out_of_band_opaque= opaque_data;
+  imp->out_of_band_function = out_of_band_function;
+  imp->out_of_band_opaque = opaque_data;
 }
 
-bool sanity::maybe_write_to_out_of_band_handler(char channel, std::string const& str)
+bool sanity::maybe_write_to_out_of_band_handler(char channel, std::string const & str)
 {
   if (imp->out_of_band_function)
     {
@@ -536,7 +536,7 @@ void MusingBase::gasp_head(string & out) const
 {
   out = (boost::format("----- begin '%s' (in %s, at %s:%d)\n")
          % name % func % file % line
-         ).str();
+        ).str();
 }
 
 void MusingBase::gasp_body(const string & objstr, string & out) const
@@ -546,7 +546,7 @@ void MusingBase::gasp_body(const string & objstr, string & out) const
           % objstr
           % (*(objstr.end() - 1) == '\n' ? "" : "\n")
           % name % func % file % line
-          ).str();
+         ).str();
 }
 
 const locale &
@@ -571,7 +571,7 @@ get_user_locale()
 }
 
 struct
-format_base::impl
+  format_base::impl
 {
   format fmt;
   ostringstream oss;
@@ -611,7 +611,7 @@ format_base::format_base(format_base const & other)
 
 format_base::~format_base()
 {
-        delete pimpl;
+  delete pimpl;
 }
 
 format_base &
@@ -642,12 +642,12 @@ format_base::operator=(format_base const & other)
 
 format_base::format_base(char const * pattern, bool use_locale)
   : pimpl(use_locale ? new impl(pattern, get_user_locale())
-                     : new impl(pattern))
+          : new impl(pattern))
 {}
 
 format_base::format_base(std::string const & pattern, bool use_locale)
   : pimpl(use_locale ? new impl(pattern, get_user_locale())
-                     : new impl(pattern))
+          : new impl(pattern))
 {}
 
 ostream &

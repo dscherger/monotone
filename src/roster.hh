@@ -178,9 +178,9 @@ struct marking
   bool operator==(marking const & other) const
   {
     return birth_revision == other.birth_revision
-      && parent_name == other.parent_name
-      && file_content == other.file_content
-      && attrs == other.attrs;
+           && parent_name == other.parent_name
+           && file_content == other.file_content
+           && attrs == other.attrs;
   }
 };
 
@@ -293,11 +293,11 @@ public:
 
   friend bool equal_shapes(roster_t const & a, roster_t const & b);
 
-  void check_sane(bool temp_nodes_ok=false) const;
+  void check_sane(bool temp_nodes_ok = false) const;
 
   // verify that this roster is sane, and corresponds to the given
   // marking map
-  void check_sane_against(marking_map const & marks, bool temp_nodes_ok=false) const;
+  void check_sane_against(marking_map const & marks, bool temp_nodes_ok = false) const;
 
   void print_to(data & dat,
                 marking_map const & mm,

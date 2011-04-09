@@ -36,7 +36,7 @@ struct options;
 class project_t;
 struct key_identity_info;
 
-extern app_state* get_app_state(lua_State *LS);
+extern app_state * get_app_state(lua_State * LS);
 
 class lua_hooks
 {
@@ -69,9 +69,9 @@ public:
                          external & result);
   bool hook_persist_phrase_ok();
   bool hook_get_revision_cert_trust(std::set<key_identity_info> const & signers,
-                                   id const & hash,
-                                   cert_name const & name,
-                                   cert_value const & val);
+                                    id const & hash,
+                                    cert_name const & name,
+                                    cert_value const & val);
   bool hook_get_manifest_cert_trust(std::set<key_name> const & signers,
                                     id const & hash,
                                     cert_name const & name,
@@ -187,15 +187,15 @@ public:
                                globish exclude_pattern);
   bool hook_note_netsync_revision_received(revision_id const & new_id,
                                            revision_data const & rdat,
-                                           std::set<pair<key_identity_info,
-                                           pair<cert_name,
-                                           cert_value> > > const & certs,
+                                           std::set < pair < key_identity_info,
+                                           pair < cert_name,
+                                           cert_value > > > const & certs,
                                            size_t session_id);
   bool hook_note_netsync_revision_sent(revision_id const & new_id,
                                        revision_data const & rdat,
-                                       std::set<pair<key_identity_info,
-                                       pair<cert_name,
-                                       cert_value> > > const & certs,
+                                       std::set < pair < key_identity_info,
+                                       pair < cert_name,
+                                       cert_value > > > const & certs,
                                        size_t session_id);
   bool hook_note_netsync_pubkey_received(key_identity_info const & identity,
                                          size_t session_id);

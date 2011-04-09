@@ -27,10 +27,10 @@ std::string boost::lexical_cast<std::string, unsigned int>(unsigned int const & 
   while (i && pos <= maxlen)
     {
       --pos;
-      buf[pos] = ('0' + (i%10));
+      buf[pos] = ('0' + (i % 10));
       i /= 10;
     }
-  return std::string(buf+pos);
+  return std::string(buf + pos);
 }
 
 template<>
@@ -40,7 +40,7 @@ unsigned int boost::lexical_cast<unsigned int, std::string>(std::string const & 
   std::string::const_iterator i;
   for (i = s.begin(); i != s.end() && (unsigned int)(*i - '0') < 10; ++i)
     {
-      out = out*10 + (*i - '0');
+      out = out * 10 + (*i - '0');
     }
   if (i != s.end())
     throw boost::bad_lexical_cast();

@@ -49,7 +49,8 @@ using std::set;
 using std::string;
 using std::vector;
 
-struct checked_cert {
+struct checked_cert
+{
   cert rcert;
   bool found_key;
   bool good_sig;
@@ -57,7 +58,8 @@ struct checked_cert {
   checked_cert(cert const & c): rcert(c), found_key(false), good_sig(false) {}
 };
 
-struct checked_key {
+struct checked_key
+{
   bool found;       // found public keypair id in db
   size_t sigs;                // number of signatures by this key
 
@@ -66,7 +68,8 @@ struct checked_key {
   checked_key(): found(false), sigs(0) {}
 };
 
-struct checked_file {
+struct checked_file
+{
   bool found;           // found in db, retrieved and verified sha1 hash
   bool size_ok;         // recorded file size is correct
   size_t roster_refs; // number of roster references to this file
@@ -74,7 +77,8 @@ struct checked_file {
   checked_file(): found(false), size_ok(false), roster_refs(0) {}
 };
 
-struct checked_roster {
+struct checked_roster
+{
   bool found;           // found in db, retrieved and verified sha1 hash
   size_t revision_refs; // number of revision references to this roster
   size_t missing_files; // number of missing files referenced by this roster
@@ -96,7 +100,8 @@ struct checked_roster {
 // of times it is listed as a child in the ancestry cache
 // (ancestry_child_refs)
 
-struct checked_revision {
+struct checked_revision
+{
   bool found;                  // found in db, retrieved and verified sha1 hash
   size_t revision_refs;        // number of references to this revision from other revisions
   size_t ancestry_parent_refs; // number of references to this revision by ancestry parent
@@ -128,14 +133,16 @@ struct checked_revision {
     cert_refs(0), parseable(false), normalized(false) {}
 };
 
-struct checked_height {
+struct checked_height
+{
   bool found;                  // found in db
   bool unique;                 // not identical to any height retrieved earlier
   bool sensible;               // greater than all parent heights
   checked_height(): found(false), unique(false), sensible(true) {}
 };
 
-struct checked_branch {
+struct checked_branch
+{
   bool used;
   bool heads_ok;
   bool cached;
@@ -149,9 +156,9 @@ struct checked_branch {
 static void
 check_db_integrity_check(database & db)
 {
-    L(FL("asking sqlite to check db integrity"));
-    E(db.check_integrity(), origin::database,
-      F("file structure is corrupted; cannot check further"));
+  L(FL("asking sqlite to check db integrity"));
+  E(db.check_integrity(), origin::database,
+    F("file structure is corrupted; cannot check further"));
 }
 
 static void
@@ -162,7 +169,7 @@ check_files(database & db, map<file_id, checked_file> & checked_files)
   db.get_file_ids(files);
   L(FL("checking %d files") % files.size());
 
-  ticker ticks(_("files"), "f", files.size()/70+1);
+  ticker ticks(_("files"), "f", files.size() / 70 + 1);
 
   for (set<file_id>::const_iterator i = files.begin();
        i != files.end(); ++i)
@@ -205,7 +212,7 @@ check_rosters_manifest(database & db,
   db.get_roster_ids(rosters);
   L(FL("checking %d rosters, manifest pass") % rosters.size());
 
-  ticker ticks(_("rosters"), "r", rosters.size()/70+1);
+  ticker ticks(_("rosters"), "r", rosters.size() / 70 + 1);
 
   for (set<revision_id>::const_iterator i = rosters.begin();
        i != rosters.end(); ++i)
@@ -259,12 +266,12 @@ check_rosters_manifest(database & db,
 // This function assumes that check_revisions has been called!
 static void
 check_rosters_marking(database & db,
-              map<revision_id, checked_roster> & checked_rosters,
-              map<revision_id, checked_revision> & checked_revisions)
+                      map<revision_id, checked_roster> & checked_rosters,
+                      map<revision_id, checked_revision> & checked_revisions)
 {
   L(FL("checking %d rosters, marking pass") % checked_rosters.size());
 
-  ticker ticks(_("markings"), "m", checked_rosters.size()/70+1);
+  ticker ticks(_("markings"), "m", checked_rosters.size() / 70 + 1);
 
   for (map<revision_id, checked_roster>::const_iterator i
        = checked_rosters.begin(); i != checked_rosters.end(); i++)
@@ -272,7 +279,7 @@ check_rosters_marking(database & db,
       revision_id ros_id = i->first;
       L(FL("checking roster %s") % i->first);
       if (!i->second.found)
-          continue;
+        continue;
 
       // skip marking check on unreferenced rosters -- they're left by
       // kill_rev_locally, and not expected to have everything they
@@ -311,7 +318,7 @@ check_rosters_marking(database & db,
                 checked_rosters[ros_id].missing_mark_revs++;
             }
 
-          for (map<attr_key,set<revision_id> >::const_iterator attr =
+          for (map<attr_key, set<revision_id> >::const_iterator attr =
                  mark->attrs.begin(); attr != mark->attrs.end(); attr++)
             for (set<revision_id>::const_iterator r = attr->second.begin();
                  r != attr->second.end(); r++)
@@ -337,7 +344,7 @@ check_revisions(database & db,
   db.get_revision_ids(revisions);
   L(FL("checking %d revisions") % revisions.size());
 
-  ticker ticks(_("revisions"), "r", revisions.size()/70+1);
+  ticker ticks(_("revisions"), "r", revisions.size() / 70 + 1);
 
   for (set<revision_id>::const_iterator i = revisions.begin();
        i != revisions.end(); ++i)
@@ -367,7 +374,7 @@ check_revisions(database & db,
       write_revision(rev, norm_data);
       calculate_ident(norm_data, norm_ident);
       if (norm_ident == *i)
-          checked_revisions[*i].normalized = true;
+        checked_revisions[*i].normalized = true;
 
       // roster checks
       if (db.roster_version_exists(*i))
@@ -408,7 +415,7 @@ check_revisions(database & db,
   // now check for parent revision existence and problems
 
   for (map<revision_id, checked_revision>::iterator
-         revision = checked_revisions.begin();
+       revision = checked_revisions.begin();
        revision != checked_revisions.end(); ++revision)
     {
       for (set<revision_id>::const_iterator p = revision->second.parents.begin();
@@ -433,7 +440,7 @@ check_ancestry(database & db,
   db.get_forward_ancestry(graph);
   L(FL("checking %d ancestry edges") % graph.size());
 
-  ticker ticks(_("ancestry"), "a", graph.size()/70+1);
+  ticker ticks(_("ancestry"), "a", graph.size() / 70 + 1);
 
   // checked revision has set of parents
   // graph has revision and associated parents
@@ -491,7 +498,7 @@ check_certs(database & db,
 
   L(FL("checking %d revision certs") % certs.size());
 
-  ticker ticks(_("certs"), "c", certs.size()/70+1);
+  ticker ticks(_("certs"), "c", certs.size() / 70 + 1);
 
   for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); ++i)
@@ -504,7 +511,7 @@ check_certs(database & db,
           string signed_text;
           i->signable_text(signed_text);
           checked.good_sig
-            = (db.check_signature(i->key, signed_text, i->sig) == cert_ok);
+          = (db.check_signature(i->key, signed_text, i->sig) == cert_ok);
         }
 
       checked_keys[i->key].sigs++;
@@ -534,7 +541,7 @@ check_heights(database & db,
 
   set<rev_height> seen;
 
-  ticker ticks(_("heights"), "h", heights.size()/70+1);
+  ticker ticks(_("heights"), "h", heights.size() / 70 + 1);
 
   for (set<revision_id>::const_iterator i = heights.begin();
        i != heights.end(); ++i)
@@ -578,7 +585,7 @@ check_heights_relation(database & db,
 
   L(FL("checking heights for %d edges") % graph.size());
 
-  ticker ticks(_("height relations"), "h", graph.size()/70+1);
+  ticker ticks(_("height relations"), "h", graph.size() / 70 + 1);
 
   typedef multimap<revision_id, revision_id>::const_iterator gi;
   for (gi i = graph.begin(); i != graph.end(); ++i)
@@ -695,7 +702,7 @@ report_files(map<file_id, checked_file> const & checked_files,
              size_t & missing_or_invalid_file_sizes)
 {
   for (map<file_id, checked_file>::const_iterator
-         i = checked_files.begin(); i != checked_files.end(); ++i)
+       i = checked_files.begin(); i != checked_files.end(); ++i)
     {
       checked_file file = i->second;
 
@@ -722,11 +729,11 @@ report_files(map<file_id, checked_file> const & checked_files,
 
 static void
 report_rosters(map<revision_id, checked_roster> const & checked_rosters,
-                 size_t & unreferenced_rosters,
-                 size_t & incomplete_rosters)
+               size_t & unreferenced_rosters,
+               size_t & incomplete_rosters)
 {
   for (map<revision_id, checked_roster>::const_iterator
-         i = checked_rosters.begin(); i != checked_rosters.end(); ++i)
+       i = checked_rosters.begin(); i != checked_rosters.end(); ++i)
     {
       checked_roster roster = i->second;
 
@@ -765,7 +772,7 @@ report_revisions(map<revision_id, checked_revision> const & checked_revisions,
                  size_t & non_normalized_revisions)
 {
   for (map<revision_id, checked_revision>::const_iterator
-         i = checked_revisions.begin(); i != checked_revisions.end(); ++i)
+       i = checked_revisions.begin(); i != checked_revisions.end(); ++i)
     {
       checked_revision revision = i->second;
 
@@ -867,7 +874,7 @@ report_keys(map<key_id, checked_key> const & checked_keys,
             size_t & missing_keys)
 {
   for (map<key_id, checked_key>::const_iterator
-         i = checked_keys.begin(); i != checked_keys.end(); ++i)
+       i = checked_keys.begin(); i != checked_keys.end(); ++i)
     {
       checked_key key = i->second;
 
@@ -902,7 +909,7 @@ report_certs(map<revision_id, checked_revision> const & checked_revisions,
   cnames.insert(cert_name(date_cert_name));
 
   for (map<revision_id, checked_revision>::const_iterator
-         i = checked_revisions.begin(); i != checked_revisions.end(); ++i)
+       i = checked_revisions.begin(); i != checked_revisions.end(); ++i)
     {
       checked_revision revision = i->second;
       map<cert_name, size_t> cert_counts;
@@ -963,7 +970,7 @@ report_heights(map<revision_id, checked_height> const & checked_heights,
                size_t & incorrect_heights)
 {
   for (map<revision_id, checked_height>::const_iterator
-         i = checked_heights.begin(); i != checked_heights.end(); ++i)
+       i = checked_heights.begin(); i != checked_heights.end(); ++i)
     {
       checked_height height = i->second;
 
@@ -1168,32 +1175,32 @@ check_db(database & db)
     W(F("%d branches missing from branch cache") % missing_branches);
 
   size_t total = missing_files + unreferenced_files +
-    missing_or_invalid_file_sizes +
-    unreferenced_rosters + incomplete_rosters +
-    missing_revisions + incomplete_revisions +
-    non_parseable_revisions + non_normalized_revisions +
-    mismatched_parents + mismatched_children +
-    bad_history +
-    missing_rosters +
-    missing_certs + mismatched_certs +
-    unchecked_sigs + bad_sigs +
-    missing_keys +
-    missing_heights + duplicate_heights + incorrect_heights +
-    extra_branches + bad_branches + missing_branches;
+                 missing_or_invalid_file_sizes +
+                 unreferenced_rosters + incomplete_rosters +
+                 missing_revisions + incomplete_revisions +
+                 non_parseable_revisions + non_normalized_revisions +
+                 mismatched_parents + mismatched_children +
+                 bad_history +
+                 missing_rosters +
+                 missing_certs + mismatched_certs +
+                 unchecked_sigs + bad_sigs +
+                 missing_keys +
+                 missing_heights + duplicate_heights + incorrect_heights +
+                 extra_branches + bad_branches + missing_branches;
 
   // unreferenced files and rosters and mismatched certs are not actually
   // serious errors; odd, but nothing will break.
   size_t serious = missing_files + missing_or_invalid_file_sizes +
-    incomplete_rosters + missing_rosters +
-    missing_revisions + incomplete_revisions +
-    non_parseable_revisions + non_normalized_revisions +
-    mismatched_parents + mismatched_children + manifest_mismatch +
-    bad_history +
-    missing_certs +
-    unchecked_sigs + bad_sigs +
-    missing_keys +
-    missing_heights + duplicate_heights + incorrect_heights+
-    extra_branches + bad_branches + missing_branches;
+                   incomplete_rosters + missing_rosters +
+                   missing_revisions + incomplete_revisions +
+                   non_parseable_revisions + non_normalized_revisions +
+                   mismatched_parents + mismatched_children + manifest_mismatch +
+                   bad_history +
+                   missing_certs +
+                   unchecked_sigs + bad_sigs +
+                   missing_keys +
+                   missing_heights + duplicate_heights + incorrect_heights +
+                   extra_branches + bad_branches + missing_branches;
 
   P(F("check complete: %d files; %d rosters; %d revisions; %d keys; %d certs; %d heights; %d branches")
     % checked_files.size()

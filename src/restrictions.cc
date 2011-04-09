@@ -29,10 +29,10 @@ using std::vector;
 // include these nodes.
 
 typedef map<node_id, restricted_path::status>::const_iterator
-        node_status_iterator;
+node_status_iterator;
 
 typedef map<file_path, restricted_path::status>::const_iterator
-        path_status_iterator;
+path_status_iterator;
 
 typedef set<file_path>::const_iterator path_iterator;
 

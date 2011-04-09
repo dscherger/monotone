@@ -87,7 +87,7 @@ namespace resolve_conflicts
   new_file_path(string path)
   {
     return shared_ptr<any_path>
-      (new file_path(file_path_external(utf8(path, origin::user))));
+           (new file_path(file_path_external(utf8(path, origin::user))));
   };
 }
 
@@ -881,11 +881,11 @@ roster_merge_result::report_orphaned_node_conflicts(roster_t const & left_roster
       basic_io::stanza st;
 
       if (type == file_type)
-          if (basic_io)
-            st.push_str_pair(syms::conflict, syms::orphaned_file);
-          else
-            P(F("conflict: orphaned file '%s' from revision %s")
-              % lca_name % lca_rid);
+        if (basic_io)
+          st.push_str_pair(syms::conflict, syms::orphaned_file);
+        else
+          P(F("conflict: orphaned file '%s' from revision %s")
+            % lca_name % lca_rid);
       else
         {
           if (basic_io)
@@ -915,13 +915,12 @@ roster_merge_result::report_orphaned_node_conflicts(roster_t const & left_roster
             {
               if (basic_io)
                 put_rename_conflict_left (st, adaptor, conflict.nid);
+              else if (type == file_type)
+                P(F("file '%s' was renamed from '%s' on the left")
+                  % orphan_name % lca_name);
               else
-                if (type == file_type)
-                  P(F("file '%s' was renamed from '%s' on the left")
-                    % orphan_name % lca_name);
-                else
-                  P(F("directory '%s' was renamed from '%s' on the left")
-                    % orphan_name % lca_name);
+                P(F("directory '%s' was renamed from '%s' on the left")
+                  % orphan_name % lca_name);
             }
           else
             {
@@ -958,25 +957,23 @@ roster_merge_result::report_orphaned_node_conflicts(roster_t const & left_roster
             {
               if (basic_io)
                 put_rename_conflict_right (st, adaptor, conflict.nid);
+              else if (type == file_type)
+                P(F("file '%s' was renamed from '%s' on the right")
+                  % orphan_name % lca_name);
               else
-                if (type == file_type)
-                  P(F("file '%s' was renamed from '%s' on the right")
-                    % orphan_name % lca_name);
-                else
-                  P(F("directory '%s' was renamed from '%s' on the right")
-                    % orphan_name % lca_name);
+                P(F("directory '%s' was renamed from '%s' on the right")
+                  % orphan_name % lca_name);
             }
           else
             {
               if (basic_io)
                 put_added_conflict_right (st, adaptor, conflict.nid);
+              else if (type == file_type)
+                P(F("file '%s' was added on the right")
+                  % orphan_name);
               else
-                if (type == file_type)
-                  P(F("file '%s' was added on the right")
-                    % orphan_name);
-                else
-                  P(F("directory '%s' was added on the right")
-                    % orphan_name);
+                P(F("directory '%s' was added on the right")
+                  % orphan_name);
             }
         }
       else
@@ -1138,7 +1135,7 @@ roster_merge_result::report_duplicate_name_conflicts(roster_t const & left_roste
               else
                 P(F("added as a new directory on the right"));
             }
-         }
+        }
       else if (!left_lca_roster->has_node(right_nid) &&
                right_lca_roster->has_node(left_nid))
         {
@@ -1147,11 +1144,10 @@ roster_merge_result::report_duplicate_name_conflicts(roster_t const & left_roste
 
           if (basic_io)
             put_rename_conflict_left (st, adaptor, left_nid);
+          else if (left_type == file_type)
+            P(F("renamed from file '%s' on the left") % left_lca_name);
           else
-            if (left_type == file_type)
-              P(F("renamed from file '%s' on the left") % left_lca_name);
-            else
-              P(F("renamed from directory '%s' on the left") % left_lca_name);
+            P(F("renamed from directory '%s' on the left") % left_lca_name);
 
           if (basic_io)
             put_added_conflict_right (st, adaptor, right_nid);
@@ -1660,9 +1656,9 @@ read_orphaned_node_conflict(basic_io::parser & pars,
 
 static void
 read_orphaned_node_conflicts(basic_io::parser & pars,
-                            std::vector<orphaned_node_conflict> & conflicts,
-                            roster_t const & left_roster,
-                            roster_t const & right_roster)
+                             std::vector<orphaned_node_conflict> & conflicts,
+                             roster_t const & left_roster,
+                             roster_t const & right_roster)
 {
   while (pars.tok.in.lookahead != EOF && (pars.symp(syms::orphaned_directory) || pars.symp(syms::orphaned_file)))
     {
@@ -1867,7 +1863,7 @@ validate_duplicate_name_conflicts(basic_io::parser & pars,
         {
           std::vector<duplicate_name_conflict>::iterator tmp = i;
           E(++tmp == conflicts.end(), origin::user,
-             F(conflicts_mismatch_msg));
+            F(conflicts_mismatch_msg));
         }
     }
 } // validate_duplicate_name_conflicts
@@ -2298,9 +2294,9 @@ attach_node (lua_hooks & lua,
 
 void
 roster_merge_result::resolve_orphaned_node_conflicts(lua_hooks & lua,
-                                                      roster_t const & left_roster,
-                                                      roster_t const & right_roster,
-                                                      content_merge_adaptor & adaptor)
+                                                     roster_t const & left_roster,
+                                                     roster_t const & right_roster,
+                                                     content_merge_adaptor & adaptor)
 {
   MM(left_roster);
   MM(right_roster);
@@ -2344,7 +2340,7 @@ roster_merge_result::resolve_orphaned_node_conflicts(lua_hooks & lua,
         case resolve_conflicts::rename:
           P(F("renaming '%s' to '%s'") % name % *conflict.resolution.second);
           attach_node
-            (lua, roster, conflict.nid, file_path_internal (conflict.resolution.second->as_internal()));
+          (lua, roster, conflict.nid, file_path_internal (conflict.resolution.second->as_internal()));
           break;
 
         case resolve_conflicts::none:
@@ -2374,32 +2370,32 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
   switch (resolution.first)
     {
     case resolve_conflicts::content_user:
-      {
-        E(other_resolution.first == resolve_conflicts::drop ||
-          other_resolution.first == resolve_conflicts::rename,
-          origin::user,
-          F("inconsistent left/right resolutions for '%s'") % name);
+    {
+      E(other_resolution.first == resolve_conflicts::drop ||
+        other_resolution.first == resolve_conflicts::rename,
+        origin::user,
+        F("inconsistent left/right resolutions for '%s'") % name);
 
-        P(F("replacing content of '%s' with '%s'") % name % resolution.second->as_external());
+      P(F("replacing content of '%s' with '%s'") % name % resolution.second->as_external());
 
-        file_id result_fid;
-        file_data parent_data, result_data;
-        data result_raw_data;
-        adaptor.get_version(fid, parent_data);
+      file_id result_fid;
+      file_data parent_data, result_data;
+      data result_raw_data;
+      adaptor.get_version(fid, parent_data);
 
-        read_data(*resolution.second, result_raw_data);
+      read_data(*resolution.second, result_raw_data);
 
-        result_data = file_data(result_raw_data);
-        calculate_ident(result_data, result_fid);
+      result_data = file_data(result_raw_data);
+      calculate_ident(result_data, result_fid);
 
-        file_t result_node = downcast_to_file_t(result_roster.get_node_for_update(nid));
-        result_node->content = result_fid;
+      file_t result_node = downcast_to_file_t(result_roster.get_node_for_update(nid));
+      result_node->content = result_fid;
 
-        adaptor.record_file(fid, result_fid, parent_data, result_data);
+      adaptor.record_file(fid, result_fid, parent_data, result_data);
 
-        attach_node(lua, result_roster, nid, name);
-      }
-      break;
+      attach_node(lua, result_roster, nid, name);
+    }
+    break;
 
     case resolve_conflicts::drop:
       P(F("dropping '%s'") % name);
@@ -2425,7 +2421,7 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
     case resolve_conflicts::rename:
       P(F("renaming '%s' to '%s'") % name % *resolution.second);
       attach_node
-        (lua, result_roster, nid, file_path_internal (resolution.second->as_internal()));
+      (lua, result_roster, nid, file_path_internal (resolution.second->as_internal()));
       break;
 
     case resolve_conflicts::none:
@@ -2465,7 +2461,7 @@ roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
       MM(conflict);
 
       node_id left_nid = conflict.left_nid;
-      node_id right_nid= conflict.right_nid;
+      node_id right_nid = conflict.right_nid;
 
       file_path left_name, right_name;
       file_id left_fid, right_fid;
@@ -2489,10 +2485,10 @@ roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
         }
 
       resolve_duplicate_name_one_side
-        (lua, conflict.left_resolution, conflict.right_resolution, left_name, left_fid, left_nid, adaptor, roster);
+      (lua, conflict.left_resolution, conflict.right_resolution, left_name, left_fid, left_nid, adaptor, roster);
 
       resolve_duplicate_name_one_side
-        (lua, conflict.right_resolution, conflict.left_resolution, right_name, right_fid, right_nid, adaptor, roster);
+      (lua, conflict.right_resolution, conflict.left_resolution, right_name, right_fid, right_nid, adaptor, roster);
     } // end for
 
   duplicate_name_conflicts.clear();
@@ -2527,47 +2523,47 @@ roster_merge_result::resolve_file_content_conflicts(lua_hooks & lua,
 
       switch (conflict.resolution.first)
         {
-          case resolve_conflicts::content_internal:
-          case resolve_conflicts::none:
-            {
-              file_id merged_id;
+        case resolve_conflicts::content_internal:
+        case resolve_conflicts::none:
+        {
+          file_id merged_id;
 
-              E(resolve_conflicts::do_auto_merge(lua, conflict, adaptor, left_roster,
-                                                 right_roster, this->roster, merged_id),
-                origin::user,
-                F("merge of '%s', '%s' failed") % left_name % right_name);
+          E(resolve_conflicts::do_auto_merge(lua, conflict, adaptor, left_roster,
+                                             right_roster, this->roster, merged_id),
+            origin::user,
+            F("merge of '%s', '%s' failed") % left_name % right_name);
 
-              P(F("merged '%s', '%s'") % left_name % right_name);
+          P(F("merged '%s', '%s'") % left_name % right_name);
 
-              file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.nid));
-              result_node->content = merged_id;
-            }
-            break;
+          file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.nid));
+          result_node->content = merged_id;
+        }
+        break;
 
-          case resolve_conflicts::content_user:
-            {
-              P(F("replacing content of '%s', '%s' with '%s'") %
-                left_name % right_name % conflict.resolution.second->as_external());
+        case resolve_conflicts::content_user:
+        {
+          P(F("replacing content of '%s', '%s' with '%s'") %
+            left_name % right_name % conflict.resolution.second->as_external());
 
-              file_id result_id;
-              file_data left_data, right_data, result_data;
-              data result_raw_data;
-              adaptor.get_version(conflict.left, left_data);
-              adaptor.get_version(conflict.right, right_data);
+          file_id result_id;
+          file_data left_data, right_data, result_data;
+          data result_raw_data;
+          adaptor.get_version(conflict.left, left_data);
+          adaptor.get_version(conflict.right, right_data);
 
-              read_data(*conflict.resolution.second, result_raw_data);
+          read_data(*conflict.resolution.second, result_raw_data);
 
-              result_data = file_data(result_raw_data);
-              calculate_ident(result_data, result_id);
+          result_data = file_data(result_raw_data);
+          calculate_ident(result_data, result_id);
 
-              file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.nid));
-              result_node->content = result_id;
+          file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.nid));
+          result_node->content = result_id;
 
-              adaptor.record_merge(conflict.left, conflict.right, result_id,
-                                   left_data, right_data, result_data);
+          adaptor.record_merge(conflict.left, conflict.right, result_id,
+                               left_data, right_data, result_data);
 
-            }
-            break;
+        }
+        break;
 
         default:
           I(false);

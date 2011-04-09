@@ -28,33 +28,33 @@ namespace basic_io
 {
 
   namespace
+  {
+    namespace syms
     {
-      namespace syms
-        {
-          // general format symbol
-          symbol const format_version("format_version");
+      // general format symbol
+      symbol const format_version("format_version");
 
-          // common symbols
-          symbol const dir("dir");
-          symbol const file("file");
-          symbol const content("content");
-          symbol const size("size");
-          symbol const attr("attr");
+      // common symbols
+      symbol const dir("dir");
+      symbol const file("file");
+      symbol const content("content");
+      symbol const size("size");
+      symbol const attr("attr");
 
-          symbol const content_mark("content_mark");
-        }
+      symbol const content_mark("content_mark");
     }
+  }
 
   typedef enum
-    {
-      TOK_SYMBOL,
-      TOK_STRING,
-      TOK_HEX,
-      TOK_NONE
-    } token_type;
+  {
+    TOK_SYMBOL,
+    TOK_STRING,
+    TOK_HEX,
+    TOK_NONE
+  } token_type;
 
   struct
-  input_source : public origin_aware
+    input_source : public origin_aware
   {
     size_t line, col;
     std::string const & in;
@@ -76,7 +76,7 @@ namespace basic_io
       if (LIKELY(curr != in.end()))
         // we do want to distinguish between EOF and '\xff',
         // so we translate '\xff' to 255u
-        lookahead = widen<unsigned int,char>(*curr);
+        lookahead = widen<unsigned int, char>(*curr);
       else
         lookahead = EOF;
     }
@@ -100,7 +100,7 @@ namespace basic_io
   };
 
   struct
-  tokenizer
+    tokenizer
   {
     input_source & in;
     std::string::const_iterator begin;
@@ -239,13 +239,13 @@ namespace basic_io
       else
         return basic_io::TOK_NONE;
     }
-   void err(std::string const & s);
+    void err(std::string const & s);
   };
 
   std::string escape(std::string const & s);
 
   struct
-  stanza
+    stanza
   {
     stanza();
     size_t indent;
@@ -254,7 +254,7 @@ namespace basic_io
     void push_hex_pair(symbol const & k, hexenc<id> const & v);
     void push_binary_pair(symbol const & k, id const & v);
     void push_binary_triple(symbol const & k, std::string const & n,
-                         id const & v);
+                            id const & v);
     void push_str_pair(symbol const & k, std::string const & v);
     void push_str_pair(symbol const & k, symbol const & v);
     void push_str_triple(symbol const & k, std::string const & n,
@@ -272,7 +272,7 @@ namespace basic_io
   // may be referenced (globally). An invariant will be triggered
   // if more than one basic_io::printer is instantiated.
   struct
-  printer
+    printer
   {
     static std::string buf;
     static int count;
@@ -282,7 +282,7 @@ namespace basic_io
   };
 
   struct
-  parser
+    parser
   {
     tokenizer & tok;
     parser(tokenizer & t) : tok(t)

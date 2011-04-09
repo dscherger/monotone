@@ -12,7 +12,7 @@
 
 #include <cstddef>
 #include <climits>              // Some architectures need this for CHAR_BIT
-                                // The lack of this was reported as bug #19984
+// The lack of this was reported as bug #19984
 #include <limits>
 #include <boost/static_assert.hpp>
 
@@ -58,16 +58,16 @@ widen(V const & v)
 // one of the users (the unit tests for dates.cc) to check it at runtime.
 
 #if defined LONG_MAX && LONG_MAX > UINT_MAX
-  #define PROBABLE_S64_MAX LONG_MAX
-  #define s64_C(x) x##L
+#define PROBABLE_S64_MAX LONG_MAX
+#define s64_C(x) x##L
 #elif defined LLONG_MAX && LLONG_MAX > UINT_MAX
-  #define PROBABLE_S64_MAX LLONG_MAX
-  #define s64_C(x) x##LL
+#define PROBABLE_S64_MAX LLONG_MAX
+#define s64_C(x) x##LL
 #elif defined LONG_LONG_MAX && LONG_LONG_MAX > UINT_MAX
-  #define PROBABLE_S64_MAX LONG_LONG_MAX
-  #define s64_C(x) x##LL
+#define PROBABLE_S64_MAX LONG_LONG_MAX
+#define s64_C(x) x##LL
 #else
-  #error "How do I write a constant of type s64?"
+#error "How do I write a constant of type s64?"
 #endif
 
 #endif

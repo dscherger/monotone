@@ -58,7 +58,7 @@ typedef pair<string::size_type, string::size_type> extent;
 typedef hashmap::hash_map<u32, extent> match_table;
 
 struct
-insn
+  insn
 {
   insn(char c) : code(insert), pos(0), len(0), payload("")  { payload += c; }
   insn(string s) : code(insert), pos(0), len(s.size()), payload(s)  {}
@@ -115,7 +115,7 @@ find_match(match_table const & matches,
 
   // maybe we haven't seen it at all?
   if (e == matches.end())
-      return false;
+    return false;
 
   string::size_type tpos = e->second.first;
   string::size_type tlen = e->second.second;
@@ -265,7 +265,7 @@ compute_delta_insns(string const & a,
           // it does a multiply, but for now, ignore this; it turns out that
           // advancements in the range of [2..blocksz-1] are actually really
           // rare.
-          if (badvance >= blocksz/2)
+          if (badvance >= blocksz / 2)
             {
               u32 new_lo = save_lo + badvance;
               u32 new_hi = new_lo + blocksz;
@@ -274,7 +274,7 @@ compute_delta_insns(string const & a,
                   new_hi = b.size();
                 }
               I(new_lo <= new_hi);
-              rolling.replace_with(reinterpret_cast<u8 const *>(b.data() + new_lo), new_hi-new_lo);
+              rolling.replace_with(reinterpret_cast<u8 const *>(b.data() + new_lo), new_hi - new_lo);
               lo = new_lo;
             }
         }
@@ -348,7 +348,7 @@ compute_delta(string const & a,
 }
 
 struct
-simple_applicator
+  simple_applicator
   : public delta_applicator
 {
   string src;
@@ -361,7 +361,7 @@ simple_applicator
   }
   virtual void next()
   {
-    swap(src,dst);
+    swap(src, dst);
     dst.clear();
   }
   virtual void finish(string & out)
@@ -380,7 +380,7 @@ simple_applicator
 };
 
 inline string::size_type
-read_num(string::const_iterator &i,
+read_num(string::const_iterator & i,
          string::const_iterator e)
 {
   string::size_type n = 0;
@@ -416,7 +416,7 @@ apply_delta(shared_ptr<delta_applicator> da,
           I((i - delta.begin()) + len <= delta.size());
           if (len > 0)
             {
-              string tmp(i, i+len);
+              string tmp(i, i + len);
               da->insert(tmp);
             }
           i += len;
@@ -511,7 +511,7 @@ struct chunk
 typedef vector<chunk> version_spec;
 
 struct
-piece_table
+  piece_table
 {
   vector<string> pieces;
 
@@ -555,7 +555,7 @@ apply_insert(piece_table & p, version_spec & out, string const & str)
 }
 
 struct
-chunk_less_than
+  chunk_less_than
 {
   bool operator()(chunk const & ch1, chunk const & ch2) const
   {
@@ -596,7 +596,7 @@ apply_copy(version_spec const & in, version_spec & out,
   if (!out.empty())
     dst_vpos = out.back().vpos + out.back().len;
   version_pos dst_final = dst_vpos + src_len;
-  chunk src_bounding_chunk(0,0,src_vpos,0);
+  chunk src_bounding_chunk(0, 0, src_vpos, 0);
   version_spec::const_iterator lo = lower_bound(in.begin(),
                                                 in.end(),
                                                 src_bounding_chunk,
@@ -646,7 +646,7 @@ apply_copy(version_spec const & in, version_spec & out,
 
 
 struct
-piecewise_applicator
+  piecewise_applicator
   : public delta_applicator
 {
   piece_table pt;
@@ -671,7 +671,7 @@ piecewise_applicator
 
   virtual void next()
   {
-    swap(src,dst);
+    swap(src, dst);
     dst->clear();
   }
 
@@ -725,12 +725,12 @@ struct copied_extent
   bool operator<(copied_extent const & other) const
   {
     return (old_pos < other.old_pos) ||
-      (old_pos == other.old_pos && len > other.len);
+           (old_pos == other.old_pos && len > other.len);
   }
 };
 
 struct
-inverse_delta_writing_applicator :
+  inverse_delta_writing_applicator :
   public delta_applicator
 {
   string const & old;

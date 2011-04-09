@@ -32,9 +32,11 @@ void check_sql_schema(sqlite3 * db, system_path const & filename);
 // value of the "catch all" item "regen_all"
 enum regen_cache_type { regen_none = 0, regen_rosters = 1,
                         regen_heights = 2, regen_branches = 4,
-                        regen_file_sizes = 8, regen_all = 15 };
+                        regen_file_sizes = 8, regen_all = 15
+                      };
 
-class migration_status {
+class migration_status
+{
   regen_cache_type _regen_type;
   std::string _flag_day_name;
 public:
@@ -68,7 +70,7 @@ void test_migration_step(sqlite3 * db, key_store & keys,
 // to change.  we call it a creator code because it has the same format and
 // function as file creator codes in old-sk00l Mac OS.
 
-const unsigned int mtn_creator_code = ((('_'*256 + 'M')*256 + 'T')*256 + 'N');
+const unsigned int mtn_creator_code = ((('_' * 256 + 'M') * 256 + 'T') * 256 + 'N');
 
 
 

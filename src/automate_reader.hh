@@ -20,7 +20,7 @@ class automate_reader
   enum location {opt, cmd, none, eof};
   location loc;
   bool get_string(std::string & out);
-  std::streamsize read(char *buf, size_t nbytes, bool eof_ok = false);
+  std::streamsize read(char * buf, size_t nbytes, bool eof_ok = false);
   void go_to_next_item();
 public:
   automate_reader(std::istream & is);

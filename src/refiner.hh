@@ -36,7 +36,7 @@
 //    items you've determined the existence of during refinement.
 
 struct
-refiner_callbacks
+  refiner_callbacks
 {
   virtual void queue_refine_cmd(refinement_type ty,
                                 merkle_node const & our_node) = 0;
@@ -46,7 +46,7 @@ refiner_callbacks
 };
 
 class
-refiner
+  refiner
 {
   netcmd_item_type type;
   protocol_voice voice;

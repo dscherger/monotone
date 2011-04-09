@@ -41,93 +41,93 @@
 */
 
 namespace Netxx
-  {
+{
   class PipeCompatibleProbe;
   class StreamServer;
 
   class PipeStream : public StreamBase
+  {
+#ifdef WIN32
+    HANDLE named_pipe;
+    HANDLE child;
+    char readbuf[1024];
+    DWORD bytes_available;
+    bool read_in_progress;
+    OVERLAPPED overlap;
+    friend class PipeCompatibleProbe;
+#else
+    int readfd, writefd;
+    int child;
+#endif
+
+
+  public:
+    // do we need Timeout for symmetry with Stream?
+    explicit PipeStream (int readfd, int writefd);
+    explicit PipeStream (const std::string & cmd, const std::vector<std::string> &args);
+    virtual ~PipeStream() { close(); }
+    virtual signed_size_type read (void * buffer, size_type length);
+    virtual signed_size_type write (const void * buffer, size_type length);
+    virtual void close (void);
+    virtual socket_type get_socketfd (void) const;
+    virtual const ProbeInfo * get_probe_info (void) const;
+    int get_readfd(void) const
     {
 #ifdef WIN32
-      HANDLE named_pipe;
-      HANDLE child;
-      char readbuf[1024];
-      DWORD bytes_available;
-      bool read_in_progress;
-      OVERLAPPED overlap;
-      friend class PipeCompatibleProbe;
+      return -1;
 #else
-      int readfd, writefd;
-      int child;
+      return readfd;
 #endif
-
-
-    public:
-      // do we need Timeout for symmetry with Stream?
-      explicit PipeStream (int readfd, int writefd);
-      explicit PipeStream (const std::string &cmd, const std::vector<std::string> &args);
-      virtual ~PipeStream() { close(); }
-      virtual signed_size_type read (void *buffer, size_type length);
-      virtual signed_size_type write (const void *buffer, size_type length);
-      virtual void close (void);
-      virtual socket_type get_socketfd (void) const;
-      virtual const ProbeInfo* get_probe_info (void) const;
-      int get_readfd(void) const
-        {
+    }
+    int get_writefd(void) const
+    {
 #ifdef WIN32
-          return -1;
+      return -1;
 #else
-          return readfd;
+      return writefd;
 #endif
-        }
-      int get_writefd(void) const
-        {
-#ifdef WIN32
-          return -1;
-#else
-          return writefd;
-#endif
-        }
-    };
+    }
+  };
 
 #ifdef WIN32
 
   // This probe can either handle _one_ PipeStream or several network
   // Streams so if !is_pipe this acts like a Probe.
   class PipeCompatibleProbe : public Probe
+  {
+    bool is_pipe;
+    // only meaningful if is_pipe is true
+    PipeStream * pipe;
+    ready_type ready_t;
+  public:
+    PipeCompatibleProbe() : is_pipe(), pipe(), ready_t()
+    {}
+    void clear()
     {
-      bool is_pipe;
-      // only meaningful if is_pipe is true
-      PipeStream *pipe;
-      ready_type ready_t;
-    public:
-      PipeCompatibleProbe() : is_pipe(), pipe(), ready_t()
-      {}
-      void clear()
-      {
-        if (is_pipe)
-          {
-            pipe=0;
-            is_pipe=false;
-          }
-        else
-          Probe::clear();
-      }
-      // This function does all the hard work (emulating a select).
-      result_type ready(const Timeout &timeout=Timeout(), ready_type rt=ready_none);
-      void add(PipeStream &ps, ready_type rt=ready_none);
-      void add(const StreamBase &sb, ready_type rt=ready_none);
-      void add(const StreamServer &ss, ready_type rt=ready_none);
-    };
+      if (is_pipe)
+        {
+          pipe = 0;
+          is_pipe = false;
+        }
+      else
+        Probe::clear();
+    }
+    // This function does all the hard work (emulating a select).
+    result_type ready(const Timeout & timeout = Timeout(), ready_type rt = ready_none);
+    void add(PipeStream & ps, ready_type rt = ready_none);
+    void add(const StreamBase & sb, ready_type rt = ready_none);
+    void add(const StreamServer & ss, ready_type rt = ready_none);
+  };
 #else
 
   // We only act specially if a PipeStream is added (directly or via
   // the StreamBase parent reference).
   struct PipeCompatibleProbe : Probe
-    {
-      void add(PipeStream &ps, ready_type rt=ready_none);
-      void add(const StreamBase &sb, ready_type rt=ready_none);
-      void add(const StreamServer &ss, ready_type rt=ready_none);
-    };
+  {
+    void add(PipeStream & ps, ready_type rt = ready_none);
+    void add(const StreamBase & sb, ready_type rt = ready_none);
+    void add(const StreamServer & ss, ready_type rt = ready_none);
+  };
 #endif
 
 }

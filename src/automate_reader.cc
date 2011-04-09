@@ -39,16 +39,16 @@ bool automate_reader::get_string(string & out)
     }
   while(c <= '9' && c >= '0')
     {
-      size = (size*10)+(c-'0');
+      size = (size * 10) + (c - '0');
       read(&c, 1);
     }
   E(c == ':', origin::user,
     F("bad input to automate stdio: expected ':' after string size"));
-  char *str = new char[size];
+  char * str = new char[size];
   size_t got = 0;
   while(got < size)
     {
-      int n = read(str+got, size-got);
+      int n = read(str + got, size - got);
       got += n;
     }
   out = string(str, size);
@@ -56,7 +56,7 @@ bool automate_reader::get_string(string & out)
   L(FL("Got string '%s'") % out);
   return true;
 }
-streamsize automate_reader::read(char *buf, size_t nbytes, bool eof_ok)
+streamsize automate_reader::read(char * buf, size_t nbytes, bool eof_ok)
 {
   streamsize rv;
 

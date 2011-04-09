@@ -25,7 +25,7 @@ using std::ostream_iterator;
 using std::transform;
 
 struct
-lowerize
+  lowerize
 {
   char operator()(unsigned char const & c) const
   {
@@ -42,7 +42,7 @@ lowercase(string const & in)
 }
 
 struct
-upperize
+  upperize
 {
   char operator()(unsigned char const & c) const
   {
@@ -101,16 +101,16 @@ void split_into_lines(string const & in,
           string::size_type next_begin;
 
           if (in.at(end) == '\r'
-              && in.size() > end+1
-              && in.at(end+1) == '\n')
+              && in.size() > end + 1
+              && in.at(end + 1) == '\n')
             next_begin = end + 2;
           else
             next_begin = end + 1;
 
           if (flags & split_flags::keep_endings)
-            out.push_back(in.substr(begin, next_begin-begin));
+            out.push_back(in.substr(begin, next_begin - begin));
           else
-            out.push_back(in.substr(begin, end-begin));
+            out.push_back(in.substr(begin, end - begin));
 
           begin = next_begin;
 
@@ -118,16 +118,18 @@ void split_into_lines(string const & in,
             break;
           end = in.find_first_of("\r\n", begin);
         }
-      if (begin < in.size()) {
-        // special case: last line without trailing newline
-        string s = in.substr(begin, in.size() - begin);
-        if (flags & split_flags::diff_compat) {
-          // special handling: produce diff(1) compatible output
-          s += (in.find_first_of("\r") != string::npos ? "\r\n" : "\n");
-          s += "\\ No newline at end of file";
+      if (begin < in.size())
+        {
+          // special case: last line without trailing newline
+          string s = in.substr(begin, in.size() - begin);
+          if (flags & split_flags::diff_compat)
+            {
+              // special handling: produce diff(1) compatible output
+              s += (in.find_first_of("\r") != string::npos ? "\r\n" : "\n");
+              s += "\\ No newline at end of file";
+            }
+          out.push_back(s);
         }
-        out.push_back(s);
-      }
     }
   else
     {
@@ -237,7 +239,7 @@ trim_right(string const & s, string const & chars)
   // characters then the entire string is made up of these characters
 
   pos = tmp.find_last_of(chars);
-  if (pos == tmp.size()-1)
+  if (pos == tmp.size() - 1)
     tmp = "";
 
   return tmp;

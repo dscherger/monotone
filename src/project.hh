@@ -83,9 +83,9 @@ private:
   // These are caches of what's in the database. They are updated when
   // they're noticed to be out of date, which will always be during a
   // logically read-only operation.
-  mutable std::map<std::pair<branch_name, suspended_indicator>,
-                   std::pair<outdated_indicator, std::set<revision_id> >
-                   > branch_heads;
+  mutable std::map < std::pair<branch_name, suspended_indicator>,
+          std::pair<outdated_indicator, std::set<revision_id> >
+          > branch_heads;
   mutable std::set<branch_name> branches;
   mutable outdated_indicator indicator;
 

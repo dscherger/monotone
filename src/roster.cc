@@ -98,7 +98,7 @@ dump(marking_t const & marking, string & out)
   oss << "file_content: " << tmp << '\n';
   oss << "attrs (number: " << marking->attrs.size() << "):\n";
   for (map<attr_key, set<revision_id> >::const_iterator
-         i = marking->attrs.begin(); i != marking->attrs.end(); ++i)
+       i = marking->attrs.begin(); i != marking->attrs.end(); ++i)
     {
       dump(i->second, tmp);
       oss << "  " << i->first << ": " << tmp << '\n';
@@ -482,7 +482,7 @@ dfs_iter::advance_top()
       if (stack_top.second != stack_top.first->children.end())
         nextsize = stack_top.second->first().size();
 
-      int tmpsize = curr_path.size()-prevsize;
+      int tmpsize = curr_path.size() - prevsize;
       I(tmpsize >= 0);
       curr_path.resize(tmpsize);
       if (nextsize != 0)
@@ -534,7 +534,7 @@ dfs_iter::operator++()
         {
           if (track_path)
             {
-              curr_path.resize(curr_path.size()-1);
+              curr_path.resize(curr_path.size() - 1);
             }
           advance_top();
         }
@@ -572,7 +572,7 @@ shallow_equal(const_node_t a, const_node_t b,
   if (a->attrs != b->attrs)
     return false;
 
-  if (! same_type(a,b))
+  if (! same_type(a, b))
     return false;
 
   if (is_file_t(a))
@@ -596,8 +596,8 @@ shallow_equal(const_node_t a, const_node_t b,
             return false;
 
           dir_map::const_iterator
-            i = da->children.begin(),
-            j = db->children.begin();
+          i = da->children.begin(),
+          j = db->children.begin();
 
           while (i != da->children.end() && j != db->children.end())
             {
@@ -787,7 +787,7 @@ roster_t::has_node(file_path const & p) const
 const_node_t
 roster_t::get_node(node_id nid) const
 {
-  node_t const &n(nodes.get_if_present(nid));
+  node_t const & n(nodes.get_if_present(nid));
   I(n);
   return n;
 }
@@ -1050,7 +1050,7 @@ roster_t::attach_node(node_id nid, node_id parent, path_component name)
   // this iterator might point to old_locations.end(), because old_locations
   // only includes entries for renames, not new nodes
   map<node_id, pair<node_id, path_component> >::iterator
-    i = old_locations.find(nid);
+  i = old_locations.find(nid);
 
   if (null_node(parent) || name.empty())
     {
@@ -1199,7 +1199,7 @@ roster_t::check_sane(bool temp_nodes_ok) const
   bool is_first = true;
   for (dfs_iter i(root_dir); !i.finished(); ++i)
     {
-      const_node_t const &n(*i);
+      const_node_t const & n(*i);
       if (is_first)
         {
           I(n->name.empty() && null_node(n->parent));
@@ -1280,9 +1280,9 @@ temp_node_id_source::temp_node_id_source()
 node_id
 temp_node_id_source::next()
 {
-    node_id n = curr++;
-    I(temp_node(n));
-    return n;
+  node_id n = curr++;
+  I(temp_node(n));
+  return n;
 }
 
 editable_roster_base::editable_roster_base(roster_t & r, node_id_source & nis)
@@ -1708,7 +1708,7 @@ namespace
                            new_marking->file_content);
 
     for (attr_map_t::const_iterator i = n->attrs.begin();
-           i != n->attrs.end(); ++i)
+         i != n->attrs.end(); ++i)
       {
         set<revision_id> & new_marks = new_marking->attrs[i->first];
         I(new_marks.empty());
@@ -1740,7 +1740,7 @@ namespace
     if (same_nodes)
       {
         bool same_markings = left_marking == right_marking
-          || *left_marking == *right_marking;
+                             || *left_marking == *right_marking;
         if (same_markings)
           {
             // The child marking will be the same as both parent markings,
@@ -1895,8 +1895,8 @@ mark_merge_roster(roster_t const & left_roster,
        i != merge.all_nodes().end(); ++i)
     {
       node_t const & n = i->second;
-      node_t const &left_node = left_roster.all_nodes().get_if_present(i->first);
-      node_t const &right_node = right_roster.all_nodes().get_if_present(i->first);
+      node_t const & left_node = left_roster.all_nodes().get_if_present(i->first);
+      node_t const & right_node = right_roster.all_nodes().get_if_present(i->first);
 
       bool exists_in_left = (left_node);
       bool exists_in_right = (right_node);
@@ -1935,7 +1935,8 @@ mark_merge_roster(roster_t const & left_roster,
   drop_extra_markings(merge, new_markings);
 }
 
-namespace {
+namespace
+{
 
   class editable_roster_for_nonmerge
     : public editable_roster_base
@@ -2246,7 +2247,7 @@ namespace
           {
             safe_insert(cs.deltas_applied,
                         make_pair(to_p, make_pair(from_f->content,
-                                                   to_f->content)));
+                                                  to_f->content)));
           }
       }
 
@@ -2417,9 +2418,9 @@ make_restricted_roster(roster_t const & from, roster_t const & to,
       map<node_id, node_t>::const_iterator n = selected.begin();
 
       L(FL("selected node %d %s parent %d")
-            % n->second->self
-            % n->second->name
-            % n->second->parent);
+        % n->second->self
+        % n->second->name
+        % n->second->parent);
 
       bool missing_parent = false;
 
@@ -2434,7 +2435,7 @@ make_restricted_roster(roster_t const & from, roster_t const & to,
             % n->second->parent);
 
           map<node_id, node_t>::const_iterator
-            p = selected.find(n->second->parent);
+          p = selected.find(n->second->parent);
 
           if (p != selected.end())
             {
@@ -2510,10 +2511,10 @@ make_restricted_roster(roster_t const & from, roster_t const & to,
   // sane.
 
   if (!restricted.all_nodes().empty() && !restricted.has_root())
-   {
-     W(F("restriction excludes addition of root directory"));
-     problems++;
-   }
+    {
+      W(F("restriction excludes addition of root directory"));
+      problems++;
+    }
 
   E(problems == 0, origin::user, F("invalid restriction"));
 

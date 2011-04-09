@@ -26,7 +26,7 @@ struct date_t
 
   // initialize from broken-down time
   date_t(int year, int month, int day,
-         int hour=0, int min=0, int sec=0, int millisec=0);
+         int hour = 0, int min = 0, int sec = 0, int millisec = 0);
 
   // initialize from a string; presently recognizes only
   // ISO 8601 "basic" and "extended" time formats.
@@ -53,17 +53,17 @@ struct date_t
 
   // Date comparison operators
   bool operator <(date_t const & other) const
-    { return d < other.d; };
+  { return d < other.d; };
   bool operator <=(date_t const & other) const
-    { return d <= other.d; };
+  { return d <= other.d; };
   bool operator >(date_t const & other) const
-    { return d > other.d; };
+  { return d > other.d; };
   bool operator >=(date_t const & other) const
-    { return d >= other.d; };
+  { return d >= other.d; };
   bool operator ==(date_t const & other) const
-    { return d == other.d; };
+  { return d == other.d; };
   bool operator !=(date_t const & other) const
-    { return d != other.d; };
+  { return d != other.d; };
 
   // Addition and subtraction of millisecond amounts
   date_t & operator +=(s64 const other);

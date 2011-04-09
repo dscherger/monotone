@@ -16,7 +16,7 @@
 #include "automate_ostream.hh"
 #include "simplestring_xform.hh"
 
-template<typename _CharT, typename _Traits = std::char_traits<_CharT> >
+template < typename _CharT, typename _Traits = std::char_traits<_CharT> >
 class basic_automate_streambuf_demuxed : public std::basic_streambuf<_CharT, _Traits>
 {
   typedef _Traits traits_type;
@@ -71,11 +71,11 @@ public:
     (*errout) << out << std::endl;
   }
 
-  void write_headers(std::vector<std::pair<std::string,std::string> > const & headers)
+  void write_headers(std::vector<std::pair<std::string, std::string> > const & headers)
   {
     i18n_format prefix = F("%s: remote header: ") % prog_name;
     for (std::vector<std::pair<std::string, std::string> >::const_iterator h = headers.begin();
-       h != headers.end(); ++h)
+         h != headers.end(); ++h)
       {
         (*errout) << prefix.str() << h->first << ": " << h->second << std::endl;
       }
@@ -105,7 +105,7 @@ private:
   }
 };
 
-template<typename _CharT, typename _Traits = std::char_traits<_CharT> >
+template < typename _CharT, typename _Traits = std::char_traits<_CharT> >
 struct basic_automate_ostream_demuxed : public basic_automate_ostream<_CharT, _Traits>
 {
   typedef basic_automate_streambuf_demuxed<_CharT, _Traits> streambuf_type;
@@ -138,7 +138,7 @@ public:
   virtual void write_out_of_band(char type, std::string const & data)
   { _M_autobuf.write_out_of_band(type, data); }
 
-  virtual void write_headers(std::vector<std::pair<std::string,std::string> > const & headers)
+  virtual void write_headers(std::vector<std::pair<std::string, std::string> > const & headers)
   { _M_autobuf.write_headers(headers); }
 };
 

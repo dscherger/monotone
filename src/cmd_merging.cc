@@ -293,7 +293,7 @@ update(app_state & app,
 
   // Get the OLD and WORKING rosters
   roster_t_cp old_roster
-    = parent_cached_roster(parents.begin()).first;
+  = parent_cached_roster(parents.begin()).first;
   MM(*old_roster);
 
   shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
@@ -540,7 +540,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     }
 
   P(FP("%d head on branch '%s'", "%d heads on branch '%s'", heads.size())
-      % heads.size() % app.opts.branch);
+    % heads.size() % app.opts.branch);
 
   // avoid failure after lots of work
   cache_user_key(app.opts, project, keys, app.lua);
@@ -648,14 +648,14 @@ void perform_merge_into_dir(app_state & app,
   if (*src_i == *dst_i || is_ancestor(db, *src_i, *dst_i))
     {
       P(F("branch '%s' is up-to-date with respect to branch '%s'")
-          % idx(args, 1)() % idx(args, 0)());
+        % idx(args, 1)() % idx(args, 0)());
       P(F("no action taken"));
       return;
     }
 
   cache_user_key(app.opts, project, keys, app.lua);
 
-  P(F("propagating %s -> %s") % idx(args,0) % idx(args,1));
+  P(F("propagating %s -> %s") % idx(args, 0) % idx(args, 1));
   P(F("[left]  %s") % *src_i);
   P(F("[right] %s") % *dst_i);
 
@@ -681,8 +681,8 @@ void perform_merge_into_dir(app_state & app,
         MM(right_roster);
         marking_map left_marking_map, right_marking_map;
         set<revision_id>
-          left_uncommon_ancestors,
-          right_uncommon_ancestors;
+        left_uncommon_ancestors,
+        right_uncommon_ancestors;
 
         db.get_roster(left_rid, left_roster, left_marking_map);
         db.get_roster(right_rid, right_roster, right_marking_map);
@@ -690,7 +690,7 @@ void perform_merge_into_dir(app_state & app,
                                   left_uncommon_ancestors,
                                   right_uncommon_ancestors);
 
-        if (!idx(args,2)().empty())
+        if (!idx(args, 2)().empty())
           {
             dir_t moved_root = left_roster.root();
             file_path pth = file_path_external(idx(args, 2));
@@ -720,12 +720,12 @@ void perform_merge_into_dir(app_state & app,
                      result);
 
         content_merge_database_adaptor
-          dba(db, left_rid, right_rid, left_marking_map, right_marking_map);
+        dba(db, left_rid, right_rid, left_marking_map, right_marking_map);
 
         bool resolutions_given;
 
         parse_resolve_conflicts_opts
-          (app.opts, left_rid, left_roster, right_rid, right_roster, result, resolutions_given);
+        (app.opts, left_rid, left_roster, right_rid, right_roster, result, resolutions_given);
 
         resolve_merge_conflicts(app.lua, app.opts, left_roster, right_roster,
                                 result, dba, resolutions_given);
@@ -744,7 +744,7 @@ void perform_merge_into_dir(app_state & app,
       bool log_message_given;
       utf8 log_message;
       utf8 log_prefix = utf8((FL("propagate from branch '%s' (head %s)\n"
-                               "            to branch '%s' (head %s)\n")
+                                 "            to branch '%s' (head %s)\n")
                               % idx(args, 0)
                               % *src_i
                               % idx(args, 1)
@@ -829,7 +829,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
 
     E(parent_roster(parents.begin()) == *working_roster, origin::user,
       F("'%s' can only be used in a workspace with no pending changes") %
-        join_words(execid)());
+      join_words(execid)());
 
     left_id = parent_id(parents.begin());
     left = parent_cached_roster(parents.begin());
@@ -855,8 +855,8 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
 
   set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
   db.get_uncommon_ancestors(left_id, right_id,
-                                left_uncommon_ancestors,
-                                right_uncommon_ancestors);
+                            left_uncommon_ancestors,
+                            right_uncommon_ancestors);
 
   roster_merge_result merge_result;
   MM(merge_result);
@@ -1098,8 +1098,8 @@ CMD(show_conflicts, "show_conflicts", "", CMD_REF(informative), N_("REV REV"),
   if (args.size() != 2)
     throw usage(execid);
   revision_id l_id, r_id;
-  complete(app.opts, app.lua, project, idx(args,0)(), l_id);
-  complete(app.opts, app.lua, project, idx(args,1)(), r_id);
+  complete(app.opts, app.lua, project, idx(args, 0)(), l_id);
+  complete(app.opts, app.lua, project, idx(args, 1)(), r_id);
 
   show_conflicts_core(db, app.lua, l_id, r_id,
                       false, // basic_io
@@ -1134,8 +1134,8 @@ static void get_conflicts_rids(args_vector const & args,
   else if (args.size() == 2)
     {
       // get ids from args
-      complete(app.opts, app.lua, project, idx(args,0)(), left_rid);
-      complete(app.opts, app.lua, project, idx(args,1)(), right_rid);
+      complete(app.opts, app.lua, project, idx(args, 0)(), left_rid);
+      complete(app.opts, app.lua, project, idx(args, 1)(), right_rid);
     }
   else
     E(false, origin::user, F("wrong argument count"));
@@ -1222,12 +1222,12 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
   project_t project(db);
 
   revision_id left_rid;
-  complete(app.opts, app.lua, project, idx(args,0)(), left_rid);
-  file_path const left_path = file_path_external(idx(args,1));
+  complete(app.opts, app.lua, project, idx(args, 0)(), left_rid);
+  file_path const left_path = file_path_external(idx(args, 1));
 
   revision_id right_rid;
-  complete(app.opts, app.lua, project, idx(args,2)(), right_rid);
-  file_path const right_path = file_path_external(idx(args,3));
+  complete(app.opts, app.lua, project, idx(args, 2)(), right_rid);
+  file_path const right_path = file_path_external(idx(args, 3));
 
   roster_t left_roster;
   roster_t right_roster;
@@ -1525,8 +1525,8 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
 
           set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
           db.get_uncommon_ancestors(left_id, right_id,
-                                        left_uncommon_ancestors,
-                                        right_uncommon_ancestors);
+                                    left_uncommon_ancestors,
+                                    right_uncommon_ancestors);
 
           mark_merge_roster(left_roster, left_markings,
                             left_uncommon_ancestors,

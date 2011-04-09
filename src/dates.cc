@@ -60,7 +60,8 @@ using std::time_t;
 using std::tm;
 
 // Our own "struct tm"-like struct to represent broken-down times
-struct broken_down_time {
+struct broken_down_time
+{
   int millisec;    /* milliseconds (0 - 999) */
   int sec;         /* seconds (0 - 59) */
   int min;         /* minutes (0 - 59) */
@@ -103,14 +104,15 @@ s64 const EARLIEST_SUPPORTED_DATE = s64_C(-62135596800000);
 
 // These constants are all in seconds.
 u32 const SEC  = 1;
-u32 const MIN  = 60*SEC;
-u32 const HOUR = 60*MIN;
-u64 const DAY  = 24*HOUR;
-u64 const YEAR = 365*DAY;
+u32 const MIN  = 60 * SEC;
+u32 const HOUR = 60 * MIN;
+u64 const DAY  = 24 * HOUR;
+u64 const YEAR = 365 * DAY;
 
 inline s64 MILLISEC(s64 n) { return n * 1000; }
 
-unsigned char const DAYS_PER_MONTH[] = {
+unsigned char const DAYS_PER_MONTH[] =
+{
   31, // jan
   28, // feb (non-leap)
   31, // mar
@@ -129,7 +131,7 @@ inline bool
 is_leap_year(s32 year)
 {
   return (year % 4 == 0
-    && (year % 100 != 0 || year % 400 == 0));
+          && (year % 100 != 0 || year % 400 == 0));
 }
 inline s32
 days_in_year(s32 year)
@@ -175,12 +177,12 @@ our_gmtime(s64 ts, broken_down_time & tb)
   // This is the result of inverting the equation
   //    yb = y*365 + y/4 - y/100 + y/400
   // it approximates years since the epoch for any day count.
-  u32 year = (400*days / 146097);
+  u32 year = (400 * days / 146097);
 
   // Compute the _exact_ number of days from the epoch to the beginning of
   // the approximate year determined above.
   u64 yearbeg;
-  yearbeg = widen<u64,u32>(year)*365 + year/4 - year/100 + year/400;
+  yearbeg = widen<u64, u32>(year) * 365 + year / 4 - year / 100 + year / 400;
 
   // Our epoch is year 1, not year 0 (there is no year 0).
   year++;
@@ -347,8 +349,8 @@ date_t::as_iso_8601_extended() const
   I(valid());
   our_gmtime(d, tb);
   return (FL("%04u-%02u-%02uT%02u:%02u:%02u")
-             % tb.year % tb.month % tb.day
-             % tb.hour % tb.min % tb.sec).str();
+          % tb.year % tb.month % tb.day
+          % tb.hour % tb.min % tb.sec).str();
 }
 
 ostream &
@@ -375,7 +377,7 @@ date_t::as_formatted_localtime(string const & fmt) const
   // within range for the current time_t type so that localtime doesn't
   // produce a bad result.
 
-  s64 seconds = d/1000 - get_epoch_offset();
+  s64 seconds = d / 1000 - get_epoch_offset();
 
   L(FL("%s seconds UTC since unix epoch") % seconds);
 
@@ -529,9 +531,9 @@ date_t::date_t(string const & s)
       // seconds
       u8 sec;
       E(s.at(i) >= '0' && s.at(i) <= '9'
-        && s.at(i-1) >= '0' && s.at(i-1) <= '5', origin::user,
+        && s.at(i - 1) >= '0' && s.at(i - 1) <= '5', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
-      sec = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
+      sec = (s.at(i - 1) - '0') * 10 + (s.at(i) - '0');
       i -= 2;
       E(sec <= 60, origin::user,
         F("seconds out of range"));
@@ -543,9 +545,9 @@ date_t::date_t(string const & s)
       // minutes
       u8 min;
       E(s.at(i) >= '0' && s.at(i) <= '9'
-        && s.at(i-1) >= '0' && s.at(i-1) <= '5', origin::user,
+        && s.at(i - 1) >= '0' && s.at(i - 1) <= '5', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
-      min = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
+      min = (s.at(i - 1) - '0') * 10 + (s.at(i) - '0');
       i -= 2;
       E(min < 60, origin::user,
         F("minutes out of range"));
@@ -556,11 +558,11 @@ date_t::date_t(string const & s)
 
       // hours
       u8 hour;
-      E((s.at(i-1) >= '0' && s.at(i-1) <= '1'
+      E((s.at(i - 1) >= '0' && s.at(i - 1) <= '1'
          && s.at(i) >= '0' && s.at(i) <= '9')
-        || (s.at(i-1) == '2' && s.at(i) >= '0' && s.at(i) <= '3'), origin::user,
+        || (s.at(i - 1) == '2' && s.at(i) >= '0' && s.at(i) <= '3'), origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
-      hour = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
+      hour = (s.at(i - 1) - '0') * 10 + (s.at(i) - '0');
       i -= 2;
       E(hour < 24, origin::user,
         F("hour out of range"));
@@ -572,10 +574,10 @@ date_t::date_t(string const & s)
 
       // day
       u8 day;
-      E(s.at(i-1) >= '0' && s.at(i-1) <= '3'
+      E(s.at(i - 1) >= '0' && s.at(i - 1) <= '3'
         && s.at(i) >= '0' && s.at(i) <= '9', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
-      day = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
+      day = (s.at(i - 1) - '0') * 10 + (s.at(i) - '0');
       i -= 2;
 
       // optional dash
@@ -584,10 +586,10 @@ date_t::date_t(string const & s)
 
       // month
       u8 month;
-      E(s.at(i-1) >= '0' && s.at(i-1) <= '1'
+      E(s.at(i - 1) >= '0' && s.at(i - 1) <= '1'
         && s.at(i) >= '0' && s.at(i) <= '9', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
-      month = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
+      month = (s.at(i - 1) - '0') * 10 + (s.at(i) - '0');
       E(month >= 1 && month <= 12, origin::user,
         F("month out of range in '%s'") % s);
       i -= 2;
@@ -608,7 +610,7 @@ date_t::date_t(string const & s)
         {
           E(s.at(i) >= '0' && s.at(i) <= '9', origin::user,
             F("unrecognized date (monotone only understands ISO 8601 format)"));
-          year += (s.at(i) - '0')*digit;
+          year += (s.at(i) - '0') * digit;
           i--;
           digit *= 10;
         }

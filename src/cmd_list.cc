@@ -55,7 +55,8 @@ CMD_GROUP(list, "list", "ls", CMD_REF(informative),
              "or known, unknown, intentionally ignored, missing, or "
              "changed-state files."));
 
-namespace {
+namespace
+{
   // for 'ls certs' and 'ls tags'
   string format_key(key_identity_info const & info)
   {
@@ -309,7 +310,8 @@ struct key_location_info
 };
 typedef map<key_id, key_location_info> key_map;
 
-namespace {
+namespace
+{
   void get_key_list(database & db,
                     key_store & keys,
                     lua_hooks & lua,
@@ -480,7 +482,7 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
 {
   globish inc("*", origin::internal);
   if (args.size() == 1)
-    inc = globish(idx(args,0)(), origin::user);
+    inc = globish(idx(args, 0)(), origin::user);
   else if (args.size() > 1)
     throw usage(execid);
 
@@ -508,7 +510,7 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
   if (args.empty())
     {
       for (map<branch_name, epoch_data>::const_iterator
-             i = epochs.begin();
+           i = epochs.begin();
            i != epochs.end(); ++i)
         {
           cout << encode_hexenc(i->second.inner()(),
@@ -539,7 +541,7 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
 {
   globish inc("*", origin::internal);
   if (args.size() == 1)
-    inc = globish(idx(args,0)(), origin::user);
+    inc = globish(idx(args, 0)(), origin::user);
   else if (args.size() > 1)
     throw usage(execid);
 
@@ -566,7 +568,7 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
           hexenc<id> hexid;
           encode_hexenc(i->ident.inner(), hexid);
 
-          cout << i->name << ' ' << hexid().substr(0,10) << "... ";
+          cout << i->name << ' ' << hexid().substr(0, 10) << "... ";
 
           for (vector<cert>::const_iterator c = certs.begin();
                c != certs.end(); ++c)
@@ -646,7 +648,7 @@ print_workspace_info(database & db, lua_hooks & lua,
         {
           L(FL("ignoring workspace '%s', expected database %s, "
                "but has %s configured in _MTN/options")
-              % workspace_path % db_path % workspace_db_path);
+            % workspace_path % db_path % workspace_db_path);
           continue;
         }
 
@@ -659,8 +661,8 @@ print_workspace_info(database & db, lua_hooks & lua,
       out << indent << F("%s (in '%s')") % workspace_branch % workspace_path << '\n';
     }
 
-    if (!has_valid_workspaces)
-      out << indent << F("no known valid workspaces") << '\n';
+  if (!has_valid_workspaces)
+    out << indent << F("no known valid workspaces") << '\n';
 }
 
 CMD(workspaces, "workspaces", "", CMD_REF(list), "",
@@ -710,8 +712,8 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
             }
 
           string db_alias = ":" + db_path.as_internal().substr(
-            search_path.as_internal().size() + 1
-          );
+                              search_path.as_internal().size() + 1
+                            );
 
           options db_opts;
           db_opts.dbname_type = managed_db;
@@ -729,7 +731,7 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
               string failure = f.what();
               for (size_t pos = failure.find(prefix);
                    pos != string::npos; pos = failure.find(prefix))
-                 failure.replace(pos, prefix.size(), "");
+                failure.replace(pos, prefix.size(), "");
 
               W(F("%s") % failure);
               W(F("ignoring database '%s'") % db_path);
@@ -880,7 +882,7 @@ CMD(changed, "changed", "", CMD_REF(list), "[PATH...]",
     {
       set<node_id> nodes;
       roster_t const & old_roster
-        = *safe_get(parents, edge_old_revision(i)).first;
+      = *safe_get(parents, edge_old_revision(i)).first;
       select_nodes_modified_by_cset(edge_changes(i),
                                     old_roster, new_roster, nodes);
 

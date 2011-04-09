@@ -41,7 +41,8 @@ CMD_GROUP(automate, "automate", "au", CMD_REF(automation),
           N_("Interface for scripted execution"),
           "");
 
-namespace commands {
+namespace commands
+{
   automate::automate(string const & name,
                      bool stdio_ok,
                      bool hidden,
@@ -66,7 +67,7 @@ namespace commands {
                  std::ostream & output) const
   {
     make_io_binary();
-    setlocale(LC_ALL,"POSIX");
+    setlocale(LC_ALL, "POSIX");
     exec_from_automate(app, execid, args, output);
   }
 
@@ -116,9 +117,9 @@ CMD_AUTOMATE(interface_version, "",
 }
 
 // these headers are outputted before any other output for stdio and remote_stdio
-void commands::get_stdio_headers(std::vector<std::pair<std::string,std::string> > & headers)
+void commands::get_stdio_headers(std::vector<std::pair<std::string, std::string> > & headers)
 {
-    headers.push_back(make_pair("format-version", stdio_format_version));
+  headers.push_back(make_pair("format-version", stdio_format_version));
 }
 
 // Name: bandtest
@@ -129,10 +130,10 @@ void commands::get_stdio_headers(std::vector<std::pair<std::string,std::string> 
 // Output format: None
 // Error conditions: None.
 CMD_AUTOMATE_HIDDEN(bandtest, "{ info | warning | error | ticker }",
-             N_("Emulates certain kinds of diagnostic / UI messages "
-                "for debugging and testing purposes, such as stdio"),
-             "",
-             options::opts::none)
+                    N_("Emulates certain kinds of diagnostic / UI messages "
+                       "for debugging and testing purposes, such as stdio"),
+                    "",
+                    options::opts::none)
 {
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
@@ -153,9 +154,9 @@ CMD_AUTOMATE_HIDDEN(bandtest, "{ info | warning | error | ticker }",
       int max = 20;
       second.set_total(max);
 
-      for (int i=0; i<max; i++)
+      for (int i = 0; i < max; i++)
         {
-          first+=3;
+          first += 3;
           ++second;
           usleep(100000); // 100ms
         }
@@ -165,9 +166,9 @@ CMD_AUTOMATE_HIDDEN(bandtest, "{ info | warning | error | ticker }",
 }
 
 
-static void out_of_band_to_automate_streambuf(char channel, std::string const& text, void *opaque)
+static void out_of_band_to_automate_streambuf(char channel, std::string const & text, void * opaque)
 {
-  reinterpret_cast<automate_ostream*>(opaque)->write_out_of_band(channel, text);
+  reinterpret_cast<automate_ostream *>(opaque)->write_out_of_band(channel, text);
 }
 
 // Name: stdio
@@ -212,16 +213,18 @@ static void out_of_band_to_automate_streambuf(char channel, std::string const& t
 class done_reading_input {};
 // lambda expressions would be really nice right about now
 // even the ability to use local classes as template arguments would help
-class local_stdio_pre_fn {
+class local_stdio_pre_fn
+{
   automate_reader & ar;
   vector<string> & cmdline;
-  vector<pair<string,string> > & params;
+  vector<pair<string, string> > & params;
 public:
   local_stdio_pre_fn(automate_reader & a, vector<string> & c,
-                     vector<pair<string,string> > & p)
+                     vector<pair<string, string> > & p)
     : ar(a), cmdline(c), params(p)
   { }
-  void operator()() {
+  void operator()()
+  {
     if (!ar.get_command(params, cmdline))
       throw done_reading_input();
   }
@@ -259,9 +262,9 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       try
         {
           pair<int, string> err = automate_stdio_helpers::
-            automate_stdio_shared_body(app, cmdline, params, os,
-                                       local_stdio_pre_fn(ar, cmdline, params),
-                                       boost::function<void(command_id const &)>());
+                                  automate_stdio_shared_body(app, cmdline, params, os,
+                                                             local_stdio_pre_fn(ar, cmdline, params),
+                                                             boost::function<void(command_id const &)>());
           if (err.first != 0)
             os.write_out_of_band('e', err.second);
           os.end_cmd(err.first);
@@ -279,7 +282,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
 LUAEXT(change_workspace, )
 {
   const system_path ws(luaL_checkstring(LS, -1), origin::user);
-  app_state* app_p = get_app_state(LS);
+  app_state * app_p = get_app_state(LS);
 
   try
     {
@@ -317,12 +320,12 @@ LUAEXT(mtn_automate, )
 
   try
     {
-      app_state* app_p = get_app_state(LS);
+      app_state * app_p = get_app_state(LS);
       I(app_p != NULL);
       I(app_p->lua.check_lua_state(LS));
       E(app_p->mtn_automate_allowed, origin::user,
-          F("it is illegal to call the mtn_automate() lua extension,\n"
-            "unless from a command function defined by register_command()."));
+        F("it is illegal to call the mtn_automate() lua extension,\n"
+          "unless from a command function defined by register_command()."));
 
       // don't allow recursive calls
       app_p->mtn_automate_allowed = false;
@@ -335,7 +338,7 @@ LUAEXT(mtn_automate, )
       L(FL("Starting call to mtn_automate lua hook"));
 
       vector<string> args;
-      for (int i=1; i<=n; i++)
+      for (int i = 1; i <= n; i++)
         {
           string next_arg(luaL_checkstring(LS, i));
           L(FL("arg: %s") % next_arg);
@@ -346,13 +349,13 @@ LUAEXT(mtn_automate, )
       commands::automate const * cmd;
 
       automate_stdio_helpers::
-        automate_stdio_shared_setup(*app_p, args, 0,
-                                    id, cmd,
-                                    automate_stdio_helpers::no_force_stdio_ticker);
+      automate_stdio_shared_setup(*app_p, args, 0,
+                                  id, cmd,
+                                  automate_stdio_helpers::no_force_stdio_ticker);
 
 
       commands::automate const * acmd
-        = dynamic_cast< commands::automate const * >(cmd);
+      = dynamic_cast< commands::automate const * >(cmd);
       I(acmd);
 
 

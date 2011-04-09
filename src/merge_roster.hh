@@ -113,8 +113,10 @@ struct duplicate_name_conflict
   resolve_conflicts::file_resolution_t left_resolution, right_resolution;
 
   duplicate_name_conflict ()
-  {left_resolution.first = resolve_conflicts::none;
-    right_resolution.first = resolve_conflicts::none;};
+  {
+    left_resolution.first = resolve_conflicts::none;
+    right_resolution.first = resolve_conflicts::none;
+  };
 };
 
 // nodes with attribute conflicts are left attached in the resulting tree (unless
@@ -141,7 +143,7 @@ struct file_content_conflict
 
   file_content_conflict () :
     nid(the_null_node)
-    {resolution.first = resolve_conflicts::none;};
+  {resolution.first = resolve_conflicts::none;};
 
   file_content_conflict(node_id nid) :
     nid(nid) {resolution.first = resolve_conflicts::none;};

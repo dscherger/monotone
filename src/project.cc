@@ -51,8 +51,8 @@ std::ostream &
 operator<<(std::ostream & os,
            key_identity_info const & identity)
 {
-  os<<"{id="<<identity.id<<"; given_name="<<identity.given_name
-    <<"; official_name="<<identity.official_name<<"}";
+  os << "{id=" << identity.id << "; given_name=" << identity.given_name
+     << "; official_name=" << identity.official_name << "}";
   return os;
 }
 
@@ -165,9 +165,9 @@ project_t::get_branch_heads(branch_name const & name,
                             multimap<revision_id, revision_id> * inverse_graph_cache_ptr) const
 {
   pair<branch_name, suspended_indicator>
-    cache_index(name, ignore_suspend_certs);
+  cache_index(name, ignore_suspend_certs);
   pair<outdated_indicator, set<revision_id> > &
-    branch = branch_heads[cache_index];
+  branch = branch_heads[cache_index];
   outdated_indicator & indicator = branch.first;
   set<revision_id> & my_heads = branch.second;
   if (indicator.outdated())
@@ -196,7 +196,8 @@ project_t::get_branch_heads(branch_name const & name,
           my_heads = leaves;
         }
       else
-        { // bah, do it the slow way
+        {
+          // bah, do it the slow way
           indicator = db.get_revisions_with_cert(cert_name(branch_cert_name),
                                                  typecast_vocab<cert_value>(name),
                                                  my_heads);
@@ -707,14 +708,15 @@ notify_if_multiple_heads(project_t & project,
 {
   set<revision_id> heads;
   project.get_branch_heads(branchname, heads, ignore_suspend_certs);
-  if (heads.size() > 1) {
-    string prefixedline;
-    prefix_lines_with(_("note: "),
-                      _("branch '%s' has multiple heads\n"
-                        "perhaps consider '%s merge'"),
-                      prefixedline);
-    P(i18n_format(prefixedline) % branchname % prog_name);
-  }
+  if (heads.size() > 1)
+    {
+      string prefixedline;
+      prefix_lines_with(_("note: "),
+                        _("branch '%s' has multiple heads\n"
+                          "perhaps consider '%s merge'"),
+                        prefixedline);
+      P(i18n_format(prefixedline) % branchname % prog_name);
+    }
 }
 
 // Guess which branch is appropriate for a commit below IDENT.
