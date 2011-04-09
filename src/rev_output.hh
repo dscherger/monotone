@@ -10,6 +10,7 @@
 #ifndef __REV_SUMMARY_HH__
 #define __REV_SUMMARY_HH__
 
+#include "colorizer.hh"
 #include "rev_types.hh"
 #include "vocab.hh"
 
@@ -17,18 +18,19 @@ struct date_t;
 struct cert;
 
 void
-revision_header(revision_id const rid, revision_t const & rev, 
+revision_header(revision_id const rid, revision_t const & rev,
                 std::string const & author, date_t const date,
                 branch_name const & branch, utf8 const & changelog,
-                std::string const & date_fmt, utf8 & header);
-
-void
-revision_header(revision_id const rid, revision_t const & rev, 
-                std::vector<cert> const & certs, std::string const & date_fmt,
+                std::string const & date_fmt, colorizer const & color,
                 utf8 & header);
 
 void
-revision_summary(revision_t const & rev, utf8 & summary);
+revision_header(revision_id const rid, revision_t const & rev,
+                std::vector<cert> const & certs, std::string const & date_fmt,
+                colorizer const & color, utf8 & header);
+
+void
+revision_summary(revision_t const & rev, colorizer const & color, utf8 & summary);
 
 #endif  // header guard
 

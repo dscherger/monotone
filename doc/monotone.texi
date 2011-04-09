@@ -5878,7 +5878,7 @@ about, in its database, which begin with the 4 hex digits
 @code{fa36}. This command is intended to be used by programmable
 completion systems, such as those in @command{bash} and @command{zsh}.
 
-@anchor{mtn diff}@item mtn diff [--unified] [--[no-]show-encloser]
+@anchor{mtn diff}@item mtn diff [--unified] [--[no-]show-encloser] [--[no-]colorize]
 @itemx mtn diff --context [--[no-]show-encloser]
 @itemx mtn diff --external [--diff-args=@var{argstring}]
 @itemx mtn diff @var{pathname...}
@@ -5920,7 +5920,7 @@ Specifying only the pathname "." will restrict @command{diff} to files
 changed within the current subdirectory of the workspace.
 
 The output format of @command{diff} is controlled by the options
-@option{--unified}, @option{--context}, @option{--no-show-encloser}, and
+@option{--unified}, @option{--context}, @option{--no-show-encloser}, @option{--colorize}, and
 @option{--external}.  By default, monotone uses its built-in diff
 algorithm to produce a listing in ``unified diff'' format (analogous
 to running the program @command{diff @option{-u}}); you can also explicitly
@@ -5941,6 +5941,10 @@ regular expression is correct for many programming languages.  You can
 adjust the expression used with the Lua hook
 @ref{get_encloser_pattern}.  For the regular expression syntax, see
 @ref{Regexps}.
+
+Furthermore, when @option{--colorize} is given, monotone tries to print 
+colored diff output if the underlying terminal supports it.  This works
+in both modes as well.
 
 Sometimes, you may want more flexibility in output formats; for these
 cases, you can use @option{--external}, which causes monotone to
@@ -6169,7 +6173,7 @@ can be used to explicitely register and unregister workspaces shown
 within this list.  See @ref{Managed Databases} for more information.
 
 @anchor{mtn log}@item mtn log
-@itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--clear-from] [--to=@var{id} [...]] [--clear-to] [--revision=@var{id} [...]] [--[no-]brief] [--[no-]merges] [--[no-]files] [--[no-]graph] [--[no-]diffs] [@var{pathname...}]
+@itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--clear-from] [--to=@var{id} [...]] [--clear-to] [--revision=@var{id} [...]] [--[no-]brief] [--[no-]merges] [--[no-]files] [--[no-]graph] [--[no-]diffs] [--[no-]colorize] [@var{pathname...}]
 See the online help for more options.
 
 This command prints out a log, in forward ancestry order by default
@@ -6240,7 +6244,10 @@ If @option{--no-graph} is given, the log output excludes the ASCII revision grap
 prefix on log output lines.
 
 Specifying @option{--diffs} causes the log output to include a unified
-diff of the changes in each revision.
+diff of the changes in each revision. If @option{--colorize} is given
+additionally, the diff output is colored if the underlying terminal
+supports that.
+
 
 If one or more files are given, the command will only log the revisions
 where those files are changed.
