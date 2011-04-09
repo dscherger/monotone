@@ -14,4 +14,4 @@ skip_if(no_network_tests)
 -- and some commands should use :memory: as default because they
 -- just need a temporary throw-away database to work properly
 check(raw_mtn("au", "remote", "interface_version", "--remote-stdio-host", "http://code.monotone.ca/monotone", "--key="), 0, false, true)
-check(qgrep("No database given; assuming ':memory:' database", "stderr"))
+check(qgrep("no database given; assuming ':memory:' database", "stderr"))
