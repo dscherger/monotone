@@ -196,17 +196,17 @@ struct by_rev {};
 // indexed by both, their revision and their revision's height, with the
 // latter being used by default. usage of that data structure frees us from
 // the burden of keeping two data structures in sync.
-typedef multi_index_container <
-annotate_node_work,
-indexed_by <
-ordered_unique <
-member<annotate_node_work, rev_height, &annotate_node_work::height>,
-std::greater<rev_height> > ,
-ordered_unique <
-tag<by_rev>,
-member<annotate_node_work, revision_id, &annotate_node_work::revision> >
->
-> work_units;
+typedef multi_index_container<
+  annotate_node_work,
+  indexed_by<
+    ordered_unique<
+      member<annotate_node_work,rev_height,&annotate_node_work::height>,
+      std::greater<rev_height> >,
+    ordered_unique<
+      tag<by_rev>,
+      member<annotate_node_work,revision_id,&annotate_node_work::revision> >
+    >
+  > work_units;
 
 
 annotate_context::annotate_context(app_state & app, project_t & project, file_id fid)
