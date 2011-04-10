@@ -1,0 +1,1 @@
+astyle --style=gnu -s2 -p --align-pointer=middle --keep-one-line-blocks --keep-one-line-statements --indent-namespaces --max-instatement-indent=60 $@
