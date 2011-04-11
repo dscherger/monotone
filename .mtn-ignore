@@ -62,7 +62,7 @@
 ^src/std_hooks\.cc$
 ^stamp-h1$
 ^stamp-vti$
-^test/(func|tester|unit)\.status$
+^test/(extra|func|tester|unit)\.status$
 ^test/bin$
 ^test/src/testlib\.cc$
 ^test/unit/tests/[^._]*(_+[^._]+)+$
