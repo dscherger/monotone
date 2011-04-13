@@ -33,6 +33,8 @@ string colorizer::purpose_to_name(colorizer::purpose const p) const
       return "comment";
     case encloser:
       return "encloser";
+    case important:
+      return "important";
     case log_revision:
       return "log_revision";
     case remove:
@@ -148,6 +150,7 @@ colorizer::colorizer(bool enable, lua_hooks & lh)
       colormap.insert(map_output_color(change));
       colormap.insert(map_output_color(comment));
       colormap.insert(map_output_color(encloser));
+      colormap.insert(map_output_color(important));
       colormap.insert(map_output_color(log_revision));
       colormap.insert(map_output_color(remove));
       colormap.insert(map_output_color(rename));

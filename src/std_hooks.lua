@@ -1561,6 +1561,7 @@ function get_output_color(purpose)
                 change = { fg = "blue", bg = "", style = "" },
                 comment = { fg = "yellow", bg = "", style = "" },
                 encloser = { fg = "magenta", bg = "", style = "" },
+                important = { fg = "white", bg = "red", style = "" },
                 log_revision = { fg = "", bg = "", style = "bold" },
                 remove = { fg = "red", bg = "", style = "" },
                 rename = { fg = "yellow", bg = "", style = "" },

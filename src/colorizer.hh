@@ -24,6 +24,7 @@ struct colorizer {
                  change,
                  comment,
                  encloser,
+                 important,
                  log_revision,
                  remove,
                  rename,
