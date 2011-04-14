@@ -136,12 +136,13 @@ string colorizer::style_to_code(string const style) const
 }
 
 colorizer::colorizer(bool enable, lua_hooks & lh) 
-  : lua(lh)
+  : lua(lh),
+    enabled(enable)
 {
   if (!have_smart_terminal())
-    enable = false;
+    enabled = false;
 
-  if (enable)
+  if (enabled)
     {
       colormap.insert(map_output_color(normal));
       colormap.insert(map_output_color(reset));
@@ -164,10 +165,13 @@ colorizer::colorizer(bool enable, lua_hooks & lh)
 string
 colorizer::colorize(string const & in, purpose p) const
 {
-  if (colormap.find(p) == colormap.end())
+  if (enabled)
+    {
+      I(colormap.find(p) != colormap.end());
+      return get_format(p) + in + get_format(reset);
+    }
+  else
     return in;
-
-   return get_format(p) + in + get_format(reset);
 }
 
 string

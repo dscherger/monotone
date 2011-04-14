@@ -43,6 +43,7 @@ private:
   std::map<purpose, boost::tuple<std::string, std::string, std::string> >
     colormap;
   lua_hooks & lua;
+  bool enabled;
 
   std::pair<purpose, boost::tuple<std::string, std::string, std::string> >
   map_output_color(purpose const p);
