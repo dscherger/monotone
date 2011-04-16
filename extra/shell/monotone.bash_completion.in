@@ -70,6 +70,7 @@ _monotone_files() {
 
 _monotone_databases() {
     _filedir mtn
+    _filedir db
     COMPREPLY=(
 	"${COMPREPLY[@]}"
 	$(compgen -W "$(LANG=POSIX \
