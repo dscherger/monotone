@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: monotone\n"
 "Report-Msgid-Bugs-To: https://code.monotone.ca/p/monotone/issues/\n"
 "POT-Creation-Date: 2011-04-21 12:52+0200\n"
-"PO-Revision-Date: 2011-04-21 12:58+0100\n"
+"PO-Revision-Date: 2011-04-21 13:08+0100\n"
 "Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
 "Language-Team: \n"
 "Language: it\n"
@@ -126,7 +126,7 @@ msgid "path '%s' is in bookkeeping dir"
 msgstr "path‘%s’ is in bookkeeping dir"
 
 #: src/paths.cc:460
-#, fuzzy, c-format
+#, c-format
 msgid "invalid utf8"
 msgstr "UTF-8 non valido"
 
@@ -2994,17 +2994,17 @@ msgstr "riportato a %s"
 #: src/cmd_ws_commit.cc:2124
 #, c-format
 msgid "bisecting revisions; %d good; %d bad; %d skipped; specify good revisions to start search"
-msgstr "revisioni divaricanti; %d buone; %d cattive; %d saltate; specificare le revisioni buone e iniziare la ricerca"
+msgstr "bisezione di revisioni; %d buone; %d cattive; %d saltate; specificare le revisioni buone per iniziare la ricerca"
 
 #: src/cmd_ws_commit.cc:2130
 #, c-format
 msgid "bisecting revisions; %d good; %d bad; %d skipped; specify bad revisions to start search"
-msgstr "revisioni divaricanti; %d buone; %d cattive; %d saltate; specificare le revisioni cattive e iniziare la ricerca"
+msgstr "bisezione di revisioni; %d buone; %d cattive; %d saltate; specificare le revisioni cattive e iniziare la ricerca"
 
 #: src/cmd_ws_commit.cc:2193
 #, c-format
 msgid "bisecting %d revisions; %d good; %d bad; %d skipped; %d remaining"
-msgstr "revisioni divaricanti; %d buone; %d cattive; %d saltate; %d restanti"
+msgstr "bisezione di %d revisioni; %d buone; %d cattive; %d saltate; %d restanti"
 
 #: src/cmd_ws_commit.cc:2211
 #, c-format
@@ -3431,6 +3431,7 @@ msgid "too many arguments"
 msgstr "troppi parametri"
 
 # non sono sicura
+#: src/cmd_conflicts.cc:260
 #: src/cmd_conflicts.cc:276
 #, c-format
 msgid "other resolution must be 'drop' or 'rename'"
@@ -3451,7 +3452,7 @@ msgstr "numero errato di parametri"
 #: src/cmd_conflicts.cc:401
 #, c-format
 msgid "interactive merge result saved in '%s'"
-msgstr "il percorso risultato deve essere sotto _MTN"
+msgstr ""
 
 #: src/cmd_conflicts.cc:404
 #, c-format
@@ -3969,10 +3970,11 @@ msgstr "questo spazio di lavoro è nel formato attuale, non è necessario migrar
 msgid "calculated cert hash %s does not match %s"
 msgstr "l'hash calcolato sul certificato è ‘%s’, non corrisponde a ‘%s’"
 
+# dopo i due punti sono valori interni da non tradurre
 #: src/project.cc:477
 #, c-format
 msgid "could not interpret test result string '%s'; valid strings are: 1, 0, yes, no, true, false, pass, fail"
-msgstr "non posso interpretare la striga test risultato _MTN; stringhe valide sono: 1, 0, sì, no, vero, falso, passato, fallito"
+msgstr "non posso interpretare la striga test risultato ‘%s’; stringhe valide sono: 1, 0, yes, no, true, false, pass, fail"
 
 #: src/project.cc:542
 #: src/project.cc:558
@@ -4448,13 +4450,13 @@ msgstr "converto la chiave privata ‘%s’ dal vecchio formato"
 msgid "ignored invalid key file '%s' in key store"
 msgstr "la coppia di chiavi ‘%s’ non è nel portachiavi ‘%s’"
 
-#: key_store.cc:422
-#: key_store.cc:426
-#: key_store.cc:429
-#: key_store.cc:431
-#: key_store.cc:434
-#, c-format
-msgid "Invalid data in key file."
+#: src/key_store.cc:422
+#: src/key_store.cc:426
+#: src/key_store.cc:429
+#: src/key_store.cc:431
+#: src/key_store.cc:434
+#, fuzzy, c-format
+msgid "invalid data in key file"
 msgstr "Dati non validi nel file chiave."
 
 #: src/key_store.cc:442
@@ -7603,12 +7605,14 @@ msgstr "non caricare i file Lua ‘~/.monotone/monotonerc’ e ‘_MTN/monotoner
 msgid "do not load the built-in lua file with the default hooks"
 msgstr ""
 
-#: options_list.hh:469
-msgid "please use --no-standard-rcfiles instead"
+#: src/options_list.hh:470
+#, fuzzy
+msgid "please use '--no-standard-rcfiles' instead"
 msgstr "per favore invece usa --no-standard-rcfiles "
 
-#: options_list.hh:471
-msgid "old version of --no-standard-rcfiles"
+#: src/options_list.hh:472
+#, fuzzy
+msgid "old version of '--no-standard-rcfiles'"
 msgstr "vecchia versione di --no-standard-rcfiles "
 
 #: src/options_list.hh:476
