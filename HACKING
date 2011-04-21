@@ -25,7 +25,7 @@ The appropriate Emacs modeline to use for editing source is:
 
 -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 
-And something close (but not perfect) for VIM:
+And something close (but not perfect) for VIM (requires "set cindent"):
 
 vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
@@ -33,22 +33,145 @@ The appropriate astyle options are:
 
 astyle --style=gnu -s2 -p
 
-monotone's source includes a number of third party libraries.  These have
+monotone's source includes third party code and libraries.  These have
 been imported from upstream, and should retain the original coding style of
 the particular library in all cases.  This makes life easier when a
 developer needs to send our fixes upstream or wants to import new upstream
 versions into monotone.
 
-There is a special header file, base.hh, that should be the very first
-#include in every .cc file, without exception.  It makes a small
+There is a special header file, src/base.hh, that should be the very
+first #include in every .cc file, without exception.  It makes a small
 number of inclusions and declarations that we want to be globally
 visible.  Do not include this header in any other header file;
 however, in header files, assume the contents of base.hh are already
 visible.  "make distcheck" will verify that these rules are followed.
-If you modify base.hh, make sure you keep the "audit-includes" script
-consistent with it.  Try not to add things to base.hh; it's intended
+If you modify src/base.hh, make sure you keep the "util/audit-includes"
+script consistent with it.  Try not to add things to base.hh; it's intended
 to be a minimal set of declarations that really do need to be visible
 everywhere.
+
+
+Formatting messages
+-------------------
+
+For short messages (single sentence error, warning, info and progress
+messages), we follow the GNU coding standards.  However, those are not
+quite enough, and we have developed an extended set of rules to follow
+for messages in english:
+
+  - put single quotes ('') aroung file names and paths, option names,
+    tag names, branch names, command names and commands, as well as
+    any %s that would be expanded to one of those.
+    There is an exception, though: if the quoted item is cited after a
+    colon, either as the last part of the message or on its own line.
+    For example, the following doesn't look very good:
+
+        To apply the changes relative to one of its parents, use:
+          'mtn pluck -r PARENT -r 06c3...'
+
+    The following looks better
+
+        To apply the changes relative to one of its parents, use:
+          mtn pluck -r PARENT -r 06c3...
+
+  - use a Capital first letter in command abstract and description
+    strings.  Do not put a period at the end of the abstract, but do
+    so with the description.  The following would be very wrong:
+
+        CMD(foo, "foo", "", CMD_REF(foos), "",
+            N_("does the foo thing."),
+            N_("in order to do the foo thing, this allows you to join "
+               "the foo fighters"),
+
+    The following is what it's supposed to look like:
+
+        CMD(foo, "foo", "", CMD_REF(foos), "",
+            N_("Does the foo thing"),
+            N_("In order to do the foo thing, this allows you to join "
+               "the foo fighters."),
+
+  - just as with error messages, use a lowercase first letter in
+    descriptions of options and do not end it with a period.  The
+    following would be wrong:
+
+        SIMPLE_OPTION(bar, "bar", bool,
+                      gettext_noop("Have the remaining figures go to "
+                                   "the nearest bar."))
+
+    The following is better:
+
+        SIMPLE_OPTION(bar, "bar", bool,
+                      gettext_noop("have the remaining figures go to "
+                                   "the nearest bar"))
+
+  - for multi-sentence error messages, use a lowercase first letter,
+    but have the second sentence and on start with a Capital letter,
+    and punctuate between sentences.  The following is an example that
+    does not follow this rule, and is quite unreadable:
+
+      E(!candidates.empty(), origin::user,
+        F("your request matches no descendents of the current revision\n"
+          "in fact, it doesn't even match the current revision\n"
+          "maybe you want something like --revision=h:%s")
+        % app.opts.branch);
+
+    The proper way to write this message is:
+
+      E(!candidates.empty(), origin::user,
+        F("your request matches no descendents of the current revision.\n"
+          "In fact, it doesn't even match the current revision.\n"
+          "Maybe you want something like --revision=h:%s")
+        % app.opts.branch);
+
+  - proper names, acronyms, function names and variable names must
+    follow their proper capitalization rules.  For example, "Botan"
+    and "I/O" must be written that way.
+
+  - "monotone" and "mtn" are proper names with a lower case character,
+    and should always be written with a lower case first character,
+    even though language rules or the rules written here would say
+    otherwise.  If you find that troublesome, you might want to
+    consider rephrasing so the sentence doesn't start with "monotone"
+    or "mtn".
+
+  - Please consider that the user has to understand the messages, even
+    though they might not know all the inner details of how monotone
+    works, and might not have a programmer's mind.  For example, the
+    following message was hard to understand:
+
+        could not query default database locations
+
+    It has been replaced with the following (which will at least make
+    it clear that this is likely to be a configuration problem and not
+    some inner weirdness in monotone):
+
+        no default database location configured
+
+PLEASE APPLY COMMON SENSE.  There are message that will deviate from
+these rules.  They should be very few, however.
+
+
+Translation
+-----------
+
+For translators, their language may have a different set of rules for
+things such as quoting (in the french translation, «_ and _» are used
+instead of single quotes, for example) and capitalization.  Please use
+your best judgement and be consistent.  Still, do not capitalize
+"monotone" or "mtn".
+
+When working on your languages, please do not update any language file
+but your own, as it can be quite annoying for other translators to
+have to deal with merging the changes generated with their current
+work.  The best way to deal with this is by updating your language
+files using one of the following methods:
+
+    make ALL_LINGUAS={lang} update-po update-gmo
+
+    make po/{lang}.po-update po/{lang}.gmo
+
+(replace {lang} with your language code)
+
 
 Dialect issues
 --------------
@@ -160,6 +283,7 @@ continued to adhere to the dialect we write in. in particular:
   - prefer character constants ('x') to single-character strings ("x") in
     formatted output sequences.
 
+
 Interfacing with Lua
 --------------------
 
@@ -170,6 +294,7 @@ interfaces with Lua must obey the following rules:
     mandated by the language per se, but the standard libraries assume that
     and using the arrays otherwise may break hooks that use standard
     functions.
+
 
 Test suites, and writing test cases
 -----------------------------------
@@ -187,7 +312,7 @@ development team of a problem.
 All changes to monotone that alter monotone's behaviour should include a new
 test.  This includes most changes, but use your judgment about adding tests
 for very small changes.  The tests are located in the source tree in the
-tests/ directory, documentation on writing tests is available in
+test/ directory, documentation on writing tests is available in
 notes/README.testing.
 
 When fixing a bug, check for an existing test case for that bug and
@@ -201,6 +326,7 @@ number in parentheses.  Or, if using gdb, try setting a breakpoint on
 theboost::unit_test::first_failed_assertion function (see
 results_collector.hpp).
 
+
 Documenting large, user visible or otherwise important changes
 --------------------------------------------------------------
 
@@ -210,6 +336,7 @@ earlier releases in that file.
 Please add the entries in NEWS as part of the change in question, or
 as soon after the change has been committed as possible.  That will
 save the release master a lot of hassle at the time of release.
+
 
 Single-character macros
 -----------------------
@@ -278,6 +405,7 @@ bare capital letters scattered around.  Here's a quick guide.
              function.  You can easily add an overload to "dump" to
              support new types.
 
+
 "Application state" objects
 ---------------------------
 
@@ -344,6 +472,7 @@ the list below.
 
  * "workspace" is responsible for manipulating checked-out source trees.
 
+
 Reporting errors to the user
 ----------------------------
 
@@ -378,45 +507,69 @@ atomically update the workspace.
 Patch submission guidelines
 ---------------------------
 
-Mail patches to 'monotone-devel@nongnu.org' with a subject beginning with
-'[PATCH]' and followed by a brief description of the patch.  The body of the
-message should contain a description of the patch with reasoning for why the
-changes are required, followed by a prepared commit message.  Patches may
-be included inline in a message, or attached as a text/plain, text/x-diff,
-or text/x-patch attachment.  Make sure your mailer does not mangle the
-patch (e.g. by wrapping lines in the patch) before sending your patch to the
-list.
+Register an account on our code forge at <https://code.monotone.ca> and go to
+the "Issues" view of the "monotone" project listed there.  Then create a
+separate issue for the patch you want to send; describe it briefly in the
+issue's title and explain the reasoning more in detail in the description
+text.  Afterwards append the patch file to the issue so we can review and
+comment on it.  Please do not paste or upload it somewhere else, external
+resources tend to expire from time to time and we would like to preserve
+the information as they are as long as possible. Please do also not include
+your patch inline in the issue's description, so its formatting is not
+destroyed.
 
-All changes to the monotone source require an accompanying commit message.
+If you prefer old-style mail, send your patches to 'monotone-devel@nongnu.org'
+with a subject beginning with '[PATCH]', again followed by a brief description of
+the patch.  The body of the message should then also contain more information
+with reasoning for why the changes are required.  Patches may be included inline
+in a message, or attached as a text/plain, text/x-diff, or text/x-patch attachment.
+Make sure your mailer does not mangle the patch (e.g. by wrapping lines in the
+patch) before sending your patch to the list.
+
+All changes to the monotone source require an accompanying commit message, so
+please add a prepared commit message to your submission, as it will make our
+lives a little easier.
+
 Any changes that affect the user interface (e.g. adding command-line
 options, changing the output format) or affect the documented behaviour of
-monotone must include appropriate changes to the documentation.
+monotone must include appropriate changes to the documentation.  Please also
+think about adding unit and / or functional tests for bug fixes or new features
+in your patch.
 
-Please review your patch prior to submission, to not include
+Finally, please review your patch prior to submission, to not include
 accidental white-space-only changes or changes to the language
 files. Usually you should revert po/*.po files before generating a
 patch - unfortunately these are often changed when you build but do
 not contain any reasonable changes. Alternatively restrict mtn diff to
 the files you've actually changed.
 
-The monotone development team review and comment on all patches on a
+The monotone development team will review and comment on all patches on a
 best-efforts basis.  Patches are never ignored, but a patch may not be
 discussed or applied immediately according to the amount of spare time the
 developers have.  Don't be discouraged if you don't receive an immediate
 response, and if you feel that your patch has slipped through the cracks,
-post a follow up reminder message with a pointer to the original message in
-the mailing list archives.
+post a follow up reminder message with a pointer to the original issue
+or message to the mailing list archives.
 
 
 Third-party code
 ----------------
 
-monotone contains parts of a number of third-party libraries, including but
-not limited to: Lua, Popt, Botan, SQLite, Netxx, and libidn.  See AUTHORS
-for complete details on the included third-party code and the copyrights and
-licenses of each portion.
+monotone used to include a number of libraries directly in its source
+tree for a long time.  Today we prefer to keep big external sources
+outside of our tree, with the exception of our network library "Netxx"
+which has been abandoned by its original author long ago and which has
+also seen minor modifications from our side in the meantime.
 
-From time to time, bug fixes to this third-party code are required.  These
+So if you write new code that depends on third-party code or libraries,
+then try to rely on packaged versions of this code as much as possible.
+If this is impractical, for example because its only one file or even
+a single method you need, check the copyrights of the code in question for
+compatibility with the GPL that is used for monotone and add individual
+copyrights to the AUTHORS file before you copy it into monotone's
+source tree.
+
+Also from time to time, bug fixes to third-party code are required.  These
 fixes should be made in the monotone versions of the code first to solve the
 immediate problem.  In all cases that make sense (i.e. for general bug
 fixes), the change should also be sent to the upstream developers for

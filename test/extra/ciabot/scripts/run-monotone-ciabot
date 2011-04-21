@@ -1,0 +1,5 @@
+#! /bin/sh
+
+"`dirname $0`"/monotone-ciabot.py "$@" \
+    > monotone-ciabot.out \
+    2> monotone-ciabot.err

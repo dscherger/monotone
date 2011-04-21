@@ -1,0 +1,12 @@
+#! /bin/sh
+
+set -x
+if [ "$1" = "--subpart" ]; then
+    # The calling script is already redirecting to a file,
+    # let's not disturb that
+    $_MIME_CONSTRUCT "$@"
+else
+    $_MIME_CONSTRUCT --output "$@" \
+	>> $_MIME_CONSTRUCT_OUTPUT \
+	2>> $_MIME_CONSTRUCT_ERROR
+fi

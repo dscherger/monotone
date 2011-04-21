@@ -1,6 +1,28 @@
-If you've downloaded a release, see INSTALL for installation
-instructions.  If you've checked this out, the generated files are not
-included, and you must use "autoreconf --install" to create them.
+This directory tree holds the version control system `monotone'.
 
-"make html" for docs, or read the .info file.
+`monotone' is a free distributed version control system that provides
+a simple, single-file transactional version store, with fully
+disconnected operation and an efficient peer-to-peer synchronization
+protocol.  It understands history-sensitive merging, lightweight
+branches, integrated code review and 3rd party testing. it uses
+cryptographic version naming and client-side RSA certificates.  It
+has good internationalization support, few external dependencies,
+and runs on unix, OSX, windows, and is licensed under the GNU GPL
 
+Please see `COPYING' for licensing information, and `AUTHORS' for
+further information on those who have contributed, as well as
+licensing information for software used by `monotone'.
+
+The file `INSTALL' in this directory tells you how to build and
+install `monotone' on various systems, one you have unpacked or
+checked out the entire file tree.
+
+Please have a look at the file `NEWS' for information on new features
+and other user-visible changes in `monotone'.
+
+You may find bugs in this release.  If you do, please report them, as
+that helps us enhance `monotone' further, or simply fix problems on
+machines we don't have, or in code we don't use often.  Please send
+bugs reports to the mailing list monotone-devel@nongnu.org, or
+(preferred) go to https://code.monotone.ca/p/monotone/issues/ using
+your favorite web browser, sign in and issue a bug report there.

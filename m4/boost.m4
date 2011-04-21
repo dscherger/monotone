@@ -13,7 +13,7 @@ AC_DEFUN([BOOST_VERSION_CHECK],
  AC_CACHE_CHECK([boost version 1.33.0 or newer],
                  ac_cv_boost_version_least_1_33_0,
  [
-  AC_COMPILE_IFELSE(
+  AC_COMPILE_IFELSE([AC_LANG_SOURCE(
   [#include <boost/version.hpp>
   #if BOOST_VERSION >= 103300
   int main() { return 0; }
@@ -23,7 +23,7 @@ AC_DEFUN([BOOST_VERSION_CHECK],
   ],
   ac_cv_boost_version_least_1_33_0=yes,
   ac_cv_boost_version_least_1_33_0=no)
- ])
+ ])])
   if test x$ac_cv_boost_version_least_1_33_0 = xno; then
         AC_MSG_ERROR([boost 1.33.0 or newer required])
   fi

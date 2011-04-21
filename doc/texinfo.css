@@ -1,0 +1,335 @@
+body {
+    margin: 0px;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 0.625em;
+}
+
+body > * {
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+h1.settitle,
+div.node {
+    position: fixed;
+    top: 0;
+    margin: 0;
+    width: 100%;
+    background: url(images/bg.png);
+    padding: 20px;
+    font-size: 2.5em;
+    line-height: 1.2em;
+    height: 30px;
+    font-weight: bold;
+    color: white;
+    border-bottom: 1px solid #474747;
+}
+
+div.node:before {
+    content: "monotone documentation";
+}
+
+div.node hr {
+    visibility: hidden;
+    clear: both;
+    margin: 0;
+}
+
+div.node p {
+    float: right;
+    margin: 0;
+    margin-right: 20px;
+    padding-right: 20px;
+    padding-top: 2px;
+    font-weight: bold;
+    color: transparent;
+    font-size: 0px;
+    line-height: auto;
+    background: white;
+    -moz-border-radius: 10px 0px 0px 10px;
+    -webkit-border-radius: 10px 0px 0px 10px;
+    border-radius: 10px 0px 0px 10px;
+}
+
+div.node p a {
+    color: black;
+    margin-left: 20px;
+    font-weight: normal;
+    text-decoration: none;
+    padding-left: 21px;
+    font-size: 13px;
+    line-height: 25px;
+    background-repeat: no-repeat;
+    background-position: left center;
+    vertical-align: bottom;
+}
+
+div.node p a[name],
+div.node p a[href="../index.html#dir"] {
+    display: none;
+}
+
+div.node p a[rel=next] {
+    background-image: url(images/go-next.png);
+}
+
+div.node p a[rel=previous] {
+    background-image: url(images/go-previous.png);
+}
+
+div.node p a[rel=up] {
+    background-image: url(images/go-up.png);
+}
+
+div.node p a:first-child {
+    margin-left: 10px;
+}
+
+div.node + *,
+h1.settitle + h2,
+h1.settitle + * + h2 {
+    margin-top: 100px;
+}
+
+a[name] {
+    display: inline-block;
+    height: 50px;
+    margin-top: -50px;
+}
+
+div.contents a[name],
+div.footnote a[name] {
+    display: inline;
+    height: auto;
+    margin-top: auto;
+}
+
+h1.settitle + div.node {
+   display: none;
+}
+
+a {
+    color: #4627B4;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.clearfloat {
+    clear: both;
+}
+
+/* global margin */
+p,
+ul,
+ol,
+hr,
+div.block-image,
+pre {
+    margin-top: 1em;
+    margin-bottom: 0;
+}
+
+/* less top margin for certain consecutive elements */
+p + ul,
+p + ol,
+p + blockquote,
+h1 + h2,
+h3 + *,
+h4 + * {
+    margin-top: 0.5em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+    color: black;
+    line-height: 1.2em;
+    margin-bottom: 0;
+}
+
+h1 {
+    border-bottom: 1px dotted #474747;
+    padding-bottom: 0.2em;
+    margin-bottom: 1em;
+    margin-top: 3.5em;
+}
+
+h2 {
+    border-bottom: 1px dotted #474747;
+    padding-bottom: 0.2em;
+    margin-bottom: 1em;
+    margin-top: 2.5em;
+}
+
+h3 {
+    font-size: 1.4em;
+    margin-top: 2em;
+}
+
+h4 {
+    font-size: 1.3em;
+    font-style: italic;
+    margin-top: 1.5em;
+}
+
+h5 {
+    font-size: 1.2em;
+    margin-top: 1em;
+}
+
+p {
+    line-height: 1.5em;
+}
+
+body > p,
+blockquote > p {
+    font-size: 1.4em;
+}
+
+ul,
+ol {
+    font-size: 1.3em;
+    line-height: 1.75em;
+}
+
+ol li *,
+ul li * {
+    margin-bottom: auto;
+    font-size: 1em;
+}
+
+ul ol,
+ol ol,
+ul ul,
+ol ul {
+    margin-top: 0;
+    padding-left: 2em;
+    font-size: 1em;
+}
+
+dl dd {
+    font-size: 1.3em;
+    margin-bottom: 1em;
+}
+
+dl dd > * {
+    font-size: 1em;
+}
+
+dl dd ul,
+dl dd ol {
+    padding-left: 1em;
+}
+
+dl dd dl {
+    font-size: 0.7692em;
+    margin-top: 1em;
+}
+
+dl dt + dd {
+    margin-top: 1em;
+}
+
+dl dt {
+    font-size: 1.4em;
+}
+
+dl dt strong {
+    font-size: 0.8em;
+}
+
+dl dd dl dd {
+    margin-bottom: 0.5em;
+}
+
+dl dd dl dt + dd {
+    margin-top: 0.5em;
+}
+
+hr {
+    border: 0;
+    border-top: 1px dotted #474747;
+}
+
+pre,
+pre.smallexample {
+    background: #F0F0F0;
+    border: 1px dotted #474747;
+    font-family: monospace, courier;
+    padding: 1em;
+    white-space: -moz-pre-wrap;
+    white-space: pre-wrap;
+    overflow: auto;
+    font-size: 1.2em !important;
+}
+
+/* p is 1.4em, so we need the reciproce here to "reset" the size */
+p pre,
+p pre.smallexample {
+    font-size: 0.8571em !important;
+}
+
+/* same for dd here, 1 / 1.3 * 1.2 */
+dd pre,
+dd pre.smallexample {
+    font-size: 0.9231em !important;
+}
+
+/* makeinfo generates spurios p tags including line breaks in tables;
+   we don't want these pseudo elements create a margin and screw with our
+   layout, so we're hiding them by setting their font-size to 0.
+   This _could_ however make problems in the future where we use legit
+   tables with paragraphs in them! */
+table td + td > pre + p {
+    font-size: 0;
+}
+
+body * pre {
+    font-size: 1.2em;
+}
+
+/* specific styles */
+.contents {
+    margin-top: 1em;
+    border: 1px dotted #474747;
+    background: url(images/toc.png) no-repeat 10px 10px #FAFAFA;
+    padding: 10px;
+    padding-top: 50px;
+}
+
+.contents  ul {
+    list-style-type: none;
+    margin-top: 0;
+}
+
+.contents h2 {
+    display: none;
+}
+
+span.command,
+span.option,
+span.file,
+code,
+sample {
+    font-size: 1.1em !important;
+}
+
+span.file {
+    color: darkred;
+    font-weight: bold;
+}
+
+span.command {
+    color: darkgreen;
+    font-weight: bold;
+}
+
+span.option {
+    color: darkblue;
+}
+

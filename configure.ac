@@ -10,11 +10,12 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT([monotone], [0.99dev], [monotone-devel@nongnu.org])
-AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
-AC_CONFIG_SRCDIR([app_state.cc])
+AC_INIT([monotone], [1.0.90], [https://code.monotone.ca/p/monotone/issues/], ,
+	[http://www.monotone.ca])
+AM_INIT_AUTOMAKE([1.9 tar-ustar dist-bzip2 no-dist-gzip std-options])
+AC_CONFIG_SRCDIR([src/app_state.cc])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile doc/Makefile])
 AC_LANG([C++])
 
 dnl We want to take advantage of automake 1.11's optional "quiet build"
@@ -41,6 +42,11 @@ AC_SUBST([MKDIR_P])
 AC_CANONICAL_HOST
 AC_MSG_CHECKING([category of operating system])
 
+BUILD_DATE=`date '+%F'`
+AC_SUBST([BUILD_DATE])
+AC_DEFINE_UNQUOTED([BUILD_DATE], ["$BUILD_DATE"],
+	[The date of the build, used in the manual page and other places.])
+
 WIN32_PLATFORM=false
 os_err_t="int"
 case "$host" in
@@ -48,9 +54,10 @@ case "$host" in
     AC_MSG_RESULT([Windows])
     WIN32_PLATFORM="true"
     os_err_t="unsigned int"
+    ac_executable_extensions=".exe"
     
     # Inno setup configuration
-    AC_CONFIG_FILES([monotone.iss:win32/monotone.iss.in])
+    AC_CONFIG_FILES([monotone.iss:innosetup/monotone.iss.in])
     AC_PATH_PROG(ISCC, [ISCC]) 
   ;;
 
