@@ -19,18 +19,19 @@ addfile("nfs_mounted/nfs_mounted-file0", "nfs_mounted file 0\n")
 commit()
 rev0 = base_revision()
 
-addfile("local/local-dir/file1", "local file 1\n")
-addfile("local/local-dir/file2", "local file 2\n")
+addfile("local/file1", "local file 1\n")
+addfile("local/file2", "local file 2\n")
 
-addfile("nfs_mounted/nfs_mounted-dir/file1", "nfs_mounted file 1\n")
-addfile("nfs_mounted/nfs_mounted-dir/file2", "nfs_mounted file 2\n")
+addfile("nfs_mounted/file1", "nfs_mounted file 1\n")
+addfile("nfs_mounted/file2", "nfs_mounted file 2\n")
 
 commit()
 rev1 = base_revision()
 
 revert_to(rev0)
 
-execute(["echo", "tmpdir \"nfs_mounted\" \"nfs_mounted/tmp\" > _MTN/options"]) 
+get("options_line.text")
+execute("sh", "-c", 'cat options_line.text >> _MTN/options') 
 
 mkdir("nfs_mounted/tmp")
 
