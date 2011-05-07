@@ -42,12 +42,12 @@ using std::string;
 
 #ifdef HAVE_MMAP
 struct
-file_handle
+rcs_file_handle
 {
   string const & filename;
   off_t length;
   int fd;
-  file_handle(string const & fn) :
+  rcs_file_handle(string const & fn) :
     filename(fn),
     length(0),
     fd(-1)
@@ -60,13 +60,13 @@ file_handle
       if (fd == -1)
         throw oops("open of " + filename + " failed");
     }
-  ~file_handle()
+  ~rcs_file_handle()
     {
       if (close(fd) == -1)
         throw oops("close of " + filename + " failed");
     }
 };
-struct file_source
+struct rcs_file_source
 {
   string const & filename;
   int fd;
@@ -91,7 +91,7 @@ struct file_source
       ++pos;
     return good();
   }
-  file_source(string const & fn,
+  rcs_file_source(string const & fn,
               int f,
               off_t len) :
     filename(fn),
@@ -104,7 +104,7 @@ struct file_source
     if (mapping == MAP_FAILED)
       throw oops("mmap of " + filename + " failed");
   }
-  ~file_source()
+  ~rcs_file_source()
   {
     if (munmap(mapping, length) == -1)
       throw oops("munmapping " + filename + " failed, after reading RCS file");
@@ -112,12 +112,12 @@ struct file_source
 };
 #elif defined(WIN32)
 struct
-file_handle
+rcs_file_handle
 {
   string const & filename;
   off_t length;
   HANDLE fd;
-  file_handle(string const & fn) :
+  rcs_file_handle(string const & fn) :
     filename(fn),
     length(0),
     fd(NULL)
@@ -134,7 +134,7 @@ file_handle
       if (fd == NULL)
         throw oops("open of " + filename + " failed");
     }
-  ~file_handle()
+  ~rcs_file_handle()
     {
       if (CloseHandle(fd)==0)
         throw oops("close of " + filename + " failed");
@@ -142,7 +142,7 @@ file_handle
 };
 
 struct
-file_source
+rcs_file_source
 {
   string const & filename;
   HANDLE fd,map;
@@ -167,7 +167,7 @@ file_source
       ++pos;
     return good();
   }
-  file_source(string const & fn,
+  rcs_file_source(string const & fn,
               HANDLE f,
               off_t len) :
     filename(fn),
@@ -183,7 +183,7 @@ file_source
     if (mapping==NULL)
       throw oops("MapViewOfFile of " + filename + " failed");
   }
-  ~file_source()
+  ~rcs_file_source()
   {
     if (UnmapViewOfFile(mapping)==0)
       throw oops("UnmapViewOfFile of " + filename + " failed");
@@ -193,7 +193,7 @@ file_source
 };
 #else
 // no mmap at all
-typedef istream file_source;
+typedef istream rcs_file_source;
 #endif
 
 typedef enum
@@ -220,7 +220,7 @@ adv(char i, size_t & line, size_t & col)
 }
 
 static token_type
-get_token(file_source & ist,
+get_token(rcs_file_source & ist,
           string & str,
           size_t & line,
           size_t & col)
@@ -303,14 +303,14 @@ get_token(file_source & ist,
 
 struct parser
 {
-  file_source & ist;
+  rcs_file_source & ist;
   rcs_file & r;
   string token;
   token_type ttype;
 
   size_t line, col;
 
-  parser(file_source & s,
+  parser(rcs_file_source & s,
          rcs_file & r)
     : ist(s), r(r), line(1), col(1)
   {}
@@ -489,8 +489,8 @@ void
 parse_rcs_file(string const & filename, rcs_file & r)
 {
 #if defined(HAVE_MMAP) || defined(WIN32)
-      file_handle handle(filename);
-      file_source ifs(filename, handle.fd, handle.length);
+      rcs_file_handle handle(filename);
+      rcs_file_source ifs(filename, handle.fd, handle.length);
 #else
       ifstream ifs(filename.c_str());
       ifs.unsetf(ios_base::skipws);
