@@ -2151,7 +2151,7 @@ msgstr ""
 
 #: src/cmd_db.cc:177
 msgid "Kills a revision from the local database"
-msgstr "Löscht eine Revision von der lokalen Datenbank"
+msgstr "Löscht eine Revision aus der lokalen Datenbank"
 
 #: src/cmd_db.cc:194
 #, c-format
