@@ -381,9 +381,9 @@ SIMPLE_OPTION(bookkeep_only, "bookkeep-only", bool,
 SIMPLE_OPTION(move_conflicting_paths,
               "move-conflicting-paths/no-move-conflicting-paths",
               bool,
-              (F("move conflicting, unversioned paths into '%s' "
+              strdup((F("move conflicting, unversioned paths into '%s' "
                  "before proceeding with any workspace change") %
-                 bookkeeping_resolutions_dir).str().c_str())
+                      bookkeeping_resolutions_dir).str().c_str()))
 
 OPTSET_REL(globals, ssh_sign)
 SIMPLE_INITIALIZED_OPTION(ssh_sign, "ssh-sign", enum_string, "yes,no,only,check",
