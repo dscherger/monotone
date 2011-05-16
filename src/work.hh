@@ -1,4 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2011 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -128,7 +129,11 @@ public:
   // definitely is.
   explicit workspace(app_state & app);
   explicit workspace(app_state & app, i18n_format const & explanation);
-  explicit workspace(lua_hooks & lua, i18n_format const & explanation);
+
+  // this is only used by selectors to get info about the workspace, so it
+  // doesn't need a tmpdir_map
+  explicit workspace(lua_hooks & lua,
+                     i18n_format const & explanation);
 
   // Methods for manipulating the workspace's content.
   void find_missing(roster_t const & new_roster_shape,
@@ -293,6 +298,9 @@ public:
   // that exists, is unknown, and matches one of these regexps is treated as
   // if it did not exist, instead of being an unknown file.
   bool ignore_file(file_path const & path);
+
+  file_path_map const & tmpdir_map;
+
 };
 
 // This object turns the workspace ignore_file method into a path predicate,

@@ -1,4 +1,4 @@
-// Copyright (C) 2009, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2009 - 2011 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -191,19 +191,20 @@ workspace::create_workspace(options const & opts,
 
 // Normal-use constructor.
 workspace::workspace(app_state & app)
-  : lua(app.lua)
+  : lua(app.lua), tmpdir_map(app.opts.tmpdir)
 {
   require_workspace();
 }
 
 workspace::workspace(app_state & app, i18n_format const & explanation)
-  : lua(app.lua)
+  : lua(app.lua), tmpdir_map(app.opts.tmpdir)
 {
   require_workspace(explanation);
 }
 
-workspace::workspace(lua_hooks & lua, i18n_format const & explanation)
-  : lua(lua)
+workspace::workspace(lua_hooks & lua,
+                     i18n_format const & explanation)
+  : lua(lua), tmpdir_map(file_path_map())
 {
   require_workspace(explanation);
 }
@@ -517,6 +518,22 @@ read_options_file(any_path const & optspath,
           opts.key_dir = system_path(val, origin::workspace);
           opts.key_dir_given = true;
         }
+      else if (opt == "tmpdir")
+        {
+          // val is 'path1=path2'
+          size_t const path1_last = val.find("=") - 1;
+          try
+            {
+              file_path path1 = file_path_internal(val.substr(0, path1_last + 1));
+              file_path path2 = file_path_internal(val.substr(path1_last + 1));
+              opts.tmpdir.insert(std::make_pair(path1, path2));
+            }
+          catch (std::exception & e)
+            {
+              W(F("could not parse key 'tmpdir' (value '%s') in options file '%s' - ignored")
+                % val % optspath);
+            }
+        }
       else
         W(F("unrecognized key '%s' in options file '%s' - ignored")
           % opt % optspath);
@@ -548,6 +565,8 @@ write_options_file(bookkeeping_path const & optspath,
     st.push_str_pair(symbol("key"), opts.key());
   if (!opts.key_dir.as_internal().empty())
     st.push_str_pair(symbol("keydir"), opts.key_dir.as_internal());
+
+  // FIXME: write tmpdir
 
   basic_io::printer pr;
   pr.print_stanza(st);
@@ -1281,6 +1300,7 @@ struct simulated_working_tree : public editable_tree
 static inline bookkeeping_path
 path_for_detached_nids()
 {
+  // FIXME: this needs to use tmpdir_map
   return bookkeeping_root / "detached";
 }
 
@@ -1432,7 +1452,7 @@ editable_working_tree::apply_delta(file_path const & pth,
 
   file_data dat;
   source.get_version(new_id, dat);
-  write_data(pth, dat.inner());
+  write_data(pth, dat.inner(), work.tmpdir_map);
 }
 
 void
@@ -2180,7 +2200,11 @@ workspace::perform_content_update(roster_t const & old_roster,
   roster_t test_roster;
   temp_node_id_source nis;
   set<file_path> known;
+
+  // FIXME: this must be a list, from tmpdir_map
+  // which means it may not be a bookkeeping path
   bookkeeping_path detached = path_for_detached_nids();
+
   bool moved_conflicting = false;
 
   E(!directory_exists(detached), origin::user,

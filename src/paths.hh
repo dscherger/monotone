@@ -1,5 +1,5 @@
-// Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2005, 2011 Nathaniel Smith <njs@pobox.com>
+//               2008, 2010, 2011 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -483,6 +483,8 @@ void mark_std_paths_used(void);
 
 // reset path globals to uninitialized; should be done for each new command.
 void reset_std_paths(void);
+
+typedef std::map<file_path, file_path> file_path_map; // need a named type for options
 
 file_path
 find_new_path_for(std::map<file_path, file_path> const & renames,

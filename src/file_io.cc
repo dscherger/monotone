@@ -1,4 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2011 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -339,11 +340,24 @@ write_data_impl(any_path const & p,
 }
 
 void
-write_data(file_path const & path, data const & dat)
+write_data(file_path const & path,
+           data const & dat,
+           file_path_map const & tmpdir_map)
 {
-  // use the bookkeeping root as the temporary directory.
-  assert_path_is_directory(bookkeeping_root);
-  write_data_impl(path, dat, bookkeeping_root, false);
+  // use the bookkeeping root as the temporary directory, unless overridden
+  // by a tmpdir option.
+
+  // FIXME: match path prefix, not entire path; need alternate compare operator for find
+  std::map<file_path, file_path>::const_iterator i = tmpdir_map.find(path);
+  any_path tmp = any_path(bookkeeping_root);
+
+  if (i != tmpdir_map.end())
+    {
+      tmp = i->second;
+    }
+
+  assert_path_is_directory(tmp);
+  write_data_impl(path, dat, tmp, false);
 }
 
 void

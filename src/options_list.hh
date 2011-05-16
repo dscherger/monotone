@@ -1,5 +1,5 @@
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
-//               2008-2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008-2011 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -154,6 +154,19 @@ void set_simple_option(enum_string & t, std::string const & arg)
 template<>
 void set_simple_option(enum_string_set & t, std::string const & arg)
 { t.add(arg); }
+void set_simple_option(file_path_map & t, std::string const & arg)
+{
+  // arg is 'path1=path2'
+  size_t const path1_last = arg.find("=") - 1;
+  try
+    {
+      file_path path1 = file_path_internal(arg.substr(0, path1_last + 1));
+      file_path path2 = file_path_internal(arg.substr(path1_last + 1));
+      t.insert(std::make_pair(path1, path2));
+    }
+  catch (std::exception & e)
+    { throw bad_arg_internal(e.what()); }
+}
 
 # define SIMPLE_OPTION_BODY(name) { set_simple_option(name, arg); }
 #else
@@ -649,6 +662,9 @@ SIMPLE_OPTION(import_marks, "import-marks", system_path,
 
 SIMPLE_OPTION(export_marks, "export-marks", system_path,
               gettext_noop("save the internal marks table after exporting revisions"))
+
+SIMPLE_INITIALIZED_OPTION(tmpdir, "tmpdir", file_path_map, file_path_map(),
+              gettext_noop("list of alternate temp directories for writing files"))
 
 // clean up after ourselves
 #undef SIMPLE_OPTION

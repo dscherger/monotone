@@ -1,4 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2011 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -83,7 +84,13 @@ void read_data_for_command_line(utf8 const & path, data & dat);
 // or something, because we can't necessarily atomic rename from /tmp to the
 // workspace).  But that means we can't use it in general, only for the
 // workspace.
-void write_data(file_path const & path, data const & data);
+//
+// alt_tmpdir_map allows using alternate temp file directories for parts of
+// the workspace. This allows, for example, putting part of the workspace on
+// an NFS mounted drive.
+void write_data(file_path const & path,
+                data const & data,
+                file_path_map const & tmpdir_map);
 void write_data(bookkeeping_path const & path, data const & data);
 
 // Version that takes a system_path. To work with the "somewhat atomic"

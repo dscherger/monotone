@@ -1,1 +1,1 @@
-  tmpdir "nfs_mounted" "nfs_mounted/tmp"
+  tmpdir "nfs_mounted=nfs_mounted/tmp"

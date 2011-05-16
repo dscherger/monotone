@@ -14,7 +14,11 @@ mkdir("local")
 addfile("local/local-file0", "local file 0\n")
 
 mkdir("nfs_mounted")
-addfile("nfs_mounted/nfs_mounted-file0", "nfs_mounted file 0\n")
+addfile("nfs_mounted/file0", "nfs_mounted file 0\n")
+
+-- alt_tmpdir matches tree rooted at nfs_mounted
+mkdir("nfs_mounted/dir1")
+addfile("nfs_mounted/dir1/file0", "dir1/nfs_mounted file 1\n")
 
 commit()
 rev0 = base_revision()
@@ -23,7 +27,7 @@ addfile("local/file1", "local file 1\n")
 addfile("local/file2", "local file 2\n")
 
 addfile("nfs_mounted/file1", "nfs_mounted file 1\n")
-addfile("nfs_mounted/file2", "nfs_mounted file 2\n")
+addfile("nfs_mounted/dir1/file1", "dir1/nfs_mounted file 1\n")
 
 commit()
 rev1 = base_revision()
@@ -36,5 +40,6 @@ execute("sh", "-c", 'cat options_line.text >> _MTN/options')
 mkdir("nfs_mounted/tmp")
 
 check(mtn("update"), 0, nil, true)
+-- FIXME: no way to see use of nfs_mounted/tmp?
 
 -- end of file

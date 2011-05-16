@@ -489,7 +489,7 @@ revert(app_state & app,
               L(FL("writing file %s to %s")
                 % f->content % path);
               db.get_file_version(f->content, dat);
-              write_data(path, dat.inner());
+              write_data(path, dat.inner(), app.opts.tmpdir);
             }
         }
       else
