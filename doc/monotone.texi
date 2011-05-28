@@ -7599,6 +7599,8 @@ The argument @var{path} determines which path's attributes should be printed.
 
 @itemize
 @item
+13.1 -- add the possibility to specify a revision for the operation
+@item
 11.0 -- removed the @command{format_version} stanza
 @item
 5.0 -- renamed from @command{attributes} to @command{get_attributes}
@@ -7610,6 +7612,8 @@ The argument @var{path} determines which path's attributes should be printed.
 
 Prints all attributes of the given file in the current workspace, and
 the attribute states.
+If a revision is given, then the attributes of the given file at that
+point in time are returned. No workspace is needed in this case.
 
 @item Sample output:
 
@@ -7637,13 +7641,13 @@ of attribute. This entry can have one of the following four values:
 
 @itemize
 @item
-'added': the attribute has just been added to the file
+@code{added}: the attribute has just been added to the file
 @item
-'dropped': the attribute has just been dropped from the file
+@code{dropped}: the attribute has just been dropped from the file
 @item
-'unchanged': the attribute has not been changed since the last revision
+@code{unchanged}: the attribute has not been changed since the last revision
 @item
-'changed': the attribute has been changed since the last revision
+@code{changed}: the attribute has been changed since the last revision
 @end itemize
 
 The status 'changed' can come up if an attribute foo has been dropped and
@@ -7656,6 +7660,9 @@ $ mtn attr drop file.txt foo ; mtn attr set file.txt foo baz
 If an attribute has been dropped, the output will still return the previously
 set value of the dropped attribute for convenience (obviously this is no longer
 recorded in the current workspace).
+
+If attributes from a specific revision are queried, then all the file's
+attribute states are set to @code{unchanged}.
 
 The complete format:
 

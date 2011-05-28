@@ -2,6 +2,21 @@ XXX XXX XX XX:XX:XX UTC 201X
 
         1.1 release.
 
+        Changes
+
+        New features
+
+        - 'automate atttributes' now also works without a workspace
+          and returns the attributes for a specific file from the
+          revision's manifest
+
+        Bugs fixed
+
+        Internal
+
+        Other
+
+
 Sat Mar 26 10:53:47 UTC 2011
 
         1.0 release.

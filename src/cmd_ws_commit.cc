@@ -1319,49 +1319,65 @@ CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
 //   1: file / directory name
 // Added in: 1.0
 // Renamed from attributes to get_attributes in: 5.0
+// Changed to also work without a workspace in: 13.1
 // Purpose: Prints all attributes for the specified path
 // Output format: basic_io formatted output, each attribute has its own stanza:
 //
-// 'format_version'
-//         used in case this format ever needs to change.
-//         format: ('format_version', the string "1" currently)
-//         occurs: exactly once
 // 'attr'
 //         represents an attribute entry
 //         format: ('attr', name, value), ('state', [unchanged|changed|added|dropped])
 //         occurs: zero or more times
 //
-// Error conditions: If the path has no attributes, prints only the
-//                   format version, if the file is unknown, escalates
+// Error conditions: If the path has no attributes, prints nothing,
+//                   if the file is unknown, escalates
 CMD_AUTOMATE(get_attributes, N_("PATH"),
              N_("Prints all attributes for the specified path"),
-             "",
-             options::opts::none)
+             N_("If an explicit revision is given, the file's attributes "
+                "at this specific revision are returned."),
+             options::opts::revision)
 {
-  E(!args.empty(), origin::user,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
-  database db(app);
-  workspace work(app);
-
-  // retrieve the path
   file_path path = file_path_external(idx(args,0));
 
-  roster_t base, current;
-  parent_map parents;
-  temp_node_id_source nis;
+  database db(app);
+  roster_t current, base;
 
-  // get the base and the current roster of this workspace
-  work.get_current_roster_shape(db, nis, current);
-  work.get_parent_rosters(db, parents);
-  E(parents.size() == 1, origin::user,
-    F("this command can only be used in a single-parent workspace"));
-  base = parent_roster(parents.begin());
+  bool from_database;
+  if (app.opts.revision.size() == 0)
+    {
+      from_database = false;
+      workspace work(app);
 
-  E(current.has_node(path), origin::user,
-    F("unknown path '%s'") % path);
+      parent_map parents;
+      temp_node_id_source nis;
 
-  // create the printer
+      // get the base and the current roster of this workspace
+      work.get_current_roster_shape(db, nis, current);
+      work.get_parent_rosters(db, parents);
+      E(parents.size() == 1, origin::user,
+        F("this command can only be used in a single-parent workspace"));
+      base = parent_roster(parents.begin());
+
+      E(current.has_node(path), origin::user,
+        F("unknown path '%s'") % path);
+    }
+  else if (app.opts.revision.size() == 1)
+    {
+      from_database = true;
+      revision_id rid;
+
+      project_t project(db);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), rid);
+      db.get_roster(rid, current);
+
+      E(current.has_node(path), origin::user,
+        F("unknown path '%s' in %s") % path % rid);
+    }
+  else
+    E(false, origin::user, F("none or only one revision must be given"));
+
   basic_io::printer pr;
 
   // the current node holds all current attributes (unchanged and new ones)
@@ -1370,61 +1386,70 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
        i != n->attrs.end(); ++i)
   {
     std::string value(i->second.second());
-    std::string state;
+    std::string state = "unchanged";
 
-    // if if the first value of the value pair is false this marks a
-    // dropped attribute
-    if (!i->second.first)
+    if (!from_database)
       {
-        // if the attribute is dropped, we should have a base roster
-        // with that node. we need to check that for the attribute as well
-        // because if it is dropped there as well it was already deleted
-        // in any previous revision
-        I(base.has_node(path));
-
-        const_node_t prev_node = base.get_node(path);
-
-        // find the attribute in there
-        attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
-        I(j != prev_node->attrs.end());
-
-        // was this dropped before? then ignore it
-        if (!j->second.first) { continue; }
-
-        state = "dropped";
-        // output the previous (dropped) value later
-        value = j->second.second();
-      }
-    // this marks either a new or an existing attribute
-    else
-      {
-        if (base.has_node(path))
+        // if if the first value of the value pair is false this marks a
+        // dropped attribute
+        if (!i->second.first)
           {
-            const_node_t prev_node = base.get_node(path);
-            attr_map_t::const_iterator j =
-              prev_node->attrs.find(i->first);
+            // if the attribute is dropped, we should have a base roster
+            // with that node. we need to check that for the attribute as well
+            // because if it is dropped there as well it was already deleted
+            // in any previous revision
+            I(base.has_node(path));
 
-            // the attribute is new if it either hasn't been found
-            // in the previous roster or has been deleted there
-            if (j == prev_node->attrs.end() || !j->second.first)
+            const_node_t prev_node = base.get_node(path);
+
+            // find the attribute in there
+            attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
+            I(j != prev_node->attrs.end());
+
+            // was this dropped before? then ignore it
+            if (!j->second.first) { continue; }
+
+            state = "dropped";
+            // output the previous (dropped) value later
+            value = j->second.second();
+          }
+        // this marks either a new or an existing attribute
+        else
+          {
+            if (base.has_node(path))
+              {
+                const_node_t prev_node = base.get_node(path);
+                attr_map_t::const_iterator j =
+                  prev_node->attrs.find(i->first);
+
+                // the attribute is new if it either hasn't been found
+                // in the previous roster or has been deleted there
+                if (j == prev_node->attrs.end() || !j->second.first)
+                  {
+                    state = "added";
+                  }
+                // check if the attribute's value has been changed
+                else if (i->second.second() != j->second.second())
+                  {
+                    state = "changed";
+                  }
+                else
+                  {
+                    state = "unchanged";
+                  }
+              }
+            // its added since the whole node has been just added
+            else
               {
                 state = "added";
               }
-            // check if the attribute's value has been changed
-            else if (i->second.second() != j->second.second())
-              {
-                state = "changed";
-              }
-            else
-              {
-                state = "unchanged";
-              }
           }
-        // its added since the whole node has been just added
-        else
-          {
-            state = "added";
-          }
+      }
+    else
+      {
+        // skip previously dropped attributes in database mode
+        if (!i->second.first)
+          continue;
       }
 
     basic_io::stanza st;

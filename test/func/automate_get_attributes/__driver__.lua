@@ -97,3 +97,35 @@ for _,l in pairs(parsed) do
     end
 end
 
+-- check that we can query arbitrary attributes from earlier revisions
+check(mtn("automate", "get_attributes", "-r", "0123456789012345678901234567890123456789", "bla"), 1, false, true)
+check(qgrep("no revision 0123456789012345678901234567890123456789 found in database", "stderr"))
+
+rev = base_revision()
+check(mtn("automate", "get_attributes", "foo", "-r", rev), 1, false, true)
+check(qgrep("unknown path 'foo' in " .. rev, "stderr"))
+
+check(mtn("automate", "get_attributes", "testfile", "-r", rev), 0, true, false)
+
+parsed = parse_basic_io(readfile("stdout"))
+check(table.getn(parsed) == 6)
+
+lastkey = ""
+checked = {}
+for _,l in pairs(parsed) do
+    if l.name == "attr" then
+        lastkey = l.values[1]
+        val = l.values[2]
+        if lastkey == "key1" then check(val == "persists")
+        elseif lastkey == "key3" then check(val == "has_been_changed")
+        elseif lastkey == "key4" then check(val == "has_been_added")
+        else check(false) end
+    end
+    if l.name == "state" then
+        check(l.values[1] == "unchanged")
+        checked[lastkey] = true
+    end
+end
+
+check(checked["key1"] and checked["key3"] and checked["key4"])
+
