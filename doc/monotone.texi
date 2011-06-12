@@ -7588,7 +7588,7 @@ prints an error message to stderr and exits with status 1.
 
 @end table
 
-@item mtn automate get_attributes @var{path}
+@item mtn automate get_attributes [--revision=@var{id}] @var{path}
 
 @table @strong
 @item Arguments:
@@ -7610,10 +7610,8 @@ The argument @var{path} determines which path's attributes should be printed.
 
 @item Purpose:
 
-Prints all attributes of the given file in the current workspace, and
-the attribute states.
-If a revision is given, then the attributes of the given file at that
-point in time are returned. No workspace is needed in this case.
+Prints all attributes of the given file in the given revision (default
+current workspace revision), and the attribute states.
 
 @item Sample output:
 
