@@ -3698,7 +3698,7 @@ test, or testsuite.
 
 The evaluation of trust is done on a cert-by-cert basis by calling a
 set of Lua hooks: @ref{get_revision_cert_trust},
-@ref{get_manifest_cert_trust}, and @ref{get_file_cert_trust}.  These
+@ref{get_manifest_cert_trust}.  These
 hooks are only called when a cert has at least one good signature from
 a known key, and are passed @emph{all} the keys which have signed the
 cert, as well as the cert's ID, name and value. The hook can then
@@ -12035,9 +12035,6 @@ by at least one of three ``trusted'' keys, unless it is an
 @emph{two} or more trusted keys. This is one way of requiring that
 the revision has been approved by an extra ``reviewer'' who used the
 @command{approve} command.
-
-@anchor{get_file_cert_trust}@item get_file_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
-Similar to @code{@ref{get_revision_cert_trust}}, for certs on files.
 
 @anchor{get_manifest_cert_trust}@item get_manifest_cert_trust (@var{signers}, @var{id}, @var{name}, @var{val})
 Similar to @code{@ref{get_revision_cert_trust}}, for certs on manifests.

@@ -17,7 +17,3 @@ function get_manifest_cert_trust(signers, id, name, val)
    return true
 end
 
-function get_file_cert_trust(signers, id, name, val)
-   return true
-end
-

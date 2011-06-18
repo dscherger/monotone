@@ -412,10 +412,6 @@ function get_manifest_cert_trust(signers, id, name, val)
    return true
 end
 
-function get_file_cert_trust(signers, id, name, val)
-   return true
-end
-
 function accept_testresult_change(old_results, new_results)
    local reqfile = io.open("_MTN/wanted-testresults", "r")
    if (reqfile == nil) then return true end
