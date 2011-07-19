@@ -1390,7 +1390,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
 
     if (!from_database)
       {
-        // if if the first value of the value pair is false this marks a
+        // if the first value of the value pair is false this marks a
         // dropped attribute
         if (!i->second.first)
           {
@@ -1447,7 +1447,8 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
       }
     else
       {
-        // skip previously dropped attributes in database mode
+        // skip previously dropped attributes in database mode, because that
+        // has meaning only in uncommitted workspaces.
         if (!i->second.first)
           continue;
       }

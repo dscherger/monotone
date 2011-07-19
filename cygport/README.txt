@@ -9,8 +9,13 @@ $ ln -s monotone.cygwin.patch monotone-$NEW-1.cygwin.patch
     edit *.cygport and/or *.patch as needed
     add the new version to Port Notes in *.patch
 
-$ cd ../monotone-build_cygwin; make dist-gzip
-$ cp ../monotone-build_cygwin/monotone-$NEW.tar.gz .
+download monotone-$NEW.tar.bz2 from http://www.monotone.ca/downloads.php
+    to monotone/cygport directory
+
+    or build dist-gzip, copy to here
+
+$ bunzip2 monotone-$NEW.tar.bz2
+$ gzip monotone-$NEW.tar
 $ cygport monotone-$NEW-1 all
 $ cp monotone-$NEW-1/spkg/monotone.cygwin.patch .
 

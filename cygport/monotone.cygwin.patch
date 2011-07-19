@@ -1,6 +1,6 @@
 --- origsrc/monotone-1.0/CYGWIN-PATCHES/README	1970-01-01 01:00:00.000000000 +0100
 +++ src/monotone-1.0/CYGWIN-PATCHES/README	2010-11-03 20:05:14.793224700 +0100
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,130 @@
 +monotone
 +------------------------------------------
 +monotone is a free distributed version control system. it provides a simple,
@@ -66,6 +66,9 @@
 +------------------
 +
 +Port Notes:
++
++----------  monotone-1.00-1 -- 2011-04-30 -----------
++Upstream major release. No patch needed.
 +
 +----------  monotone-0.99.1-1 -- 2010-11-03 -----------
 +Upstream major release. No patch needed.
