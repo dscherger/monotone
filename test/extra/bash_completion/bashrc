@@ -16,6 +16,9 @@ stty columns 4000
 if [ "$BASH_COMPLETION" = "" ]; then
     if [ -f /etc/bash_completion ]; then
 	. /etc/bash_completion
+    elif [ -f /etc/profile.d/bash-completion.sh ]; then
+        # Gentoo default installation place
+	. /etc/profile.d/bash-completion.sh
     elif [ -f /usr/local/etc/bash_completion ]; then
 	. /usr/local/etc/bash_completion
     else
