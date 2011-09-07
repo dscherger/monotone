@@ -385,9 +385,9 @@ bool
 ssh_agent::has_key(const keypair & key)
 {
   //grab the monotone public key as an RSA_PublicKey
-  SecureVector<Botan::byte> pub_block;
-  pub_block.set(reinterpret_cast<Botan::byte const *>((key.pub)().data()),
-                (key.pub)().size());
+  SecureVector<Botan::byte> pub_block
+    (reinterpret_cast<Botan::byte const *>((key.pub)().data()),
+     (key.pub)().size());
   L(FL("has_key: building %d-byte pub key") % pub_block.size());
   shared_ptr<X509_PublicKey> x509_key =
     shared_ptr<X509_PublicKey>(Botan::X509::load_key(pub_block));

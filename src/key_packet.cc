@@ -106,8 +106,8 @@ namespace
     void validate_public_key_data(string const & name, string const & keydata) const
     {
       string decoded = decode_base64_as<string>(keydata, origin::user);
-      Botan::SecureVector<Botan::byte> key_block;
-      key_block.set(reinterpret_cast<Botan::byte const *>(decoded.c_str()), decoded.size());
+      Botan::SecureVector<Botan::byte> key_block
+        (reinterpret_cast<Botan::byte const *>(decoded.c_str()), decoded.size());
       try
         {
           Botan::X509::load_key(key_block);

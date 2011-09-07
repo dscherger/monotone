@@ -7,6 +7,7 @@
 #ifndef BOTAN_EXT_GZIP_H__
 #define BOTAN_EXT_GZIP_H__
 
+#include <botan/version.h>
 #include <botan/filter.h>
 #include <botan/pipe.h>
 
@@ -30,13 +31,19 @@ namespace GZIP {
 
 }
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+   typedef size_t filter_length_t;
+#else
+   typedef u32bit filter_length_t;
+#endif
+
 /*************************************************
 * Gzip Compression Filter                        *
 *************************************************/
 class Gzip_Compression : public Filter
    {
    public:
-      void write(const byte input[], u32bit length);
+      void write(const byte input[], filter_length_t length);
       void start_msg();
       void end_msg();
       std::string name() const { return "Gzip_Compression"; }
@@ -60,7 +67,7 @@ class Gzip_Compression : public Filter
 class Gzip_Decompression : public Filter
    {
    public:
-      void write(const byte input[], u32bit length);
+      void write(const byte input[], filter_length_t length);
       void start_msg();
       void end_msg();
       std::string name() const { return "Gzip_Decompression"; }

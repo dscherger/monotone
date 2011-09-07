@@ -137,7 +137,7 @@ void Gzip_Compression::start_msg()
 /*************************************************
 * Compress Input with Gzip                       *
 *************************************************/
-void Gzip_Compression::write(const byte input[], u32bit length)
+void Gzip_Compression::write(const byte input[], filter_length_t length)
    {
 
    count += length;
@@ -267,7 +267,7 @@ void Gzip_Decompression::start_msg()
 /*************************************************
 * Decompress Input with Gzip                     *
 *************************************************/
-void Gzip_Decompression::write(const byte input[], u32bit length)
+void Gzip_Decompression::write(const byte input[], filter_length_t length)
    {
    if(length) no_writes = false;
 
@@ -284,8 +284,8 @@ void Gzip_Decompression::write(const byte input[], u32bit length)
    // Check the gzip header
    if (pos < sizeof(GZIP::GZIP_HEADER))
       {
-      u32bit len = std::min((u32bit)sizeof(GZIP::GZIP_HEADER)-pos, length);
-      u32bit cmplen = len;
+      filter_length_t len = std::min((filter_length_t)sizeof(GZIP::GZIP_HEADER)-pos, length);
+      filter_length_t cmplen = len;
       // The last byte is the OS flag - we don't care about that
       if (pos + len - 1 >= GZIP::HEADER_POS_OS)
          cmplen--;
@@ -346,8 +346,14 @@ u32bit Gzip_Decompression::eat_footer(const byte input[], u32bit length)
       if (footer.size() >= GZIP::FOOTER_LENGTH)
          throw Decoding_Error("Gzip_Decompression: Data integrity error in footer");
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+      size_t eat_len = std::min(GZIP::FOOTER_LENGTH-footer.size(),
+                                static_cast<size_t>(length));
+      footer += std::make_pair(input, eat_len);
+#else
       u32bit eat_len = std::min(GZIP::FOOTER_LENGTH-footer.size(), length);
       footer.append(input, eat_len);
+#endif
 
       if (footer.size() == GZIP::FOOTER_LENGTH)
          {
@@ -377,7 +383,12 @@ void Gzip_Decompression::check_footer()
   for (int i = 0; i < 4; i++)
      buf[3-i] = tmpbuf[i];
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+  tmpbuf.resize(4);
+  tmpbuf.copy(footer.begin(), 4);
+#else
   tmpbuf.set(footer.begin(), 4);
+#endif
   if (buf != tmpbuf)
       throw Decoding_Error("Gzip_Decompression: Data integrity error - CRC32 error");
 
@@ -412,7 +423,11 @@ void Gzip_Decompression::clear()
    no_writes = true;
    inflateReset(&(zlib->stream));
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+   footer.clear();
+#else
    footer.destroy();
+#endif
    pos = 0;
    datacount = 0;
    }

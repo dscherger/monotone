@@ -856,9 +856,9 @@ key_store::make_signature(database & db,
     {
       if (agent.connected()) {
         //grab the monotone public key as an RSA_PublicKey
-        SecureVector<Botan::byte> pub_block;
-        pub_block.set(reinterpret_cast<Botan::byte const *>(key.pub().data()),
-                      key.pub().size());
+        SecureVector<Botan::byte> pub_block
+          (reinterpret_cast<Botan::byte const *>(key.pub().data()),
+           key.pub().size());
         L(FL("make_signature: building %d-byte pub key") % pub_block.size());
         shared_ptr<X509_PublicKey> x509_key =
           shared_ptr<X509_PublicKey>(Botan::X509::load_key(pub_block));
@@ -1031,8 +1031,14 @@ key_store_state::migrate_old_key_pair
   for (;;)
     try
       {
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+        arc4_key.resize(phrase().size());
+        arc4_key.copy(reinterpret_cast<Botan::byte const *>(phrase().data()),
+                      phrase().size());
+#else
         arc4_key.set(reinterpret_cast<Botan::byte const *>(phrase().data()),
                      phrase().size());
+#endif
 
         Pipe arc4_decryptor(get_cipher("ARC4", arc4_key, Botan::DECRYPTION));
 
