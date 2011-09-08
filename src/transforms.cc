@@ -53,10 +53,10 @@ using Botan::Hash_Filter;
 // paradigm "must" be used. this program is intended for source code
 // control and I make no bones about it.
 
-NORETURN(static inline void error_in_transform(Botan::Exception & e));
+NORETURN(static inline void error_in_transform(std::exception & e));
 
 static inline void
-error_in_transform(Botan::Exception & e, origin::type caused_by)
+error_in_transform(std::exception & e, origin::type caused_by)
 {
   // these classes can all indicate data corruption
   if (typeid(e) == typeid(Botan::Encoding_Error)
@@ -107,7 +107,7 @@ error_in_transform(Botan::Exception & e, origin::type caused_by)
         pipe->process_msg(in);                                  \
         out = pipe->read_all_as_string(Pipe::LAST_MESSAGE);     \
       }                                                         \
-    catch (Botan::Exception & e)                                \
+    catch (std::exception & e)                                   \
       {                                                         \
         pipe.reset(new Pipe(new T(carg)));                      \
         error_in_transform(e, made_from);                       \
@@ -173,7 +173,7 @@ template<> string xform<Botan::Hex_Decoder>(string const & in,
             {
               throw Botan::Decoding_Error(string("invalid hex character '") + (char)c + "'");
             }
-          catch(Botan::Exception & e)
+          catch(std::exception & e)
             {
               error_in_transform(e, made_from);
             }
@@ -219,7 +219,7 @@ void pack(T const & in, base64< gzip<T> > & out)
       tmp = pipe->read_all_as_string(Pipe::LAST_MESSAGE);
       out = base64< gzip<T> >(tmp, in.made_from);
     }
-  catch (Botan::Exception & e)
+  catch (std::exception & e)
     {
       pipe.reset(new Pipe(new Gzip_Compression,
                           new Base64_Encoder));
@@ -237,7 +237,7 @@ void unpack(base64< gzip<T> > const & in, T & out)
       pipe->process_msg(in());
       out = T(pipe->read_all_as_string(Pipe::LAST_MESSAGE), in.made_from);
     }
-  catch (Botan::Exception & e)
+  catch (std::exception & e)
     {
       pipe.reset(new Pipe(new Base64_Decoder,
                           new Gzip_Decompression));
@@ -264,7 +264,7 @@ calculate_ident(data const & dat,
       p->process_msg(dat());
       ident = id(p->read_all_as_string(Pipe::LAST_MESSAGE), dat.made_from);
     }
-  catch (Botan::Exception & e)
+  catch (std::exception & e)
     {
       p.reset(new Pipe(new Hash_Filter("SHA-160")));
       error_in_transform(e, dat.made_from);
