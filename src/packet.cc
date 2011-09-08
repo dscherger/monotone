@@ -175,7 +175,9 @@ namespace
       Botan::DataSource_Memory ds(decoded);
       try
         {
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+          Botan::PKCS8::load_key(ds, lazy_rng::get(), Dummy_UI());
+#elif BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
           Botan::PKCS8::load_key(ds, lazy_rng::get(), string());
 #else
           Botan::PKCS8::load_key(ds, string());
@@ -189,7 +191,11 @@ namespace
         }
       // since we do not want to prompt for a password to decode it finally,
       // we ignore all other exceptions
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+      catch (Passphrase_Required) {}
+#else
       catch (Botan::Invalid_Argument) {}
+#endif
     }
     void validate_certname(string const & cn) const
     {
@@ -460,7 +466,13 @@ read_packets(istream & in, packet_consumer & cons)
   return count;
 }
 
-
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+std::string Dummy_UI::get_passphrase(const std::string&,
+                                     const std::string&,
+                                     Botan::User_Interface::UI_Result&) const {
+  throw Passphrase_Required();
+}
+#endif
 
 // Local Variables:
 // mode: C++

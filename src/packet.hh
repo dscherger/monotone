@@ -84,6 +84,24 @@ struct packet_writer : public packet_consumer
 
 size_t read_packets(std::istream & in, packet_consumer & cons);
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+// work around botan commit 2d09d7d0cd4bd0e7155d001dd65a4f29103b158c
+#include <botan/ui.h>
+class Dummy_UI : public Botan::User_Interface
+{
+public:
+  virtual std::string get_passphrase(const std::string&,
+                                     const std::string&,
+                                     Botan::User_Interface::UI_Result&) const;
+};
+class Passphrase_Required : public Botan::Exception {
+public:
+  Passphrase_Required(const std::string& m = "Passphrase required") :
+    Botan::Exception(m)
+    {}
+};
+#endif
+
 #endif
 
 // Local Variables:
