@@ -170,11 +170,16 @@ cpp_main(int argc, char ** argv)
       // versions, including all of the stable branch 1.8.x.
       E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0), origin::system,
         F("this monotone binary does not work with Botan 1.9.x"));
-#else
+#elif BOTAN_VERSION_CODE < BOTAN_VERSION_CODE_FOR(1,9,11)
       E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,22), origin::system,
         F("this monotone binary requires Botan 1.7.22 or newer"));
       E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0), origin::system,
         F("this monotone binary does not work with Botan 1.9.x"));
+#else
+      E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,9,11), origin::system,
+        F("this monotone binary requires Botan 1.9.11 or newer"));
+      E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,11,0), origin::system,
+        F("this monotone binary does not work with Botan 1.11.x"));
 #endif
 
       app_state app;
