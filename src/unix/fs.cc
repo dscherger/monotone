@@ -359,7 +359,7 @@ do_remove_recursive(string const & path)
   if (err == ENOENT)
     return; // nothing to delete
 
-  E(err == ENOTEMPTY, origin::system,
+  E((err == ENOTEMPTY) || (err == EEXIST), origin::system,
     F("could not remove '%s': %s") % path % os_strerror(err));
 
   // If we get here, it's a non-empty directory to be recursed through.
