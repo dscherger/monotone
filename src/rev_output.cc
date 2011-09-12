@@ -98,10 +98,22 @@ revision_header(revision_id const rid, revision_t const & rev,
     if (i->name == tag)
       out << _("Tag:      ") << i->value << '\n';
 
+  // Output "custom" certs if we have any, under a heading of "Other certs"
+  bool need_to_output_heading = true;
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
-    if (i->name != author && i->name != branch && i->name != changelog &&
-        i->name != comment && i->name != date && i->name != tag)
-      out << i->name << ": " << i->value << '\n';
+    {
+      if (i->name != author && i->name != branch && i->name != changelog &&
+          i->name != comment && i->name != date && i->name != tag)
+        {
+          if (need_to_output_heading)
+            {
+              out << _("Other certs:") << '\n';
+              need_to_output_heading = false;
+            }
+
+          out << "  " << i->name << ": " << i->value << '\n';
+        }
+    }
 
   out << "\n";
 
