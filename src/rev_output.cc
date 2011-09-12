@@ -98,6 +98,11 @@ revision_header(revision_id const rid, revision_t const & rev,
     if (i->name == tag)
       out << _("Tag:      ") << i->value << '\n';
 
+  for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
+    if (i->name != author && i->name != branch && i->name != changelog &&
+        i->name != comment && i->name != date && i->name != tag)
+      out << i->name << ": " << i->value << '\n';
+
   out << "\n";
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
