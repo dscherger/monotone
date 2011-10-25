@@ -881,7 +881,7 @@ distcleancheck_listfiles = find . -type f -a ! -name package_revision.txt -a ! -
 .PHONY: distcheck-base.hh
 distcheck-base.hh:
 	cd $(srcdir) && $(SHELL) util/audit-includes \
-		$(sort $(mtn_SOURCES) $(test_unit_tester_SOURCES) $(test_bin_tester_SOURCES) \
+		$(sort $(mtn_SOURCES) $(test_bin_unit_tester_SOURCES) $(test_bin_tester_SOURCES) \
                        $(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
                        src/win32/main.cc src/unix/main.cc)
 
