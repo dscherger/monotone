@@ -76,7 +76,45 @@ namespace pcre
   typedef map<char const *,
               pair<struct real_pcre const *, struct pcre_extra const *> >
               regex_cache;
-  regex_cache compiled;
+
+  class regex_cache_manager
+  {
+public:
+    regex_cache::iterator find(char const * pattern)
+      {
+        return cache.find(pattern);
+      }
+
+    void store(char const * pattern,
+               pair<struct real_pcre const *, struct pcre_extra const *>
+               data)
+      {
+        cache[pattern] = data;
+      }
+
+    regex_cache::iterator end()
+      {
+        return cache.end();
+      }
+
+    ~regex_cache_manager()
+      {
+        for (regex_cache::iterator iter = cache.begin();
+             iter != cache.end();
+             ++iter)
+          {
+            if (iter->second.first)
+              pcre_free(const_cast<pcre_t *>(iter->second.first));
+
+            if (iter->second.second)
+              pcre_free(const_cast<pcre_extra *>(iter->second.second));
+          }
+      }
+private:
+    regex_cache cache;
+  };
+
+  regex_cache_manager compiled;
 
   void regex::init(char const * pattern, flags options)
   {
@@ -116,7 +154,7 @@ namespace pcre
     ed->match_limit_recursion = 2000;
     extradat = ed;
     // store in cache
-    compiled[pattern] = make_pair(basedat, extradat);
+    compiled.store(pattern, make_pair(basedat, extradat));
   }
 
   regex::regex(char const * pattern, origin::type whence, flags options)
@@ -133,22 +171,6 @@ namespace pcre
 
   regex::~regex()
   {
-  }
-
-  // currently not called from anywhere so the entries are leaked
-  void free_compiled()
-  {
-    for (regex_cache::iterator iter = compiled.begin();
-         iter != compiled.end();
-         ++iter)
-      {
-        if (iter->second.first)
-          pcre_free(const_cast<pcre_t *>(iter->second.first));
-
-        if (iter->second.second)
-          pcre_free(const_cast<pcre_extra *>(iter->second.second));
-      }
-      compiled.clear();
   }
 
   bool
