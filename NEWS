@@ -14,6 +14,11 @@ XXX XXX XX XX:XX:XX UTC 201X
 
         Internal
 
+	- The performance and memory usage of regular expressions has
+	  been improved throughout. This affects any use of the
+	  ".mtn-ignore" file such as "mtn ls unknown" and "mtn add",
+	  and any calls to "regex.search" in Lua hooks.
+
         Other
 
 
