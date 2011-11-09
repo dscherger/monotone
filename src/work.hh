@@ -18,7 +18,7 @@ class path_restriction;
 class node_restriction;
 struct content_merge_adaptor;
 class lua_hooks;
-class i18n_format;
+struct i18n_format;
 struct options;
 class app_state;
 
