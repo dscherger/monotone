@@ -80,7 +80,7 @@ namespace pcre
   class regex_cache_manager
   {
 public:
-    regex_cache::iterator find(char const * pattern)
+    regex_cache::const_iterator find(char const * pattern)
       {
         return cache.find(pattern);
       }
@@ -92,7 +92,7 @@ public:
         cache[pattern] = data;
       }
 
-    regex_cache::iterator end()
+    regex_cache::const_iterator end()
       {
         return cache.end();
       }
@@ -122,7 +122,7 @@ private:
     int erroff;
     char const * err;
     // use the cached data if we have it
-    regex_cache::iterator iter = compiled.find(pattern);
+    regex_cache::const_iterator iter = compiled.find(pattern);
     if (iter != compiled.end())
       {
         basedat = iter->second.first;
