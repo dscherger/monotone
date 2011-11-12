@@ -670,6 +670,8 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
   unsigned int old_head_size = heads.size();
 
   edge_entry const & old_edge (*rev.edges.begin());
+  E(!null_id(edge_old_revision(old_edge)), origin::user,
+    F("cannot disapprove root revision"));
   db.get_revision_manifest(edge_old_revision(old_edge),
                                rev_inverse.new_manifest);
   {
