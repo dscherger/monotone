@@ -45,7 +45,8 @@ use warnings;
 use Term::ANSIColor;
 
 if ( $^O eq 'MSWin32' ) {
-    use Win32::Console::ANSI;
+    require Win32::Console::ANSI;
+    import  Win32::Console::ANSI;
 }
 
 # pattern => attributes
