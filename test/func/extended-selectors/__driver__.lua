@@ -79,6 +79,12 @@ expect("b:otherbranch", lhs, other, other_2)
 expect("b:testbranch/b:otherbranch", lhs)
 expect("b:testbranch|b:otherbranch", root, lhs, rhs, m, other, other_2)
 
+-- now do same tests again with a double not - should get same results
+expect("not(not(b:testbranch))", root, lhs, rhs, m)
+expect("not(not(b:otherbranch))", lhs, other, other_2)
+expect("not(not(b:testbranch/b:otherbranch))", lhs)
+expect("not(not(b:testbranch|b:otherbranch))", root, lhs, rhs, m, other, other_2)
+
 expect("not(b:otherbranch)", root, rhs, m)
 expect("not(b:testbranch)", other, other_2)
 expect("not(h:testbranch)", root, lhs, rhs, other, other_2)
