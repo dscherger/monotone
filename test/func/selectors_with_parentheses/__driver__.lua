@@ -1,7 +1,5 @@
 -- See issue 176 - https://code.monotone.ca/p/monotone/issues/176/
 -- It reports parentheses being mismatched when they actually aren't.
--- We're primarily testing the selector parsing here and making sure
--- the command succeeds rather than checking the data.
 --
 -- The example given used the parentheses to combine multiple
 -- selectors with |, where A, B, and C represent other selectors.
@@ -76,10 +74,13 @@ other = ci("otherbranch", lhs, "Jim")
 other_2 = ci("otherbranch", other, "Jim")
 
 -- Test reported example where parentheses are used for grouping multiple selectors
-check(mtn("automate", "select", "(a:Joe|a:Anne)/b:testbranch"), 0, true, nil)
+expect("(a:Joe|a:Anne)/b:testbranch", root, lhs, rhs, m)
 -- Simplified case using single selector
-check(mtn("automate", "select", "(a:Joe)/b:testbranch"), 0, true, nil)
+expect("(a:Joe)/b:testbranch", root, lhs)
+-- Removing the parentheses for the simplified case should be a no-op
+expect("a:Joe/b:testbranch", root, lhs)
 
--- Now lets swap the selectors around - should still work (and get same data if we cared)
-check(mtn("automate", "select", "b:testbranch/(a:Joe|a:Anne)"), 0, true, nil)
-check(mtn("automate", "select", "b:testbranch/(a:Joe)"), 0, true, nil)
+-- Now lets swap the selectors around - should still work and get same data
+expect("b:testbranch/(a:Joe|a:Anne)", root, lhs, rhs, m)
+expect("b:testbranch/(a:Joe)", root, lhs)
+expect("b:testbranch/a:Joe", root, lhs)
