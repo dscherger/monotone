@@ -766,7 +766,7 @@ shared_ptr<selector> selector::create(options const & opts,
           {
             ++lparen_pos;
           }
-        E(lparen_pos < items.size(), origin::user,
+        E(lparen_pos <= items.size(), origin::user,
           F("selector '%s' is invalid, unmatched ')'") % orig);
         I(idx(items, items.size() - lparen_pos).str == "(");
         unsigned int name_idx = items.size() - lparen_pos - 1;
