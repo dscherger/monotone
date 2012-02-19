@@ -1172,6 +1172,7 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
     }
 
   output.write(pr.buf.data(), pr.buf.size());
+  output << '\n';
 }
 
 // Name: get_revision
