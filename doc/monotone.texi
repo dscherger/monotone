@@ -12467,7 +12467,7 @@ bytes:
 @item guess_terminal_width()
 
 Returns the size of the terminal window as number or a sane default
-(80) if the information cannot be retrieved.
+(72) if the information cannot be retrieved.
 
 @item include(@var{scriptfile})
 
