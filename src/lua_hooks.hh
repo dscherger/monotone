@@ -65,6 +65,8 @@ public:
   bool hook_get_author(branch_name const & branchname,
                        key_identity_info const & info,
                        string & author);
+  bool hook_get_real_branch_name(string const & branch_alias,
+                                 branch_name & real_branch_name);
   bool hook_edit_comment(external const & user_log_message,
                          external & result);
   bool hook_persist_phrase_ok();

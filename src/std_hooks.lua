@@ -1540,3 +1540,7 @@ function get_man_page_formatter_command()
    end
 end
 
+function get_real_branch_name(branch_alias)
+	return branch_alias
+end
+

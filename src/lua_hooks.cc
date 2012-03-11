@@ -398,6 +398,21 @@ lua_hooks::hook_get_author(branch_name const & branchname,
 }
 
 bool
+lua_hooks::hook_get_real_branch_name(string const & branch_alias,
+                                     branch_name & real_branch_name)
+{
+  Lua ll(st);
+  string rbn;
+  ll.func("get_real_branch_name")
+    .push_str(branch_alias);
+  bool ok = ll.call(1,1)
+    .extract_str(rbn)
+    .ok();
+  real_branch_name = branch_name(rbn, origin::internal);
+  return ok;
+}
+
+bool
 lua_hooks::hook_edit_comment(external const & user_log_message,
                              external & result)
 {

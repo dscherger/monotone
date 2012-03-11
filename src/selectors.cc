@@ -108,13 +108,17 @@ class branch_selector : public selector
 {
   string value;
 public:
-  branch_selector(string const & arg, options const & opts) : value(arg)
+  branch_selector(string const & arg, options const & opts, lua_hooks & lua) : value(arg)
   {
     if (value.empty())
       {
         workspace::require_workspace(F("the empty branch selector b: refers to the current branch"));
         value = opts.branch();
       }
+
+    branch_name real_branch_name;
+    lua.hook_get_real_branch_name(value, real_branch_name);
+    dump(real_branch_name, value);
   }
   virtual set<revision_id> complete(project_t & project)
   {
@@ -662,7 +666,7 @@ selector::create_simple_selector(options const & opts,
     case 'a':
       return shared_ptr<selector>(new author_selector(sel));
     case 'b':
-      return shared_ptr<selector>(new branch_selector(sel, opts));
+      return shared_ptr<selector>(new branch_selector(sel, opts, lua));
     case 'c':
       return shared_ptr<selector>(new cert_selector(sel));
     case 'd':

@@ -11592,6 +11592,29 @@ end
 @end group
 @end smallexample
 
+@anchor{get_real_branch_name}@item get_real_branch_name (@var{branch_alias})
+
+Called whenever monotone receives a branch name from the user, as the real branch
+name within the database is needed to perform actions. This allows the user to
+provide their own aliases to minimize key presses for common branch names.
+
+Example: "net.venge.monotone" is the real branch name for the monotone main development
+branch, and this hook allows a user to map the alias "nvm" to "net.venge.monotone".
+
+@smallexample
+@group
+function get_real_branch_name(branch_alias)
+        if (branch_alias == "nvm") then
+                return "net.venge.monotone"
+        else
+                return branch_alias
+        end
+end
+@end group
+@end smallexample
+
+The default implementation of this hook returns @var{branch_alias}.
+
 @anchor{get_default_database_locations}@item get_default_database_locations ()
 Called whenever monotone converts a database name to an absolute path.
 
