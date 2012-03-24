@@ -4799,7 +4799,9 @@ Print version number, then exit; same as @command{mtn version}.
 
 @item --xargs <arg>
 @itemx -@@ <arg>
-Insert command line arguments taken from the given file.
+Insert command line arguments taken from the given file. A '-'
+can be used to read the arguments from standard input.
+e.g. @code{--xargs=-}
 @end ftable
 
 @node Common Options,  , Global Options, Global and Common Options
