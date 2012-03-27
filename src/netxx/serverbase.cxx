@@ -44,6 +44,8 @@
 #include "probeinfo.h"
 #include "socket.h"
 
+#include <cerrno>
+
 // standard includes
 #include <map>
 #include <vector>
@@ -167,13 +169,26 @@ void Netxx::ServerBase::bind_to(const Address &addr, bool stream_server)
 		if (saun->sun_path[0] == '/') {
 		    files_.push_back(saun->sun_path);
 		} else {
-		    char buffer[MAXPATHLEN];
+		    // BIG FAT WARNING: THIS CODE HAS NOT BEEN TESTED!
+		    // The original code is non-dynamic, depending on
+		    // the value of MAXPATHLEN.  Since that macro isn't
+		    // guaranteed to exist, a more dynamic use if getcwd()
+		    // was written.  However, since monotone doesn't use
+		    // AF_LOCAL sockets, this code will not be reached.
+		    int e = ERANGE;
+		    int n = 4096;
 
-		    if (getcwd(buffer, sizeof(buffer))) {
- 			std::string fullpath = buffer; fullpath += '/'; fullpath += saun->sun_path;
-			files_.push_back(fullpath);
-		    } else {
-			files_.push_back(saun->sun_path);
+		    while (e == ERANGE) {
+			char buffer[n];
+			e = 0;
+			n += 4096;
+
+			if (getcwd(buffer, n)) {
+			    std::string fullpath = buffer; fullpath += '/'; fullpath += saun->sun_path;
+			    files_.push_back(fullpath);
+			} else if ((e = errno) != ERANGE) {
+			    files_.push_back(saun->sun_path);
+			}
 		    }
 		}
 	    }
