@@ -6,6 +6,9 @@
 -- Version history:
 -- ----------------
 -- 
+-- 0.2 (2012-04-10) Markus Wanner <markus@bluegap.ch>
+--     - adapt to buildbot 0.8.3 and newer
+--
 -- 0.1 (2007-07-10) Markus Schiltknecht <markus@bluegap.ch>
 --     - initial version
 --
@@ -43,9 +46,12 @@ function notify_buildbot(rev_id, revision, certs)
 	end
     end
 
+    -- Note: for buildbot versions before 0.8.3, you need to give a
+    -- 'username' argument instead of 'auth' and 'who'.
     execute(_buildbot_bin, "sendchange",
 	    "--master", _buildbot_addr,
-	    "--username", author,
+	    "--auth", "change:changepw",
+	    "--who", author,
 	    "--revision", rev_id,
 	    "--comments", changelog,
 	    "--branch", branch,
