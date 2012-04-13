@@ -23,23 +23,23 @@ Python        | 2.7.1   | http://www.python.org/
 mingw-get-inst| latest  | http://sourceforge.net/projects/mingw/files/
                         | -> Automated MinGW Installer
                         | -> mingw-get-inst
-                        | -> mingw-get-inst-20101030
-                        | -> mingw-get-inst-20101030.exe
-boost         | 1.45.1  | http://sourceforge.net/projects/boots/files/
-                        | -> boost -> 1.54.0 -> boost_1_45_0.tar.gz
+                        | -> mingw-get-inst-20110211
+                        | -> mingw-get-inst-20110211.exe
+boost         | 1.46.1  | http://sourceforge.net/projects/boost/files/
+                        | -> boost -> 1.46.1 -> boost_1_46_1.tar.gz
 Lua           | 5.1.4   | http://www.lua.org/
                         | -> download
                         | -> "...current release is >Lua 5.1.4<" under "Source"
                         | lua-5.1.4.tar.gz
-pcre          | 8.11    | http://www.pcre.org/
+pcre          | 8.12    | http://www.pcre.org/
                         | -> ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/
-                        | -> pcre-8.11.tar.gz
+                        | -> pcre-8.12.tar.gz
 botan         | 1.8.11  | http://botan.randombit.net/download.html
                         | "Source: >tar/gzip<" under "Current Stable Release"
-sqlite3       | 3.7.4   | http://www.sqlite.org/download.html
-                        | -> sqlite-autoconf-3070400.tar.gz
-libidn        | 1.19    | ftp://ftp.gnu.org/gnu/libidn/
-                        | -> libidn-1.19.tar.gz
+sqlite3       | 3.7.5   | http://www.sqlite.org/download.html
+                        | -> sqlite-autoconf-3070500.tar.gz
+libidn        | 1.20    | ftp://ftp.gnu.org/gnu/libidn/
+                        | -> libidn-1.20.tar.gz
 Depends.exe   |         | http://www.dependencywalker.com/ ; also comes with Visual Studio
 
 In general, there are two versions of most tools on the
@@ -90,11 +90,11 @@ maps to both / and /usr/ under the MinGW shell.
   $ cd /usr
   $ mkdir src
   $ cd src
-  $ tar -zxf ../boost_1_45_1.tar.gz
+  $ tar -zxf ../boost_1_46_1.tar.gz
   This may give errors about gid_t out of range, and then say
   "Exiting with failure status due to previous errors"; you can
   ignore this.
-  $ cd boost_1_45_1
+  $ cd boost_1_46_1
   $ cp -a boost /mingw/include
 
 04. Lua
@@ -106,8 +106,8 @@ maps to both / and /usr/ under the MinGW shell.
 
 05. pcre
    $ cd /usr/src
-   $ tar -zxf ../pcre-8.11.tar.gz
-   $ cd pcre-8.11
+   $ tar -zxf ../pcre-8.12.tar.gz
+   $ cd pcre-8.12
    $ ./configure --prefix=/mingw
    $ make install
 
@@ -125,15 +125,15 @@ maps to both / and /usr/ under the MinGW shell.
 
 07. sqlite3
    $ cd /usr/src
-   $ tar -zxf ../sqlite-autoconf-3070400.tar.gz
-   $ cd sqlite-autoconf-3070400
+   $ tar -zxf ../sqlite-autoconf-3070500.tar.gz
+   $ cd sqlite-autoconf-3070500
    $ ./configure --prefix=/mingw
    $ make install
 
 08. libidn
    $ cd /usr/src
-   $ tar -zxf ../libidn-1.19.tar.gz
-   $ cd libidn-1.19
+   $ tar -zxf ../libidn-1.20.tar.gz
+   $ cd libidn-1.20
    $ ./configure --prefix=/mingw
    $ make install
 
@@ -151,8 +151,8 @@ maps to both / and /usr/ under the MinGW shell.
    monotone binary will take several extra seconds to start.
    $ cd /c/.../monotone
    $ autoreconf -i # not needed if you use the distributed tarball
-   $ CXXFLAGS="-static-libgcc -static-libstdc++ -O2 -Wall"; export CXXFLAGS
-   $ LDFLAGS="-static-libgcc -static-libstdc++"; export LDFLAGS
+   $ export CXXFLAGS="-static-libgcc -static-libstdc++ -g -O2 -Wall"
+   $ export LDFLAGS="-static-libgcc -static-libstdc++"
    $ ./configure
    $ make
 

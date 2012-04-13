@@ -1,0 +1,22 @@
+.TH "MTN-CLEANUP" 1 2011-02-22 monotone monotone
+.SH "NAME"
+mtn-cleanup \- generate shell variables from monotone workspace options
+.SH "SYNOPSIS"
+.B mtn-cleanup
+.br
+.SH "DESCRIPTION"
+.B mtn-cleanup
+returns a workspace to its pristine state with the minimum of change;
+missing files are restored, changed files are reverted and new files
+are removed.
+.SH "BUGS"
+.B mtn-cleanup
+doesn't look to see if the database happens to be somewhere in the
+workspace, and might therefore remove it.  Future version may take a
+look at
+.I _MTN/options
+to check for this possibility.
+.SH "SEE ALSO"
+.BR mtn (1),
+.SH "AUTHOR"
+Written by Anthony Edward Cooper <aecooper@coosoft.plus.com>.

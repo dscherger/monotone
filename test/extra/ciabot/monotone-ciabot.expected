@@ -1,0 +1,19 @@
+<message>
+    <generator>
+        <name>Monotone CIA Bot client python script</name>
+        <version>1.0</version>
+    </generator>
+    <source>
+        <project>test</project>
+        <branch>testbranch</branch>
+    </source>
+    <body>
+        <commit>
+            <revision>425f7d00baffb1f43a12b60f106b2293d5dddd7c</revision>
+            <author>tester@test.net</author>
+            <files><file action="modify">test2</file></files>
+            <log>blah-blah</log>
+            <url>http://test.net/commit/425f7d00baffb1f43a12b60f106b2293d5dddd7c</url>
+        </commit>
+    </body>
+</message>

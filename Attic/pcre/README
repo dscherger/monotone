@@ -1,4 +1,4 @@
-This is the library component of pcre 7.4, downloaded from
+This is the library component of pcre 7.6, downloaded from
 <ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/>.  The only
 modification made to the code is that each .c file has been changed to
 #include "pcre_config.h" unconditionally, instead of "config.h" only when

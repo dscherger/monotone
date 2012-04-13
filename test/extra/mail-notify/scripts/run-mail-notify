@@ -1,0 +1,13 @@
+#! /bin/sh
+
+# Current work directory should be
+# {builddir}/test/work/extra/mail-notify
+
+_MIME_CONSTRUCT="`type -p mime-construct || which mime-construct`"
+_MIME_CONSTRUCT_OUTPUT="`pwd`/mime-construct.out"
+_MIME_CONSTRUCT_ERROR="`pwd`/mime-construct.err"
+_HERE="`dirname ${0}`"
+ls -a "$1"
+ls -aR "`dirname $1`"
+export _MIME_CONSTRUCT _MIME_CONSTRUCT_OUTPUT _MIME_CONSTRUCT_ERROR
+PATH=${_HERE}:$PATH ${_HERE}/monotone-mail-notify "$@"

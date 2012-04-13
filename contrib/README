@@ -6,37 +6,20 @@ and may not even work with the current version of monotone.
 
 See individual files for licenses.
 
-  -- monotone.bash_completion: command line completion code for bash.
   -- monotone.zsh_completion: command line completion code for zsh.
 
-  -- monotone.el, monotone-nav.el: An Emacs interface.
+  -- monotone-nav.el: An Emacs interface.
 
   -- ciabot_monotone.py: A python script to watch a repository and
      send notifications of commits to CIA (http://cia.navi.cx).
 
   -- mtbrowse.sh: An interactive text-mode history browser
 
-  -- monotone-notify.pl: a Perl hack to create email logs with recent
-     changes in a repository database.  It's designed to be run at regular
-     intervals, for example from a cron script.  It uses database
-     variables (those handled with 'monotone set/unset') in the domain
-     domain 'notify' to keep track of the last revisions that have
-     already been sent out.
-     For a manual, do `perl Notify.pl --man'.
-     To get a help text, do `perl Notify.pl --help'.
-
-  -- mtn-cleanup: A Perl script for returning a workspace to its pristine state
-     with the minimum of change (i.e. missing files are restored, changed files
-     are reverted and new files are removed).
-
   -- Monotone.pm: A Perl module to access a 'mtn automate stdio' subprocess.
 
   -- monoprof.sh: A simple monotone profiling script.
 
   -- Log2Gxl.java: Removed. Now in branch net.venge.monotone.contrib.monotree
-
-  -- mtn_cheat_sheet.svg: A SVG image inspired by Mercurial's QuickStart Guides
-     (http://people.type-z.org/seb/mercurial/v1.0/)
 
   -- ext_hooks.lua.in, ext_hooks_expand.pl: run ext_hooks_expand.pl and you
      will get ext_hooks.lua, a hooks system that allows loading several
@@ -67,14 +50,6 @@ See individual files for licenses.
      command sequences.  The lua code should be copied to a monotonerc file
      for use.
 
-  -- monotone-mail-notify.lua: a mail notification script which offers an
-     individual per-branch recipient configuration with a syntax similar
-     to the one found in ~/.monotone/read-permissions.
-     It writes out details of each revision received to files which are then
-     picked up by the monotone-mail-notify.sh script which requires bash,
-     source-highlight and mime-construct to build nicely structured emails
-     with summaries of the revision and its diffs.
-
   -- ciabot_monotone_hookversion.lua / ciabot_monotone_hookversion.py:
      Two scripts that work together to send commit notifications to
      http://CIA.cv/.  The main configuration is done in the file
@@ -89,22 +64,3 @@ See individual files for licenses.
      notifiers.  After a pull, it will display what branches are being
      filled with new revisions, and how many.  Easy to include from your
      monotonerc.
-
-  -- dump-test-logs.sh: Dump the detailed logs for all tests with an
-     unexpected outcome to stdout.  This is intended for use in super-
-     automated build environments, e.g. the Debian build daemons, where
-     the easiest way to recover detailed test logs for a failed build
-     is to embed them in the overall 'make' output.  Run, with no
-     arguments, from the top level of a monotone build tree.
-
-  -- get_passphrase_from_file.lua: This creates a version of the function
-     get_passphrase() that reads passphrases from a file in the monotone
-     configuration directory called "passphrases".  This is useful for
-     automated startup of servers.
-
-  -- authorize_remote_automate.lua: This is a server hook to authenticate
-     remote automate operations, either by matching a key identity with
-     patterns in the file remote-automate-permissions, or matching the
-     command with a configured list of safe remote automate commands
-     (configured through the variable ARA_safe_commands, which can be set
-     up anywhere before this hook is loaded).

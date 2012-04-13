@@ -1,5 +1,9 @@
 How to release a new version of monotone
-----------------------------------------
+========================================
+
+-----------
+Preparation
+-----------
 
 0) Send a pre-release announcement out to monotone-i18n@nongnu.org
    to inform active translators that a new version of monotone
@@ -13,21 +17,40 @@ How to release a new version of monotone
 1) Make sure that the buildbot looks reasonably green.  Let's not
    release stuff that's known to be broken on any major platforms, eh?
 
-2) Write user-readable release notes at the top of the NEWS file,
+2) Check out a fresh copy of the source in a separate directory and
+   prepare it for building (if you use your main workspace, you
+   increase the changes of accidentally picking up weird stuff).
+   For example, {SOMEDIR} in the example here could be 'monotone-{NEW VERSION}'.
+
+   $ mtn co -r h:net.venge.monotone {SOMEDIR}
+   $ cd {SOMEDIR}
+
+   If nothing else is said, the rest of this file assumes you're
+   standing in {SOMEDIR}.
+
+   NOTE:  If you're about to create a new release branch, make sure to
+   edit the branch setting in _MTN/options to reflect that.  Do it now
+   instead of forgetting it in a commit later ;-).
+
+-----------------------------------------------------
+Check the documentation, and make appropriate changes
+-----------------------------------------------------
+
+3) Write user-readable release notes at the top of the NEWS file,
    roughly following the format of existing entries.  Make sure to
    mention any incompatibilities at the top, and generally it's a good
    idea to put cool new stuff above nice-but-not-as-exciting stuff.
 
    A useful command:
 
-     $ mtn log --from h:net.venge.monotone --to t:monotone-*
+     $ mtn log --from h:net.venge.monotone --to t:monotone-{LAST RELEASE}
 
    Commit your release notes, so other people can see them.
 
-3) Get people to read over your release notes, it's really easy to
+4) Get people to read over your release notes, it's really easy to
    make mistakes or have stupid grammatical errors here.
 
-4) Check the NEWS if any changes in the automation interface have happened.
+5) Check the NEWS if any changes in the automation interface have happened.
 
    Document changes in the wiki under http://wiki.monotone.ca/AutomateVersions/
    by adding new commands with an 'A' marker or set a 'B' (for _B_ackwards
@@ -46,7 +69,7 @@ How to release a new version of monotone
 
    Commit your changes.
 
-5) Update the UPGRADE file.  At the very least, bump the version
+6) Update the UPGRADE file.  At the very least, bump the version
    number in the first line.  This file should always contain a
    complete description of how to upgrade from any version of monotone
    to the latest release -- you may need to tweak or remove earlier
@@ -54,78 +77,97 @@ How to release a new version of monotone
 
    Commit your changes.
 
-6) Double-check that INSTALL, AUTHORS, and README don't need any
+7) Double-check that INSTALL, AUTHORS, and README don't need any
    updates.  If they do, make them.
 
-7) Update version numbers.  The following files need to be touched:
+8) Update version numbers.  The following files need to be touched:
      configure.ac: change the call to AC_INIT
      visualc/config.h: the version number is mentioned several times,
        don't miss any.
    Commit your changes.
 
-8) Okay, everything should be ready to go... double-check that:
+9) Okay, everything should be ready to go... double-check that:
      -- you've done the above steps correctly
      -- you've entered the correct date at the top of the NEWS file
         (esp. important when you wrote the notes a few days ago so
         people could look them over!)
 
-9) Build and test the source package, in a clean checkout (if you use
-   your main workspace, you increase the changes of accidentally
-   picking up weird stuff):
+--------------------
+Building and testing
+--------------------
 
-   $ mtn co -r h:net.venge.monotone SOMEDIR
-   $ cd SOMEDIR
-   $ autoreconf -i && ./configure && make distcheck
+10) Build and test, making sure to check that the targets listed
+    below (mandatory!  Make at the very least sure to check the Unix
+    targets!).
 
-   Wait a long time, eventually it will either bomb out, or say
-   "monotone-0.<whatever>.tar.gz is ready for distribution".  If it
-   bombs out, fix it, otherwise, SOMEDIR/monotone-<NEW VERSION>.tar.gz
-   is the source package.
+    $ autoreconf -i && ./configure && make {TARGETS}
 
-10) Build docs for the website:
+    Targets to check on different platforms:
 
-    $ tar xvzf SOMEDIR/monotone-<NEW VERSION>.tar.gz
-    $ cd monotone-<NEW VERSION>
-    $ ./configure
-    $ LANG=C make monotone.pdf html
+      - Unix: all doc/monotone.pdf doc/monotone.ps distcheck
 
-11) Upload everything to the website (uses monotone):
+      - Win32 MinGW: all check win32-installer
+
+      - Win32 Cygwin: all check dist-gzip
+
+    (we really don't need to go through distcheck on all platforms,
+    and that's why it's important to check the Unix targets at the
+    very least)
+
+    Wait a long time on distcheck, eventually it will either bomb out,
+    or say "monotone-{NEW VERSION}.tar.bz2 is ready for distribution".
+    If it bombs out, fix it, otherwise, monotone-{NEW VERSION}.tar.bz2
+    is the source package.
+
+11) Build docs for the website (most of it is already built at this
+    point, but not all):
+
+    $ LANG=C make pdf html
+
+------------------------------
+Uploading, tagging and syncing
+------------------------------
+
+12) Upload everything to the website (uses monotone):
 
     # This requires that you have registered a SSH version 2 public key
     # with the administrators of monotone.ca, currently richard@levitte.org.
     #
-    $ mkdir <NEW VERSION>
-    $ mv SOMEDIR/monotone-<NEW VERSION>.tar.gz <NEW VERSION>/
-    $ scp -r <NEW VERSION> mtn-uploads@monotone.ca:~/
+    $ mkdir {NEW VERSION}
+    $ cp monotone-{NEW VERSION}.tar.bz2 {NEW VERSION}/
+    $ scp -r {NEW VERSION} mtn-uploads@monotone.ca:~/
 
     # The rest is done via monotone.
     #
-    $ mtn -d DATABASE co -b net.venge.monotone.web.mainsite WEBDIR
-    $ cp monotone-<NEW VERSION>/{NEWS,INSTALL,UPGRADE,monotone.pdf,monotone.html} \
-          WEBDIR/
-    $ rm -rf WEBDIR/docs
-    $ cp -r monotone-<NEW VERSION>/html WEBDIR/docs
+    $ mtn -d DATABASE co -b net.venge.monotone.web.mainsite {WEBDIR}
+    $ cp monotone-{NEW VERSION}/NEWS			{WEBDIR}
+    $ cp monotone-{NEW VERSION}/INSTALL			{WEBDIR}
+    $ cp monotone-{NEW VERSION}/UPGRADE			{WEBDIR}
+    $ cp monotone-{NEW VERSION}/doc/monotone.pdf	{WEBDIR}
+    $ cp monotone-{NEW VERSION}/doc/monotone.html	{WEBDIR}
+    $ rm -rf {WEBDIR}/docs
+    $ cp -r monotone-{NEW VERSION}/doc/html		{WEBDIR}/docs
 
-    Open WEBDIR/monotone.html, change the CSS include from "texinfo.css" to
-    "docs/texinfo.css" and hit save.
+    Open {WEBDIR}/monotone.html, change the CSS include from
+    "texinfo.css" to "docs/texinfo.css" and hit save.
 
-    $ rm WEBDIR/figures/*
-    $ cp monotone-<NEW VERSION>/figures/*.png WEBDIR/figures/
-    $ cd WEBDIR
+    $ rm {WEBDIR}/figures/*
+    $ cp monotone-{NEW VERSION}/doc/figures/*.png	{WEBDIR}/figures/
+    $ cd {WEBDIR}
     $ mtn drop --missing
     $ mtn add --unknown
-    $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
+    $ mtn ci -m "Updates related to the release of monotone {NEW VERSION}"
     $ mtn sync
 
-12) Update index.php on the website to state the latest version in the left
+13) Update index.php on the website to state the latest version in the left
     column:
 
-    $ cd WEBDIR
+    $ cd {WEBDIR}
     $ vi index.php
-    $ mtn ci -m "Updates related to the release of monotone <NEW VERSION>"
+    $ mtn ci -m "Updates related to the release of monotone {NEW VERSION}"
     $ mtn sync
 
-13) Check if the releases newsfeed is properly updated, i.e. if the script
+14) Check if the releases newsfeed is properly updated, i.e. if the script
     <http://www.monotone.ca/releases.xml.php> can parse the NEWS file as is
     and links issues and URLs, while keeping the overall structure.
     (If your NEWS entries match the previous ones, this shouldn't be a problem.)
@@ -133,39 +175,47 @@ How to release a new version of monotone
     If you encounter problems, either patch the NEWS file or adapt the code
     in releases.xml.php and commit your changes accordingly.
 
-14) Once you're pretty sure things have gone well, tag the source:
+15) Once you're pretty sure things have gone well, tag the source:
 
-    $ mtn tag <REVISION> monotone-<NEW VERSION>
+    $ mtn tag {REVISION} monotone-{NEW VERSION}
 
     This is the last possible moment to back out!
 
     $ mtn sync
 
-15) Change the topic in the IRC channel to state the new version
+------------
+Announcement
+------------
+
+16) Change the topic in the IRC channel to state the new version
     number.
 
-16) Send out a release announcement.  Format is something like:
+17) Send out a release announcement.  Format is something like:
 
     To: monotone-announce@nongnu.org
     CC: monotone-devel@nongnu.org
-    Subject: [ANNOUNCE] monotone <NEW VERSION> released
+    Subject: [ANNOUNCE] monotone {NEW VERSION} released
 
-    <a few lines stating the new version and where the website is>
+    {a few lines stating the new version and where the website is}
 
-    <the release notes copy/pasted from the top of NEWS>
+    {the release notes copy/pasted from the top of NEWS}
 
-    <sign off>
+    {sign off}
 
-17) Submit a release announcement to freshmeat.net.
+18) Submit a release announcement to freshmeat.net.
 
-18) Append ".90" to the released version number in configure.ac to
+-----------------
+Post-release work
+-----------------
+
+19) Append ".90" to the released version number in configure.ac to
     mark the beginning of the development of the next version of
     monotone.  For more information, read up the paragraph
     "Version numbering scheme" on <http://wiki.monotone.ca/RoadMap>
    
     Commit and sync your changes.
 
-19) Note any mistakes you made and update this file accordingly for
+20) Note any mistakes you made and update this file accordingly for
     next time.
 
-20) Party!
+21) Party!
