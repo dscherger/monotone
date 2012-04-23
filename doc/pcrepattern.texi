@@ -2209,7 +2209,7 @@ added, giving
 @verbatim
          \( ( ( (?>[^()]+) | (?R) )* ) \)
             ^                        ^
-@end example
+@end verbatim
 
 @noindent
 the string they capture is @samp{ab(cd)ef}, the contents of the top

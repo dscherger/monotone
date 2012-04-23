@@ -18,6 +18,13 @@ if [ "$BASH_COMPLETION" = "" ]; then
 	. /etc/bash_completion
     elif [ -f /usr/local/etc/bash_completion ]; then
 	. /usr/local/etc/bash_completion
+    elif [ -f /usr/share/bash-completion/.pre -a \
+           -f /usr/share/bash-completion/base ]; then
+        # In Gentoo /etc/profile.d/bash-completion.sh sources required
+        # functions only if enabled with `eselect bashcomp`. We source
+        # required definitions manually.
+        . /usr/share/bash-completion/.pre
+        . /usr/share/bash-completion/base
     else
 	echo No bash completion package present.
 	exit
