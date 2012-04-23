@@ -62,6 +62,7 @@ error_in_transform(std::exception & e, origin::type caused_by)
   if (typeid(e) == typeid(Botan::Encoding_Error)
       || typeid(e) == typeid(Botan::Decoding_Error)
       || typeid(e) == typeid(Botan::Stream_IO_Error)
+      || typeid(e) == typeid(Botan::Invalid_Argument)
       || typeid(e) == typeid(Botan::Integrity_Failure))
     {
       // clean up the what() string a little: throw away the

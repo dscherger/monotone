@@ -466,11 +466,13 @@ read_packets(istream & in, packet_consumer & cons)
   return count;
 }
 
+// Dummy User_Interface implementation for Botan
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
-std::string Dummy_UI::get_passphrase(const std::string&,
-                                     const std::string&,
-                                     Botan::User_Interface::UI_Result&) const {
-  throw Passphrase_Required();
+std::string
+Dummy_UI::get_passphrase(const std::string &, const std::string &,
+                         Botan::User_Interface::UI_Result&) const
+{
+  throw Passphrase_Required("Passphrase required");
 }
 #endif
 

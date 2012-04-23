@@ -582,6 +582,8 @@ key_store_state::decrypt_private_key(key_id const & id,
     }
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
   catch (Passphrase_Required & e)
+#elif BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,4)
+  catch (Botan::Invalid_Argument & e)
 #else
   catch (Botan::Exception & e)
 #endif
@@ -611,13 +613,18 @@ key_store_state::decrypt_private_key(key_id const & id,
           {
             Botan::DataSource_Memory ds(kp.priv());
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-            pkcs8_key.reset(Botan::PKCS8::load_key(ds, lazy_rng::get(), phrase()));
+            pkcs8_key.reset(Botan::PKCS8::load_key(ds, lazy_rng::get(),
+                                                   phrase()));
 #else
             pkcs8_key.reset(Botan::PKCS8::load_key(ds, phrase()));
 #endif
             break;
           }
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,4)
+        catch (Botan::Invalid_Argument)
+#else
         catch (Botan::Exception & e)
+#endif
           {
             cycles++;
             L(FL("decrypt_private_key: failure %d to load encrypted key: %s")
@@ -828,10 +835,14 @@ key_store::decrypt_rsa(key_id const & id,
       plaintext = string(reinterpret_cast<char const*>(plain.begin()),
                          plain.size());
     }
-  catch (Botan::Exception & ex)
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,4)
+  catch (std::exception & e)
+#else
+  catch (Botan::Exception & e)
+#endif
     {
       E(false, ciphertext.made_from,
-        F("Botan error decrypting data: '%s'") % ex.what());
+        F("Botan error decrypting data: '%s'") % e.what());
     }
 }
 
@@ -1063,7 +1074,11 @@ key_store_state::migrate_old_key_pair
 #endif
         break;
       }
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,4)
+    catch (Botan::Invalid_Argument & e)
+#else
     catch (Botan::Exception & e)
+#endif
       {
         L(FL("migrate_old_key_pair: failure %d to load old private key: %s")
           % cycles % e.what());

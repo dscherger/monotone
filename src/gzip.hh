@@ -13,6 +13,12 @@
 
 namespace Botan {
 
+#if BOTAN_VERSION_CODE < BOTAN_VERSION_CODE_FOR(1,9,4)
+// Only 1.9.4 and newer export the Memory_Exception. Give this gzip
+// implementation something compatible to work with.
+typedef std::bad_alloc Memory_Exhaustion;
+#endif
+
 namespace GZIP {
 
    /* A basic header - we only need to set the IDs and compression method */
@@ -32,9 +38,9 @@ namespace GZIP {
 }
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
-   typedef size_t filter_length_t;
+typedef size_t filter_length_t;
 #else
-   typedef u32bit filter_length_t;
+typedef u32bit filter_length_t;
 #endif
 
 /*************************************************
