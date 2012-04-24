@@ -460,7 +460,7 @@ void add_functions(lua_State * st)
         {
           lua_newtable(st);
           lua_pushvalue(st, -1);
-          lua_setfield(st, LUA_GLOBALSINDEX, table.c_str());
+          lua_setglobal(st, table.c_str());
         }
       for (luaext::fmap::const_iterator j = i->second.begin();
            j != i->second.end(); ++j)
