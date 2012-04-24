@@ -18,7 +18,8 @@ if rcfile ~= nil then
    rcfile:close()
 end
 
-check(mtn("sync", "file://" .. test.root .. "/test2.db?testbranch"), 0, true, false)
+test_uri="file://" .. url_encode_path(test.root .. "/test2.db") .. "?testbranch"
+check(mtn("sync", test_uri), 0, true, false)
 
 n = 0
 

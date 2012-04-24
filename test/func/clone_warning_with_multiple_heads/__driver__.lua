@@ -16,9 +16,9 @@ commit()
 REV3=base_revision()
 
 copy("test.db", "test-clone.db")
-testURI="file://" .. test.root .. "/test-clone.db?testbranch"
 
-check(nodb_mtn("clone", testURI, "test_dirA"),
+test_uri="file://" .. url_encode_path(test.root .. "/test-clone.db") .. "?testbranch"
+check(nodb_mtn("clone", test_uri, "test_dirA"),
          1, false, true)
 check(qgrep(REV2, "stderr"))
 check(qgrep(REV3, "stderr"))

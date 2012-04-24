@@ -144,6 +144,22 @@ function numlines(filename)
   return n
 end
 
+-- encodes a query by percent escaping reserved characters (as defined
+-- in RFC 3986) - except for the directory separator ('/').
+function url_encode_path(path)
+  path = string.gsub(path, "([!*'();:@&=+$,?#[%]])",
+    function (x) return string.format("%%%02X", string.byte(x)) end)
+  return string.gsub(path, " ", "+")
+end
+
+-- encodes a query by percent escaping reserved characters (as defined
+-- in RFC 3986) - except for the ampersand and equal sign ('&', '=')
+function url_encode_query(path)
+  path = string.gsub(path, "([!*'();:@+$,/?#[%]])",
+    function (x) return string.format("%%%02X", string.byte(x)) end)
+  return string.gsub(path, " ", "+")
+end
+
 function open_or_err(filename, mode, depth)
   local file, e = io.open(filename, mode)
   if file == nil then
