@@ -87,10 +87,10 @@ function check_same_revs(cmd1, cmd2)
    check(cmd2, 0, true, false)
    local data2 = {}
    for l in io.lines("stdout") do table.insert(data2, l) end
-   L("Command 1 has ", table.getn(data1), " lines.")
-   L("Command 2 has ", table.getn(data2), " lines.")
-   check(table.getn(data1) == table.getn(data2))
-   for i = 1, table.getn(data1) do
+   L("Command 1 has ", #data1, " lines.")
+   L("Command 2 has ", #data2, " lines.")
+   check(#data1 == #data2)
+   for i = 1, #data1 do
       local hash_len = 40
       check(data1[i]:sub(1, hash_len) == data2[i]:sub(1, hash_len))
    end

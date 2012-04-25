@@ -25,7 +25,7 @@ check(mtn("automate", "set_attribute", "testfile", "foo", "bar"), 0, false, fals
 check(mtn("automate", "get_attributes", "testfile"), 0, true, false)
 parsed = parse_basic_io(readfile("stdout"))
 
-check(table.getn(parsed) == 2)
+check(#parsed == 2)
 for _,l in pairs(parsed) do
     if l.name == "attr" then
         key = l.values[1]
@@ -44,7 +44,7 @@ check(mtn("automate", "drop_attribute", "testfile", "foo"), 0, true, true)
 -- check if it has been really dropped
 check(mtn("automate", "get_attributes", "testfile"), 0, true, false)
 parsed = parse_basic_io(readfile("stdout"))
-check(table.getn(parsed) == 0)
+check(#parsed == 0)
 
 -- check if it escalates properly if there is no such attr to drop
 check(mtn("automate", "drop_attribute", "testfile", "foo"), 1, false, true)

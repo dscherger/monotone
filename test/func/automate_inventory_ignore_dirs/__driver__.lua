@@ -14,7 +14,7 @@ function sortContentsByLine(input)
   table.insert(lines, string.sub(input, theStart))
   table.sort(lines)
 
-  local len = table.getn(lines)
+  local len = #lines
   local output = lines[1]
   for i = 2, len do
     output = output .. delimiter .. lines[i]
