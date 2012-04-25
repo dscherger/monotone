@@ -119,17 +119,27 @@ Lua &
 Lua::get(int idx)
 {
   if (failed) return *this;
-  if (!lua_istable (st, idx))
-    {
-      fail("istable() in get");
-      return *this;
-    }
   if (lua_gettop (st) < 1)
     {
       fail("stack top > 0 in get");
       return *this;
     }
-  lua_gettable(st, idx);
+  if (idx)
+    {
+      if (!lua_istable (st, idx))
+        {
+          fail("istable() in get");
+          return *this;
+        }
+      lua_gettable(st, idx);
+    }
+  else
+    {
+      string name;
+      extract_str(name);
+      pop();
+      lua_getglobal(st, name.c_str);
+    }
   return *this;
 }
 
