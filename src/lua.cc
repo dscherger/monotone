@@ -411,7 +411,7 @@ Lua::func(string const & fname)
       else
         {
           push_str(fname);
-          get_fn(LUA_GLOBALSINDEX);
+          get_fn();
           if (failed)
             missing_functions.insert(fname);
         }
