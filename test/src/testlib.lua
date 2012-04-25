@@ -326,17 +326,11 @@ end
 -- to want to include from the dir for the current test,
 -- since in that case it could just go in the driver file.
 function include(name)
-  local func, e = loadfile(testdir.."/"..name)
-  if func == nil then err(e, 2) end
-  setfenv(func, getfenv(2))
-  func()
+  dofile(testdir.."/"..name)
 end
 
 function includecommon(name)
-  local func, e = loadfile(srcdir.."/common/"..name)
-  if func == nil then err(e, 2) end
-  setfenv(func, getfenv(2))
-  func()
+  dofile(srcdir.."/common/"..name)
 end
 
 function trim(str)
