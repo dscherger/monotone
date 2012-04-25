@@ -15,7 +15,7 @@ Get a copy of the monotone repository; see
 http://wiki.monotone.ca/MonotoneProjectServer/
 
 Check out the release version of monotone:
-mtn -d /path/to/monotone.db checkout -r t:monotone-<version> --branch net.venge.monotone.monotone-<version> monotone-<version>
+mtn -d /path/to/monotone.db checkout -r t:monotone-<version> --branch net.venge.monotone monotone-<version>
 
 Build the release. See the last instruction in ../INSTALL_windows_native.txt
 Then build the installer:
