@@ -23,7 +23,7 @@ do
 
       local handle, msg = io.open(dir .. ".cvsignore")
       if (handle) then
-	 for line in handle:lines(dir .. ".cvsignore") do
+	 for line in handle:lines() do
 	    pat2 = _glob_to_pattern(line) .. "$"
 	    if (string.find(name, pat1 .. pat2)) then
 	       return true
