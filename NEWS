@@ -12,6 +12,10 @@ XXX XXX XX XX:XX:XX UTC 201X
 
         - New 'not(A)' selector is now available which returns all
           revisions not selected by 'A'.
+
+        - All certs for a revision are now output by 'mtn log' with
+          'suspend', 'testresult', and custom certs placed under a
+          a new 'Other certs' heading.
            
         Bugs fixed
 
