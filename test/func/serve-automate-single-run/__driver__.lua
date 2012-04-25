@@ -28,7 +28,7 @@ server = netsync.start({"--rcfile=allow-automate.lua"})
 
 check(mtn2("automate", "remote", "--remote-stdio-host", server.address,
     "interface_version"), 0, true, false)
-check(qgrep("^[0-9]{2,}\.[0-9]+$", "stdout"))
+check(qgrep("^[0-9]{2,}\\.[0-9]+$", "stdout"))
 
 check(mtn2("automate", "remote", "--remote-stdio-host", server.address,
     "leaves"), 0, true, false)

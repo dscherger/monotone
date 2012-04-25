@@ -19,13 +19,13 @@ check(mtn("merge_into_workspace", other), 0, false, false)
 
 -- check that we've got the expected initial status
 check(mtn("status"), 0, true, false)
-check(qgrep("patched[ 	]\+foo", "stdout"))
+check(qgrep("patched[ 	]+foo", "stdout"))
 
 -- enable inodeprints
 writefile("_MTN/inodeprints")
 
 check(mtn("status"), 0, true, false)
-check(qgrep("patched[ 	]\+foo", "stdout"))
+check(qgrep("patched[ 	]+foo", "stdout"))
 
 sleep(5)
 

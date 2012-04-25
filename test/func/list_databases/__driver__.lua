@@ -25,15 +25,15 @@ check(mt("db", "init", "-d", ":bar"), 0, false, false)
 check(exists("managed_databases/bar.mtn"))
 
 check(mt("ls", "dbs"), 0, true, false)
-check(qgrep(":bar.mtn.+in.+list_databases\/managed_databases", "stdout"))
+check(qgrep(":bar.mtn.+in.+list_databases/managed_databases", "stdout"))
 check(qgrep("\tno known valid workspaces", "stdout"))
 
 check(mt("setup", "-d", ":bar", "-b", "test.foo.branch", "test_foo"), 0, false, false)
 
 check(mt("ls", "dbs"), 0, true, false)
 check(not qgrep("\tno known valid workspaces", "stdout"))
-check(qgrep("\ttest.foo.branch.+in.+list_databases\/test_foo", "stdout"))
+check(qgrep("\ttest.foo.branch.+in.+list_databases/test_foo", "stdout"))
 
 check(rename("managed_databases/bar.mtn", "managed_databases/bar.db"))
 check(mt("ls", "dbs"), 0, true, false)
-check(qgrep(":bar.db.+in.+list_databases\/managed_databases", "stdout"))
+check(qgrep(":bar.db.+in.+list_databases/managed_databases", "stdout"))
