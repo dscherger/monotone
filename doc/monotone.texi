@@ -2935,6 +2935,14 @@ Set difference; this returns all revisions selected by A but not by B. For
 example, @code{difference(a:graydon;b:net.venge.monotone)} would return all
 revisions which have an @code{author} cert beginning with @code{graydon} which
 are not in the branch @code{net.venge.monotone}.
+@item not(A)
+Set complement; this returns all revisions not selected by A. For example,
+@code{not(c:testresult)} would return all revisions which do not have any
+@code{testresult} certs. Conceptually @code{not(A)} is equivalent to
+@code{difference(*, A)}, where @code{*} selects all revisions. The previous
+example to return all revisions which have an @code{author} cert beginning
+with @code{graydon} and are not in the branch @code{net.venge.monotone},
+can be written as @code{a:graydon/not(b:net.venge.monotone)}.
 @item lca(A;B)
 Least common ancestors; this is identical to
 @code{max((ancestors(A)|A)/(ancestors(B)|B))},
