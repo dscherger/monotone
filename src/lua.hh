@@ -37,13 +37,13 @@ Lua
   void report_error();
   bool check_stack(int count);
 
-  // getters
-  Lua & get(int idx = LUA_GLOBALSINDEX);
-  Lua & get_fn(int idx = LUA_GLOBALSINDEX);
-  Lua & get_tab(int idx = LUA_GLOBALSINDEX);
-  Lua & get_str(int idx = LUA_GLOBALSINDEX);
-  Lua & get_num(int idx = LUA_GLOBALSINDEX);
-  Lua & get_bool(int idx = LUA_GLOBALSINDEX);
+  // getters (0 is an invalid index in lua, and is used here to represent the global table)
+  Lua & get(int idx = 0);
+  Lua & get_fn(int idx = 0);
+  Lua & get_tab(int idx = 0);
+  Lua & get_str(int idx = 0);
+  Lua & get_num(int idx = 0);
+  Lua & get_bool(int idx = 0);
 
   // extractors
   Lua & extract_str_nolog(std::string & str);
