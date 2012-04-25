@@ -32,6 +32,8 @@ XXX XXX XX XX:XX:XX UTC 201X
 
         Other
 
+        - 'mtn diff' now outputs old and new revision IDs in the diff header
+           when both are specified.
 
 Sat Mar 26 10:53:47 UTC 2011
 
