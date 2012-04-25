@@ -1073,7 +1073,7 @@ lua_hooks::hook_init_attributes(file_path const & filename,
 
   ll
     .push_str("attr_init_functions")
-    .get_tab();
+    .get_tab(LUA_GLOBALSINDEX);
 
   L(FL("calling attr_init_function for %s") % filename);
   ll.begin();
@@ -1111,7 +1111,7 @@ lua_hooks::hook_set_attribute(string const & attr,
 {
   return Lua(st)
     .push_str("attr_functions")
-    .get_tab()
+    .get_tab(LUA_GLOBALSINDEX)
     .push_str(attr)
     .get_fn(-2)
     .push_str(filename.as_external())
@@ -1126,7 +1126,7 @@ lua_hooks::hook_clear_attribute(string const & attr,
 {
   return Lua(st)
     .push_str("attr_functions")
-    .get_tab()
+    .get_tab(LUA_GLOBALSINDEX)
     .push_str(attr)
     .get_fn(-2)
     .push_str(filename.as_external())
