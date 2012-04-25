@@ -23,6 +23,8 @@ XXX XXX XX XX:XX:XX UTC 201X
 
         - Fixed recursive file removal on Solaris.
 
+        - Monotone now compiles against Lua 5.2 as well.
+
         Internal
 
         - The performance and memory usage of regular expressions has
