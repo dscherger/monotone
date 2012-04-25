@@ -489,12 +489,11 @@ end
 function samelines(f, t)
   local fl = {}
   for l in io.lines(f) do table.insert(fl, l) end
-  if not (table.getn(fl) == table.getn(t)) then
-    L(locheader(), string.format("file has %s lines; table has %s\n",
-                                 table.getn(fl), table.getn(t)))
+  if not (#fl == #t) then
+    L(locheader(), string.format("file has %s lines; table has %s\n", #fl, #t))
     return false
   end
-  for i=1,table.getn(t) do
+  for i=1,#t do
     if fl[i] ~= t[i] then
       if fl[i] then
         L(locheader(), string.format("file[%d] = '%s'; table[%d] = '%s'\n",
@@ -512,12 +511,11 @@ end
 function greplines(f, t)
   local fl = {}
   for l in io.lines(f) do table.insert(fl, l) end
-  if not (table.getn(fl) == table.getn(t)) then
-    L(locheader(), string.format("file has %s lines; table has %s\n",
-                                 table.getn(fl), table.getn(t)))
+  if not (#fl == #t) then
+    L(locheader(), string.format("file has %s lines; table has %s\n", #fl, #t))
     return false
   end
-  for i=1,table.getn(t) do
+  for i=1,#t do
     if not regex.search(t[i], fl[i]) then
       L(locheader(), string.format("file[i] = '%s'; table[i] = '%s'\n",
                                    fl[i], t[i]))
@@ -587,7 +585,7 @@ function tail(...)
     local mylines = {}
     for l in io.lines(file) do
       table.insert(mylines, l)
-      if table.getn(mylines) > num then
+      if #mylines > num then
         table.remove(mylines, 1)
       end
     end
@@ -942,8 +940,8 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
     if _1 then
       l = l + 0
       r = r + 0
-      if l < 1 then l = table.getn(tests) + l + 1 end
-      if r < 1 then r = table.getn(tests) + r + 1 end
+      if l < 1 then l = #tests + l + 1 end
+      if r < 1 then r = #tests + r + 1 end
       if l > r then l,r = r,l end
       for j = l,r do
         torun[j] = tests[j]
@@ -951,7 +949,7 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
       run_all = false
     elseif string.find(a, "^-?%d+$") then
       r = a + 0
-      if r < 1 then r = table.getn(tests) + r + 1 end
+      if r < 1 then r = #tests + r + 1 end
       torun[r] = tests[r]
       run_all = false
     else
