@@ -5,7 +5,8 @@ function check_head(...)
       io.stderr:write("automate call failed\n")
       return
     end
-    arghead = unpack(...)
+    local arg = {...}
+    arghead = arg[1]
     heads = heads:gsub("^%s*(.-)%s*$", "%1")	-- trim leading and trailing whitespace
     if (heads == arghead) then
         io.write("heads are equal\n")
