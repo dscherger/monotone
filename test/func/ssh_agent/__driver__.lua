@@ -81,7 +81,7 @@ end
 
 check({"ssh-agent"}, 0, true, false)
 for line in io.lines("stdout") do
-   for k, v in string.gmatch(line, "([%w_]+)=([%w/\.-]+)") do
+   for k, v in string.gmatch(line, "([%w_]+)=([%w/%.-]+)") do
       set_env(k, v)
    end
 end
@@ -91,7 +91,7 @@ check(mtn("ssh_agent_add"), 0, false, false)
 check({"ssh-add", "-l"}, 0, true, false)
 ok = false
 for line in io.lines("stdout") do
-    for k in string.gmatch(line, "tester@test\.net") do
+    for k in string.gmatch(line, "tester@test%.net") do
     	ok = true
     end
 end
@@ -288,7 +288,7 @@ check(mtn("ssh_agent_add", "--key", "test2@tester.net"), 0, false, false)
 check({"ssh-add", "-l"}, 0, true, false)
 ok = false
 for line in io.lines("stdout") do
-    for k in string.gmatch(line, "test2@tester\.net") do
+    for k in string.gmatch(line, "test2@tester%.net") do
     	ok = true
     end
 end
@@ -338,7 +338,7 @@ check(mtn("ssh_agent_add", "--key", "test_pass@tester.net"), 0, false, false, "p
 check({"ssh-add", "-l"}, 0, true, false)
 ok = false
 for line in io.lines("stdout") do
-    for k in string.gmatch(line, "test_pass@tester\.net") do
+    for k in string.gmatch(line, "test_pass@tester%.net") do
     	ok = true
     end
 end
