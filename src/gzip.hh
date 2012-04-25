@@ -13,10 +13,17 @@
 
 namespace Botan {
 
-#if BOTAN_VERSION_CODE < BOTAN_VERSION_CODE_FOR(1,9,4)
-// Only 1.9.4 and newer export the Memory_Exception. Give this gzip
-// implementation something compatible to work with.
-typedef std::bad_alloc Memory_Exhaustion;
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,12) && \
+  BOTAN_VERSION_CODE < BOTAN_VERSION_CODE_FOR(1,9,4)
+// Botan versions between 1.7.12 and 1.9.3 (including) keep their
+// Memory_Exception private. Give this gzip implementation something
+// compatible to work with.
+class Memory_Exhaustion : public Exception
+{
+public:
+  Memory_Exhaustion() :
+    Exception("Ran out of memory, allocation failed") {}
+};
 #endif
 
 namespace GZIP {
