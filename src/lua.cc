@@ -44,7 +44,11 @@ dump_stack(lua_State * st)
     switch (t) {
     case LUA_TSTRING:  /* strings */
       out += '`';
+#ifdef lua_strlen
       out += string(lua_tostring(st, i), lua_strlen(st, i));
+#else
+      out += string(lua_tostring(st, i), lua_rawlen(st, i));
+#endif
       out += '\'';
       break;
 
@@ -95,7 +99,11 @@ void
 Lua::report_error()
 {
 //  I(lua_isstring(st, -1));
+#ifdef lua_strlen
   string err = string(lua_tostring(st, -1), lua_strlen(st, -1));
+#else
+  string err = string(lua_tostring(st, -1), lua_rawlen(st, -1));
+#endif
   W(i18n_format("%s") % err);
   L(FL("lua stack: %s") % dump_stack(st));
   lua_pop(st, 1);
@@ -107,7 +115,11 @@ Lua::check_stack(int count)
 {
   if (!lua_checkstack(st, count))
     {
+#ifdef LUAI_MAXCSTACK
       fail((FL("lua stack limit '%d' reached") % LUAI_MAXCSTACK).str());
+#else
+      fail((FL("lua stack limit '%d' reached") % LUAI_MAXSTACK).str());
+#endif
       return false;
     }
   return true;
@@ -138,7 +150,7 @@ Lua::get(int idx)
       string name;
       extract_str(name);
       pop();
-      lua_getglobal(st, name.c_str);
+      lua_getglobal(st, name.c_str());
     }
   return *this;
 }
@@ -204,7 +216,11 @@ Lua::extract_str_nolog(string & str)
       fail("isstring() in extract_str");
       return *this;
     }
+#ifdef lua_strlen
   str = string(lua_tostring(st, -1), lua_strlen(st, -1));
+#else
+  str = string(lua_tostring(st, -1), lua_rawlen(st, -1));
+#endif
   return *this;
 }
 

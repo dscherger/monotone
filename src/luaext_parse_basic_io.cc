@@ -23,7 +23,11 @@ LUAEXT(parse_basic_io, )
   // followed by one or more string or hex values. It returns a table of
   // lines.
   vector<pair<string, vector<string> > > res;
+#ifdef lua_strlen
+  const string str(luaL_checkstring(LS, -1), lua_strlen(LS, -1));
+#else
   const string str(luaL_checkstring(LS, -1), lua_rawlen(LS, -1));
+#endif
   basic_io::input_source in(str, "monotone_parse_basic_io_for_lua");
   in.made_from = origin::user;
   basic_io::tokenizer tok(in);

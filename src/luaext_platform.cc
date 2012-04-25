@@ -118,7 +118,10 @@ static FILE **newfile (lua_State *LS) {
   lua_setmetatable(LS, -2);
 
   lua_pushcfunction(LS, io_fclose);
+#ifdef LUA_ENVIRONINDEX
+  // Lua 5.2 removes C function environments
   lua_setfield(LS, LUA_ENVIRONINDEX, "__close");
+#endif
 
   return pf;
 }
