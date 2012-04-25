@@ -369,6 +369,9 @@ prepare_diff(app_state & app,
 
       old_from_db = true;
       new_from_db = true;
+
+      header << "# old_revision [" << r_old_id << "]\n";
+      header << "# new_revision [" << r_new_id << "]\n";
     }
   else
     {

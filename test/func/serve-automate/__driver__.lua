@@ -56,7 +56,8 @@ copy("allow-automate.lua", "custom_test_hooks.lua")
 if ostype ~= "Windows" then
 -- 'file:' not supported on Windows
 
-check(mtn2("automate", "remote_stdio", "file://" .. test.root .. "/test.db"),
+test_uri="file://" .. url_encode_path(test.root .. "/test.db")
+check(mtn2("automate", "remote_stdio", test_uri),
       0, true, false, "l17:interface_versione")
 check(parse_stdio(readfile("stdout"), 0, 0, "m") ~= nil)
 end

@@ -3425,9 +3425,8 @@ database::encrypt_rsa(key_id const & pub_id,
   rsa_pub_key pub;
   get_key(pub_id, pub);
 
-  SecureVector<Botan::byte> pub_block;
-  pub_block.set(reinterpret_cast<Botan::byte const *>(pub().data()),
-                pub().size());
+  SecureVector<Botan::byte> pub_block
+    (reinterpret_cast<Botan::byte const *>(pub().data()), pub().size());
 
   shared_ptr<X509_PublicKey> x509_key(Botan::X509::load_key(pub_block));
   shared_ptr<RSA_PublicKey> pub_key
@@ -3471,14 +3470,13 @@ database::check_signature(key_id const & id,
   else
     {
       rsa_pub_key pub;
-      SecureVector<Botan::byte> pub_block;
 
       if (!public_key_exists(id))
         return cert_unknown;
 
       get_key(id, pub);
-      pub_block.set(reinterpret_cast<Botan::byte const *>(pub().data()),
-                    pub().size());
+      SecureVector<Botan::byte> pub_block
+        (reinterpret_cast<Botan::byte const *>(pub().data()), pub().size());
 
       L(FL("building verifier for %d-byte pub key") % pub_block.size());
       shared_ptr<X509_PublicKey> x509_key(Botan::X509::load_key(pub_block));

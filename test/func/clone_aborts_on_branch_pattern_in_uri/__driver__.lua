@@ -6,9 +6,9 @@ addfile("foo", "blah blah")
 commit("mybranch")
 
 copy("test.db", "test-clone.db")
-testURI="file://" .. test.root .. "/test-clone.db?mybranch*"
 
-check(nodb_mtn("clone", testURI), 1, false, true)
+test_uri="file://" .. url_encode_path(test.root .. "/test-clone.db") .. "?mybranch*"
+check(nodb_mtn("clone", test_uri), 1, false, true)
 check(qgrep("you must specify an unambiguous branch to clone", "stderr"))
 
 -- the branch option is invalid in non-URI mode
@@ -16,7 +16,7 @@ check(nodb_mtn("clone", "some-server", "mybranch", "--branch=mybranch"), 1, fals
 check(qgrep("the '--branch' option is only valid with an URI to clone", "stderr"))
 
 -- finally, this should succeed
-check(nodb_mtn("clone", testURI, "--branch=mybranch"), 0, false, false)
+check(nodb_mtn("clone", test_uri, "--branch=mybranch"), 0, false, false)
 check(exists("mybranch"))
 check(readfile("foo") == readfile("mybranch/foo"))
 

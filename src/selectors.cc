@@ -523,6 +523,19 @@ public:
                        inserter(ret, ret.end()));
         return ret;
       }
+    else if (name == "not")
+      {
+        diagnose_wrong_arg_count("not", 1, args.size());
+        set<revision_id> lhs;
+        set<revision_id> rhs = args[0]->complete(project);
+
+        project.db.get_revision_ids(lhs);
+        set<revision_id> ret;
+        set_difference(lhs.begin(), lhs.end(),
+                       rhs.begin(), rhs.end(),
+                       inserter(ret, ret.end()));
+        return ret;
+      }
     else if (name == "lca")
       {
         diagnose_wrong_arg_count("lca", 2, args.size());

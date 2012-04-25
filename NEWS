@@ -10,9 +10,28 @@ XXX XXX XX XX:XX:XX UTC 201X
           and returns the attributes for a specific file from the
           revision's manifest
 
+        - New 'not(A)' selector is now available which returns all
+          revisions not selected by 'A'.
+           
         Bugs fixed
 
+        - Monotone now compiles against Botan 1.10.x (as well as most of
+          the testing releases in 1.9.y).
+
+        - Struct file_handle got renamed to avoid clash with newer glibc's
+          fcntl.h.
+
+        - Monotone now compiles just fine with gcc's option
+          "-Werror=format-security."
+
+        - Fixed recursive file removal on Solaris.
+
         Internal
+
+        - The performance and memory usage of regular expressions has
+          been improved throughout. This affects any use of the
+          ".mtn-ignore" file such as "mtn ls unknown" and "mtn add",
+          and any calls to "regex.search" in Lua hooks.
 
         Other
 

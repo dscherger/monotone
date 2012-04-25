@@ -10,6 +10,8 @@
 --     - initial version
 -- 0.2 (2011-03-11) Richard Levitte <richard@levitte.org>
 --     - updated to have things more protected
+-- 0.3 (2012-04-10) Markus Wanner <markus@bluegap.ch>
+--     - adapt to buildbot 0.8.3 and newer
 --
 -- License: GPL
 --
@@ -58,17 +60,21 @@ do
 	    end
 	 end
 
+    -- Note: for buildbot versions before 0.8.3, you need to give a
+    -- 'username' argument instead of 'auth' and 'who'.
 	 print("monotone-buildbot-notification: Running script:",
 	       buildbot_bin, "sendchange",
 	       "--master", buildbot_master,
-	       "--username", "'"..author.."'",
+	       "--auth", "change:changepw",
+	       "--who", "'"..author.."'",
 	       "--revision", rev_id,
 	       "--comments", "'"..changelog.."'",
 	       "--branch", branch,
 	       touched_files)
 	 execute(buildbot_bin, "sendchange",
 		 "--master", buildbot_master,
-		 "--username", author,
+		 "--auth", "change:changepw",
+		 "--who", "'"..author.."'",
 		 "--revision", rev_id,
 		 "--comments", changelog,
 		 "--branch", branch,

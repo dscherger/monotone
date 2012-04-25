@@ -46,7 +46,9 @@ base = base_revision()
 
 -- Create Beth's workspace via checkout, so 'update' works
 chdir(test.root)
-check(abe_mtn("sync", "file://" .. test.root .. "/beth.db?*"), 0, false, false)
+
+test_uri="file://" .. url_encode_path(test.root .. "/beth.db") .. "?*"
+check(abe_mtn("sync", test_uri), 0, false, false)
 check(beth_mtn("checkout", "--branch", "testbranch", "Beth"), 0, false, false)
 chdir("Beth")
 check(beth_mtn("genkey", "beth@test.net"), 0, false, false, string.rep("beth@test.net\n", 2))
@@ -64,7 +66,7 @@ commit("testbranch", "rev_b", abe_mtn)
 rev_b = base_revision()
 
 -- Sync dbs
-check(abe_mtn("sync", "file://" .. test.root .. "/beth.db?*"), 0, false, false)
+check(abe_mtn("sync", test_uri), 0, false, false)
 
 -- Abe merges
 chdir("Abe")
@@ -80,7 +82,8 @@ commit("testbranch", "rev_d", beth_mtn)
 rev_d = base_revision()
 
 -- Sync dbs (not clear if direction of sync matters)
-check(beth_mtn("sync", "file://" .. test.root .. "/abe.db?*"), 0, false, false)
+test_uri="file://" .. url_encode_path(test.root .. "/abe.db") .. "?*"
+check(beth_mtn("sync", test_uri), 0, false, false)
 
 -- bug; rev_d and rev_c are both heads according to branch_leaves table.
 check(beth_mtn("db", "check"), 0, false, false)

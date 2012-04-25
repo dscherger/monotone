@@ -724,6 +724,11 @@ mostlyclean-tests:
 	  rmdir $${d%/*} || :; \
 	done
 
+# With the MacOS X toolchain, some stuff may be generated in the form of subdirs
+.PHONY: mostlyclean-util
+mostlyclean-util:
+	rm -rf util/txt2c.dSYM
+
 MOSTLYCLEANFILES = mtn.1 \
 	run_tester_tests   run_func_tests   run_unit_tests   run_extra_tests \
 	test/tester.status test/func.status test/unit.status test/extra.status
@@ -881,7 +886,7 @@ distcleancheck_listfiles = find . -type f -a ! -name package_revision.txt -a ! -
 .PHONY: distcheck-base.hh
 distcheck-base.hh:
 	cd $(srcdir) && $(SHELL) util/audit-includes \
-		$(sort $(mtn_SOURCES) $(test_unit_tester_SOURCES) $(test_bin_tester_SOURCES) \
+		$(sort $(mtn_SOURCES) $(test_bin_unit_tester_SOURCES) $(test_bin_tester_SOURCES) \
                        $(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
                        src/win32/main.cc src/unix/main.cc)
 
@@ -896,7 +901,7 @@ install-data-local: install-nls \
 	install-contrib-data install-examples-data
 uninstall-local: uninstall-nls \
 	uninstall-contrib-data uninstall-examples-data
-mostlyclean-local: mostlyclean-tests
+mostlyclean-local: mostlyclean-tests mostlyclean-util
 check-local: check-testers
 
 # All hooks supported by automake here, depending on all the things we want

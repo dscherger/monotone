@@ -11,6 +11,7 @@
 #include "pcrewrap.hh"
 #include "sanity.hh"
 #include <cstring>
+#include <map>
 #include <vector>
 
 // This dirty trick is necessary to prevent the 'pcre' typedef defined by
@@ -19,6 +20,9 @@
 #include "pcre.h"
 #undef pcre
 
+using std::make_pair;
+using std::map;
+using std::pair;
 using std::string;
 using std::vector;
 
@@ -69,11 +73,63 @@ get_capturecount(void const * bd)
 
 namespace pcre
 {
+  typedef map<char const *,
+              pair<struct real_pcre const *, struct pcre_extra const *> >
+              regex_cache;
+
+  class regex_cache_manager
+  {
+public:
+    regex_cache::const_iterator find(char const * pattern)
+      {
+        return cache.find(pattern);
+      }
+
+    void store(char const * pattern,
+               pair<struct real_pcre const *, struct pcre_extra const *>
+               data)
+      {
+        cache[pattern] = data;
+      }
+
+    regex_cache::const_iterator end()
+      {
+        return cache.end();
+      }
+
+    ~regex_cache_manager()
+      {
+        for (regex_cache::iterator iter = cache.begin();
+             iter != cache.end();
+             ++iter)
+          {
+            if (iter->second.first)
+              pcre_free(const_cast<pcre_t *>(iter->second.first));
+
+            if (iter->second.second)
+              pcre_free(const_cast<pcre_extra *>(iter->second.second));
+          }
+      }
+private:
+    regex_cache cache;
+  };
+
+  regex_cache_manager compiled;
+
   void regex::init(char const * pattern, flags options)
   {
     int errcode;
     int erroff;
     char const * err;
+    // use the cached data if we have it
+    regex_cache::const_iterator iter = compiled.find(pattern);
+    if (iter != compiled.end())
+      {
+        basedat = iter->second.first;
+        extradat = iter->second.second;
+        return;
+      }
+    // not in cache - compile them then store in cache
     basedat = pcre_compile2(pattern, flags_to_internal(options),
                             &errcode, &err, &erroff, 0);
     if (!basedat)
@@ -97,6 +153,8 @@ namespace pcre
     ed->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
     ed->match_limit_recursion = 2000;
     extradat = ed;
+    // store in cache
+    compiled.store(pattern, make_pair(basedat, extradat));
   }
 
   regex::regex(char const * pattern, origin::type whence, flags options)
@@ -113,10 +171,6 @@ namespace pcre
 
   regex::~regex()
   {
-    if (basedat)
-      pcre_free(const_cast<pcre_t *>(basedat));
-    if (extradat)
-      pcre_free(const_cast<pcre_extra *>(extradat));
   }
 
   bool

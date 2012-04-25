@@ -49,8 +49,7 @@ unsigned int terminal_width()
         }
     }
 
-  // default to 80 columns if the width query failed.
-  return 80;
+  return 0;
 }
 
 // Local Variables:

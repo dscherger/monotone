@@ -7,10 +7,24 @@
 #ifndef BOTAN_EXT_GZIP_H__
 #define BOTAN_EXT_GZIP_H__
 
+#include <botan/version.h>
 #include <botan/filter.h>
 #include <botan/pipe.h>
 
 namespace Botan {
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,12) && \
+  BOTAN_VERSION_CODE < BOTAN_VERSION_CODE_FOR(1,9,4)
+// Botan versions between 1.7.12 and 1.9.3 (including) keep their
+// Memory_Exception private. Give this gzip implementation something
+// compatible to work with.
+class Memory_Exhaustion : public Exception
+{
+public:
+  Memory_Exhaustion() :
+    Exception("Ran out of memory, allocation failed") {}
+};
+#endif
 
 namespace GZIP {
 
@@ -30,13 +44,19 @@ namespace GZIP {
 
 }
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+typedef size_t filter_length_t;
+#else
+typedef u32bit filter_length_t;
+#endif
+
 /*************************************************
 * Gzip Compression Filter                        *
 *************************************************/
 class Gzip_Compression : public Filter
    {
    public:
-      void write(const byte input[], u32bit length);
+      void write(const byte input[], filter_length_t length);
       void start_msg();
       void end_msg();
       std::string name() const { return "Gzip_Compression"; }
@@ -60,7 +80,7 @@ class Gzip_Compression : public Filter
 class Gzip_Decompression : public Filter
    {
    public:
-      void write(const byte input[], u32bit length);
+      void write(const byte input[], filter_length_t length);
       void start_msg();
       void end_msg();
       std::string name() const { return "Gzip_Decompression"; }

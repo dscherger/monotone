@@ -50,9 +50,12 @@ CMD_HIDDEN(benchmark_sha1, "benchmark_sha1", "", CMD_REF(debug), "",
   Botan::Default_Benchmark_Timer timer;
   std::map<std::string, double> results =
     Botan::algorithm_benchmark("SHA-1",  milliseconds, timer, rng, af);
-#else
+#elif BOTAN_VERSION_CODE < BOTAN_VERSION_CODE_FOR(1,9,11)
   std::map<std::string, double> results =
     Botan::algorithm_benchmark("SHA-1",  milliseconds, rng, af);
+#else
+  std::map<std::string, double> results =
+    Botan::algorithm_benchmark("SHA-1",  af, rng, milliseconds, 16);
 #endif
 
   for(std::map<std::string, double>::const_iterator i = results.begin();
