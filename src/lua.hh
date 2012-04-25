@@ -38,12 +38,12 @@ Lua
   bool check_stack(int count);
 
   // getters
-  Lua & get(int idx);
-  Lua & get_fn(int idx);
-  Lua & get_tab(int idx);
-  Lua & get_str(int idx);
-  Lua & get_num(int idx);
-  Lua & get_bool(int idx);
+  Lua & get(int idx = LUA_GLOBALSINDEX);
+  Lua & get_fn(int idx = LUA_GLOBALSINDEX);
+  Lua & get_tab(int idx = LUA_GLOBALSINDEX);
+  Lua & get_str(int idx = LUA_GLOBALSINDEX);
+  Lua & get_num(int idx = LUA_GLOBALSINDEX);
+  Lua & get_bool(int idx = LUA_GLOBALSINDEX);
 
   // extractors
   Lua & extract_str_nolog(std::string & str);
