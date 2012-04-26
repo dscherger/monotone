@@ -1,3 +1,4 @@
+// Copyright (C) 2012 Stephe Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 nathaniel smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -28,6 +29,7 @@
 #include "../platform.hh"
 #include "../vector.hh"
 
+using std::malloc;
 using std::string;
 using std::vector;
 
@@ -288,11 +290,74 @@ make_accessible(string const & name)
 void
 rename_clobberingly(string const & from, string const & to)
 {
+  // rename doesn't work across devices, which can happen if part of the
+  // workspace is NFS mounted.
+  //
+  // We only check for that if rename fails, to avoid slowing down normal
+  // workspaces.
+
   if (rename(from.c_str(), to.c_str()))
     {
-      const int err = errno;
-      E(false, origin::system,
-        F("renaming '%s' to '%s' failed: %s") % from % to % os_strerror(err));
+      // rename failed
+      int err = errno;
+
+      int from_fd = open(from.c_str(), O_RDONLY);
+      int to_fd = open(to.c_str(), O_WRONLY | O_CREAT | O_TRUNC);
+      struct stat from_stat;
+      struct stat to_stat;
+      fstat(from_fd, &from_stat);
+      fstat(to_fd, &to_stat);
+
+      if (from_stat.st_dev /= to_stat.st_dev)
+        {
+          // different devices; use cp, rm
+          //
+          // except there isn't a C function that does 'cp', so we read in
+          // the file and write it out again.
+
+          char * buffer    = (char * )malloc(from_stat.st_size);
+          char * ptr       = buffer;
+          size_t remaining = from_stat.st_size;
+
+          do
+            {
+              ssize_t read_count = read(from_fd, ptr, remaining);
+
+              err = errno;
+
+              E(read_count >= 0, origin::system,
+                F ("error reading file '%s': %s") % from % os_strerror(err));
+
+              remaining -= read_count;
+              ptr       += read_count;
+            }
+          while (remaining > 0);
+          close(from_fd);
+
+          ptr       = buffer;
+          remaining = from_stat.st_size;
+          do
+            {
+              ssize_t write_count = write(to_fd, ptr, remaining);
+              err = errno;
+              E(write_count >= 0, origin::system,
+                F("error writing file '%s': %s") % to % os_strerror(err));
+
+              remaining -= write_count;
+              ptr       += write_count;
+            }
+          while (remaining > 0);
+          close(to_fd);
+
+          free(buffer);
+
+          remove(from.c_str());
+        }
+      else
+        {
+          E(false, origin::system,
+            F("renaming '%s' to '%s' failed: %s") % from % to % os_strerror(err));
+        }
     }
 }
 
