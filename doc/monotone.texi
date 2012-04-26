@@ -2957,6 +2957,11 @@ ancestors of other revisions selected by @code{A}. For example,
 @code{max(b:net.venge.monotone/a:graydon)} would return the latest revision(s)
 on branch @code{net.venge.monotone} which have an @code{author} cert beginning
 with @code{graydon}.
+@item min(A)
+Erase descendants; this returns all revisions selected by @code{A} which are not
+descendants of other revisions selected by @code{A}. For example,
+@code{min(b:net.venge.monotone)} would return the earliest revision(s)
+on branch @code{net.venge.monotone}.
 @item ancestors(A)
 Strict ancestors; returns all revisions which are an ancestor of a revision
 selected by @code{A}. For example, @code{ancestors(b:net.venge.monotone)}
