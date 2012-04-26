@@ -10,6 +10,10 @@ XXX XXX XX XX:XX:XX UTC 201X
           and returns the attributes for a specific file from the
           revision's manifest
 
+        - New 'min(A)' selector is now available which returns all
+          revisions selected by A which are not descendants of other
+          revisions selected by A.
+
         - New 'not(A)' selector is now available which returns all
           revisions not selected by 'A'.
 
