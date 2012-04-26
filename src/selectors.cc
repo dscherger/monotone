@@ -559,6 +559,13 @@ public:
         erase_ancestors(project.db, ret);
         return ret;
       }
+    else if (name == "min")
+      {
+        diagnose_wrong_arg_count("min", 1, args.size());
+        set<revision_id> ret = args[0]->complete(project);
+        erase_descendants(project.db, ret);
+        return ret;
+      }
     else if (name == "ancestors")
       {
         diagnose_wrong_arg_count("ancestors", 1, args.size());

@@ -374,6 +374,121 @@ erase_ancestors(database & db, set<revision_id> & revisions)
   erase_ancestors_and_failures(db, revisions, p);
 }
 
+static void
+accumulate_strict_descendants(database & db,
+                              revision_id const & start,
+                              set<revision_id> & all_descendants,
+                              multimap<revision_id, revision_id> const & graph,
+                              rev_height const & max_height)
+{
+  typedef multimap<revision_id, revision_id>::const_iterator gi;
+
+  vector<revision_id> frontier;
+  frontier.push_back(start);
+
+  while (!frontier.empty())
+    {
+      revision_id rid = frontier.back();
+      frontier.pop_back();
+      pair<gi, gi> parents = graph.equal_range(rid);
+      for (gi i = parents.first; i != parents.second; ++i)
+        {
+          revision_id const & parent = i->second;
+          if (all_descendants.find(parent) == all_descendants.end())
+            {
+              // prune if we're above max_height
+              rev_height h;
+              db.get_rev_height(parent, h);
+              if (h <= max_height)
+                {
+                  all_descendants.insert(parent);
+                  frontier.push_back(parent);
+                }
+            }
+        }
+    }
+}
+
+// this call is equivalent to running:
+//   erase(remove_if(candidates.begin(), candidates.end(), p));
+//   erase_descendants(candidates, db);
+// however, by interleaving the two operations, it can in common cases make
+// many fewer calls to the predicate, which can be a significant speed win.
+
+void
+erase_descendants_and_failures(database & db,
+                               std::set<revision_id> & candidates,
+                               is_failure & p,
+                               multimap<revision_id, revision_id> *graph_cache_ptr)
+{
+  // Load up the ancestry graph
+  multimap<revision_id, revision_id> graph;
+
+  if (candidates.empty())
+    return;
+
+  if (graph_cache_ptr == NULL)
+    graph_cache_ptr = &graph;
+  if (graph_cache_ptr->empty())
+  {
+    db.get_forward_ancestry(*graph_cache_ptr);
+  }
+
+  // Keep a set of all descendants that we've traversed -- to avoid
+  // combinatorial explosion.
+  set<revision_id> all_descendants;
+
+  rev_height max_height;
+  db.get_rev_height(*candidates.begin(), max_height);
+  for (std::set<revision_id>::const_iterator it = candidates.begin(); it != candidates.end(); it++)
+    {
+      rev_height h;
+      db.get_rev_height(*it, h);
+      if (h > max_height)
+        max_height = h;
+    }
+
+  vector<revision_id> todo(candidates.begin(), candidates.end());
+  std::random_shuffle(todo.begin(), todo.end());
+
+  size_t predicates = 0;
+  while (!todo.empty())
+    {
+      revision_id rid = todo.back();
+      todo.pop_back();
+      // check if this one has already been eliminated
+      if (all_descendants.find(rid) != all_descendants.end())
+        continue;
+      // and then whether it actually should stay in the running:
+      ++predicates;
+      if (p(rid))
+        {
+          candidates.erase(rid);
+          continue;
+        }
+      // okay, it is good enough that all its descendants should be
+      // eliminated
+      accumulate_strict_descendants(db, rid, all_descendants, *graph_cache_ptr, max_height);
+    }
+
+  // now go and eliminate the ancestors
+  for (set<revision_id>::const_iterator i = all_descendants.begin();
+       i != all_descendants.end(); ++i)
+    candidates.erase(*i);
+
+  L(FL("called predicate %s times") % predicates);
+}
+
+// This function looks at a set of revisions, and for every pair A, B in that
+// set such that A is an descendant of B, it erases A.
+
+void
+erase_descendants(database & db, set<revision_id> & revisions)
+{
+  no_failures p;
+  erase_descendants_and_failures(db, revisions, p);
+}
+
 // This function takes a revision A and a set of revision Bs, calculates the
 // ancestry of each, and returns the set of revisions that are in A's ancestry
 // but not in the ancestry of any of the Bs.  It tells you 'what's new' in A

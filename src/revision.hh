@@ -162,6 +162,15 @@ erase_ancestors_and_failures(database & db,
                              std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
 
 void
+erase_descendants(database & db, std::set<revision_id> & revisions);
+
+void
+erase_descendants_and_failures(database & db,
+                               std::set<revision_id> & revisions,
+                               is_failure & p,
+                               std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
+
+void
 ancestry_difference(database & db, revision_id const & a,
                     std::set<revision_id> const & bs,
                     std::set<revision_id> & new_stuff);
