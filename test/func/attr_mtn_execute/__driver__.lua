@@ -30,7 +30,7 @@ check(indir("checkout", {"test", "-x","foo"}, 0, false, false))
 -- test clone with mtn:execute
 
 copy("test.db", "test-clone.db")
-testURI="file://" .. test.root .. "/test-clone.db?testbranch"
+test_uri="file://" .. url_encode_path(test.root .. "/test-clone.db") .. "?testbranch"
 
-check(nodb_mtn("clone", testURI, "clone"), 0, false, true)
+check(nodb_mtn("clone", test_uri, "clone"), 0, false, true)
 check(indir("clone", {"test", "-x","foo"}, 0, false, false))

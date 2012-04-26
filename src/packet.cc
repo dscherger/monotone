@@ -156,8 +156,8 @@ namespace
     void validate_public_key_data(string const & name, string const & keydata) const
     {
       string decoded = decode_base64_as<string>(keydata, origin::user);
-      Botan::SecureVector<Botan::byte> key_block;
-      key_block.set(reinterpret_cast<Botan::byte const *>(decoded.c_str()), decoded.size());
+      Botan::SecureVector<Botan::byte> key_block
+        (reinterpret_cast<Botan::byte const *>(decoded.c_str()), decoded.size());
       try
         {
           Botan::X509::load_key(key_block);
@@ -175,7 +175,9 @@ namespace
       Botan::DataSource_Memory ds(decoded);
       try
         {
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+          Botan::PKCS8::load_key(ds, lazy_rng::get(), Dummy_UI());
+#elif BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
           Botan::PKCS8::load_key(ds, lazy_rng::get(), string());
 #else
           Botan::PKCS8::load_key(ds, string());
@@ -189,7 +191,11 @@ namespace
         }
       // since we do not want to prompt for a password to decode it finally,
       // we ignore all other exceptions
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+      catch (Passphrase_Required) {}
+#else
       catch (Botan::Invalid_Argument) {}
+#endif
     }
     void validate_certname(string const & cn) const
     {
@@ -460,7 +466,15 @@ read_packets(istream & in, packet_consumer & cons)
   return count;
 }
 
-
+// Dummy User_Interface implementation for Botan
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+std::string
+Dummy_UI::get_passphrase(const std::string &, const std::string &,
+                         Botan::User_Interface::UI_Result&) const
+{
+  throw Passphrase_Required("Passphrase required");
+}
+#endif
 
 // Local Variables:
 // mode: C++

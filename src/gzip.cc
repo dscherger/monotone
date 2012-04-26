@@ -110,7 +110,7 @@ Gzip_Compression::Gzip_Compression(u32bit l) :
    if(deflateInit2(&(zlib->stream), level, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY) != Z_OK)
       {
       delete zlib; zlib = 0;
-      throw Exception("Gzip_Compression: Memory allocation error");
+      throw Memory_Exhaustion();
       }
    }
 
@@ -137,7 +137,7 @@ void Gzip_Compression::start_msg()
 /*************************************************
 * Compress Input with Gzip                       *
 *************************************************/
-void Gzip_Compression::write(const byte input[], u32bit length)
+void Gzip_Compression::write(const byte input[], filter_length_t length)
    {
 
    count += length;
@@ -152,7 +152,7 @@ void Gzip_Compression::write(const byte input[], u32bit length)
       zlib->stream.avail_out = buffer.size();
       int rc = deflate(&(zlib->stream), Z_NO_FLUSH);
       if (rc != Z_OK && rc != Z_STREAM_END)
-         throw Exception("Internal error in Gzip_Compression deflate.");
+         throw Invalid_State("Internal error in Gzip_Compression deflate.");
       send(buffer.begin(), buffer.size() - zlib->stream.avail_out);
       }
    }
@@ -172,7 +172,7 @@ void Gzip_Compression::end_msg()
       zlib->stream.avail_out = buffer.size();
       rc = deflate(&(zlib->stream), Z_FINISH);
       if (rc != Z_OK && rc != Z_STREAM_END)
-         throw Exception("Internal error in Gzip_Compression finishing deflate.");
+         throw Invalid_State("Internal error in Gzip_Compression finishing deflate.");
       send(buffer.begin(), buffer.size() - zlib->stream.avail_out);
       }
 
@@ -228,7 +228,7 @@ Gzip_Decompression::Gzip_Decompression() : buffer(DEFAULT_BUFFERSIZE),
    no_writes(true), pipe(new Hash_Filter("CRC32")), footer(0)
    {
    if (DEFAULT_BUFFERSIZE < sizeof(GZIP::GZIP_HEADER))
-      throw Exception("DEFAULT_BUFFERSIZE is too small");
+      throw Decoding_Error("DEFAULT_BUFFERSIZE is too small");
 
    zlib = new Zlib_Stream;
 
@@ -237,7 +237,7 @@ Gzip_Decompression::Gzip_Decompression() : buffer(DEFAULT_BUFFERSIZE),
    if(inflateInit2(&(zlib->stream), -15) != Z_OK)
       {
       delete zlib; zlib = 0;
-      throw Exception("Gzip_Decompression: Memory allocation error");
+      throw Memory_Exhaustion();
       }
    }
 
@@ -256,7 +256,7 @@ Gzip_Decompression::~Gzip_Decompression()
 void Gzip_Decompression::start_msg()
    {
    if (!no_writes)
-      throw Exception("Gzip_Decompression: start_msg after already writing");
+      throw Decoding_Error("Gzip_Decompression: start_msg after already writing");
 
    pipe.start_msg();
    datacount = 0;
@@ -267,7 +267,7 @@ void Gzip_Decompression::start_msg()
 /*************************************************
 * Decompress Input with Gzip                     *
 *************************************************/
-void Gzip_Decompression::write(const byte input[], u32bit length)
+void Gzip_Decompression::write(const byte input[], filter_length_t length)
    {
    if(length) no_writes = false;
 
@@ -277,15 +277,16 @@ void Gzip_Decompression::write(const byte input[], u32bit length)
          u32bit eat_len = eat_footer(input, length);
          input += eat_len;
          length -= eat_len;
-         if (length == 0)
-            return;
       }
+
+   if (length == 0)
+     return;
 
    // Check the gzip header
    if (pos < sizeof(GZIP::GZIP_HEADER))
       {
-      u32bit len = std::min((u32bit)sizeof(GZIP::GZIP_HEADER)-pos, length);
-      u32bit cmplen = len;
+      filter_length_t len = std::min((filter_length_t)sizeof(GZIP::GZIP_HEADER)-pos, length);
+      filter_length_t cmplen = len;
       // The last byte is the OS flag - we don't care about that
       if (pos + len - 1 >= GZIP::HEADER_POS_OS)
          cmplen--;
@@ -317,8 +318,8 @@ void Gzip_Decompression::write(const byte input[], u32bit length)
          if(rc == Z_NEED_DICT)
             throw Decoding_Error("Gzip_Decompression: Need preset dictionary");
          if(rc == Z_MEM_ERROR)
-            throw Exception("Gzip_Decompression: Memory allocation error");
-         throw Exception("Gzip_Decompression: Unknown decompress error");
+            throw Memory_Exhaustion();
+         throw Decoding_Error("Gzip_Decompression: Unknown decompress error");
          }
       send(buffer.begin(), buffer.size() - zlib->stream.avail_out);
       pipe.write(buffer.begin(), buffer.size() - zlib->stream.avail_out);
@@ -346,8 +347,14 @@ u32bit Gzip_Decompression::eat_footer(const byte input[], u32bit length)
       if (footer.size() >= GZIP::FOOTER_LENGTH)
          throw Decoding_Error("Gzip_Decompression: Data integrity error in footer");
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+      size_t eat_len = std::min(GZIP::FOOTER_LENGTH-footer.size(),
+                                static_cast<size_t>(length));
+      footer += std::make_pair(input, eat_len);
+#else
       u32bit eat_len = std::min(GZIP::FOOTER_LENGTH-footer.size(), length);
       footer.append(input, eat_len);
+#endif
 
       if (footer.size() == GZIP::FOOTER_LENGTH)
          {
@@ -364,7 +371,7 @@ u32bit Gzip_Decompression::eat_footer(const byte input[], u32bit length)
 void Gzip_Decompression::check_footer()
    {
    if (footer.size() != GZIP::FOOTER_LENGTH)
-      throw Exception("Gzip_Decompression: Error finalizing decompression");
+      throw Decoding_Error("Gzip_Decompression: Error finalizing decompression");
 
    pipe.end_msg();
 
@@ -377,7 +384,12 @@ void Gzip_Decompression::check_footer()
   for (int i = 0; i < 4; i++)
      buf[3-i] = tmpbuf[i];
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+  tmpbuf.resize(4);
+  tmpbuf.copy(footer.begin(), 4);
+#else
   tmpbuf.set(footer.begin(), 4);
+#endif
   if (buf != tmpbuf)
       throw Decoding_Error("Gzip_Decompression: Data integrity error - CRC32 error");
 
@@ -400,7 +412,7 @@ void Gzip_Decompression::end_msg()
    // read, clear() will reset no_writes
    if(no_writes) return;
 
-   throw Exception("Gzip_Decompression: didn't find footer");
+   throw Decoding_Error("Gzip_Decompression: didn't find footer");
 
    }
 
@@ -412,7 +424,11 @@ void Gzip_Decompression::clear()
    no_writes = true;
    inflateReset(&(zlib->stream));
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+   footer.clear();
+#else
    footer.destroy();
+#endif
    pos = 0;
    datacount = 0;
    }

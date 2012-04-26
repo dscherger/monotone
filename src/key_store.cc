@@ -572,13 +572,21 @@ key_store_state::decrypt_private_key(key_id const & id,
   try // with empty passphrase
     {
       Botan::DataSource_Memory ds(kp.priv());
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+      pkcs8_key.reset(Botan::PKCS8::load_key(ds, lazy_rng::get(), Dummy_UI()));
+#elif BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
       pkcs8_key.reset(Botan::PKCS8::load_key(ds, lazy_rng::get(), ""));
 #else
       pkcs8_key.reset(Botan::PKCS8::load_key(ds, ""));
 #endif
     }
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+  catch (Passphrase_Required & e)
+#elif BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,4)
+  catch (Botan::Invalid_Argument & e)
+#else
   catch (Botan::Exception & e)
+#endif
     {
       L(FL("failed to load key with no passphrase: %s") % e.what());
 
@@ -605,13 +613,18 @@ key_store_state::decrypt_private_key(key_id const & id,
           {
             Botan::DataSource_Memory ds(kp.priv());
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-            pkcs8_key.reset(Botan::PKCS8::load_key(ds, lazy_rng::get(), phrase()));
+            pkcs8_key.reset(Botan::PKCS8::load_key(ds, lazy_rng::get(),
+                                                   phrase()));
 #else
             pkcs8_key.reset(Botan::PKCS8::load_key(ds, phrase()));
 #endif
             break;
           }
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,4)
+        catch (Botan::Invalid_Argument)
+#else
         catch (Botan::Exception & e)
+#endif
           {
             cycles++;
             L(FL("decrypt_private_key: failure %d to load encrypted key: %s")
@@ -822,10 +835,14 @@ key_store::decrypt_rsa(key_id const & id,
       plaintext = string(reinterpret_cast<char const*>(plain.begin()),
                          plain.size());
     }
-  catch (Botan::Exception & ex)
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,4)
+  catch (std::exception & e)
+#else
+  catch (Botan::Exception & e)
+#endif
     {
       E(false, ciphertext.made_from,
-        F("Botan error decrypting data: '%s'") % ex.what());
+        F("Botan error decrypting data: '%s'") % e.what());
     }
 }
 
@@ -856,9 +873,9 @@ key_store::make_signature(database & db,
     {
       if (agent.connected()) {
         //grab the monotone public key as an RSA_PublicKey
-        SecureVector<Botan::byte> pub_block;
-        pub_block.set(reinterpret_cast<Botan::byte const *>(key.pub().data()),
-                      key.pub().size());
+        SecureVector<Botan::byte> pub_block
+          (reinterpret_cast<Botan::byte const *>(key.pub().data()),
+           key.pub().size());
         L(FL("make_signature: building %d-byte pub key") % pub_block.size());
         shared_ptr<X509_PublicKey> x509_key =
           shared_ptr<X509_PublicKey>(Botan::X509::load_key(pub_block));
@@ -1031,8 +1048,14 @@ key_store_state::migrate_old_key_pair
   for (;;)
     try
       {
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,11)
+        arc4_key.resize(phrase().size());
+        arc4_key.copy(reinterpret_cast<Botan::byte const *>(phrase().data()),
+                      phrase().size());
+#else
         arc4_key.set(reinterpret_cast<Botan::byte const *>(phrase().data()),
                      phrase().size());
+#endif
 
         Pipe arc4_decryptor(get_cipher("ARC4", arc4_key, Botan::DECRYPTION));
 
@@ -1051,7 +1074,11 @@ key_store_state::migrate_old_key_pair
 #endif
         break;
       }
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,4)
+    catch (Botan::Invalid_Argument & e)
+#else
     catch (Botan::Exception & e)
+#endif
       {
         L(FL("migrate_old_key_pair: failure %d to load old private key: %s")
           % cycles % e.what());
