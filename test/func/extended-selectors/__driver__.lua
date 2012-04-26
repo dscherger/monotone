@@ -3,6 +3,7 @@
 --   not(a)
 --   lca(a,b)
 --   max(a)
+--   min(a)
 --   ancestors(a)
 --   descendants(a)
 --   parents(a)
@@ -78,6 +79,12 @@ expect("b:testbranch", root, lhs, rhs, m)
 expect("b:otherbranch", lhs, other, other_2)
 expect("b:testbranch/b:otherbranch", lhs)
 expect("b:testbranch|b:otherbranch", root, lhs, rhs, m, other, other_2)
+
+expect("min(*)", root)
+expect("min(b:testbranch)", root)
+expect("min(b:testbranch/a:Anne)", rhs)
+expect("min(b:otherbranch)", lhs)
+expect("min(a:Jim)", other)
 
 -- now do same tests again with a double not - should get same results
 expect("not(not(b:testbranch))", root, lhs, rhs, m)
