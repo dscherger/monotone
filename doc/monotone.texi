@@ -39,7 +39,7 @@ Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
 Copyright @copyright{} 2006 - 2010 Thomas Keller @*
-Copyright @copyright{} 2007 - 2011 Stephen Leake @*
+Copyright @copyright{} 2007 - 2012 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
 greater.  See the accompanying file COPYING for details.
@@ -4603,7 +4603,8 @@ help for those.
 The Lua hook @code{@ref{get_default_command_options}} can change the
 default value for any option.
 
-Revision arguments to commands may be selectors or hex ids.
+Revision arguments to commands (but not to automate commands) may be
+selectors (see @ref{Selectors}) or hex ids.
 
 @menu
 * Global and Common Options::   Options that affect all or many commands
@@ -4858,7 +4859,7 @@ head of the workspace branch.
 @anchor{mtn checkout}@item mtn checkout [--[no-]move-conflicting-paths] --revision=@var{id} @var{directory}
 @itemx mtn checkout [--[no-]move-conflicting-paths] --branch=@var{branchname} @var{directory}
 @itemx mtn co
-@command{co} is an alias for @command{checkout}
+@command{co} is an alias for @command{checkout}. See @ref{Selectors}.
 
 These commands copy a revision @var{id} out of your database,
 recording the chosen revision (the @dfn{base revision}) in the file
@@ -4907,9 +4908,9 @@ If no @var{id} is provided, as in the latter two commands, you
 See @ref{Conflicts}
 
 @anchor{mtn explicit_merge}@item mtn explicit_merge [--[no-]update] @var{id} @var{id} @var{destbranch}
-See the online help for options. See @ref{--update}.
+See the online help for options. See @ref{--update}. See @ref{Selectors}.
 
-This command merges exactly the two @var{id}s you give it, and places
+This command merges exactly the two revision @var{id}s you give it, and places
 the result in branch @var{destbranch}.  It is useful when you need more
 control over the merging process than @command{propagate} or @command{merge}
 give you.  For instance, if you have a branch with three heads, and you
@@ -4932,7 +4933,7 @@ computer clocks is not reliable, so monotone usually ignores time.
 
 @anchor{mtn import}@item mtn import --branch=@var{branch} [--message=@var{message}] [--[no-]dry-run] @var{dir}
 @itemx mtn import --revision=@var{revision} [--message=@var{message}] [--[no-]dry-run] @var{dir}
-See the online help for more options.
+See the online help for more options. See @ref{Selectors}.
 
 This command imports the contents of the given directory and commits it
 to the head of the given branch or as a child of the given revision (and
@@ -5007,10 +5008,10 @@ intended.
 @ref{Merge Conflicts} can occur. See @ref{--update}.
 
 @anchor{mtn merge_into_workspace}@item mtn merge_into_workspace [--[no]-move-conflicting-paths] @var{revision}
-Merges @var{revision} into the current workspace; the result is not
-committed to the database. There can be no pending changes in the
-current workspace. The workspace's selected branch is not
-changed.
+Merges @var{revision} (see @ref{Selectors}) into the current
+workspace; the result is not committed to the database. There can be
+no pending changes in the current workspace. The workspace's selected
+branch is not changed.
 
 When a later commit is done, both @var{revision} and the workspace's
 base revision will be recorded as parents.
@@ -5105,10 +5106,10 @@ in alphabetical order. Then the conflict resolutions are discussed.
 @ftable @command
 @item mtn conflicts store [--conflicts-file=@var{file}] [@var{left_rev_id} @var{right_rev_id}]
 Store the conflicts encountered by merging @var{left_rev_id} with
-@var{right_rev_id}, in the specified file (defaults to
-@file{_MTN/conflicts}. If @var{left_rev_id} and @var{right_rev_id} are
-not given, the first two heads that the @command{merge} command would
-merge are used.
+@var{right_rev_id} (revision ids; see @ref{Selectors}), in the
+specified file (defaults to @file{_MTN/conflicts}. If
+@var{left_rev_id} and @var{right_rev_id} are not given, the first two
+heads that the @command{merge} command would merge are used.
 
 The conflicts file format is as output by the @command{automate
 show_conflicts} command; see @command{@ref{mtn automate show_conflicts}}.
@@ -5484,7 +5485,7 @@ When running @command{pivot_root}, it is sometimes possible for
 
 @anchor{mtn pluck}@item mtn pluck [--[no-]move-conflicting-paths] --revision=@var{to}
 @itemx mtn pluck [--[no-]move-conflicting-paths] --revision=@var{from} --revision=@var{to}
-See the online help for more options.
+See the online help for more options. See @ref{Selectors}.
 
 This command takes changes made at any point in history, and attempts to
 edit your current workspace to include those changes.  The end result is
@@ -5560,7 +5561,7 @@ given), it just removes the pending drop.
 @anchor{mtn update}@item mtn update [--[no-]move-conflicting-paths] [--branch @var{branchname}]
 @itemx mtn update [--[no-]move-conflicting-paths] --revision=@var{revision}
 This command changes your workspace to have the a different revision as
-the base revision.
+the base revision. See @ref{Selectors}.
 
 @command{update} performs 3 separate stages. If any of these stages
 fails, the update aborts, doing nothing. The first two stages select
@@ -5774,9 +5775,9 @@ that to determine which branch to checkout.
 Finally, @command{clone} copies the files out of the newly created
 database into a local directory, just as @command{checkout} would.  If
 no @var{directory} is given, the @var{branchname} is used as
-directory. If @option{--revision} is given, that revision must be on
-the specified branch, and is checked out; otherwise the head of the
-branch is checked out.
+directory. If @option{--revision} is given (see @ref{Selectors}), that
+revision must be on the specified branch, and is checked out;
+otherwise the head of the branch is checked out.
 
 @strong{Important notice:} The @var{address}[:@var{port}] @var{branchname}
 call syntax is deprecated and subject to removal in future versions of monotone!
@@ -5789,6 +5790,7 @@ call syntax is deprecated and subject to removal in future versions of monotone!
 @ftable @command
 @item mtn annotate @var{file}
 @itemx mtn annotate [--revision=@var{id}] [--revs-only] @var{file}
+See @ref{Selectors}.
 
 Dumps an annotated copy of the file to stdout. The output is in the
 form:
@@ -5812,10 +5814,10 @@ If @option{--revs-only} is specified, the output format is:
 
 @item mtn bisect bad [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
 Mark the specified revisions as ``bad'' for the current bisection
-operation (see @ref{Bisecting}). If no bisection operation is in
-progress a new bisection is initialized. If a bisection operation is
-in progress the next update target is selected and the workspace is
-updated to the selected revision.
+operation (see @ref{Bisecting}, see @ref{Selectors}). If no bisection
+operation is in progress a new bisection is initialized. If a
+bisection operation is in progress the next update target is selected
+and the workspace is updated to the selected revision.
 
 If the update is blocked by conflicting unversioned paths existing in
 the workspace this command may be re-issued with the
@@ -5825,10 +5827,10 @@ the workspace and move the conflicting paths out of the way.
 
 @item mtn bisect good [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
 Mark the specified revisions as ``good'' for the current bisection
-operation (see @ref{Bisecting}). If no bisection operation is in
-progress a new bisection is initialized. If a bisection operation is
-in progress the next update target is selected and the workspace is
-updated to the selected revision.
+operation (see @ref{Bisecting}, see @ref{Selectors}). If no bisection
+operation is in progress a new bisection is initialized. If a
+bisection operation is in progress the next update target is selected
+and the workspace is updated to the selected revision.
 
 If the update is blocked by conflicting unversioned paths existing in
 the workspace this command may be re-issued with the
@@ -5843,10 +5845,10 @@ current bisection information.
 
 @item mtn bisect skip [--revision=@var{id} ...] [--[no-]move-conflicting-paths]
 Mark the specified revisions as ``skipped'' for the current bisection
-operation (see @ref{Bisecting}). If no bisection operation is in
-progress a new bisection is initialized. If a bisection operation is
-in progress the next update target is selected and the workspace is
-updated to the selected revision.
+operation (see @ref{Bisecting}, see @ref{Selectors}). If no bisection
+operation is in progress a new bisection is initialized. If a
+bisection operation is in progress the next update target is selected
+and the workspace is updated to the selected revision.
 
 If the update is blocked by conflicting unversioned paths existing in
 the workspace this command may be re-issued with the
@@ -5868,16 +5870,18 @@ because of conflicting unversioned paths existing in the workspace.
 
 @item mtn cat [--revision=@var{id}] @var{path}
 Write the contents of a specific file @var{path} in revision @var{id}
-(default to workspace base revision) to standard output.
+(see @ref{Selectors}; default to workspace base revision) to standard
+output.
 
 @item mtn complete file @var{partial-id}
 @itemx mtn complete key @var{partial-id}
 @itemx mtn complete revision @var{partial-id}
 
 These commands print out all known completions of a partial @sc{sha1}
-value, listing completions which are @code{file}, @code{manifest} or
-@code{revision} IDs depending on which variant is used. For
-example, suppose you enter this command and get this result:
+value (@emph{not} a selector), listing completions which are
+@code{file}, @code{manifest} or @code{revision} IDs depending on which
+variant is used. For example, suppose you enter this command and get
+this result:
 
 @smallexample
 @group
@@ -5902,7 +5906,8 @@ completion systems, such as those in @command{bash} and @command{zsh}.
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2}
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2} @var{pathname...}
 @itemx mtn di
-@command{di} is an alias for @command{diff}. See online help for more options.
+@command{di} is an alias for @command{diff}. See online help for more
+options. See @ref{Selectors}.
 
 These commands print out textual difference listings between various
 manifest versions. With no @option{--revision} options, @command{diff}
@@ -6072,7 +6077,8 @@ register and unregister workspaces shown within this list.
 
 @item mtn list duplicates [--revision=@var{id}]
 @itemx mtn ls duplicates
-@command{ls duplicates} is an alias for @command{list duplicates}.
+@command{ls duplicates} is an alias for @command{list duplicates}. See
+@ref{Selectors}.
 
 This command lists duplicate files in a given revision (defaults to
 the workspace base revision). Ignored and unknown files are excluded
@@ -6185,7 +6191,7 @@ within this list.  See @ref{Managed Databases} for more information.
 
 @anchor{mtn log}@item mtn log
 @itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--clear-from] [--to=@var{id} [...]] [--clear-to] [--revision=@var{id} [...]] [--[no-]brief] [--[no-]merges] [--[no-]files] [--[no-]graph] [--[no-]diffs] [@var{pathname...}]
-See the online help for more options.
+See the online help for more options. See @ref{Selectors}.
 
 This command prints out a log, in forward ancestry order by default
 but optionally in reverse ancestry order, of small history summaries.
@@ -6282,7 +6288,7 @@ commands and options, which is deactivated by default.
 
 @item mtn show_conflicts @var{rev} @var{rev}
 This command shows what conflicts would need to be resolved in order to merge
-the given revisions; see @ref{Merge Conflicts}.
+the given revisions; see @ref{Merge Conflicts}, see @ref{Selectors}.
 
 Note that this does not show conflicts due to update commands, since
 in that case one revision is the workspace.
@@ -6341,8 +6347,8 @@ See @ref{--update}.
 
 @anchor{mtn comment}@item mtn comment @var{rev} [@var{comment}]
 
-This adds a new comment to a committed revision.  If @var{comment} is
-not provided, it is obtained from the Lua hook
+This adds a new comment to a committed revision (see @ref{Selectors}).
+If @var{comment} is not provided, it is obtained from the Lua hook
 @code{@ref{edit_comment}}; the hook is passed an empty string.
 
 This command is a synonym for @command{mtn cert @var{rev} comment
@@ -6351,10 +6357,12 @@ This command is a synonym for @command{mtn cert @var{rev} comment
 @item mtn disapprove [--[no-]update] [@var{parent}] @var{child}
 See online help for more options; see @ref{Common Options}. See @ref{--update}.
 
-This command records a disapproval of the changes between @var{parent}'s
-ancestor and @var{child}.  If @var{parent} is omitted, only @var{child}
-is disapproved.  The command does the disapproval by committing
-the @i{inverse} changes as a new revision descending from @var{child}.
+This command records a disapproval of the changes between
+@var{parent}'s ancestor and @var{child}. @var{parent} and @var{child}
+are revision ids (see @ref{Selectors}). If @var{parent} is omitted,
+only @var{child} is disapproved.  The command does the disapproval by
+committing the @i{inverse} changes as a new revision descending from
+@var{child}.
 
 Conceptually, @command{disapprove}'s contract is that disapprove(A) gives a
 revision B such that whenever B is merged with a descendant D of A the merge
@@ -6369,10 +6377,11 @@ the multi-ancestor case.
 @anchor{mtn suspend}@item mtn suspend [--[no-]update] [--branch @var{branchname}] @var{rev}
 See @ref{--update}.
 
-This makes @var{rev} invisible as a head of branch @var{branchname}
-(defaults to the current workspace branch).  Any operation that looks
-for heads will not count @var{rev}; this includes @command{@ref{mtn
-list branches}} as well as @command{@ref{mtn merge}} etc.
+This makes @var{rev} (a revision id; see @ref{Selectors}) invisible as
+a head of branch @var{branchname} (defaults to the current workspace
+branch).  Any operation that looks for heads will not count @var{rev};
+this includes @command{@ref{mtn list branches}} as well as
+@command{@ref{mtn merge}} etc.
 
 If @var{rev} is not a head, @command{suspend} has no effect.
 
@@ -6385,8 +6394,9 @@ This command is a synonym for @command{mtn cert @var{rev} suspend
 
 @item mtn tag @var{rev} @var{tagname}
 This command associates the symbolic name @var{tagname} with the
-revision @var{rev}, so that symbolic name can later be used in
-@ref{Selectors} for specifying revisions.
+revision @var{rev} (a revision id; see @ref{Selectors}), so that
+symbolic name can later be used in selectors for specifying
+revisions.
 
 This command is a synonym for @command{mtn cert @var{rev} tag
 @var{tagname}}.
@@ -6439,7 +6449,7 @@ Deletes any value associated with @var{name} in @var{domain}.  See
 @anchor{mtn cert}@item mtn cert @var{selector} @var{certname} [@var{certval}]
 
 Create a new certificate with name @var{certname}, for all
-revisions matching @var{selector}.
+revisions matching @var{selector} (see @ref{Selectors}).
 
 If @var{certval} is provided, it is the value of the certificate.
 Otherwise the certificate value is read from @code{stdin}.
@@ -6560,11 +6570,11 @@ work with all signing algorithms.
 
 @item mtn trusted @var{id} @var{certname} @var{certval} @var{signers}
 This command lets you test your revision trust hook
-@ref{get_revision_cert_trust}.  You pass it a revision ID, a
-certificate name, a certificate value, and one or more key IDs or key
-names, and it will tell you whether, under your current settings,
-Monotone would trust a cert on that revision with that value signed by
-those keys.
+@ref{get_revision_cert_trust}.  You pass it a revision ID (see
+@ref{Selectors}), a certificate name, a certificate value, and one or
+more key IDs or key names, and it will tell you whether, under your
+current settings, Monotone would trust a cert on that revision with
+that value signed by those keys.
 
 The specified keys must exist either in your keystore or in the database.
 
@@ -6826,15 +6836,15 @@ database @var{dbfile}.
 
 @item mtn local kill_certs @var{selector} @var{certname} [@var{certval}]
 This command deletes certs with the given name on revisions that match
-the given selector. If a value is given, it restricts itself to only
-delete certs that also have that same value. Like @command{@ref{mtn
-local kill_revision}}, it is a very dangerous command; it permanently
-and irrevocably deletes historical information from your
-database. Also like @command{kill_revision}, this only deletes the
-certs from your local database; if there are other databases that you
-sync with which have these certs they will reappear when you sync,
-unless the owners of those databases also delete those certificates
-locally.
+the given selector (see @ref{Selectors}). If a value is given, it
+restricts itself to only delete certs that also have that same
+value. Like @command{@ref{mtn local kill_revision}}, it is a very
+dangerous command; it permanently and irrevocably deletes historical
+information from your database. Also like @command{kill_revision},
+this only deletes the certs from your local database; if there are
+other databases that you sync with which have these certs they will
+reappear when you sync, unless the owners of those databases also
+delete those certificates locally.
 
 Early versions of monotone had @command{db kill_tag_locally} and
 @command{db kill_branch_certs_locally} commands. These can be emulated with
@@ -6842,14 +6852,15 @@ Early versions of monotone had @command{db kill_tag_locally} and
 @command{local kill_certs i: branch BRANCH}, respectively.
 
 @anchor{mtn local kill_revision}@item mtn local kill_revision @var{id}
-This command ``kills'', i.e., deletes, a given revision, as well as
-any certs attached to it.  It is a very dangerous command; it
-permanently and irrevocably deletes historical information from your
-database.  If you execute this command in a workspace, whose parent
-revision is the one you are about to delete, the killed revision is
-re-applied to this workspace which makes it possible for you to fix a
-problem and commit again later on easily. For this to work, the
-workspace may not have any changes and/or missing files.
+This command ``kills'', i.e., deletes, a given revision (see
+@ref{Selectors}), as well as any certs attached to it.  It is a very
+dangerous command; it permanently and irrevocably deletes historical
+information from your database.  If you execute this command in a
+workspace, whose parent revision is the one you are about to delete,
+the killed revision is re-applied to this workspace which makes it
+possible for you to fix a problem and commit again later on
+easily. For this to work, the workspace may not have any changes
+and/or missing files.
 
 There are a number of other caveats with this command:
 @itemize
