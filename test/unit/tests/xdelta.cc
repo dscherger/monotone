@@ -8,11 +8,16 @@
 // PURPOSE.
 
 #include "../../../src/base.hh"
+
+// <boost/math/special_functions/detail/lgamma_small.hpp> uses L().
+// This conflicts with a #define in "../../../src/sanity.hh".
+// Workaround: Include BOOST header before "../../../src/xdelta.hh".
+#include <boost/random.hpp>
+
 #include "../unit_tests.hh"
 #include "../../../src/xdelta.hh"
 
 #include "../../../src/adler32.hh"
-#include <boost/random.hpp>
 
 boost::mt19937 xdelta_prng;
 boost::uniform_smallint<char> xdelta_chargen('a', 'z');
