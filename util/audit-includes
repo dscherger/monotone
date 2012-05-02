@@ -11,6 +11,7 @@
 # Check all C++ source files to make sure they obey the header file rules.
 
 egrep -H "$(printf '^[ \t]*#[ \t]*include\\>')" "$@" |
+  sed -e "$(printf 's/\r$//')" |
   sed -e "$(printf 's/:[ \t]*#[ \t]*include[ \t]*[<\"]/ /')" -e 's/[>"]$//' |
   {
     current=""
