@@ -240,6 +240,39 @@ CMD_AUTOMATE(erase_ancestors, N_("[REV1 [REV2 [REV3 [...]]]]"),
     output << *i << '\n';
 }
 
+// Name: erase_descendants
+// Arguments:
+//   0 or more: revision ids
+// Added in: 13.1
+// Purpose: Prints all arguments, except those that are a descendant of some
+//   other argument.  One way to think about this is that it prints the
+//   minimal elements of the given set, under the ordering imposed by the
+//   "parent of" relation.  Another way to think of it is if the arguments were
+//   a branch, then we print the roots of that branch.
+// Output format: A list of revision ids, in hexadecimal, each followed by a
+//   newline.  Revision ids are printed in alphabetically sorted order.
+// Error conditions: If any of the revisions do not exist, prints nothing to
+//   stdout, prints an error message to stderr, and exits with status 1.
+CMD_AUTOMATE(erase_descendants, N_("[REV1 [REV2 [REV3 [...]]]]"),
+             N_("Erases the descendants in a list of revisions"),
+             "",
+             options::opts::none)
+{
+  database db(app);
+
+  set<revision_id> revs;
+  for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
+    {
+      revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
+      E(db.revision_exists(rid), origin::user,
+        F("no revision %s found in database") % rid);
+      revs.insert(rid);
+    }
+  erase_descendants(db, revs);
+  for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
+    output << *i << '\n';
+}
+
 // Name: toposort
 // Arguments:
 //   0 or more: revision ids

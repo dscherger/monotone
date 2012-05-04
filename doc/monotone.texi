@@ -7523,6 +7523,47 @@ an error message to stderr, and exits with status 1.
 
 @end table
 
+@item mtn automate erase_descendants [@var{rev...}]
+
+@table @strong
+@item Arguments:
+
+One or more revision IDs.
+
+@item Added in:
+
+13.1
+
+@item Purpose:
+
+Prints all arguments, except those that are a descendant of some other
+argument.
+
+One way to think about this is that it prints the minimal elements of
+the given set, under the ordering imposed by the ``parent of''
+relation.  Another way to think of it is if the arguments formed a
+branch, then we would print the roots of that branch.  If there are no
+arguments, prints nothing.
+
+@item Sample output:
+
+@verbatim
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+75156724e0e2e3245838f356ec373c50fa469f1f
+@end verbatim
+
+@item Output format:
+
+Zero or more lines, each giving the ID of one of the given revisions.
+Each line consists of a revision ID, in hexadecimal, followed by a
+newline.  The lines are printed in alphabetically sorted order.
+
+@item Error conditions:
+
+If any of the revisions do not exist, prints nothing to stdout, prints
+an error message to stderr, and exits with status 1.
+
+@end table
 
 @item mtn automate file_merge @var{left-rid} @var{left-path} @var{right-rid} @var{right-path}
 
