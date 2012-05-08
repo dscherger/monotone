@@ -1,11 +1,12 @@
 This directory keeps the files needed to build the Windows native
-installer, using Inno Setup. 
+installer, using Inno Setup.
 
 Here are all the steps for creating a MinGW release, on a fresh
 Windows machine:
 
 Install Inno Setup and Inno Setup preprocessor; see
-http://www.jrsoftware.org/isinfo.php, get the Quick Start Pack isetup-5.4.2.exe
+http://www.jrsoftware.org/isinfo.php, isetup-5.4.3.exe. Install the
+preprocessor (we use it).
 
 Install MinGW tools; see ../INSTALL_windows_native.txt
 
@@ -26,9 +27,9 @@ That builds "monotone-<version>-setup.exe" in the current directory.
 
 NOTE:
 
-  If ISCC (Inno setup compiler) is not in PATH, then you must specify
-  its location:
-  
+  If ISCC (Inno setup compiler) is not in PATH when monotone configure
+  is run, then you must specify its location:
+
     make win32-installer ISCC=/d/progs/InnoSetup5/ISCC.exe
 
 Publish the binary on the monotone website with proper permissions:
