@@ -4233,7 +4233,7 @@ Monotone is capable of exporting the contents of a database to
 $ mkdir test.git
 $ cd test.git
 $ git init
-$ mtn --db test.mtn git_export | git fast import
+$ mtn --db test.mtn git_export | git fast-import
 @end group
 @end smallexample
 
