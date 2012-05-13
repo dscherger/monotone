@@ -9,24 +9,22 @@
 
 #include "../../../src/base.hh"
 
-// <boost/math/special_functions/detail/lgamma_small.hpp> uses L().
-// This conflicts with a #define in "../../../src/sanity.hh".
-// Workaround: Include BOOST header before "../../../src/xdelta.hh".
-#include <boost/random.hpp>
+#include <random>
 
 #include "../unit_tests.hh"
 #include "../../../src/xdelta.hh"
 
 #include "../../../src/adler32.hh"
 
-boost::mt19937 xdelta_prng;
-boost::uniform_smallint<char> xdelta_chargen('a', 'z');
-boost::uniform_smallint<size_t> xdelta_sizegen(1024, 65536);
-boost::uniform_smallint<size_t> xdelta_editgen(3, 10);
-boost::uniform_smallint<size_t> xdelta_lengen(1, 256);
-
 using std::string;
 using std::shared_ptr;
+using std::uniform_int_distribution;
+
+std::mt19937 xdelta_prng;
+uniform_int_distribution<char> xdelta_chargen('a', 'z');
+uniform_int_distribution<size_t> xdelta_sizegen(1024, 65536);
+uniform_int_distribution<size_t> xdelta_editgen(3, 10);
+uniform_int_distribution<size_t> xdelta_lengen(1, 256);
 
 UNIT_TEST(basic)
 {
