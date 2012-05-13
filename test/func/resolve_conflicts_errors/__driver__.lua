@@ -51,10 +51,11 @@ check(samefilestd("conflicts-attr-store-2", "stdout"))
 ----------
 -- use old conflicts file for new merge
 
--- get rid of attr conflict, add file content conflict
+-- get rid of attr conflict, add half of file content conflict
 check(mtn("attr", "set", "simple_file", "foo", "1"), 0, nil, nil)
 writefile("simple_file", "simple\ntwo\nthree\nfour\n")
 commit("testbranch", "right 2")
+right_2 = base_revision()
 
 -- attempt merge with old conflict file
 check(mtn("merge", "--resolve-conflicts"), 1, nil, true)
@@ -62,19 +63,33 @@ check(grep("-v", "detected at", "stderr"), 0, true)
 canonicalize("stdout")
 check(samefilestd("merge-old-conflicts-file", "stdout"))
 
+----------
+-- 'resolve_first' without resolution (issue 202)
+
+-- other half of file content conflict
+revert_to(left_1)
+writefile("simple_file", "simple\none\nthree\nfour\n")
+commit("testbranch", "left 2")
+left_2 = base_revision()
+
+check(mtn("conflicts", "store", left_2, right_2), 0, nil, true)
+
+check(mtn("conflicts", "resolve_first"), 1, nil, true)
+check(qgrep("wrong number of arguments", "stderr"))
 
 ----------
 -- specify inconsistent left and right resolutions for duplicate_name
 
+addfile("checkout.sh", "checkout.sh left 1")
+commit("testbranch", "left 3")
+
+revert_to(right_2)
+
 addfile("checkout.sh", "checkout.sh right 1")
 commit("testbranch", "right 3")
 
-revert_to(left_1)
-addfile("checkout.sh", "checkout.sh left 1")
-commit("testbranch", "left 2")
-
 check(mtn("conflicts", "store"), 0, nil, true)
-check(samelines("stderr", {"mtn: 1 conflict with supported resolutions.",
+check(samelines("stderr", {"mtn: 2 conflicts with supported resolutions.",
                            "mtn: stored in '_MTN/conflicts'"}))
 
 -- invalid number of params

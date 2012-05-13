@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <cstdlib>
 
 #include "../sanity.hh"
 #include "../platform.hh"

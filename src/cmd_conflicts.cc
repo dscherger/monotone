@@ -1,4 +1,4 @@
-// Copyright (C) 2008 - 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008 - 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -480,6 +480,7 @@ CMD(resolve_first, "resolve_first", "", CMD_REF(conflicts),
   database db(app);
   conflicts_t conflicts (db, app.opts.conflicts_file);
 
+  E(args.size() == 1, origin::user, F("wrong number of arguments"));
   set_first_conflict(db, app.lua, conflicts, args, neither);
 
   conflicts.write (db, app.lua, app.opts.conflicts_file);
