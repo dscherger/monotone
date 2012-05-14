@@ -2,13 +2,9 @@ See INSTALL for general notes, such as running 'make' and 'make check'
 
 on Windows (using MinGW):
 
-Many tools and packages are available on SourceForge:
-
-https://sourceforge.net/projects/<project>/files/
-
-That site is organized into several hierarchical lists of files. We
-give the hierarchy names here, rather than a complete download URL, to
-make it easy to check for new versions.
+Here we give sources for the various packages needed. We give
+directions to the download, rather than an exact URL, to make it easy
+to check for new versions.
 
 The versions given here may not be exactly the same versions as used to
 build the current release of monontone.
@@ -16,30 +12,34 @@ build the current release of monontone.
 These instructions work on a new computer, with only
 Windows XP installed.
 
+The most recent MinGW installer mingw-get-inst-20120426 contains g++
+4.6.2; this is broken for C++ exceptions on MinGW. So we use an
+earlier installer mingw-get-inst-20110211, containing g++ 4.5.2 and a
+catalog of other binary packages that are consistent with that runtime.
+
 Package       | Version | location
 --------------------------
-Python        | 2.7.1   | http://www.python.org/
-                        | "Windows Installer" under "Quick Links (2.7.1)"
-mingw-get-inst| latest  | http://sourceforge.net/projects/mingw/files/
-                        | -> Automated MinGW Installer
+Python        | 2.7.3   | http://www.python.org/
+                        | "Windows Installer" under "Quick Links (2.7.3)"
+                        | Used for the Botan install; that does not work with Python 3.2.3
+mingw-get-inst|20110211 | http://sourceforge.net/projects/mingw/files/
+                        | -> Installer
                         | -> mingw-get-inst
                         | -> mingw-get-inst-20110211
-                        | -> mingw-get-inst-20110211.exe
-boost         | 1.46.1  | http://sourceforge.net/projects/boost/files/
-                        | -> boost -> 1.46.1 -> boost_1_46_1.tar.gz
-Lua           | 5.1.4   | http://www.lua.org/
-                        | -> download
-                        | -> "...current release is >Lua 5.1.4<" under "Source"
+                        | -> mingw-get-inst-20110211.exe - _not_ the most recent; see above
+boost         | 1.49.0  | http://sourceforge.net/projects/boost/files/
+                        | -> boost -> 1.49.0 -> boost_1_49_0.tar.bz2
                         | lua-5.1.4.tar.gz
-pcre          | 8.12    | http://www.pcre.org/
+pcre          | 8.30    | http://www.pcre.org/
                         | -> ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/
-                        | -> pcre-8.12.tar.gz
-botan         | 1.8.11  | http://botan.randombit.net/download.html
+                        | -> pcre-8.30.tar.bz2
+botan         | 1.10.1  | http://botan.randombit.net/download.html
                         | "Source: >tar/gzip<" under "Current Stable Release"
-sqlite3       | 3.7.5   | http://www.sqlite.org/download.html
-                        | -> sqlite-autoconf-3070500.tar.gz
-libidn        | 1.20    | ftp://ftp.gnu.org/gnu/libidn/
-                        | -> libidn-1.20.tar.gz
+                        | _not_ the "windows binary installer"
+sqlite3       | 3.7.11  | http://www.sqlite.org/download.html
+                        | -> sqlite-autoconf-3071100.tar.gz
+libidn        | 1.24    | ftp://ftp.gnu.org/gnu/libidn/
+                        | -> libidn-1.24.tar.gz
 Depends.exe   |         | http://www.dependencywalker.com/ ; also comes with Visual Studio
 
 In general, there are two versions of most tools on the
@@ -78,43 +78,49 @@ maps to both / and /usr/ under the MinGW shell.
     command window run "echo %PATH%" and look for the Python directory in the output.
 
 02. MinGW
-  Run mingw-get-inst (graphical installer for mingw-get and the MinGW base system).
-  At the "Select Components" screen, add "C++ compiler" and "MinGW Developer Toolkit".
-    Other than this, accept all defaults.
+  Run mingw-get-inst-20110211.exe - note that later versions include
+  g++ 4.6.2, which is broken for C++ exceptions on MinGW.
+  At the "Select Components" screen, add:
+    C++ compiler
+    MinGW Developer Toolkit
+  Other than this, accept all defaults.
+  In particular, do _not_ update the catalog; use the built-in
+  catalog, to insure the binaries are consistent with the g++ 4.5.2
+  runtime.
   Open the MinGW shell (Start->All Programs->MinGW->MinGW Shell)
   Run the following:
-  $ mingw-get install msys-autoconf msys-automake mingw32-libiconv
+  $ mingw-get install msys-autoconf msys-automake
   $ mingw-get install mingw32-zlib mingw32-libz-dev mingw32-gettext
 
 03. boost; only need headers
   $ cd /usr
   $ mkdir src
   $ cd src
-  $ tar -zxf ../boost_1_46_1.tar.gz
+  $ tar -jxf ../boost_1_49_0.tar.bz2
   This may give errors about gid_t out of range, and then say
   "Exiting with failure status due to previous errors"; you can
   ignore this.
-  $ cd boost_1_46_1
+  $ cd boost_1_49_0
   $ cp -a boost /mingw/include
 
 04. Lua
    $ cd /usr/src
-   $ tar -zxf ../lua-5.1.4.tar.gz
-   $ cd lua-5.1.4
+   $ tar -zxf ../lua-5.20.tar.gz
+   $ cd lua-5.2.0
    $ make mingw INSTALL_TOP=/mingw
    $ make install INSTALL_TOP=/mingw
 
 05. pcre
    $ cd /usr/src
-   $ tar -zxf ../pcre-8.12.tar.gz
-   $ cd pcre-8.12
+   $ tar -jxf ../pcre-8.30.tar.bz2
+   $ cd pcre-8.30
    $ ./configure --prefix=/mingw
    $ make install
 
 06. botan
    $ cd /usr/src
-   $ tar -zxf ../Botan-1.8.11.tgz
-   $ cd Botan-1.8.11
+   $ tar -zxf ../Botan-1.10.1.tgz
+   $ cd Botan-1.10.1
    $ ./configure.py --cc=gcc --os=mingw
    The Botan configure script generates paths with Python's
    os.path.join(...), which in the case of the Windows Python
@@ -125,15 +131,15 @@ maps to both / and /usr/ under the MinGW shell.
 
 07. sqlite3
    $ cd /usr/src
-   $ tar -zxf ../sqlite-autoconf-3070500.tar.gz
-   $ cd sqlite-autoconf-3070500
+   $ tar -zxf ../sqlite-autoconf-3071100.tar.gz
+   $ cd sqlite-autoconf-3071100
    $ ./configure --prefix=/mingw
    $ make install
 
 08. libidn
    $ cd /usr/src
-   $ tar -zxf ../libidn-1.20.tar.gz
-   $ cd libidn-1.20
+   $ tar -zxf ../libidn-1.24.tar.gz
+   $ cd libidn-1.24
    $ ./configure --prefix=/mingw
    $ make install
 
@@ -143,7 +149,7 @@ maps to both / and /usr/ under the MinGW shell.
    unpack it someplace in your %PATH% (for example, C:\MinGW\bin\).
    This is only used by the testsuite, in particular the empty_environment test.
    If you just want to build monotone for your own use, you can skip this and
-   just ignore that that test fails.
+   just ignore that test failing.
 
 10. build monotone
    You can skip the CXXFLAGS and LDFLAGS if you really want to, but if you do that
@@ -153,6 +159,9 @@ maps to both / and /usr/ under the MinGW shell.
    $ autoreconf -i # not needed if you use the distributed tarball
    $ export CXXFLAGS="-static-libgcc -static-libstdc++ -g -O2 -Wall"
    $ export LDFLAGS="-static-libgcc -static-libstdc++"
+   $ export botan_CFLAGS="-I/mingw/include/botan-1.10"
+   $ export botan_LIBS="-lbotan-1.10"
    $ ./configure
    $ make
 
+See innosetup/README.txt for instructions on building the native Win32 installer.

@@ -28,7 +28,7 @@ check(mtn("automate", "get_attributes", "testfile"), 0, true, true)
 check(fsize("stderr") == 0)
 parsed = parse_basic_io(readfile("stdout"))
 -- make sure the output generated 8 stanzas
-check(table.getn(parsed) == 8)
+check(#parsed == 8)
 lastkey = ""
 checked = {}
 for _,l in pairs(parsed) do
@@ -108,7 +108,7 @@ check(qgrep("unknown path 'foo' in " .. rev, "stderr"))
 check(mtn("automate", "get_attributes", "testfile", "-r", rev), 0, true, false)
 
 parsed = parse_basic_io(readfile("stdout"))
-check(table.getn(parsed) == 6)
+check(#parsed == 6)
 
 lastkey = ""
 checked = {}

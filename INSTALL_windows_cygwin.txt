@@ -2,39 +2,28 @@ See INSTALL for general notes, such as running 'make' and 'make check'
 
 on Windows using Cygwin:
 
-Monotone needs the following packages to compile:
-(newer releases are usually ok)
+An official Cygwin package for monotone and all its dependencies is
+usually available soon after release; just run the Cygwin installer
+and install the 'monotone' package.
 
- Runtime requirements:
-   cygwin-1.7.0-60
-   libgcc1-4.3.2-2
-   libidn11-1.9-1
-   libintl8-0.17-11
-   libpcre0-7.9-1
-   libsqlite3_0-3.6.2-1
-   libstdc++6-4.3.2-2
+To build Monotone on Cygwin for development and testing, the following
+packages are required (the versions listed are known to work; they may
+not be the exact versions used to build the official Cygwin package).
+Note that the monotone source code is compatible with Lua 5.2, but (as
+of 8 May 2012), Cygwin only has Lua 5.1.4.
+
+   binutils-2.22.51
+   libboost-devel-1.48.0
+   botan-1.8.13
+   gcc4-g++-4.5.3
+   gettext-devel-0.18.1
+   libidn-devel-1.22
+   libpcre-devel-8.21
+   libsqlite3-devel-3.7.3
    lua-5.1.4-11
-   zlib0-1.2.3-10
+   zlib-devel-1.2.5
 
- Build requirements:
-   gcc4-4.3.2
-   binutils-2.19.51
-   boost-devel-1.33.1
-   libsqlite3-devel-3.6.2
-   libidn-devel-1.9
-   gettext-devel-0.17
-   zlib-1.2.3
-   perl-5.10.0
-   botan-1.8.2
-
-currently every prerequisite is available as packages except
-lua and botan which are only available in Cygwin 1.7;
-an official Cygwin package for monotone and all its
-dependencies is usually available soon after release.
-
-The following is needed to succesfully configure:
-
- export CXXFLAGS="-I/usr/include/boost-1_33_1/ -g -O2"; configure
+No special options are needed for configure.
 
 There is a bug in the bash builtin 'pwd' in bash 4.1; it can return
 'c:/' syntax for absolute paths in some circumstances. See
@@ -43,4 +32,4 @@ this happens when starting a bash shell under Emacs, which results in
 configure creating Makefiles with some problems. A work-around is to
 put 'cd `/bin/pwd`' in your ~/.emacs_bash.
 
-See ../cygport/README for building a Cygwin package.
+See cygport/README for building a Cygwin package.
