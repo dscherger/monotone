@@ -1,0 +1,11 @@
+    left [92ea0d12182ab4761f8fe56a103aed9d65aff68d]
+   right [f5b4b65976746d1a2aa203ceaa67701353cc4172]
+ancestor [871b706565c414aa20f58f5f6db56778d64ece88]
+
+        conflict dropped_modified
+   ancestor_name "foo"
+ancestor_file_id [b02b6245b4b750465e12f65148d5369536b1b780]
+       left_type "dropped file"
+      right_type "modified file"
+      right_name "bar"
+   right_file_id [abd7d750f84aafa7c0b1f26540e2da28095bc082]

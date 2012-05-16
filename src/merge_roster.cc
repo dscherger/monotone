@@ -1,4 +1,4 @@
-// Copyright (C) 2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //               2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -89,6 +89,21 @@ dump(multiple_name_conflict const & conflict, string & out)
 }
 
 template <> void
+dump(dropped_modified_conflict const & conflict, string & out)
+{
+  ostringstream oss;
+  oss << "dropped_modified_conflict on node: " <<
+    conflict.left_nid == the_null_node ? conflict.right_nid : conflict.left_nid;
+  if (conflict.resolution.first != resolve_conflicts::none)
+    {
+      oss << " resolution: " << image(conflict.resolution.first);
+      oss << " name: " << conflict.resolution.second;
+    }
+  oss << "\n";
+  out = oss.str();
+}
+
+template <> void
 dump(duplicate_name_conflict const & conflict, string & out)
 {
   ostringstream oss;
@@ -146,6 +161,7 @@ roster_merge_result::clear()
 
   orphaned_node_conflicts.clear();
   multiple_name_conflicts.clear();
+  dropped_modified_conflicts.clear();
   duplicate_name_conflicts.clear();
 
   attribute_conflicts.clear();
@@ -175,6 +191,7 @@ roster_merge_result::has_non_content_conflicts() const
     || !directory_loop_conflicts.empty()
     || !orphaned_node_conflicts.empty()
     || !multiple_name_conflicts.empty()
+    || !dropped_modified_conflicts.empty()
     || !duplicate_name_conflicts.empty()
     || !attribute_conflicts.empty();
 }
@@ -183,6 +200,7 @@ int
 roster_merge_result::count_supported_resolution() const
 {
   return orphaned_node_conflicts.size()
+    + dropped_modified_conflicts.size()
     + file_content_conflicts.size()
     + duplicate_name_conflicts.size();
 }
@@ -209,6 +227,7 @@ dump_conflicts(roster_merge_result const & result, string & out)
 
   dump(result.orphaned_node_conflicts, out);
   dump(result.multiple_name_conflicts, out);
+  dump(result.dropped_modified_conflicts, out);
   dump(result.duplicate_name_conflicts, out);
 
   dump(result.attribute_conflicts, out);
@@ -316,34 +335,42 @@ namespace
                    marking_map const & markings,
                    set<revision_id> const & uncommon_ancestors,
                    roster_t const & parent_roster,
-                   roster_t & new_roster)
+                   side_t const present_in,
+                   roster_merge_result & result)
   {
     const_marking_t const & m = markings.get_marking(n->self);
     revision_id const & birth = m->birth_revision;
     if (uncommon_ancestors.find(birth) != uncommon_ancestors.end())
-      create_node_for(n, new_roster);
+      create_node_for(n, result.roster);
     else
       {
         // In this branch we are NOT inserting the node into the new roster as it
         // has been deleted from the other side of the merge.
-        // In this case, output a warning if there are changes to the file on the
+        // In this case, create a conflict if there are changes to the file on the
         // side of the merge where it still exists.
         set<revision_id> const & content_marks = m->file_content;
         bool found_one_ignored_content = false;
-        for (set<revision_id>::const_iterator it = content_marks.begin(); it != content_marks.end(); it++)
+        for (set<revision_id>::const_iterator it = content_marks.begin();
+             (!found_one_ignored_content) && (it != content_marks.end());
+             it++)
           {
             if (uncommon_ancestors.find(*it) != uncommon_ancestors.end())
               {
                 if (!found_one_ignored_content)
                   {
-                    file_path fp;
-                    parent_roster.get_name(n->self, fp);
-                    W(F("content changes to the file '%s'\n"
-                        "will be ignored during this merge as the file has been\n"
-                        "removed on one side of the merge.  Affected revisions include:") % fp);
+                    switch (present_in)
+                    {
+                    case left_side:
+                      result.dropped_modified_conflicts.push_back
+                        (dropped_modified_conflict(n->self, the_null_node));
+                      break;
+                    case right_side:
+                      result.dropped_modified_conflicts.push_back
+                        (dropped_modified_conflict(the_null_node, n->self));
+                      break;
+                    }
                   }
                 found_one_ignored_content = true;
-                W(F("Revision: %s") % (*it));
               }
           }
       }
@@ -515,13 +542,15 @@ roster_merge(roster_t const & left_parent,
           case parallel::in_left:
             insert_if_unborn(i.left_data(),
                              left_markings, left_uncommon_ancestors, left_parent,
-                             result.roster);
+                             left_side, // present_in
+                             result);
             break;
 
           case parallel::in_right:
             insert_if_unborn(i.right_data(),
                              right_markings, right_uncommon_ancestors, right_parent,
-                             result.roster);
+                             right_side, // present_in
+                             result);
             break;
 
           case parallel::in_both:

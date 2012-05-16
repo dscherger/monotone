@@ -1,5 +1,5 @@
 // Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -667,8 +667,9 @@ resolve_merge_conflicts(lua_hooks & lua,
           E(result.attribute_conflicts.size() == 0, origin::user,
             F(msg) % "attribute_conflicts");
 
-          // resolve the ones we can.
+          // resolve the ones we can, if they have resolutions specified
           result.resolve_orphaned_node_conflicts(lua, left_roster, right_roster, adaptor);
+          result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster, adaptor);
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
           result.resolve_file_content_conflicts(lua, left_roster, right_roster, adaptor);
         }
@@ -682,6 +683,7 @@ resolve_merge_conflicts(lua_hooks & lua,
 
       result.report_orphaned_node_conflicts(left_roster, right_roster, adaptor, false, std::cout);
       result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      result.report_dropped_modified_conflicts(left_roster, right_roster, adaptor, false, std::cout);
       result.report_duplicate_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
 
       result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);

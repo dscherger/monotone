@@ -1,5 +1,5 @@
 // Copyright (C) 2005, 2010 Nathaniel Smith <njs@pobox.com>
-//               2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2009, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -90,6 +90,17 @@ struct multiple_name_conflict
   std::pair<node_id, path_component> left, right;
 };
 
+// nodes with drop/modified conflicts are left detached in the resulting
+// roster, with null parent and name fields.
+struct dropped_modified_conflict
+{
+  node_id left_nid, right_nid; // the dropped side is the null node, modified is valid.
+  resolve_conflicts::file_resolution_t resolution;
+
+  dropped_modified_conflict(node_id left_nid, node_id right_nid) : left_nid(left_nid), right_nid(right_nid)
+  {resolution.first = resolve_conflicts::none;}
+};
+
 // this is when two distinct nodes want to have the same name.  these nodes
 // always each merged their names cleanly.  the nodes in the resulting roster
 // are both detached.
@@ -152,6 +163,7 @@ template <> void dump(directory_loop_conflict const & conflict, std::string & ou
 
 template <> void dump(orphaned_node_conflict const & conflict, std::string & out);
 template <> void dump(multiple_name_conflict const & conflict, std::string & out);
+template <> void dump(dropped_modified_conflict const & conflict, std::string & out);
 template <> void dump(duplicate_name_conflict const & conflict, std::string & out);
 
 template <> void dump(attribute_conflict const & conflict, std::string & out);
@@ -166,16 +178,18 @@ struct roster_merge_result
   //   - duplicate name conflicts
   //   - orphaned node conflicts
   //   - multiple name conflicts
+  //   - drop/modified conflicts
   //   - directory loop conflicts
   // - attribute conflicts
   // - file content conflicts
 
-  bool missing_root_conflict;
+  bool missing_root_conflict; // there can only be one of these
   std::vector<invalid_name_conflict> invalid_name_conflicts;
   std::vector<directory_loop_conflict> directory_loop_conflicts;
 
   std::vector<orphaned_node_conflict> orphaned_node_conflicts;
   std::vector<multiple_name_conflict> multiple_name_conflicts;
+  std::vector<dropped_modified_conflict> dropped_modified_conflicts;
   std::vector<duplicate_name_conflict> duplicate_name_conflicts;
 
   std::vector<attribute_conflict> attribute_conflicts;
@@ -222,6 +236,16 @@ struct roster_merge_result
                                       content_merge_adaptor & adaptor,
                                       bool const basic_io,
                                       std::ostream & output) const;
+
+  void report_dropped_modified_conflicts(roster_t const & left,
+                                         roster_t const & right,
+                                         content_merge_adaptor & adaptor,
+                                         bool const basic_io,
+                                         std::ostream & output) const;
+  void resolve_dropped_modified_conflicts(lua_hooks & lua,
+                                          roster_t const & left_roster,
+                                          roster_t const & right_roster,
+                                          content_merge_adaptor & adaptor);
 
   void report_duplicate_name_conflicts(roster_t const & left,
                                        roster_t const & right,

@@ -84,6 +84,57 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
         }
     }
 
+  for (std::vector<dropped_modified_conflict>::iterator i = conflicts.result.dropped_modified_conflicts.begin();
+       i != conflicts.result.dropped_modified_conflicts.end();
+       ++i)
+    {
+      dropped_modified_conflict & conflict = *i;
+
+      if (conflict.resolution.first == resolve_conflicts::none)
+        {
+          node_id nid;
+          file_path modified_name;
+
+          if (conflict.left_nid == the_null_node)
+            {
+              // left side dropped, right side modified
+              nid = conflict.right_nid;
+              conflicts.right_roster->get_name(conflict.right_nid, modified_name);
+            }
+          else
+            {
+              // left side modified, right side dropped
+              nid = conflict.left_nid;
+              conflicts.left_roster->get_name(conflict.left_nid, modified_name);
+            }
+
+          P(F("conflict: file '%s'") % modified_name);
+          if (conflict.left_nid == the_null_node)
+            {
+              P(F("dropped on the left"));
+              P(F("modified on the right"));
+            }
+          else
+            {
+              P(F("modified on the left"));
+              P(F("dropped on the right"));
+            }
+
+          switch (show_case)
+            {
+            case first:
+              P(F("possible resolutions:"));
+              P(F("resolve_first drop"));
+              P(F("resolve_first keep"));
+              P(F("resolve_first user \"name\""));
+              return;
+
+            case remaining:
+              break;
+            }
+        }
+    }
+
   for (std::vector<duplicate_name_conflict>::iterator i = conflicts.result.duplicate_name_conflicts.begin();
        i != conflicts.result.duplicate_name_conflicts.end();
        ++i)
@@ -186,6 +237,8 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
             conflicts.result.report_orphaned_node_conflicts
               (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
             conflicts.result.report_multiple_name_conflicts
+              (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
+            conflicts.result.report_dropped_modified_conflicts
               (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
             conflicts.result.report_attribute_conflicts
               (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
@@ -352,6 +405,42 @@ set_first_conflict(database & db,
                 {
                   E(false, origin::user,
                     F(conflict_resolution_not_supported_msg) % idx(args,0) % "orphaned_node");
+                }
+              return;
+            }
+        }
+
+      for (std::vector<dropped_modified_conflict>::iterator i = conflicts.result.dropped_modified_conflicts.begin();
+           i != conflicts.result.dropped_modified_conflicts.end();
+           ++i)
+        {
+          dropped_modified_conflict & conflict = *i;
+
+          if (conflict.resolution.first == resolve_conflicts::none)
+            {
+              if ("drop" == idx(args,0)())
+                {
+                  E(args.size() == 1, origin::user, F("wrong number of arguments"));
+
+                  conflict.resolution.first  = resolve_conflicts::drop;
+                }
+              else if ("keep" == idx(args,0)())
+                {
+                  E(args.size() == 1, origin::user, F("wrong number of arguments"));
+
+                  conflict.resolution.first  = resolve_conflicts::keep;
+                }
+              else if ("user" == idx(args,0)())
+                {
+                  E(args.size() == 2, origin::user, F("wrong number of arguments"));
+
+                  conflict.resolution.first  = resolve_conflicts::content_user;
+                  conflict.resolution.second = new_optimal_path(idx(args,1)(), false);
+                }
+              else
+                {
+                  E(false, origin::user,
+                    F(conflict_resolution_not_supported_msg) % idx(args,0) % "dropped_modified");
                 }
               return;
             }

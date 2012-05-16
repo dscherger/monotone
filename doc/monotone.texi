@@ -3560,6 +3560,15 @@ of the merge parents so that both agree on the name.
 In earlier versions of monotone (those before version 0.39) this type
 of conflict was referred to as a @emph{name conflict}.
 
+@subheading Dropped/Modified Conflict
+
+A dropped/modified conflict occurs when a single file has
+been dropped in one merge parent, and modified in the other.
+
+@command{conflicts} supports resolving this conflict; the possible
+resolutions are to drop the file in the result, keep the modified
+version, or keep a user supplied version.
+
 @subheading Attribute Conflict
 
 An attribute conflict occurs when a versioned attribute on a file or
@@ -5125,11 +5134,11 @@ possible resolutions.
 @item mtn conflicts show_remaining [--conflicts-file=@var{file}]
 Show remaining unresolved conflicts in the conflicts file.
 
-@item mtn conflicts resolve_first [--conflicts-file=@var{file}] @var{resolution}
+@anchor{mtn conflicts resolve_first}@item mtn conflicts resolve_first [--conflicts-file=@var{file}] @var{resolution}
 Specify a resolution for the first conflict in the conflicts file; it
 must be a single file conflict. The conflicts file is updated.
 
-@anchor{mtn conflicts resolve_first}@item mtn conflicts resolve_first_left [--conflicts-file=@var{file}] @var{resolution}
+@item mtn conflicts resolve_first_left [--conflicts-file=@var{file}] @var{resolution}
 @itemx mtn conflicts resolve_first_right [--conflicts-file=@var{file}] @var{resolution}
 Specify a resolution for one of the files in the first conflict in the
 conflicts file; it must be a two file conflict. The conflicts file is
@@ -10214,6 +10223,8 @@ option.
 
 @itemize
 @item
+FIXME: -- Add reporting and resolution for dropped/modified conflicts.
+@item
 11.0 -- Add resolution for orphaned node conflicts. Deleted
 @code{resolved_user} conflict resolution; use @code{resolved_*_left}
 for single file conflicts. Add @code{resolved_keep_left,
@@ -10424,6 +10435,17 @@ ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
 ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
       right_name "baz"
    right_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+@end verbatim
+
+File dropped and modified (and possibly renamed):
+@verbatim
+        conflict drop_modified
+   ancestor_name "foo"
+ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+       left_type "dropped file"
+      right_type "modified file"
+      right_name "baz"
+   right_file_id [fe6d523f607e2f2fc0f0defad3bda0351a95a337]
 @end verbatim
 
 Invalid file name (@file{_MTN} in root directory):

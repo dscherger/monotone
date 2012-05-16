@@ -1,5 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -1064,6 +1064,7 @@ show_conflicts_core (database & db,
 
       result.report_orphaned_node_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_multiple_name_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
+      result.report_dropped_modified_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_duplicate_name_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
 
       result.report_attribute_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
