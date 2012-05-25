@@ -1896,11 +1896,16 @@ read_dropped_modified_conflict(basic_io::parser & pars,
           conflict.resolution.first = resolve_conflicts::drop;
           pars.sym();
         }
-      else if (pars.symp (syms::resolved_rename_left))
+      else if (pars.symp (syms::resolved_keep_left))
         {
-          conflict.resolution.first = resolve_conflicts::rename;
+          conflict.resolution.first = resolve_conflicts::keep;
           pars.sym();
-          conflict.resolution.second = new_optimal_path(pars.token, true);
+        }
+      else if (pars.symp (syms::resolved_user_left))
+        {
+          conflict.resolution.first = resolve_conflicts::content_user;
+          pars.sym();
+          conflict.resolution.second = new_optimal_path(pars.token, false);
           pars.str();
         }
       else
@@ -2649,7 +2654,7 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
         case resolve_conflicts::drop:
           P(F("dropping '%s'") % modified_name);
 
-          // already dropped; nothing to do
+          roster.drop_detached_node(nid);
           break;
 
         case resolve_conflicts::keep:

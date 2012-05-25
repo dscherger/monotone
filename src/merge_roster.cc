@@ -344,33 +344,31 @@ namespace
       create_node_for(n, result.roster);
     else
       {
-        // In this branch we are NOT inserting the node into the new roster as it
-        // has been deleted from the other side of the merge.
-        // In this case, create a conflict if there are changes to the file on the
-        // side of the merge where it still exists.
+        // The node has been deleted from the other side of the merge. If
+        // there are changes to the file on this side of the merge, insert
+        // it into the new roster, but leave it detached, so the conflict
+        // resolutions can deal with it easily. Note that attaching is done
+        // later; see roster_merge below.
         set<revision_id> const & content_marks = m->file_content;
-        bool found_one_ignored_content = false;
         for (set<revision_id>::const_iterator it = content_marks.begin();
-             (!found_one_ignored_content) && (it != content_marks.end());
+             it != content_marks.end();
              it++)
           {
             if (uncommon_ancestors.find(*it) != uncommon_ancestors.end())
               {
-                if (!found_one_ignored_content)
+                create_node_for(n, result.roster);
+                switch (present_in)
                   {
-                    switch (present_in)
-                    {
-                    case left_side:
-                      result.dropped_modified_conflicts.push_back
-                        (dropped_modified_conflict(n->self, the_null_node));
-                      break;
-                    case right_side:
-                      result.dropped_modified_conflicts.push_back
-                        (dropped_modified_conflict(the_null_node, n->self));
-                      break;
-                    }
+                  case left_side:
+                    result.dropped_modified_conflicts.push_back
+                      (dropped_modified_conflict(n->self, the_null_node));
+                    break;
+                  case right_side:
+                    result.dropped_modified_conflicts.push_back
+                      (dropped_modified_conflict(the_null_node, n->self));
+                    break;
                   }
-                found_one_ignored_content = true;
+                return;
               }
           }
       }
@@ -579,13 +577,20 @@ roster_merge(roster_t const & left_parent,
             {
               node_t const & left_n = i.left_data();
               // we skip nodes that aren't in the result roster (were
-              // deleted in the lifecycles step above)
+              // deleted in the lifecycles step above), or that have
+              // dropped_modified conflicts.
               if (result.roster.has_node(left_n->self))
                 {
-                  // attach this node from the left roster. this may cause
-                  // a name collision with the previously attached node from
-                  // the other side of the merge.
-                  copy_node_forward(result, new_i->second, left_n, left_side);
+                  if (result.dropped_modified_conflicts.end() ==
+                      find(result.dropped_modified_conflicts.begin(),
+                           result.dropped_modified_conflicts.end(),
+                           left_n->self))
+                    {
+                      // attach this node from the left roster. this may cause
+                      // a name collision with the previously attached node from
+                      // the other side of the merge.
+                      copy_node_forward(result, new_i->second, left_n, left_side);
+                    }
                   ++new_i;
                 }
               ++left_mi;
@@ -595,13 +600,20 @@ roster_merge(roster_t const & left_parent,
           case parallel::in_right:
             {
               node_t const & right_n = i.right_data();
-              // we skip nodes that aren't in the result roster
+              // we skip nodes that aren't in the result roster, or that have
+              // dropped_modified conflicts.
               if (result.roster.has_node(right_n->self))
                 {
-                  // attach this node from the right roster. this may cause
-                  // a name collision with the previously attached node from
-                  // the other side of the merge.
-                  copy_node_forward(result, new_i->second, right_n, right_side);
+                  if (result.dropped_modified_conflicts.end() ==
+                      find(result.dropped_modified_conflicts.begin(),
+                           result.dropped_modified_conflicts.end(),
+                           right_n->self))
+                    {
+                      // attach this node from the right roster. this may cause
+                      // a name collision with the previously attached node from
+                      // the other side of the merge.
+                      copy_node_forward(result, new_i->second, right_n, right_side);
+                    }
                   ++new_i;
                 }
               ++right_mi;

@@ -99,6 +99,8 @@ struct dropped_modified_conflict
 
   dropped_modified_conflict(node_id left_nid, node_id right_nid) : left_nid(left_nid), right_nid(right_nid)
   {resolution.first = resolve_conflicts::none;}
+
+  bool operator==(node_id n) {return left_nid == n || right_nid == n;}
 };
 
 // this is when two distinct nodes want to have the same name.  these nodes
