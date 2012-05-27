@@ -489,6 +489,15 @@ namespace
             result.directory_loop_conflicts.push_back(c);
             return;
           }
+
+        if (result.dropped_modified_conflicts.end() !=
+            find(result.dropped_modified_conflicts.begin(),
+                 result.dropped_modified_conflicts.end(),
+                 nid))
+          {
+            // conflict already entered, just don't attach
+            return;
+          }
       }
     // hey, we actually made it.  attach the node!
     result.roster.attach_node(nid, parent, name);
@@ -577,20 +586,13 @@ roster_merge(roster_t const & left_parent,
             {
               node_t const & left_n = i.left_data();
               // we skip nodes that aren't in the result roster (were
-              // deleted in the lifecycles step above), or that have
-              // dropped_modified conflicts.
+              // deleted in the lifecycles step above)
               if (result.roster.has_node(left_n->self))
                 {
-                  if (result.dropped_modified_conflicts.end() ==
-                      find(result.dropped_modified_conflicts.begin(),
-                           result.dropped_modified_conflicts.end(),
-                           left_n->self))
-                    {
-                      // attach this node from the left roster. this may cause
-                      // a name collision with the previously attached node from
-                      // the other side of the merge.
-                      copy_node_forward(result, new_i->second, left_n, left_side);
-                    }
+                  // attach this node from the left roster. this may cause
+                  // a name collision with the previously attached node from
+                  // the other side of the merge.
+                  copy_node_forward(result, new_i->second, left_n, left_side);
                   ++new_i;
                 }
               ++left_mi;
@@ -600,20 +602,13 @@ roster_merge(roster_t const & left_parent,
           case parallel::in_right:
             {
               node_t const & right_n = i.right_data();
-              // we skip nodes that aren't in the result roster, or that have
-              // dropped_modified conflicts.
+              // we skip nodes that aren't in the result roster
               if (result.roster.has_node(right_n->self))
                 {
-                  if (result.dropped_modified_conflicts.end() ==
-                      find(result.dropped_modified_conflicts.begin(),
-                           result.dropped_modified_conflicts.end(),
-                           right_n->self))
-                    {
-                      // attach this node from the right roster. this may cause
-                      // a name collision with the previously attached node from
-                      // the other side of the merge.
-                      copy_node_forward(result, new_i->second, right_n, right_side);
-                    }
+                  // attach this node from the right roster. this may cause
+                  // a name collision with the previously attached node from
+                  // the other side of the merge.
+                  copy_node_forward(result, new_i->second, right_n, right_side);
                   ++new_i;
                 }
               ++right_mi;
