@@ -152,8 +152,9 @@ check(qgrep("dropping 'file_2_renamed'", "stderr"))
 check(qgrep("dropping 'file_3_renamed'", "stderr"))
 check(qgrep("keeping 'file_4'", "stderr"))
 check(qgrep("keeping 'file_5'", "stderr"))
-check(qgrep("replacing 'file_6_renamed' with '_MTN/resolutions/file_6_resolved", "stderr"))
-check(qgrep("replacing 'file_7_renamed' with '_MTN/resolutions/file_7_resolved", "stderr"))
+check(qgrep("replacing content of 'file_6_renamed' with '_MTN/resolutions/file_6_resolved", "stderr"))
+check(qgrep("replacing content of 'file_7_renamed' with '_MTN/resolutions/file_7_resolved", "stderr"))
+check(not qgrep("warning", "stderr"))
 
 -- FIXME: add dropped_modified to 'show_conflicts' test (etc?)
 -- better to put those tests here

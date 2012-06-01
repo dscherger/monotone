@@ -644,6 +644,7 @@ resolve_merge_conflicts(lua_hooks & lua,
                         roster_t const & right_roster,
                         roster_merge_result & result,
                         content_merge_adaptor & adaptor,
+                        temp_node_id_source & nis,
                         const bool resolutions_given)
 {
   if (!result.is_clean())
@@ -669,7 +670,7 @@ resolve_merge_conflicts(lua_hooks & lua,
 
           // resolve the ones we can, if they have resolutions specified
           result.resolve_orphaned_node_conflicts(lua, left_roster, right_roster, adaptor);
-          result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster, adaptor);
+          result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster, adaptor, nis);
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
           result.resolve_file_content_conflicts(lua, left_roster, right_roster, adaptor);
         }
@@ -755,12 +756,13 @@ interactive_merge_and_store(lua_hooks & lua,
                result);
 
   bool resolutions_given;
+  temp_node_id_source nis;
   content_merge_database_adaptor dba(db, left_rid, right_rid,
                                      left_marking_map, right_marking_map);
 
   parse_resolve_conflicts_opts (opts, left_rid, left_roster, right_rid, right_roster, result, resolutions_given);
 
-  resolve_merge_conflicts(lua, opts, left_roster, right_roster, result, dba, resolutions_given);
+  resolve_merge_conflicts(lua, opts, left_roster, right_roster, result, dba, nis, resolutions_given);
 
   // write new files into the db
   store_roster_merge_result(db,
@@ -779,7 +781,7 @@ store_roster_merge_result(database & db,
 {
   I(result.is_clean());
   roster_t & merged_roster = result.roster;
-  merged_roster.check_sane();
+  merged_roster.check_sane(true); // resolve conflicts can create new nodes
 
   revision_t merged_rev;
   merged_rev.made_for = made_for_database;

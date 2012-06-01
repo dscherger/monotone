@@ -247,7 +247,8 @@ struct roster_merge_result
   void resolve_dropped_modified_conflicts(lua_hooks & lua,
                                           roster_t const & left_roster,
                                           roster_t const & right_roster,
-                                          content_merge_adaptor & adaptor);
+                                          content_merge_adaptor & adaptor,
+                                          temp_node_id_source & nis);
 
   void report_duplicate_name_conflicts(roster_t const & left,
                                        roster_t const & right,

@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -12,6 +12,7 @@
 #define __MERGE_HH__
 
 #include "vocab.hh"
+#include "roster.hh"
 #include "rev_types.hh"
 #include "paths.hh"
 
@@ -259,6 +260,7 @@ resolve_merge_conflicts(lua_hooks & lua,
                         roster_t const & right_roster,
                         roster_merge_result & result,
                         content_merge_adaptor & adaptor,
+                        temp_node_id_source & nis,
                         bool const resolutions_given);
 
 // traditional resolve-all-conflicts-as-you-go style merging with 3-way merge

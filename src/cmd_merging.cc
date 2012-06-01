@@ -329,7 +329,7 @@ update(app_state & app,
                                       left_markings, right_markings, paths);
   wca.cache_roster(working_rid, working_roster);
   resolve_merge_conflicts(app.lua, app.opts, *working_roster, chosen_roster,
-                          result, wca, false);
+                          result, wca, nis, false);
 
   // Make sure it worked...
   I(result.is_clean());
@@ -719,6 +719,7 @@ void perform_merge_into_dir(app_state & app,
                      right_uncommon_ancestors,
                      result);
 
+        temp_node_id_source nis;
         content_merge_database_adaptor
           dba(db, left_rid, right_rid, left_marking_map, right_marking_map);
 
@@ -728,7 +729,7 @@ void perform_merge_into_dir(app_state & app,
           (app.opts, left_rid, left_roster, right_rid, right_roster, result, resolutions_given);
 
         resolve_merge_conflicts(app.lua, app.opts, left_roster, right_roster,
-                                result, dba, resolutions_given);
+                                result, dba, nis, resolutions_given);
 
         {
           dir_t moved_root = left_roster.root();
@@ -872,10 +873,11 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   map<file_id, file_path> paths;
   get_content_paths(*working_roster, paths);
 
+  temp_node_id_source nis;
   content_merge_workspace_adaptor wca(db, lca_id, lca.first,
                                       *left.second, *right.second, paths);
   wca.cache_roster(working_rid, working_roster);
-  resolve_merge_conflicts(app.lua, app.opts, *left.first, *right.first, merge_result, wca, false);
+  resolve_merge_conflicts(app.lua, app.opts, *left.first, *right.first, merge_result, wca, nis, false);
 
   // Make sure it worked...
   I(merge_result.is_clean());
@@ -1405,7 +1407,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   wca.cache_roster(to_rid, to_roster);
 
   resolve_merge_conflicts(app.lua, app.opts, *working_roster, *to_roster,
-                          result, wca, false);
+                          result, wca, nis, false);
 
   I(result.is_clean());
   // temporary node ids may appear

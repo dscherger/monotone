@@ -2590,7 +2590,8 @@ void
 roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
                                                         roster_t const & left_roster,
                                                         roster_t const & right_roster,
-                                                        content_merge_adaptor & adaptor)
+                                                        content_merge_adaptor & adaptor,
+                                                        temp_node_id_source & nis)
 {
   MM(left_roster);
   MM(right_roster);
@@ -2632,20 +2633,19 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
             modified_name % conflict.resolution.second->as_external());
 
           {
-            file_data modified_data, result_data;
+            // See comments in keep below on why we drop first
+            roster.drop_detached_node(nid);
+
+            file_data result_data;
             data result_raw_data;
             file_id result_fid;
-            adaptor.get_version(modified_fid, modified_data);
-
             read_data(*conflict.resolution.second, result_raw_data);
 
             result_data = file_data(result_raw_data);
             calculate_ident(result_data, result_fid);
 
-            file_t result_node = downcast_to_file_t(roster.get_node_for_update(nid));
-            result_node->content = result_fid;
-
-            adaptor.record_file(modified_fid, result_fid, modified_data, result_data);
+            // FIXME: need to record file in db
+            nid = roster.create_file_node(result_fid, nis);
 
             attach_node(lua, roster, nid, modified_name);
           }
@@ -2659,6 +2659,17 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
 
         case resolve_conflicts::keep:
           P(F("keeping '%s'") % modified_name);
+
+          // We'd like to just attach_node here, but that violates a
+          // fundamental design principle of mtn; nodes are born once, and
+          // die once. If we attach here, the node is born, died, and then
+          // born again.
+          //
+          // So we have to drop the old node, and create a new node with the
+          // same contents. That loses history; 'mtn log <path>' will end
+          // here, not showing the history of the original node.
+          roster.drop_detached_node(nid);
+          nid = roster.create_file_node(modified_fid, nis);
           attach_node (lua, roster, nid, modified_name);
           break;
 
