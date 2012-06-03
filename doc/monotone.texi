@@ -31,7 +31,7 @@
 This manual is for the ``monotone'' distributed version control system.
 This edition documents version @value{VERSION}.
 
-Copyright @copyright{} 2003, 2004, 2011 Graydon Hoare @*
+Copyright @copyright{} 2003, 2004, 2011, 2012 Graydon Hoare @*
 Copyright @copyright{} 2004, 2005, 2006 Nathaniel Smith @*
 Copyright @copyright{} 2005 - 2010 Derek Scherger @*
 Copyright @copyright{} 2005, 2006 Daniel Carosone @*
@@ -3251,7 +3251,8 @@ are not done; the @command{merge} command must be repeated, possibly
 with new conflicts and resolutions, to merge the remaining heads.
 
 For the special case of file content conflicts, a merge command
-invoked without @option{--resolve-conflicts} will attempt to start an
+invoked without @option{--resolve-conflicts} will attempt to use an
+internal content merger; if that fails, it will attempt to start an
 external interactive merge tool; the user must then resolve the conflicts
 and terminate the merge tool, letting monotone continue with the
 merge. This process is repeated for each file content conflict. See
@@ -3277,7 +3278,7 @@ the following sections.
 Monotone versions files, directories, and file attributes explicitly,
 and it tracks individual file and directory identity from birth to
 death so that name changes throughout the full life-cycle can be
-tracked exactly.  Partly because of these qualities, monotone notices
+tracked exactly. Partly because of these qualities, monotone notices
 several types of conflicts that other version control systems may not.
 
 The two most common conflicts are described first, then all other
@@ -3294,17 +3295,21 @@ relative to the common ancestor, it first checks to see if the file
 has a @code{mtn:manual_merge} attribute with value @code{true}. If
 not, it uses an internal merge algorithm to detect whether the changes
 are to the same lines of the file. If they are not, monotone will use
-the result of the internal merge as the new file version.
+the result of the internal merge as the new file version. Note that
+this may not always be what the user wants; if the same line is added
+at two different places in the file, it will be in the result twice.
 
-@code{mtn:manual_merge} is set @code{true} when a file is
-@command{add}ed for all files for which the @code{binary_file} hook
-returns true; see @ref{attr_init_functions}.
+@code{mtn:manual_merge} is automatically set @code{true} when a file
+is @command{add}ed for which the @code{binary_file} hook returns true;
+see @ref{attr_init_functions}. The user may also set the
+@code{mtn:manual_merge} attribute manually; see @command{@ref{mtn attr}}.
 
 If @code{mtn:manual_merge} is present and @code{true}, or if the
 changes are to the same lines of the file, and neither
 @option{--resolve-conflicts} nor @option{--non-interactive} was
 specified, the @ref{merge3} hook is called, with the content of both
-conflicting versions and their common ancestor.
+conflicting versions and their common ancestor. When the hook returns,
+the merge proceeds to the next conflict.
 
 Alternatively, you can use your favorite merge tool asychronously with
 the merge, and specify the result file in the conflicts file, using
@@ -3485,7 +3490,7 @@ root in the other merge parent.
 See the @command{pivot_root} command for more information on moving
 another directory to the project root.
 
-@command{conflicts} does not yet support resolving this conflict.
+@command{conflicts} does not support resolving this conflict.
 
 @subheading Invalid Name Conflict
 
@@ -5125,11 +5130,11 @@ possible resolutions.
 @item mtn conflicts show_remaining [--conflicts-file=@var{file}]
 Show remaining unresolved conflicts in the conflicts file.
 
-@item mtn conflicts resolve_first [--conflicts-file=@var{file}] @var{resolution}
+@anchor{mtn conflicts resolve_first}@item mtn conflicts resolve_first [--conflicts-file=@var{file}] @var{resolution}
 Specify a resolution for the first conflict in the conflicts file; it
 must be a single file conflict. The conflicts file is updated.
 
-@anchor{mtn conflicts resolve_first}@item mtn conflicts resolve_first_left [--conflicts-file=@var{file}] @var{resolution}
+@item mtn conflicts resolve_first_left [--conflicts-file=@var{file}] @var{resolution}
 @itemx mtn conflicts resolve_first_right [--conflicts-file=@var{file}] @var{resolution}
 Specify a resolution for one of the files in the first conflict in the
 conflicts file; it must be a two file conflict. The conflicts file is
@@ -5537,6 +5542,10 @@ it is not already versioned.
 
 This command also moves any attributes on @var{src} to @var{dst}; see
 @ref{File Attributes} for more details.
+
+Note that you cannot rename a branch. You can accomplish something
+similar by creating a new branch with the desired name, using the
+@ref{mtn approve} command to add a branch name to the desired revision.
 
 @anchor{mtn revert}@item mtn revert @var{pathname...}
 @itemx mtn revert --missing @var{pathname...}
@@ -6336,7 +6345,7 @@ was compiled.
 @section Review
 
 @ftable @command
-@item mtn approve @var{rev} [--branch=@var{branchname}] [--[no-]update]
+@anchor{mtn approve}@item mtn approve @var{rev} [--branch=@var{branchname}] [--[no-]update]
 This command puts @var{rev} on the branch @var{branchname} (defaults
 to the workspace branch).
 
