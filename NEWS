@@ -24,7 +24,14 @@ XXX XXX XX XX:XX:XX UTC 201X
         - All certs for a revision are now output by 'mtn log' with
           'suspend', 'testresult', and custom certs placed under a
           a new 'Other certs' heading.
-           
+
+        - New conflict 'dropped/modified' allows explicitly resolving
+          the case of a file that is dropped on one side of a merge,
+          and modified on the other. Previously, the modifications
+          were always lost; now you have the option of re-adding the
+          file with the modifications during merge conflict
+          resolution.
+        
         Bugs fixed
 
         - Monotone now compiles against Botan 1.10.x (as well as most of

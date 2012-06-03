@@ -54,6 +54,16 @@ check(mtn("mv", "file_7", "file_7_renamed"), 0, false, false)
 commit("testbranch", "right 1")
 right_1 = base_revision()
 
+-- Now start the conflict resolution process. First show the conflicts.
+check(mtn("show_conflicts", left_1, right_1), 0, nil, true)
+canonicalize("stderr")
+check(samefilestd("show_conflicts", "stderr"))
+
+check(mtn("automate", "show_conflicts", left_1, right_1), 0, true, nil)
+canonicalize("stdout")
+check(samefilestd("conflicts", "stdout"))
+
+-- Now store and resolve them one by one.
 check(mtn("conflicts", "store", left_1, right_1), 0, nil, true)
 check(samelines("stderr",
 {"mtn: 6 conflicts with supported resolutions.",
@@ -156,7 +166,29 @@ check(qgrep("replacing content of 'file_6_renamed' with '_MTN/resolutions/file_6
 check(qgrep("replacing content of 'file_7_renamed' with '_MTN/resolutions/file_7_resolved", "stderr"))
 check(not qgrep("warning", "stderr"))
 
--- FIXME: add dropped_modified to 'show_conflicts' test (etc?)
--- better to put those tests here
-                           
+-- There is no such thing as a dropped/modified directory; if the
+-- directory is empty, the only possible change is rename, which is
+-- ignored. If the directory is not empty, that creates orphaned file
+-- conflicts.
+--
+-- Similarly, if a file is renamed (without other change) and dropped,
+-- the change is ignored:
+
+addfile("file_8", "file_8 base") -- rename left, drop right
+commit("testbranch", "base 2")
+base_2 = base_revision()
+
+check(mtn("mv", "file_8", "file_8_renamed"), 0, false, false)
+commit("testbranch", "left 2")
+left_2 = base_revision()
+
+revert_to(base_2)
+
+check(mtn("drop", "file_8"), 0, false, false)
+commit("testbranch", "right 2")
+right_2 = base_revision()
+
+check(mtn("show_conflicts", left_2, right_2), 0, nil, true)
+check(qgrep("0 conflicts", "stderr"))
+
 -- end of file

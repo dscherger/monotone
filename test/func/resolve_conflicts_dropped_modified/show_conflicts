@@ -1,0 +1,22 @@
+mtn: [left]     f675f3440ebd978fffba5d990e8c876ae9470aa3
+mtn: [right]    3b44e67a00d6f2ef92279d5fd07b46cc175b3291
+mtn: [ancestor] c2fe3623ce72d248154425dc7db2ddcc397c9aca
+mtn: conflict: file 'file_2' from revision c2fe3623ce72d248154425dc7db2ddcc397c9aca
+mtn: modified on the left, named file_2_renamed
+mtn: dropped on the right
+mtn: conflict: file 'file_3' from revision c2fe3623ce72d248154425dc7db2ddcc397c9aca
+mtn: dropped on the left
+mtn: modified on the right, named file_3_renamed
+mtn: conflict: file 'file_4' from revision c2fe3623ce72d248154425dc7db2ddcc397c9aca
+mtn: modified on the left, named file_4
+mtn: dropped on the right
+mtn: conflict: file 'file_5' from revision c2fe3623ce72d248154425dc7db2ddcc397c9aca
+mtn: dropped on the left
+mtn: modified on the right, named file_5
+mtn: conflict: file 'file_6' from revision c2fe3623ce72d248154425dc7db2ddcc397c9aca
+mtn: modified on the left, named file_6_renamed
+mtn: dropped on the right
+mtn: conflict: file 'file_7' from revision c2fe3623ce72d248154425dc7db2ddcc397c9aca
+mtn: dropped on the left
+mtn: modified on the right, named file_7_renamed
+mtn: 6 conflicts with supported resolutions.

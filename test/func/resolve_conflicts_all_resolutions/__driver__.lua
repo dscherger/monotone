@@ -1,5 +1,8 @@
 -- Test showing and setting all possible conflict resolutions in a
 -- conflict file. Also test 'conflict show_remaining'.
+--
+-- Except for dropped/modified; see
+-- ../resolve_conflicts_dropped_modified/__driver__.lua
 
 mtn_setup()
 get("merge3_hook.lua")

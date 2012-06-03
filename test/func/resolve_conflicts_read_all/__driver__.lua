@@ -4,6 +4,9 @@ mtn_setup()
 -- that "conflicts show_remaining" can properly process the output of
 -- "conflicts store".
 --
+-- Except for dropped/modified; see
+-- ../resolve_conflicts_dropped_modified/__driver__.lua
+--
 -- test case generation borrowed from conflict_messages test.
 
 

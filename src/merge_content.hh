@@ -31,7 +31,10 @@ content_merge_adaptor
                             file_data const & right_data,
                             file_data const & merged_data) = 0;
 
-  // For use when one side of the merge is dropped
+  // dropped_modified conflict resolution of keep or user creates new node
+  virtual void record_file(file_id const & ident,
+                           file_data const & data) = 0;
+
   virtual void record_file(file_id const & parent_ident,
                            file_id const & merged_ident,
                            file_data const & parent_data,
@@ -69,6 +72,9 @@ content_merge_database_adaptor
                     file_data const & left_data,
                     file_data const & right_data,
                     file_data const & merged_data);
+
+  void record_file(file_id const & ident,
+                   file_data const & data);
 
   void record_file(file_id const & parent_ident,
                    file_id const & merged_ident,
@@ -118,6 +124,9 @@ content_merge_workspace_adaptor
                     file_data const & right_data,
                     file_data const & merged_data);
 
+  void record_file(file_id const & ident,
+                   file_data const & data);
+
   void record_file(file_id const & parent_ident,
                    file_id const & merged_ident,
                    file_data const & parent_data,
@@ -147,6 +156,9 @@ content_merge_checkout_adaptor
                     file_data const & right_data,
                     file_data const & merged_data);
 
+  void record_file(file_id const & ident,
+                   file_data const & data);
+
   void record_file(file_id const & parent_ident,
                    file_id const & merged_ident,
                    file_data const & parent_data,
@@ -172,6 +184,9 @@ content_merge_empty_adaptor
                     file_data const & left_data,
                     file_data const & right_data,
                     file_data const & merged_data);
+
+  void record_file(file_id const & ident,
+                   file_data const & data);
 
   void record_file(file_id const & parent_ident,
                    file_id const & merged_ident,

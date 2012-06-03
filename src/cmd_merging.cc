@@ -985,8 +985,8 @@ show_conflicts_core (database & db,
     }
   else
     {
-      P(F("[left]  %s") % l_id);
-      P(F("[right] %s") % r_id);
+      P(F("[left]     %s") % l_id);
+      P(F("[right]    %s") % r_id);
     }
 
   if (is_ancestor(db, l_id, r_id))
@@ -1048,12 +1048,17 @@ show_conflicts_core (database & db,
       content_merge_database_adaptor adaptor(db, l_id, r_id,
                                              l_marking, r_marking);
 
-      {
-        basic_io::printer pr;
-        st.push_binary_pair(syms::ancestor, adaptor.lca.inner());
-        pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
-      }
+      if (basic_io)
+        {
+          basic_io::printer pr;
+          st.push_binary_pair(syms::ancestor, adaptor.lca.inner());
+          pr.print_stanza(st);
+          output.write(pr.buf.data(), pr.buf.size());
+        }
+      else
+        {
+          P(F("[ancestor] %s") % adaptor.lca);
+        }
 
       // The basic_io routines in roster_merge.cc access these rosters via
       // the adaptor.

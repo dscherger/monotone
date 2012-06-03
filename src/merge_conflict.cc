@@ -2644,9 +2644,13 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
             result_data = file_data(result_raw_data);
             calculate_ident(result_data, result_fid);
 
-            // FIXME: need to record file in db
             nid = roster.create_file_node(result_fid, nis);
 
+            // User could specify no changes
+            if (result_fid != modified_fid)
+              {
+                adaptor.record_file(result_fid, result_data);
+              }
             attach_node(lua, roster, nid, modified_name);
           }
           break;
