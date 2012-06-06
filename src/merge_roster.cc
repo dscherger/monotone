@@ -42,6 +42,8 @@ image(resolve_conflicts::resolution_t resolution)
       return "keep";
     case resolve_conflicts::rename:
       return "rename";
+    case resolve_conflicts::content_user_rename:
+      return "content_user_rename";
     }
   I(false); // keep compiler happy
 }
@@ -94,10 +96,12 @@ dump(dropped_modified_conflict const & conflict, string & out)
   ostringstream oss;
   oss << "dropped_modified_conflict on node: " <<
     conflict.left_nid == the_null_node ? conflict.right_nid : conflict.left_nid;
+  oss << " orphaned: " << conflict.orphaned;
   if (conflict.resolution.first != resolve_conflicts::none)
     {
       oss << " resolution: " << image(conflict.resolution.first);
-      oss << " name: " << conflict.resolution.second;
+      oss << " new_content_name: " << conflict.resolution.second;
+      oss << " rename: " << conflict.rename;
     }
   oss << "\n";
   out = oss.str();
@@ -435,14 +439,33 @@ namespace
       }
     else
       {
+        // We need this in two places
+        std::vector<dropped_modified_conflict>::iterator dropped_modified =
+          find(result.dropped_modified_conflicts.begin(),
+               result.dropped_modified_conflicts.end(),
+               nid);
+
         // orphan:
         if (!result.roster.has_node(parent))
           {
-            orphaned_node_conflict c;
-            c.nid = nid;
-            c.parent_name = make_pair(parent, name);
-            result.orphaned_node_conflicts.push_back(c);
-            return;
+            // If the orphaned node is due to the parent directory being
+            // dropped, and the orphaned node is modified, then it already
+            // has a dropped_modified conflict; add the orphaned information
+            // to that.
+
+            if (result.dropped_modified_conflicts.end() != dropped_modified)
+              {
+                dropped_modified->orphaned = true;
+                return;
+              }
+            else
+              {
+                orphaned_node_conflict c;
+                c.nid = nid;
+                c.parent_name = make_pair(parent, name);
+                result.orphaned_node_conflicts.push_back(c);
+                return;
+              }
           }
 
         dir_t p = downcast_to_dir_t(result.roster.get_node_for_update(parent));
@@ -490,10 +513,7 @@ namespace
             return;
           }
 
-        if (result.dropped_modified_conflicts.end() !=
-            find(result.dropped_modified_conflicts.begin(),
-                 result.dropped_modified_conflicts.end(),
-                 nid))
+        if (result.dropped_modified_conflicts.end() != dropped_modified)
           {
             // conflict already entered, just don't attach
             return;

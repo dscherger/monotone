@@ -29,7 +29,7 @@
 
 namespace resolve_conflicts
 {
-  enum resolution_t {none, content_user, content_internal, drop, keep, rename};
+  enum resolution_t {none, content_user, content_internal, drop, keep, rename, content_user_rename};
 
   typedef std::pair<resolve_conflicts::resolution_t, boost::shared_ptr<any_path> > file_resolution_t;
 
@@ -95,9 +95,19 @@ struct multiple_name_conflict
 struct dropped_modified_conflict
 {
   node_id left_nid, right_nid; // the dropped side is the null node, modified is valid.
-  resolve_conflicts::file_resolution_t resolution;
 
-  dropped_modified_conflict(node_id left_nid, node_id right_nid) : left_nid(left_nid), right_nid(right_nid)
+  bool orphaned; // if true, the dropped side is due to a dropped parent directory
+
+  resolve_conflicts::file_resolution_t resolution;
+  boost::shared_ptr<any_path> rename;
+  // if orphaned is true, the resolutions are 'drop' and 'user rename'; the
+  // latter requires two paths; content in resolution->second, filename in
+  // rename.
+
+  dropped_modified_conflict(node_id left_nid, node_id right_nid) :
+    left_nid(left_nid),
+    right_nid(right_nid),
+    orphaned(false)
   {resolution.first = resolve_conflicts::none;}
 
   bool operator==(node_id n) {return left_nid == n || right_nid == n;}

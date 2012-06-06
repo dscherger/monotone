@@ -8,6 +8,8 @@ mtn_setup()
 -- Six conflicts to test the three possible resolutions, with drop on
 -- both left and right. Number in file name is the node number (helps
 -- in debugging; node 1 is the root directory).
+--
+-- The case of a modified file in a dropped directory is tested below.
 
 addfile("file_2", "file_2 base") -- modify/rename left, drop right; drop
 addfile("file_3", "file_3 base") -- drop left, modify/rename right; drop
@@ -166,12 +168,7 @@ check(qgrep("replacing content of 'file_6_renamed' with '_MTN/resolutions/file_6
 check(qgrep("replacing content of 'file_7_renamed' with '_MTN/resolutions/file_7_resolved", "stderr"))
 check(not qgrep("warning", "stderr"))
 
--- There is no such thing as a dropped/modified directory; if the
--- directory is empty, the only possible change is rename, which is
--- ignored. If the directory is not empty, that creates orphaned file
--- conflicts.
---
--- Similarly, if a file is renamed (without other change) and dropped,
+-- If a file is renamed (without other change) and dropped,
 -- the change is ignored:
 
 addfile("file_8", "file_8 base") -- rename left, drop right
@@ -190,5 +187,124 @@ right_2 = base_revision()
 
 check(mtn("show_conflicts", left_2, right_2), 0, nil, true)
 check(qgrep("0 conflicts", "stderr"))
+
+-- There is no such thing as a dropped/modified directory; if the
+-- directory is empty, the only possible change is rename, which is
+-- ignored.
+--
+-- If the directory is not empty, that creates a dropped/modified file
+-- conflict (not an orphaned file conflict, although that would also
+-- make sense). This used to be the test
+-- "(imp)_merge((patch_foo_a),_(delete_foo_))"
+--
+-- We create three potential conflicts; one ignored, three with different resolutions:
+
+adddir("dir1") -- empty, dropped and renamed (not a conflict; just dropped)
+mkdir("dir2")  -- not empty, dropped, contents modified
+addfile("dir2/file_9", "file_9 base") -- resolved by rename
+addfile("dir2/file_10", "file_10 base") -- resolved by user_rename
+addfile("dir2/file_11", "file_11 base") -- resolved by drop
+commit("testbranch", "base 3")
+base_3 = base_revision()
+
+check(mtn("mv", "dir1", "dir3"), 0, false, false)
+
+writefile("dir2/file_9", "file_9 left")
+writefile("dir2/file_10", "file_10 left")
+writefile("dir2/file_11", "file_11 left")
+commit("testbranch", "left 3")
+left_3 = base_revision()
+
+revert_to(base_3)
+
+check(mtn("drop", "dir1", "--no-recursive"), 0, false, false)
+
+check(mtn("drop", "--recursive", "dir2"), 0, false, false)
+
+commit("testbranch", "right 3")
+right_3 = base_revision()
+
+check(mtn("show_conflicts", left_3, right_3), 0, nil, true)
+canonicalize("stderr")
+check(samefilestd("show_conflicts-orphaned", "stderr"))
+
+-- Show these conflicts can be resolved
+check(mtn("conflicts", "store", left_3, right_3), 0, nil, true)
+
+canonicalize("_MTN/conflicts")
+check(samefilestd("conflicts-orphaned", "_MTN/conflicts"))
+
+check(mtn("conflicts", "show_first"), 0, nil, true)
+check(samelines("stderr",
+{"mtn: conflict: file 'dir2/file_10'",
+ "mtn: modified on the left",
+ "mtn: orphaned on the right",
+ "mtn: possible resolutions:",
+ "mtn: resolve_first drop",
+ "mtn: resolve_first rename",
+ "mtn: resolve_first user_rename \"new_content_name\" \"new_file_name\""}))
+
+mkdir("_MTN")
+mkdir("_MTN/resolutions")
+writefile("_MTN/resolutions/file_10", "file_10 user")
+check(mtn("conflicts", "resolve_first", "user_rename", "_MTN/resolutions/file_10", "file_10"), 0, nil, true)
+
+check(mtn("conflicts", "resolve_first", "drop"), 0, nil, nil)
+
+check(mtn("conflicts", "resolve_first", "rename", "file_9"), 0, nil, nil)
+
+check(samefilestd("conflicts-orphaned-resolved", "_MTN/conflicts"))
+
+check(mtn("explicit_merge", "--resolve-conflicts", left_3, right_3, "testbranch"), 0, nil, true)
+check(samelines("stderr",
+{"mtn: [left]  5ac4e947066417642f5404b9a54d4d8487bda002",
+ "mtn: [right] d542a5d8e86dc29448a27449688d6f4fffcec72b",
+ "mtn: replacing content of 'dir2/file_10' (renamed to 'file_10') with '_MTN/resolutions/file_10'",
+ "mtn: dropping 'dir2/file_11'",
+ "mtn: renaming 'dir2/file_9' to 'file_9'",
+ "mtn: [merged] 202584446f5184430d1f8320eb702a5f81134505"}))
+
+ 
+-- A special case; drop then re-add vs modify. This used to be the test
+-- "merge((patch_a),_(drop_a,_add_a))"
+addfile("file_10", "file_10 base")
+commit("testbranch", "base 4")
+base_4 = base_revision()
+
+writefile("file_10", "file_10 left")
+commit("testbranch", "left 4")
+left_4 = base_revision()
+
+revert_to(base_4)
+
+check(mtn("drop", "file_10"), 0, false, false)
+commit("testbranch", "right 4a")
+
+addfile("file_10", "file_10 right re-add")
+commit("testbranch", "right 4b")
+right_4 = base_revision()
+
+check(mtn("show_conflicts", left_4, right_4), 0, nil, true)
+check(qgrep("mtn: conflict: file 'file_10'", "stderr"))
+check(qgrep("mtn: modified on the left", "stderr"))
+check(qgrep("mtn: dropped on the right", "stderr"))
+check(qgrep("mtn: 1 conflict with supported resolutions.", "stderr"))
+
+-- FIXME: Show this conflict can't be resolved by keep; two new nodes with same name
+check(mtn("conflicts", "store", left_4, right_4), 0, nil, true)
+
+check(mtn("conflicts", "show_first"), 0, nil, true)
+check(samelines("stderr",
+{"mtn: conflict: file 'file_10'",
+ "mtn: modified on the left",
+ "mtn: dropped on the right",
+ "mtn: possible resolutions:",
+ "mtn: resolve_first drop",
+ "mtn: resolve_first keep",
+ "mtn: resolve_first user \"name\""}))
+
+check(mtn("conflicts", "resolve_first", "keep"), 0, nil, true)
+
+check(mtn("explicit_merge", "--resolve-conflicts", left_4, right_4, "testbranch"), 0, nil)
 
 -- end of file

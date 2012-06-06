@@ -109,25 +109,52 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
             }
 
           P(F("conflict: file '%s'") % modified_name);
-          if (conflict.left_nid == the_null_node)
+          if (conflict.orphaned)
             {
-              P(F("dropped on the left"));
-              P(F("modified on the right"));
+              if (conflict.left_nid == the_null_node)
+                {
+                  P(F("orphaned on the left"));
+                  P(F("modified on the right"));
+                }
+              else
+                {
+                  P(F("modified on the left"));
+                  P(F("orphaned on the right"));
+                }
             }
           else
             {
-              P(F("modified on the left"));
-              P(F("dropped on the right"));
+              if (conflict.left_nid == the_null_node)
+                {
+                  P(F("dropped on the left"));
+                  P(F("modified on the right"));
+                }
+              else
+                {
+                  P(F("modified on the left"));
+                  P(F("dropped on the right"));
+                }
             }
 
           switch (show_case)
             {
             case first:
-              P(F("possible resolutions:"));
-              P(F("resolve_first drop"));
-              P(F("resolve_first keep"));
-              P(F("resolve_first user \"name\""));
-              return;
+              if (conflict.orphaned)
+                {
+                  P(F("possible resolutions:"));
+                  P(F("resolve_first drop"));
+                  P(F("resolve_first rename"));
+                  P(F("resolve_first user_rename \"new_content_name\" \"new_file_name\""));
+                  return;
+                }
+              else
+                {
+                  P(F("possible resolutions:"));
+                  P(F("resolve_first drop"));
+                  P(F("resolve_first keep"));
+                  P(F("resolve_first user \"name\""));
+                  return;
+                }
 
             case remaining:
               break;
@@ -427,15 +454,34 @@ set_first_conflict(database & db,
               else if ("keep" == idx(args,0)())
                 {
                   E(args.size() == 1, origin::user, F("wrong number of arguments"));
+                  E(!conflict.orphaned, origin::user, F("orphaned files must be renamed"));
 
                   conflict.resolution.first  = resolve_conflicts::keep;
                 }
               else if ("user" == idx(args,0)())
                 {
                   E(args.size() == 2, origin::user, F("wrong number of arguments"));
+                  E(!conflict.orphaned, origin::user, F("orphaned files must be renamed"));
 
                   conflict.resolution.first  = resolve_conflicts::content_user;
                   conflict.resolution.second = new_optimal_path(idx(args,1)(), false);
+                }
+              else if ("rename" == idx(args,0)())
+                {
+                  E(args.size() == 2, origin::user, F("wrong number of arguments"));
+                  E(conflict.orphaned, origin::user, F("non-orphaned files cannot be renamed"));
+
+                  conflict.resolution.first  = resolve_conflicts::rename;
+                  conflict.resolution.second = new_optimal_path(idx(args,1)(), false);
+                }
+              else if ("user_rename" == idx(args,0)())
+                {
+                  E(args.size() == 3, origin::user, F("wrong number of arguments"));
+                  E(conflict.orphaned, origin::user, F("non-orphaned files cannot be renamed"));
+
+                  conflict.resolution.first  = resolve_conflicts::content_user_rename;
+                  conflict.resolution.second = new_optimal_path(idx(args,1)(), false);
+                  conflict.rename = resolve_conflicts::new_file_path(idx(args,2)());
                 }
               else
                 {

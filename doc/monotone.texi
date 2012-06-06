@@ -3489,7 +3489,7 @@ another directory to the project root.
 
 @subheading Dropped/Modified file Conflict
 This conflict occurs when a file is dropped in one merge parent,
-and modified on the other.
+and modified in the other.
 
 @command{conflicts} supports resolving this conflict; the possible
 resolutions are to drop the file in the result, keep the modified
@@ -3505,8 +3505,11 @@ for the same file but in the parent of the merge.
 
 There is no such thing as a dropped/modified directory; if the
 directory is empty, the only possible change is rename, which is
-ignored. If the directory is not empty, that creates orphaned file
-conflicts.
+ignored.
+
+If the directory is not empty, that creates a special case of
+dropped/modified file conflict; if the file is kept, it must also be
+renamed to an existing directory.
 
 @subheading Invalid Name Conflict
 
@@ -10434,6 +10437,20 @@ ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
       right_name "baz"
    right_file_id [fe6d523f607e2f2fc0f0defad3bda0351a95a337]
 @end verbatim
+
+File orphaned and modified (and possibly renamed):
+@verbatim
+        conflict dropped_modified
+   ancestor_name "foo"
+ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+       left_type "orphaned file"
+      right_type "modified file"
+      right_name "baz"
+   right_file_id [fe6d523f607e2f2fc0f0defad3bda0351a95a337]
+@end verbatim
+Orphaned/modified is different from dropped/modified because the
+possible resolutions are different; orphaned requires a rename if the
+file is kept.
 
 Invalid file name (@file{_MTN} in root directory):
 @verbatim
