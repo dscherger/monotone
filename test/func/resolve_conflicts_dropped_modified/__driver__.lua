@@ -257,27 +257,33 @@ check(samefilestd("conflicts-orphaned-resolved", "_MTN/conflicts"))
 
 check(mtn("explicit_merge", "--resolve-conflicts", left_3, right_3, "testbranch"), 0, nil, true)
 check(samelines("stderr",
-{"mtn: [left]  5ac4e947066417642f5404b9a54d4d8487bda002",
- "mtn: [right] d542a5d8e86dc29448a27449688d6f4fffcec72b",
+{"mtn: [left]  e6dba3377cbb926ae4e90642714daef18802b2ff",
+ "mtn: [right] 9549ab0f562b7a6d4597daa274892a922f38d45a",
  "mtn: replacing content of 'dir2/file_10' (renamed to 'file_10') with '_MTN/resolutions/file_10'",
  "mtn: dropping 'dir2/file_11'",
  "mtn: renaming 'dir2/file_9' to 'file_9'",
- "mtn: [merged] 202584446f5184430d1f8320eb702a5f81134505"}))
-
+ "mtn: [merged] 435d4d0197ba785b0360961debe3080f5704313e"}))
  
 -- A special case; drop then re-add vs modify. This used to be the test
 -- "merge((patch_a),_(drop_a,_add_a))"
-addfile("file_10", "file_10 base")
+addfile("file_10", "file_10 base") -- modify in left; drop, add in right
+addfile("file_11", "file_11 base") -- drop, add in left; modify in right
 commit("testbranch", "base 4")
 base_4 = base_revision()
 
 writefile("file_10", "file_10 left")
-commit("testbranch", "left 4")
+
+check(mtn("drop", "file_11"), 0, false, false)
+commit("testbranch", "left 4a")
+
+addfile("file_11", "file_11 left re-add")
+commit("testbranch", "left 4b")
 left_4 = base_revision()
 
 revert_to(base_4)
 
 check(mtn("drop", "file_10"), 0, false, false)
+writefile("file_11", "file_11 right")
 commit("testbranch", "right 4a")
 
 addfile("file_10", "file_10 right re-add")
@@ -285,26 +291,58 @@ commit("testbranch", "right 4b")
 right_4 = base_revision()
 
 check(mtn("show_conflicts", left_4, right_4), 0, nil, true)
-check(qgrep("mtn: conflict: file 'file_10'", "stderr"))
-check(qgrep("mtn: modified on the left", "stderr"))
-check(qgrep("mtn: dropped on the right", "stderr"))
-check(qgrep("mtn: 1 conflict with supported resolutions.", "stderr"))
+check(samelines("stderr",
+{"mtn: [left]     fd12d8fb1973814d7756bae60c668b9c82364b59",
+ "mtn: [right]    74ded9748ae7ee457a83a8d8a7dd0ffac93b13af",
+ "mtn: [ancestor] 613d77ec3ea9e0cda71d1a9c8328d4965b5730bf",
+ "mtn: conflict: file 'file_10' from revision 613d77ec3ea9e0cda71d1a9c8328d4965b5730bf",
+ "mtn: modified on the left, named file_10",
+ "mtn: dropped and recreated on the right",
+ "mtn: conflict: file 'file_11' from revision 613d77ec3ea9e0cda71d1a9c8328d4965b5730bf",
+ "mtn: dropped and recreated on the left",
+ "mtn: modified on the right, named file_11",
+ "mtn: 2 conflicts with supported resolutions."}))
 
--- FIXME: Show this conflict can't be resolved by keep; two new nodes with same name
 check(mtn("conflicts", "store", left_4, right_4), 0, nil, true)
+check(samefilestd("conflicts-recreated", "_MTN/conflicts"))
 
+-- drop is not a valid resolution in this case
 check(mtn("conflicts", "show_first"), 0, nil, true)
 check(samelines("stderr",
 {"mtn: conflict: file 'file_10'",
  "mtn: modified on the left",
- "mtn: dropped on the right",
+ "mtn: dropped and recreated on the right",
  "mtn: possible resolutions:",
- "mtn: resolve_first drop",
  "mtn: resolve_first keep",
  "mtn: resolve_first user \"name\""}))
 
-check(mtn("conflicts", "resolve_first", "keep"), 0, nil, true)
+check(mtn("conflicts", "resolve_first", "drop"), 1, nil, true)
+check(samelines("stderr", {"mtn: misuse: recreated files may not be dropped"}))
 
-check(mtn("explicit_merge", "--resolve-conflicts", left_4, right_4, "testbranch"), 0, nil)
+check(mtn("conflicts", "resolve_first", "keep"), 0, nil, nil)
+
+check(mtn("conflicts", "show_first"), 0, nil, true)
+check(samelines("stderr",
+{"mtn: conflict: file 'file_11'",
+ "mtn: dropped and recreated on the left",
+ "mtn: modified on the right",
+ "mtn: possible resolutions:",
+ "mtn: resolve_first keep",
+ "mtn: resolve_first user \"name\""}))
+
+mkdir("_MTN")
+mkdir("_MTN/resolutions")
+writefile("_MTN/resolutions/file_11", "file_11 user")
+check(mtn("conflicts", "resolve_first", "user", "_MTN/resolutions/file_11"), 0, nil, nil)
+
+check(samefilestd("conflicts-recreated-resolved", "_MTN/conflicts"))
+
+check(mtn("explicit_merge", "--resolve-conflicts", left_4, right_4, "testbranch"), 0, nil, true)
+check(samelines("stderr",
+{"mtn: [left]  fd12d8fb1973814d7756bae60c668b9c82364b59",
+ "mtn: [right] 74ded9748ae7ee457a83a8d8a7dd0ffac93b13af",
+ "mtn: keeping 'file_10'",
+ "mtn: replacing content of 'file_11' with '_MTN/resolutions/file_11'",
+ "mtn: [merged] 4da275122e0592217634c4d23838284cc570681a"}))
 
 -- end of file

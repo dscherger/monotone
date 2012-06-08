@@ -3503,6 +3503,12 @@ merge, not showing the previous history for the file. That history is
 still there; the user can see it by starting @command{mtn log} again
 for the same file but in the parent of the merge.
 
+A special case occurs when the user re-adds the file after dropping
+it, then attempts to merge. In this case, the possible resolutions are
+to keep the re-added version, or keep a user modified version,
+replacing the re-added version (drop is
+not a valid resolution).
+
 There is no such thing as a dropped/modified directory; if the
 directory is empty, the only possible change is rename, which is
 ignored.
@@ -10451,6 +10457,19 @@ ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
 Orphaned/modified is different from dropped/modified because the
 possible resolutions are different; orphaned requires a rename if the
 file is kept.
+
+File dropped and recreated on one side; modified on the other (and possibly renamed):
+@verbatim
+        conflict dropped_modified
+   ancestor_name "foo"
+ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+       left_type "recreated file"
+       left_name "foo"
+    left_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+      right_type "modified file"
+      right_name "baz"
+   right_file_id [fe6d523f607e2f2fc0f0defad3bda0351a95a337]
+@end verbatim
 
 Invalid file name (@file{_MTN} in root directory):
 @verbatim

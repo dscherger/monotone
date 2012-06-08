@@ -1124,7 +1124,17 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                 }
               else
                 {
-                  st.push_str_pair(syms::left_type, "dropped file");
+                  if (conflict.recreated == the_null_node)
+                    {
+                      st.push_str_pair(syms::left_type, "dropped file");
+                    }
+                  else
+                    {
+                      st.push_str_pair(syms::left_type, "recreated file");
+                      st.push_str_pair(syms::left_name, modified_name.as_external());
+                      db_adaptor.db.get_file_content (db_adaptor.left_rid, conflict.recreated, fid);
+                      st.push_binary_pair(syms::left_file_id, fid.inner());
+                    }
                 }
             }
           else
@@ -1143,7 +1153,17 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                 }
               else
                 {
-                  st.push_str_pair(syms::right_type, "dropped file");
+                  if (conflict.recreated == the_null_node)
+                    {
+                      st.push_str_pair(syms::right_type, "dropped file");
+                    }
+                  else
+                    {
+                      st.push_str_pair(syms::right_type, "recreated file");
+                      st.push_str_pair(syms::right_name, modified_name.as_external());
+                      db_adaptor.db.get_file_content (db_adaptor.right_rid, conflict.recreated, fid);
+                      st.push_binary_pair(syms::right_file_id, fid.inner());
+                    }
                 }
             }
           else
@@ -1165,12 +1185,10 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                   break;
 
                 case resolve_conflicts::content_user_rename:
-                  st.push_str_pair(syms::resolved_rename_left, conflict.rename->as_external());
+                  st.push_str_pair(syms::resolved_rename_left, conflict.rename.as_external());
                   break;
 
                 default:
-                  // FIXME: debugging
-                  E(false, origin::user, F("conflict.resolution.first: %s") % conflict.resolution.first);
                   I(false);
                 }
             }
@@ -1187,7 +1205,10 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                 }
               else
                 {
-                  P(F("dropped on the left"));
+                  if (conflict.recreated == the_null_node)
+                    P(F("dropped on the left"));
+                  else
+                    P(F("dropped and recreated on the left"));
                 }
               P(F("modified on the right, named %s") % modified_name);
             }
@@ -1200,7 +1221,10 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                 }
               else
                 {
-                  P(F("dropped on the right"));
+                  if (conflict.recreated == the_null_node)
+                    P(F("dropped on the right"));
+                  else
+                    P(F("dropped and recreated on the right"));
                 }
             }
         }
@@ -1931,13 +1955,20 @@ read_dropped_modified_conflict(basic_io::parser & pars,
       // no more data for left
       conflict.orphaned = true;
     }
-  else
+  else if (tmp == "recreated file")
     {
-      // modified file
+      pars.esym(syms::left_name); pars.str(tmp);
+      conflict.recreated = left_roster.get_node(file_path_external(utf8(tmp, origin::internal)))->self;
+      pars.esym(syms::left_file_id); pars.hex();
+    }
+  else if (tmp == "modified file")
+    {
       pars.esym(syms::left_name); pars.str(tmp);
       conflict.left_nid = left_roster.get_node(file_path_external(utf8(tmp, origin::internal)))->self;
       pars.esym(syms::left_file_id); pars.hex();
     }
+  else
+    I(false);
 
   pars.esym(syms::right_type);
   pars.str(tmp);
@@ -1951,13 +1982,20 @@ read_dropped_modified_conflict(basic_io::parser & pars,
       // no more data for right
       conflict.orphaned = true;
     }
-  else
+  else if (tmp == "recreated file")
     {
-      // modified file
+      pars.esym(syms::right_name); pars.str(tmp);
+      conflict.recreated = right_roster.get_node(file_path_external(utf8(tmp, origin::internal)))->self;
+      pars.esym(syms::right_file_id); pars.hex();
+    }
+  else if (tmp == "modified file")
+    {
       pars.esym(syms::right_name); pars.str(tmp);
       conflict.right_nid = right_roster.get_node(file_path_external(utf8(tmp, origin::internal)))->self;
       pars.esym(syms::right_file_id); pars.hex();
     }
+  else
+    I(false);
 
   // check for a resolution
   if ((!pars.symp (syms::conflict)) && pars.tok.in.lookahead != EOF)
@@ -1986,7 +2024,7 @@ read_dropped_modified_conflict(basic_io::parser & pars,
               pars.esym (syms::resolved_rename_left);
               conflict.resolution.first = resolve_conflicts::content_user_rename;
               pars.str(tmp);
-              conflict.rename = new_optimal_path(tmp, false);
+              conflict.rename = file_path_external_ws(utf8(tmp, origin::user));
             }
         }
       else if (pars.symp (syms::resolved_rename_left))
@@ -2043,7 +2081,8 @@ validate_dropped_modified_conflicts(basic_io::parser & pars,
 
       // Note that we do not confirm the file ids.
       E(merge_conflict.left_nid == file_conflict.left_nid &&
-        merge_conflict.right_nid == file_conflict.right_nid,
+        merge_conflict.right_nid == file_conflict.right_nid &&
+        merge_conflict.recreated == file_conflict.recreated,
         origin::user,
         F(conflicts_mismatch_msg));
 
@@ -2728,16 +2767,28 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
       node_id   nid;
       file_path modified_name;
       file_id   modified_fid;
+      file_path recreated_name;
+      file_id   recreated_fid;
 
       if (conflict.left_nid == the_null_node)
         {
           nid = conflict.right_nid;
           right_roster.get_file_details(nid, modified_fid, modified_name);
+
+          if (conflict.recreated != the_null_node)
+            {
+              roster.get_file_details(conflict.recreated, recreated_fid, recreated_name);
+            }
         }
       else
         {
           nid = conflict.left_nid;
           left_roster.get_file_details(nid, modified_fid, modified_name);
+
+          if (conflict.recreated != the_null_node)
+            {
+              roster.get_file_details(conflict.recreated, recreated_fid, recreated_name);
+            }
         }
 
       switch (conflict.resolution.first)
@@ -2751,17 +2802,40 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
           P(F("replacing content of '%s' with '%s'") %
             modified_name % conflict.resolution.second->as_external());
 
-          resolve_dropped_modified_user(roster, nid, modified_fid, conflict, adaptor, nis);
-          attach_node(lua, roster, nid, modified_name);
+          if (conflict.recreated == the_null_node)
+            {
+              resolve_dropped_modified_user(roster, nid, modified_fid, conflict, adaptor, nis);
+              attach_node(lua, roster, nid, modified_name);
+            }
+          else
+            {
+              // See comments in keep below on why we drop first
+              roster.drop_detached_node(nid);
+
+              file_id result_fid;
+              file_data parent_data, result_data;
+              data result_raw_data;
+              adaptor.get_version(recreated_fid, parent_data);
+
+              read_data(*conflict.resolution.second, result_raw_data);
+
+              result_data = file_data(result_raw_data);
+              calculate_ident(result_data, result_fid);
+
+              file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.recreated));
+              result_node->content = result_fid;
+
+              adaptor.record_file(recreated_fid, result_fid, parent_data, result_data);
+            }
           break;
 
         case resolve_conflicts::content_user_rename:
-          I(conflict.rename != 0);
+          I(conflict.rename.as_external().length() != 0);
           P(F("replacing content of '%s' (renamed to '%s') with '%s'") %
-            modified_name % conflict.rename->as_external() % conflict.resolution.second->as_external());
+            modified_name % conflict.rename.as_external() % conflict.resolution.second->as_external());
 
           resolve_dropped_modified_user(roster, nid, modified_fid, conflict, adaptor, nis);
-          attach_node(lua, roster, nid, file_path_internal (conflict.rename->as_internal()));
+          attach_node(lua, roster, nid, file_path_internal (conflict.rename.as_internal()));
           break;
 
         case resolve_conflicts::drop:
@@ -2782,17 +2856,26 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
         case resolve_conflicts::keep:
           P(F("keeping '%s'") % modified_name);
 
-          // We'd like to just attach_node here, but that violates a
-          // fundamental design principle of mtn; nodes are born once, and
-          // die once. If we attach here, the node is born, died, and then
-          // born again.
-          //
-          // So we have to drop the old node, and create a new node with the
-          // same contents. That loses history; 'mtn log <path>' will end
-          // here, not showing the history of the original node.
-          roster.drop_detached_node(nid);
-          nid = roster.create_file_node(modified_fid, nis);
-          attach_node (lua, roster, nid, modified_name);
+          if (conflict.recreated == the_null_node)
+            {
+              // We'd like to just attach_node here, but that violates a
+              // fundamental design principle of mtn; nodes are born once,
+              // and die once. If we attach here, the node is born, died,
+              // and then born again.
+              //
+              // So we have to drop the old node, and create a new node with
+              // the same contents. That loses history; 'mtn log <path>'
+              // will end here, not showing the history of the original
+              // node.
+              roster.drop_detached_node(nid);
+              nid = roster.create_file_node(modified_fid, nis);
+              attach_node (lua, roster, nid, modified_name);
+            }
+          else
+            {
+              roster.drop_detached_node(nid);
+              // Nothing else to do.
+            }
           break;
 
         default:

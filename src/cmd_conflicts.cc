@@ -126,31 +126,40 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
             {
               if (conflict.left_nid == the_null_node)
                 {
-                  P(F("dropped on the left"));
+                  if (conflict.recreated == the_null_node)
+                    P(F("dropped on the left"));
+                  else
+                    P(F("dropped and recreated on the left"));
+
                   P(F("modified on the right"));
                 }
               else
                 {
                   P(F("modified on the left"));
-                  P(F("dropped on the right"));
+
+                  if (conflict.recreated == the_null_node)
+                    P(F("dropped on the right"));
+                  else
+                    P(F("dropped and recreated on the right"));
                 }
             }
 
           switch (show_case)
             {
             case first:
+              P(F("possible resolutions:"));
+
+              if (conflict.recreated == the_null_node)
+                P(F("resolve_first drop"));
+
               if (conflict.orphaned)
                 {
-                  P(F("possible resolutions:"));
-                  P(F("resolve_first drop"));
                   P(F("resolve_first rename"));
                   P(F("resolve_first user_rename \"new_content_name\" \"new_file_name\""));
                   return;
                 }
               else
                 {
-                  P(F("possible resolutions:"));
-                  P(F("resolve_first drop"));
                   P(F("resolve_first keep"));
                   P(F("resolve_first user \"name\""));
                   return;
@@ -448,6 +457,7 @@ set_first_conflict(database & db,
               if ("drop" == idx(args,0)())
                 {
                   E(args.size() == 1, origin::user, F("wrong number of arguments"));
+                  E(conflict.recreated == the_null_node, origin::user, F("recreated files may not be dropped"));
 
                   conflict.resolution.first  = resolve_conflicts::drop;
                 }
@@ -481,7 +491,7 @@ set_first_conflict(database & db,
 
                   conflict.resolution.first  = resolve_conflicts::content_user_rename;
                   conflict.resolution.second = new_optimal_path(idx(args,1)(), false);
-                  conflict.rename = resolve_conflicts::new_file_path(idx(args,2)());
+                  conflict.rename = file_path_external(utf8(idx(args,2)(), origin::user));
                 }
               else
                 {

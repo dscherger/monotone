@@ -1191,6 +1191,8 @@ dump(roster_t const & val, string & out)
 void
 roster_t::check_sane(bool temp_nodes_ok) const
 {
+  MM(*this);
+
   node_id parent_id(the_null_node);
   const_dir_t parent_dir;
   I(old_locations.empty());

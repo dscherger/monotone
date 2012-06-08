@@ -98,8 +98,10 @@ struct dropped_modified_conflict
 
   bool orphaned; // if true, the dropped side is due to a dropped parent directory
 
+  node_id recreated; // by user, or in a previous drop/modified resolution
+
   resolve_conflicts::file_resolution_t resolution;
-  boost::shared_ptr<any_path> rename;
+  file_path rename;
   // if orphaned is true, the resolutions are 'drop' and 'user rename'; the
   // latter requires two paths; content in resolution->second, filename in
   // rename.
@@ -107,7 +109,9 @@ struct dropped_modified_conflict
   dropped_modified_conflict(node_id left_nid, node_id right_nid) :
     left_nid(left_nid),
     right_nid(right_nid),
-    orphaned(false)
+    orphaned(false),
+    recreated(the_null_node)
+    // rename is implicitly null
   {resolution.first = resolve_conflicts::none;}
 
   bool operator==(node_id n) {return left_nid == n || right_nid == n;}

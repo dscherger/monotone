@@ -351,8 +351,12 @@ namespace
         // The node has been deleted from the other side of the merge. If
         // there are changes to the file on this side of the merge, insert
         // it into the new roster, but leave it detached, so the conflict
-        // resolutions can deal with it easily. Note that attaching is done
-        // later; see roster_merge below.
+        // resolutions can deal with it easily. Note that attaching would be
+        // done later; see roster_merge below.
+        //
+        // We also need to look for another node with the same name; user
+        // may have already 'undeleted' the node. But we have to do that
+        // after all result nodes are created and attached.
         set<revision_id> const & content_marks = m->file_content;
         for (set<revision_id>::const_iterator it = content_marks.begin();
              it != content_marks.end();
@@ -766,6 +770,27 @@ roster_merge(roster_t const & left_parent,
     I(right_mi == right_markings.end());
     I(new_i == result.roster.all_nodes().end());
   }
+
+  // now we can look for dropped_modified conflicts with recreated nodes
+  for (size_t i = 0; i < result.dropped_modified_conflicts.size(); ++i)
+    {
+      dropped_modified_conflict & conflict = result.dropped_modified_conflicts[i];
+
+      file_path modified_name;
+      if (conflict.left_nid == the_null_node)
+        {
+          right_parent.get_name(conflict.right_nid, modified_name);
+        }
+      else
+        {
+          left_parent.get_name(conflict.left_nid, modified_name);
+        }
+
+      if (result.roster.has_node(modified_name))
+        {
+          conflict.recreated = result.roster.get_node(modified_name)->self;
+        }
+    }
 
   // now check for the possible global problems
   if (!result.roster.has_root())
