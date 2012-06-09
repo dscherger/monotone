@@ -76,11 +76,14 @@ check(samelines
   "mtn: dropped and recreated on the right",
   "mtn: 1 conflict with supported resolutions."}))
 
-check(mtn("conflicts", "store", left_1, right_1), 0, nil, true)
+check(mtn("conflicts", "store", left_2, right_2), 0, nil, true)
 
 check(mtn("conflicts", "resolve_first", "keep"), 0, nil, true)
 
-check(mtn("explicit_merge", "--resolve-conflicts", left_1, right_1, "testbranch"), 0, nil, true)
-check(qgrep("mtn: keeping 'file_2'", "stderr"))
+check(mtn("explicit_merge", "--resolve-conflicts", left_2, right_2, "testbranch"), 0, nil, true)
+check(qgrep("mtn: keeping 'file_2' from left", "stderr"))
+
+check(mtn("update"), 0, nil, true)
+check(samelines("file_2", {"file_2 left 2"}))
 
 -- end of file

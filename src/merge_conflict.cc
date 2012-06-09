@@ -2854,10 +2854,10 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
           break;
 
         case resolve_conflicts::keep:
-          P(F("keeping '%s'") % modified_name);
-
           if (conflict.recreated == the_null_node)
             {
+              P(F("keeping '%s'") % modified_name);
+
               // We'd like to just attach_node here, but that violates a
               // fundamental design principle of mtn; nodes are born once,
               // and die once. If we attach here, the node is born, died,
@@ -2873,8 +2873,20 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
             }
           else
             {
+              P(F("keeping '%s' from %s") % modified_name % ((conflict.left_nid == the_null_node) ? "right" : "left"));
+
               roster.drop_detached_node(nid);
-              // Nothing else to do.
+
+              // keep the modified content, not the recreated content
+              file_data parent_data, result_data;
+              adaptor.get_version(recreated_fid, parent_data);
+
+              adaptor.get_version(modified_fid, result_data);
+
+              file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.recreated));
+              result_node->content = modified_fid;
+
+              adaptor.record_file(recreated_fid, modified_fid, parent_data, result_data);
             }
           break;
 

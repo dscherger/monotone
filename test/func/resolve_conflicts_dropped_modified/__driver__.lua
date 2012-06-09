@@ -345,8 +345,11 @@ check(mtn("explicit_merge", "--resolve-conflicts", left_4, right_4, "testbranch"
 check(samelines("stderr",
 {"mtn: [left]  fd12d8fb1973814d7756bae60c668b9c82364b59",
  "mtn: [right] 74ded9748ae7ee457a83a8d8a7dd0ffac93b13af",
- "mtn: keeping 'file_10'",
+ "mtn: keeping 'file_10' from left",
  "mtn: replacing content of 'file_11' with '_MTN/resolutions/file_11'",
- "mtn: [merged] 4da275122e0592217634c4d23838284cc570681a"}))
+ "mtn: [merged] 146a0f04f7f1d015976a10ab6a0c7164f0789ac7"}))
+
+check(mtn("update"), 0, nil, true)
+check(samelines("file_10", {"file_10 left"}))
 
 -- end of file
