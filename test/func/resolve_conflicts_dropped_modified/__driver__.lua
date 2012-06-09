@@ -1,8 +1,7 @@
 -- Test reporting and resolving drop/modified conflicts
 --
--- other tests validate resolving in extended use cases:
--- ../resolve_conflicts_dropped_modified_2,
--- ../resolve_conflicts_dropped_modified_vendor
+-- other resolve_conflicts_dropped_modified_* tests validate resolving
+-- in extended use cases.
 
 mtn_setup()
 
