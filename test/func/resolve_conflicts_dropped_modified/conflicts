@@ -1,5 +1,5 @@
-    left [f675f3440ebd978fffba5d990e8c876ae9470aa3]
-   right [3b44e67a00d6f2ef92279d5fd07b46cc175b3291]
+    left [7b2ef4343b0717bcd122498a1a0b7ff7acffb64c]
+   right [ca7922b510f9daf5c4b28c6788315ee82eb9a7f0]
 ancestor [c2fe3623ce72d248154425dc7db2ddcc397c9aca]
 
         conflict dropped_modified
@@ -9,11 +9,17 @@ ancestor_file_id [4fd0fa24812427ee6c13a839d2a90bc0c6fc0091]
        left_name "file_2_renamed"
     left_file_id [afbd804a8c606a93f9d8bc0fdacc1db9f34b4548]
       right_type "dropped file"
+       right_rev [c2fe3623ce72d248154425dc7db2ddcc397c9aca]
+      right_name "file_2"
+   right_file_id [4fd0fa24812427ee6c13a839d2a90bc0c6fc0091]
 
         conflict dropped_modified
    ancestor_name "file_3"
 ancestor_file_id [311aac8e6f1fb6fca84da5153aa6d5a1c6faff79]
        left_type "dropped file"
+        left_rev [c2fe3623ce72d248154425dc7db2ddcc397c9aca]
+       left_name "file_3"
+    left_file_id [311aac8e6f1fb6fca84da5153aa6d5a1c6faff79]
       right_type "modified file"
       right_name "file_3_renamed"
    right_file_id [da7ea65160c9c92f4ed120568229342fe7daa924]
@@ -25,11 +31,17 @@ ancestor_file_id [861174e6639f2991d9c065785cd9679be0c774f1]
        left_name "file_4"
     left_file_id [57f26e8057760f356762c405bdc1f89b0a9bfed2]
       right_type "dropped file"
+       right_rev [4125c3aea991e97a3063c3e3f425a47d58e7c8da]
+      right_name "file_4_renamed"
+   right_file_id [259dbd8291bd18ba3fdb9adb3776eb26f94b1230]
 
         conflict dropped_modified
    ancestor_name "file_5"
 ancestor_file_id [d141bda733292622ebce4c231cbb0da44ac59f40]
        left_type "dropped file"
+        left_rev [b0d6953684d49dd6bd345c312d6a0c8fed3078ce]
+       left_name "file_5_renamed"
+    left_file_id [420cde699a422f7c3d2c8951c46ddfd546db66c0]
       right_type "modified file"
       right_name "file_5"
    right_file_id [e7eb31ab48c2e42126f44ef78ffdb27f388333b0]
@@ -41,11 +53,17 @@ ancestor_file_id [d5531643d3b5aee3e10eceabbdfecf167148a2d9]
        left_name "file_6_renamed"
     left_file_id [1f62c734b799474943bfdda12b062f61024dc059]
       right_type "dropped file"
+       right_rev [c2fe3623ce72d248154425dc7db2ddcc397c9aca]
+      right_name "file_6"
+   right_file_id [d5531643d3b5aee3e10eceabbdfecf167148a2d9]
 
         conflict dropped_modified
    ancestor_name "file_7"
 ancestor_file_id [1a9d3059360fd5f04d0cec05875c8e376da0eaef]
        left_type "dropped file"
+        left_rev [c2fe3623ce72d248154425dc7db2ddcc397c9aca]
+       left_name "file_7"
+    left_file_id [1a9d3059360fd5f04d0cec05875c8e376da0eaef]
       right_type "modified file"
       right_name "file_7_renamed"
    right_file_id [9b362e2754ea1f943497d5a31de3899271ee5a8b]

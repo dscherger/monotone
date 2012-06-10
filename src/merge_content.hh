@@ -88,6 +88,14 @@ content_merge_database_adaptor
                             revision_id & rid,
                             boost::shared_ptr<roster_t const> & anc);
 
+  // Search parents of rev_id (which must be left_rid or right_rid); return
+  // rev, file_path, and file_id for nid just before it was dropped.
+  void get_dropped_details(revision_id & rev_id,
+                           node_id       nid,
+                           revision_id & dropped_rev_id,
+                           file_path   & dropped_name,
+                           file_id     & dropped_file_id);
+
   void get_version(file_id const & ident,
                    file_data & dat) const;
 };

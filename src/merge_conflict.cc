@@ -58,6 +58,7 @@ namespace
     symbol const left_attr_value("left_attr_value");
     symbol const left_file_id("left_file_id");
     symbol const left_name("left_name");
+    symbol const left_rev("left_rev");
     symbol const left_type("left_type");
     symbol const missing_root("missing_root");
     symbol const multiple_names("multiple_names");
@@ -78,6 +79,7 @@ namespace
     symbol const right_attr_value("right_attr_value");
     symbol const right_file_id("right_file_id");
     symbol const right_name("right_name");
+    symbol const right_rev("right_rev");
     symbol const right_type("right_type");
   }
 }
@@ -1062,6 +1064,25 @@ roster_merge_result::report_multiple_name_conflicts(roster_t const & left_roster
     }
 }
 
+void static
+push_dropped_details(content_merge_database_adaptor & db_adaptor,
+                     symbol                           rev_sym,
+                     symbol                           name_sym,
+                     symbol                           file_id_sym,
+                     revision_id                      rev_id,
+                     node_id                          nid,
+                     basic_io::stanza &               st)
+{
+  revision_id dropped_rev_id;
+  file_path   dropped_name;
+  file_id     dropped_file_id;
+  db_adaptor.get_dropped_details(rev_id, nid, dropped_rev_id, dropped_name, dropped_file_id);
+
+  st.push_binary_pair(rev_sym, dropped_rev_id.inner());
+  st.push_str_pair(name_sym, dropped_name.as_external());
+  st.push_binary_pair(file_id_sym, dropped_file_id.inner());
+}
+
 void
 roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_roster,
                                                        roster_t const & right_roster,
@@ -1121,12 +1142,16 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
               if (conflict.orphaned)
                 {
                    st.push_str_pair(syms::left_type, "orphaned file");
+                   push_dropped_details(db_adaptor, syms::left_rev, syms::left_name, syms::left_file_id,
+                                        db_adaptor.left_rid, nid, st);
                 }
               else
                 {
                   if (conflict.recreated == the_null_node)
                     {
                       st.push_str_pair(syms::left_type, "dropped file");
+                      push_dropped_details(db_adaptor, syms::left_rev, syms::left_name, syms::left_file_id,
+                                           db_adaptor.left_rid, nid, st);
                     }
                   else
                     {
@@ -1150,12 +1175,16 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
               if (conflict.orphaned)
                 {
                   st.push_str_pair(syms::right_type, "orphaned file");
+                  push_dropped_details(db_adaptor, syms::right_rev, syms::right_name, syms::right_file_id,
+                                       db_adaptor.right_rid, nid, st);
                 }
               else
                 {
                   if (conflict.recreated == the_null_node)
                     {
                       st.push_str_pair(syms::right_type, "dropped file");
+                      push_dropped_details(db_adaptor, syms::right_rev, syms::right_name, syms::right_file_id,
+                                           db_adaptor.right_rid, nid, st);
                     }
                   else
                     {
@@ -1948,11 +1977,16 @@ read_dropped_modified_conflict(basic_io::parser & pars,
 
   if (tmp == "dropped file")
     {
-      // no more data for left
+      pars.esym(syms::left_rev); pars.hex();
+      pars.esym(syms::left_name); pars.str();
+      pars.esym(syms::left_file_id); pars.hex();
     }
   else if (tmp == "orphaned file")
     {
-      // no more data for left
+      pars.esym(syms::left_rev); pars.hex();
+      pars.esym(syms::left_name); pars.str();
+      pars.esym(syms::left_file_id); pars.hex();
+
       conflict.orphaned = true;
     }
   else if (tmp == "recreated file")
@@ -1975,11 +2009,16 @@ read_dropped_modified_conflict(basic_io::parser & pars,
 
   if (tmp == "dropped file")
     {
-      // no more data for right
+      pars.esym(syms::right_rev); pars.hex();
+      pars.esym(syms::right_name); pars.str();
+      pars.esym(syms::right_file_id); pars.hex();
     }
   else if (tmp == "orphaned file")
     {
-      // no more data for right
+      pars.esym(syms::right_rev); pars.hex();
+      pars.esym(syms::right_name); pars.str();
+      pars.esym(syms::right_file_id); pars.hex();
+
       conflict.orphaned = true;
     }
   else if (tmp == "recreated file")

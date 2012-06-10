@@ -16,8 +16,8 @@ mtn_setup()
 
 addfile("file_2", "file_2 base") -- modify/rename left, drop right; drop
 addfile("file_3", "file_3 base") -- drop left, modify/rename right; drop
-addfile("file_4", "file_4 base") -- modify left, drop right; keep
-addfile("file_5", "file_5 base") -- drop left, modify right; keep
+addfile("file_4", "file_4 base") -- modify left; modify, rename, and drop right; keep
+addfile("file_5", "file_5 base") -- modify, rename, and drop left; modify right; keep
 addfile("file_6", "file_6 base") -- modify/rename left, drop right; user
 addfile("file_7", "file_7 base") -- drop left, modify/rename right; user
 commit("testbranch", "base")
@@ -30,14 +30,18 @@ check(mtn("drop", "file_3"), 0, false, false)
 
 writefile("file_4", "file_4 left")
 
-check(mtn("drop", "file_5"), 0, false, false)
+writefile("file_5", "file_5 left")
+check(mtn("mv", "file_5", "file_5_renamed"), 0, false, false)
 
 writefile("file_6", "file_6 left")
 check(mtn("mv", "file_6", "file_6_renamed"), 0, false, false)
 
 check(mtn("drop", "file_7"), 0, false, false)
 
-commit("testbranch", "left 1")
+commit("testbranch", "left 1a")
+
+check(mtn("drop", "file_5_renamed"), 0, nil, true)
+commit("testbranch", "left 1b")
 left_1 = base_revision()
 
 revert_to(base)
@@ -47,7 +51,8 @@ check(mtn("drop", "file_2"), 0, false, false)
 writefile("file_3", "file_3 right")
 check(mtn("mv", "file_3", "file_3_renamed"), 0, false, false)
 
-check(mtn("drop", "file_4"), 0, false, false)
+writefile("file_4", "file_4 right")
+check(mtn("mv", "file_4", "file_4_renamed"), 0, false, false)
 
 writefile("file_5", "file_5 right")
 
@@ -56,7 +61,10 @@ check(mtn("drop", "file_6"), 0, false, false)
 writefile("file_7", "file_7 right")
 check(mtn("mv", "file_7", "file_7_renamed"), 0, false, false)
 
-commit("testbranch", "right 1")
+commit("testbranch", "right 1a")
+
+check(mtn("drop", "file_4_renamed"), 0, false, false)
+commit("testbranch", "right 1b")
 right_1 = base_revision()
 
 -- Now start the conflict resolution process. First show the conflicts.
@@ -260,12 +268,12 @@ check(samefilestd("conflicts-orphaned-resolved", "_MTN/conflicts"))
 
 check(mtn("explicit_merge", "--resolve-conflicts", left_3, right_3, "testbranch"), 0, nil, true)
 check(samelines("stderr",
-{"mtn: [left]  e6dba3377cbb926ae4e90642714daef18802b2ff",
- "mtn: [right] 9549ab0f562b7a6d4597daa274892a922f38d45a",
+{"mtn: [left]  4228fbd8003cdd89e7eea51fcef10c3f91d78f69",
+ "mtn: [right] 6cb6438a490a1ad4c69ff6cac23c75a903cd9cfd",
  "mtn: replacing content of 'dir2/file_10' (renamed to 'file_10') with '_MTN/resolutions/file_10'",
  "mtn: dropping 'dir2/file_11'",
  "mtn: renaming 'dir2/file_9' to 'file_9'",
- "mtn: [merged] 435d4d0197ba785b0360961debe3080f5704313e"}))
+ "mtn: [merged] 5cafe5405ed31c81f9061be62e38f25aeaaea9c5"}))
  
 -- A special case; drop then re-add vs modify. This used to be the test
 -- "merge((patch_a),_(drop_a,_add_a))"
@@ -295,13 +303,13 @@ right_4 = base_revision()
 
 check(mtn("show_conflicts", left_4, right_4), 0, nil, true)
 check(samelines("stderr",
-{"mtn: [left]     fd12d8fb1973814d7756bae60c668b9c82364b59",
- "mtn: [right]    74ded9748ae7ee457a83a8d8a7dd0ffac93b13af",
- "mtn: [ancestor] 613d77ec3ea9e0cda71d1a9c8328d4965b5730bf",
- "mtn: conflict: file 'file_10' from revision 613d77ec3ea9e0cda71d1a9c8328d4965b5730bf",
+{"mtn: [left]     9485fe891d5e23d6dc30140228cd02840ee719e9",
+ "mtn: [right]    9a8192d3bf263cbd5782791e823b837d42af6902",
+ "mtn: [ancestor] 209e4118bda3960b2f83e48b2368e981ab748ee5",
+ "mtn: conflict: file 'file_10' from revision 209e4118bda3960b2f83e48b2368e981ab748ee5",
  "mtn: modified on the left, named file_10",
  "mtn: dropped and recreated on the right",
- "mtn: conflict: file 'file_11' from revision 613d77ec3ea9e0cda71d1a9c8328d4965b5730bf",
+ "mtn: conflict: file 'file_11' from revision 209e4118bda3960b2f83e48b2368e981ab748ee5",
  "mtn: dropped and recreated on the left",
  "mtn: modified on the right, named file_11",
  "mtn: 2 conflicts with supported resolutions."}))
@@ -342,11 +350,11 @@ check(samefilestd("conflicts-recreated-resolved", "_MTN/conflicts"))
 
 check(mtn("explicit_merge", "--resolve-conflicts", left_4, right_4, "testbranch"), 0, nil, true)
 check(samelines("stderr",
-{"mtn: [left]  fd12d8fb1973814d7756bae60c668b9c82364b59",
- "mtn: [right] 74ded9748ae7ee457a83a8d8a7dd0ffac93b13af",
+{"mtn: [left]  9485fe891d5e23d6dc30140228cd02840ee719e9",
+ "mtn: [right] 9a8192d3bf263cbd5782791e823b837d42af6902",
  "mtn: keeping 'file_10' from left",
  "mtn: replacing content of 'file_11' with '_MTN/resolutions/file_11'",
- "mtn: [merged] 146a0f04f7f1d015976a10ab6a0c7164f0789ac7"}))
+ "mtn: [merged] 306eb31064512a8a2f4d316ff7a7ec32a1f64f4c"}))
 
 check(mtn("update"), 0, nil, true)
 check(samelines("file_10", {"file_10 left"}))

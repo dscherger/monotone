@@ -1,13 +1,13 @@
-mtn: [left]     e6dba3377cbb926ae4e90642714daef18802b2ff
-mtn: [right]    9549ab0f562b7a6d4597daa274892a922f38d45a
-mtn: [ancestor] c55331b815b944b2fcde9b2ce42536dbda706a4c
-mtn: conflict: file 'dir2/file_10' from revision c55331b815b944b2fcde9b2ce42536dbda706a4c
+mtn: [left]     4228fbd8003cdd89e7eea51fcef10c3f91d78f69
+mtn: [right]    6cb6438a490a1ad4c69ff6cac23c75a903cd9cfd
+mtn: [ancestor] 44c4d408ecf65b6b45fa2c6fa2a51e5b7485d8e1
+mtn: conflict: file 'dir2/file_10' from revision 44c4d408ecf65b6b45fa2c6fa2a51e5b7485d8e1
 mtn: modified on the left, named dir2/file_10
 mtn: orphaned on the right
-mtn: conflict: file 'dir2/file_11' from revision c55331b815b944b2fcde9b2ce42536dbda706a4c
+mtn: conflict: file 'dir2/file_11' from revision 44c4d408ecf65b6b45fa2c6fa2a51e5b7485d8e1
 mtn: modified on the left, named dir2/file_11
 mtn: orphaned on the right
-mtn: conflict: file 'dir2/file_9' from revision c55331b815b944b2fcde9b2ce42536dbda706a4c
+mtn: conflict: file 'dir2/file_9' from revision 44c4d408ecf65b6b45fa2c6fa2a51e5b7485d8e1
 mtn: modified on the left, named dir2/file_9
 mtn: orphaned on the right
 mtn: 3 conflicts with supported resolutions.

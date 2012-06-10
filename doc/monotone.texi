@@ -10439,10 +10439,15 @@ File dropped and modified (and possibly renamed):
    ancestor_name "foo"
 ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
        left_type "dropped file"
+        left_rev [b0d6953684d49dd6bd345c312d6a0c8fed3078ce]
+       left_name "foo"
+    left_file_id [420cde699a422f7c3d2c8951c46ddfd546db66c0]
       right_type "modified file"
       right_name "baz"
    right_file_id [fe6d523f607e2f2fc0f0defad3bda0351a95a337]
 @end verbatim
+Here left_name, left_file_id are from left_rev, just before the file
+was dropped.
 
 File orphaned and modified (and possibly renamed):
 @verbatim
@@ -10450,6 +10455,9 @@ File orphaned and modified (and possibly renamed):
    ancestor_name "foo"
 ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
        left_type "orphaned file"
+        left_rev [b0d6953684d49dd6bd345c312d6a0c8fed3078ce]
+       left_name "foo"
+    left_file_id [420cde699a422f7c3d2c8951c46ddfd546db66c0]
       right_type "modified file"
       right_name "baz"
    right_file_id [fe6d523f607e2f2fc0f0defad3bda0351a95a337]

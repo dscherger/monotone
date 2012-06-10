@@ -180,6 +180,37 @@ content_merge_database_adaptor::get_ancestral_roster(node_id nid,
 }
 
 void
+content_merge_database_adaptor::get_dropped_details(revision_id & rev_id,
+                                                    node_id       nid,
+                                                    revision_id & dropped_rev_id,
+                                                    file_path   & dropped_name,
+                                                    file_id     & dropped_file_id)
+{
+  set<revision_id> parents;
+  db.get_revision_parents(rev_id, parents);
+
+  for (set<revision_id>::iterator i = parents.begin(); i != parents.end(); i++)
+    {
+      roster_t roster;
+      marking_map marking_map;
+
+      db.get_roster(*i, roster, marking_map);
+      if (roster.has_node(nid))
+        {
+          dropped_rev_id = *i;
+          roster.get_file_details(nid, dropped_file_id, dropped_name);
+          return;
+        }
+      else
+        {
+          set<revision_id> more_parents;
+          db.get_revision_parents(*i, more_parents);
+          parents.insert(more_parents.begin(), more_parents.end());
+        }
+    }
+}
+
+void
 content_merge_database_adaptor::get_version(file_id const & ident,
                                             file_data & dat) const
 {

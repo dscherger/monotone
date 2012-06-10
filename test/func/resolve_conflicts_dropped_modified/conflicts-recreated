@@ -1,6 +1,6 @@
-    left [fd12d8fb1973814d7756bae60c668b9c82364b59]
-   right [74ded9748ae7ee457a83a8d8a7dd0ffac93b13af]
-ancestor [613d77ec3ea9e0cda71d1a9c8328d4965b5730bf]
+    left [9485fe891d5e23d6dc30140228cd02840ee719e9]
+   right [9a8192d3bf263cbd5782791e823b837d42af6902]
+ancestor [209e4118bda3960b2f83e48b2368e981ab748ee5]
 
         conflict dropped_modified
    ancestor_name "file_10"
