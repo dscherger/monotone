@@ -14,6 +14,7 @@
 #include "sanity.hh"
 #include "safe_map.hh"
 #include "parallel_iter.hh"
+#include "vocab_cast.hh"
 
 #include <sstream>
 
@@ -364,18 +365,37 @@ namespace
           {
             if (uncommon_ancestors.find(*it) != uncommon_ancestors.end())
               {
+                dropped_modified_conflict conflict;
+                attr_key a_key = typecast_vocab<attr_key>(utf8("mtn:resolve_conflict"));
+                attr_map_t::const_iterator i = n->attrs.find(a_key);
+
                 create_node_for(n, result.roster);
+
                 switch (present_in)
                   {
                   case left_side:
-                    result.dropped_modified_conflicts.push_back
-                      (dropped_modified_conflict(n->self, the_null_node));
+                      conflict = dropped_modified_conflict(n->self, the_null_node);
                     break;
                   case right_side:
-                    result.dropped_modified_conflicts.push_back
-                      (dropped_modified_conflict(the_null_node, n->self));
+                    conflict = dropped_modified_conflict(the_null_node, n->self);
                     break;
                   }
+
+                if (i != n->attrs.end() && i->second.first)
+                  {
+                    if (i->second.second == typecast_vocab<attr_value>(utf8("drop")))
+                      {
+                        conflict.resolution.first = resolve_conflicts::drop;
+                      }
+                    else
+                      {
+                        E(false, origin::user,
+                          F("unsupported '%s' conflict resolution in mtn:resolve_conflict attribute") %
+                          i->second.first);
+                      }
+                  }
+
+                result.dropped_modified_conflicts.push_back(conflict);
                 return;
               }
           }

@@ -722,29 +722,29 @@ resolve_merge_conflicts(lua_hooks & lua,
     {
       result.log_conflicts();
 
-      if (resolutions_given)
-        {
-          // If there are any conflicts for which we don't currently support
-          // resolutions, give a nice error message.
-          char const * const msg = "conflict resolution for %s not yet supported";
+      // Apply any conflict resolutions. If the user did not specify
+      // --resolve_conflicts, there may still be some specified by attr
+      // mtn:resolve_conflict.
 
-          E(!result.missing_root_conflict, origin::user,
-            F(msg) % "missing_root_dir");
-          E(result.invalid_name_conflicts.size() == 0, origin::user,
-            F(msg) % "invalid_name_conflicts");
-          E(result.directory_loop_conflicts.size() == 0, origin::user,
-            F(msg) % "directory_loop_conflicts");
-          E(result.multiple_name_conflicts.size() == 0, origin::user,
-            F(msg) % "multiple_name_conflicts");
-          E(result.attribute_conflicts.size() == 0, origin::user,
-            F(msg) % "attribute_conflicts");
+      char const * const msg = "conflict resolution for %s not yet supported";
 
-          // resolve the ones we can, if they have resolutions specified
-          result.resolve_orphaned_node_conflicts(lua, left_roster, right_roster, adaptor);
-          result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster, adaptor, nis);
-          result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
-          result.resolve_file_content_conflicts(lua, left_roster, right_roster, adaptor);
-        }
+      E(!result.missing_root_conflict, origin::user,
+        F(msg) % "missing_root_dir");
+      E(result.invalid_name_conflicts.size() == 0, origin::user,
+        F(msg) % "invalid_name_conflicts");
+      E(result.directory_loop_conflicts.size() == 0, origin::user,
+        F(msg) % "directory_loop_conflicts");
+      E(result.multiple_name_conflicts.size() == 0, origin::user,
+        F(msg) % "multiple_name_conflicts");
+      E(result.attribute_conflicts.size() == 0, origin::user,
+        F(msg) % "attribute_conflicts");
+
+      // Resolve the ones we can, if they have resolutions specified. Each
+      // conflict list is deleted once all are resolved.
+      result.resolve_orphaned_node_conflicts(lua, left_roster, right_roster, adaptor);
+      result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster, adaptor, nis);
+      result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
+      result.resolve_file_content_conflicts(lua, left_roster, right_roster, adaptor);
     }
 
   if (result.has_non_content_conflicts())

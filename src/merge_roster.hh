@@ -114,6 +114,14 @@ struct dropped_modified_conflict
     // rename is implicitly null
   {resolution.first = resolve_conflicts::none;}
 
+  dropped_modified_conflict() :
+    left_nid(the_null_node),
+    right_nid(the_null_node),
+    orphaned(false),
+    recreated(the_null_node)
+    // rename is implicitly null
+  {resolution.first = resolve_conflicts::none;}
+
   bool operator==(node_id n) {return left_nid == n || right_nid == n;}
 };
 

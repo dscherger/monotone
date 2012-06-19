@@ -1,4 +1,6 @@
--- Show a problematic use case involving a dropped_modified conflict.
+-- Show a problematic use case involving a dropped_modified conflict,
+-- and how it can be resolved with the 'mtn:resolve_conflict'
+-- attribute.
 --
 -- There is an upstream branch, and a local branch. The local branch
 -- deletes a file that the upstream branch continues to modify. We
@@ -6,8 +8,8 @@
 -- never merge in the other direction.
 --
 -- The dropped file causes new dropped_modified conflicts at each
--- propagate. We decided to always drop; we'd like to be able to tell
--- mtn that somehow.
+-- propagate. We decided to always drop, so we apply the
+-- 'mtn:resolve_conflict' attribute.
 
 mtn_setup()
 
@@ -55,18 +57,32 @@ check(not exists("file_2"))
 
 local_2 = base_revision()
 
--- round 2; upstream modifies the file again
+-- round 2; upstream modifies the file again, and records the drop
+-- conflict resolution for future merges to downstream.
 revert_to(upstream_1)
 
 writefile("file_2", "file_2 upstream 2")
 
+check(mtn("attr", "set", "file_2", "mtn:resolve_conflict", "drop"), 0, nil, nil)
+
 commit("testbranch", "upstream 2")
 upstream_2 = base_revision()
 
+-- Since the attribute specifies the conflict resolution, we don't need to specify one ourselves
+
+-- We do not require --resolve-conflicts here; the attribute use makes
+-- the conflict transparent.
+check(mtn("merge"), 0, nil, true)
+check(qgrep("mtn: dropping 'file_2'", "stderr"))
+
+check(mtn("update"), 0, nil, true)
+check(not exists("file_2"))
+
+-- FIXME: show attribute here, report no unresolved conflicts, allow merge
 check(mtn("show_conflicts", upstream_2, local_2), 0, nil, true)
 check(samelines
 ("stderr",
- {"mtn: [left]     9bf6dcccb01b4566f2470acd0c6afa48f6eaef65",
+ {"mtn: [left]     c0ed8c29ffad149af1c948969e8e80d270999b13",
   "mtn: [right]    dd1ba606b52fddb4431da3760ff65b65f6509a48",
   "mtn: [ancestor] 1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
   "mtn: conflict: file 'file_2' from revision 1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
@@ -74,14 +90,9 @@ check(samelines
   "mtn: dropped on the right",
   "mtn: 1 conflict with supported resolutions."}))
 
+-- 'conflicts store' is not needed unless there are other conflicts,
+-- or the user wants to override the attribute.
 check(mtn("conflicts", "store", upstream_2, local_2), 0, nil, true)
-
-check(mtn("conflicts", "resolve_first", "drop"), 0, nil, true)
-
-check(mtn("explicit_merge", "--resolve-conflicts", upstream_2, local_2, "testbranch"), 0, nil, true)
-check(qgrep("mtn: dropping 'file_2'", "stderr"))
-
-check(mtn("update"), 0, nil, true)
-check(not exists("file_2"))
+check(samefilestd("conflicts", "_MTN/conflicts"))
 
 -- end of file
