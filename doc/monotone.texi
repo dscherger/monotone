@@ -3495,6 +3495,20 @@ and modified in the other.
 resolutions are to drop the file in the result, keep the modified
 version, or keep a user supplied version.
 
+In addition, the attribute @command{mtn:resolve_conflict} may be used
+to specify a @command{drop} resolution for this
+conflict. @command{--resolve_conflict} must be specified on the merge
+command for the attribute to be processed. Note that a
+@file{_MTN/conflicts} file left over from a previous merge will be
+processed when @command{--resolve_conflict}; the user must delete such
+files when they are no longer needed.
+
+The attribute is useful in the case
+where the conflict will occur again in the future, for example when a
+file that is maintained in an upstream branch is not needed, and
+therefore dropped, in a local branch. The user only needs to specify
+the conflict resolution once, via the attribute.
+
 Because of the @emph{die-die-die} policy, monotone internally must
 first drop the modified file, and then add a new file with the same
 name and the desired contents. This means history is disconnected;
@@ -4994,7 +5008,7 @@ The twist with the @command{mtn setup} part is that it sets the parent
 to be the given revision or the head of the given branch instead of the
 null revision.
 
-@anchor{mtn merge}@item mtn merge [--branch=@var{branchname}] [--message @var{string}] [--message-file @var{filename}] [--[no-]update]
+@anchor{mtn merge}@item mtn merge [--branch=@var{branchname}] [--message @var{string}] [--message-file @var{filename}] [--[no-]update] [--resolve-conflicts]
 See the online help for more options. See @ref{--update}.
 
 This command merges the ``heads'' of @var{branchname} (default the
@@ -5014,7 +5028,8 @@ graph and these 3 revisions are provided to the built-in 3-way merge
 algorithm. The process then repeats for each additional head, using
 the result of each previous merge as an input to the next.
 
-@ref{Merge Conflicts} can occur.
+@ref{Merge Conflicts} for conflicts that can occur, and the use of
+@command{--resolve-conflicts}.
 
 @item mtn merge_into_dir [--[no-]update] @var{sourcebranch} @var{destbranch} @var{dir}
 This command takes a unique head from @var{sourcebranch} and merges it

@@ -31,6 +31,13 @@ XXX XXX XX XX:XX:XX UTC 201X
           were always lost; now you have the option of re-adding the
           file with the modifications during merge conflict
           resolution.
+
+        - New attribute 'mtn:resolve_conflict' allows specifying a
+          persistent 'drop' conflict resolution for a dropped/modified
+          conflict. This is useful in the case where the conflict will
+          occur again in the future, for example when a file that is
+          maintained in an upstream branch is not needed, and
+          therefore dropped, in a local branch.
         
         Bugs fixed
 

@@ -70,15 +70,19 @@ upstream_2 = base_revision()
 
 -- Since the attribute specifies the conflict resolution, we don't need to specify one ourselves
 
--- We do not require --resolve-conflicts here; the attribute use makes
--- the conflict transparent.
-check(mtn("merge"), 0, nil, true)
+-- We require --resolve-conflicts here, mostly for consistency with
+-- 1.0 behavior (where resolving non-content conflicts requires
+-- --resolve-conflict)
+check(mtn("merge"), 1, nil, true)
+check(qgrep("mtn: misuse: merge failed due to unresolved conflicts", "stderr"))
+
+check(mtn("merge", "--resolve-conflicts"), 0, nil, true)
 check(qgrep("mtn: dropping 'file_2'", "stderr"))
 
 check(mtn("update"), 0, nil, true)
 check(not exists("file_2"))
 
--- FIXME: show attribute here, report no unresolved conflicts, allow merge
+-- Show that 'show_conflicts' reports the attribute resolution properly.
 check(mtn("show_conflicts", upstream_2, local_2), 0, nil, true)
 check(samelines
 ("stderr",
@@ -88,10 +92,12 @@ check(samelines
   "mtn: conflict: file 'file_2' from revision 1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
   "mtn: modified on the left, named file_2",
   "mtn: dropped on the right",
+  "mtn: resolution: drop",
   "mtn: 1 conflict with supported resolutions."}))
 
 -- 'conflicts store' is not needed unless there are other conflicts,
--- or the user wants to override the attribute.
+-- or the user wants to override the attribute. Show that it reports
+-- the attr resolution properly.
 check(mtn("conflicts", "store", upstream_2, local_2), 0, nil, true)
 check(samefilestd("conflicts", "_MTN/conflicts"))
 

@@ -724,6 +724,9 @@ resolve_merge_conflicts(lua_hooks & lua,
 
       if (resolutions_given)
         {
+          // We require --resolve_conflicts to enable processing attr
+          // mtn:resolve_conflict.
+
           // If there are any conflicts for which we don't currently support
           // resolutions, give a nice error message.
           char const * const msg = "conflict resolution for %s not yet supported";
@@ -746,13 +749,6 @@ resolve_merge_conflicts(lua_hooks & lua,
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
 
           result.resolve_file_content_conflicts (lua, left_roster, right_roster, adaptor);
-        }
-      else
-        {
-          // The user did not specify --resolve_conflicts, but there may
-          // still be some specified by attr mtn:resolve_conflict. Only
-          // these conflicts support that so far.
-          result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster, adaptor, nis);
         }
     }
 

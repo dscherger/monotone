@@ -1256,6 +1256,38 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                     P(F("dropped and recreated on the right"));
                 }
             }
+
+          // We can have a resolution from a mtn:resolve_conflict attribute.
+          switch (conflict.resolution.first)
+            {
+            case resolve_conflicts::none:
+              break;
+
+            case resolve_conflicts::content_user:
+              P(F("resolution: user file '%s'") % conflict.resolution.second->as_external());
+              break;
+
+            case resolve_conflicts::content_user_rename:
+              P(F("resolution: user '%s' rename '%s'") %
+                conflict.resolution.second->as_external() %
+                conflict.rename.as_external());
+              break;
+
+            case resolve_conflicts::rename:
+              P(F("resolution: rename '%s'") % conflict.resolution.second->as_external());
+              break;
+
+            case resolve_conflicts::drop:
+              P(F("resolution: drop"));
+              break;
+
+            case resolve_conflicts::keep:
+              P(F("resolution: keep"));
+              break;
+
+            default:
+              I(false);
+            }
         }
     }
 }
@@ -2627,6 +2659,13 @@ parse_resolve_conflicts_opts (options const & opts,
   if (opts.resolve_conflicts)
     {
       resolutions_given = true;
+
+      if (!file_exists(system_path(opts.resolve_conflicts_file)))
+        {
+          // user may specify --resolve_conflicts to enable attr
+          // mtn:resolve_conflict, without _MTN/conflicts.
+          return;
+        }
 
       data dat;
 
