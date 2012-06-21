@@ -271,8 +271,10 @@ check(samelines("stderr",
 {"mtn: [left]  4228fbd8003cdd89e7eea51fcef10c3f91d78f69",
  "mtn: [right] 6cb6438a490a1ad4c69ff6cac23c75a903cd9cfd",
  "mtn: replacing content of 'dir2/file_10' (renamed to 'file_10') with '_MTN/resolutions/file_10'",
+ "mtn: history for 'dir2/file_10' will be lost; see user manual Merge Conflicts section",
  "mtn: dropping 'dir2/file_11'",
  "mtn: renaming 'dir2/file_9' to 'file_9'",
+ "mtn: history for 'dir2/file_9' will be lost; see user manual Merge Conflicts section",
  "mtn: [merged] 5cafe5405ed31c81f9061be62e38f25aeaaea9c5"}))
  
 -- A special case; drop then re-add vs modify. This used to be the test
@@ -353,7 +355,9 @@ check(samelines("stderr",
 {"mtn: [left]  9485fe891d5e23d6dc30140228cd02840ee719e9",
  "mtn: [right] 9a8192d3bf263cbd5782791e823b837d42af6902",
  "mtn: keeping 'file_10' from left",
+ "mtn: history for 'file_10' will be lost; see user manual Merge Conflicts section",
  "mtn: replacing content of 'file_11' with '_MTN/resolutions/file_11'",
+ "mtn: history for 'file_11' will be lost; see user manual Merge Conflicts section",
  "mtn: [merged] 306eb31064512a8a2f4d316ff7a7ec32a1f64f4c"}))
 
 check(mtn("update"), 0, nil, true)

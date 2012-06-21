@@ -2840,6 +2840,8 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
         case resolve_conflicts::content_user:
           P(F("replacing content of '%s' with '%s'") %
             modified_name % conflict.resolution.second->as_external());
+          P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+            modified_name);
 
           if (conflict.recreated == the_null_node)
             {
@@ -2872,6 +2874,8 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
           I(conflict.rename.as_external().length() != 0);
           P(F("replacing content of '%s' (renamed to '%s') with '%s'") %
             modified_name % conflict.rename.as_external() % conflict.resolution.second->as_external());
+          P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+            modified_name);
 
           resolve_dropped_modified_user(roster, nid, modified_fid, conflict, adaptor, nis);
           attach_node(lua, roster, nid, file_path_internal (conflict.rename.as_internal()));
@@ -2885,6 +2889,8 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
 
         case resolve_conflicts::rename:
           P(F("renaming '%s' to '%s'") % modified_name % conflict.resolution.second->as_external());
+          P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+            modified_name);
 
           // See comment in keep below on why we drop first.
           roster.drop_detached_node(nid);
@@ -2896,6 +2902,8 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
           if (conflict.recreated == the_null_node)
             {
               P(F("keeping '%s'") % modified_name);
+              P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+                modified_name);
 
               // We'd like to just attach_node here, but that violates a
               // fundamental design principle of mtn; nodes are born once,
@@ -2913,6 +2921,8 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
           else
             {
               P(F("keeping '%s' from %s") % modified_name % ((conflict.left_nid == the_null_node) ? "right" : "left"));
+              P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+                modified_name);
 
               roster.drop_detached_node(nid);
 
