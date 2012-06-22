@@ -3497,11 +3497,11 @@ version, or keep a user supplied version.
 
 In addition, the attribute @command{mtn:resolve_conflict} may be used
 to specify a @command{drop} resolution for this
-conflict. @command{--resolve_conflict} must be specified on the merge
+conflict. @command{--resolve-conflicts} must be specified on the merge
 command for the attribute to be processed. Note that a
 @file{_MTN/conflicts} file left over from a previous merge will be
-processed when @command{--resolve_conflict}; the user must delete such
-files when they are no longer needed.
+processed when @command{--resolve-conflicts} is specified; the user must
+delete such files when they are no longer needed.
 
 The attribute is useful in the case
 where the conflict will occur again in the future, for example when a

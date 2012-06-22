@@ -724,7 +724,7 @@ resolve_merge_conflicts(lua_hooks & lua,
 
       if (resolutions_given)
         {
-          // We require --resolve_conflicts to enable processing attr
+          // We require --resolve-conflicts to enable processing attr
           // mtn:resolve_conflict.
 
           // If there are any conflicts for which we don't currently support

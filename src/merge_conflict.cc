@@ -2662,7 +2662,7 @@ parse_resolve_conflicts_opts (options const & opts,
 
       if (!file_exists(system_path(opts.resolve_conflicts_file)))
         {
-          // user may specify --resolve_conflicts to enable attr
+          // user may specify --resolve-conflicts to enable attr
           // mtn:resolve_conflict, without _MTN/conflicts.
           return;
         }
