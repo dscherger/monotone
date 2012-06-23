@@ -1,4 +1,4 @@
-// Copyright (C) 2009, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2009, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -900,15 +900,29 @@ workspace::enable_inodeprints()
 void
 workspace::maybe_update_inodeprints(database & db)
 {
+  maybe_update_inodeprints(db, node_restriction());
+}
+
+void
+workspace::maybe_update_inodeprints(database & db,
+                                    node_restriction const & mask)
+{
   if (!in_inodeprints_mode())
     return;
+
+  // We update the cache only for files that are included in the
+  // restriction. The only guarantee that inodeprints mode makes is that if
+  // a file's current inodeprint matches its cached inodeprint then it has
+  // not changed. i.e. for a missing file, the cache would not be updated
+  // but the old cached value can't possibly equal the current value since
+  // the file does not exist and cannot have an inodeprint.
 
   inodeprint_map ipm_new;
   temp_node_id_source nis;
   roster_t new_roster;
 
   get_current_roster_shape(db, nis, new_roster);
-  update_current_roster_from_filesystem(new_roster);
+  update_current_roster_from_filesystem(new_roster, mask);
 
   parent_map parents;
   get_parent_rosters(db, parents);
@@ -917,6 +931,10 @@ workspace::maybe_update_inodeprints(database & db)
   for (node_map::const_iterator i = new_nodes.begin(); i != new_nodes.end(); ++i)
     {
       node_id nid = i->first;
+
+      if (!mask.includes(new_roster, nid))
+        continue;
+
       if (!is_file_t(i->second))
         continue;
       file_t new_file = downcast_to_file_t(i->second);

@@ -1,4 +1,4 @@
-// Copyright (C) 2010, 2011 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2010, 2011, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -530,9 +530,8 @@ revert(app_state & app,
   revision_t remaining;
   make_revision_for_workspace(parent_id(parents.begin()), preserved, remaining);
 
-  // Race.
   work.put_work_rev(remaining);
-  work.maybe_update_inodeprints(db);
+  work.maybe_update_inodeprints(db, mask);
 }
 
 CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
@@ -1801,7 +1800,7 @@ void perform_commit(app_state & app,
       % prog_name);
   }
 
-  work.maybe_update_inodeprints(db);
+  work.maybe_update_inodeprints(db, mask);
 
   {
     // Tell lua what happened. Yes, we might lose some information

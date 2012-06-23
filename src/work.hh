@@ -1,3 +1,4 @@
+// Copyright (C) 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -287,6 +288,8 @@ public:
 
   void enable_inodeprints();
   void maybe_update_inodeprints(database &);
+  void maybe_update_inodeprints(database &,
+                                node_restriction const & mask);
 
   // the 'ignore file', .mtn-ignore in the root of the workspace, contains a
   // set of regular expressions that match pathnames.  any file or directory
