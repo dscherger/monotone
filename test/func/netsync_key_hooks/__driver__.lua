@@ -67,5 +67,10 @@ function server(what, ret, exp_err)
 end
 
 server({}, 1, "you have multiple private keys")
-server({"--rcfile", "server-hooks.lua"}, -SIGTERM, "beginning service on localhost")
 
+-- SIGTERM gives unreliable process status on Windows
+if(ostype == "Windows") then
+   partial_skip = true
+else         
+   server({"--rcfile", "server-hooks.lua"}, -SIGTERM, "beginning service on localhost")
+end
