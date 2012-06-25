@@ -1,4 +1,4 @@
-\input texinfo   @c -*-texinfo-*-
+0\input texinfo   @c -*-texinfo-*-
 @c %**start of header
 @setfilename monotone.info
 @settitle monotone documentation
@@ -31,7 +31,7 @@
 This manual is for the ``monotone'' distributed version control system.
 This edition documents version @value{VERSION}.
 
-Copyright @copyright{} 2003, 2004, 2011, 2012 Graydon Hoare @*
+Copyright @copyright{} 2003, 2004, 2011 Graydon Hoare @*
 Copyright @copyright{} 2004, 2005, 2006 Nathaniel Smith @*
 Copyright @copyright{} 2005 - 2010 Derek Scherger @*
 Copyright @copyright{} 2005, 2006 Daniel Carosone @*
@@ -3492,6 +3492,50 @@ another directory to the project root.
 
 @command{conflicts} does not support resolving this conflict.
 
+@subheading Dropped/Modified file Conflict
+This conflict occurs when a file is dropped in one merge parent,
+and modified in the other.
+
+@command{conflicts} supports resolving this conflict; the possible
+resolutions are to drop the file in the result, keep the modified
+version, or keep a user supplied version.
+
+In addition, the attribute @command{mtn:resolve_conflict} may be used
+to specify a @command{drop} resolution for this
+conflict. @command{--resolve-conflicts} must be specified on the merge
+command for the attribute to be processed. Note that a
+@file{_MTN/conflicts} file left over from a previous merge will be
+processed when @command{--resolve-conflicts} is specified; the user must
+delete such files when they are no longer needed.
+
+The attribute is useful in the case
+where the conflict will occur again in the future, for example when a
+file that is maintained in an upstream branch is not needed, and
+therefore dropped, in a local branch. The user only needs to specify
+the conflict resolution once, via the attribute.
+
+Because of the @emph{die-die-die} policy, monotone internally must
+first drop the modified file, and then add a new file with the same
+name and the desired contents. This means history is disconnected;
+when @command{mtn log} is later run for the file, it will stop at this
+merge, not showing the previous history for the file. That history is
+still there; the user can see it by starting @command{mtn log} again
+for the same file but in the parent of the merge.
+
+A special case occurs when the user re-adds the file after dropping
+it, then attempts to merge. In this case, the possible resolutions are
+to keep the re-added version, or keep a user modified version,
+replacing the re-added version (drop is
+not a valid resolution).
+
+There is no such thing as a dropped/modified directory; if the
+directory is empty, the only possible change is rename, which is
+ignored.
+
+If the directory is not empty, that creates a special case of
+dropped/modified file conflict; if the file is kept, it must also be
+renamed to an existing directory.
+
 @subheading Invalid Name Conflict
 
 Monotone reserves the name @file{_MTN} in a workspace root directory
@@ -4969,7 +5013,7 @@ The twist with the @command{mtn setup} part is that it sets the parent
 to be the given revision or the head of the given branch instead of the
 null revision.
 
-@anchor{mtn merge}@item mtn merge [--branch=@var{branchname}] [--message @var{string}] [--message-file @var{filename}] [--[no-]update]
+@anchor{mtn merge}@item mtn merge [--branch=@var{branchname}] [--message @var{string}] [--message-file @var{filename}] [--[no-]update] [--resolve-conflicts]
 See the online help for more options. See @ref{--update}.
 
 This command merges the ``heads'' of @var{branchname} (default the
@@ -4989,7 +5033,8 @@ graph and these 3 revisions are provided to the built-in 3-way merge
 algorithm. The process then repeats for each additional head, using
 the result of each previous merge as an input to the next.
 
-@ref{Merge Conflicts} can occur.
+@ref{Merge Conflicts} for conflicts that can occur, and the use of
+@command{--resolve-conflicts}.
 
 @item mtn merge_into_dir [--[no-]update] @var{sourcebranch} @var{destbranch} @var{dir}
 This command takes a unique head from @var{sourcebranch} and merges it
@@ -5147,11 +5192,11 @@ resolution files in @file{_MTN/resolutions}; this command provides a
 convenient way to clean up.
 @end ftable
 
-@subheading Single file conflict resolutions
+@subheading Conflict resolutions
 
-For single file conflicts, there are several possible
-resolutions. Note that @command{resolved_user_left} is used even for
-single file conflicts.
+For single and two file conflicts, there are several possible
+resolutions. In the conflicts file, @command{resolved_user_left} is
+used for single file conflicts.
 
 @ftable @command
 @item interactive [@var{file}]
@@ -5162,46 +5207,23 @@ merge the left and right files, leaving the result in the specified file.
 specified, @var{file} defaults to @file{_MTN/resolutions/<path>},
 where @file{<path>} is the path to the file that has the conflict.
 
-This inserts a @command{resolved_user_left @var{file}} conflict resolution in the
+This inserts a @command{resolved_user_left @var{file}} or
+@command{resolved_user_right @var{file}} conflict resolution in the
 conflicts file.
 
 @item user @var{file}
 The file contents are replaced by the contents of the specified file.
 
-This inserts a @command{resolved_user_left @var{file}} conflict resolution in the
+This inserts a @command{resolved_user_left @var{file}} or
+@command{resolved_user_right @var{file}} conflict resolution in the
 conflicts file.
 
-@item drop
-The file is dropped in the merge. This is useful for an orphaned file
-conflict.
-
-This inserts a @command{resolved_drop_left} conflict resolution in the
-conflicts file.
-
-@item rename @var{filename}
-The file is renamed. This is useful for an orphaned file conflict.
-
-This inserts a @command{resolved_rename_left @var{filename}} conflict resolution
-in the conflicts file.
-
-@end ftable
-
-@subheading Two file conflict resolutions
-
-For two file conflicts, the possible resolutions are:
-
-@ftable @command
 @item drop
 The file is dropped in the merge.
 
-This inserts a @command{resolved_drop_left} or @command{resolved_drop_right}
-conflict resolution in the conflicts file.
-
-@item keep
-The file is kept in the merge.
-
-This inserts a @command{resolved_keep_left} or @command{resolved_keep_right}
-conflict resolution in the conflicts file.
+This inserts a @command{resolved_drop_left} or
+@command{resolved_drop_right} conflict resolution in the conflicts
+file.
 
 @item rename @var{filename}
 The file is renamed.
@@ -5210,13 +5232,11 @@ This inserts a @command{resolved_rename_left @var{filename}} or
 @command{resolved_rename_right @var{filename}} conflict resolution in
 the conflicts file.
 
-@item user @var{file}
-The file contents are replaced by the contents of the specified file.
-The other file in the conflict must be dropped or renamed.
+@item keep
+The file is kept in the merge.
 
-This inserts a @command{resolved_user_left @var{file}} or
-@command{resolved_user_right @var{file}} conflict resolution in the
-conflicts file.
+This inserts a @command{resolved_keep_left} or @command{resolved_keep_right}
+conflict resolution in the conflicts file.
 
 @end ftable
 
@@ -10223,6 +10243,8 @@ option.
 
 @itemize
 @item
+FIXME: -- Add reporting and resolution for dropped/modified conflicts.
+@item
 11.0 -- Add resolution for orphaned node conflicts. Deleted
 @code{resolved_user} conflict resolution; use @code{resolved_*_left}
 for single file conflicts. Add @code{resolved_keep_left,
@@ -10433,6 +10455,52 @@ ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
 ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
       right_name "baz"
    right_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+@end verbatim
+
+File dropped and modified (and possibly renamed):
+@verbatim
+        conflict dropped_modified
+   ancestor_name "foo"
+ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+       left_type "dropped file"
+        left_rev [b0d6953684d49dd6bd345c312d6a0c8fed3078ce]
+       left_name "foo"
+    left_file_id [420cde699a422f7c3d2c8951c46ddfd546db66c0]
+      right_type "modified file"
+      right_name "baz"
+   right_file_id [fe6d523f607e2f2fc0f0defad3bda0351a95a337]
+@end verbatim
+Here left_name, left_file_id are from left_rev, just before the file
+was dropped.
+
+File orphaned and modified (and possibly renamed):
+@verbatim
+        conflict dropped_modified
+   ancestor_name "foo"
+ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+       left_type "orphaned file"
+        left_rev [b0d6953684d49dd6bd345c312d6a0c8fed3078ce]
+       left_name "foo"
+    left_file_id [420cde699a422f7c3d2c8951c46ddfd546db66c0]
+      right_type "modified file"
+      right_name "baz"
+   right_file_id [fe6d523f607e2f2fc0f0defad3bda0351a95a337]
+@end verbatim
+Orphaned/modified is different from dropped/modified because the
+possible resolutions are different; orphaned requires a rename if the
+file is kept.
+
+File dropped and recreated on one side; modified on the other (and possibly renamed):
+@verbatim
+        conflict dropped_modified
+   ancestor_name "foo"
+ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+       left_type "recreated file"
+       left_name "foo"
+    left_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+      right_type "modified file"
+      right_name "baz"
+   right_file_id [fe6d523f607e2f2fc0f0defad3bda0351a95a337]
 @end verbatim
 
 Invalid file name (@file{_MTN} in root directory):

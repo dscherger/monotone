@@ -1,5 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -329,7 +329,7 @@ update(app_state & app,
                                       left_markings, right_markings, paths);
   wca.cache_roster(working_rid, working_roster);
   resolve_merge_conflicts(app.lua, app.opts, *working_roster, chosen_roster,
-                          result, wca, false);
+                          result, wca, nis, false);
 
   // Make sure it worked...
   I(result.is_clean());
@@ -719,6 +719,7 @@ void perform_merge_into_dir(app_state & app,
                      right_uncommon_ancestors,
                      result);
 
+        temp_node_id_source nis;
         content_merge_database_adaptor
           dba(db, left_rid, right_rid, left_marking_map, right_marking_map);
 
@@ -728,7 +729,7 @@ void perform_merge_into_dir(app_state & app,
           (app.opts, left_rid, left_roster, right_rid, right_roster, result, resolutions_given);
 
         resolve_merge_conflicts(app.lua, app.opts, left_roster, right_roster,
-                                result, dba, resolutions_given);
+                                result, dba, nis, resolutions_given);
 
         {
           dir_t moved_root = left_roster.root();
@@ -872,10 +873,11 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   map<file_id, file_path> paths;
   get_content_paths(*working_roster, paths);
 
+  temp_node_id_source nis;
   content_merge_workspace_adaptor wca(db, lca_id, lca.first,
                                       *left.second, *right.second, paths);
   wca.cache_roster(working_rid, working_roster);
-  resolve_merge_conflicts(app.lua, app.opts, *left.first, *right.first, merge_result, wca, false);
+  resolve_merge_conflicts(app.lua, app.opts, *left.first, *right.first, merge_result, wca, nis, false);
 
   // Make sure it worked...
   I(merge_result.is_clean());
@@ -983,8 +985,8 @@ show_conflicts_core (database & db,
     }
   else
     {
-      P(F("[left]  %s") % l_id);
-      P(F("[right] %s") % r_id);
+      P(F("[left]     %s") % l_id);
+      P(F("[right]    %s") % r_id);
     }
 
   if (is_ancestor(db, l_id, r_id))
@@ -1046,12 +1048,17 @@ show_conflicts_core (database & db,
       content_merge_database_adaptor adaptor(db, l_id, r_id,
                                              l_marking, r_marking);
 
-      {
-        basic_io::printer pr;
-        st.push_binary_pair(syms::ancestor, adaptor.lca.inner());
-        pr.print_stanza(st);
-        output.write(pr.buf.data(), pr.buf.size());
-      }
+      if (basic_io)
+        {
+          basic_io::printer pr;
+          st.push_binary_pair(syms::ancestor, adaptor.lca.inner());
+          pr.print_stanza(st);
+          output.write(pr.buf.data(), pr.buf.size());
+        }
+      else
+        {
+          P(F("[ancestor] %s") % adaptor.lca);
+        }
 
       // The basic_io routines in roster_merge.cc access these rosters via
       // the adaptor.
@@ -1064,6 +1071,7 @@ show_conflicts_core (database & db,
 
       result.report_orphaned_node_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_multiple_name_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
+      result.report_dropped_modified_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_duplicate_name_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
 
       result.report_attribute_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
@@ -1404,7 +1412,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   wca.cache_roster(to_rid, to_roster);
 
   resolve_merge_conflicts(app.lua, app.opts, *working_roster, *to_roster,
-                          result, wca, false);
+                          result, wca, nis, false);
 
   I(result.is_clean());
   // temporary node ids may appear

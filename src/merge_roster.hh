@@ -1,5 +1,5 @@
 // Copyright (C) 2005, 2010 Nathaniel Smith <njs@pobox.com>
-//               2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2009, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -29,7 +29,7 @@
 
 namespace resolve_conflicts
 {
-  enum resolution_t {none, content_user, content_internal, drop, keep, rename};
+  enum resolution_t {none, content_user, content_internal, drop, keep, rename, content_user_rename};
 
   typedef std::pair<resolve_conflicts::resolution_t, boost::shared_ptr<any_path> > file_resolution_t;
 
@@ -88,6 +88,41 @@ struct multiple_name_conflict
   node_id nid;
   multiple_name_conflict(node_id nid) : nid(nid) {}
   std::pair<node_id, path_component> left, right;
+};
+
+// nodes with drop/modified conflicts are left detached in the resulting
+// roster, with null parent and name fields.
+struct dropped_modified_conflict
+{
+  node_id left_nid, right_nid; // the dropped side is the null node, modified is valid.
+
+  bool orphaned; // if true, the dropped side is due to a dropped parent directory
+
+  node_id recreated; // by user, or in a previous drop/modified resolution
+
+  resolve_conflicts::file_resolution_t resolution;
+  file_path rename;
+  // if orphaned is true, the resolutions are 'drop' and 'user rename'; the
+  // latter requires two paths; content in resolution->second, filename in
+  // rename.
+
+  dropped_modified_conflict(node_id left_nid, node_id right_nid) :
+    left_nid(left_nid),
+    right_nid(right_nid),
+    orphaned(false),
+    recreated(the_null_node)
+    // rename is implicitly null
+  {resolution.first = resolve_conflicts::none;}
+
+  dropped_modified_conflict() :
+    left_nid(the_null_node),
+    right_nid(the_null_node),
+    orphaned(false),
+    recreated(the_null_node)
+    // rename is implicitly null
+  {resolution.first = resolve_conflicts::none;}
+
+  bool operator==(node_id n) {return left_nid == n || right_nid == n;}
 };
 
 // this is when two distinct nodes want to have the same name.  these nodes
@@ -152,6 +187,7 @@ template <> void dump(directory_loop_conflict const & conflict, std::string & ou
 
 template <> void dump(orphaned_node_conflict const & conflict, std::string & out);
 template <> void dump(multiple_name_conflict const & conflict, std::string & out);
+template <> void dump(dropped_modified_conflict const & conflict, std::string & out);
 template <> void dump(duplicate_name_conflict const & conflict, std::string & out);
 
 template <> void dump(attribute_conflict const & conflict, std::string & out);
@@ -166,16 +202,18 @@ struct roster_merge_result
   //   - duplicate name conflicts
   //   - orphaned node conflicts
   //   - multiple name conflicts
+  //   - drop/modified conflicts
   //   - directory loop conflicts
   // - attribute conflicts
   // - file content conflicts
 
-  bool missing_root_conflict;
+  bool missing_root_conflict; // there can only be one of these
   std::vector<invalid_name_conflict> invalid_name_conflicts;
   std::vector<directory_loop_conflict> directory_loop_conflicts;
 
   std::vector<orphaned_node_conflict> orphaned_node_conflicts;
   std::vector<multiple_name_conflict> multiple_name_conflicts;
+  std::vector<dropped_modified_conflict> dropped_modified_conflicts;
   std::vector<duplicate_name_conflict> duplicate_name_conflicts;
 
   std::vector<attribute_conflict> attribute_conflicts;
@@ -222,6 +260,17 @@ struct roster_merge_result
                                       content_merge_adaptor & adaptor,
                                       bool const basic_io,
                                       std::ostream & output) const;
+
+  void report_dropped_modified_conflicts(roster_t const & left,
+                                         roster_t const & right,
+                                         content_merge_adaptor & adaptor,
+                                         bool const basic_io,
+                                         std::ostream & output) const;
+  void resolve_dropped_modified_conflicts(lua_hooks & lua,
+                                          roster_t const & left_roster,
+                                          roster_t const & right_roster,
+                                          content_merge_adaptor & adaptor,
+                                          temp_node_id_source & nis);
 
   void report_duplicate_name_conflicts(roster_t const & left,
                                        roster_t const & right,

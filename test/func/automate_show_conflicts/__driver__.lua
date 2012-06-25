@@ -1,6 +1,9 @@
 -- Create the various non-content conflict cases, check that
 -- 'automate show_conflict' displays them properly.
 --
+-- Except for dropped/modified; see
+-- ../resolve_conflicts_dropped_modified/__driver__.lua
+--
 -- Cases are created in the same way as in conflict_messages/__driver__.lua
 
 mtn_setup()

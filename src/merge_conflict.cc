@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2009, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -50,6 +50,7 @@ namespace
     symbol const conflict("conflict");
     symbol const content("content");
     symbol const directory_loop("directory_loop");
+    symbol const dropped_modified("dropped_modified");
     symbol const duplicate_name("duplicate_name");
     symbol const invalid_name("invalid_name");
     symbol const left("left");
@@ -57,6 +58,7 @@ namespace
     symbol const left_attr_value("left_attr_value");
     symbol const left_file_id("left_file_id");
     symbol const left_name("left_name");
+    symbol const left_rev("left_rev");
     symbol const left_type("left_type");
     symbol const missing_root("missing_root");
     symbol const multiple_names("multiple_names");
@@ -77,6 +79,7 @@ namespace
     symbol const right_attr_value("right_attr_value");
     symbol const right_file_id("right_file_id");
     symbol const right_name("right_name");
+    symbol const right_rev("right_rev");
     symbol const right_type("right_type");
   }
 }
@@ -396,9 +399,9 @@ put_attr_conflict (basic_io::stanza & st,
 enum side_t {left_side, right_side};
 
 static void
-put_resolution(basic_io::stanza & st,
-               side_t side,
-               resolve_conflicts::file_resolution_t const & resolution)
+put_file_resolution(basic_io::stanza & st,
+                    side_t side,
+                    resolve_conflicts::file_resolution_t const & resolution)
 {
   // We output any resolution for any conflict; only valid resolutions
   // should get into the data structures. To enforce that, when reading
@@ -421,6 +424,20 @@ put_resolution(basic_io::stanza & st,
           st.push_str_pair(syms::resolved_user_right, resolution.second->as_external());
           break;
         }
+      break;
+
+    case resolve_conflicts::content_user_rename:
+      switch (side)
+        {
+        case left_side:
+          st.push_str_pair(syms::resolved_user_left, resolution.second->as_external());
+          break;
+
+        case right_side:
+          st.push_str_pair(syms::resolved_user_right, resolution.second->as_external());
+          break;
+        }
+      // value for rename is put by caller
       break;
 
     case resolve_conflicts::content_internal:
@@ -518,7 +535,7 @@ put_content_conflict (basic_io::stanza & st,
       st.push_file_pair(syms::left_name, left_name);
       st.push_file_pair(syms::right_name, right_name);
     }
-  put_resolution (st, left_side, conflict.resolution);
+  put_file_resolution (st, left_side, conflict.resolution);
 }
 
 static void
@@ -984,7 +1001,7 @@ roster_merge_result::report_orphaned_node_conflicts(roster_t const & left_roster
 
       if (basic_io)
         {
-          put_resolution (st, left_side, conflict.resolution);
+          put_file_resolution (st, left_side, conflict.resolution);
           put_stanza (st, output);
         }
     }
@@ -1044,6 +1061,234 @@ roster_merge_result::report_multiple_name_conflicts(roster_t const & left_roster
 
       if (basic_io)
         put_stanza(st, output);
+    }
+}
+
+void static
+push_dropped_details(content_merge_database_adaptor & db_adaptor,
+                     symbol                           rev_sym,
+                     symbol                           name_sym,
+                     symbol                           file_id_sym,
+                     revision_id                      rev_id,
+                     node_id                          nid,
+                     basic_io::stanza &               st)
+{
+  revision_id dropped_rev_id;
+  file_path   dropped_name;
+  file_id     dropped_file_id;
+  db_adaptor.get_dropped_details(rev_id, nid, dropped_rev_id, dropped_name, dropped_file_id);
+
+  st.push_binary_pair(rev_sym, dropped_rev_id.inner());
+  st.push_str_pair(name_sym, dropped_name.as_external());
+  st.push_binary_pair(file_id_sym, dropped_file_id.inner());
+}
+
+void
+roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_roster,
+                                                       roster_t const & right_roster,
+                                                       content_merge_adaptor & adaptor,
+                                                       const bool basic_io,
+                                                       std::ostream & output) const
+{
+  MM(left_roster);
+  MM(right_roster);
+
+  for (size_t i = 0; i < dropped_modified_conflicts.size(); ++i)
+    {
+      dropped_modified_conflict const & conflict = dropped_modified_conflicts[i];
+      MM(conflict);
+
+      node_id nid;
+      file_path modified_name;
+
+      if (conflict.left_nid == the_null_node)
+        {
+          // left side dropped, right side modified
+          I(!roster.is_attached(conflict.right_nid));
+
+          nid = conflict.right_nid;
+          right_roster.get_name(conflict.right_nid, modified_name);
+        }
+      else
+        {
+          // left side modified, right side dropped
+          I(!roster.is_attached(conflict.left_nid));
+
+          nid = conflict.left_nid;
+          left_roster.get_name(conflict.left_nid, modified_name);
+        }
+
+      shared_ptr<roster_t const> lca_roster;
+      revision_id lca_rid;
+      file_path ancestor_name;
+
+      adaptor.get_ancestral_roster(nid, lca_rid, lca_roster);
+      lca_roster->get_name(nid, ancestor_name);
+
+      if (basic_io)
+        {
+          basic_io::stanza st;
+
+          content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
+          file_id fid;
+
+          st.push_str_pair(syms::conflict, syms::dropped_modified);
+          st.push_str_pair(syms::ancestor_name, ancestor_name.as_external());
+          db_adaptor.db.get_file_content (db_adaptor.lca, nid, fid);
+          st.push_binary_pair(syms::ancestor_file_id, fid.inner());
+
+          if (conflict.left_nid == the_null_node)
+            {
+              if (conflict.orphaned)
+                {
+                   st.push_str_pair(syms::left_type, "orphaned file");
+                   push_dropped_details(db_adaptor, syms::left_rev, syms::left_name, syms::left_file_id,
+                                        db_adaptor.left_rid, nid, st);
+                }
+              else
+                {
+                  if (conflict.recreated == the_null_node)
+                    {
+                      st.push_str_pair(syms::left_type, "dropped file");
+                      push_dropped_details(db_adaptor, syms::left_rev, syms::left_name, syms::left_file_id,
+                                           db_adaptor.left_rid, nid, st);
+                    }
+                  else
+                    {
+                      st.push_str_pair(syms::left_type, "recreated file");
+                      st.push_str_pair(syms::left_name, modified_name.as_external());
+                      db_adaptor.db.get_file_content (db_adaptor.left_rid, conflict.recreated, fid);
+                      st.push_binary_pair(syms::left_file_id, fid.inner());
+                    }
+                }
+            }
+          else
+            {
+              st.push_str_pair(syms::left_type, "modified file");
+              st.push_str_pair(syms::left_name, modified_name.as_external());
+              db_adaptor.db.get_file_content (db_adaptor.left_rid, nid, fid);
+              st.push_binary_pair(syms::left_file_id, fid.inner());
+            }
+
+          if (conflict.right_nid == the_null_node)
+            {
+              if (conflict.orphaned)
+                {
+                  st.push_str_pair(syms::right_type, "orphaned file");
+                  push_dropped_details(db_adaptor, syms::right_rev, syms::right_name, syms::right_file_id,
+                                       db_adaptor.right_rid, nid, st);
+                }
+              else
+                {
+                  if (conflict.recreated == the_null_node)
+                    {
+                      st.push_str_pair(syms::right_type, "dropped file");
+                      push_dropped_details(db_adaptor, syms::right_rev, syms::right_name, syms::right_file_id,
+                                           db_adaptor.right_rid, nid, st);
+                    }
+                  else
+                    {
+                      st.push_str_pair(syms::right_type, "recreated file");
+                      st.push_str_pair(syms::right_name, modified_name.as_external());
+                      db_adaptor.db.get_file_content (db_adaptor.right_rid, conflict.recreated, fid);
+                      st.push_binary_pair(syms::right_file_id, fid.inner());
+                    }
+                }
+            }
+          else
+            {
+              st.push_str_pair(syms::right_type, "modified file");
+              st.push_str_pair(syms::right_name, modified_name.as_external());
+              db_adaptor.db.get_file_content (db_adaptor.right_rid, nid, fid);
+              st.push_binary_pair(syms::right_file_id, fid.inner());
+            }
+
+          put_file_resolution (st, left_side, conflict.resolution);
+          if (conflict.orphaned)
+            {
+              switch (conflict.resolution.first)
+                {
+                case resolve_conflicts::none:
+                case resolve_conflicts::rename:
+                case resolve_conflicts::drop:
+                  break;
+
+                case resolve_conflicts::content_user_rename:
+                  st.push_str_pair(syms::resolved_rename_left, conflict.rename.as_external());
+                  break;
+
+                default:
+                  I(false);
+                }
+            }
+          put_stanza(st, output);
+        }
+      else
+        {
+          P(F("conflict: file '%s' from revision %s") % ancestor_name % lca_rid);
+          if (conflict.left_nid == the_null_node)
+            {
+              if (conflict.orphaned)
+                {
+                  P(F("orphaned on the left"));
+                }
+              else
+                {
+                  if (conflict.recreated == the_null_node)
+                    P(F("dropped on the left"));
+                  else
+                    P(F("dropped and recreated on the left"));
+                }
+              P(F("modified on the right, named %s") % modified_name);
+            }
+          else
+            {
+              P(F("modified on the left, named %s") % modified_name);
+              if (conflict.orphaned)
+                {
+                  P(F("orphaned on the right"));
+                }
+              else
+                {
+                  if (conflict.recreated == the_null_node)
+                    P(F("dropped on the right"));
+                  else
+                    P(F("dropped and recreated on the right"));
+                }
+            }
+
+          // We can have a resolution from a mtn:resolve_conflict attribute.
+          switch (conflict.resolution.first)
+            {
+            case resolve_conflicts::none:
+              break;
+
+            case resolve_conflicts::content_user:
+              P(F("resolution: user file '%s'") % conflict.resolution.second->as_external());
+              break;
+
+            case resolve_conflicts::content_user_rename:
+              P(F("resolution: user '%s' rename '%s'") %
+                conflict.resolution.second->as_external() %
+                conflict.rename.as_external());
+              break;
+
+            case resolve_conflicts::rename:
+              P(F("resolution: rename '%s'") % conflict.resolution.second->as_external());
+              break;
+
+            case resolve_conflicts::drop:
+              P(F("resolution: drop"));
+              break;
+
+            case resolve_conflicts::keep:
+              P(F("resolution: keep"));
+              break;
+
+            default:
+              I(false);
+            }
+        }
     }
 }
 
@@ -1221,8 +1466,8 @@ roster_merge_result::report_duplicate_name_conflicts(roster_t const & left_roste
 
       if (basic_io)
         {
-          put_resolution (st, left_side, conflict.left_resolution);
-          put_resolution (st, right_side, conflict.right_resolution);
+          put_file_resolution (st, left_side, conflict.left_resolution);
+          put_file_resolution (st, right_side, conflict.right_resolution);
           put_stanza(st, output);
         }
     }
@@ -1749,6 +1994,184 @@ read_multiple_name_conflicts(basic_io::parser & pars,
 } // read_multiple_name_conflicts
 
 static void
+read_dropped_modified_conflict(basic_io::parser & pars,
+                               dropped_modified_conflict & conflict,
+                               roster_t const & left_roster,
+                               roster_t const & right_roster)
+{
+  string tmp;
+
+  pars.esym(syms::ancestor_name); pars.str();
+  pars.esym(syms::ancestor_file_id); pars.hex();
+
+  pars.esym(syms::left_type);
+  pars.str(tmp);
+
+  if (tmp == "dropped file")
+    {
+      pars.esym(syms::left_rev); pars.hex();
+      pars.esym(syms::left_name); pars.str();
+      pars.esym(syms::left_file_id); pars.hex();
+    }
+  else if (tmp == "orphaned file")
+    {
+      pars.esym(syms::left_rev); pars.hex();
+      pars.esym(syms::left_name); pars.str();
+      pars.esym(syms::left_file_id); pars.hex();
+
+      conflict.orphaned = true;
+    }
+  else if (tmp == "recreated file")
+    {
+      pars.esym(syms::left_name); pars.str(tmp);
+      conflict.recreated = left_roster.get_node(file_path_external(utf8(tmp, origin::internal)))->self;
+      pars.esym(syms::left_file_id); pars.hex();
+    }
+  else if (tmp == "modified file")
+    {
+      pars.esym(syms::left_name); pars.str(tmp);
+      conflict.left_nid = left_roster.get_node(file_path_external(utf8(tmp, origin::internal)))->self;
+      pars.esym(syms::left_file_id); pars.hex();
+    }
+  else
+    I(false);
+
+  pars.esym(syms::right_type);
+  pars.str(tmp);
+
+  if (tmp == "dropped file")
+    {
+      pars.esym(syms::right_rev); pars.hex();
+      pars.esym(syms::right_name); pars.str();
+      pars.esym(syms::right_file_id); pars.hex();
+    }
+  else if (tmp == "orphaned file")
+    {
+      pars.esym(syms::right_rev); pars.hex();
+      pars.esym(syms::right_name); pars.str();
+      pars.esym(syms::right_file_id); pars.hex();
+
+      conflict.orphaned = true;
+    }
+  else if (tmp == "recreated file")
+    {
+      pars.esym(syms::right_name); pars.str(tmp);
+      conflict.recreated = right_roster.get_node(file_path_external(utf8(tmp, origin::internal)))->self;
+      pars.esym(syms::right_file_id); pars.hex();
+    }
+  else if (tmp == "modified file")
+    {
+      pars.esym(syms::right_name); pars.str(tmp);
+      conflict.right_nid = right_roster.get_node(file_path_external(utf8(tmp, origin::internal)))->self;
+      pars.esym(syms::right_file_id); pars.hex();
+    }
+  else
+    I(false);
+
+  // check for a resolution
+  if ((!pars.symp (syms::conflict)) && pars.tok.in.lookahead != EOF)
+    {
+      if (pars.symp (syms::resolved_drop_left))
+        {
+          conflict.resolution.first = resolve_conflicts::drop;
+          pars.sym();
+        }
+      else if (pars.symp (syms::resolved_keep_left))
+        {
+          E(!conflict.orphaned, origin::user, F("orphaned files must be renamed"));
+
+          conflict.resolution.first = resolve_conflicts::keep;
+          pars.sym();
+        }
+      else if (pars.symp (syms::resolved_user_left))
+        {
+          conflict.resolution.first = resolve_conflicts::content_user;
+          pars.sym();
+          conflict.resolution.second = new_optimal_path(pars.token, false);
+          pars.str();
+
+          if (conflict.orphaned)
+            {
+              pars.esym (syms::resolved_rename_left);
+              conflict.resolution.first = resolve_conflicts::content_user_rename;
+              pars.str(tmp);
+              conflict.rename = file_path_external_ws(utf8(tmp, origin::user));
+            }
+        }
+      else if (pars.symp (syms::resolved_rename_left))
+        {
+          E(conflict.orphaned, origin::user, F("non-orphaned files cannot be renamed"));
+
+          conflict.resolution.first = resolve_conflicts::rename;
+          pars.sym();
+          conflict.resolution.second = new_optimal_path(pars.token, false);
+          pars.str();
+        }
+      else
+        E(false, origin::user,
+          F(conflict_resolution_not_supported_msg) % pars.token % "dropped_modified");
+    }
+} // read_dropped_modified_conflict
+
+static void
+read_dropped_modified_conflicts(basic_io::parser & pars,
+                             std::vector<dropped_modified_conflict> & conflicts,
+                             roster_t const & left_roster,
+                             roster_t const & right_roster)
+{
+  while (pars.tok.in.lookahead != EOF && pars.symp(syms::dropped_modified))
+    {
+      dropped_modified_conflict conflict(the_null_node, the_null_node);
+
+      pars.sym();
+
+      read_dropped_modified_conflict(pars, conflict, left_roster, right_roster);
+
+      conflicts.push_back(conflict);
+
+      if (pars.tok.in.lookahead != EOF)
+        pars.esym (syms::conflict);
+    }
+} // read_dropped_modified_conflicts
+static void
+validate_dropped_modified_conflicts(basic_io::parser & pars,
+                                    std::vector<dropped_modified_conflict> & conflicts,
+                                    roster_t const & left_roster,
+                                    roster_t const & right_roster)
+{
+  for (std::vector<dropped_modified_conflict>::iterator i = conflicts.begin();
+       i != conflicts.end();
+       ++i)
+    {
+      dropped_modified_conflict & merge_conflict = *i;
+      dropped_modified_conflict file_conflict (the_null_node, the_null_node);
+
+      pars.esym(syms::dropped_modified);
+
+      read_dropped_modified_conflict(pars, file_conflict, left_roster, right_roster);
+
+      // Note that we do not confirm the file ids.
+      E(merge_conflict.left_nid == file_conflict.left_nid &&
+        merge_conflict.right_nid == file_conflict.right_nid &&
+        merge_conflict.recreated == file_conflict.recreated,
+        origin::user,
+        F(conflicts_mismatch_msg));
+
+      merge_conflict.resolution = file_conflict.resolution;
+      merge_conflict.rename     = file_conflict.rename;
+
+      if (pars.tok.in.lookahead != EOF)
+        pars.esym (syms::conflict);
+      else
+        {
+          std::vector<dropped_modified_conflict>::iterator tmp = i;
+          E(++tmp == conflicts.end(), origin::user,
+             F(conflicts_mismatch_msg));
+        }
+    }
+} // validate_dropped_modified_conflicts
+
+static void
 read_duplicate_name_conflict(basic_io::parser & pars,
                              duplicate_name_conflict & conflict,
                              roster_t const & left_roster,
@@ -2110,6 +2533,7 @@ read_conflict_file_core(basic_io::parser pars,
       // order as non-validate, below.
 
       validate_orphaned_node_conflicts(pars, result.orphaned_node_conflicts, left_roster, right_roster);
+      validate_dropped_modified_conflicts(pars, result.dropped_modified_conflicts, left_roster, right_roster);
       validate_duplicate_name_conflicts(pars, result.duplicate_name_conflicts, left_roster, right_roster);
       validate_file_content_conflicts(pars, result.file_content_conflicts, left_roster, right_roster);
     }
@@ -2122,6 +2546,7 @@ read_conflict_file_core(basic_io::parser pars,
       read_directory_loop_conflicts(pars, result.directory_loop_conflicts, left_roster, right_roster);
       read_orphaned_node_conflicts(pars, result.orphaned_node_conflicts, left_roster, right_roster);
       read_multiple_name_conflicts(pars, result.multiple_name_conflicts, left_roster, right_roster);
+      read_dropped_modified_conflicts(pars, result.dropped_modified_conflicts, left_roster, right_roster);
       read_duplicate_name_conflicts(pars, result.duplicate_name_conflicts, left_roster, right_roster);
       read_attribute_conflicts(pars, result.attribute_conflicts, left_roster, right_roster);
       read_file_content_conflicts(pars, result.file_content_conflicts, left_roster, right_roster);
@@ -2212,6 +2637,7 @@ roster_merge_result::write_conflict_file(database & db,
   report_directory_loop_conflicts(*left_roster, *right_roster, adaptor, true, output);
   report_orphaned_node_conflicts(*left_roster, *right_roster, adaptor, true, output);
   report_multiple_name_conflicts(*left_roster, *right_roster, adaptor, true, output);
+  report_dropped_modified_conflicts(*left_roster, *right_roster, adaptor, true, output);
   report_duplicate_name_conflicts(*left_roster, *right_roster, adaptor, true, output);
   report_attribute_conflicts(*left_roster, *right_roster, adaptor, true, output);
   report_file_content_conflicts(lua, *left_roster, *right_roster, adaptor, true, output);
@@ -2233,6 +2659,13 @@ parse_resolve_conflicts_opts (options const & opts,
   if (opts.resolve_conflicts)
     {
       resolutions_given = true;
+
+      if (!file_exists(system_path(opts.resolve_conflicts_file)))
+        {
+          // user may specify --resolve-conflicts to enable attr
+          // mtn:resolve_conflict, without _MTN/conflicts.
+          return;
+        }
 
       data dat;
 
@@ -2362,6 +2795,199 @@ roster_merge_result::resolve_orphaned_node_conflicts(lua_hooks & lua,
 }
 
 static void
+resolve_dropped_modified_user(roster_t &                      roster,
+                              node_id   &                     nid,
+                              file_id                         modified_fid,
+                              dropped_modified_conflict const conflict,
+                              content_merge_adaptor &         adaptor,
+                              temp_node_id_source &           nis)
+{
+  // See comments in keep below on why we drop first
+  roster.drop_detached_node(nid);
+
+  file_data result_data;
+  data result_raw_data;
+  file_id result_fid;
+  read_data(*conflict.resolution.second, result_raw_data);
+
+  result_data = file_data(result_raw_data);
+  calculate_ident(result_data, result_fid);
+
+  nid = roster.create_file_node(result_fid, nis);
+
+  // User could specify no changes
+  if (result_fid != modified_fid)
+    {
+      adaptor.record_file(result_fid, result_data);
+    }
+}
+
+void
+roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
+                                                        roster_t const & left_roster,
+                                                        roster_t const & right_roster,
+                                                        content_merge_adaptor & adaptor,
+                                                        temp_node_id_source & nis)
+{
+  MM(left_roster);
+  MM(right_roster);
+  MM(this->roster); // New roster
+
+  // Conflict node is absent in the new roster
+
+  for (std::vector<dropped_modified_conflict>::const_iterator i = dropped_modified_conflicts.begin();
+       i != dropped_modified_conflicts.end();
+       ++i)
+    {
+      dropped_modified_conflict const & conflict = *i;
+      MM(conflict);
+
+      node_id   nid;
+      file_path modified_name;
+      file_id   modified_fid;
+      file_path recreated_name;
+      file_id   recreated_fid;
+
+      if (conflict.left_nid == the_null_node)
+        {
+          nid = conflict.right_nid;
+          right_roster.get_file_details(nid, modified_fid, modified_name);
+
+          if (conflict.recreated != the_null_node)
+            {
+              roster.get_file_details(conflict.recreated, recreated_fid, recreated_name);
+            }
+        }
+      else
+        {
+          nid = conflict.left_nid;
+          left_roster.get_file_details(nid, modified_fid, modified_name);
+
+          if (conflict.recreated != the_null_node)
+            {
+              roster.get_file_details(conflict.recreated, recreated_fid, recreated_name);
+            }
+        }
+
+      switch (conflict.resolution.first)
+        {
+        case resolve_conflicts::none:
+          E(false, origin::user,
+            F("no resolution provided for dropped_modifed '%s'") % modified_name);
+          break;
+
+        case resolve_conflicts::content_user:
+          P(F("replacing content of '%s' with '%s'") %
+            modified_name % conflict.resolution.second->as_external());
+          P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+            modified_name);
+
+          if (conflict.recreated == the_null_node)
+            {
+              resolve_dropped_modified_user(roster, nid, modified_fid, conflict, adaptor, nis);
+              attach_node(lua, roster, nid, modified_name);
+            }
+          else
+            {
+              // See comments in keep below on why we drop first
+              roster.drop_detached_node(nid);
+
+              file_id result_fid;
+              file_data parent_data, result_data;
+              data result_raw_data;
+              adaptor.get_version(recreated_fid, parent_data);
+
+              read_data(*conflict.resolution.second, result_raw_data);
+
+              result_data = file_data(result_raw_data);
+              calculate_ident(result_data, result_fid);
+
+              file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.recreated));
+              result_node->content = result_fid;
+
+              adaptor.record_file(recreated_fid, result_fid, parent_data, result_data);
+            }
+          break;
+
+        case resolve_conflicts::content_user_rename:
+          I(conflict.rename.as_external().length() != 0);
+          P(F("replacing content of '%s' (renamed to '%s') with '%s'") %
+            modified_name % conflict.rename.as_external() % conflict.resolution.second->as_external());
+          P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+            modified_name);
+
+          resolve_dropped_modified_user(roster, nid, modified_fid, conflict, adaptor, nis);
+          attach_node(lua, roster, nid, file_path_internal (conflict.rename.as_internal()));
+          break;
+
+        case resolve_conflicts::drop:
+          P(F("dropping '%s'") % modified_name);
+
+          roster.drop_detached_node(nid);
+          break;
+
+        case resolve_conflicts::rename:
+          P(F("renaming '%s' to '%s'") % modified_name % conflict.resolution.second->as_external());
+          P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+            modified_name);
+
+          // See comment in keep below on why we drop first.
+          roster.drop_detached_node(nid);
+          nid = roster.create_file_node(modified_fid, nis);
+          attach_node (lua, roster, nid, file_path_internal (conflict.resolution.second->as_internal()));
+          break;
+
+        case resolve_conflicts::keep:
+          if (conflict.recreated == the_null_node)
+            {
+              P(F("keeping '%s'") % modified_name);
+              P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+                modified_name);
+
+              // We'd like to just attach_node here, but that violates a
+              // fundamental design principle of mtn; nodes are born once,
+              // and die once. If we attach here, the node is born, died,
+              // and then born again.
+              //
+              // So we have to drop the old node, and create a new node with
+              // the same contents. That loses history; 'mtn log <path>'
+              // will end here, not showing the history of the original
+              // node.
+              roster.drop_detached_node(nid);
+              nid = roster.create_file_node(modified_fid, nis);
+              attach_node (lua, roster, nid, modified_name);
+            }
+          else
+            {
+              P(F("keeping '%s' from %s") % modified_name % ((conflict.left_nid == the_null_node) ? "right" : "left"));
+              P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+                modified_name);
+
+              roster.drop_detached_node(nid);
+
+              // keep the modified content, not the recreated content
+              file_data parent_data, result_data;
+              adaptor.get_version(recreated_fid, parent_data);
+
+              adaptor.get_version(modified_fid, result_data);
+
+              file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.recreated));
+              result_node->content = modified_fid;
+
+              adaptor.record_file(recreated_fid, modified_fid, parent_data, result_data);
+            }
+          break;
+
+        default:
+          I(false);
+        }
+
+    } // end for
+
+  dropped_modified_conflicts.clear();
+}
+
+static void
 resolve_duplicate_name_one_side(lua_hooks & lua,
                                 resolve_conflicts::file_resolution_t const & resolution,
                                 resolve_conflicts::file_resolution_t const & other_resolution,
@@ -2431,11 +3057,6 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
     case resolve_conflicts::none:
       E(false, origin::user,
         F("no resolution provided for duplicate_name '%s'") % name);
-      break;
-
-    case resolve_conflicts::content_internal:
-      E(false, origin::user,
-        F("invalid resolution for duplicate_name '%s'") % name);
       break;
 
     default:

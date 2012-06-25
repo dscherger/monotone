@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -12,6 +12,7 @@
 #define __MERGE_HH__
 
 #include "vocab.hh"
+#include "roster.hh"
 #include "rev_types.hh"
 #include "paths.hh"
 
@@ -30,7 +31,10 @@ content_merge_adaptor
                             file_data const & right_data,
                             file_data const & merged_data) = 0;
 
-  // For use when one side of the merge is dropped
+  // dropped_modified conflict resolution of keep or user creates new node
+  virtual void record_file(file_id const & ident,
+                           file_data const & data) = 0;
+
   virtual void record_file(file_id const & parent_ident,
                            file_id const & merged_ident,
                            file_data const & parent_data,
@@ -69,6 +73,9 @@ content_merge_database_adaptor
                     file_data const & right_data,
                     file_data const & merged_data);
 
+  void record_file(file_id const & ident,
+                   file_data const & data);
+
   void record_file(file_id const & parent_ident,
                    file_id const & merged_ident,
                    file_data const & parent_data,
@@ -80,6 +87,14 @@ content_merge_database_adaptor
   void get_ancestral_roster(node_id nid,
                             revision_id & rid,
                             boost::shared_ptr<roster_t const> & anc);
+
+  // Search parents of rev_id (which must be left_rid or right_rid); return
+  // rev, file_path, and file_id for nid just before it was dropped.
+  void get_dropped_details(revision_id & rev_id,
+                           node_id       nid,
+                           revision_id & dropped_rev_id,
+                           file_path   & dropped_name,
+                           file_id     & dropped_file_id);
 
   void get_version(file_id const & ident,
                    file_data & dat) const;
@@ -117,6 +132,9 @@ content_merge_workspace_adaptor
                     file_data const & right_data,
                     file_data const & merged_data);
 
+  void record_file(file_id const & ident,
+                   file_data const & data);
+
   void record_file(file_id const & parent_ident,
                    file_id const & merged_ident,
                    file_data const & parent_data,
@@ -146,6 +164,9 @@ content_merge_checkout_adaptor
                     file_data const & right_data,
                     file_data const & merged_data);
 
+  void record_file(file_id const & ident,
+                   file_data const & data);
+
   void record_file(file_id const & parent_ident,
                    file_id const & merged_ident,
                    file_data const & parent_data,
@@ -171,6 +192,9 @@ content_merge_empty_adaptor
                     file_data const & left_data,
                     file_data const & right_data,
                     file_data const & merged_data);
+
+  void record_file(file_id const & ident,
+                   file_data const & data);
 
   void record_file(file_id const & parent_ident,
                    file_id const & merged_ident,
@@ -259,6 +283,7 @@ resolve_merge_conflicts(lua_hooks & lua,
                         roster_t const & right_roster,
                         roster_merge_result & result,
                         content_merge_adaptor & adaptor,
+                        temp_node_id_source & nis,
                         bool const resolutions_given);
 
 // traditional resolve-all-conflicts-as-you-go style merging with 3-way merge

@@ -1,0 +1,23 @@
+    left [9485fe891d5e23d6dc30140228cd02840ee719e9]
+   right [9a8192d3bf263cbd5782791e823b837d42af6902]
+ancestor [209e4118bda3960b2f83e48b2368e981ab748ee5]
+
+        conflict dropped_modified
+   ancestor_name "file_10"
+ancestor_file_id [7368a4340573dca149c05db6f49638fafee766d0]
+       left_type "modified file"
+       left_name "file_10"
+    left_file_id [080c590e6e671b1b9ca0e752e1bc468c5167e2a9]
+      right_type "recreated file"
+      right_name "file_10"
+   right_file_id [59db7ed2afabb782b5a0215d825a86271eb96b8d]
+
+        conflict dropped_modified
+   ancestor_name "file_11"
+ancestor_file_id [498b49fddbd0418f62eb19d2096de816f3e34116]
+       left_type "recreated file"
+       left_name "file_11"
+    left_file_id [bbf158a696465c2feb9ea22fac35ff7088f07ba0]
+      right_type "modified file"
+      right_name "file_11"
+   right_file_id [935f9a7af1da88e7fe541690076c48bac2108052]

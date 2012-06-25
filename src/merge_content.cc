@@ -1,5 +1,5 @@
 // Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -78,6 +78,20 @@ content_merge_database_adaptor::record_merge(file_id const & left_ident,
       diff(right_data.inner(), merged_data.inner(), right_delta);
       db.put_file_version(right_ident, merged_ident, file_delta(right_delta));
     }
+  guard.commit();
+}
+
+void
+content_merge_database_adaptor::record_file(file_id const & ident,
+                                            file_data const & data)
+{
+  L(FL("recording new file %s")
+    % ident);
+
+  transaction_guard guard(db);
+
+  db.put_file(ident, data);
+
   guard.commit();
 }
 
@@ -166,6 +180,37 @@ content_merge_database_adaptor::get_ancestral_roster(node_id nid,
 }
 
 void
+content_merge_database_adaptor::get_dropped_details(revision_id & rev_id,
+                                                    node_id       nid,
+                                                    revision_id & dropped_rev_id,
+                                                    file_path   & dropped_name,
+                                                    file_id     & dropped_file_id)
+{
+  set<revision_id> parents;
+  db.get_revision_parents(rev_id, parents);
+
+  for (set<revision_id>::iterator i = parents.begin(); i != parents.end(); i++)
+    {
+      roster_t roster;
+      marking_map marking_map;
+
+      db.get_roster(*i, roster, marking_map);
+      if (roster.has_node(nid))
+        {
+          dropped_rev_id = *i;
+          roster.get_file_details(nid, dropped_file_id, dropped_name);
+          return;
+        }
+      else
+        {
+          set<revision_id> more_parents;
+          db.get_revision_parents(*i, more_parents);
+          parents.insert(more_parents.begin(), more_parents.end());
+        }
+    }
+}
+
+void
 content_merge_database_adaptor::get_version(file_id const & ident,
                                             file_data & dat) const
 {
@@ -200,6 +245,18 @@ content_merge_workspace_adaptor::record_merge(file_id const & left_id,
   // legal (though rare) to have multiple merges resolve to the same file
   // contents.
   temporary_store.insert(make_pair(merged_id, merged_data));
+}
+
+void
+content_merge_workspace_adaptor::record_file(file_id const & id,
+                                             file_data const & data)
+{
+  L(FL("temporarily recording file %s")
+    % id);
+  // this is an insert instead of a safe_insert because it is perfectly
+  // legal (though rare) to have multiple merges resolve to the same file
+  // contents.
+  temporary_store.insert(make_pair(id, data));
 }
 
 void
@@ -307,6 +364,13 @@ content_merge_checkout_adaptor::record_file(file_id const & parent_ident,
 }
 
 void
+content_merge_checkout_adaptor::record_file(file_id const & ident,
+                                            file_data const & data)
+{
+  I(false);
+}
+
+void
 content_merge_checkout_adaptor::get_ancestral_roster(node_id nid,
                                                      revision_id & rid,
                                                      shared_ptr<roster_t const> & anc)
@@ -332,6 +396,13 @@ content_merge_empty_adaptor::record_merge(file_id const & left_ident,
                                           file_data const & left_data,
                                           file_data const & right_data,
                                           file_data const & merged_data)
+{
+  I(false);
+}
+
+void
+content_merge_empty_adaptor::record_file(file_id const & ident,
+                                         file_data const & data)
 {
   I(false);
 }
@@ -644,6 +715,7 @@ resolve_merge_conflicts(lua_hooks & lua,
                         roster_t const & right_roster,
                         roster_merge_result & result,
                         content_merge_adaptor & adaptor,
+                        temp_node_id_source & nis,
                         const bool resolutions_given)
 {
   if (!result.is_clean())
@@ -652,6 +724,9 @@ resolve_merge_conflicts(lua_hooks & lua,
 
       if (resolutions_given)
         {
+          // We require --resolve-conflicts to enable processing attr
+          // mtn:resolve_conflict.
+
           // If there are any conflicts for which we don't currently support
           // resolutions, give a nice error message.
           char const * const msg = "conflict resolution for %s not yet supported";
@@ -667,10 +742,13 @@ resolve_merge_conflicts(lua_hooks & lua,
           E(result.attribute_conflicts.size() == 0, origin::user,
             F(msg) % "attribute_conflicts");
 
-          // resolve the ones we can.
+          // Resolve the ones we can, if they have resolutions specified. Each
+          // conflict list is deleted once all are resolved.
           result.resolve_orphaned_node_conflicts(lua, left_roster, right_roster, adaptor);
+          result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster, adaptor, nis);
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
-          result.resolve_file_content_conflicts(lua, left_roster, right_roster, adaptor);
+
+          result.resolve_file_content_conflicts (lua, left_roster, right_roster, adaptor);
         }
     }
 
@@ -682,6 +760,7 @@ resolve_merge_conflicts(lua_hooks & lua,
 
       result.report_orphaned_node_conflicts(left_roster, right_roster, adaptor, false, std::cout);
       result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      result.report_dropped_modified_conflicts(left_roster, right_roster, adaptor, false, std::cout);
       result.report_duplicate_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
 
       result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);
@@ -753,12 +832,13 @@ interactive_merge_and_store(lua_hooks & lua,
                result);
 
   bool resolutions_given;
+  temp_node_id_source nis;
   content_merge_database_adaptor dba(db, left_rid, right_rid,
                                      left_marking_map, right_marking_map);
 
   parse_resolve_conflicts_opts (opts, left_rid, left_roster, right_rid, right_roster, result, resolutions_given);
 
-  resolve_merge_conflicts(lua, opts, left_roster, right_roster, result, dba, resolutions_given);
+  resolve_merge_conflicts(lua, opts, left_roster, right_roster, result, dba, nis, resolutions_given);
 
   // write new files into the db
   store_roster_merge_result(db,
@@ -777,7 +857,7 @@ store_roster_merge_result(database & db,
 {
   I(result.is_clean());
   roster_t & merged_roster = result.roster;
-  merged_roster.check_sane();
+  merged_roster.check_sane(true); // resolve conflicts can create new nodes
 
   revision_t merged_rev;
   merged_rev.made_for = made_for_database;

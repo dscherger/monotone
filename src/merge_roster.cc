@@ -1,4 +1,4 @@
-// Copyright (C) 2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //               2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -14,6 +14,7 @@
 #include "sanity.hh"
 #include "safe_map.hh"
 #include "parallel_iter.hh"
+#include "vocab_cast.hh"
 
 #include <sstream>
 
@@ -42,6 +43,8 @@ image(resolve_conflicts::resolution_t resolution)
       return "keep";
     case resolve_conflicts::rename:
       return "rename";
+    case resolve_conflicts::content_user_rename:
+      return "content_user_rename";
     }
   I(false); // keep compiler happy
 }
@@ -85,6 +88,23 @@ dump(multiple_name_conflict const & conflict, string & out)
       << "basename: " << conflict.left.second << " "
       << "right parent: " << conflict.right.first << " "
       << "basename: " << conflict.right.second << "\n";
+  out = oss.str();
+}
+
+template <> void
+dump(dropped_modified_conflict const & conflict, string & out)
+{
+  ostringstream oss;
+  oss << "dropped_modified_conflict on node: " <<
+    conflict.left_nid == the_null_node ? conflict.right_nid : conflict.left_nid;
+  oss << " orphaned: " << conflict.orphaned;
+  if (conflict.resolution.first != resolve_conflicts::none)
+    {
+      oss << " resolution: " << image(conflict.resolution.first);
+      oss << " new_content_name: " << conflict.resolution.second;
+      oss << " rename: " << conflict.rename;
+    }
+  oss << "\n";
   out = oss.str();
 }
 
@@ -146,6 +166,7 @@ roster_merge_result::clear()
 
   orphaned_node_conflicts.clear();
   multiple_name_conflicts.clear();
+  dropped_modified_conflicts.clear();
   duplicate_name_conflicts.clear();
 
   attribute_conflicts.clear();
@@ -175,6 +196,7 @@ roster_merge_result::has_non_content_conflicts() const
     || !directory_loop_conflicts.empty()
     || !orphaned_node_conflicts.empty()
     || !multiple_name_conflicts.empty()
+    || !dropped_modified_conflicts.empty()
     || !duplicate_name_conflicts.empty()
     || !attribute_conflicts.empty();
 }
@@ -183,6 +205,7 @@ int
 roster_merge_result::count_supported_resolution() const
 {
   return orphaned_node_conflicts.size()
+    + dropped_modified_conflicts.size()
     + file_content_conflicts.size()
     + duplicate_name_conflicts.size();
 }
@@ -209,6 +232,7 @@ dump_conflicts(roster_merge_result const & result, string & out)
 
   dump(result.orphaned_node_conflicts, out);
   dump(result.multiple_name_conflicts, out);
+  dump(result.dropped_modified_conflicts, out);
   dump(result.duplicate_name_conflicts, out);
 
   dump(result.attribute_conflicts, out);
@@ -316,34 +340,63 @@ namespace
                    marking_map const & markings,
                    set<revision_id> const & uncommon_ancestors,
                    roster_t const & parent_roster,
-                   roster_t & new_roster)
+                   side_t const present_in,
+                   roster_merge_result & result)
   {
     const_marking_t const & m = markings.get_marking(n->self);
     revision_id const & birth = m->birth_revision;
     if (uncommon_ancestors.find(birth) != uncommon_ancestors.end())
-      create_node_for(n, new_roster);
+      create_node_for(n, result.roster);
     else
       {
-        // In this branch we are NOT inserting the node into the new roster as it
-        // has been deleted from the other side of the merge.
-        // In this case, output a warning if there are changes to the file on the
-        // side of the merge where it still exists.
+        // The node has been deleted from the other side of the merge. If
+        // there are changes to the file on this side of the merge, insert
+        // it into the new roster, but leave it detached, so the conflict
+        // resolutions can deal with it easily. Note that attaching would be
+        // done later; see roster_merge below.
+        //
+        // We also need to look for another node with the same name; user
+        // may have already 'undeleted' the node. But we have to do that
+        // after all result nodes are created and attached.
         set<revision_id> const & content_marks = m->file_content;
-        bool found_one_ignored_content = false;
-        for (set<revision_id>::const_iterator it = content_marks.begin(); it != content_marks.end(); it++)
+        for (set<revision_id>::const_iterator it = content_marks.begin();
+             it != content_marks.end();
+             it++)
           {
             if (uncommon_ancestors.find(*it) != uncommon_ancestors.end())
               {
-                if (!found_one_ignored_content)
+                dropped_modified_conflict conflict;
+                attr_key a_key = typecast_vocab<attr_key>(utf8("mtn:resolve_conflict"));
+                attr_map_t::const_iterator i = n->attrs.find(a_key);
+
+                create_node_for(n, result.roster);
+
+                switch (present_in)
                   {
-                    file_path fp;
-                    parent_roster.get_name(n->self, fp);
-                    W(F("content changes to the file '%s'\n"
-                        "will be ignored during this merge as the file has been\n"
-                        "removed on one side of the merge.  Affected revisions include:") % fp);
+                  case left_side:
+                      conflict = dropped_modified_conflict(n->self, the_null_node);
+                    break;
+                  case right_side:
+                    conflict = dropped_modified_conflict(the_null_node, n->self);
+                    break;
                   }
-                found_one_ignored_content = true;
-                W(F("Revision: %s") % (*it));
+
+                if (i != n->attrs.end() && i->second.first)
+                  {
+                    if (i->second.second == typecast_vocab<attr_value>(utf8("drop")))
+                      {
+                        conflict.resolution.first = resolve_conflicts::drop;
+                      }
+                    else
+                      {
+                        E(false, origin::user,
+                          F("unsupported '%s' conflict resolution in mtn:resolve_conflict attribute") %
+                          i->second.first);
+                      }
+                  }
+
+                result.dropped_modified_conflicts.push_back(conflict);
+                return;
               }
           }
       }
@@ -410,14 +463,33 @@ namespace
       }
     else
       {
+        // We need this in two places
+        std::vector<dropped_modified_conflict>::iterator dropped_modified =
+          find(result.dropped_modified_conflicts.begin(),
+               result.dropped_modified_conflicts.end(),
+               nid);
+
         // orphan:
         if (!result.roster.has_node(parent))
           {
-            orphaned_node_conflict c;
-            c.nid = nid;
-            c.parent_name = make_pair(parent, name);
-            result.orphaned_node_conflicts.push_back(c);
-            return;
+            // If the orphaned node is due to the parent directory being
+            // dropped, and the orphaned node is modified, then it already
+            // has a dropped_modified conflict; add the orphaned information
+            // to that.
+
+            if (result.dropped_modified_conflicts.end() != dropped_modified)
+              {
+                dropped_modified->orphaned = true;
+                return;
+              }
+            else
+              {
+                orphaned_node_conflict c;
+                c.nid = nid;
+                c.parent_name = make_pair(parent, name);
+                result.orphaned_node_conflicts.push_back(c);
+                return;
+              }
           }
 
         dir_t p = downcast_to_dir_t(result.roster.get_node_for_update(parent));
@@ -462,6 +534,12 @@ namespace
             c.nid = nid;
             c.parent_name = make_pair(parent, name);
             result.directory_loop_conflicts.push_back(c);
+            return;
+          }
+
+        if (result.dropped_modified_conflicts.end() != dropped_modified)
+          {
+            // conflict already entered, just don't attach
             return;
           }
       }
@@ -515,13 +593,15 @@ roster_merge(roster_t const & left_parent,
           case parallel::in_left:
             insert_if_unborn(i.left_data(),
                              left_markings, left_uncommon_ancestors, left_parent,
-                             result.roster);
+                             left_side, // present_in
+                             result);
             break;
 
           case parallel::in_right:
             insert_if_unborn(i.right_data(),
                              right_markings, right_uncommon_ancestors, right_parent,
-                             result.roster);
+                             right_side, // present_in
+                             result);
             break;
 
           case parallel::in_both:
@@ -710,6 +790,27 @@ roster_merge(roster_t const & left_parent,
     I(right_mi == right_markings.end());
     I(new_i == result.roster.all_nodes().end());
   }
+
+  // now we can look for dropped_modified conflicts with recreated nodes
+  for (size_t i = 0; i < result.dropped_modified_conflicts.size(); ++i)
+    {
+      dropped_modified_conflict & conflict = result.dropped_modified_conflicts[i];
+
+      file_path modified_name;
+      if (conflict.left_nid == the_null_node)
+        {
+          right_parent.get_name(conflict.right_nid, modified_name);
+        }
+      else
+        {
+          left_parent.get_name(conflict.left_nid, modified_name);
+        }
+
+      if (result.roster.has_node(modified_name))
+        {
+          conflict.recreated = result.roster.get_node(modified_name)->self;
+        }
+    }
 
   // now check for the possible global problems
   if (!result.roster.has_root())

@@ -1,7 +1,10 @@
 mtn_setup()
 
--- this test creates the various non-content conflict cases
--- and attempts to merge them to check the various messages
+-- this test creates the various non-content conflict cases and
+-- attempts to merge them to check the various messages.
+--
+-- Except for dropped/modified; see
+-- ../resolve_conflicts_dropped_modified/__driver__.lua
 
 
 function setup(branch)
