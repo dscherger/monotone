@@ -31,7 +31,7 @@ check(qgrep("Name  : branch", "stdout"))
 check(mtn2("ls", "certs", ver0), 0, true, nil)
 check(not qgrep("Name  : branch", "stdout"))
 
--- and db check says this is a serious problem, but we'd like it not to.
-xfail(mtn2("db", "check"), 0, nil, true)
+-- db check now says this is only a minor problem
+check(mtn2("db", "check"), 0, nil, true)
 check(qgrep("missing branch cert", "stderr"))
-check(qgrep("error: serious problems detected", "stderr"))
+check(qgrep("mtn: minor problems detected", "stderr"))

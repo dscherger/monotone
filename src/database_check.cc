@@ -1182,14 +1182,14 @@ check_db(database & db)
     extra_branches + bad_branches + missing_branches;
 
   // unreferenced files and rosters and mismatched certs are not actually
-  // serious errors; odd, but nothing will break.
+  // serious errors; odd, but nothing will break. Similarly, missing and
+  // mismatched certs are not serious errors.
   size_t serious = missing_files + missing_or_invalid_file_sizes +
     incomplete_rosters + missing_rosters +
     missing_revisions + incomplete_revisions +
     non_parseable_revisions + non_normalized_revisions +
     mismatched_parents + mismatched_children + manifest_mismatch +
     bad_history +
-    missing_certs +
     unchecked_sigs + bad_sigs +
     missing_keys +
     missing_heights + duplicate_heights + incorrect_heights+
