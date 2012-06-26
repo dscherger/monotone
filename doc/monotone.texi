@@ -4378,7 +4378,10 @@ reading the dump into a second database.
 We will create two databases, A and B, then create a few revisions in
 A, and transfer part of them to B.
 
-First we initialize the databases:
+First we initialize the databases (we assume you have a key for
+commits already):
+@c see ../test/func/using_packets/__driver__.lua for implementation of
+@c this example; keep that up to date if changing this.
 
 @smallexample
 @group
@@ -4426,9 +4429,9 @@ OK, that's enough.  Let's see what we have:
 @group
 $ cd ..
 $ mtn -d A automate select i: | mtn -d A automate toposort -@-
-a423db0ad651c74e41ab2529eca6f17513ccf714
-d14e89582ad9030e1eb62f563c8721be02ca0b65
-151f1fb125f19ebe11eb8bfe3a5798fcbea4e736
+2d0b9a10f73ce2445213506c2a0a81b8e910b923
+b2ae639e410e4970cab274a580e87d08adc87ee7
+299b021a6d426f2ff3b09fabcd165abe5d82f2b5
 @end group
 @end smallexample
 
@@ -4437,17 +4440,17 @@ get the meta-information on that revision:
 
 @smallexample
 @group
-$ mtn -d A automate get_revision a423db0ad651c74e41ab2529eca6f17513ccf714
+$ mtn -d A automate get_revision 2d0b9a10f73ce2445213506c2a0a81b8e910b923
 format_version "1"
 
-new_manifest [b6dbdbbe0e7f41e44d9b72f9fe29b1f1a4f47f18]
+new_manifest [e93adafbcdcafc2fccc1188de73d0d96f8dd2818]
 
 old_revision []
 
 add_dir ""
 
 add_file "file"
- content [8714e0ef31edb00e33683f575274379955b3526c]
+ content [66b27417d37e024c46526c2f6d358a754fc552f3]
 @end group
 @end smallexample
 
@@ -4455,43 +4458,47 @@ OK, one file was added in this revision. We'll transfer it. Now, @emph{ORDER MAT
 We should transfer:
 
 @enumerate
+@item the key used to sign things
 @item The file data (fdata) and file deltas (fdeltas), if any
 @item The release data (rdata)
 @item The certs
 @end enumerate
 
-In that order. This is because certs make reference to release data, and release data
-makes reference to file data and file deltas.
+In that order. This is because certs make reference to revision data
+and keys, and revision data makes reference to file data and file
+deltas.
 
 @smallexample
 @group
-mtn -d A automate packet_for_fdata 8714e0ef31edb00e33683f575274379955b3526c > PACKETS
-mtn -d A automate packet_for_rdata a423db0ad651c74e41ab2529eca6f17513ccf714 >> PACKETS
-mtn -d A automate packets_for_certs a423db0ad651c74e41ab2529eca6f17513ccf714 >> PACKETS
-mtn -d B read < PACKETS
+mtn -d A pubkey johndoe@@domain.com > KEY_PACKETS
+mtn -d A automate packet_for_fdata 66b27417d37e024c46526c2f6d358a754fc552f3 > PACKETS
+mtn -d A automate packet_for_rdata 2d0b9a10f73ce2445213506c2a0a81b8e910b923 >> PACKETS
+mtn -d A automate packets_for_certs 2d0b9a10f73ce2445213506c2a0a81b8e910b923 >> PACKETS
+mtn -d B read KEY_PACKETS PACKETS
 @end group
 @end smallexample
 
-This revision (a423db0ad651c74e41ab2529eca6f17513ccf714) was already sent to database
-B. You may want to check the PACKETS file to see what the packets look like.
+Database B now contains revision
+2d0b9a10f73ce2445213506c2a0a81b8e910b923. You may want to check the
+PACKETS file to see what the packets look like.
 
 Now let's transfer one more revision:
 
 @smallexample
 @group
-mtn -d A automate get_revision d14e89582ad9030e1eb62f563c8721be02ca0b65
+mtn -d A automate get_revision b2ae639e410e4970cab274a580e87d08adc87ee7
 format_version "1"
 
-new_manifest [48a03530005d46ed9c31c8f83ad96c4fa22b8b28]
+new_manifest [a13f0659778955abbe84f5676d328382ca71008f]
 
-old_revision [a423db0ad651c74e41ab2529eca6f17513ccf714]
+old_revision [2d0b9a10f73ce2445213506c2a0a81b8e910b923]
 
 add_file "file2"
- content [d2178687226560032947c1deacb39d16a16ea5c6]
+ content [ca085d538b534aa2f1746ac9a61c6f1d279356a4]
 
 patch "file"
- from [8714e0ef31edb00e33683f575274379955b3526c]
-   to [8b52d96d4fab6c1e56d6364b0a2673f4111b228e]
+ from [66b27417d37e024c46526c2f6d358a754fc552f3]
+   to [491cd4818acc21cb6fb3f8fd5676633d60a6b973]
 @end group
 @end smallexample
 
@@ -4500,10 +4507,11 @@ same we did before for them:
 
 @smallexample
 @group
-mtn -d A automate packet_for_fdata d2178687226560032947c1deacb39d16a16ea5c6 > PACKETS2
-mtn -d A automate packet_for_fdelta 8714e0ef31edb00e33683f575274379955b3526c 8b52d96d4fab6c1e56d6364b0a2673f4111b228e >> PACKETS2
-mtn -d A automate packet_for_rdata d14e89582ad9030e1eb62f563c8721be02ca0b65 >> PACKETS2
-mtn -d A automate packets_for_certs d14e89582ad9030e1eb62f563c8721be02ca0b65 >> PACKETS2
+mtn -d A automate packet_for_fdata ca085d538b534aa2f1746ac9a61c6f1d279356a4 > PACKETS2
+mtn -d A automate packet_for_fdelta
+66b27417d37e024c46526c2f6d358a754fc552f3 491cd4818acc21cb6fb3f8fd5676633d60a6b973 >> PACKETS2
+mtn -d A automate packet_for_rdata b2ae639e410e4970cab274a580e87d08adc87ee7 >> PACKETS2
+mtn -d A automate packets_for_certs b2ae639e410e4970cab274a580e87d08adc87ee7 >> PACKETS2
 mtn -d B read < PACKETS2
 @end group
 @end smallexample
@@ -4514,34 +4522,26 @@ Let's take a look at what's in each database:
 @smallexample
 @group
 $ mtn -d A automate select i: | mtn -d A automate toposort -@-
-a423db0ad651c74e41ab2529eca6f17513ccf714
-d14e89582ad9030e1eb62f563c8721be02ca0b65
-151f1fb125f19ebe11eb8bfe3a5798fcbea4e736
+2d0b9a10f73ce2445213506c2a0a81b8e910b923
+b2ae639e410e4970cab274a580e87d08adc87ee7
+299b021a6d426f2ff3b09fabcd165abe5d82f2b5
 
 $ mtn -d B automate select i: | mtn -d B automate toposort -@-
-a423db0ad651c74e41ab2529eca6f17513ccf714
-d14e89582ad9030e1eb62f563c8721be02ca0b65
+2d0b9a10f73ce2445213506c2a0a81b8e910b923
+b2ae639e410e4970cab274a580e87d08adc87ee7
 @end group
 @end smallexample
 
-Good! B has the two first revisions (as expected), and A has all three. However, a checkout
-of that branch on B will not work, because the certificate signatures cannot be verified.
-We need to transfer the signatures too (suppose the key used had the ID @code{"johndoe@@domain.com"}):
-
-@smallexample
-@group
-mtn -d A pubkey johndoe@@domain.com > KEY_PACKETS
-mtn -d B read < KEY_PACKETS
-@end group
-@end smallexample
-
-Done.
+Good! B has the two first revisions (as expected), and A has all
+three. We can checkout from B:
 
 @smallexample
 @group
 $ mtn -d B co -b test test-B
 $ ls test-B
-file2  _MTN  x
+file file2  _MTN
+$ more test-B/file
+ERASE
 $ more test-B/file2
 file 2 getting in
 @end group
