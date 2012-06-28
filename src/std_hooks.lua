@@ -408,11 +408,8 @@ function get_revision_cert_trust(signers, id, name, val)
    return true
 end
 
+-- This is only used by migration from old manifest-style ancestry
 function get_manifest_cert_trust(signers, id, name, val)
-   return true
-end
-
-function get_file_cert_trust(signers, id, name, val)
    return true
 end
 
