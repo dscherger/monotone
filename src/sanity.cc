@@ -188,7 +188,7 @@ sanity::dump_buffer()
     }
   else
     inform_message("discarding debug log, because I have nowhere to write it\n"
-                   "(maybe you want --debug or --dump?)");
+                   "(maybe you want -v -v or --dump?)");
 }
 
 int
