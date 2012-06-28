@@ -101,7 +101,7 @@ check(mtnA("update", "-r", rev_two), 0, nil, false)
 
 check(mtnB("checkout", "--branch", "test", "test-B"), 0, nil, false)
 
-check(samefile("file", "test-b/file"))
-check(samefile("file2", "test-b/file2"))
+check(samefile("file", "test-B/file"))
+check(samefile("file2", "test-B/file2"))
 
 -- end of file
