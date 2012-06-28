@@ -5120,7 +5120,7 @@ or within an existing directory full of files, prior to using
 @command{mtn commit}.
 
 On Windows, workspaces cannot be located in the root directory of a
-device; for example, \file{d:/} is an invalid directory for a workspace.
+device; for example, @file{d:/} is an invalid directory for a workspace.
 @end ftable
 
 @page
