@@ -30,8 +30,7 @@ commit("testbranch", "right 1")
 right_1 = base_revision()
 
 check(mtn("show_conflicts", left_1, right_1), 0, nil, true)
-check(samelines
-("stderr",
+check(samelines("stderr",
  {"mtn: [left]     506d8ed51b06c0080e8bb307155a88637045b532",
   "mtn: [right]    a2889488ed1801a904d0219ec9939dfc2e9be033",
   "mtn: [ancestor] f80ff103551d0313647d6c84990bc9db6b158dac",
@@ -45,8 +44,7 @@ check(mtn("conflicts", "store", left_1, right_1), 0, nil, true)
 check(mtn("conflicts", "resolve_first", "keep"), 0, nil, true)
 
 check(mtn("explicit_merge", "--resolve-conflicts", left_1, right_1, "testbranch"), 0, nil, true)
-check(samelines
-("stderr",
+check(samelines("stderr",
  {"mtn: [left]  506d8ed51b06c0080e8bb307155a88637045b532",
   "mtn: [right] a2889488ed1801a904d0219ec9939dfc2e9be033",
   "mtn: keeping 'file_2'",
@@ -67,8 +65,7 @@ commit("testbranch", "left 2")
 left_2 = base_revision()
 
 check(mtn("show_conflicts", left_2, right_2), 0, nil, true)
-check(samelines
-("stderr",
+check(samelines("stderr",
  {"mtn: [left]     5a144a43f03692e389f3ddd4c510a4d9754061d5",
   "mtn: [right]    3df3126220588440def7b08f488ca35eaa94f1b6",
   "mtn: [ancestor] 506d8ed51b06c0080e8bb307155a88637045b532",

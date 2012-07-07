@@ -30,8 +30,7 @@ commit("testbranch", "local 1")
 local_1 = base_revision()
 
 check(mtn("show_conflicts", upstream_1, local_1), 0, nil, true)
-check(samelines
-("stderr",
+check(samelines("stderr",
  {"mtn: [left]     1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
   "mtn: [right]    a2889488ed1801a904d0219ec9939dfc2e9be033",
   "mtn: [ancestor] f80ff103551d0313647d6c84990bc9db6b158dac",
@@ -45,8 +44,7 @@ check(mtn("conflicts", "store", upstream_1, local_1), 0, nil, true)
 check(mtn("conflicts", "resolve_first", "drop"), 0, nil, true)
 
 check(mtn("explicit_merge", "--resolve-conflicts", upstream_1, local_1, "testbranch"), 0, nil, true)
-check(samelines
-("stderr",
+check(samelines("stderr",
  {"mtn: [left]  1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
   "mtn: [right] a2889488ed1801a904d0219ec9939dfc2e9be033",
   "mtn: dropping 'file_2'",
@@ -84,8 +82,7 @@ check(not exists("file_2"))
 
 -- Show that 'show_conflicts' reports the attribute resolution properly.
 check(mtn("show_conflicts", upstream_2, local_2), 0, nil, true)
-check(samelines
-("stderr",
+check(samelines("stderr",
  {"mtn: [left]     c0ed8c29ffad149af1c948969e8e80d270999b13",
   "mtn: [right]    dd1ba606b52fddb4431da3760ff65b65f6509a48",
   "mtn: [ancestor] 1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
