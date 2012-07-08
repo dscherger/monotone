@@ -13,7 +13,8 @@ check(samelines("stdout",
 {"bar",
  "emptyhomedir",
  "foo",
- "min_hooks.lua"}))
+ "min_hooks.lua",
+ "tester.log"}))
 
 -- Doesn't show contents of unknown directory, even when the directory is specified
 check(mtn("ls", "unknown", "foo"), 0, true, nil)
@@ -26,6 +27,8 @@ check(samelines("stdout",
 {"bar",
  "emptyhomedir",
  "foo",
- "min_hooks.lua"}))
+ "min_hooks.lua",
+ "stdout",
+ "tester.log"}))
 
 

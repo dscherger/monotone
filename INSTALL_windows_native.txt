@@ -80,30 +80,31 @@ maps to both / and /usr/ under the MinGW shell.
 02. MinGW
   Run mingw-get-inst-20110211.exe - note that later versions include
   g++ 4.6.2, which is broken for C++ exceptions on MinGW.
+  Do _not_ update the catalog; use the built-in catalog, to insure the
+  binaries are consistent with the g++ 4.5.2 runtime.
   At the "Select Components" screen, add:
     C++ compiler
     MinGW Developer Toolkit
   Other than this, accept all defaults.
-  In particular, do _not_ update the catalog; use the built-in
-  catalog, to insure the binaries are consistent with the g++ 4.5.2
-  runtime.
   Open the MinGW shell (Start->All Programs->MinGW->MinGW Shell)
   Run the following:
   $ mingw-get install msys-autoconf msys-automake
   $ mingw-get install mingw32-zlib mingw32-libz-dev mingw32-gettext
 
 03. boost; only need headers
+  in MinGW shell:
   $ cd /usr
   $ mkdir src
   $ cd src
   $ tar -jxf ../boost_1_49_0.tar.bz2
-  This may give errors about gid_t out of range, and then say
+  This may give errors about a value out of gid_t range, and then say
   "Exiting with failure status due to previous errors"; you can
   ignore this.
   $ cd boost_1_49_0
   $ cp -a boost /mingw/include
 
 04. Lua
+  in MinGW shell:
    $ cd /usr/src
    $ tar -zxf ../lua-5.20.tar.gz
    $ cd lua-5.2.0
@@ -121,12 +122,18 @@ maps to both / and /usr/ under the MinGW shell.
    $ cd /usr/src
    $ tar -zxf ../Botan-1.10.1.tgz
    $ cd Botan-1.10.1
-   $ ./configure.py --cc=gcc --os=mingw
+
+   On a 64 bit machine, configure will default to 64 bit compilation
+   options. However, some Botan source files do not yet support 64
+   bits. So force 32 bits.
+   $ ./configure.py --cc=gcc --os=mingw --cpu=x86_32
+
    The Botan configure script generates paths with Python's
    os.path.join(...), which in the case of the Windows Python
    we installed uses '\' as the path separator. There are a
    couple of places in the Makefile where this causes problems.
    $ sed -i 's#\\\(.\)#/\1#g' Makefile
+
    $ make install
 
 07. sqlite3
