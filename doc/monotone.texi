@@ -5120,7 +5120,7 @@ or within an existing directory full of files, prior to using
 @command{mtn commit}.
 
 On Windows, workspaces cannot be located in the root directory of a
-device; for example, \file{d:/} is an invalid directory for a workspace.
+device; for example, @file{d:/} is an invalid directory for a workspace.
 @end ftable
 
 @page
@@ -10581,7 +10581,7 @@ invalid, prints an error message to stderr and exits with status 1.
 
 @end table
 
-@anchor{mtn automate stdio}@item mtn automate stdio
+@anchor{mtn automate stdio}@item mtn automate stdio [--automate-stdio-size <size>]
 
 @table @strong
 @item Arguments:
@@ -10681,6 +10681,9 @@ A packet looks like:
 @verbatim
 <command number>:<stream>:<size>:<output>
 @end verbatim
+
+Packet size is limited by the @command{--automate-stdio-size} option
+(default 32k bytes).
 
 @code{<command number>} is a decimal number specifying which command this output
 is from. It is 0 for the first command, and increases by one each time.
