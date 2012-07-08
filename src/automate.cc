@@ -1352,15 +1352,15 @@ CMD_AUTOMATE(get_base_revision_id, "",
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
-  database db(app);
   workspace work(app);
+  revision_t rev;
 
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
-  E(parents.size() == 1, origin::user,
+  work.get_work_rev(rev);
+
+  E(rev.edges.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
-  output << parent_id(parents.begin()) << '\n';
+  output << rev.edges.begin()->first << '\n';
 }
 
 // Name: get_current_revision_id
