@@ -5,8 +5,9 @@ Here are all the steps for creating a MinGW release, on a fresh
 Windows machine:
 
 Install Inno Setup and Inno Setup preprocessor; see
-http://www.jrsoftware.org/isinfo.php, isetup-5.4.3.exe. Install the
-preprocessor (we use it).
+http://www.jrsoftware.org/isinfo.php, isetup-5.5.1.exe. Install to a
+path that has no spaces in the name; simplifies later steps. Install
+the preprocessor (we use it).
 
 Install MinGW tools; see ../INSTALL_windows_native.txt
 
