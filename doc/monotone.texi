@@ -1,4 +1,4 @@
-0\input texinfo   @c -*-texinfo-*-
+\input texinfo   @c -*-texinfo-*-
 @c %**start of header
 @setfilename monotone.info
 @settitle monotone documentation
@@ -5231,6 +5231,16 @@ The file is renamed.
 This inserts a @command{resolved_rename_left @var{filename}} or
 @command{resolved_rename_right @var{filename}} conflict resolution in
 the conflicts file.
+
+@item user_rename @var{contents_file} @var{rename_file}
+The file contents are replaced by the contents of the specified file,
+and renamed.
+
+This inserts a @command{resolved_user_left @var{contents_file}} or
+@command{resolved_user_right @var{contents_file}} conflict resolution
+in the conflicts file, and a @command{resolved_rename_left
+@var{rename_file}} or @command{resolved_rename_right
+@var{rename_file}} conflict resolution.
 
 @item keep
 The file is kept in the merge.

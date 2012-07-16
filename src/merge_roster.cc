@@ -49,6 +49,21 @@ image(resolve_conflicts::resolution_t resolution)
   I(false); // keep compiler happy
 }
 
+static string
+image(resolve_conflicts::file_resolution_t res)
+{
+  if (res.resolution == resolve_conflicts::none)
+    return string("");
+  else
+    {
+      ostringstream oss;
+      oss << "resolution: " << image(res.resolution) << " "
+          << "content: " << res.content << " "
+          << "rename: " << res.rename << "\n";
+      return oss.str();
+    }
+}
+
 template <> void
 dump(invalid_name_conflict const & conflict, string & out)
 {
@@ -98,12 +113,8 @@ dump(dropped_modified_conflict const & conflict, string & out)
   oss << "dropped_modified_conflict on node: " <<
     conflict.left_nid == the_null_node ? conflict.right_nid : conflict.left_nid;
   oss << " orphaned: " << conflict.orphaned;
-  if (conflict.resolution.first != resolve_conflicts::none)
-    {
-      oss << " resolution: " << image(conflict.resolution.first);
-      oss << " new_content_name: " << conflict.resolution.second;
-      oss << " rename: " << conflict.rename;
-    }
+  oss << " left_resolution: " << image(conflict.left_resolution);
+  oss << " right_resolution: " << image(conflict.left_resolution);
   oss << "\n";
   out = oss.str();
 }
@@ -115,19 +126,10 @@ dump(duplicate_name_conflict const & conflict, string & out)
   oss << "duplicate_name_conflict between left node: " << conflict.left_nid << " "
       << "and right node: " << conflict.right_nid << " "
       << "parent: " << conflict.parent_name.first << " "
-      << "basename: " << conflict.parent_name.second;
-
-  if (conflict.left_resolution.first != resolve_conflicts::none)
-    {
-      oss << " left_resolution: " << image(conflict.left_resolution.first);
-      oss << " left_name: " << conflict.left_resolution.second;
-    }
-  if (conflict.right_resolution.first != resolve_conflicts::none)
-    {
-      oss << " right_resolution: " << image(conflict.right_resolution.first);
-      oss << " right_name: " << conflict.right_resolution.second;
-    }
-  oss << "\n";
+      << "basename: " << conflict.parent_name.second << " "
+      << "left_resolution: " << " "
+      << "right_resolution: "
+      << "\n";
   out = oss.str();
 }
 
@@ -147,12 +149,7 @@ dump(file_content_conflict const & conflict, string & out)
 {
   ostringstream oss;
   oss << "file_content_conflict on node: " << conflict.nid;
-
-  if (conflict.resolution.first != resolve_conflicts::none)
-    {
-      oss << " resolution: " << image(conflict.resolution.first);
-      oss << " name: " << conflict.resolution.second;
-    }
+  oss << " resolution: " << image(conflict.resolution);
   oss << "\n";
   out = oss.str();
 }
@@ -374,7 +371,7 @@ namespace
                 switch (present_in)
                   {
                   case left_side:
-                      conflict = dropped_modified_conflict(n->self, the_null_node);
+                    conflict = dropped_modified_conflict(n->self, the_null_node);
                     break;
                   case right_side:
                     conflict = dropped_modified_conflict(the_null_node, n->self);
@@ -385,7 +382,15 @@ namespace
                   {
                     if (i->second.second == typecast_vocab<attr_value>(utf8("drop")))
                       {
-                        conflict.resolution.first = resolve_conflicts::drop;
+                        switch (present_in)
+                          {
+                          case left_side:
+                            conflict.left_resolution.resolution = resolve_conflicts::drop;
+                            break;
+                          case right_side:
+                            conflict.right_resolution.resolution = resolve_conflicts::drop;
+                            break;
+                          }
                       }
                     else
                       {
@@ -796,21 +801,65 @@ roster_merge(roster_t const & left_parent,
     {
       dropped_modified_conflict & conflict = result.dropped_modified_conflicts[i];
 
+      // If the file name was recreated it may now subject to a
+      // duplicate_name conflict (see
+      // test/func/resolve_conflicts_dropped_modified_upstream_vs_local_2).
+      // In which case modified_name will be present in the other parent,
+      // but not in the result.
+
       file_path modified_name;
-      if (conflict.left_nid == the_null_node)
+      bool duplicate_name = false;
+
+      switch (conflict.dropped_side)
         {
+        case resolve_conflicts::left_side:
           right_parent.get_name(conflict.right_nid, modified_name);
-        }
-      else
-        {
+
+          if (left_parent.has_node (modified_name))
+            {
+              conflict.left_nid = left_parent.get_node(modified_name)->self;
+              duplicate_name = true;
+            }
+          else if (result.roster.has_node(modified_name))
+            {
+              // recreated
+              conflict.left_nid = result.roster.get_node(modified_name)->self;
+            }
+          break;
+
+        case resolve_conflicts::right_side:
           left_parent.get_name(conflict.left_nid, modified_name);
+
+          if (right_parent.has_node (modified_name))
+            {
+              conflict.right_nid = right_parent.get_node(modified_name)->self;
+              duplicate_name = false;
+            }
+
+          else if (result.roster.has_node(modified_name))
+            {
+              // recreated
+              conflict.right_nid = result.roster.get_node(modified_name)->self;
+            }
+          break;
         }
 
-      if (result.roster.has_node(modified_name))
+      if (duplicate_name)
         {
-          conflict.recreated = result.roster.get_node(modified_name)->self;
+          // delete the duplicate name conflict; it will be handled by dropped_modified.
+          for (std::vector<duplicate_name_conflict>::iterator i = result.duplicate_name_conflicts.begin();
+               i != result.duplicate_name_conflicts.end();
+               ++i)
+            {
+              duplicate_name_conflict & dn_conf = *i;
+              if (dn_conf.left_nid == conflict.left_nid || dn_conf.right_nid == conflict.right_nid)
+                {
+                  result.duplicate_name_conflicts.erase(i);
+                  break;
+                }
+            }
         }
-    }
+    } // end dropped_modified loop
 
   // now check for the possible global problems
   if (!result.roster.has_root())

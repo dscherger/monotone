@@ -189,8 +189,9 @@ content_merge_database_adaptor::get_dropped_details(revision_id & rev_id,
   set<revision_id> parents;
   db.get_revision_parents(rev_id, parents);
 
-  for (set<revision_id>::iterator i = parents.begin(); i != parents.end(); i++)
+  while (parents.begin() != parents.end())
     {
+      set<revision_id>::iterator i = parents.begin();
       roster_t roster;
       marking_map marking_map;
 
@@ -203,6 +204,7 @@ content_merge_database_adaptor::get_dropped_details(revision_id & rev_id,
         }
       else
         {
+          parents.erase (i);
           set<revision_id> more_parents;
           db.get_revision_parents(*i, more_parents);
           parents.insert(more_parents.begin(), more_parents.end());
