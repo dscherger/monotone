@@ -90,24 +90,45 @@ check(samelines("stderr",
 check(mtn("conflicts", "store", upstream_3, local_2), 0, nil, true)
 check(samefilestd("conflicts_3_2", "_MTN/conflicts"))
 
--- 'keep' is ambiguous here, so it gives an error
+-- since we have a duplicate name conflict, we need to specify both
+-- right and left resolutions, so 'resolve_first' is wrong here
 check(mtn("conflicts", "resolve_first", "keep"), 1, nil, true)
-check(qgrep("ambiguous; use 'keep_left' or 'keep_right'", "stderr"))
+check(qgrep("must specify 'resolve_first_left' or 'resolve_first_right'", "stderr"))
 
 check(mtn("conflicts", "show_first"), 0, nil, true)
 check(samelines("stderr",
- {"mtn: conflict: file 'file_2' from revision 27d41ae9f2b3cb73b130d9845d77574a11021b17",
-  "mtn: modified on the left, named file_2",
-  "mtn: dropped and recreated on the right",
+ {"mtn: conflict: file 'file_2'",
   "mtn: modified on the left",
+  "mtn: dropped and recreated on the right",
   "mtn: possible resolutions:",
-  "mtn: resolve_first keep_left",
-  "mtn: resolve_first keep_right",
-  "mtn: resolve_first user_left \"name\"",
-  "mtn: resolve_first user_right \"name\""}))
+  "mtn: resolve_first_left drop",
+  "mtn: resolve_first_left rename",
+  "mtn: resolve_first_left user_rename \"new_content_name\" \"new_file_name\"",
+  "mtn: resolve_first_left keep",
+  "mtn: resolve_first_left user \"name\"",
+  "mtn: resolve_first_right drop",
+  "mtn: resolve_first_right rename",
+  "mtn: resolve_first_right user_rename \"new_content_name\" \"new_file_name\"",
+  "mtn: resolve_first_right keep",
+  "mtn: resolve_first_right user \"name\""}))   
 
 -- We want to keep the upstream node to avoid future conflicts
-check(mtn("conflicts", "resolve_first", "keep_left"), 0, nil, true)
+check(mtn("conflicts", "resolve_first_left", "keep"), 0, nil, true)
+
+check(mtn("conflicts", "show_first"), 0, nil, true)
+check(samelines("stderr",
+ {"mtn: conflict: file 'file_2'",
+  "mtn: modified on the left",
+  "mtn: dropped and recreated on the right",
+  "mtn: left_resolution: keep",
+  "mtn: possible resolutions:",
+  "mtn: resolve_first_right drop",
+  "mtn: resolve_first_right rename",
+  "mtn: resolve_first_right user_rename \"new_content_name\" \"new_file_name\"",
+  "mtn: resolve_first_right keep",
+  "mtn: resolve_first_right user \"name\""}))   
+
+check(mtn("conflicts", "resolve_first_right", "drop"), 0, nil, true)
 check(samefilestd("conflicts_3_2_resolved", "_MTN/conflicts"))
 
 check(mtn("explicit_merge", "--resolve-conflicts", upstream_3, local_2, "testbranch"), 0, nil, true)

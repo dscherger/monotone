@@ -1160,13 +1160,18 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                     }
                 }
 
+              st.push_str_pair(syms::right_type, "modified file");
+              st.push_str_pair(syms::right_name, modified_name.as_external());
+              db_adaptor.db.get_file_content (db_adaptor.right_rid, nid, fid);
+              st.push_binary_pair(syms::right_file_id, fid.inner());
+              break;
+
+            case resolve_conflicts::right_side:
               st.push_str_pair(syms::left_type, "modified file");
               st.push_str_pair(syms::left_name, modified_name.as_external());
               db_adaptor.db.get_file_content (db_adaptor.left_rid, nid, fid);
               st.push_binary_pair(syms::left_file_id, fid.inner());
-              break;
 
-            case resolve_conflicts::right_side:
               if (conflict.orphaned)
                 {
                   st.push_str_pair(syms::right_type, "orphaned file");
@@ -1189,11 +1194,6 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                       st.push_binary_pair(syms::right_file_id, fid.inner());
                     }
                 }
-
-              st.push_str_pair(syms::right_type, "modified file");
-              st.push_str_pair(syms::right_name, modified_name.as_external());
-              db_adaptor.db.get_file_content (db_adaptor.right_rid, nid, fid);
-              st.push_binary_pair(syms::right_file_id, fid.inner());
               break;
             }
 
@@ -1243,6 +1243,8 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
           switch (conflict.left_resolution.resolution)
             {
             case resolve_conflicts::none:
+              break;
+
             case resolve_conflicts::content_user:
             case resolve_conflicts::content_user_rename:
             case resolve_conflicts::rename:
@@ -1258,6 +1260,8 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
           switch (conflict.right_resolution.resolution)
             {
             case resolve_conflicts::none:
+              break;
+
             case resolve_conflicts::content_user:
             case resolve_conflicts::content_user_rename:
             case resolve_conflicts::rename:

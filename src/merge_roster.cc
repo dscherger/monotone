@@ -26,42 +26,48 @@ using std::ostringstream;
 
 enum side_t {left_side, right_side};
 
-static char const *
-image(resolve_conflicts::resolution_t resolution)
+namespace resolve_conflicts
 {
-  switch (resolution)
-    {
-    case resolve_conflicts::none:
-      return "none";
-    case resolve_conflicts::content_user:
-      return "content_user";
-    case resolve_conflicts::content_internal:
-      return "content_internal";
-    case resolve_conflicts::drop:
-      return "drop";
-    case resolve_conflicts::keep:
-      return "keep";
-    case resolve_conflicts::rename:
-      return "rename";
-    case resolve_conflicts::content_user_rename:
-      return "content_user_rename";
-    }
-  I(false); // keep compiler happy
-}
+  char const *
+  image(resolution_t resolution)
+  {
+    switch (resolution)
+      {
+      case resolve_conflicts::none:
+        return "none";
+      case resolve_conflicts::content_user:
+        return "content_user";
+      case resolve_conflicts::content_internal:
+        return "content_internal";
+      case resolve_conflicts::drop:
+        return "drop";
+      case resolve_conflicts::keep:
+        return "keep";
+      case resolve_conflicts::rename:
+        return "rename";
+      case resolve_conflicts::content_user_rename:
+        return "content_user_rename";
+      }
+    I(false); // keep compiler happy
+  }
 
-static string
-image(resolve_conflicts::file_resolution_t res)
-{
-  if (res.resolution == resolve_conflicts::none)
-    return string("");
-  else
-    {
-      ostringstream oss;
-      oss << "resolution: " << image(res.resolution) << " "
-          << "content: " << res.content << " "
-          << "rename: " << res.rename << "\n";
-      return oss.str();
-    }
+  string
+  image(file_resolution_t res)
+  {
+    if (res.resolution == resolve_conflicts::none)
+      return string("");
+    else
+      {
+        ostringstream oss;
+        oss << "resolution: " << image(res.resolution);
+        if (res.content != 0)
+          oss << " content: " << res.content;
+        if (res.rename.as_internal().length()>0)
+          oss << "rename: " << res.rename;
+        oss << "\n";
+        return oss.str();
+      }
+  }
 }
 
 template <> void
@@ -833,7 +839,7 @@ roster_merge(roster_t const & left_parent,
           if (right_parent.has_node (modified_name))
             {
               conflict.right_nid = right_parent.get_node(modified_name)->self;
-              duplicate_name = false;
+              duplicate_name = true;
             }
 
           else if (result.roster.has_node(modified_name))

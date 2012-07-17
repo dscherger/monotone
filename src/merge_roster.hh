@@ -31,6 +31,8 @@ namespace resolve_conflicts
 {
   enum resolution_t {none, content_user, content_internal, drop, keep, rename, content_user_rename};
 
+  char const * image(resolution_t item);
+
   enum side_t {left_side, right_side};
 
   struct file_resolution_t
@@ -45,6 +47,8 @@ namespace resolve_conflicts
       rename()
       {}
   };
+
+  std::string image(file_resolution_t res);
 
   // For filename read from conflicts file; converts path to utf8. basic_io
   // parser should return utf8 in the first place.
@@ -145,7 +149,7 @@ struct dropped_modified_conflict
     right_rid(),
     left_resolution(),
     right_resolution()
-  {dropped_side = (left_nid == the_null_node ? resolve_conflicts::right_side : resolve_conflicts::left_side);}
+  {dropped_side = (left_nid == the_null_node ? resolve_conflicts::left_side : resolve_conflicts::right_side);}
 
   dropped_modified_conflict() :
     left_nid(the_null_node),
