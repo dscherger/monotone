@@ -1188,14 +1188,30 @@ dump(roster_t const & val, string & out)
   out = oss.str();
 }
 
+template <> void
+dump(std::map<node_id, std::pair<node_id, path_component> > const & val, string & out)
+{
+  ostringstream oss;
+  for (std::map<node_id, std::pair<node_id, path_component> >::const_iterator i = val.begin();
+       i != val.end();
+       ++i)
+    {
+      oss << "Node " << i->first;
+      oss << " node " << i->second.first;
+      oss << " path " << i->second.second << "\n";
+    }
+  out = oss.str();
+}
+
 void
 roster_t::check_sane(bool temp_nodes_ok) const
 {
   MM(*this);
+  MM(old_locations);
 
   node_id parent_id(the_null_node);
   const_dir_t parent_dir;
-  I(old_locations.empty());
+  I(old_locations.empty()); // if fail, some renamed node is still present and detached
   I(has_root());
   size_t maxdepth = nodes.size();
   bool is_first = true;
@@ -1235,7 +1251,7 @@ roster_t::check_sane(bool temp_nodes_ok) const
       I(n == get_node(nid));
       I(maxdepth-- > 0);
     }
-  I(maxdepth == 0); // if fails, some node is not attached
+  I(maxdepth == 0); // if fails, some newly created node is not attached
 }
 
 void

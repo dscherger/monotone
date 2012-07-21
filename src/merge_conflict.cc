@@ -2955,6 +2955,7 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
         {
           // recreated; replace the contents of the recreated node
           replace_content(side_roster, side_image, nid, result_roster, resolution.content, adaptor);
+          attach_node(lua, result_roster, nid, name);
         }
       else
         {
@@ -2975,7 +2976,7 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
 
     case resolve_conflicts::drop:
       // The node is either modified, recreated or duplicate name; in
-      // any case, it is present in the result roster, so drop it
+      // any case, it is present but detached in the result roster, so drop it
       P(F("dropping '%s' from %s") % name % side_image);
       result_roster.drop_detached_node(nid);
       break;

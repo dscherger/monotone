@@ -414,11 +414,11 @@ check(samelines("stderr",
  "mtn: history for 'file_12' from left will be lost; see user manual Merge Conflicts section",
  "mtn: dropping 'file_12' from right",
  "mtn: replacing content of 'file_13' from left with '_MTN/resolutions/file_13'",
- "mtn: history for 'file_13' from left will be lost; see user manual Merge Conflicts section",
  "mtn: dropping 'file_13' from right",
- "mtn: [merged] 306eb31064512a8a2f4d316ff7a7ec32a1f64f4c"}))
+ "mtn: [merged] 21f4b2cfb7386246e682c4a862cffeb77a435c1a"}))
 
 check(mtn("update"), 0, nil, true)
 check(samelines("file_12", {"file_12 left"}))
+check(samelines("file_13", {"file_13 user"}))
 
 -- end of file

@@ -818,18 +818,21 @@ roster_merge(roster_t const & left_parent,
     I(new_i == result.roster.all_nodes().end());
   }
 
-  // now we can look for dropped_modified conflicts with recreated nodes
+  // now we can look for dropped_modified conflicts with recreated nodes or
+  // duplicate names
   for (size_t i = 0; i < result.dropped_modified_conflicts.size(); ++i)
     {
       dropped_modified_conflict & conflict = result.dropped_modified_conflicts[i];
 
-      // If the file name was recreated it may now subject to a
-      // duplicate_name conflict (see
+      // If the file name was recreated, it is present in the result with
+      // the modified_name but different node id; find that and unattach it.
+      // Or, it may now subject to a duplicate_name conflict (see
       // test/func/resolve_conflicts_dropped_modified_upstream_vs_local_2).
       // In which case modified_name will be present in the other parent,
       // but not in the result.
 
       file_path modified_name;
+      node_id   nid;
       bool duplicate_name = false;
 
       switch (conflict.dropped_side)
@@ -837,31 +840,46 @@ roster_merge(roster_t const & left_parent,
         case resolve_conflicts::left_side:
           right_parent.get_name(conflict.right_nid, modified_name);
 
-          if (left_parent.has_node (modified_name))
+          if (result.roster.has_node(modified_name))
+            {
+              // recreated; we need to detach the node for the conflict
+              // resolution process. We'd like to just do:
+              // result.roster.detach_node(modified_name);
+              // but that doesn't erase result.roster.old_locations properly
+
+              const_node_t const & left_node      = left_parent.get_node(modified_name);
+              node_id              parent         = left_node->parent;
+              path_component       component_name = left_node->name;
+              dir_t                p              = downcast_to_dir_t(result.roster.get_node_for_update(parent));
+              conflict.left_nid                   = left_node->self;
+              p->detach_child(component_name);
+            }
+          else if (left_parent.has_node (modified_name))
             {
               conflict.left_nid = left_parent.get_node(modified_name)->self;
-              duplicate_name = true;
-            }
-          else if (result.roster.has_node(modified_name))
-            {
-              // recreated
-              conflict.left_nid = result.roster.get_node(modified_name)->self;
+              nid               = conflict.left_nid;
+              duplicate_name    = true;
             }
           break;
 
         case resolve_conflicts::right_side:
           left_parent.get_name(conflict.left_nid, modified_name);
 
-          if (right_parent.has_node (modified_name))
+          if (result.roster.has_node(modified_name))
+            {
+              // recreated; see comment in left_side above
+              const_node_t const & right_node     = right_parent.get_node(modified_name);
+              node_id              parent         = right_node->parent;
+              path_component       component_name = right_node->name;
+              dir_t                p              = downcast_to_dir_t(result.roster.get_node_for_update(parent));
+              conflict.right_nid                  = right_node->self;
+              p->detach_child(component_name);
+            }
+          else if (right_parent.has_node (modified_name))
             {
               conflict.right_nid = right_parent.get_node(modified_name)->self;
-              duplicate_name = true;
-            }
-
-          else if (result.roster.has_node(modified_name))
-            {
-              // recreated
-              conflict.right_nid = result.roster.get_node(modified_name)->self;
+              nid                = conflict.right_nid;
+              duplicate_name     = true;
             }
           break;
         }
@@ -869,17 +887,12 @@ roster_merge(roster_t const & left_parent,
       if (duplicate_name)
         {
           // delete the duplicate name conflict; it will be handled by dropped_modified.
-          for (std::vector<duplicate_name_conflict>::iterator i = result.duplicate_name_conflicts.begin();
-               i != result.duplicate_name_conflicts.end();
-               ++i)
-            {
-              duplicate_name_conflict & dn_conf = *i;
-              if (dn_conf.left_nid == conflict.left_nid || dn_conf.right_nid == conflict.right_nid)
-                {
-                  result.duplicate_name_conflicts.erase(i);
-                  break;
-                }
-            }
+          std::vector<duplicate_name_conflict>::iterator i =
+            find(result.duplicate_name_conflicts.begin(),
+                 result.duplicate_name_conflicts.end(),
+                 nid);
+
+          result.duplicate_name_conflicts.erase(i);
         }
     } // end dropped_modified loop
 
