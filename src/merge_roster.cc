@@ -29,6 +29,19 @@ enum side_t {left_side, right_side};
 namespace resolve_conflicts
 {
   char const *
+  image(side_t item)
+  {
+    switch (item)
+      {
+      case resolve_conflicts::left_side:
+        return "left_side";
+      case resolve_conflicts::right_side:
+        return "right_side";
+      }
+    I(false); // keep compiler happy
+  }
+
+  char const *
   image(resolution_t resolution)
   {
     switch (resolution)
@@ -55,7 +68,7 @@ namespace resolve_conflicts
   image(file_resolution_t res)
   {
     if (res.resolution == resolve_conflicts::none)
-      return string("");
+      return string("\n");
     else
       {
         ostringstream oss;
@@ -116,12 +129,15 @@ template <> void
 dump(dropped_modified_conflict const & conflict, string & out)
 {
   ostringstream oss;
-  oss << "dropped_modified_conflict on node: " <<
-    conflict.left_nid == the_null_node ? conflict.right_nid : conflict.left_nid;
-  oss << " orphaned: " << conflict.orphaned;
-  oss << " left_resolution: " << image(conflict.left_resolution);
-  oss << " right_resolution: " << image(conflict.left_resolution);
-  oss << "\n";
+  oss << "dropped_modified_conflict -\n";
+  oss << " dropped_side    : " << image(conflict.dropped_side) << "\n";
+  oss << " left_nid        : " << conflict.left_nid << "\n";
+  oss << " right_nid       : " << conflict.right_nid << "\n";
+  oss << " orphaned        : " << conflict.orphaned << "\n";
+  oss << " left_rid        : " << conflict.left_rid << "\n";
+  oss << " right_rid       : " << conflict.right_rid << "\n";
+  oss << " left_resolution : " << image(conflict.left_resolution);
+  oss << " right_resolution: " << image(conflict.right_resolution);
   out = oss.str();
 }
 
@@ -133,8 +149,8 @@ dump(duplicate_name_conflict const & conflict, string & out)
       << "and right node: " << conflict.right_nid << " "
       << "parent: " << conflict.parent_name.first << " "
       << "basename: " << conflict.parent_name.second << " "
-      << "left_resolution: " << " "
-      << "right_resolution: "
+      << "left_resolution: " << image(conflict.left_resolution)
+      << "right_resolution: " << image(conflict.right_resolution)
       << "\n";
   out = oss.str();
 }

@@ -747,7 +747,8 @@ resolve_merge_conflicts(lua_hooks & lua,
           // Resolve the ones we can, if they have resolutions specified. Each
           // conflict list is deleted once all are resolved.
           result.resolve_orphaned_node_conflicts(lua, left_roster, right_roster, adaptor);
-          result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster, adaptor, nis);
+          result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster,
+                                                    dynamic_cast <content_merge_database_adaptor&>(adaptor), nis);
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
 
           result.resolve_file_content_conflicts (lua, left_roster, right_roster, adaptor);

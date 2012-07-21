@@ -87,6 +87,12 @@ check(samelines("stderr",
   "mtn: dropped and recreated on the right",
   "mtn: 1 conflict with supported resolutions."}))
 
+--  There are two nodes with filename 'file_2'; node 4 in upstream,
+--  node 3 in local. At this point, node 4 is modified in upstream and
+--  dropped in local; node 3 is unborn in upstream and modified in
+--  local. Therefore this is a combination of dropped_modified and
+--  duplicate_name conflicts, which we handle as a dropped_modified
+--  conflict.
 check(mtn("conflicts", "store", upstream_3, local_2), 0, nil, true)
 check(samefilestd("conflicts_3_2", "_MTN/conflicts"))
 

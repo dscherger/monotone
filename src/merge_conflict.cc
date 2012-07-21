@@ -2915,36 +2915,147 @@ replace_content(roster_t const &            parent_roster,
 }
 
 static void
-error_extra_left(node_id left_nid, node_id right_nid, roster_t const & right_roster)
+resolve_dropped_modified_one(lua_hooks &                                  lua,
+                             string                                       side_image,
+                             bool                                         handling_dropped_side,
+                             resolve_conflicts::file_resolution_t const & resolution,
+                             resolve_conflicts::file_resolution_t const & other_resolution,
+                             roster_t const &                             side_roster,
+                             file_path const &                            name,
+                             file_id const &                              fid,
+                             node_id const                                nid,
+                             content_merge_database_adaptor &             adaptor,
+                             temp_node_id_source &                        nis,
+                             roster_t &                                   result_roster)
 {
-  if (left_nid == the_null_node)
+  if (nid == the_null_node)
     {
-      file_path right_name;
-      file_id   right_fid;
-      right_roster.get_file_details(right_nid, right_fid, right_name);
-      E(false, origin::user,
-        F("extra left_resolution provided for dropped_modifed '%s'") % right_name);
+      E(resolution.resolution == resolve_conflicts::none, origin::user,
+        F("extra %s_resolution provided for dropped_modified '%s'") % side_image % name);
+      return;
     }
-}
+  else
+    {
+      E(resolution.resolution != resolve_conflicts::none, origin::user,
+        F("no %s_resolution provided for dropped_modified '%s'") % side_image % name);
+    }
 
-static void
-error_extra_right(node_id left_nid, node_id right_nid, roster_t const & left_roster)
-{
-  if (right_nid == the_null_node)
+  switch (resolution.resolution)
     {
-      file_path left_name;
-      file_id   left_fid;
-      left_roster.get_file_details(left_nid, left_fid, left_name);
-      E(false, origin::user,
-        F("extra right_resolution provided for dropped_modifed '%s'") % left_name);
+    case resolve_conflicts::none:
+      // handled above; can't get here
+      break;
+
+    case resolve_conflicts::content_user:
+      // FIXME: check other_resolution for consistency
+      if (handling_dropped_side)
+        {
+          // recreated; replace the contents of the recreated node
+          replace_content(side_roster, nid, result_roster, resolution.content, adaptor);
+        }
+      else
+        {
+          // modified; drop and create a new node
+          // See comments in keep below on why we drop first
+          result_roster.drop_detached_node(nid);
+
+          node_id new_nid = create_new_node (side_roster, nid, result_roster, resolution.content, adaptor, nis);
+
+          attach_node(lua, result_roster, new_nid, name);
+        }
+      break;
+
+    case resolve_conflicts::content_internal:
+      // not valid for dropped_modified
+      I(false);
+
+    case resolve_conflicts::drop:
+      // The node is either modified, recreated or duplicate name; in
+      // any case, it is present in the result roster, so drop it
+      P(F("dropping '%s'") % name);
+      result_roster.drop_detached_node(nid);
+      break;
+
+    case resolve_conflicts::keep:
+      if (handling_dropped_side)
+        {
+          // recreated; keep the recreated contents
+          P(F("keeping '%s'") % name);
+          attach_node(lua, result_roster, nid, name);
+        }
+      else
+        {
+          // modified; keep the modified contents
+
+          P(F("keeping '%s'") % name);
+          P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
+            name);
+
+          // We'd like to just attach_node here, but that violates a
+          // fundamental design principle of mtn; nodes are born once,
+          // and die once. If we attach here, the node is born, died,
+          // and then born again.
+          //
+          // So we have to drop the old node, and create a new node with
+          // the same contents. That loses history; 'mtn log <path>'
+          // will end here, not showing the history of the original
+          // node.
+          result_roster.drop_detached_node(nid);
+          node_id nid = result_roster.create_file_node(fid, nis);
+          attach_node (lua, result_roster, nid, name);
+        }
+      break;
+
+    case resolve_conflicts::rename:
+      if (handling_dropped_side)
+        {
+          // recreated; rename the recreated contents
+          P(F("renaming '%s' to '%s'") % name % resolution.rename.as_external());
+          attach_node(lua, result_roster, nid, resolution.rename);
+        }
+      else
+        {
+          // modified; drop, create new node with the modified contents, rename
+          // See comment in keep above on why we drop first.
+          result_roster.drop_detached_node(nid);
+
+          P(F("renaming '%s' to '%s'") % name % resolution.rename.as_external());
+          P(F("history for '%s' will be lost; see user manual Merge Conflicts section") % name);
+
+          node_id new_nid = result_roster.create_file_node(fid, nis);
+          attach_node (lua, result_roster, new_nid, resolution.rename);
+        }
+      break;
+
+    case resolve_conflicts::content_user_rename:
+      if (handling_dropped_side)
+        {
+          // recreated; rename and replace the recreated contents
+          replace_content(side_roster, nid, result_roster, resolution.content, adaptor);
+
+          P(F("renaming '%s' to '%s'") % name % resolution.rename.as_external());
+
+          attach_node (lua, result_roster, nid, resolution.rename);
+        }
+      else
+        {
+         // modified; drop, rename and replace the modified contents
+          node_id nid = create_new_node
+            (side_roster, nid, result_roster, resolution.content, adaptor, nis);
+
+          P(F("renaming '%s' to '%s'") % name % resolution.rename.as_external());
+
+          attach_node(lua, result_roster, nid, resolution.rename);
+        }
+      break;
     }
-}
+} // resolve_dropped_modified_one
 
 void
 roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
                                                         roster_t const & left_roster,
                                                         roster_t const & right_roster,
-                                                        content_merge_adaptor & adaptor,
+                                                        content_merge_database_adaptor & adaptor,
                                                         temp_node_id_source & nis)
 {
   MM(left_roster);
@@ -2963,163 +3074,55 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
       file_path right_name;
       file_id   right_fid;
 
-      switch (conflict.left_resolution.resolution)
+      if (null_id(conflict.left_rid))
         {
-        case resolve_conflicts::none:
           if (conflict.left_nid != the_null_node)
-            {
-              // FIXME: use left_name here if it's not too hard
-              right_roster.get_file_details(conflict.right_nid, right_fid, right_name);
-              E(false, origin::user,
-                F("no left_resolution provided for dropped_modifed '%s'") % right_name);
-            }
-          break;
-
-        case resolve_conflicts::content_user:
-          switch (conflict.dropped_side)
-            {
-            case resolve_conflicts::left_side:
-              error_extra_left(conflict.left_nid, conflict.right_nid, right_roster);
-
-              // recreated; replace the contents of the recreated node
-              replace_content(left_roster, conflict.left_nid, roster, conflict.left_resolution.content, adaptor);
-              break;
-
-            case resolve_conflicts::right_side:
-              error_extra_right(conflict.left_nid, conflict.right_nid, left_roster);
-
-              // modified; drop and create a new node
-              // See comments in keep below on why we drop first
-              roster.drop_detached_node(conflict.left_nid);
-
-              node_id new_nid = create_new_node
-                (left_roster, conflict.left_nid, roster, conflict.left_resolution.content, adaptor, nis);
-
-              attach_node(lua, roster, new_nid, left_name);
-
-              break;
-            }
-          break;
-
-        case resolve_conflicts::content_internal:
-          I(false);
-
-        case resolve_conflicts::drop:
-          switch (conflict.dropped_side)
-            {
-            case resolve_conflicts::left_side:
-              error_extra_left(conflict.left_nid, conflict.right_nid, right_roster);
-
-              left_roster.get_file_details(conflict.left_nid, left_fid, left_name);
-              P(F("dropping '%s'") % left_name);
-
-              roster.drop_detached_node(conflict.left_nid);
-              break;
-
-            case resolve_conflicts::right_side:
-              error_extra_right(conflict.left_nid, conflict.right_nid, left_roster);
-
-              right_roster.get_file_details(conflict.right_nid, right_fid, right_name);
-              P(F("dropping '%s'") % right_name);
-
-              roster.drop_detached_node(conflict.right_nid);
-              break;
-            }
-
-        case resolve_conflicts::keep:
-          switch (conflict.dropped_side)
-            {
-            case resolve_conflicts::left_side:
-              error_extra_left(conflict.left_nid, conflict.right_nid, right_roster);
-
-              // recreated; keep the recreated contents
-              left_roster.get_file_details(conflict.left_nid, left_fid, left_name);
-              P(F("keeping '%s'") % left_name);
-              attach_node(lua, roster, conflict.left_nid, left_name);
-              break;
-
-            case resolve_conflicts::right_side:
-              // modified; keep the modified contents
-
-              left_roster.get_file_details(conflict.left_nid, left_fid, left_name);
-              P(F("keeping '%s'") % left_name);
-              P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
-                left_name);
-
-              // We'd like to just attach_node here, but that violates a
-              // fundamental design principle of mtn; nodes are born once,
-              // and die once. If we attach here, the node is born, died,
-              // and then born again.
-              //
-              // So we have to drop the old node, and create a new node with
-              // the same contents. That loses history; 'mtn log <path>'
-              // will end here, not showing the history of the original
-              // node.
-              roster.drop_detached_node(conflict.left_nid);
-              node_id nid = roster.create_file_node(left_fid, nis);
-              attach_node (lua, roster, nid, left_name);
-              break;
-            }
-
-        case resolve_conflicts::rename:
-          switch (conflict.dropped_side)
-            {
-            case resolve_conflicts::left_side:
-              error_extra_left(conflict.left_nid, conflict.right_nid, right_roster);
-
-              // recreated; rename the recreated contents
-              left_roster.get_file_details(conflict.left_nid, left_fid, left_name);
-              P(F("renaming '%s' to '%s'") % left_name % conflict.left_resolution.rename.as_external());
-              attach_node(lua, roster, conflict.left_nid, conflict.left_resolution.rename);
-              break;
-
-            case resolve_conflicts::right_side:
-              error_extra_right(conflict.left_nid, conflict.right_nid, left_roster);
-
-              // modified; drop, create new node with the modified contents, rename
-              // See comment in keep above on why we drop first.
-              roster.drop_detached_node(conflict.left_nid);
-
-              left_roster.get_file_details(conflict.left_nid, left_fid, left_name);
-              P(F("renaming '%s' to '%s'") % left_name % conflict.left_resolution.rename.as_external());
-              P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
-                left_name);
-
-              node_id new_nid = roster.create_file_node(left_fid, nis);
-              attach_node (lua, roster, new_nid, conflict.left_resolution.rename);
-              break;
-            }
-
-        case resolve_conflicts::content_user_rename:
-          switch (conflict.dropped_side)
-            {
-            case resolve_conflicts::left_side:
-              error_extra_left(conflict.left_nid, conflict.right_nid, right_roster);
-
-              // recreated; rename and replace the recreated contents
-              replace_content(left_roster, conflict.left_nid, roster, conflict.left_resolution.content, adaptor);
-
-              left_roster.get_file_details(conflict.left_nid, left_fid, left_name);
-              P(F("renaming '%s' to '%s'") % left_name % conflict.left_resolution.rename.as_external());
-
-              attach_node (lua, roster, conflict.left_nid, conflict.left_resolution.rename);
-              break;
-
-            case resolve_conflicts::right_side:
-              // modified; drop, rename and replace the modified contents
-              node_id nid = create_new_node
-                (left_roster, conflict.left_nid, roster, conflict.left_resolution.content, adaptor, nis);
-
-              left_roster.get_file_details(conflict.left_nid, left_fid, left_name);
-              P(F("renaming '%s' to '%s'") % left_name % conflict.left_resolution.rename.as_external());
-
-              attach_node(lua, roster, conflict.left_nid, conflict.left_resolution.rename);
-              break;
-            }
+            left_roster.get_file_details(conflict.left_nid, left_fid, left_name);
+        }
+      else
+        {
+          roster_t tmp;
+          adaptor.db.get_roster(conflict.left_rid, tmp);
+          tmp.get_file_details(conflict.left_nid, left_fid, left_name);
         }
 
-      // FIXME: handle right_resolution; factor out resolve_dropped_modified_one_side
-      // add inconsistent left/right resolution checks
+      if (null_id (conflict.right_rid))
+        {
+          if (conflict.right_nid != the_null_node)
+            right_roster.get_file_details(conflict.right_nid, right_fid, right_name);
+        }
+      else
+        {
+          roster_t tmp;
+          adaptor.db.get_roster(conflict.right_rid, tmp);
+          tmp.get_file_details(conflict.right_nid, right_fid, right_name);
+        }
+
+      resolve_dropped_modified_one (lua,
+                                    string("left"),
+                                    conflict.dropped_side == resolve_conflicts::left_side,
+                                    conflict.left_resolution,
+                                    conflict.right_resolution,
+                                    left_roster,
+                                    left_name,
+                                    left_fid,
+                                    conflict.left_nid,
+                                    adaptor,
+                                    nis,
+                                    roster);
+
+      resolve_dropped_modified_one (lua,
+                                    string("right"),
+                                    conflict.dropped_side == resolve_conflicts::right_side,
+                                    conflict.right_resolution,
+                                    conflict.left_resolution,
+                                    right_roster,
+                                    right_name,
+                                    right_fid,
+                                    conflict.right_nid,
+                                    adaptor,
+                                    nis,
+                                    roster);
 
     } // end for
 

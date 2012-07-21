@@ -35,6 +35,8 @@ namespace resolve_conflicts
 
   enum side_t {left_side, right_side};
 
+  char const * image(side_t item);
+
   struct file_resolution_t
   {
     resolution_t resolution;
@@ -137,7 +139,8 @@ struct dropped_modified_conflict
 
   bool orphaned; // if true, the dropped side is due to a dropped parent directory
 
-  // read_dropped_modified sets rid for dropped, non-recreated file FIXME: can we use this?
+  // read_dropped_modified sets rid when corresponding nid is non-null and
+  // not in the corresponding parent roster
   revision_id                          left_rid, right_rid;
   resolve_conflicts::file_resolution_t left_resolution, right_resolution;
 
@@ -313,7 +316,7 @@ struct roster_merge_result
   void resolve_dropped_modified_conflicts(lua_hooks & lua,
                                           roster_t const & left_roster,
                                           roster_t const & right_roster,
-                                          content_merge_adaptor & adaptor,
+                                          content_merge_database_adaptor & adaptor,
                                           temp_node_id_source & nis);
 
   void report_duplicate_name_conflicts(roster_t const & left,
