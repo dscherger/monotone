@@ -139,8 +139,36 @@ check(samefilestd("conflicts_3_2_resolved", "_MTN/conflicts"))
 
 check(mtn("explicit_merge", "--resolve-conflicts", upstream_3, local_2, "testbranch"), 0, nil, true)
 check(qgrep("mtn: dropping 'file_2'", "stderr"))
+check(qgrep("mtn: \\[merged\\] 864bfab34bcd301828a985f000c6f8ada712b0ca", "stderr")) -- for comparing with below
 
 check(mtn("update"), 0, nil, true)
 check(samelines("file_2", {"file_2 upstream 2"}))
+
+-- Repeat merge with left, right swapped, to test symmetry in code.
+check(mtn("conflicts", "store", local_2, upstream_3), 0, nil, true)
+check(samefilestd("conflicts_2_3", "_MTN/conflicts"))
+
+check(mtn("conflicts", "resolve_first_right", "keep"), 0, nil, true)
+
+check(mtn("conflicts", "show_first"), 0, nil, true)
+check(samelines("stderr",
+ {"mtn: conflict: file 'file_2'",
+  "mtn: dropped and recreated on the left",
+  "mtn: modified on the right",
+  "mtn: right_resolution: keep",
+  "mtn: possible resolutions:",
+  "mtn: resolve_first_left drop",
+  "mtn: resolve_first_left rename",
+  "mtn: resolve_first_left user_rename \"new_content_name\" \"new_file_name\"",
+  "mtn: resolve_first_left keep",
+  "mtn: resolve_first_left user \"name\""}))   
+
+check(mtn("conflicts", "resolve_first_left", "drop"), 0, nil, true)
+check(samefilestd("conflicts_2_3_resolved", "_MTN/conflicts"))
+
+check(mtn("explicit_merge", "--resolve-conflicts", local_2, upstream_3, "testbranch"), 0, nil, true)
+check(qgrep("mtn: dropping 'file_2'", "stderr"))
+check(qgrep("mtn: \\[merged\\] 864bfab34bcd301828a985f000c6f8ada712b0ca", "stderr"))
+-- same revision as merge in other order
 
 -- end of file

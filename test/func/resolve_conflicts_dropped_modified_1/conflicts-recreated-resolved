@@ -1,0 +1,27 @@
+    left [0745f9674d3e615b29cdb30ffe6e3c6a1db55915]
+   right [682e750ea71b77bcbbcdf33b6fc7cfa0516766f8]
+ancestor [c8bb2e0efd5e055beea0299c9beecffece46cb4a]
+
+           conflict dropped_modified
+      ancestor_name "file_12"
+   ancestor_file_id [ec21b6df4e9613a1de985ab44f073a78b1f0b0c1]
+          left_type "modified file"
+          left_name "file_12"
+       left_file_id [831efe7eb30ab2dfecc3b3d9e5b68f4d8d8978ca]
+         right_type "recreated file"
+         right_name "file_12"
+      right_file_id [33f2071587733c13912824370e1ae0e3aa2a296c]
+ resolved_keep_left 
+resolved_drop_right 
+
+           conflict dropped_modified
+      ancestor_name "file_13"
+   ancestor_file_id [833044cd7f5458fe436ddb0058dd9cde0e715715]
+          left_type "recreated file"
+          left_name "file_13"
+       left_file_id [c43d02936229a95d852d699ffb14ee8f02ad5311]
+         right_type "modified file"
+         right_name "file_13"
+      right_file_id [6aaa91015c6fc3b0dc8eeccf2aa22c52fe8dba2a]
+ resolved_user_left "_MTN/resolutions/file_13"
+resolved_drop_right 

@@ -139,8 +139,6 @@ struct dropped_modified_conflict
 
   bool orphaned; // if true, the dropped side is due to a dropped parent directory
 
-  // read_dropped_modified sets rid when corresponding nid is non-null and
-  // not in the corresponding parent roster
   revision_id                          left_rid, right_rid;
   resolve_conflicts::file_resolution_t left_resolution, right_resolution;
 

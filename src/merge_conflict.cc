@@ -2067,7 +2067,6 @@ read_dropped_modified_conflict(basic_io::parser &          pars,
     }
   else if (tmp == "modified file")
     {
-      conflict.dropped_side = resolve_conflicts::right_side;
       conflict.right_rid = right_rid;
 
       pars.esym(syms::right_name); pars.str(tmp);
@@ -2141,7 +2140,7 @@ read_dropped_modified_conflict(basic_io::parser &          pars,
           else
             conflict.right_resolution.resolution = resolve_conflicts::content_user;
           pars.sym();
-          conflict.left_resolution.content = new_optimal_path(pars.token, false);
+          conflict.right_resolution.content = new_optimal_path(pars.token, false);
           pars.str();
         }
       else
@@ -2846,6 +2845,7 @@ roster_merge_result::resolve_orphaned_node_conflicts(lua_hooks & lua,
 
 static node_id
 create_new_node(roster_t const &            parent_roster,
+                string const &              side_image,
                 node_id const &             parent_nid,
                 roster_t &                  result_roster,
                 boost::shared_ptr<any_path> new_content,
@@ -2859,10 +2859,10 @@ create_new_node(roster_t const &            parent_roster,
   parent_roster.get_file_details(parent_nid, parent_fid, parent_name);
   adaptor.get_version(parent_fid, parent_data);
 
-  P(F("replacing content of '%s' with '%s'") % parent_name % new_content->as_external());
+  P(F("replacing content of '%s' from %s with '%s'") % parent_name % side_image % new_content->as_external());
 
   // FIXME: factor out 'history lost' msg
-  P(F("history for '%s' will be lost; see user manual Merge Conflicts section") % parent_name);
+  P(F("history for '%s' from %s will be lost; see user manual Merge Conflicts section") % parent_name % side_image);
 
   data result_raw_data;
   read_data(*new_content, result_raw_data);
@@ -2882,6 +2882,7 @@ create_new_node(roster_t const &            parent_roster,
 
 static void
 replace_content(roster_t const &            parent_roster,
+                string const &              side_image,
                 node_id  const &            nid,
                 roster_t &                  result_roster,
                 boost::shared_ptr<any_path> new_content,
@@ -2892,7 +2893,7 @@ replace_content(roster_t const &            parent_roster,
 
   parent_roster.get_file_details(nid, parent_fid, parent_name);
 
-  P(F("replacing content of '%s' with '%s'") % parent_name % new_content->as_external());
+  P(F("replacing content of '%s' from %s with '%s'") % parent_name % side_image % new_content->as_external());
 
   file_data parent_data;
   adaptor.get_version(parent_fid, parent_data);
@@ -2937,6 +2938,8 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
   else
     {
       E(resolution.resolution != resolve_conflicts::none, origin::user,
+        (other_resolution.resolution == resolve_conflicts::none) ?
+        F("no resolution provided for dropped_modified '%s'") % name :
         F("no %s_resolution provided for dropped_modified '%s'") % side_image % name);
     }
 
@@ -2951,7 +2954,7 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
       if (handling_dropped_side)
         {
           // recreated; replace the contents of the recreated node
-          replace_content(side_roster, nid, result_roster, resolution.content, adaptor);
+          replace_content(side_roster, side_image, nid, result_roster, resolution.content, adaptor);
         }
       else
         {
@@ -2959,7 +2962,8 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
           // See comments in keep below on why we drop first
           result_roster.drop_detached_node(nid);
 
-          node_id new_nid = create_new_node (side_roster, nid, result_roster, resolution.content, adaptor, nis);
+          node_id new_nid = create_new_node
+            (side_roster, side_image, nid, result_roster, resolution.content, adaptor, nis);
 
           attach_node(lua, result_roster, new_nid, name);
         }
@@ -2972,7 +2976,7 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
     case resolve_conflicts::drop:
       // The node is either modified, recreated or duplicate name; in
       // any case, it is present in the result roster, so drop it
-      P(F("dropping '%s'") % name);
+      P(F("dropping '%s' from %s") % name % side_image);
       result_roster.drop_detached_node(nid);
       break;
 
@@ -2980,16 +2984,16 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
       if (handling_dropped_side)
         {
           // recreated; keep the recreated contents
-          P(F("keeping '%s'") % name);
+          P(F("keeping '%s' from %s") % name % side_image);
           attach_node(lua, result_roster, nid, name);
         }
       else
         {
           // modified; keep the modified contents
 
-          P(F("keeping '%s'") % name);
-          P(F("history for '%s' will be lost; see user manual Merge Conflicts section") %
-            name);
+          P(F("keeping '%s' from %s") % name % side_image);
+          P(F("history for '%s' from %s will be lost; see user manual Merge Conflicts section") %
+            name % side_image);
 
           // We'd like to just attach_node here, but that violates a
           // fundamental design principle of mtn; nodes are born once,
@@ -3010,7 +3014,7 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
       if (handling_dropped_side)
         {
           // recreated; rename the recreated contents
-          P(F("renaming '%s' to '%s'") % name % resolution.rename.as_external());
+          P(F("renaming '%s' from %s to '%s'") % name % side_image % resolution.rename.as_external());
           attach_node(lua, result_roster, nid, resolution.rename);
         }
       else
@@ -3019,8 +3023,8 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
           // See comment in keep above on why we drop first.
           result_roster.drop_detached_node(nid);
 
-          P(F("renaming '%s' to '%s'") % name % resolution.rename.as_external());
-          P(F("history for '%s' will be lost; see user manual Merge Conflicts section") % name);
+          P(F("renaming '%s' from %s to '%s'") % name % side_image % resolution.rename.as_external());
+          P(F("history for '%s' from %s will be lost; see user manual Merge Conflicts section") % name % side_image);
 
           node_id new_nid = result_roster.create_file_node(fid, nis);
           attach_node (lua, result_roster, new_nid, resolution.rename);
@@ -3031,21 +3035,23 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
       if (handling_dropped_side)
         {
           // recreated; rename and replace the recreated contents
-          replace_content(side_roster, nid, result_roster, resolution.content, adaptor);
+          replace_content(side_roster, side_image, nid, result_roster, resolution.content, adaptor);
 
-          P(F("renaming '%s' to '%s'") % name % resolution.rename.as_external());
+          P(F("renaming '%s' from %s to '%s'") % name % side_image % resolution.rename.as_external());
 
           attach_node (lua, result_roster, nid, resolution.rename);
         }
       else
         {
-         // modified; drop, rename and replace the modified contents
-          node_id nid = create_new_node
-            (side_roster, nid, result_roster, resolution.content, adaptor, nis);
+          // modified; drop, rename and replace the modified contents
+          result_roster.drop_detached_node(nid);
 
-          P(F("renaming '%s' to '%s'") % name % resolution.rename.as_external());
+          node_id new_nid = create_new_node
+            (side_roster, side_image, nid, result_roster, resolution.content, adaptor, nis);
 
-          attach_node(lua, result_roster, nid, resolution.rename);
+          P(F("renaming '%s' from %s to '%s'") % name % side_image % resolution.rename.as_external());
+
+          attach_node(lua, result_roster, new_nid, resolution.rename);
         }
       break;
     }
@@ -3074,28 +3080,32 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
       file_path right_name;
       file_id   right_fid;
 
-      if (null_id(conflict.left_rid))
+      if (conflict.left_nid != the_null_node)
         {
-          if (conflict.left_nid != the_null_node)
-            left_roster.get_file_details(conflict.left_nid, left_fid, left_name);
-        }
-      else
-        {
-          roster_t tmp;
-          adaptor.db.get_roster(conflict.left_rid, tmp);
-          tmp.get_file_details(conflict.left_nid, left_fid, left_name);
+          if (conflict.left_rid == adaptor.left_rid)
+            {
+              left_roster.get_file_details(conflict.left_nid, left_fid, left_name);
+            }
+          else
+            {
+              roster_t tmp;
+              adaptor.db.get_roster(conflict.left_rid, tmp);
+              tmp.get_file_details(conflict.left_nid, left_fid, left_name);
+            }
         }
 
-      if (null_id (conflict.right_rid))
+      if (conflict.right_nid != the_null_node)
         {
-          if (conflict.right_nid != the_null_node)
-            right_roster.get_file_details(conflict.right_nid, right_fid, right_name);
-        }
-      else
-        {
-          roster_t tmp;
-          adaptor.db.get_roster(conflict.right_rid, tmp);
-          tmp.get_file_details(conflict.right_nid, right_fid, right_name);
+          if (conflict.right_rid == adaptor.right_rid)
+            {
+              right_roster.get_file_details(conflict.right_nid, right_fid, right_name);
+            }
+          else
+            {
+              roster_t tmp;
+              adaptor.db.get_roster(conflict.right_rid, tmp);
+              tmp.get_file_details(conflict.right_nid, right_fid, right_name);
+            }
         }
 
       resolve_dropped_modified_one (lua,

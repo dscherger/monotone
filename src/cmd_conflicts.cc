@@ -399,7 +399,7 @@ set_resolution(resolve_conflicts::file_resolution_t &       resolution,
     {
       E(args.size() == 2, origin::user, F("wrong number of arguments"));
       resolution.resolution  = resolve_conflicts::rename;
-      resolution.rename = file_path_external(utf8(idx(args,1)(), origin::user));
+      resolution.rename = file_path_external(idx(args,1));
     }
   else if ("user" == idx(args, 0)())
     {
@@ -420,7 +420,7 @@ set_resolution(resolve_conflicts::file_resolution_t &       resolution,
 
       resolution.resolution  = resolve_conflicts::content_user_rename;
       resolution.content = new_optimal_path(idx(args,1)(), false);
-      resolution.rename = file_path_external(utf8(idx(args,2)(), origin::user));
+      resolution.rename = file_path_external(idx(args,2));
     }
   else
     E(false, origin::user,
@@ -557,57 +557,7 @@ set_first_conflict(database & db,
               E(conflict.left_nid == the_null_node, origin::user,
                 F("must specify 'resolve_first_left' or 'resolve_first_right' (not just 'resolve_first')"));
 
-              if (conflict.left_resolution.resolution == resolve_conflicts::none)
-                {
-                  if ("drop" == idx(args,0)())
-                    {
-                      E(args.size() == 1, origin::user, F("wrong number of arguments"));
-
-                      conflict.left_resolution.resolution = resolve_conflicts::drop;
-                    }
-                  else if ("keep" == idx(args,0)())
-                    {
-                  E(args.size() == 1, origin::user, F("wrong number of arguments"));
-                  E(!conflict.orphaned, origin::user, F("orphaned files must be renamed"));
-
-                  conflict.left_resolution.resolution  = resolve_conflicts::keep;
-                    }
-                  else if ("user" == idx(args,0)())
-                    {
-                      E(args.size() == 2, origin::user, F("wrong number of arguments"));
-                      E(!conflict.orphaned, origin::user, F("orphaned files must be renamed"));
-
-                      conflict.left_resolution.resolution  = resolve_conflicts::content_user;
-                      conflict.left_resolution.content = new_optimal_path(idx(args,1)(), false);
-                    }
-                  else if ("rename" == idx(args,0)())
-                    {
-                      E(args.size() == 2, origin::user, F("wrong number of arguments"));
-
-                      conflict.left_resolution.resolution  = resolve_conflicts::rename;
-                      conflict.left_resolution.content = new_optimal_path(idx(args,1)(), false);
-                    }
-                  else if ("user_rename" == idx(args,0)())
-                    {
-                      E(args.size() == 3, origin::user, F("wrong number of arguments"));
-
-                      conflict.left_resolution.resolution  = resolve_conflicts::content_user_rename;
-                      conflict.left_resolution.content = new_optimal_path(idx(args,1)(), false);
-                      conflict.left_resolution.rename = file_path_external(utf8(idx(args,2)(), origin::user));
-                    }
-                  else
-                    {
-                      E(false, origin::user,
-                        F(conflict_resolution_not_supported_msg) % idx(args,0) % "dropped_modified");
-                    }
-                  return;
-                }
-              break;
-
-            case resolve_conflicts::right_side:
-              E(conflict.right_nid == the_null_node, origin::user,
-                F("must specify 'resolve_first_left' or 'resolve_first_right' (not just 'resolve_first')"));
-
+              // the left side stays dropped; we either drop, keep or replace the right side
               if (conflict.right_resolution.resolution == resolve_conflicts::none)
                 {
                   if ("drop" == idx(args,0)())
@@ -621,7 +571,7 @@ set_first_conflict(database & db,
                       E(args.size() == 1, origin::user, F("wrong number of arguments"));
                       E(!conflict.orphaned, origin::user, F("orphaned files must be renamed"));
 
-                      conflict.right_resolution.resolution  = resolve_conflicts::keep;
+                      conflict.right_resolution.resolution = resolve_conflicts::keep;
                     }
                   else if ("user" == idx(args,0)())
                     {
@@ -636,7 +586,7 @@ set_first_conflict(database & db,
                       E(args.size() == 2, origin::user, F("wrong number of arguments"));
 
                       conflict.right_resolution.resolution  = resolve_conflicts::rename;
-                      conflict.right_resolution.content = new_optimal_path(idx(args,1)(), false);
+                      conflict.right_resolution.rename = file_path_external(idx(args,1));
                     }
                   else if ("user_rename" == idx(args,0)())
                     {
@@ -644,7 +594,59 @@ set_first_conflict(database & db,
 
                       conflict.right_resolution.resolution  = resolve_conflicts::content_user_rename;
                       conflict.right_resolution.content = new_optimal_path(idx(args,1)(), false);
-                      conflict.right_resolution.rename = file_path_external(utf8(idx(args,2)(), origin::user));
+                      conflict.right_resolution.rename = file_path_external(idx(args,2));
+                    }
+                  else
+                    {
+                      E(false, origin::user,
+                        F(conflict_resolution_not_supported_msg) % idx(args,0) % "dropped_modified");
+                    }
+                  return;
+                }
+              break;
+
+            case resolve_conflicts::right_side:
+              E(conflict.right_nid == the_null_node, origin::user,
+                F("must specify 'resolve_first_left' or 'resolve_first_right' (not just 'resolve_first')"));
+
+              // the right side stays dropped; we either drop, keep or replace the left side
+              if (conflict.left_resolution.resolution == resolve_conflicts::none)
+                {
+                  if ("drop" == idx(args,0)())
+                    {
+                      E(args.size() == 1, origin::user, F("wrong number of arguments"));
+
+                      conflict.left_resolution.resolution = resolve_conflicts::drop;
+                    }
+                  else if ("keep" == idx(args,0)())
+                    {
+                      E(args.size() == 1, origin::user, F("wrong number of arguments"));
+                      E(!conflict.orphaned, origin::user, F("orphaned files must be renamed"));
+
+                      conflict.left_resolution.resolution  = resolve_conflicts::keep;
+                    }
+                  else if ("user" == idx(args,0)())
+                    {
+                      E(args.size() == 2, origin::user, F("wrong number of arguments"));
+                      E(!conflict.orphaned, origin::user, F("orphaned files must be renamed"));
+
+                      conflict.left_resolution.resolution  = resolve_conflicts::content_user;
+                      conflict.left_resolution.content = new_optimal_path(idx(args,1)(), false);
+                    }
+                  else if ("rename" == idx(args,0)())
+                    {
+                      E(args.size() == 2, origin::user, F("wrong number of arguments"));
+
+                      conflict.left_resolution.resolution  = resolve_conflicts::rename;
+                      conflict.left_resolution.rename = file_path_external(idx(args,1));
+                    }
+                  else if ("user_rename" == idx(args,0)())
+                    {
+                      E(args.size() == 3, origin::user, F("wrong number of arguments"));
+
+                      conflict.left_resolution.resolution  = resolve_conflicts::content_user_rename;
+                      conflict.left_resolution.content = new_optimal_path(idx(args,1)(), false);
+                      conflict.left_resolution.rename = file_path_external(idx(args,2));
                     }
                   else
                     {

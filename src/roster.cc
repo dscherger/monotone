@@ -1235,7 +1235,7 @@ roster_t::check_sane(bool temp_nodes_ok) const
       I(n == get_node(nid));
       I(maxdepth-- > 0);
     }
-  I(maxdepth == 0);
+  I(maxdepth == 0); // if fails, some node is not attached
 }
 
 void
