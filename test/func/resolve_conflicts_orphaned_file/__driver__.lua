@@ -1,5 +1,5 @@
 -- Test resolving orphaned_file and orphaned_directory conflicts
-
+-- FIXME: swap left, right
 mtn_setup()
 
 addfile("foo", "foo base")

@@ -3069,11 +3069,11 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
   MM(right_roster);
   MM(this->roster); // New roster
 
-  for (std::vector<dropped_modified_conflict>::const_iterator i = dropped_modified_conflicts.begin();
+  for (std::vector<dropped_modified_conflict>::iterator i = dropped_modified_conflicts.begin();
        i != dropped_modified_conflicts.end();
        ++i)
     {
-      dropped_modified_conflict const & conflict = *i;
+      dropped_modified_conflict & conflict = *i;
       MM(conflict);
 
       file_path left_name;
@@ -3089,9 +3089,18 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
             }
           else
             {
-              roster_t tmp;
-              adaptor.db.get_roster(conflict.left_rid, tmp);
-              tmp.get_file_details(conflict.left_nid, left_fid, left_name);
+              if (null_id(conflict.left_rid))
+                {
+                  // attr mtn::resolve_conflict drop does not set rid; find it now
+                  adaptor.get_dropped_details
+                    (adaptor.left_rid, conflict.left_nid, conflict.left_rid, left_name, left_fid);
+                }
+              else
+                {
+                  roster_t tmp;
+                  adaptor.db.get_roster(conflict.left_rid, tmp);
+                  tmp.get_file_details(conflict.left_nid, left_fid, left_name);
+                }
             }
         }
 
@@ -3103,9 +3112,17 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
             }
           else
             {
-              roster_t tmp;
-              adaptor.db.get_roster(conflict.right_rid, tmp);
-              tmp.get_file_details(conflict.right_nid, right_fid, right_name);
+              if (null_id(conflict.left_rid))
+                {
+                  adaptor.get_dropped_details
+                    (adaptor.right_rid, conflict.right_nid, conflict.right_rid, right_name, right_fid);
+                }
+              else
+                {
+                  roster_t tmp;
+                  adaptor.db.get_roster(conflict.right_rid, tmp);
+                  tmp.get_file_details(conflict.right_nid, right_fid, right_name);
+                }
             }
         }
 

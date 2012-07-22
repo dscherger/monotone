@@ -47,8 +47,8 @@ check(mtn("explicit_merge", "--resolve-conflicts", left_1, right_1, "testbranch"
 check(samelines("stderr",
  {"mtn: [left]  506d8ed51b06c0080e8bb307155a88637045b532",
   "mtn: [right] a2889488ed1801a904d0219ec9939dfc2e9be033",
-  "mtn: keeping 'file_2'",
-  "mtn: history for 'file_2' will be lost; see user manual Merge Conflicts section",
+  "mtn: keeping 'file_2' from left",
+  "mtn: history for 'file_2' from left will be lost; see user manual Merge Conflicts section",
   "mtn: [merged] 3df3126220588440def7b08f488ca35eaa94f1b6"}))
 
 check(mtn("update"), 0, nil, true)
@@ -76,10 +76,12 @@ check(samelines("stderr",
 
 check(mtn("conflicts", "store", left_2, right_2), 0, nil, true)
 
-check(mtn("conflicts", "resolve_first", "keep"), 0, nil, true)
+check(mtn("conflicts", "resolve_first_left", "keep"), 0, nil, true)
+check(mtn("conflicts", "resolve_first_right", "drop"), 0, nil, true)
 
 check(mtn("explicit_merge", "--resolve-conflicts", left_2, right_2, "testbranch"), 0, nil, true)
 check(qgrep("mtn: keeping 'file_2' from left", "stderr"))
+check(qgrep("mtn: dropping 'file_2' from right", "stderr"))
 
 check(mtn("update"), 0, nil, true)
 check(samelines("file_2", {"file_2 left 2"}))

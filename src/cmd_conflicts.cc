@@ -532,7 +532,7 @@ set_first_conflict(database & db,
                   E(args.size() == 2, origin::user, F("wrong number of arguments"));
 
                   conflict.resolution.resolution  = resolve_conflicts::rename;
-                  conflict.resolution.content = new_optimal_path(idx(args,1)(), false);
+                  conflict.resolution.rename = file_path_external(idx(args,1));
                 }
               else
                 {
