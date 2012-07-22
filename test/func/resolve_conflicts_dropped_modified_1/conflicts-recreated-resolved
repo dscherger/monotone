@@ -1,6 +1,6 @@
-    left [0745f9674d3e615b29cdb30ffe6e3c6a1db55915]
-   right [682e750ea71b77bcbbcdf33b6fc7cfa0516766f8]
-ancestor [c8bb2e0efd5e055beea0299c9beecffece46cb4a]
+    left [3721cc38b4f98b571d92bd38b2e269f438ed0af8]
+   right [ad9ca7cb1f77fe829269d4ac18763bfb9683a4b0]
+ancestor [a2b0bdd41b1b94e6e580c81c9901af128d299a7f]
 
            conflict dropped_modified
       ancestor_name "file_12"
@@ -25,3 +25,65 @@ resolved_drop_right
       right_file_id [6aaa91015c6fc3b0dc8eeccf2aa22c52fe8dba2a]
  resolved_user_left "_MTN/resolutions/file_13"
 resolved_drop_right 
+
+            conflict dropped_modified
+       ancestor_name "file_14"
+    ancestor_file_id [0e462cd7a936807265ce7c01ce040b79aa2fa4d1]
+           left_type "modified file"
+           left_name "file_14"
+        left_file_id [442ddb4cae7d5cde84983dd60597c966e87645ea]
+          right_type "recreated file"
+          right_name "file_14"
+       right_file_id [963b47ce0f243cbd38b1ae288e6c6d559006ba6b]
+resolved_rename_left "file_14_renamed"
+ resolved_keep_right 
+
+             conflict dropped_modified
+        ancestor_name "file_15"
+     ancestor_file_id [13afe431eae6774a3b14ce8a2a6c2583ba375383]
+            left_type "modified file"
+            left_name "file_15"
+         left_file_id [8c1962f213226e85231b7b91b1a368f8e2ad8bf4]
+           right_type "recreated file"
+           right_name "file_15"
+        right_file_id [4d28d9df37261e18c1c23108c2ab531b8e535193]
+   resolved_user_left "_MTN/resolutions/file_15_left"
+ resolved_rename_left "file_15_renamed_left"
+resolved_rename_right "file_15_renamed_right"
+
+             conflict dropped_modified
+        ancestor_name "file_16"
+     ancestor_file_id [b7de9cb0feb57657abcc6a991fdc7d034bfe2e66]
+            left_type "recreated file"
+            left_name "file_16"
+         left_file_id [7a8bca4a66301d480279b187927dcacba4da9f39]
+           right_type "modified file"
+           right_name "file_16"
+        right_file_id [e9d80dfb12b60107455fdf42fcc6beecb33fa7bd]
+   resolved_drop_left 
+resolved_rename_right "file_16_renamed"
+
+            conflict dropped_modified
+       ancestor_name "file_17"
+    ancestor_file_id [36158b32ea4ca5cbeba77374c9f407adeee91930]
+           left_type "recreated file"
+           left_name "file_17"
+        left_file_id [b5143f8996e5383113d406f263896a75f211e208]
+          right_type "modified file"
+          right_name "file_17"
+       right_file_id [5b5069994101a5bd4f35c9a9eaaf78abdf8e52ee]
+resolved_rename_left "file_17_renamed"
+ resolved_drop_right 
+
+            conflict dropped_modified
+       ancestor_name "file_18"
+    ancestor_file_id [4d70c0b068124556ad0e2d4f17b2d5994eaf01f5]
+           left_type "recreated file"
+           left_name "file_18"
+        left_file_id [3c2034c53b1882fd16fd943c80a93074932fc220]
+          right_type "modified file"
+          right_name "file_18"
+       right_file_id [c7ef23c4c1ad7b8c977a1caeb9a5830fd1fa1ae7]
+  resolved_user_left "_MTN/resolutions/file_18"
+resolved_rename_left "file_18_renamed"
+ resolved_drop_right 

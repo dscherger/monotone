@@ -82,7 +82,7 @@ check(samelines("stderr",
  {"mtn: [left]     48b18ebc7b70733133539384e49a2eedb82e32b2",
   "mtn: [right]    650057e8a81bd41991dc5ff10b2d60343f1032ae",
   "mtn: [ancestor] 27d41ae9f2b3cb73b130d9845d77574a11021b17",
-  "mtn: conflict: file 'file_2' from revision 27d41ae9f2b3cb73b130d9845d77574a11021b17",
+  "mtn: conflict: file 'file_2'",
   "mtn: modified on the left, named file_2",
   "mtn: dropped and recreated on the right",
   "mtn: 1 conflict with supported resolutions."}))

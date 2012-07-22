@@ -34,7 +34,7 @@ check(samelines("stderr",
  {"mtn: [left]     1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
   "mtn: [right]    a2889488ed1801a904d0219ec9939dfc2e9be033",
   "mtn: [ancestor] f80ff103551d0313647d6c84990bc9db6b158dac",
-  "mtn: conflict: file 'file_2' from revision f80ff103551d0313647d6c84990bc9db6b158dac",
+  "mtn: conflict: file 'file_2'",
   "mtn: modified on the left, named file_2",
   "mtn: dropped on the right",
   "mtn: 1 conflict with supported resolutions."}))
@@ -86,7 +86,7 @@ check(samelines("stderr",
  {"mtn: [left]     c0ed8c29ffad149af1c948969e8e80d270999b13",
   "mtn: [right]    dd1ba606b52fddb4431da3760ff65b65f6509a48",
   "mtn: [ancestor] 1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
-  "mtn: conflict: file 'file_2' from revision 1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
+  "mtn: conflict: file 'file_2'",
   "mtn: modified on the left, named file_2",
   "mtn: dropped on the right",
   "mtn: left_resolution: drop",
@@ -98,5 +98,11 @@ check(samelines("stderr",
 check(mtn("conflicts", "store", upstream_2, local_2), 0, nil, true)
 check(samefilestd("conflicts", "_MTN/conflicts"))
 
--- FIXME: repeat merge with left, right swapped
+-- repeat merge with left, right swapped to verify symmetry in code
+remove("_MTN/conflicts")
+check(mtn("explicit_merge", "--resolve-conflicts", local_2, upstream_2, "testbranch"), 0, nil, true)
+check(qgrep("mtn: dropping 'file_2' from right", "stderr"))
+check(mtn("update"), 0, nil, true)
+check(not exists("file_2"))
+
 -- end of file

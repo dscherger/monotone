@@ -1,5 +1,8 @@
 -- Test reporting and resolving drop/modified conflicts
 --
+-- tests for the restrictions imposed by orphan, resoltion consistency
+-- are in resolved_dropped_modified_3
+-- 
 -- other resolve_conflicts_dropped_modified_* tests validate resolving
 -- in extended use cases.
 
@@ -14,7 +17,7 @@
 -- and resolution:
 --
 -- state    resolution      left file       right file
--- dropped  drop            file_3 etc          file_2 etc
+-- dropped  drop            file_3 etc      file_2 etc
 --          keep            (not supported)
 --          rename          (not supported)
 --          user            (not supported)
@@ -22,17 +25,16 @@
 -- 
 -- modified drop            file_2      file_3 etc
 --          keep            file_4      file_5
---          rename                      file_9
+--          rename          file_14     file_9
 --          user            file_6      file_7
---          user_rename                 file_10
+--          user_rename     file_15     file_10
 -- 
--- recreated drop                       file_12
---           keep           file_12
---           rename     
---           user           file_13
---           user_rename
+-- recreated drop           file_16     file_12
+--           keep           file_12     file_14
+--           rename         file_17     file_15
+--           user           file_13     file_16
+--           user_rename    file_18     file_13
 --
---  There are also other tests for the restrictions imposed by orphan etc.
 
 mtn_setup()
 
@@ -329,16 +331,32 @@ check(mtn("update"), 0, nil, true)
 -- Test recreated; drop then re-add vs modify. This used to be the test
 -- "merge((patch_a),_(drop_a,_add_a))"
 addfile("file_12", "file_12 base") -- modify in left; drop, add in right: keep left, drop right
-addfile("file_13", "file_13 base") -- drop, add in left; modify in right: user left, drop right
+addfile("file_13", "file_13 base") -- drop, add in left; modify in right: user left, user_rename right
+
+-- Other cases not covered above
+addfile("file_14", "file_14 base") -- modify in left; recreated in right: rename left, keep right
+addfile("file_15", "file_15 base") -- modify in left; recreated in right: user_rename left, rename right
+addfile("file_16", "file_16 base") -- recreated in left; modify in right: drop left, rename right
+addfile("file_17", "file_17 base") -- recreated in left; modify in right: rename left, drop right
+addfile("file_18", "file_18 base") -- recreated in left; modify in right: user_rename left, drop right
 commit("testbranch", "base 4")
 base_4 = base_revision()
 
 writefile("file_12", "file_12 left")
-
 check(mtn("drop", "file_13"), 0, false, false)
+
+writefile("file_14", "file_14 left")
+writefile("file_15", "file_15 left")
+
+check(mtn("drop", "file_16"), 0, false, false)
+check(mtn("drop", "file_17"), 0, false, false)
+check(mtn("drop", "file_18"), 0, false, false)
 commit("testbranch", "left 4a")
 
 addfile("file_13", "file_13 left re-add")
+addfile("file_16", "file_16 left re-add")
+addfile("file_17", "file_17 left re-add")
+addfile("file_18", "file_18 left re-add")
 commit("testbranch", "left 4b")
 left_4 = base_revision()
 
@@ -346,24 +364,46 @@ revert_to(base_4)
 
 check(mtn("drop", "file_12"), 0, false, false)
 writefile("file_13", "file_13 right")
+check(mtn("drop", "file_14"), 0, false, false)
+check(mtn("drop", "file_15"), 0, false, false)
+writefile("file_16", "file_16 right")
+writefile("file_17", "file_17 right")
+writefile("file_18", "file_18 right")
 commit("testbranch", "right 4a")
 
 addfile("file_12", "file_12 right re-add")
+addfile("file_14", "file_14 right re-add")
+addfile("file_15", "file_15 right re-add")
 commit("testbranch", "right 4b")
 right_4 = base_revision()
 
 check(mtn("show_conflicts", left_4, right_4), 0, nil, true)
 check(samelines("stderr",
-{"mtn: [left]     0745f9674d3e615b29cdb30ffe6e3c6a1db55915",
- "mtn: [right]    682e750ea71b77bcbbcdf33b6fc7cfa0516766f8",
- "mtn: [ancestor] c8bb2e0efd5e055beea0299c9beecffece46cb4a",
- "mtn: conflict: file 'file_12' from revision c8bb2e0efd5e055beea0299c9beecffece46cb4a",
+{"mtn: [left]     " .. left_4,
+ "mtn: [right]    " .. right_4,
+ "mtn: [ancestor] " .. base_4,
+ "mtn: conflict: file 'file_12'",
  "mtn: modified on the left, named file_12",
  "mtn: dropped and recreated on the right",
- "mtn: conflict: file 'file_13' from revision c8bb2e0efd5e055beea0299c9beecffece46cb4a",
+ "mtn: conflict: file 'file_13'",
  "mtn: dropped and recreated on the left",
  "mtn: modified on the right, named file_13",
- "mtn: 2 conflicts with supported resolutions."}))
+ "mtn: conflict: file 'file_14'",
+ "mtn: modified on the left, named file_14",
+ "mtn: dropped and recreated on the right",
+ "mtn: conflict: file 'file_15'",
+ "mtn: modified on the left, named file_15",
+ "mtn: dropped and recreated on the right",
+ "mtn: conflict: file 'file_16'",
+ "mtn: dropped and recreated on the left",
+ "mtn: modified on the right, named file_16",
+ "mtn: conflict: file 'file_17'",
+ "mtn: dropped and recreated on the left",
+ "mtn: modified on the right, named file_17",
+ "mtn: conflict: file 'file_18'",
+ "mtn: dropped and recreated on the left",
+ "mtn: modified on the right, named file_18",
+ "mtn: 7 conflicts with supported resolutions."}))
 
 check(mtn("conflicts", "store", left_4, right_4), 0, nil, true)
 check(samefilestd("conflicts-recreated", "_MTN/conflicts"))
@@ -404,21 +444,62 @@ writefile("_MTN/resolutions/file_13", "file_13 user")
 check(mtn("conflicts", "resolve_first_left", "user", "_MTN/resolutions/file_13"), 0, nil, nil)
 check(mtn("conflicts", "resolve_first_right", "drop"), 0, nil, nil)
 
+check(mtn("conflicts", "resolve_first_left", "rename", "file_14_renamed"), 0, nil, nil)
+check(mtn("conflicts", "resolve_first_right", "keep"), 0, nil, nil)
+
+writefile("_MTN/resolutions/file_15_left", "file_15 user left")
+check(mtn("conflicts", "resolve_first_left", "user_rename", "_MTN/resolutions/file_15_left", "file_15_renamed_left"), 0, nil, nil)
+check(mtn("conflicts", "resolve_first_right", "rename", "file_15_renamed_right"), 0, nil, nil)
+
+check(mtn("conflicts", "resolve_first_left", "drop"), 0, nil, nil)
+check(mtn("conflicts", "resolve_first_right", "rename", "file_16_renamed"), 0, nil, nil)
+
+check(mtn("conflicts", "resolve_first_left", "rename", "file_17_renamed"), 0, nil, nil)
+check(mtn("conflicts", "resolve_first_right", "drop"), 0, nil, nil)
+
+mkdir("_MTN")
+mkdir("_MTN/resolutions")
+writefile("_MTN/resolutions/file_18", "file_18 user")
+check(mtn("conflicts", "resolve_first_left", "user_rename", "_MTN/resolutions/file_18", "file_18_renamed"), 0, nil, nil)
+check(mtn("conflicts", "resolve_first_right", "drop"), 0, nil, nil)
+
 check(samefilestd("conflicts-recreated-resolved", "_MTN/conflicts"))
 
 check(mtn("explicit_merge", "--resolve-conflicts", left_4, right_4, "testbranch"), 0, nil, true)
 check(samelines("stderr",
-{"mtn: [left]  0745f9674d3e615b29cdb30ffe6e3c6a1db55915",
- "mtn: [right] 682e750ea71b77bcbbcdf33b6fc7cfa0516766f8",
+{"mtn: [left]  " .. left_4,
+ "mtn: [right] " .. right_4,
  "mtn: keeping 'file_12' from left",
  "mtn: history for 'file_12' from left will be lost; see user manual Merge Conflicts section",
  "mtn: dropping 'file_12' from right",
  "mtn: replacing content of 'file_13' from left with '_MTN/resolutions/file_13'",
  "mtn: dropping 'file_13' from right",
- "mtn: [merged] 21f4b2cfb7386246e682c4a862cffeb77a435c1a"}))
+ "mtn: renaming 'file_14' from left to 'file_14_renamed'",
+ "mtn: history for 'file_14' from left will be lost; see user manual Merge Conflicts section",
+ "mtn: keeping 'file_14' from right",
+ "mtn: replacing content of 'file_15' from left with '_MTN/resolutions/file_15_left'",
+ "mtn: history for 'file_15' from left will be lost; see user manual Merge Conflicts section",
+ "mtn: renaming 'file_15' from left to 'file_15_renamed_left'",
+ "mtn: renaming 'file_15' from right to 'file_15_renamed_right'",
+ "mtn: dropping 'file_16' from left",
+ "mtn: renaming 'file_16' from right to 'file_16_renamed'",
+ "mtn: history for 'file_16' from right will be lost; see user manual Merge Conflicts section",
+ "mtn: renaming 'file_17' from left to 'file_17_renamed'",
+ "mtn: dropping 'file_17' from right",
+ "mtn: replacing content of 'file_18' from left with '_MTN/resolutions/file_18'",
+ "mtn: renaming 'file_18' from left to 'file_18_renamed'",
+ "mtn: dropping 'file_18' from right",
+ "mtn: [merged] c6d6dba528110b6aa32572f6939982a1d56b17e0"}))
 
 check(mtn("update"), 0, nil, true)
 check(samelines("file_12", {"file_12 left"}))
 check(samelines("file_13", {"file_13 user"}))
+check(samelines("file_14_renamed", {"file_14 left"}))
+check(samelines("file_14", {"file_14 right re-add"}))
+check(samelines("file_15_renamed_left", {"file_15 user left"}))
+check(samelines("file_15_renamed_right", {"file_15 right re-add"}))
+check(samelines("file_16_renamed", {"file_16 right"}))
+check(samelines("file_17_renamed", {"file_17 left re-add"}))
+check(samelines("file_18_renamed", {"file_18 user"}))
 
 -- end of file

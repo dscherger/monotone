@@ -1204,7 +1204,7 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
         }
       else
         {
-          P(F("conflict: file '%s' from revision %s") % ancestor_name % lca_rid);
+          P(F("conflict: file '%s'") % ancestor_name);
           switch (conflict.dropped_side)
             {
             case resolve_conflicts::left_side:
@@ -1713,6 +1713,7 @@ namespace resolve_conflicts
 
 static char const * const conflicts_mismatch_msg = N_("conflicts file does not match current conflicts");
 static char const * const conflict_resolution_not_supported_msg = N_("%s is not a supported conflict resolution for %s");
+static char const * const history_lost_msg = N_("history for '%s' from %s will be lost; see user manual Merge Conflicts section");
 static char const * const conflict_extra = N_("extra chars at end of conflict");
 
 static void
@@ -2861,8 +2862,7 @@ create_new_node(roster_t const &            parent_roster,
 
   P(F("replacing content of '%s' from %s with '%s'") % parent_name % side_image % new_content->as_external());
 
-  // FIXME: factor out 'history lost' msg
-  P(F("history for '%s' from %s will be lost; see user manual Merge Conflicts section") % parent_name % side_image);
+  P(F(history_lost_msg) % parent_name % side_image);
 
   data result_raw_data;
   read_data(*new_content, result_raw_data);
@@ -2993,8 +2993,7 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
           // modified; keep the modified contents
 
           P(F("keeping '%s' from %s") % name % side_image);
-          P(F("history for '%s' from %s will be lost; see user manual Merge Conflicts section") %
-            name % side_image);
+          P(F(history_lost_msg) % name % side_image);
 
           // We'd like to just attach_node here, but that violates a
           // fundamental design principle of mtn; nodes are born once,
@@ -3025,7 +3024,7 @@ resolve_dropped_modified_one(lua_hooks &                                  lua,
           result_roster.drop_detached_node(nid);
 
           P(F("renaming '%s' from %s to '%s'") % name % side_image % resolution.rename.as_external());
-          P(F("history for '%s' from %s will be lost; see user manual Merge Conflicts section") % name % side_image);
+          P(F(history_lost_msg) % name % side_image);
 
           node_id new_nid = result_roster.create_file_node(fid, nis);
           attach_node (lua, result_roster, new_nid, resolution.rename);
