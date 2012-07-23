@@ -100,8 +100,10 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
     {
       dropped_modified_conflict & conflict = *i;
 
-      if ((conflict.left_nid != the_null_node && conflict.left_resolution.resolution == resolve_conflicts::none) ||
-          (conflict.right_nid != the_null_node && conflict.right_resolution.resolution == resolve_conflicts::none))
+      if ((conflict.left_nid != the_null_node &&
+           conflict.left_resolution.resolution == resolve_conflicts::none) ||
+          (conflict.right_nid != the_null_node &&
+           conflict.right_resolution.resolution == resolve_conflicts::none))
         {
           file_path modified_name;
 
@@ -192,7 +194,9 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
                   P(F("resolve_first_left rename"));
                   P(F("resolve_first_left user_rename \"new_content_name\" \"new_file_name\""));
 
-                  if (!conflict.orphaned)
+                  if (!conflict.orphaned &&
+                      conflict.right_resolution.resolution != resolve_conflicts::keep &&
+                      conflict.right_resolution.resolution != resolve_conflicts::content_user)
                     {
                       P(F("resolve_first_left keep"));
                       P(F("resolve_first_left user \"name\""));
@@ -205,7 +209,9 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
                   P(F("resolve_first_right drop"));
                   P(F("resolve_first_right rename"));
                   P(F("resolve_first_right user_rename \"new_content_name\" \"new_file_name\""));
-                  if (!conflict.orphaned)
+                  if (!conflict.orphaned &&
+                      conflict.left_resolution.resolution != resolve_conflicts::keep &&
+                      conflict.left_resolution.resolution != resolve_conflicts::content_user)
                     {
                       P(F("resolve_first_right keep"));
                       P(F("resolve_first_right user \"name\""));
@@ -392,7 +398,8 @@ set_resolution(resolve_conflicts::file_resolution_t &       resolution,
         other_resolution.resolution == resolve_conflicts::rename ||
         other_resolution.resolution == resolve_conflicts::content_user_rename,
         origin::user,
-        F("other resolution must be 'drop', 'rename', or 'user_rename'"));
+        F("other resolution is %s; specify 'drop', 'rename', or 'user_rename'") %
+        image(other_resolution.resolution));
       resolution.resolution = resolve_conflicts::keep;
     }
   else if ("rename" == idx(args, 0)())
@@ -409,7 +416,8 @@ set_resolution(resolve_conflicts::file_resolution_t &       resolution,
         other_resolution.resolution == resolve_conflicts::rename ||
         other_resolution.resolution == resolve_conflicts::content_user_rename,
         origin::user,
-        F("other resolution must be 'drop', 'rename', or 'user_rename'"));
+        F("other resolution is %s; specify 'drop', 'rename', or 'user_rename'") %
+        image(other_resolution.resolution));
 
       resolution.resolution  = resolve_conflicts::content_user;
       resolution.content = new_optimal_path(idx(args,1)(), false);

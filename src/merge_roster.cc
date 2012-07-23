@@ -74,9 +74,9 @@ namespace resolve_conflicts
         ostringstream oss;
         oss << "resolution: " << image(res.resolution);
         if (res.content != 0)
-          oss << " content: " << res.content;
+          oss << ", content: '" << res.content->as_external() << "'";
         if (res.rename.as_internal().length()>0)
-          oss << "rename: " << res.rename;
+          oss << ", rename: '" << res.rename.as_external() << "'";
         oss << "\n";
         return oss.str();
       }

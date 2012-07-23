@@ -308,6 +308,15 @@ mkdir("_MTN/resolutions")
 writefile("_MTN/resolutions/file_10", "file_10 user")
 check(mtn("conflicts", "resolve_first", "user_rename", "_MTN/resolutions/file_10", "file_10"), 0, nil, true)
 
+-- Test error message from invalid resolution
+check(mtn("conflicts", "resolve_first", "keep"), 1, nil, true)
+check(samelines("stderr",
+{"mtn: misuse: orphaned files must be renamed"}))
+
+check(mtn("conflicts", "resolve_first", "user", "foo"), 1, nil, true)
+check(samelines("stderr",
+{"mtn: misuse: orphaned files must be renamed"}))
+
 check(mtn("conflicts", "resolve_first", "drop"), 0, nil, nil)
 
 check(mtn("conflicts", "resolve_first", "rename", "file_9"), 0, nil, nil)
