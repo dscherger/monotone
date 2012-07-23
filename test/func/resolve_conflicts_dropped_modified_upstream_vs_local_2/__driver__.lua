@@ -130,9 +130,7 @@ check(samelines("stderr",
   "mtn: possible resolutions:",
   "mtn: resolve_first_right drop",
   "mtn: resolve_first_right rename",
-  "mtn: resolve_first_right user_rename \"new_content_name\" \"new_file_name\"",
-  "mtn: resolve_first_right keep",
-  "mtn: resolve_first_right user \"name\""}))   
+  "mtn: resolve_first_right user_rename \"new_content_name\" \"new_file_name\""}))   
 
 check(mtn("conflicts", "resolve_first_right", "drop"), 0, nil, true)
 check(samefilestd("conflicts_3_2_resolved", "_MTN/conflicts"))
@@ -159,9 +157,7 @@ check(samelines("stderr",
   "mtn: possible resolutions:",
   "mtn: resolve_first_left drop",
   "mtn: resolve_first_left rename",
-  "mtn: resolve_first_left user_rename \"new_content_name\" \"new_file_name\"",
-  "mtn: resolve_first_left keep",
-  "mtn: resolve_first_left user \"name\""}))   
+  "mtn: resolve_first_left user_rename \"new_content_name\" \"new_file_name\""}))   
 
 check(mtn("conflicts", "resolve_first_left", "drop"), 0, nil, true)
 check(samefilestd("conflicts_2_3_resolved", "_MTN/conflicts"))

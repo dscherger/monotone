@@ -108,7 +108,7 @@ check(mtn("conflicts", "resolve_first_right", "user", "checkout.sh"), 1, nil, tr
 check(grep("-v", "detected at", "stderr"), 0, true)
 canonicalize("stdout")
 check(samelines("stdout",
-{"mtn: misuse: other resolution must be 'drop', 'rename', or 'user_rename'"}))
+{"mtn: misuse: other resolution is content_user; specify 'drop', 'rename', or 'user_rename'"}))
 
 -- not in workspace; report nice error; conflicts file must be under
 -- _MTN, so need workspace. Fixes bug 30473
