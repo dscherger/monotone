@@ -19,6 +19,10 @@ http://wiki.monotone.ca/MonotoneProjectServer/
 Check out the release version of monotone:
 mtn -d /path/to/monotone.db checkout -r t:monotone-<version> --branch net.venge.monotone.monotone-<version> monotone-<version>
 
+Do not use the source tarball; if you do, the resulting monotone
+executable will not know the base revision, which is needed for good
+bug reports.
+
 Build the release. See the last instruction in ../INSTALL_windows_native.txt
 Then build the installer:
 
