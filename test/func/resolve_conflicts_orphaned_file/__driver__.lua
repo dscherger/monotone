@@ -1,5 +1,4 @@
 -- Test resolving orphaned_file and orphaned_directory conflicts
-
 mtn_setup()
 
 addfile("foo", "foo base")

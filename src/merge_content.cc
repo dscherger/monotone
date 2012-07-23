@@ -189,8 +189,9 @@ content_merge_database_adaptor::get_dropped_details(revision_id & rev_id,
   set<revision_id> parents;
   db.get_revision_parents(rev_id, parents);
 
-  for (set<revision_id>::iterator i = parents.begin(); i != parents.end(); i++)
+  while (parents.begin() != parents.end())
     {
+      set<revision_id>::iterator i = parents.begin();
       roster_t roster;
       marking_map marking_map;
 
@@ -203,6 +204,7 @@ content_merge_database_adaptor::get_dropped_details(revision_id & rev_id,
         }
       else
         {
+          parents.erase (i);
           set<revision_id> more_parents;
           db.get_revision_parents(*i, more_parents);
           parents.insert(more_parents.begin(), more_parents.end());
@@ -745,7 +747,8 @@ resolve_merge_conflicts(lua_hooks & lua,
           // Resolve the ones we can, if they have resolutions specified. Each
           // conflict list is deleted once all are resolved.
           result.resolve_orphaned_node_conflicts(lua, left_roster, right_roster, adaptor);
-          result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster, adaptor, nis);
+          result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster,
+                                                    dynamic_cast <content_merge_database_adaptor&>(adaptor), nis);
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
 
           result.resolve_file_content_conflicts (lua, left_roster, right_roster, adaptor);

@@ -31,9 +31,30 @@ namespace resolve_conflicts
 {
   enum resolution_t {none, content_user, content_internal, drop, keep, rename, content_user_rename};
 
-  typedef std::pair<resolve_conflicts::resolution_t, boost::shared_ptr<any_path> > file_resolution_t;
+  char const * image(resolution_t item);
 
-  boost::shared_ptr<any_path> new_file_path(std::string path);
+  enum side_t {left_side, right_side};
+
+  char const * image(side_t item);
+
+  struct file_resolution_t
+  {
+    resolution_t resolution;
+    boost::shared_ptr<any_path> content;
+    file_path rename;
+
+    file_resolution_t() :
+      resolution(none),
+      content(),
+      rename()
+      {}
+  };
+
+  std::string image(file_resolution_t res);
+
+  // For filename read from conflicts file; converts path to utf8. basic_io
+  // parser should return utf8 in the first place.
+  file_path file_path_external(std::string path);
 
 }
 
@@ -94,34 +115,54 @@ struct multiple_name_conflict
 // roster, with null parent and name fields.
 struct dropped_modified_conflict
 {
-  node_id left_nid, right_nid; // the dropped side is the null node, modified is valid.
+  // A dropped_modified conflict can be the result of a repeated
+  // duplicate_name conflict (see
+  // ../test/func/resolve_conflicts_dropped_modified_upstream_vs_local_2)
+  //
+  // If the user has recreated the dropped node, that also looks like a
+  // duplicate name conflict.
+  //
+  // In either case both nids are non-null.
+  //
+  // Dropped_modified can also be due to a dropped directory, in which case
+  // this looks like an orphaned_node conflict.
+  //
+  // If the resolution for the dropped node is 'keep', we need the revision
+  // that contains the node id, which is an ancestor of the merge parent.
+  // That information is also useful for an external front end, that wants to
+  // retreive the file contents for a merge tool.
+
+  resolve_conflicts::side_t dropped_side;
+
+ // If nid is set, it is in corresponding merge parent.
+  node_id left_nid, right_nid;
 
   bool orphaned; // if true, the dropped side is due to a dropped parent directory
 
-  node_id recreated; // by user, or in a previous drop/modified resolution
-
-  resolve_conflicts::file_resolution_t resolution;
-  file_path rename;
-  // if orphaned is true, the resolutions are 'drop' and 'user rename'; the
-  // latter requires two paths; content in resolution->second, filename in
-  // rename.
+  revision_id                          left_rid, right_rid;
+  resolve_conflicts::file_resolution_t left_resolution, right_resolution;
 
   dropped_modified_conflict(node_id left_nid, node_id right_nid) :
     left_nid(left_nid),
     right_nid(right_nid),
     orphaned(false),
-    recreated(the_null_node)
-    // rename is implicitly null
-  {resolution.first = resolve_conflicts::none;}
+    left_rid(),
+    right_rid(),
+    left_resolution(),
+    right_resolution()
+  {dropped_side = (left_nid == the_null_node ? resolve_conflicts::left_side : resolve_conflicts::right_side);}
 
   dropped_modified_conflict() :
     left_nid(the_null_node),
     right_nid(the_null_node),
     orphaned(false),
-    recreated(the_null_node)
-    // rename is implicitly null
-  {resolution.first = resolve_conflicts::none;}
+    left_rid(),
+    right_rid(),
+    left_resolution(),
+    right_resolution()
+  {}
 
+  // for find
   bool operator==(node_id n) {return left_nid == n || right_nid == n;}
 };
 
@@ -147,9 +188,10 @@ struct duplicate_name_conflict
   // it may be a bookkeeping or system path if resolution is 'user'.
   resolve_conflicts::file_resolution_t left_resolution, right_resolution;
 
-  duplicate_name_conflict ()
-  {left_resolution.first = resolve_conflicts::none;
-    right_resolution.first = resolve_conflicts::none;};
+  duplicate_name_conflict() {};
+
+  // for find
+  bool operator==(node_id n) {return left_nid == n || right_nid == n;}
 };
 
 // nodes with attribute conflicts are left attached in the resulting tree (unless
@@ -174,12 +216,15 @@ struct file_content_conflict
   file_id ancestor, left, right; // ancestor is set only when reading in a conflicts file
   resolve_conflicts::file_resolution_t resolution;
 
-  file_content_conflict () :
-    nid(the_null_node)
-    {resolution.first = resolve_conflicts::none;};
+  file_content_conflict() :
+    nid(the_null_node),
+    resolution()
+  {};
 
   file_content_conflict(node_id nid) :
-    nid(nid) {resolution.first = resolve_conflicts::none;};
+    nid(nid),
+    resolution()
+  {};
 };
 
 template <> void dump(invalid_name_conflict const & conflict, std::string & out);
@@ -269,7 +314,7 @@ struct roster_merge_result
   void resolve_dropped_modified_conflicts(lua_hooks & lua,
                                           roster_t const & left_roster,
                                           roster_t const & right_roster,
-                                          content_merge_adaptor & adaptor,
+                                          content_merge_database_adaptor & adaptor,
                                           temp_node_id_source & nis);
 
   void report_duplicate_name_conflicts(roster_t const & left,

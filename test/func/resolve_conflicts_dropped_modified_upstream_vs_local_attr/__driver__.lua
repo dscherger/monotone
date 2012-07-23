@@ -34,7 +34,7 @@ check(samelines("stderr",
  {"mtn: [left]     1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
   "mtn: [right]    a2889488ed1801a904d0219ec9939dfc2e9be033",
   "mtn: [ancestor] f80ff103551d0313647d6c84990bc9db6b158dac",
-  "mtn: conflict: file 'file_2' from revision f80ff103551d0313647d6c84990bc9db6b158dac",
+  "mtn: conflict: file 'file_2'",
   "mtn: modified on the left, named file_2",
   "mtn: dropped on the right",
   "mtn: 1 conflict with supported resolutions."}))
@@ -47,7 +47,7 @@ check(mtn("explicit_merge", "--resolve-conflicts", upstream_1, local_1, "testbra
 check(samelines("stderr",
  {"mtn: [left]  1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
   "mtn: [right] a2889488ed1801a904d0219ec9939dfc2e9be033",
-  "mtn: dropping 'file_2'",
+  "mtn: dropping 'file_2' from left",
   "mtn: [merged] dd1ba606b52fddb4431da3760ff65b65f6509a48"}))
 
 check(mtn("update"), 0, nil, true)
@@ -75,7 +75,7 @@ check(mtn("merge"), 1, nil, true)
 check(qgrep("mtn: misuse: merge failed due to unresolved conflicts", "stderr"))
 
 check(mtn("merge", "--resolve-conflicts"), 0, nil, true)
-check(qgrep("mtn: dropping 'file_2'", "stderr"))
+check(qgrep("mtn: dropping 'file_2' from left", "stderr"))
 
 check(mtn("update"), 0, nil, true)
 check(not exists("file_2"))
@@ -86,10 +86,10 @@ check(samelines("stderr",
  {"mtn: [left]     c0ed8c29ffad149af1c948969e8e80d270999b13",
   "mtn: [right]    dd1ba606b52fddb4431da3760ff65b65f6509a48",
   "mtn: [ancestor] 1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
-  "mtn: conflict: file 'file_2' from revision 1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2",
+  "mtn: conflict: file 'file_2'",
   "mtn: modified on the left, named file_2",
   "mtn: dropped on the right",
-  "mtn: resolution: drop",
+  "mtn: left_resolution: drop",
   "mtn: 1 conflict with supported resolutions."}))
 
 -- 'conflicts store' is not needed unless there are other conflicts,
@@ -97,5 +97,12 @@ check(samelines("stderr",
 -- the attr resolution properly.
 check(mtn("conflicts", "store", upstream_2, local_2), 0, nil, true)
 check(samefilestd("conflicts", "_MTN/conflicts"))
+
+-- repeat merge with left, right swapped to verify symmetry in code
+remove("_MTN/conflicts")
+check(mtn("explicit_merge", "--resolve-conflicts", local_2, upstream_2, "testbranch"), 0, nil, true)
+check(qgrep("mtn: dropping 'file_2' from right", "stderr"))
+check(mtn("update"), 0, nil, true)
+check(not exists("file_2"))
 
 -- end of file
