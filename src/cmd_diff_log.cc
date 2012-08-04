@@ -1,4 +1,4 @@
-// Copyright (C) 2009, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2009, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -32,6 +32,7 @@
 #include "database.hh"
 #include "work.hh"
 #include "roster.hh"
+#include "vocab_cast.hh"
 
 using std::cout;
 using std::make_pair;
@@ -66,6 +67,7 @@ dump_diff(lua_hooks & lua,
           file_path const & left_path, file_path const & right_path,
           file_id const left_id, file_id const right_id,
           data const & left_data, data const & right_data,
+          bool is_manual_merge,
           diff_type const diff_format,
           bool external_diff_args_given,
           string external_diff_args,
@@ -74,9 +76,7 @@ dump_diff(lua_hooks & lua,
 {
   if (diff_format == external_diff)
     {
-      bool is_binary = false;
-      if (guess_binary(left_data()) || guess_binary(right_data()))
-        is_binary = true;
+      bool is_binary = is_manual_merge || guess_binary(left_data()) || guess_binary(right_data());
 
       file_path path = right_path;
       if (path.empty()) // use the left path for deletes
@@ -111,6 +111,7 @@ dump_diff(lua_hooks & lua,
       make_diff(left, right,
                 left_id, right_id,
                 left_data, right_data,
+                is_manual_merge,
                 output, diff_format, encloser);
     }
 
@@ -119,8 +120,9 @@ struct diff_node_data
 {
   file_path left_path;
   file_path right_path;
-  file_id left_id;
-  file_id right_id;
+  file_id   left_id;
+  file_id   right_id;
+  bool      is_manual_merge;
 };
 
 static void
@@ -139,6 +141,7 @@ dump_diffs(lua_hooks & lua,
   // Put all node data in a multimap with the file path of the node as key
   // which gets automatically sorted. For removed nodes the file path is
   // the left_path, for added, patched and renamed nodes it is the right_path.
+  attr_key manual_merge_key = typecast_vocab<attr_key>(utf8("mtn:manual_merge"));
   std::multimap<file_path, diff_node_data> path_node_data;
   parallel::iter<node_map> i(left_roster.all_nodes(), right_roster.all_nodes());
   while (i.next())
@@ -160,6 +163,8 @@ dump_diffs(lua_hooks & lua,
               dat.left_id = downcast_to_file_t(i.left_data())->content;
               // right_id is null
 
+              dat.is_manual_merge = (i.left_data()->attrs.find(manual_merge_key) != i.left_data()->attrs.end());
+
               path_node_data.insert(make_pair(dat.left_path, dat));
           }
           break;
@@ -174,6 +179,8 @@ dump_diffs(lua_hooks & lua,
 
               // left_id is null
               dat.right_id = downcast_to_file_t(i.right_data())->content;
+
+              dat.is_manual_merge = (i.right_data()->attrs.find(manual_merge_key) != i.right_data()->attrs.end());
 
               path_node_data.insert(make_pair(dat.right_path, dat));
             }
@@ -192,6 +199,10 @@ dump_diffs(lua_hooks & lua,
 
               left_roster.get_name(i.left_key(), dat.left_path);
               right_roster.get_name(i.right_key(), dat.right_path);
+
+              dat.is_manual_merge =
+                (i.left_data()->attrs.find(manual_merge_key) != i.left_data()->attrs.end()) or
+                (i.right_data()->attrs.find(manual_merge_key) != i.right_data()->attrs.end());
 
               path_node_data.insert(make_pair(dat.right_path, dat));
             }
@@ -219,6 +230,7 @@ dump_diffs(lua_hooks & lua,
                 dat.left_path, dat.right_path,
                 dat.left_id, dat.right_id,
                 left_data, right_data,
+                dat.is_manual_merge,
                 diff_format, external_diff_args_given, external_diff_args,
                 encloser, output);
     }

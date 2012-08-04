@@ -1,5 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -469,11 +469,12 @@ make_diff(string const & filename1,
           file_id const & id2,
           data const & data1,
           data const & data2,
+          bool is_manual_merge,
           ostream & ost,
           diff_type type,
           string const & pattern)
 {
-  if (guess_binary(data1()) || guess_binary(data2()))
+  if (is_manual_merge || guess_binary(data1()) || guess_binary(data2()))
     {
       // If a file has been removed, filename2 will be "/dev/null".
       // It doesn't make sense to output that.

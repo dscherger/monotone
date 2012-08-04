@@ -132,6 +132,7 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
   make_diff(src_name, dst_name,
             src_id, dst_id,
             src.inner(), dst.inner(),
+            false, // is_manual_merge
             cout, app.opts.diff_format, pattern);
 }
 

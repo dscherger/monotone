@@ -1,5 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -22,6 +22,7 @@ void make_diff(std::string const & filename1,
                file_id const & id2,
                data const & data1,
                data const & data2,
+               bool is_manual_merge,
                std::ostream & ost,
                diff_type type,
                std::string const & pattern);
