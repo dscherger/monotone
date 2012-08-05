@@ -3493,6 +3493,7 @@ another directory to the project root.
 @command{conflicts} does not support resolving this conflict.
 
 @subheading Dropped/Modified file Conflict
+@anchor{dropped_modified_conflict}
 This conflict occurs when a file is dropped in one merge parent,
 and modified in the other.
 
@@ -5296,6 +5297,23 @@ command applies to all attributes attached to the file given in
     Sets @var{attr} on @var{path} to @var{value}.
 
    @end table
+
+Several attributes are reserved for mtn use; they all start with ``mtn:'':
+    @table @command
+    @item mtn:encoding
+    Specify character encoding for the file.
+
+    @item mtn:execute
+    File is executable.
+
+    @item mtn:manual_merge
+    Don't use internal or external diff or merger.
+
+    @item mtn:resolve_conflict
+    Specify @command{drop} resolution for a recurring dropped/modified
+    conflict (@ref{dropped_modified_conflict}).
+
+    @end table
 
 @anchor{mtn commit}@item mtn commit
 @itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...] [@var{pathname...}]
