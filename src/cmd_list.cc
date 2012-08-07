@@ -1,4 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -784,6 +785,7 @@ CMD(known, "known", "", CMD_REF(list), "",
 
 static void get_unknown_ignored(app_state & app,
                                 args_vector const & args,
+                                bool recurse,
                                 set<file_path> & unknown,
                                 set<file_path> & ignored)
 {
@@ -798,28 +800,36 @@ static void get_unknown_ignored(app_state & app,
   if (roots.empty())
     roots.push_back(file_path());
 
-  work.find_unknown_and_ignored(db, mask, roots, unknown, ignored);
+  work.find_unknown_and_ignored(db, mask, recurse, roots, unknown, ignored);
 }
 
+CMD_PRESET_OPTIONS(unknown)
+{
+  opts.recursive=true;
+}
 CMD(unknown, "unknown", "", CMD_REF(list), "[PATH]",
     N_("Lists workspace files that are unknown in the current branch"),
     "",
-    options::opts::depth | options::opts::exclude)
+    options::opts::depth | options::opts::exclude | options::opts::recursive)
 {
   set<file_path> unknown, _;
-  get_unknown_ignored(app, args, unknown, _);
+  get_unknown_ignored(app, args, app.opts.recursive, unknown, _);
 
   copy(unknown.begin(), unknown.end(),
        ostream_iterator<file_path>(cout, "\n"));
 }
 
+CMD_PRESET_OPTIONS(ignored)
+{
+  opts.recursive=true;
+}
 CMD(ignored, "ignored", "", CMD_REF(list), "[PATH]",
     N_("Lists workspace files that are ignored in the current branch"),
     "",
-    options::opts::depth | options::opts::exclude)
+    options::opts::depth | options::opts::exclude | options::opts::recursive)
 {
   set<file_path> _, ignored;
-  get_unknown_ignored(app, args, _, ignored);
+  get_unknown_ignored(app, args, app.opts.recursive, _, ignored);
 
   copy(ignored.begin(), ignored.end(),
        ostream_iterator<file_path>(cout, "\n"));

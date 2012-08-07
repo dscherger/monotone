@@ -5270,13 +5270,13 @@ more information on @command{add} and @command{commit}.
 
 As a convenience, the @option{--unknown @var{pathname...}} option can be used;
 this option will cause all of the files listed by @command{mtn list
-unknown @var{pathname...}} to be added.
+unknown @var{pathname...}} to be added. However, note that the default
+for @command{list unknown} is @option{--recursive}, while the default
+for @command{add} is @option{--no-recursive}.
 
 Adding directories, whether explicitly or using the @option{--unknown}
 option, is non-recursive by default.  The @command{add} command can be
-made recursive using the @option{--recursive} option.  When adding a
-directory non-recursively, monotone will warn if the directory has
-any files that would be added by a recursive add.
+made recursive using the @option{--recursive} option.
 
 @anchor{mtn attr}@item mtn attr
 Manage @ref{File Attributes}.
@@ -6144,7 +6144,7 @@ from the listing.
 Two or more files are considered duplicates if the @sc{sha1} hashes of their
 contents are equal.
 
-@item mtn list ignored [@var{pathname...}]
+@item mtn list ignored [--[no-]recursive] [@var{pathname...}]
 @itemx mtn ls ignored
 @command{ls ignored} is an alias for @command{list ignored}.
 
@@ -6160,6 +6160,11 @@ From within a subdirectory of the workspace the @command{list
 ignored} command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for ignored
 files to the current subdirectory of the workspace.
+
+Default is @option{--recursive}; all directories will be
+traversed. Specifying @option{--no-recursive} restricts the listing to
+the root directory of the specified path (or the workspace, if no path
+is given).
 
 @item mtn list keys [@var{pattern}]
 @itemx mtn ls keys
@@ -6212,7 +6217,7 @@ This command lists all known tags in your database that match the
 given @var{pattern} (default all tags).  If @option{--exclude}
 options are provided they are used as globs to exclude specified tags.
 
-@item mtn list unknown [@var{pathname...}]
+@item mtn list unknown [--[no-]recursive] [@var{pathname...}]
 @itemx mtn ls unknown
 @command{ls unknown} is an alias for @command{list unknown}.
 
@@ -6227,6 +6232,11 @@ From within a subdirectory of the workspace the @command{list
 unknown} command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for unknown
 files to the current subdirectory of the workspace.
+
+Default is @option{--recursive}; all directories will be
+traversed. Specifying @option{--no-recursive} restricts the listing to
+the root directory of the specified path (or the workspace, if no path
+is given).
 
 @itemx mtn list vars [@var{domain}]
 @itemx mtn ls vars

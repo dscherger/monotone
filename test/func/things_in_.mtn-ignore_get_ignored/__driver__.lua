@@ -6,6 +6,8 @@ writefile("foo")
 writefile("bar")
 writefile("baz/xyzzy")
 
+-- "*.d" is a bad regexp; nothing to repeat (this is _not_ shell glob syntax)
+-- Show this is not fatal, but does produce an error message.
 writefile(".mtn-ignore", "bar\nbaz\n*.d\n")
 
 check(raw_mtn("ls", "unknown"), 0, true, true)
@@ -18,7 +20,7 @@ check(not qgrep("baz", "unknown"))
 check(qgrep("warning", "unknownerr"))
 
 
-check(raw_mtn("ls", "ignored"), 0, true, true)
+check(raw_mtn("ls", "ignored", "--no-recursive"), 0, true, true)
 copy("stdout", "ignored")
 copy("stderr", "ignorederr")
 

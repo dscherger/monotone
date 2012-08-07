@@ -15,6 +15,7 @@ check(mtn("add", "foobar"), 1, false, false)
 check(mtn("add", "file0"), 0, false, true)
 check(qgrep("adding 'file0'", "stderr"))
 
+-- Default is --no-recursive
 check(mtn("add", "dir"), 0, false, true)
 check(not qgrep("adding 'dir/file1'", "stderr"))
 check(not qgrep("adding 'dir/file2'", "stderr"))
@@ -45,36 +46,60 @@ check(not qgrep("file0", "stdout"))
 check(not qgrep("file1", "stdout"))
 check(not qgrep("file2", "stdout"))
 
--- add --unknown should add any files that ls unknown shows you and not ignored
-
 writefile("file3", "file 3\n")
---writefile("file4.ignore", "file 4 ignore\n")
 writefile("dir/file5", "file 5\n")
-writefile("dir/file6.ignore", "file 6\n")
 mkdir("dir2")
 writefile("dir2/file7", "file 7\n")
---writefile(".mtn-ignore", ".*\\.ignore$\n")
 
---check(raw_mtn("ls", "unkown"), 0, true, false)
+-- 'add --unknown --recursive' should add any files that 'ls unknown' shows.
+-- Default for add is --no-recursive, for ls it is --recursive. So dir/* and dir2/* are added.
+check(mtn("ls", "unknown"), 0, true, false)
+check(samelines("stdout",
+{"dir/file5",
+ "dir2",
+ "dir2/file7",
+ "emptyhomedir",
+ "file3",
+ "min_hooks.lua",
+ "stderr",
+ "stdout",
+ "tester.log"}))
 
-check(mtn("add", "--unknown"), 0, false, true)
-check(qgrep("adding 'file3'", "stderr"))
---check(not qgrep("adding 'file4\.ignore'", "stderr"))
-check(qgrep("adding 'dir/file5'", "stderr"))
---check(not qgrep("adding 'dir/file6\.ignore'", "stderr"))
-check(qgrep("adding 'dir2'", "stderr"))
-check(not qgrep("adding 'dir2/file7'", "stderr"))
-check(not qgrep("skipping 'dir2/file7'", "stderr"))
-check(not qgrep("adding 'test_hooks.lua'", "stderr"))
-
+-- Note that 'ls ignored' does not recurse into ignored directory 'keys'
+-- ignored files are _not_ in .mtn-ignore; see ../test_hooks.lua ignore_file
+check(mtn("ls", "ignored"), 0, true, false)
+check(samelines("stdout",
+{"keys",
+ "test.db",
+ "test_hooks.lua",
+ "ts-stderr",
+ "ts-stdin",
+ "ts-stdout"}))
+ 
+check(mtn("add", "--unknown", "--recursive"), 0, false, true)
+check(samelines("stderr",
+{"mtn: skipping ignorable file 'keys'",
+ "mtn: skipping ignorable file 'test.db'",
+ "mtn: skipping ignorable file 'test_hooks.lua'",
+ "mtn: skipping ignorable file 'ts-stderr'",
+ "mtn: skipping ignorable file 'ts-stdin'",
+ "mtn: skipping ignorable file 'ts-stdout'",
+ "mtn: adding 'dir/file5' to workspace manifest",
+ "mtn: adding 'dir2' to workspace manifest",
+ "mtn: adding 'dir2/file7' to workspace manifest",
+ "mtn: adding 'emptyhomedir' to workspace manifest",
+ "mtn: adding 'file3' to workspace manifest",
+ "mtn: adding 'min_hooks.lua' to workspace manifest",
+ "mtn: adding 'stderr' to workspace manifest",
+ "mtn: adding 'stdout' to workspace manifest",
+ "mtn: adding 'tester.log' to workspace manifest"}))
+ 
 check(mtn("status"), 0, true)
 check(not qgrep("file0", "stdout"))
 check(not qgrep("file1", "stdout"))
 check(not qgrep("file2", "stdout"))
 check(qgrep("file3", "stdout"))
---check(not qgrep("file4", "stdout"))
 check(qgrep("file5", "stdout"))
---check(not qgrep("file6", "stdout"))
 
 commit()
 
@@ -83,6 +108,6 @@ check(not qgrep("file0", "stdout"))
 check(not qgrep("file1", "stdout"))
 check(not qgrep("file2", "stdout"))
 check(not qgrep("file3", "stdout"))
---check(not qgrep("file4", "stdout"))
 check(not qgrep("file5", "stdout"))
---check(not qgrep("file6", "stdout"))
+
+-- end of file

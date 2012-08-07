@@ -751,29 +751,38 @@ void perform_add(app_state & app,
                  workspace & work,
                  vector<file_path> roots)
 {
-  set<file_path> paths;
   bool add_recursive = app.opts.recursive;
   if (app.opts.unknown)
     {
       path_restriction mask(roots, args_to_paths(app.opts.exclude),
                             app.opts.depth, ignored_file(work));
+      set<file_path> unknown;
       set<file_path> ignored;
 
       // if no starting paths have been specified use the workspace root
       if (roots.empty())
         roots.push_back(file_path());
 
-      work.find_unknown_and_ignored(db, mask, roots, paths, ignored);
+      work.find_unknown_and_ignored(db, mask, add_recursive, roots, unknown, ignored);
 
-      work.perform_additions(db, ignored,
-                                 add_recursive, !app.opts.no_ignore);
+      // This does nothing unless --no-ignore is given
+      work.perform_additions(db, ignored, add_recursive, !app.opts.no_ignore);
+
+      // No need for recursion here; all paths to be added are explicit in unknown
+      work.perform_additions(db, unknown, false, true);
     }
   else
-    paths = set<file_path>(roots.begin(), roots.end());
-
-  work.perform_additions(db, paths, add_recursive, !app.opts.no_ignore);
+    {
+      // There are at most two roots in a workspace
+      set<file_path> paths = set<file_path>(roots.begin(), roots.end());
+      work.perform_additions(db, paths, add_recursive, !app.opts.no_ignore);
+    }
 }
 
+CMD_PRESET_OPTIONS(add)
+{
+  opts.recursive=false; // match 'ls unknown' and 'add --unknown --recursive'
+}
 CMD(add, "add", "", CMD_REF(workspace), N_("[PATH]..."),
     N_("Adds files to the workspace"),
     "",

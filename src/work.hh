@@ -138,6 +138,7 @@ public:
 
   void find_unknown_and_ignored(database & db,
                                 path_restriction const & mask,
+                                bool recurse,
                                 std::vector<file_path> const & roots,
                                 std::set<file_path> & unknown,
                                 std::set<file_path> & ignored);

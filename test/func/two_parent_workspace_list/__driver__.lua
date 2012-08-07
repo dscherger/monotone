@@ -30,8 +30,25 @@ check(mtn("ls", "known"), 0, "file1\nfile2\nfile3\nfile4\n", nil)
 -- ignore them all.  if the test suite is ever fixed to use a
 -- subdirectory for the workspace (and therefore to keep it cleaner)
 -- or to ignore them all properly, this will have to change.
-check(mtn("ls", "ignored"), 0, "keys\ntest.db\ntest_hooks.lua\nts-stderr\nts-stdin\nts-stdout\n", nil)
-check(mtn("ls", "unknown"), 0, "_MTN.old\nemptyhomedir\nmin_hooks.lua\npaths-new\npaths-old\nstderr\ntester.log\n", nil)
+check(mtn("ls", "ignored", "--no-recursive"), 0, true, nil)
+check(samelines("stdout",
+{"keys",
+ "test.db",
+ "test_hooks.lua",
+ "ts-stderr",
+ "ts-stdin",
+ "ts-stdout"}))
+
+check(mtn("ls", "unknown", "--no-recursive"), 0, true, nil)
+check(samelines("stdout",
+{"_MTN.old",
+ "emptyhomedir",
+ "min_hooks.lua",
+ "paths-new",
+ "paths-old",
+ "stderr",
+ "stdout",
+ "tester.log"}))
 
 -- we do this after the other tests so it doesn't interfere with them.
 remove("file4")

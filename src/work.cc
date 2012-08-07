@@ -1007,12 +1007,14 @@ struct file_itemizer : public tree_walker
   set<file_path> & unknown;
   set<file_path> & ignored;
   path_restriction const & mask;
+  bool const recurse;
   file_itemizer(database & db, workspace & work,
                 set<file_path> & k,
                 set<file_path> & u,
                 set<file_path> & i,
-                path_restriction const & r)
-    : db(db), work(work), known(k), unknown(u), ignored(i), mask(r) {}
+                path_restriction const & r,
+                bool recurse)
+    : db(db), work(work), known(k), unknown(u), ignored(i), mask(r), recurse(recurse) {}
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
 };
@@ -1022,7 +1024,8 @@ bool
 file_itemizer::visit_dir(file_path const & path)
 {
   this->visit_file(path);
-  return known.find(path) != known.end();
+  // Don't recurse into ignored directories, even for 'ls ignored'.
+  return recurse && ignored.find(path) == ignored.end();
 }
 
 void
@@ -1141,60 +1144,8 @@ addition_builder::add_nodes_for(file_path const & path,
 bool
 addition_builder::visit_dir(file_path const & path)
 {
-  struct directory_has_unignored_files_exception {};
-  struct directory_has_unignored_files : public dirent_consumer
-  {
-    directory_has_unignored_files(workspace & work, file_path const & p)
-      : work(work), p(p) {}
-    virtual void consume(char const * s)
-    {
-      try
-        {
-          file_path entry = p / path_component(s);
-          if (!work.ignore_file(entry))
-            throw directory_has_unignored_files_exception();
-        }
-      catch (std::logic_error)
-        {
-          // ignore this file for purposes of the warning; this file
-          // wouldn't have been added by a recursive add anyway.
-        }
-    }
-  private:
-    workspace & work;
-    file_path const & p;
-  };
-
-  if (!recursive)
-    {
-      bool warn = false;
-
-      // If the db can ever be stored in a dir
-      // then revisit this logic
-      I(!db.is_dbfile(path));
-
-      if (!respect_ignore)
-        warn = !directory_empty(path);
-      else if (!work.ignore_file(path))
-        {
-          directory_has_unignored_files dhuf(work, path);
-          try
-            {
-              read_directory(path, dhuf, dhuf, dhuf);
-            }
-          catch (directory_has_unignored_files_exception)
-            {
-              warn = true;
-            }
-        }
-
-      if (warn)
-        W(F("non-recursive add: Files in the directory '%s' "
-            "will not be added automatically.") % path);
-    }
-
   this->visit_file(path);
-  return true;
+  return recursive && (!respect_ignore || !work.ignore_file(path));
 }
 
 void
@@ -1781,6 +1732,7 @@ workspace::find_missing(roster_t const & new_roster_shape,
 void
 workspace::find_unknown_and_ignored(database & db,
                                     path_restriction const & mask,
+                                    bool recurse,
                                     vector<file_path> const & roots,
                                     set<file_path> & unknown,
                                     set<file_path> & ignored)
@@ -1792,7 +1744,7 @@ workspace::find_unknown_and_ignored(database & db,
   get_current_roster_shape(db, nis, new_roster);
   new_roster.extract_path_set(known);
 
-  file_itemizer u(db, *this, known, unknown, ignored, mask);
+  file_itemizer u(db, *this, known, unknown, ignored, mask, recurse);
   for (vector<file_path>::const_iterator
          i = roots.begin(); i != roots.end(); ++i)
     {
