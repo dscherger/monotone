@@ -1145,7 +1145,9 @@ bool
 addition_builder::visit_dir(file_path const & path)
 {
   this->visit_file(path);
-  return recursive && (!respect_ignore || !work.ignore_file(path));
+  // when --recursive, don't recurse into ignored dirs (it would just waste time)
+  // when --no-recursive, this result is ignored (see workspace::perform_additions)
+  return !work.ignore_file(path);
 }
 
 void
