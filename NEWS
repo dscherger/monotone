@@ -54,6 +54,9 @@ XXX XXX XX XX:XX:XX UTC 201X
 
         - Monotone now compiles against Lua 5.2 as well.
 
+        - mtn add and mtn list are now more consistent in their use of
+          --recursive and --unknown options.
+        
         Internal
 
         - The performance and memory usage of regular expressions has

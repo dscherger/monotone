@@ -5718,9 +5718,12 @@ and optionally also exclude patterns for the exchange:
 @anchor{netsync uri}
 @smallexample
 @group
-<scheme>://[[<user>@@]<host>[:<port>]][/<path>][?<pattern>[;-<exclude-pattern>[...]]]
+<scheme>://[[<user>@@]<host>[:<port>]][/<path>][?[-]<pattern>[;[-]<pattern>]...]
 @end group
 @end smallexample
+
+Branches matching a pattern are excluded if the pattern is preceded by
+'-', included otherwise.
 
 Valid examples of URIs monotone accepts are:
 
@@ -5728,6 +5731,7 @@ Valid examples of URIs monotone accepts are:
 @group
 mtn://my.server:4690?my.branch
 mtn://my.server/project?my.other.branch*;-my.other.branch.test
+mtn://my.server/project?one.branch;-one.branch.test;another.branch;-another.branch.test
 file:///path/to/database.mtn?my.branch
 ssh://joe@@my.server/~/db.mtn?joes.branch
 @end group
