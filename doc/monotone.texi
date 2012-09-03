@@ -3509,11 +3509,11 @@ command for the attribute to be processed. Note that a
 processed when @command{--resolve-conflicts} is specified; the user must
 delete such files when they are no longer needed.
 
-The attribute is useful in the case
-where the conflict will occur again in the future, for example when a
-file that is maintained in an upstream branch is not needed, and
-therefore dropped, in a local branch. The user only needs to specify
-the conflict resolution once, via the attribute.
+The attribute is useful in the case where the conflict will occur
+again in the future, for example when a file that is maintained in an
+upstream branch is not needed, and therefore dropped, in a local
+branch. The user only needs to specify the conflict resolution once,
+via the attribute.
 
 Because of the @emph{die-die-die} policy, monotone internally must
 first drop the modified file, and then add a new file with the same
@@ -3523,11 +3523,15 @@ merge, not showing the previous history for the file. That history is
 still there; the user can see it by starting @command{mtn log} again
 for the same file but in the parent of the merge.
 
+Note that we don't need a @command{keep} value for the
+@command{mtn:resolve_conflict} attribute; if the local branch keeps a
+file that the upstream branch drops, the first keep resolution will
+break history, and the conflict will not occur again.
+
 A special case occurs when the user re-adds the file after dropping
 it, then attempts to merge. In this case, the possible resolutions are
 to keep the re-added version, or keep a user modified version,
-replacing the re-added version (drop is
-not a valid resolution).
+replacing the re-added version (drop is not a valid resolution).
 
 There is no such thing as a dropped/modified directory; if the
 directory is empty, the only possible change is rename, which is
