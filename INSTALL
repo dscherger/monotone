@@ -44,6 +44,12 @@ building and installation process for monotone
              databases/sqlite3 devel/automake1.9 devel/boost devel/gettext
              devel/gmake devel/pcre lang/lua security/botan dns/libidn
 
+        on OpenBSD:
+
+           install the following packages using 'pkg_add':
+             autoconf automake boost botan gmake libiconv libidn lua
+             pcre sqlite3 
+
         on Gentoo:
 
            emerge the following packages:
