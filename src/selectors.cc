@@ -169,7 +169,7 @@ string preprocess_date_for_selector(string sel, lua_hooks & lua, bool equals)
 
   if (sel != tmp)
     {
-      P(F("expanded date '%s' -> '%s'") % sel % tmp);
+      P(F("expanded date '%s' to UTC -> '%s'") % sel % tmp);
       sel = tmp;
     }
   if (equals && sel.size() < 19)
