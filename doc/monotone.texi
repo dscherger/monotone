@@ -4432,7 +4432,7 @@ OK, that's enough.  Let's see what we have:
 @smallexample
 @group
 $ cd ..
-$ mtn -d A automate select i: | mtn -d A automate toposort -@-
+$ mtn -d A automate select i: | mtn -d A automate toposort -@@-
 a423db0ad651c74e41ab2529eca6f17513ccf714
 d14e89582ad9030e1eb62f563c8721be02ca0b65
 151f1fb125f19ebe11eb8bfe3a5798fcbea4e736
@@ -4525,12 +4525,12 @@ Let's take a look at what's in each database:
 
 @smallexample
 @group
-$ mtn -d A automate select i: | mtn -d A automate toposort -@-
+$ mtn -d A automate select i: | mtn -d A automate toposort -@@-
 a423db0ad651c74e41ab2529eca6f17513ccf714
 d14e89582ad9030e1eb62f563c8721be02ca0b65
 151f1fb125f19ebe11eb8bfe3a5798fcbea4e736
 
-$ mtn -d B automate select i: | mtn -d B automate toposort -@-
+$ mtn -d B automate select i: | mtn -d B automate toposort -@@-
 a423db0ad651c74e41ab2529eca6f17513ccf714
 d14e89582ad9030e1eb62f563c8721be02ca0b65
 @end group
