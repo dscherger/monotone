@@ -23,6 +23,7 @@
 #include "cmd.hh"
 #include "roster.hh"
 #include "database.hh"
+#include "date_format.hh"
 #include "globish.hh"
 #include "keys.hh"
 #include "key_store.hh"
@@ -113,6 +114,8 @@ CMD(certs, "certs", "", CMD_REF(list), "REVID",
 
   transaction_guard guard(db, false);
 
+  string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
+
   revision_id ident;
   complete(app.opts, app.lua,  project, idx(args, 0)(), ident);
   vector<cert> ts;
@@ -183,6 +186,11 @@ CMD(certs, "certs", "", CMD_REF(list), "REVID",
       vector<string> lines;
       split_into_lines(washed, lines);
       std::string value_first_line = lines.empty() ? "" : idx(lines, 0);
+
+      if (idx(certs, i).name == date_cert_name)
+        {
+          value_first_line = date_t(value_first_line).as_formatted_localtime(date_fmt);
+        }
 
       key_identity_info identity;
       identity.id = idx(certs, i).key;
@@ -1068,6 +1076,7 @@ CMD_AUTOMATE(certs, N_("REV"),
   sort(certs.begin(), certs.end());
 
   basic_io::printer pr;
+  string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 
   for (size_t i = 0; i < certs.size(); ++i)
     {
@@ -1105,8 +1114,14 @@ CMD_AUTOMATE(certs, N_("REV"),
         }
       st.push_str_pair(syms::signature, stat);
 
+      string value = tv();
+      if (name == date_cert_name)
+        {
+          value = date_t(tv()).as_formatted_localtime(date_fmt);
+        }
+      
       st.push_str_pair(syms::name, name());
-      st.push_str_pair(syms::value, tv());
+      st.push_str_pair(syms::value, value);
       st.push_str_pair(syms::trust, (trusted ? "trusted" : "untrusted"));
 
       pr.print_stanza(st);
