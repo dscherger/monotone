@@ -10,7 +10,7 @@
 -- this is the standard set of lua hooks for monotone;
 -- user-provided files can override it or add to it.
 
-function temp_file(namehint)
+function temp_file(namehint, filemodehint)
    local tdir
    tdir = os.getenv("TMPDIR")
    if tdir == nil then tdir = os.getenv("TMP") end
@@ -22,8 +22,14 @@ function temp_file(namehint)
    else
       filename = string.format("%s/mtn.%s.XXXXXX", tdir, namehint)
    end
+   local filemode
+   if filemodehint == nil then
+      filemode = "r+"
+   else
+      filemode = filemodehint
+   end
    local name = mkstemp(filename)
-   local file = io.open(name, "r+")
+   local file = io.open(name, filemode)
    return file, name
 end
 
@@ -826,8 +832,8 @@ mergers.opendiff = {
    wanted = function () return true end
 }
 
-function write_to_temporary_file(data, namehint)
-   tmp, filename = temp_file(namehint)
+function write_to_temporary_file(data, namehint, filemodehint)
+   tmp, filename = temp_file(namehint, filemodehint)
    if (tmp == nil) then
       return nil
    end;
@@ -914,10 +920,10 @@ function merge3 (anc_path, left_path, right_path, merged_path, ancestor, left, r
    tbl.rfile = nil
    tbl.outfile = nil
    tbl.meld_exists = false
-   tbl.lfile = write_to_temporary_file (left, "left")
-   tbl.afile = write_to_temporary_file (ancestor, "ancestor")
-   tbl.rfile = write_to_temporary_file (right, "right")
-   tbl.outfile = write_to_temporary_file ("", "merged")
+   tbl.lfile = write_to_temporary_file (left, "left", "rb+")
+   tbl.afile = write_to_temporary_file (ancestor, "ancestor", "rb+")
+   tbl.rfile = write_to_temporary_file (right, "right", "rb+")
+   tbl.outfile = write_to_temporary_file ("", "merged", "rb+")
 
    if tbl.lfile ~= nil and tbl.rfile ~= nil and tbl.afile ~= nil and tbl.outfile ~= nil
    then
@@ -1055,8 +1061,8 @@ external_diff_default_args = "-u"
 
 -- default external diff, works for gnu diff
 function external_diff(file_path, data_old, data_new, is_binary, diff_args, rev_old, rev_new)
-   local old_file = write_to_temporary_file(data_old);
-   local new_file = write_to_temporary_file(data_new);
+   local old_file = write_to_temporary_file(data_old, nil, "rb+");
+   local new_file = write_to_temporary_file(data_new, nil, "rb+");
 
    if diff_args == nil then diff_args = external_diff_default_args end
    execute("diff", diff_args, "--label", file_path .. "\told", old_file, "--label", file_path .. "\tnew", new_file);
