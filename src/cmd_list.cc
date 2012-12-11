@@ -23,6 +23,7 @@
 #include "cmd.hh"
 #include "roster.hh"
 #include "database.hh"
+#include "date_format.hh"
 #include "globish.hh"
 #include "keys.hh"
 #include "key_store.hh"
@@ -113,6 +114,8 @@ CMD(certs, "certs", "", CMD_REF(list), "REVID",
 
   transaction_guard guard(db, false);
 
+  string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
+  
   revision_id ident;
   complete(app.opts, app.lua,  project, idx(args, 0)(), ident);
   vector<cert> ts;
@@ -183,6 +186,18 @@ CMD(certs, "certs", "", CMD_REF(list), "REVID",
       vector<string> lines;
       split_into_lines(washed, lines);
       std::string value_first_line = lines.empty() ? "" : idx(lines, 0);
+
+      if (idx(certs, i).name == date_cert_name)
+        {
+          if (!date_fmt.empty())
+            {
+              value_first_line = date_t(value_first_line).as_formatted_localtime(date_fmt);
+            }
+          else
+            {
+              value_first_line = date_t(value_first_line).as_iso_8601_extended();
+            }
+        }
 
       key_identity_info identity;
       identity.id = idx(certs, i).key;

@@ -68,3 +68,8 @@ test_tz_fmt("ZZT-09:00", "%Y-%m-%d %H:%M %Z%z", "1999-12-31 22:00 ZZT+0900")
 test_tz_fmt("ZZT-10:00", "%Y-%m-%d %H:%M %Z%z", "1999-12-31 23:00 ZZT+1000")
 test_tz_fmt("ZZT-11:00", "%Y-%m-%d %H:%M %Z%z", "2000-01-01 00:00 ZZT+1100")
 test_tz_fmt("ZZT-12:00", "%Y-%m-%d %H:%M %Z%z", "2000-01-01 01:00 ZZT+1200")
+
+-- Warning, "expected" must match the last test_tz_fmt as timezone was changed
+check(get("expected"))
+check(mtn("ls", "certs", "--date-format=%Y-%m-%dT%H:%M:%S%z", rev), 0, false, false)
+check(samefile("expected", "ts-stdout"))
