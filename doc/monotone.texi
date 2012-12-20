@@ -11975,7 +11975,9 @@ has not been given access will be denied access even if it doesn't match any
 
 
 If a client connects anonymously, this hook will be called with a
-@var{key_identity} of @code{nil}.
+@var{key_identity} of @code{nil}. An empty string value must be used
+in @file{read-permissions} to represent clients connecting anonymously. e.g.
+@code{allow ""}.
 
 @anchor{get_netsync_write_permitted}@item get_netsync_write_permitted (@var{key_identity})
 
