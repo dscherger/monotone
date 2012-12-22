@@ -419,7 +419,16 @@ function get_manifest_cert_trust(signers, id, name, val)
    return true
 end
 
-function accept_testresult_change(old_results, new_results)
+-- http://snippets.luacode.org/?p=snippets/String_to_Hex_String_68
+function hex_dump(str,spacer)
+   return (string.gsub(str,"(.)",
+      function (c)
+         return string.format("%02x%s",string.byte(c), spacer or "")
+      end)
+   )
+end
+
+function accept_testresult_change_hex(old_results, new_results)
    local reqfile = io.open("_MTN/wanted-testresults", "r")
    if (reqfile == nil) then return true end
    local line = reqfile:read()
@@ -438,6 +447,21 @@ function accept_testresult_change(old_results, new_results)
       end
    end
    return true
+end
+
+function accept_testresult_change(old_results, new_results)
+   -- Hex encode each of the key hashes to match those in 'wanted-testresults'
+   local old_results_hex = {}
+   for k, v in pairs(old_results) do
+	old_results_hex[hex_dump(k)] = v
+   end
+
+   local new_results_hex = {}
+   for k, v in pairs(new_results) do
+      new_results_hex[hex_dump(k)] = v
+   end
+
+   return accept_testresult_change_hex(old_results_hex, new_results_hex)
 end
 
 -- merger support

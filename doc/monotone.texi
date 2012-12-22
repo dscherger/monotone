@@ -12235,18 +12235,19 @@ Called by @command{@ref{mtn update}}.
 This hook is used by the update algorithm to determine whether a
 change in test results between update source and update target is
 acceptable. The hook is called with two tables, each of which maps a
-signing key -- representing a particular testsuite -- to a boolean
-value indicating whether or not the test run was successful. The
+signing key hash -- representing a particular testsuite -- to a boolean
+value indicating whether or not the test run was successful (calculated
+from the @code{testresult} cert). The
 function should return @code{true} if you consider an update from the
 version carrying the @var{old_results} to the version carrying the
 @var{new_results} to be acceptable.
 
 The default definition of this hook returns @code{true} if
 @file{_MTN/wanted-testresults} does not exist. Otherwise, the file
-should contain a list of signing key ids. The hook returns @code{false}
-if a listed signing key id is present in both @var{old_results} and
-@var{new_results}, and @var{old_results} is @code{true} but
-@var{new_results} is @code{false}; otherwise it returns @code{true}.
+should contain a list of signing key hashes in lowercase. The hook returns @code{false}
+if a listed signing key hash is present in both @var{old_results} and
+@var{new_results}, with the value @code{true} in @var{old_results}
+and @code{false} in @var{new_results}; otherwise it returns @code{true}.
 
 @end ftable
 
