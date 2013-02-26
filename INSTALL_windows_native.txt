@@ -38,8 +38,11 @@ botan         | 1.10.1  | http://botan.randombit.net/download.html
                         | _not_ the "windows binary installer"
 sqlite3       | 3.7.11  | http://www.sqlite.org/download.html
                         | -> sqlite-autoconf-3071100.tar.gz
+libiconv      | 1.14    | ftp://ftp.gnu.org/gnu/libiconv/
+                        | -> libiconv-1.14.tar.gz
 libidn        | 1.24    | ftp://ftp.gnu.org/gnu/libidn/
                         | -> libidn-1.24.tar.gz
+http://ftp.gnu.org/pub/gnu/libiconv/
 Depends.exe   |         | http://www.dependencywalker.com/ ; also comes with Visual Studio
 
 In general, there are two versions of most tools on the
@@ -143,14 +146,22 @@ maps to both / and /usr/ under the MinGW shell.
    $ ./configure --prefix=/mingw
    $ make install
 
-08. libidn
+08. libiconv
+
+   $ cd /usr/src
+   $ tar -zxf ../libiconv-1.14.tar.gz
+   $ cd libiconv-1.14
+   $ ./configure --prefix=/mingw
+   $ make install
+
+09. libidn
    $ cd /usr/src
    $ tar -zxf ../libidn-1.24.tar.gz
    $ cd libidn-1.24
    $ ./configure --prefix=/mingw
    $ make install
 
-09. Depends.exe
+10. Depends.exe
    If you have Visual Studio installed, you should be able to skip this.
    If you don't, then download the appropriate depends*.zip and
    unpack it someplace in your %PATH% (for example, C:\MinGW\bin\).
@@ -158,14 +169,14 @@ maps to both / and /usr/ under the MinGW shell.
    If you just want to build monotone for your own use, you can skip this and
    just ignore that test failing.
 
-10. build monotone
+11. build monotone
    You can skip the CXXFLAGS and LDFLAGS if you really want to, but if you do that
    then libgcc_s and libstdc++-6 will be linked dynamically and the resulting
    monotone binary will take several extra seconds to start.
    $ cd /c/.../monotone
    $ autoreconf -i # not needed if you use the distributed tarball
-   $ export CXXFLAGS="-static-libgcc -static-libstdc++ -g -O2 -Wall"
-   $ export LDFLAGS="-static-libgcc -static-libstdc++"
+   $ export CXXFLAGS="-static-libgcc -static-libstdc++ -I/mingw/include -g -O2 -Wall"
+   $ export LDFLAGS="-static-libgcc -static-libstdc++ -L/mingw/lib"
    $ export botan_CFLAGS="-I/mingw/include/botan-1.10"
    $ export botan_LIBS="-lbotan-1.10"
    $ ./configure
