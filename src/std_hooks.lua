@@ -956,7 +956,7 @@ function merge3 (anc_path, left_path, right_path, merged_path, ancestor, left, r
          if not ret then
             ret = nil
          else
-            ret = read_contents_of_file (ret, "r")
+            ret = read_contents_of_file (ret, "rb")
             if string.len (ret) == 0
             then
                ret = nil
