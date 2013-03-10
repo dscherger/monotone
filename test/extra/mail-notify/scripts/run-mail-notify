@@ -3,7 +3,7 @@
 # Current work directory should be
 # {builddir}/test/work/extra/mail-notify
 
-_MIME_CONSTRUCT="`type -p mime-construct || which mime-construct`"
+_MIME_CONSTRUCT="`which mime-construct`"
 _MIME_CONSTRUCT_OUTPUT="`pwd`/mime-construct.out"
 _MIME_CONSTRUCT_ERROR="`pwd`/mime-construct.err"
 _HERE="`dirname ${0}`"
