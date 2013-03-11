@@ -46,6 +46,9 @@
 
 #include <cerrno>
 
+// Monotone specific, for get_current_working_dir()
+#include <src/platform.hh>
+
 // standard includes
 #include <map>
 #include <vector>
@@ -169,27 +172,16 @@ void Netxx::ServerBase::bind_to(const Address &addr, bool stream_server)
 		if (saun->sun_path[0] == '/') {
 		    files_.push_back(saun->sun_path);
 		} else {
-		    // BIG FAT WARNING: THIS CODE HAS NOT BEEN TESTED!
-		    // The original code is non-dynamic, depending on
-		    // the value of MAXPATHLEN.  Since that macro isn't
-		    // guaranteed to exist, a more dynamic use if getcwd()
-		    // was written.  However, since monotone doesn't use
-		    // AF_LOCAL sockets, this code will not be reached.
-		    int e = ERANGE;
-		    int n = 4096;
-
-		    while (e == ERANGE) {
-			char buffer[n];
-			e = 0;
-			n += 4096;
-
-			if (getcwd(buffer, n)) {
-			    std::string fullpath = buffer; fullpath += '/'; fullpath += saun->sun_path;
-			    files_.push_back(fullpath);
-			} else if ((e = errno) != ERANGE) {
-			    files_.push_back(saun->sun_path);
-			}
-		    }
+		    /*
+		     * the original (netxx) code here relied on MAXPATHLEN,
+		     * which isn't defined on hurd. As netxx seems to only
+		     * live on within monotone, we can as well make it
+		     * inter-dependent. And the unix/fs.cc variant certainly
+		     * gets more test mileage than anything special here.
+		     */
+		    std::string fullpath = get_current_working_dir();
+		    fullpath += '/'; fullpath += saun->sun_path;
+		    files_.push_back(fullpath);
 		}
 	    }
 #	endif

@@ -44,14 +44,26 @@ using std::vector;
 string
 get_current_working_dir()
 {
-  char buffer[4096];
-  if (!getcwd(buffer, 4096))
+  std::vector<char> cwd_buf;
+  size_t cwd_sz = 4096;
+
+  // This funny loop prevents having to specify a MAXPATHLEN or similar, but
+  // uses a dynamic approach, repeatedly calling getcwd() until our buffer
+  // is big enough for the current path to fit. Think of it as a portable
+  // replacement for get_current_dir_name(), which is GNU-only.
+  do
     {
-      const int err = errno;
-      E(false, origin::system,
-        F("cannot get working directory: %s") % os_strerror(err));
+      cwd_buf.resize(cwd_sz);
+      cwd_sz += 4096;
+
+      if (getcwd(&cwd_buf[0], cwd_sz))
+        return string(&cwd_buf[0]);
     }
-  return string(buffer);
+  while (errno == ERANGE);
+
+  const int err = errno;
+  E(false, origin::system,
+    F("cannot get working directory: %s") % os_strerror(err));
 }
 
 void
