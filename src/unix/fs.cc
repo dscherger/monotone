@@ -54,10 +54,10 @@ get_current_working_dir()
   do
     {
       cwd_buf.resize(cwd_sz);
-      cwd_sz += 4096;
-
       if (getcwd(&cwd_buf[0], cwd_sz))
         return string(&cwd_buf[0]);
+
+      cwd_sz += 4096;
     }
   while (errno == ERANGE);
 
