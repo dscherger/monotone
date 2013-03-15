@@ -92,7 +92,7 @@ using std::vector;
 using std::accumulate;
 
 using boost::shared_ptr;
-using boost::shared_dynamic_cast;
+using boost::dynamic_pointer_cast;
 using boost::lexical_cast;
 using boost::get;
 using boost::tuple;
@@ -3430,7 +3430,7 @@ database::encrypt_rsa(key_id const & pub_id,
 
   shared_ptr<X509_PublicKey> x509_key(Botan::X509::load_key(pub_block));
   shared_ptr<RSA_PublicKey> pub_key
-    = shared_dynamic_cast<RSA_PublicKey>(x509_key);
+    = dynamic_pointer_cast<RSA_PublicKey>(x509_key);
   if (!pub_key)
     throw recoverable_failure(origin::system,
                               "Failed to get RSA encrypting key");
@@ -3481,7 +3481,7 @@ database::check_signature(key_id const & id,
       L(FL("building verifier for %d-byte pub key") % pub_block.size());
       shared_ptr<X509_PublicKey> x509_key(Botan::X509::load_key(pub_block));
       shared_ptr<RSA_PublicKey> pub_key
-        = boost::shared_dynamic_cast<RSA_PublicKey>(x509_key);
+        = boost::dynamic_pointer_cast<RSA_PublicKey>(x509_key);
 
       E(pub_key, id.inner().made_from,
         F("failed to get RSA verifying key for %s") % id);
