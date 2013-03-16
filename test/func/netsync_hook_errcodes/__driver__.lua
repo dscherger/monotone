@@ -12,9 +12,9 @@ netsync.setup_with_notes()
 function get_errcode(who)
    canonicalize("testnotes-" .. who .. ".log")
    local dat = readfile("testnotes-" .. who .. ".log")
-   local _, _, errcode = string.find(dat, "\n%d+ end: status = (%d%d%d)\n")
-   L("Error code for ", who, " is ", errcode)
+   local _, _, errcode = string.find(dat, "\n%d+ end: status = (%d+)\n")
    if errcode == nil then errcode = "<missing>" end
+   L("Error code for ", who, " is ", errcode)
    return errcode
 end
 

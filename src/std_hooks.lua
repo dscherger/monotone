@@ -10,7 +10,7 @@
 -- this is the standard set of lua hooks for monotone;
 -- user-provided files can override it or add to it.
 
-function temp_file(namehint)
+function temp_file(namehint, filemodehint)
    local tdir
    tdir = os.getenv("TMPDIR")
    if tdir == nil then tdir = os.getenv("TMP") end
@@ -22,8 +22,14 @@ function temp_file(namehint)
    else
       filename = string.format("%s/mtn.%s.XXXXXX", tdir, namehint)
    end
+   local filemode
+   if filemodehint == nil then
+      filemode = "r+"
+   else
+      filemode = filemodehint
+   end
    local name = mkstemp(filename)
-   local file = io.open(name, "r+")
+   local file = io.open(name, filemode)
    return file, name
 end
 
@@ -413,7 +419,16 @@ function get_manifest_cert_trust(signers, id, name, val)
    return true
 end
 
-function accept_testresult_change(old_results, new_results)
+-- http://snippets.luacode.org/?p=snippets/String_to_Hex_String_68
+function hex_dump(str,spacer)
+   return (string.gsub(str,"(.)",
+      function (c)
+         return string.format("%02x%s",string.byte(c), spacer or "")
+      end)
+   )
+end
+
+function accept_testresult_change_hex(old_results, new_results)
    local reqfile = io.open("_MTN/wanted-testresults", "r")
    if (reqfile == nil) then return true end
    local line = reqfile:read()
@@ -432,6 +447,21 @@ function accept_testresult_change(old_results, new_results)
       end
    end
    return true
+end
+
+function accept_testresult_change(old_results, new_results)
+   -- Hex encode each of the key hashes to match those in 'wanted-testresults'
+   local old_results_hex = {}
+   for k, v in pairs(old_results) do
+	old_results_hex[hex_dump(k)] = v
+   end
+
+   local new_results_hex = {}
+   for k, v in pairs(new_results) do
+      new_results_hex[hex_dump(k)] = v
+   end
+
+   return accept_testresult_change_hex(old_results_hex, new_results_hex)
 end
 
 -- merger support
@@ -823,8 +853,8 @@ mergers.opendiff = {
    wanted = function () return true end
 }
 
-function write_to_temporary_file(data, namehint)
-   tmp, filename = temp_file(namehint)
+function write_to_temporary_file(data, namehint, filemodehint)
+   tmp, filename = temp_file(namehint, filemodehint)
    if (tmp == nil) then
       return nil
    end;
@@ -911,10 +941,10 @@ function merge3 (anc_path, left_path, right_path, merged_path, ancestor, left, r
    tbl.rfile = nil
    tbl.outfile = nil
    tbl.meld_exists = false
-   tbl.lfile = write_to_temporary_file (left, "left")
-   tbl.afile = write_to_temporary_file (ancestor, "ancestor")
-   tbl.rfile = write_to_temporary_file (right, "right")
-   tbl.outfile = write_to_temporary_file ("", "merged")
+   tbl.lfile = write_to_temporary_file (left, "left", "r+b")
+   tbl.afile = write_to_temporary_file (ancestor, "ancestor", "r+b")
+   tbl.rfile = write_to_temporary_file (right, "right", "r+b")
+   tbl.outfile = write_to_temporary_file ("", "merged", "r+b")
 
    if tbl.lfile ~= nil and tbl.rfile ~= nil and tbl.afile ~= nil and tbl.outfile ~= nil
    then
@@ -926,7 +956,7 @@ function merge3 (anc_path, left_path, right_path, merged_path, ancestor, left, r
          if not ret then
             ret = nil
          else
-            ret = read_contents_of_file (ret, "r")
+            ret = read_contents_of_file (ret, "rb")
             if string.len (ret) == 0
             then
                ret = nil
@@ -1052,8 +1082,8 @@ external_diff_default_args = "-u"
 
 -- default external diff, works for gnu diff
 function external_diff(file_path, data_old, data_new, is_binary, diff_args, rev_old, rev_new)
-   local old_file = write_to_temporary_file(data_old);
-   local new_file = write_to_temporary_file(data_new);
+   local old_file = write_to_temporary_file(data_old, nil, "r+b");
+   local new_file = write_to_temporary_file(data_new, nil, "r+b");
 
    if diff_args == nil then diff_args = external_diff_default_args end
    execute("diff", diff_args, "--label", file_path .. "\told", old_file, "--label", file_path .. "\tnew", new_file);

@@ -4,6 +4,9 @@ XXX XXX XX XX:XX:XX UTC 201X
 
         Changes
 
+        - '_MTN/wanted-testresults' must now have 1 hex-encoded
+          signing key hash in lowercase per line.
+
         New features
 
         - 'automate atttributes' now also works without a workspace
