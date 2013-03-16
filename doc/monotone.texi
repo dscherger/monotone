@@ -5729,6 +5729,15 @@ and optionally also exclude patterns for the exchange:
 Branches matching a pattern are excluded if the pattern is preceded by
 '-', included otherwise.
 
+The syntax for patterns is very simple.  @code{*} matches 0 or more
+arbitrary characters.  @code{?} matches exactly 1 arbitrary character
+(you need to escape that as @code{%3F} in a URI). @code{@{,@}}
+matches alternatives; @code{@{foo,bar,baz@}} matches ``foo'', or
+``bar'', or ``baz''.  These can be combined arbitrarily.  A backslash
+(@code{\}) escapes these special characters, to match exactly that
+character; this might be useful in case someone, for some odd
+reason, decides to put a ``*'' into their branch name.
+
 Valid examples of URIs monotone accepts are:
 
 @smallexample
@@ -5736,6 +5745,7 @@ Valid examples of URIs monotone accepts are:
 mtn://my.server:4690?my.branch
 mtn://my.server/project?my.other.branch*;-my.other.branch.test
 mtn://my.server/project?one.branch;-one.branch.test;another.branch;-another.branch.test
+mtn://my.server/project?{one.branch,another.branch};-{one.branch.test,another.branch.test}
 file:///path/to/database.mtn?my.branch
 ssh://joe@@my.server/~/db.mtn?joes.branch
 @end group
@@ -5814,15 +5824,6 @@ If @option{--pid-file} is specified, @command{serve} will create the
 specified file and record the process identifier of the server in the
 file.  This file can then be read to identify specific monotone server
 processes.
-
-The syntax for patterns is very simple.  @code{*} matches 0 or more
-arbitrary characters.  @code{?} matches exactly 1 arbitrary character
-(you need to escape that with @code{%3F} in a URI). @code{@{,@}}
-matches alternatives; @code{@{foo,bar,baz@}} matches ``foo'', or
-``bar'', or ``baz''.  These can be combined arbitrarily.  A backslash
-(@code{\}) escapes these special characters, to match exactly that
-character; this might be useful in case someone, for some odd
-reason, decides to put a ``*'' into their branch name.
 
 @anchor{mtn clone}@item mtn clone @var{uri} [--branch=@var{branchname}] [--revision=@var{rev}] [@var{directory}]
 @itemx mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}] @strong{deprecated}
