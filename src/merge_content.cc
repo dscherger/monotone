@@ -1,5 +1,5 @@
 // Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-//               2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010, 2012, 2013 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -204,9 +204,9 @@ content_merge_database_adaptor::get_dropped_details(revision_id & rev_id,
         }
       else
         {
-          parents.erase (i);
           set<revision_id> more_parents;
           db.get_revision_parents(*i, more_parents);
+          parents.erase (i);
           parents.insert(more_parents.begin(), more_parents.end());
         }
     }
