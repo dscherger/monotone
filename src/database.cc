@@ -98,12 +98,15 @@ using boost::get;
 using boost::tuple;
 using boost::lexical_cast;
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+using Botan::PK_Encryptor_EME;
+#else
 using Botan::PK_Encryptor;
+#endif
 using Botan::PK_Verifier;
 using Botan::SecureVector;
 using Botan::X509_PublicKey;
 using Botan::RSA_PublicKey;
-using Botan::get_pk_encryptor;
 
 int const one_row = 1;
 int const one_col = 1;
@@ -3435,23 +3438,25 @@ database::encrypt_rsa(key_id const & pub_id,
     throw recoverable_failure(origin::system,
                               "Failed to get RSA encrypting key");
 
-  shared_ptr<PK_Encryptor>
-    encryptor(get_pk_encryptor(*pub_key, "EME1(SHA-1)"));
-
   SecureVector<Botan::byte> ct;
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  ct = encryptor->encrypt(
+  PK_Encryptor_EME encryptor(*pub_key, "EME1(SHA-1)");
+  ct = encryptor.encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
           plaintext.size(), lazy_rng::get());
 #else
+  shared_ptr<PK_Encryptor>
+    encryptor(Botan::get_pk_encryptor(*pub_key, "EME1(SHA-1)"));
+
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
           plaintext.size());
 #endif
-  ciphertext = rsa_oaep_sha_data(string(reinterpret_cast<char const *>(ct.begin()),
-                                        ct.size()),
-                                 origin::database);
+
+  ciphertext = rsa_oaep_sha_data(
+    string(reinterpret_cast<char const *>(ct.begin()), ct.size()),
+    origin::database);
 }
 
 cert_status
@@ -3486,7 +3491,11 @@ database::check_signature(key_id const & id,
       E(pub_key, id.inner().made_from,
         F("failed to get RSA verifying key for %s") % id);
 
-      verifier.reset(get_pk_verifier(*pub_key, "EMSA3(SHA-1)"));
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,10,0)
+      verifier.reset(new Botan::PK_Verifier(*pub_key, "EMSA3(SHA1)"));
+#else
+      verifier.reset(Botan::get_pk_verifier(*pub_key, "EMSA3(SHA-1)"));
+#endif
 
       /* XXX This is ugly. We need to keep the key around
        * as long as the verifier is around, but the shared_ptr will go
