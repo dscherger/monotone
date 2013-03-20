@@ -1,5 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-//               2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010, 2012, 2013 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -721,7 +721,8 @@ void perform_merge_into_dir(app_state & app,
 
         temp_node_id_source nis;
         content_merge_database_adaptor
-          dba(db, left_rid, right_rid, left_marking_map, right_marking_map);
+          dba(db, left_rid, right_rid, left_marking_map, right_marking_map,
+              left_uncommon_ancestors, right_uncommon_ancestors);
 
         bool resolutions_given;
 
@@ -1045,8 +1046,8 @@ show_conflicts_core (database & db,
     }
   else
     {
-      content_merge_database_adaptor adaptor(db, l_id, r_id,
-                                             l_marking, r_marking);
+      content_merge_database_adaptor adaptor(db, l_id, r_id, l_marking, r_marking,
+                                             l_uncommon_ancestors, r_uncommon_ancestors);
 
       if (basic_io)
         {
@@ -1244,7 +1245,9 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
   db.get_roster(right_rid, right_roster, right_marking);
 
   content_merge_database_adaptor adaptor(db, left_rid, right_rid,
-                                         left_marking, right_marking);
+                                         left_marking, right_marking,
+                                         set<revision_id> (), set<revision_id> ());
+  // uncommon_ancestors only needed for dropped_modified conflicts
 
   const_file_t left_n = downcast_to_file_t(left_roster.get_node(left_path));
   const_file_t right_n = downcast_to_file_t(right_roster.get_node(right_path));

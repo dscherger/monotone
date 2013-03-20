@@ -1066,14 +1066,15 @@ push_dropped_details(content_merge_database_adaptor & db_adaptor,
                      symbol                           rev_sym,
                      symbol                           name_sym,
                      symbol                           file_id_sym,
-                     revision_id                      rev_id,
+                     std::set<revision_id> const &    uncommon_ancestors,
+                     revision_id const &              lca,
                      node_id                          nid,
                      basic_io::stanza &               st)
 {
   revision_id dropped_rev_id;
   file_path   dropped_name;
   file_id     dropped_file_id;
-  db_adaptor.get_dropped_details(rev_id, nid, dropped_rev_id, dropped_name, dropped_file_id);
+  db_adaptor.get_dropped_details(uncommon_ancestors, lca, nid, dropped_rev_id, dropped_name, dropped_file_id);
 
   st.push_binary_pair(rev_sym, dropped_rev_id.inner());
   st.push_str_pair(name_sym, dropped_name.as_external());
@@ -1141,7 +1142,7 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                 {
                    st.push_str_pair(syms::left_type, "orphaned file");
                    push_dropped_details(db_adaptor, syms::left_rev, syms::left_name, syms::left_file_id,
-                                        db_adaptor.left_rid, nid, st);
+                                        db_adaptor.left_uncommon_ancestors, db_adaptor.lca, nid, st);
                 }
               else
                 {
@@ -1149,7 +1150,7 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                     {
                       st.push_str_pair(syms::left_type, "dropped file");
                       push_dropped_details(db_adaptor, syms::left_rev, syms::left_name, syms::left_file_id,
-                                           db_adaptor.left_rid, nid, st);
+                                           db_adaptor.left_uncommon_ancestors, db_adaptor.lca, nid, st);
                     }
                   else
                     {
@@ -1176,7 +1177,7 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                 {
                   st.push_str_pair(syms::right_type, "orphaned file");
                   push_dropped_details(db_adaptor, syms::right_rev, syms::right_name, syms::right_file_id,
-                                       db_adaptor.right_rid, nid, st);
+                                       db_adaptor.right_uncommon_ancestors, db_adaptor.lca, nid, st);
                 }
               else
                 {
@@ -1184,7 +1185,7 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
                     {
                       st.push_str_pair(syms::right_type, "dropped file");
                       push_dropped_details(db_adaptor, syms::right_rev, syms::right_name, syms::right_file_id,
-                                           db_adaptor.right_rid, nid, st);
+                                           db_adaptor.right_uncommon_ancestors, db_adaptor.lca, nid, st);
                     }
                   else
                     {
@@ -2664,8 +2665,13 @@ roster_merge_result::write_conflict_file(database & db,
 {
   std::ostringstream output;
 
+  std::set<revision_id> left_uncommon_ancestors;
+  std::set<revision_id> right_uncommon_ancestors;
+  db.get_uncommon_ancestors(left_rid, right_rid, left_uncommon_ancestors, right_uncommon_ancestors);
+
   content_merge_database_adaptor adaptor(db, left_rid, right_rid,
-                                         left_marking, right_marking);
+                                         left_marking, right_marking,
+                                         left_uncommon_ancestors, right_uncommon_ancestors);
 
   adaptor.cache_roster (left_rid, left_roster);
   adaptor.cache_roster (right_rid, right_roster);
@@ -3092,7 +3098,8 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
                 {
                   // attr mtn::resolve_conflict drop does not set rid; find it now
                   adaptor.get_dropped_details
-                    (adaptor.left_rid, conflict.left_nid, conflict.left_rid, left_name, left_fid);
+                    (adaptor.left_uncommon_ancestors, adaptor.lca,
+                     conflict.left_nid, conflict.left_rid, left_name, left_fid);
                 }
               else
                 {
@@ -3114,7 +3121,8 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
               if (null_id(conflict.left_rid))
                 {
                   adaptor.get_dropped_details
-                    (adaptor.right_rid, conflict.right_nid, conflict.right_rid, right_name, right_fid);
+                    (adaptor.right_uncommon_ancestors, adaptor.lca,
+                     conflict.right_nid, conflict.right_rid, right_name, right_fid);
                 }
               else
                 {

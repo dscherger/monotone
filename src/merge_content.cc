@@ -42,8 +42,11 @@ content_merge_database_adaptor::content_merge_database_adaptor(database & db,
                                                                revision_id const & left,
                                                                revision_id const & right,
                                                                marking_map const & left_mm,
-                                                               marking_map const & right_mm)
-  : db(db), left_rid (left), right_rid (right), left_mm(left_mm), right_mm(right_mm)
+                                                               marking_map const & right_mm,
+                                                               set<revision_id> left_uncommon_ancestors,
+                                                               set<revision_id> right_uncommon_ancestors)
+  : db(db), left_rid (left), right_rid (right), left_mm(left_mm), right_mm(right_mm),
+  left_uncommon_ancestors (left_uncommon_ancestors), right_uncommon_ancestors (right_uncommon_ancestors)
 {
   // FIXME: possibly refactor to run this lazily, as we don't
   // need to find common ancestors if we're never actually
@@ -180,21 +183,20 @@ content_merge_database_adaptor::get_ancestral_roster(node_id nid,
 }
 
 void
-content_merge_database_adaptor::get_dropped_details(revision_id & rev_id,
-                                                    node_id       nid,
-                                                    revision_id & dropped_rev_id,
-                                                    file_path   & dropped_name,
-                                                    file_id     & dropped_file_id)
+content_merge_database_adaptor::get_dropped_details(set<revision_id> const & uncommon_ancestors,
+                                                    revision_id const &      least_common_ancestor,
+                                                    node_id const            nid,
+                                                    revision_id &            dropped_rev_id,
+                                                    file_path   &            dropped_name,
+                                                    file_id     &            dropped_file_id)
 {
-  set<revision_id> parents;
-  db.get_revision_parents(rev_id, parents);
+  roster_t roster;
+  marking_map marking_map;
 
-  while (parents.begin() != parents.end())
+  // graph.cc ensures that uncommon_ancestors is in topological order, leaf-most first.
+  for (set<revision_id>::const_iterator i = uncommon_ancestors.begin();
+       i != uncommon_ancestors.end(); ++i)
     {
-      set<revision_id>::iterator i = parents.begin();
-      roster_t roster;
-      marking_map marking_map;
-
       db.get_roster(*i, roster, marking_map);
       if (roster.has_node(nid))
         {
@@ -202,14 +204,16 @@ content_merge_database_adaptor::get_dropped_details(revision_id & rev_id,
           roster.get_file_details(nid, dropped_file_id, dropped_name);
           return;
         }
-      else
-        {
-          set<revision_id> more_parents;
-          db.get_revision_parents(*i, more_parents);
-          parents.erase (i);
-          parents.insert(more_parents.begin(), more_parents.end());
-        }
     }
+
+  db.get_roster(least_common_ancestor, roster, marking_map);
+  if (roster.has_node(nid))
+    {
+      dropped_rev_id = least_common_ancestor;
+      roster.get_file_details(nid, dropped_file_id, dropped_name);
+      return;
+    }
+  I(false);
 }
 
 void
@@ -837,7 +841,8 @@ interactive_merge_and_store(lua_hooks & lua,
   bool resolutions_given;
   temp_node_id_source nis;
   content_merge_database_adaptor dba(db, left_rid, right_rid,
-                                     left_marking_map, right_marking_map);
+                                     left_marking_map, right_marking_map,
+                                     left_uncommon_ancestors, right_uncommon_ancestors);
 
   parse_resolve_conflicts_opts (opts, left_rid, left_roster, right_rid, right_roster, result, resolutions_given);
 

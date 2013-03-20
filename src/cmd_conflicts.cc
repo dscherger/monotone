@@ -1,4 +1,4 @@
-// Copyright (C) 2008 - 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008 - 2010, 2012, 2013 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -313,7 +313,8 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
                  count) % count);
 
             content_merge_database_adaptor adaptor
-              (db, conflicts.left_rid, conflicts.right_rid, conflicts.left_marking, conflicts.right_marking);
+              (db, conflicts.left_rid, conflicts.right_rid, conflicts.left_marking, conflicts.right_marking,
+               std::set<revision_id> (), std::set<revision_id> ()); // uncommon_ancestors only used in automate
 
             conflicts.result.report_missing_root_conflicts
               (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
