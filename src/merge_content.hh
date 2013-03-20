@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010, 2012, 2013 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -60,12 +60,15 @@ content_merge_database_adaptor
   revision_id right_rid;
   marking_map const & left_mm;
   marking_map const & right_mm;
+  std::set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
   std::map<revision_id, boost::shared_ptr<roster_t const> > rosters;
   content_merge_database_adaptor(database & db,
                                  revision_id const & left,
                                  revision_id const & right,
                                  marking_map const & left_mm,
-                                 marking_map const & right_mm);
+                                 marking_map const & right_mm,
+                                 std::set<revision_id> left_uncommon_ancestors,
+                                 std::set<revision_id> right_uncommon_ancestors);
   void record_merge(file_id const & left_ident,
                     file_id const & right_ident,
                     file_id const & merged_ident,
@@ -88,13 +91,15 @@ content_merge_database_adaptor
                             revision_id & rid,
                             boost::shared_ptr<roster_t const> & anc);
 
-  // Search parents of rev_id (which must be left_rid or right_rid); return
-  // rev, file_path, and file_id for nid just before it was dropped.
-  void get_dropped_details(revision_id & rev_id,
-                           node_id       nid,
-                           revision_id & dropped_rev_id,
-                           file_path   & dropped_name,
-                           file_id     & dropped_file_id);
+  // Search uncommon_ancestors (which must be left_uncommon_ancestors or
+  // right_uncommon_ancestors); return rev, file_path, and file_id for nid
+  // just before it was dropped.
+  void get_dropped_details(std::set<revision_id> const & uncommon_ancestors,
+                           revision_id const &           least_common_ancestor,
+                           node_id                       nid,
+                           revision_id &                 dropped_rev_id,
+                           file_path   &                 dropped_name,
+                           file_id     &                 dropped_file_id);
 
   void get_version(file_id const & ident,
                    file_data & dat) const;
