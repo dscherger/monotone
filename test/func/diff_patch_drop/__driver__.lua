@@ -32,9 +32,10 @@ if string.match(ostype, "BSD") then
     check({"patch", "-p0", "-E"}, 0, false, false, true)
     check(not exists("dir/file"))
 else
-    -- GNU patch should only remove the file
-    -- but it is a little aggressive and removes the dir too!
     check({"patch", "-p0"}, 0, false, false, true)
     check(not exists("dir/file"))
-    check(not exists("dir"))
+
+    -- GNU patch should only remove the file but older versions may be a
+    -- little aggressive and remove the dir too! We test monotone, here,
+    -- so we shouldn't care whether or not "dir" still exists.
 end
