@@ -4845,7 +4845,7 @@ Specify an extra rcfile to load. See @ref{rcfiles}.
 Cancel all previous @option{--rcfile} options (standard rcfiles are
 still loaded). See @ref{rcfiles}.
 
-@itemx --root <arg>
+@item --root <arg>
 Limit the search for a workspace to the specified root directory
 
 @item --ssh-sign <arg>
@@ -6247,7 +6247,7 @@ traversed. Specifying @option{--no-recursive} restricts the listing to
 the root directory of the specified path (or the workspace, if no path
 is given).
 
-@itemx mtn list vars [@var{domain}]
+@item mtn list vars [@var{domain}]
 @itemx mtn ls vars
 @command{ls vars} is an alias for @command{list vars}.
 
