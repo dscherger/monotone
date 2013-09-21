@@ -98,7 +98,7 @@ using boost::get;
 using boost::tuple;
 using boost::lexical_cast;
 
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,5)
 using Botan::PK_Encryptor_EME;
 #else
 using Botan::PK_Encryptor;
@@ -3440,9 +3440,16 @@ database::encrypt_rsa(key_id const & pub_id,
 
   SecureVector<Botan::byte> ct;
 
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,5)
   PK_Encryptor_EME encryptor(*pub_key, "EME1(SHA-1)");
   ct = encryptor.encrypt(
+          reinterpret_cast<Botan::byte const *>(plaintext.data()),
+          plaintext.size(), lazy_rng::get());
+#elif BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+  shared_ptr<PK_Encryptor>
+    encryptor(get_pk_encryptor(*pub_key, "EME1(SHA-1)"));
+
+  ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
           plaintext.size(), lazy_rng::get());
 #else
