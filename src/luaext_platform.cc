@@ -96,34 +96,58 @@ LUAEXT(spawn_redirected, )
   return 1;
 }
 
-// borrowed from lua/liolib.cc
-// Note that making C functions that return FILE* in Lua is tricky
+// Making C functions that return FILE* in Lua is tricky. Especially if it
+// actually needs to work with multiple lua versions.
+//
+// The following routines are inspired by lua/liolib.c from both versions.
+// The mtn_lua_Stream struct is closer to the 5.2 variant, but the
+// additional field compared to 5.1 (which only uses FILE*) shouldn't hurt
+// in Lua 5.1.
+//
 // There is a Lua FAQ entitled:
 // "Why does my library-created file segfault on :close() but work otherwise?"
+//
+// However, it's advice seems out-dated and applies more to 5.1.
 
-#define topfile(LS)     ((FILE **)luaL_checkudata(LS, 1, LUA_FILEHANDLE))
+typedef struct mtn_lua_Stream {
+  FILE *f;
+  lua_CFunction closef;
+} mtn_lua_Stream;
 
-static int io_fclose (lua_State *LS) {
-  FILE **p = topfile(LS);
-  int ok = (fclose(*p) == 0);
-  *p = NULL;
+#define topfile(LS)     ((mtn_lua_Stream *)luaL_checkudata(LS, 1, LUA_FILEHANDLE))
+
+static int io_pclose (lua_State *LS) {
+  mtn_lua_Stream *s = topfile(LS);
+
+  // Note that in Lua 5.2, aux_close() already resets s->closef to NULL and for
+  // Lua 5.1, it's not relevant, at all. But we've set it to &io_pclose(), so
+  // contents of s->closef different between Lua versions.
+
+  int ok;
+  if (s->f != NULL)
+    ok = (pclose(s->f) == 0);
+
+  s->f = NULL;
+  s->closef = NULL;  // just to be extra sure this won't do any harm
+
   lua_pushboolean(LS, ok);
   return 1;
 }
 
-static FILE **newfile (lua_State *LS) {
-  FILE **pf = (FILE **)lua_newuserdata(LS, sizeof(FILE *));
-  *pf = NULL;  /* file handle is currently `closed' */
+static mtn_lua_Stream *newstream (lua_State *LS) {
+  mtn_lua_Stream *s = (mtn_lua_Stream *)lua_newuserdata(LS, sizeof(mtn_lua_Stream));
+  s->f = NULL;  /* file handle is currently `closed' */
+  s->closef = NULL;
   luaL_getmetatable(LS, LUA_FILEHANDLE);
   lua_setmetatable(LS, -2);
 
-  lua_pushcfunction(LS, io_fclose);
 #ifdef LUA_ENVIRONINDEX
   // Lua 5.2 removes C function environments
+  lua_pushcfunction(LS, io_pclose);
   lua_setfield(LS, LUA_ENVIRONINDEX, "__close");
 #endif
 
-  return pf;
+  return s;
 }
 
 LUAEXT(spawn_pipe, )
@@ -139,12 +163,13 @@ LUAEXT(spawn_pipe, )
   for (i=0; i<n; i++) argv[i] = (char*)luaL_checkstring(LS,  i+1);
   argv[i] = NULL;
 
-  int infd;
-  FILE **inpf = newfile(LS);
-  int outfd;
-  FILE **outpf = newfile(LS);
+  mtn_lua_Stream *ins = newstream(LS);
+  ins->closef = &io_pclose;
 
-  pid = process_spawn_pipe(argv, inpf, outpf);
+  mtn_lua_Stream *outs = newstream(LS);
+  outs->closef = &io_pclose;
+
+  pid = process_spawn_pipe(argv, &ins->f, &outs->f);
   free(argv);
 
   lua_pushnumber(LS, pid);
