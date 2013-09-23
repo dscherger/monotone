@@ -30,6 +30,13 @@ files = {stdout = nil, stdin = nil, stderr = nil}
 -- for convenience, this is the first word of what get_ostype() returns.
 ostype = string.sub(get_ostype(), 1, string.find(get_ostype(), " ")-1)
 
+-- Since Lua 5.2, unpack and loadstrings are deprecated and are either moved
+-- to table.unpack() or replaced by load(). If lua was compiled without
+-- LUA_COMPAT_UNPACK and/or LUA_COMPAT_LOADSTRING, these two are not
+-- available and we add a similar compatibility layer, ourselves.
+unpack = unpack or table.unpack
+loadstring = loadstring or load
+
 -- table of per-test values
 test = {}
 -- misc per-test values

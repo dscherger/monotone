@@ -10,6 +10,13 @@
 -- this is the standard set of lua hooks for monotone;
 -- user-provided files can override it or add to it.
 
+-- Since Lua 5.2, unpack and loadstrings are deprecated and are either moved
+-- to table.unpack() or replaced by load(). If lua was compiled without
+-- LUA_COMPAT_UNPACK and/or LUA_COMPAT_LOADSTRING, these two are not
+-- available and we add a similar compatibility layer, ourselves.
+unpack = unpack or table.unpack
+loadstring = loadstring or load
+
 function temp_file(namehint, filemodehint)
    local tdir
    tdir = os.getenv("TMPDIR")
@@ -1492,7 +1499,7 @@ do
       return true, warning
    end
    function push_hook_functions(functions)
-      local n = table.maxn(hook_functions) + 1
+      local n = #hook_functions + 1
       return add_hook_functions(functions, n)
    end
 

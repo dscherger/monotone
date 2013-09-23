@@ -4,13 +4,13 @@ mtn_setup()
 
 -- check informational messages, warnings and errors
 out = run_stdio("l8:bandtest4:infoe", 0, 0, "p")
-check(type(out) == "table" and table.maxn(out) == 1)
+check(type(out) == "table" and #out == 1)
 
 out = run_stdio("l8:bandtest7:warninge", 0, 0, "w")
-check(type(out) == "table" and table.maxn(out) == 1)
+check(type(out) == "table" and #out == 1)
 
 out = run_stdio("l8:bandtest5:errore", 2, 0, "e")
-check(type(out) == "table" and table.maxn(out) == 1)
+check(type(out) == "table" and #out == 1)
 
 -- check tickers
 tickers = run_stdio("l8:bandtest6:tickere", 0, 0, "t")
@@ -38,7 +38,7 @@ end
 ticker_data = {}
 for _,tick in ipairs(tickers) do
     ticks = split(tick, ";")
-    check(table.maxn(ticks) > 0)
+    check(#ticks > 0)
     for _,mtick in ipairs(ticks) do
         if string.len(mtick) > 0 then
             local begin,End,short,ticktype,content =
@@ -78,6 +78,6 @@ for _,tick in ipairs(tickers) do
 end
 
 -- finally check if all tickers are completed
-check(table.maxn(ticker_data) == 0)
+check(#ticker_data == 0)
 
 

@@ -14,7 +14,7 @@ server = netsync.start({"--rcfile=deny-automate.lua"})
 
 local errors = run_remote_stdio(server, "l17:interface_versione", 1, 0, "e")
 check(
-    table.maxn(errors) == 1 and
+    #errors == 1 and
     errors[1] == "misuse: sorry, you aren't allowed to do that."
 )
 
@@ -45,7 +45,7 @@ check(
 
 local errors = run_remote_stdio(server, "l5:stdioe", 1, 0, "e")
 check(
-    table.maxn(errors) == 1 and
+    #errors == 1 and
     errors[1] == "error: sorry, that can't be run remotely or over stdio"
 )
 

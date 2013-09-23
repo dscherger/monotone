@@ -10,6 +10,13 @@
 monotone_path = nil
 no_network_tests = false
 
+-- Since Lua 5.2, unpack and loadstrings are deprecated and are either moved
+-- to table.unpack() or replaced by load(). If lua was compiled without
+-- LUA_COMPAT_UNPACK and/or LUA_COMPAT_LOADSTRING, these two are not
+-- available and we add a similar compatibility layer, ourselves.
+unpack = unpack or table.unpack
+loadstring = loadstring or load
+
 function safe_mtn(...)
   if monotone_path == nil then
     monotone_path = os.getenv("mtn")
