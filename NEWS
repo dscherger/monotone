@@ -41,7 +41,7 @@ XXX XXX XX XX:XX:XX UTC 201X
           occur again in the future, for example when a file that is
           maintained in an upstream branch is not needed, and
           therefore dropped, in a local branch.
-        
+
         Bugs fixed
 
         - Monotone now compiles against Botan 1.10.x (as well as most of
@@ -53,13 +53,30 @@ XXX XXX XX XX:XX:XX UTC 201X
         - Monotone now compiles just fine with gcc's option
           "-Werror=format-security."
 
+        - Fixed renaming across devices, for example if parts of the
+          workspace are on NFS.
+
         - Fixed recursive file removal on Solaris.
 
-        - Monotone now compiles against Lua 5.2 as well.
+        - Fixed a failure to revert some files when inodeprints is
+          enabled.
+
+        - Monotone now works with Lua 5.2, even if it doesn't have
+          backwards-compatibility compiled in.
+
+        - Various fixes for compatibility with newer boost versions.
 
         - mtn add and mtn list are now more consistent in their use of
           --recursive and --unknown options.
-        
+
+        - Produce a meaningful error message when trying to disapprove a
+          root.
+
+        - Allow monotone to compile on platforms where MAXPATHLEN isn't
+          defined (i.e. GNU/Hurd).
+
+        - Allow test suite to run on systems behind broken a DNS resolver.
+
         Internal
 
         - The performance and memory usage of regular expressions has
@@ -69,8 +86,12 @@ XXX XXX XX XX:XX:XX UTC 201X
 
         Other
 
-        - 'mtn diff' now outputs old and new revision IDs in the diff header
-           when both are specified.
+        - 'mtn diff' now outputs old and new revision IDs in the diff
+          header when both are specified.
+
+        - Additional Vim syntax files and an output colorization script
+          in contrib.
+
 
 Sat Mar 26 10:53:47 UTC 2011
 
