@@ -259,7 +259,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   }
 
   utf8 summary;
-  revision_summary(rev, summary);
+  colorizer color(false, lua);
+  revision_summary(rev, color, summary);
 
   utf8 full_message(changelog() + cancel() + instructions() + editable() + ignored() +
                     notes() + summary(),
@@ -975,10 +976,11 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   utf8 header;
   utf8 summary;
+  colorizer color(app.opts.colorize, app.lua);
 
   revision_header(rid, rev, author, date_t::now(), app.opts.branch, changelog,
-                  date_fmt, header);
-  revision_summary(rev, summary);
+                  date_fmt, color, header);
+  revision_summary(rev, color, summary);
 
   external header_external;
   external summary_external;
@@ -992,11 +994,26 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       old_branches.find(app.opts.branch) == old_branches.end())
     {
       cout << string(70, '-') << '\n'
-           << _("*** THIS REVISION WILL CREATE A NEW BRANCH ***") << "\n\n";
+           << color.colorize(_("*** THIS REVISION WILL CREATE A NEW BRANCH ***"),
+                             colorizer::important)
+           << "\n\n";
       for (set<branch_name>::const_iterator i = old_branches.begin();
            i != old_branches.end(); ++i)
-        cout << _("Old Branch: ") << *i << '\n';
-      cout << _("New Branch: ") << app.opts.branch << "\n\n";
+        {
+          std::ostringstream old_name;
+          old_name << *i;
+
+          cout << color.colorize(_("Old Branch: "), colorizer::remove)
+               << color.colorize(old_name.str(), colorizer::remove)
+               << '\n';
+        }
+
+      std::ostringstream new_name;
+      new_name << app.opts.branch;
+
+      cout << color.colorize(_("New Branch: "), colorizer::add)
+           << color.colorize(new_name.str(), colorizer::add)
+           << "\n\n";
     }
   set<revision_id> heads;
   project.get_branch_heads(app.opts.branch, heads, false);
@@ -1007,7 +1024,9 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         {
           if (heads.find(edge_old_revision(e)) == heads.end())
             {
-              cout << _("*** THIS REVISION WILL CREATE DIVERGENCE ***") << "\n\n";
+              cout << color.colorize(_("*** THIS REVISION WILL CREATE DIVERGENCE ***"),
+                                     colorizer::important)
+                   << "\n\n";
               break;
             }
         }

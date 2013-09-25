@@ -47,6 +47,7 @@ MOST_SOURCES = 								\
 	src/automate_reader.cc src/automate_stdio_helpers.hh		\
 	src/botan_pipe_cache.hh	src/cache_logger.hh src/cache_logger.cc	\
 	src/commands.cc src/commands.hh $(CMD_SOURCES)			\
+	src/colorizer.cc src/colorizer.hh				\
 	src/diff_output.cc src/diff_output.hh				\
 	src/lua_hooks.cc src/lua_hooks.hh 				\
 	src/transforms.cc src/transforms.hh				\
