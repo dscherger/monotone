@@ -116,21 +116,23 @@ typedef struct mtn_lua_Stream {
 
 #define topfile(LS)     ((mtn_lua_Stream *)luaL_checkudata(LS, 1, LUA_FILEHANDLE))
 
-static int io_pclose (lua_State *LS) {
+static int io_fclose (lua_State *LS) {
   mtn_lua_Stream *s = topfile(LS);
 
   // Note that in Lua 5.2, aux_close() already resets s->closef to NULL and for
-  // Lua 5.1, it's not relevant, at all. But we've set it to &io_pclose(), so
-  // contents of s->closef different between Lua versions.
+  // Lua 5.1, it's not relevant, at all. But we set it to &io_fclose() in both
+  // cases, so contents of s->closef differs between Lua versions at this point
+  // in the code. However, it's not used, but only reset to NULL.
 
-  int ok;
+  int ok = 1;
   if (s->f != NULL)
-    ok = (pclose(s->f) == 0);
+    ok = (fclose(s->f) == 0);
 
   s->f = NULL;
   s->closef = NULL;  // just to be extra sure this won't do any harm
 
   lua_pushboolean(LS, ok);
+
   return 1;
 }
 
@@ -143,7 +145,7 @@ static mtn_lua_Stream *newstream (lua_State *LS) {
 
 #ifdef LUA_ENVIRONINDEX
   // Lua 5.2 removes C function environments
-  lua_pushcfunction(LS, io_pclose);
+  lua_pushcfunction(LS, io_fclose);
   lua_setfield(LS, LUA_ENVIRONINDEX, "__close");
 #endif
 
@@ -164,10 +166,10 @@ LUAEXT(spawn_pipe, )
   argv[i] = NULL;
 
   mtn_lua_Stream *ins = newstream(LS);
-  ins->closef = &io_pclose;
+  ins->closef = &io_fclose;
 
   mtn_lua_Stream *outs = newstream(LS);
-  outs->closef = &io_pclose;
+  outs->closef = &io_fclose;
 
   pid = process_spawn_pipe(argv, &ins->f, &outs->f);
   free(argv);
