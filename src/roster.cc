@@ -555,7 +555,7 @@ same_type(const_node_t a, const_node_t b)
 }
 
 
-inline bool
+bool
 shallow_equal(const_node_t a, const_node_t b,
               bool shallow_compare_dir_children,
               bool compare_file_contents)
