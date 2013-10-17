@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone\n"
 "Report-Msgid-Bugs-To: https://code.monotone.ca/p/monotone/issues/\n"
-"POT-Creation-Date: 2012-09-06 04:50+0200\n"
-"PO-Revision-Date: 2012-09-06 05:11+0200\n"
+"POT-Creation-Date: 2013-10-01 00:53+0200\n"
+"PO-Revision-Date: 2012-12-01 00:44+0100\n"
 "Last-Translator: tommyd <me@thomaskeller.biz>\n"
 "Language-Team: Richard Levitte <richard@levitte.org>\n"
 "Language: sv\n"
@@ -26,7 +26,7 @@ msgstr "allvarligt fel: formatering misslyckades vid %s:%d: %s"
 msgid "misuse: "
 msgstr "missbruk: "
 
-#: src/sanity.cc:357 src/database.cc:952 src/migrate_schema.cc:65
+#: src/sanity.cc:357 src/database.cc:955 src/migrate_schema.cc:65
 msgid "error: "
 msgstr "fel: "
 
@@ -55,7 +55,7 @@ msgstr "otillåtet tecken '%c' i '%s'"
 msgid "hex encoded ID '%s' size != %d"
 msgstr "storleken för den hexadecimalt kodade identiteten '%s' != %d"
 
-#: src/vocab.cc:53 src/database.cc:4229
+#: src/vocab.cc:53 src/database.cc:4245
 #, c-format
 msgid "bad character '%c' in id name '%s'"
 msgstr "otillåtet tecken '%c' i identitetsnamnet '%s'"
@@ -855,8 +855,8 @@ msgstr "Kör KOMMANDO på servern i andra änden"
 
 #: src/cmd_netsync.cc:221 src/cmd_list.cc:1031 src/cmd_packet.cc:73
 #: src/cmd_packet.cc:134 src/cmd_packet.cc:254 src/cmd_key_cert.cc:81
-#: src/cmd_key_cert.cc:186 src/cmd_merging.cc:384 src/cmd_merging.cc:1149
-#: src/cmd_merging.cc:1227 src/cmd_ws_commit.cc:1144 src/cmd_ws_commit.cc:1350
+#: src/cmd_key_cert.cc:186 src/cmd_merging.cc:384 src/cmd_merging.cc:1150
+#: src/cmd_merging.cc:1228 src/cmd_ws_commit.cc:1144 src/cmd_ws_commit.cc:1350
 #: src/cmd_ws_commit.cc:1492 src/cmd_ws_commit.cc:1514 src/cmd_automate.cc:138
 #: src/cmd_files.cc:240 src/cmd_files.cc:337 src/cmd_files.cc:361
 #: src/cmd_files.cc:395 src/automate.cc:85 src/automate.cc:122
@@ -999,7 +999,7 @@ msgid "bookkeeping directory already exists in '%s'"
 msgstr "det finns redan en administrativ katalog i '%s'"
 
 #: src/cmd_netsync.cc:866 src/cmd_merging.cc:535 src/cmd_merging.cc:636
-#: src/cmd_merging.cc:641 src/cmd_merging.cc:1479 src/cmd_ws_commit.cc:1040
+#: src/cmd_merging.cc:641 src/cmd_merging.cc:1482 src/cmd_ws_commit.cc:1040
 #, c-format
 msgid "branch '%s' is empty"
 msgstr "grenen '%s' är tom"
@@ -1078,7 +1078,7 @@ msgstr ""
 msgid "ok"
 msgstr "ok"
 
-#: src/cmd_list.cc:176 src/database.cc:1327
+#: src/cmd_list.cc:176 src/database.cc:1330
 msgid "bad"
 msgstr "felaktig"
 
@@ -1184,12 +1184,12 @@ msgstr "Listar kända arbetskopior för en specifik databas"
 msgid "Lists managed databases and their known workspaces"
 msgstr "Visa vilka databaser som hanteras och deras kända arbetskopior"
 
-#: src/cmd_list.cc:685 src/database.cc:4976
+#: src/cmd_list.cc:685 src/database.cc:4992
 #, c-format
 msgid "no default database location configured"
 msgstr "ingen standardkatalog för databaser finns definierad"
 
-#: src/cmd_list.cc:689 src/database.cc:5054
+#: src/cmd_list.cc:689 src/database.cc:5070
 #, c-format
 msgid "could not query default database glob"
 msgstr "kunde inte fråga efter standardglobben för databaser"
@@ -1494,13 +1494,13 @@ msgid "empty comment"
 msgstr "tom kommentar"
 
 #: src/cmd_merging.cc:119 src/cmd_merging.cc:438 src/cmd_merging.cc:659
-#: src/cmd_merging.cc:854
+#: src/cmd_merging.cc:855
 #, c-format
 msgid "[left]  %s"
 msgstr "[vänster]    %s"
 
 #: src/cmd_merging.cc:120 src/cmd_merging.cc:439 src/cmd_merging.cc:660
-#: src/cmd_merging.cc:855
+#: src/cmd_merging.cc:856
 #, c-format
 msgid "[right] %s"
 msgstr "[höger]      %s"
@@ -1530,7 +1530,7 @@ msgstr ""
 "denna revision är inte i någon gren.\n"
 "Nästa ändring hamnar i grenen '%s'"
 
-#: src/cmd_merging.cc:209 src/cmd_merging.cc:825 src/cmd_ws_commit.cc:370
+#: src/cmd_merging.cc:209 src/cmd_merging.cc:826 src/cmd_ws_commit.cc:370
 #: src/cmd_ws_commit.cc:1370 src/cmd_ws_commit.cc:2078
 #: src/cmd_ws_commit.cc:2306 src/cmd_ws_commit.cc:2421 src/cmd_files.cc:309
 #: src/cmd_files.cc:407 src/automate.cc:1068 src/automate.cc:1361
@@ -1625,7 +1625,7 @@ msgstr ""
 msgid "at most one revision selector may be specified"
 msgstr "maximalt en revisionsselektor för specificeras"
 
-#: src/cmd_merging.cc:452 src/cmd_merging.cc:764
+#: src/cmd_merging.cc:452 src/cmd_merging.cc:765
 #, c-format
 msgid "[merged] %s"
 msgstr "[ihopslagen] %s"
@@ -1634,7 +1634,7 @@ msgstr "[ihopslagen] %s"
 msgid "Merges unmerged heads of a branch"
 msgstr "Slår ihop ej ihopslagna löv i grenen"
 
-#: src/cmd_merging.cc:528 src/cmd_merging.cc:1129 src/cmd_merging.cc:1470
+#: src/cmd_merging.cc:528 src/cmd_merging.cc:1130 src/cmd_merging.cc:1473
 #, c-format
 msgid "please specify a branch, with '--branch=BRANCH'"
 msgstr "var god ange en gren med '--branch=GREN'"
@@ -1696,33 +1696,33 @@ msgstr "ingen ihopslagning behövs; sätter %s i grenen '%s'"
 msgid "Path '%s' not found in destination tree."
 msgstr "Sökvägen '%s' finns inte i målträdet."
 
-#: src/cmd_merging.cc:771
+#: src/cmd_merging.cc:772
 msgid "SOURCE-BRANCH DEST-BRANCH"
 msgstr "KÄLLGREN MÅLGREN"
 
-#: src/cmd_merging.cc:772
+#: src/cmd_merging.cc:773
 msgid "Merges from one branch to another asymmetrically"
 msgstr "Slår ihop asymmetriskt från en gren till en annan"
 
-#: src/cmd_merging.cc:785
+#: src/cmd_merging.cc:786
 msgid "SOURCE-BRANCH DEST-BRANCH DIR"
 msgstr "KÄLLGREN MÅLGREN KATALOG"
 
-#: src/cmd_merging.cc:786
+#: src/cmd_merging.cc:787
 msgid "Merges one branch into a subdirectory in another branch"
 msgstr "Slår ihop en gren till en underkatalog i en annan gren"
 
-#: src/cmd_merging.cc:795
+#: src/cmd_merging.cc:796
 msgid "OTHER-REVISION"
 msgstr "ANNAN-REVISION"
 
-#: src/cmd_merging.cc:796
+#: src/cmd_merging.cc:797
 msgid "Merges a revision into the current workspace's base revision"
 msgstr ""
 "Slår ihop en revision med arbetskopians basrevision och sparar det i "
 "arbetskopian"
 
-#: src/cmd_merging.cc:797
+#: src/cmd_merging.cc:798
 msgid ""
 "Merges OTHER-REVISION into the current workspace's base revision, and update "
 "the current workspace with the result.  There can be no pending changes in "
@@ -1736,24 +1736,24 @@ msgstr ""
 "REVISION och arbetskopians grundrevision att anges som föräldrar till den ny "
 "revisionen.  Arbetskopians gren kommer inte att ändras."
 
-#: src/cmd_merging.cc:832
+#: src/cmd_merging.cc:833
 #, c-format
 msgid "'%s' can only be used in a workspace with no pending changes"
 msgstr ""
 "'%s' kan enbart användas i en arbetskopia där alla gjorda ändringar har "
 "arkiverats"
 
-#: src/cmd_merging.cc:846
+#: src/cmd_merging.cc:847
 #, c-format
 msgid "workspace is already at revision %s"
 msgstr "arbetskopian är redan uppdaterad till revision %s"
 
-#: src/cmd_merging.cc:849
+#: src/cmd_merging.cc:850
 #, c-format
 msgid "revision %s is already an ancestor of your workspace"
 msgstr "revisionen %s är redan förfader till din arbetskopia"
 
-#: src/cmd_merging.cc:851
+#: src/cmd_merging.cc:852
 #, c-format
 msgid ""
 "revision %s is a descendant of the workspace parent,\n"
@@ -1762,7 +1762,7 @@ msgstr ""
 "revisionen %s är ättling till arbetskopians förälder,\n"
 "menade du 'mtn update -r %s'?"
 
-#: src/cmd_merging.cc:905
+#: src/cmd_merging.cc:906
 #, c-format
 msgid ""
 "updated to result of merge\n"
@@ -1773,99 +1773,99 @@ msgstr ""
 "[vänster] %s\n"
 "[  höger] %s\n"
 
-#: src/cmd_merging.cc:913
+#: src/cmd_merging.cc:914
 msgid "LEFT-REVISION RIGHT-REVISION DEST-BRANCH"
 msgstr "VÄNSTERREVISION HÖGERREVISION MÅLGREN"
 
-#: src/cmd_merging.cc:914
+#: src/cmd_merging.cc:915
 msgid "Merges two explicitly given revisions"
 msgstr "Slår ihop två explicit angivna revisioner"
 
-#: src/cmd_merging.cc:915
+#: src/cmd_merging.cc:916
 msgid ""
 "The results of the merge are placed on the branch specified by DEST-BRANCH."
 msgstr "Ihopslagningens resultat är placerat i grenen MÅLGREN."
 
-#: src/cmd_merging.cc:937
+#: src/cmd_merging.cc:938
 #, c-format
 msgid "%s and %s are the same revision, aborting"
 msgstr "%s och %s är samma revision, avbryter"
 
-#: src/cmd_merging.cc:940 src/cmd_merging.cc:943
+#: src/cmd_merging.cc:941 src/cmd_merging.cc:944
 #, c-format
 msgid "%s is already an ancestor of %s"
 msgstr "%s är redan förfader till %s"
 
-#: src/cmd_merging.cc:988
+#: src/cmd_merging.cc:989
 #, c-format
 msgid "[left]     %s"
 msgstr "[vänster]    %s"
 
-#: src/cmd_merging.cc:989
+#: src/cmd_merging.cc:990
 #, c-format
 msgid "[right]    %s"
 msgstr "[höger]      %s"
 
-#: src/cmd_merging.cc:1001 src/cmd_merging.cc:1016
+#: src/cmd_merging.cc:1002 src/cmd_merging.cc:1017
 #, c-format
 msgid "%s is an ancestor of %s; no merge is needed."
 msgstr "%s är en förfader till %s; någon ihopslagning behövs inte."
 
-#: src/cmd_merging.cc:1044
+#: src/cmd_merging.cc:1045
 #, c-format
 msgid "0 conflicts"
 msgstr "0 konflikter"
 
-#: src/cmd_merging.cc:1060
+#: src/cmd_merging.cc:1061
 #, c-format
 msgid "[ancestor] %s"
 msgstr "[förälder]   %s"
 
-#: src/cmd_merging.cc:1085
+#: src/cmd_merging.cc:1086
 #, c-format
 msgid "%d conflict with supported resolutions."
 msgid_plural "%d conflicts with supported resolutions."
 msgstr[0] "varning: %d konflikt med lösningsstöd."
 msgstr[1] "varning: %d konflikter med lösningsstöd."
 
-#: src/cmd_merging.cc:1090 src/cmd_conflicts.cc:298 src/cmd_conflicts.cc:311
+#: src/cmd_merging.cc:1091 src/cmd_conflicts.cc:298 src/cmd_conflicts.cc:311
 #, c-format
 msgid "warning: %d conflict with no supported resolutions."
 msgid_plural "warning: %d conflicts with no supported resolutions."
 msgstr[0] "varning: %d konflikt utan lösningsstöd."
 msgstr[1] "varning: %d konflikter utan lösningsstöd."
 
-#: src/cmd_merging.cc:1097
+#: src/cmd_merging.cc:1098
 msgid "REV REV"
 msgstr "REV REV"
 
-#: src/cmd_merging.cc:1098
+#: src/cmd_merging.cc:1099
 msgid "Shows what conflicts need resolution between two revisions"
 msgstr ""
 "Visar de konflikter som behöver lösas om de givna revisionerna slås ihop."
 
-#: src/cmd_merging.cc:1099
+#: src/cmd_merging.cc:1100
 msgid ""
 "The conflicts are calculated based on the two revisions given in the REV "
 "parameters."
 msgstr "Konflikten beräknas på bas av de två angivna revisionerna REV."
 
-#: src/cmd_merging.cc:1136
+#: src/cmd_merging.cc:1137
 #, c-format
 msgid "branch '%s' has only 1 head; must be at least 2 for conflicts"
 msgstr ""
 "grenen '%s' har bara 1 löv; det måste vara minst 2 stycken för "
 "'show_conflicts'"
 
-#: src/cmd_merging.cc:1169
+#: src/cmd_merging.cc:1170
 msgid "[LEFT_REVID RIGHT_REVID]"
 msgstr "[VÄNSTER_REVID HÖGER_REVID]"
 
-#: src/cmd_merging.cc:1170
+#: src/cmd_merging.cc:1171
 msgid "Shows the conflicts between two revisions"
 msgstr "Visar konflikterna mellan två revisioner"
 
-#: src/cmd_merging.cc:1171
+#: src/cmd_merging.cc:1172
 msgid ""
 "If no arguments are given, LEFT_REVID and RIGHT_REVID default to the first "
 "two heads that would be chosen by the 'merge' command."
@@ -1873,11 +1873,11 @@ msgstr ""
 "Utan givna argument blir VÄNSTER_REVID och HÖGER_REVID de två första löven "
 "som kommandot 'merge' skulle ha valt."
 
-#: src/cmd_merging.cc:1188
+#: src/cmd_merging.cc:1189
 msgid "Store the conflicts from merging two revisions"
 msgstr "Spara konflikterna från en hopslagning av två revisioner"
 
-#: src/cmd_merging.cc:1189
+#: src/cmd_merging.cc:1190
 #, c-format
 msgid ""
 "If no arguments are given, LEFT_REVID and RIGHT_REVID default to the first "
@@ -1888,21 +1888,21 @@ msgstr ""
 "som kommandot 'merge' skulle ha valt.  Om '--conflicts-file' inte är angiven "
 "används '%s'."
 
-#: src/cmd_merging.cc:1198 src/options_list.hh:603 src/options_list.hh:624
+#: src/cmd_merging.cc:1199 src/options_list.hh:603 src/options_list.hh:624
 #, c-format
 msgid "conflicts file must be under '_MTN'"
 msgstr "konfliktfilen måste ligga under '_MTN'"
 
-#: src/cmd_merging.cc:1210
+#: src/cmd_merging.cc:1211
 #, c-format
 msgid "stored in '%s'"
 msgstr "sparat i '%s'"
 
-#: src/cmd_merging.cc:1213
+#: src/cmd_merging.cc:1214
 msgid "LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME"
 msgstr "VÄNSTER_REVID VÄNSTER_FILNAMN HÖGER_REVID HÖGER_FILNAMN"
 
-#: src/cmd_merging.cc:1214
+#: src/cmd_merging.cc:1215
 msgid ""
 "Prints the results of the internal line merger, given two child revisions "
 "and file names"
@@ -1910,20 +1910,20 @@ msgstr ""
 "Visa resultatet från den interna ihopslagningsmekanismen, utgående från två "
 "revisioner och filnamn"
 
-#: src/cmd_merging.cc:1266
+#: src/cmd_merging.cc:1269
 #, c-format
 msgid "internal line merger failed"
 msgstr "den interna ihopslagningsmekanismen misslyckades"
 
-#: src/cmd_merging.cc:1271
+#: src/cmd_merging.cc:1274
 msgid "[PATH...]"
 msgstr "[SÖKVÄG ...]"
 
-#: src/cmd_merging.cc:1272
+#: src/cmd_merging.cc:1275
 msgid "Applies changes made at arbitrary places in history"
 msgstr "Applicerar ändringar som gjorts på godtyckliga platser i historien"
 
-#: src/cmd_merging.cc:1273
+#: src/cmd_merging.cc:1276
 msgid ""
 "This command takes changes made at any point in history, and edits your "
 "current workspace to include those changes.  The end result is identical to "
@@ -1945,7 +1945,7 @@ msgstr ""
 "Om två revisioner har givits utförs alla ändringar som gjorts för att komma "
 "från den första till den andra."
 
-#: src/cmd_merging.cc:1297
+#: src/cmd_merging.cc:1300
 #, c-format
 msgid ""
 "revision %s is a merge.\n"
@@ -1956,49 +1956,49 @@ msgstr ""
 "För att utföra ändringarna relativt en av dess föräldrar, gör så här:\n"
 "  %s pluck -r FÖRÄLDER -r %s"
 
-#: src/cmd_merging.cc:1313
+#: src/cmd_merging.cc:1316
 #, c-format
 msgid "no changes to apply"
 msgstr "inga ändringar att utföra"
 
-#: src/cmd_merging.cc:1375
+#: src/cmd_merging.cc:1378
 #, c-format
 msgid "no changes to be applied"
 msgstr "inga ändringar att utföra"
 
-#: src/cmd_merging.cc:1425
+#: src/cmd_merging.cc:1428
 #, c-format
 msgid "no changes were applied"
 msgstr "inga ändringar blev utförda"
 
-#: src/cmd_merging.cc:1429
+#: src/cmd_merging.cc:1432
 #, c-format
 msgid "applied changes to workspace"
 msgstr "utförde ändringarna i arbetskopian"
 
-#: src/cmd_merging.cc:1461
+#: src/cmd_merging.cc:1464
 msgid "Shows unmerged head revisions of a branch"
 msgstr "Visar ej ihopslagna lövrevisioner i grenen"
 
-#: src/cmd_merging.cc:1481
+#: src/cmd_merging.cc:1484
 #, c-format
 msgid "branch '%s' is currently merged:"
 msgstr "grenen '%s' har för tillfället ett löv:"
 
-#: src/cmd_merging.cc:1483
+#: src/cmd_merging.cc:1486
 #, c-format
 msgid "branch '%s' is currently unmerged:"
 msgstr "grenen '%s' har för tillfället mer än ett löv:"
 
-#: src/cmd_merging.cc:1490 src/automate.cc:1444
+#: src/cmd_merging.cc:1493 src/automate.cc:1444
 msgid "[REVID]"
 msgstr "[REVID]"
 
-#: src/cmd_merging.cc:1491
+#: src/cmd_merging.cc:1494
 msgid "Dumps the roster associated with a given identifier"
 msgstr "Skriver ut den lista som hör ihop med angiven identifierare"
 
-#: src/cmd_merging.cc:1492
+#: src/cmd_merging.cc:1495
 msgid "If no REVID is given, the workspace is used."
 msgstr "Om ingen REVID angivits används arbetskopian."
 
@@ -2373,7 +2373,7 @@ msgstr ""
 "Detta kommando laddar alla cert från databasen och är tänkt att användas för "
 "att testa hur lång tid det tar att ladda dem."
 
-#: src/cmd_db.cc:721 src/database.cc:1315
+#: src/cmd_db.cc:721 src/database.cc:1318
 #, c-format
 msgid "loading certs"
 msgstr "laddar cert"
@@ -3518,12 +3518,12 @@ msgstr "resolve_first drop"
 msgid "resolve_first rename \"file_name\""
 msgstr "resolve_first rename \"filnamn\""
 
-#: src/cmd_conflicts.cc:121 src/merge_conflict.cc:1207
+#: src/cmd_conflicts.cc:121 src/merge_conflict.cc:1208
 #, c-format
 msgid "conflict: file '%s'"
 msgstr "konflikt: fil '%s'"
 
-#: src/cmd_conflicts.cc:127 src/merge_conflict.cc:1213
+#: src/cmd_conflicts.cc:127 src/merge_conflict.cc:1214
 #, c-format
 msgid "orphaned on the left"
 msgstr "övergiven på vänstersidan"
@@ -3538,27 +3538,27 @@ msgstr "förändrad på högersidan"
 msgid "modified on the left"
 msgstr "förändrad på vänstersidan"
 
-#: src/cmd_conflicts.cc:133 src/merge_conflict.cc:1229
+#: src/cmd_conflicts.cc:133 src/merge_conflict.cc:1230
 #, c-format
 msgid "orphaned on the right"
 msgstr "övergiven på högersidan"
 
-#: src/cmd_conflicts.cc:142 src/merge_conflict.cc:1218
+#: src/cmd_conflicts.cc:142 src/merge_conflict.cc:1219
 #, c-format
 msgid "dropped on the left"
 msgstr "borttagen på vänstersidan"
 
-#: src/cmd_conflicts.cc:146 src/merge_conflict.cc:1220
+#: src/cmd_conflicts.cc:146 src/merge_conflict.cc:1221
 #, c-format
 msgid "dropped and recreated on the left"
 msgstr "borttagen och återskapad på vänstersidan"
 
-#: src/cmd_conflicts.cc:156 src/merge_conflict.cc:1234
+#: src/cmd_conflicts.cc:156 src/merge_conflict.cc:1235
 #, c-format
 msgid "dropped on the right"
 msgstr "borttagen på högersidan"
 
-#: src/cmd_conflicts.cc:159 src/merge_conflict.cc:1236
+#: src/cmd_conflicts.cc:159 src/merge_conflict.cc:1237
 #, c-format
 msgid "dropped and recreated on the right"
 msgstr "borttagen och återskapad på högersidan"
@@ -3596,7 +3596,8 @@ msgstr "resolve_first_left rename"
 #: src/cmd_conflicts.cc:195
 #, c-format
 msgid "resolve_first_left user_rename \"new_content_name\" \"new_file_name\""
-msgstr "resolve_first_left user_rename \"nytt_innehållsnamn\" \"nytt_filenamn\""
+msgstr ""
+"resolve_first_left user_rename \"nytt_innehållsnamn\" \"nytt_filenamn\""
 
 #: src/cmd_conflicts.cc:201 src/cmd_conflicts.cc:246
 #, c-format
@@ -3621,7 +3622,8 @@ msgstr "resolve_first_right rename"
 #: src/cmd_conflicts.cc:211
 #, c-format
 msgid "resolve_first_right user_rename \"new_content_name\" \"new_file_name\""
-msgstr "resolve_first_right user_rename \"nytt_innehållsnamn\" \"nytt_filenamn\""
+msgstr ""
+"resolve_first_right user_rename \"nytt_innehållsnamn\" \"nytt_filenamn\""
 
 #: src/cmd_conflicts.cc:216 src/cmd_conflicts.cc:254
 #, c-format
@@ -3668,45 +3670,45 @@ msgstr "resolve_first user \"filnamn\""
 msgid "all conflicts resolved"
 msgstr "alla konflikter lösta"
 
-#: src/cmd_conflicts.cc:340
+#: src/cmd_conflicts.cc:341
 #, c-format
 msgid "'%s' is not a supported conflict resolution for %s"
 msgstr "'%s' stöds inte som konfliktlösning för %s"
 
-#: src/cmd_conflicts.cc:390 src/cmd_conflicts.cc:395
+#: src/cmd_conflicts.cc:391 src/cmd_conflicts.cc:396
 #, c-format
 msgid "too many arguments"
 msgstr "för många givna argument"
 
-#: src/cmd_conflicts.cc:401 src/cmd_conflicts.cc:419
+#: src/cmd_conflicts.cc:402 src/cmd_conflicts.cc:420
 #, c-format
 msgid "other resolution is %s; specify 'drop', 'rename', or 'user_rename'"
 msgstr "andra lösningen är %s; ange 'drop', 'rename' eller 'user_rename'"
 
-#: src/cmd_conflicts.cc:407 src/cmd_conflicts.cc:413 src/cmd_conflicts.cc:427
-#: src/cmd_conflicts.cc:446 src/cmd_conflicts.cc:534 src/cmd_conflicts.cc:540
-#: src/cmd_conflicts.cc:573 src/cmd_conflicts.cc:579 src/cmd_conflicts.cc:586
-#: src/cmd_conflicts.cc:594 src/cmd_conflicts.cc:601 src/cmd_conflicts.cc:625
-#: src/cmd_conflicts.cc:631 src/cmd_conflicts.cc:638 src/cmd_conflicts.cc:646
-#: src/cmd_conflicts.cc:653 src/cmd_conflicts.cc:705 src/cmd_conflicts.cc:720
-#: src/cmd_conflicts.cc:769 src/cmd_conflicts.cc:782
+#: src/cmd_conflicts.cc:408 src/cmd_conflicts.cc:414 src/cmd_conflicts.cc:428
+#: src/cmd_conflicts.cc:447 src/cmd_conflicts.cc:535 src/cmd_conflicts.cc:541
+#: src/cmd_conflicts.cc:574 src/cmd_conflicts.cc:580 src/cmd_conflicts.cc:587
+#: src/cmd_conflicts.cc:595 src/cmd_conflicts.cc:602 src/cmd_conflicts.cc:626
+#: src/cmd_conflicts.cc:632 src/cmd_conflicts.cc:639 src/cmd_conflicts.cc:647
+#: src/cmd_conflicts.cc:654 src/cmd_conflicts.cc:706 src/cmd_conflicts.cc:721
+#: src/cmd_conflicts.cc:770 src/cmd_conflicts.cc:783
 #, c-format
 msgid "wrong number of arguments"
 msgstr "felaktigt antal givna argument"
 
-#: src/cmd_conflicts.cc:464 src/cmd_conflicts.cc:477
+#: src/cmd_conflicts.cc:465 src/cmd_conflicts.cc:478
 #, c-format
 msgid "must specify resolve_first (not _left or _right)"
 msgstr "måste ange resolve_first (inte _left eller _right)"
 
-#: src/cmd_conflicts.cc:467 src/cmd_conflicts.cc:480 src/cmd_conflicts.cc:580
-#: src/cmd_conflicts.cc:587 src/cmd_conflicts.cc:632 src/cmd_conflicts.cc:639
-#: src/merge_conflict.cc:2095 src/merge_conflict.cc:2102
+#: src/cmd_conflicts.cc:468 src/cmd_conflicts.cc:481 src/cmd_conflicts.cc:581
+#: src/cmd_conflicts.cc:588 src/cmd_conflicts.cc:633 src/cmd_conflicts.cc:640
+#: src/merge_conflict.cc:2096 src/merge_conflict.cc:2103
 #, c-format
 msgid "orphaned files must be renamed"
 msgstr "föräldralös fil måste byta namn"
 
-#: src/cmd_conflicts.cc:566 src/cmd_conflicts.cc:618
+#: src/cmd_conflicts.cc:567 src/cmd_conflicts.cc:619
 #, c-format
 msgid ""
 "must specify 'resolve_first_left' or 'resolve_first_right' (not just "
@@ -3715,59 +3717,59 @@ msgstr ""
 "måste ange 'resolve_first_left' eller 'resolve_first_right' (inte bara\n"
 "'resolve_first')"
 
-#: src/cmd_conflicts.cc:713
+#: src/cmd_conflicts.cc:714
 #, c-format
 msgid "interactive merge result saved in '%s'"
 msgstr "den interaktiva ihopslagningens resultat sparades i '%s'"
 
-#: src/cmd_conflicts.cc:716
+#: src/cmd_conflicts.cc:717
 #, c-format
 msgid "interactive merge failed."
 msgstr "den interna ihopslagningsmekanismen misslyckades."
 
-#: src/cmd_conflicts.cc:740
+#: src/cmd_conflicts.cc:741
 #, c-format
 msgid "no resolvable yet unresolved left side conflicts"
 msgstr "inga lösningar på ännu olösta konflikter på vänstersidan"
 
-#: src/cmd_conflicts.cc:744
+#: src/cmd_conflicts.cc:745
 #, c-format
 msgid "no resolvable yet unresolved right side conflicts"
 msgstr "inga lösningar på ännu olösta konflikter på högersidan"
 
-#: src/cmd_conflicts.cc:748
+#: src/cmd_conflicts.cc:749
 #, c-format
 msgid "no resolvable yet unresolved single-file conflicts"
 msgstr "inga lösningar på ännu olösta enfilskonflikter"
 
-#: src/cmd_conflicts.cc:762
+#: src/cmd_conflicts.cc:763
 msgid ""
 "Show the first unresolved conflict in the conflicts file, and possible "
 "resolutions"
 msgstr ""
 "Visa den första olösta konflikten i konfliktfilen och möjliga lösningar"
 
-#: src/cmd_conflicts.cc:775
+#: src/cmd_conflicts.cc:776
 msgid "Show the remaining unresolved conflicts in the conflicts file"
 msgstr "Visa kvarvarande olösta konflikter i konfliktfilen"
 
-#: src/cmd_conflicts.cc:787 src/cmd_conflicts.cc:801 src/cmd_conflicts.cc:815
+#: src/cmd_conflicts.cc:788 src/cmd_conflicts.cc:802 src/cmd_conflicts.cc:816
 msgid "RESOLUTION"
 msgstr "LÖSNING"
 
-#: src/cmd_conflicts.cc:788
+#: src/cmd_conflicts.cc:789
 msgid "Set the resolution for the first unresolved single-file conflict."
 msgstr "Sätt lösningen till den första olösta enkelfilskonflikten."
 
-#: src/cmd_conflicts.cc:802
+#: src/cmd_conflicts.cc:803
 msgid "Set the left resolution for the first unresolved two-file conflict"
 msgstr "Sätt den vänstra lösningen på den första tvåfilskonflikten"
 
-#: src/cmd_conflicts.cc:816
+#: src/cmd_conflicts.cc:817
 msgid "Set the right resolution for the first unresolved two-file conflict"
 msgstr "Sätt den högra lösningen på den första tvåfilskonflikten"
 
-#: src/cmd_conflicts.cc:830
+#: src/cmd_conflicts.cc:831
 msgid "Delete any bookkeeping files related to conflict resolution"
 msgstr "Ta bort alla administrativa filer som hör ihop med konfliktlösning"
 
@@ -3913,7 +3915,7 @@ msgstr "hoppar över ignorerbar fil '%s'"
 msgid "skipping '%s', already accounted for in workspace"
 msgstr "hoppar över '%s', den finns redan noterad i arbetskopian"
 
-#: src/work.cc:1321 src/merge_conflict.cc:2824 src/merge_conflict.cc:3200
+#: src/work.cc:1321 src/merge_conflict.cc:2830 src/merge_conflict.cc:3208
 #, c-format
 msgid "dropping '%s'"
 msgstr "slänger '%s'"
@@ -3923,7 +3925,7 @@ msgstr "slänger '%s'"
 msgid "path '%s' already exists"
 msgstr "sökvägen '%s' finns redan"
 
-#: src/work.cc:1361 src/merge_conflict.cc:2829 src/merge_conflict.cc:3221
+#: src/work.cc:1361 src/merge_conflict.cc:2835 src/merge_conflict.cc:3229
 #, c-format
 msgid "renaming '%s' to '%s'"
 msgstr "byter namn på '%s' till '%s'"
@@ -4296,17 +4298,17 @@ msgid ""
 "multiple branch certs found for revision %s, please provide a branch name"
 msgstr "flera grencert funna för revision %s, var god ange en gren"
 
-#: src/database.cc:586
+#: src/database.cc:589
 #, c-format
 msgid "initializing new database '%s'"
 msgstr "initierar ny databas '%s'"
 
-#: src/database.cc:595
+#: src/database.cc:598
 #, c-format
 msgid "this database already contains rosters"
 msgstr "den här databasen har redan listor"
 
-#: src/database.cc:617
+#: src/database.cc:620
 #, c-format
 msgid ""
 "database '%s' contains old-style revisions.\n"
@@ -4325,7 +4327,7 @@ msgstr ""
 "  sedan databasen på nytt.\n"
 "Ursäkta besväret."
 
-#: src/database.cc:627
+#: src/database.cc:630
 #, c-format
 msgid ""
 "database '%s' contains manifests but no revisions.\n"
@@ -4338,7 +4340,7 @@ msgstr ""
 "Var god läs 'http://wiki.monotone.ca/upgradefromchangesets/'\n"
 "för detaljer"
 
-#: src/database.cc:650
+#: src/database.cc:653
 #, c-format
 msgid ""
 "database '%s' lacks some cached data.\n"
@@ -4347,25 +4349,25 @@ msgstr ""
 "databasen '%s' saknar cache-data\n"
 "Kör '%s db regenerate_caches' för att göra databasen användbar igen"
 
-#: src/database.cc:953
+#: src/database.cc:956
 msgid "sqlite error: "
 msgstr "sqlite-fel: "
 
-#: src/database.cc:977
+#: src/database.cc:980
 msgid "not set"
 msgstr "ej tilldelat "
 
-#: src/database.cc:990
+#: src/database.cc:993
 msgid " (not a monotone database)"
 msgstr " (är inte en monotonedatabas)"
 
-#: src/database.cc:1040 src/database.cc:1072 src/database.cc:1772
-#: src/database.cc:1792
+#: src/database.cc:1043 src/database.cc:1075 src/database.cc:1775
+#: src/database.cc:1795
 #, c-format
 msgid "%u"
 msgstr "%u"
 
-#: src/database.cc:1091
+#: src/database.cc:1094
 #, c-format
 msgid ""
 "creator code      : %s\n"
@@ -4422,12 +4424,12 @@ msgstr ""
 "  sidstorlek          : %s\n"
 "  cachestorlek        : %s"
 
-#: src/database.cc:1157
+#: src/database.cc:1160
 #, c-format
 msgid "invalid date '%s' for revision %s; skipped"
 msgstr "ogiltigt datum '%s' på revisionen %s; hoppar över"
 
-#: src/database.cc:1239
+#: src/database.cc:1242
 #, c-format
 msgid ""
 "timestamp correctness between revisions:\n"
@@ -4474,84 +4476,84 @@ msgstr ""
 "  95e percentilen  : %s sec\n"
 "  99e percentilen  : %s sec\n"
 
-#: src/database.cc:1290
+#: src/database.cc:1293
 #, c-format
 msgid "database schema version: %s"
 msgstr "databasens schemaversion: %s"
 
-#: src/database.cc:1324
+#: src/database.cc:1327
 #, c-format
 msgid "checking"
 msgstr "kollar"
 
-#: src/database.cc:1326
+#: src/database.cc:1329
 msgid "checked"
 msgstr "kollat"
 
-#: src/database.cc:1328
+#: src/database.cc:1331
 msgid "fixed"
 msgstr "fixat"
 
-#: src/database.cc:1331
+#: src/database.cc:1334
 msgid "dropped"
 msgstr "slängt"
 
-#: src/database.cc:1386
+#: src/database.cc:1389
 #, c-format
 msgid "checked %d certs, found %d bad, fixed %d, dropped %d"
 msgstr "kollade %d cert, hittade %d dåliga, fixade %d, kastade %d"
 
-#: src/database.cc:1391
+#: src/database.cc:1394
 #, c-format
 msgid "checked %d certs, found %d bad, fixed %d"
 msgstr "kollade %d cert, hittade %d dåliga, fixade %d"
 
-#: src/database.cc:1454
+#: src/database.cc:1457
 #, c-format
 msgid "multiple statements in query: %s"
 msgstr "multipla kommandon i databasfråga: %s"
 
-#: src/database.cc:1460
+#: src/database.cc:1463
 #, c-format
 msgid "wanted %d columns got %d in query: %s"
 msgstr "ville ha %d kolumner, fick %d i databasfråga: %s"
 
-#: src/database.cc:1539
+#: src/database.cc:1542
 #, c-format
 msgid "null result in query: %s"
 msgstr "inget resultat med databasfråga: %s"
 
-#: src/database.cc:1565
+#: src/database.cc:1568
 #, c-format
 msgid "wanted %d rows got %d in query: %s"
 msgstr "ville ha %d rader, fick %d i databasfråga: %s"
 
-#: src/database.cc:1899
+#: src/database.cc:1902
 #, c-format
 msgid "roster does not match hash"
 msgstr "'roster' stämmer inte med checksumman"
 
-#: src/database.cc:1920
+#: src/database.cc:1923
 #, c-format
 msgid "roster_delta does not match hash"
 msgstr "'roster_delta' stämmer inte med checksumman"
 
-#: src/database.cc:2105
+#: src/database.cc:2108
 #, c-format
 msgid "delta-reconstructed '%s' item does not match hash"
 msgstr "delta-återskapat element '%s' stämmer inte med checksumman"
 
-#: src/database.cc:2513
+#: src/database.cc:2516
 #, c-format
 msgid "file preimage '%s' missing in db"
 msgstr "\"preimage\" för filen '%s' saknas i databasen"
 
-#: src/database.cc:2514
+#: src/database.cc:2517
 #, c-format
 msgid "dropping delta '%s' -> '%s'"
 msgstr "slänger deltat '%s' -> '%s'"
 
-#: src/database.cc:2530
+#: src/database.cc:2533
 #, c-format
 msgid ""
 "unknown delta direction '%s'; assuming 'reverse'. Valid values are "
@@ -4560,63 +4562,63 @@ msgstr ""
 "okänd riktning '%s' för deltan; 'reverse' antas. Giltiga värden är "
 "'reverse', 'forward', 'both'."
 
-#: src/database.cc:2863
+#: src/database.cc:2866
 #, c-format
 msgid "revision does not match hash"
 msgstr "revisionen stämmer inte med identiteten"
 
-#: src/database.cc:2995
+#: src/database.cc:2998
 #, c-format
 msgid "missing prerequisite revision %s"
 msgstr "saknar nödvändig revision %s"
 
-#: src/database.cc:2997 src/database.cc:3008 src/database.cc:3024
-#: src/database.cc:3032
+#: src/database.cc:3000 src/database.cc:3011 src/database.cc:3027
+#: src/database.cc:3035
 #, c-format
 msgid "dropping revision %s"
 msgstr "slänger revisionen %s"
 
-#: src/database.cc:3007
+#: src/database.cc:3010
 #, c-format
 msgid "missing prerequisite file %s"
 msgstr "saknar nödvändig fil %s"
 
-#: src/database.cc:3022
+#: src/database.cc:3025
 #, c-format
 msgid "missing prerequisite file pre-delta %s"
 msgstr "saknar nödvändigt predelta till fil %s"
 
-#: src/database.cc:3030
+#: src/database.cc:3033
 #, c-format
 msgid "missing prerequisite file post-delta %s"
 msgstr "saknar nödvändigt postdelta till fil %s"
 
-#: src/database.cc:3163
+#: src/database.cc:3166
 #, c-format
 msgid "revision contains incorrect manifest_id"
 msgstr "revisionen innehåller inkorrekt manifest_id"
 
-#: src/database.cc:3487
+#: src/database.cc:3499
 #, c-format
 msgid "failed to get RSA verifying key for %s"
 msgstr "misslyckades med att finna signerande RSA-nyckel för %s"
 
-#: src/database.cc:3626
+#: src/database.cc:3642
 #, c-format
 msgid "your database contains multiple keys named '%s'"
 msgstr "din databas innehåller flera nycklar som heter '%s'"
 
-#: src/database.cc:3787
+#: src/database.cc:3803
 #, c-format
 msgid "cert revision %s does not exist in db"
 msgstr "certrevision %s finns inte i databasen"
 
-#: src/database.cc:3789
+#: src/database.cc:3805
 #, c-format
 msgid "dropping cert"
 msgstr "slänger cert"
 
-#: src/database.cc:3799
+#: src/database.cc:3815
 #, c-format
 msgid ""
 "the branch name\n"
@@ -4639,32 +4641,32 @@ msgstr ""
 "kommandot '%s local kill_certs för att ta bort detta särskilda\n"
 "gren-certifikat och lägga till en giltig."
 
-#: src/database.cc:4116
+#: src/database.cc:4132
 #, c-format
 msgid "ignoring bad signature by '%s' on '%s'"
 msgstr "ignorerar felaktig signatur på '%2$s', av '%1$s'"
 
-#: src/database.cc:4121
+#: src/database.cc:4137
 #, c-format
 msgid "ignoring unknown signature by '%s' on '%s'"
 msgstr "ignorerar okänd signatur på '%2$s', av '%1$s'"
 
-#: src/database.cc:4123
+#: src/database.cc:4139
 #, c-format
 msgid "trust function disliked %d signers of '%s' cert on revision %s"
 msgstr "tillitsfunktionen ogillar %d signerare av certet '%s' i revisionen %s"
 
-#: src/database.cc:4811 src/database.cc:4953
+#: src/database.cc:4827 src/database.cc:4969
 #, c-format
 msgid "no database specified"
 msgstr "ingen databas angiven"
 
-#: src/database.cc:4824
+#: src/database.cc:4840
 #, c-format
 msgid "database '%s' does not exist"
 msgstr "databasen '%s' finns inte"
 
-#: src/database.cc:4832
+#: src/database.cc:4848
 #, c-format
 msgid ""
 "'%s' is a workspace, not a database\n"
@@ -4673,17 +4675,17 @@ msgstr ""
 "'%s' är en katalog, inte en databas\n"
 "(menade du '%s'?)"
 
-#: src/database.cc:4836
+#: src/database.cc:4852
 #, c-format
 msgid "'%s' is a directory, not a database"
 msgstr "'%s' är en katalog, inte en databas"
 
-#: src/database.cc:4844
+#: src/database.cc:4860
 #, c-format
 msgid "database '%s' already exists"
 msgstr "databasen '%s' finns redan"
 
-#: src/database.cc:4849
+#: src/database.cc:4865
 #, c-format
 msgid ""
 "existing (possibly stale) journal file '%s' has same stem as new database "
@@ -4694,106 +4696,106 @@ msgstr ""
 "databasen '%s'.\n"
 "Avbryter skapandet av databasen"
 
-#: src/database.cc:5011
+#: src/database.cc:5027
 #, c-format
 msgid "the database alias '%s' has multiple ambiguous expansions:"
 msgstr "databasaliaset '%s' har flera motsägelsefulla uttydningar:"
 
-#: src/database.cc:5034
+#: src/database.cc:5050
 #, c-format
 msgid "could not query default database alias"
 msgstr "kunde inte fråga efter databasens standardalias"
 
-#: src/database.cc:5036
+#: src/database.cc:5052
 #, c-format
 msgid "using default database '%s'"
 msgstr "använder standarddatabasen '%s'"
 
-#: src/database.cc:5046
+#: src/database.cc:5062
 #, c-format
 msgid "invalid database alias '%s': does not start with a colon"
 msgstr "ogiltigt databasalias '%s': startar inte med ett kolon"
 
-#: src/database.cc:5050
+#: src/database.cc:5066
 #, c-format
 msgid "invalid database alias '%s': must not be empty"
 msgstr "ogiltigt databasalias '%s': får inte vara tomt"
 
-#: src/database.cc:5066
+#: src/database.cc:5082
 #, c-format
 msgid "invalid database alias '%s': does contain invalid characters"
 msgstr "ogiltigt databasalias '%s': innehåller ogiltiga tecken"
 
-#: src/key_store.cc:90
+#: src/key_store.cc:91
 #, c-format
 msgid "no available keystore found"
 msgstr "kunde inte hitta något tillgängligt nyckellager"
 
-#: src/key_store.cc:134 src/key_store.cc:138 src/key_store.cc:142
-#: src/key_store.cc:144 src/key_store.cc:149
+#: src/key_store.cc:135 src/key_store.cc:139 src/key_store.cc:143
+#: src/key_store.cc:145 src/key_store.cc:150
 #, c-format
 msgid "extraneous data in key store"
 msgstr "extra data i nyckelarkivet"
 
-#: src/key_store.cc:160
+#: src/key_store.cc:161
 #, c-format
 msgid "key store has multiple copies of the key with id %s"
 msgstr "nyckelarkivet har multipla kopior av nyckeln med identiteten %s."
 
-#: src/key_store.cc:169
+#: src/key_store.cc:170
 #, c-format
 msgid "converting old-format private key %s"
 msgstr "konverterar den gamla privata nyckeln %s"
 
-#: src/key_store.cc:227
+#: src/key_store.cc:228
 #, c-format
 msgid "ignored invalid key file '%s' in key store"
 msgstr "ignorerar ogiltig nyckelfil '%s' i nyckelarkivet"
 
-#: src/key_store.cc:422 src/key_store.cc:426 src/key_store.cc:429
-#: src/key_store.cc:431 src/key_store.cc:434
+#: src/key_store.cc:423 src/key_store.cc:427 src/key_store.cc:430
+#: src/key_store.cc:432 src/key_store.cc:435
 #, c-format
 msgid "invalid data in key file"
 msgstr "ogiltigt data i nyckelfil"
 
-#: src/key_store.cc:442
+#: src/key_store.cc:443
 #, c-format
 msgid "expected key with id %s in key file '%s', got key with id %s"
 msgstr ""
 "nyckel med identitet %s förväntades i filen '%s', istället fanns nyckel med "
 "identitet %s"
 
-#: src/key_store.cc:508
+#: src/key_store.cc:509
 #, c-format
 msgid "enter new passphrase for key ID [%s] (%s): "
 msgstr "ange nytt lösen för nyckelidentitet [%s] (%s):"
 
-#: src/key_store.cc:511
+#: src/key_store.cc:512
 #, c-format
 msgid "enter passphrase for key ID [%s] (%s): "
 msgstr "ange lösen för nyckelidentitet [%s] (%s):"
 
-#: src/key_store.cc:515
+#: src/key_store.cc:516
 #, c-format
 msgid "confirm passphrase for key ID [%s] (%s): "
 msgstr "bekräfta lösen för nyckelidentitet [%s] (%s):"
 
-#: src/key_store.cc:535
+#: src/key_store.cc:536
 #, c-format
 msgid "too many failed passphrases"
 msgstr "för många misslyckade försök"
 
-#: src/key_store.cc:536
+#: src/key_store.cc:537
 #, c-format
 msgid "passphrases do not match, try again"
 msgstr "lösen stämmer inte, försök igen"
 
-#: src/key_store.cc:567 src/keys.cc:43
+#: src/key_store.cc:568 src/keys.cc:43
 #, c-format
 msgid "no key pair %s found in key store '%s'"
 msgstr "nyckelparet %s finns inte i katalogen '%s'"
 
-#: src/key_store.cc:633
+#: src/key_store.cc:634
 #, c-format
 msgid ""
 "failed to decrypt old private RSA key, probably incorrect passphrase or "
@@ -4802,49 +4804,49 @@ msgstr ""
 "misslyckades med att avkoda den gamla privata RSA-nyckeln, antagligen "
 "beroende på inkorrekt lösen eller på att lua-hooken 'get_passphrase' saknas"
 
-#: src/key_store.cc:646
+#: src/key_store.cc:647
 #, c-format
 msgid "failed to extract RSA private key from PKCS#8 keypair"
 msgstr ""
 "misslyckades med att plocka ut den privata RSA-nyckeln från nyckelparet i "
 "PKCS#8-format"
 
-#: src/key_store.cc:686
+#: src/key_store.cc:687
 #, c-format
 msgid "key '%s' already exists"
 msgstr "nyckeln '%s' finns redan"
 
-#: src/key_store.cc:698
+#: src/key_store.cc:699
 #, c-format
 msgid "generating key-pair '%s'"
 msgstr "skapar nyckelparet '%s'"
 
-#: src/key_store.cc:746
+#: src/key_store.cc:763
 #, c-format
 msgid "storing key-pair %s in '%s/'"
 msgstr "lagrar nyckelparet %s i '%s/'"
 
-#: src/key_store.cc:759
+#: src/key_store.cc:776
 #, c-format
 msgid "storing public key %s in '%s'"
 msgstr "lagrar den publika nyckeln %s i '%s'"
 
-#: src/key_store.cc:775
+#: src/key_store.cc:792
 #, c-format
 msgid "key '%s' has hash '%s'"
 msgstr "nyckeln '%s' har kontrollsumman '%s'"
 
-#: src/key_store.cc:789
+#: src/key_store.cc:806
 #, c-format
 msgid "no key pair '%s' found in key store '%s'"
 msgstr "nyckelparet '%s' finns inte i katalogen '%s'"
 
-#: src/key_store.cc:845
+#: src/key_store.cc:881
 #, c-format
 msgid "Botan error decrypting data: '%s'"
 msgstr "Botan genererade ett fel när den avkodade data: '%s'"
 
-#: src/key_store.cc:868
+#: src/key_store.cc:904
 #, c-format
 msgid ""
 "you have chosen to sign only with ssh-agent but ssh-agent does not seem to "
@@ -4853,12 +4855,12 @@ msgstr ""
 "du har valt att enbart signera med hjälp av ssh-agent, men den tycks inte "
 "vara igång"
 
-#: src/key_store.cc:898
+#: src/key_store.cc:935
 #, c-format
 msgid "you don't seem to have your monotone key imported "
 msgstr "du verkar inte ha importerat din monotonenyckel "
 
-#: src/key_store.cc:952
+#: src/key_store.cc:995
 #, c-format
 msgid ""
 "make_signature: ssh signature (%i) != monotone signature (%i)\n"
@@ -4869,24 +4871,24 @@ msgstr ""
 "sshsignatur     : %s\n"
 "monotonesignatur: %s"
 
-#: src/key_store.cc:968
+#: src/key_store.cc:1011
 #, c-format
 msgid "make_signature: signature is not valid"
 msgstr "make_signature: signaturen är ogiltig"
 
-#: src/key_store.cc:980
+#: src/key_store.cc:1023
 #, c-format
 msgid "no ssh-agent is available, cannot add key %s"
 msgstr "ingen ssh-agent tillgänglig, kunde inte lägga till nyckeln %s"
 
-#: src/key_store.cc:1087
+#: src/key_store.cc:1140
 #, c-format
 msgid "failed to decrypt old private RSA key, probably incorrect passphrase"
 msgstr ""
 "misslyckades med att avkoda den gamla privata RSA-nyckeln, antagligen "
 "beroende på inkorrekt lösen"
 
-#: src/key_store.cc:1124
+#: src/key_store.cc:1187
 #, c-format
 msgid "public and private keys for %s do not match"
 msgstr "publik och privat nyckel för %s stämmer inte överens"
@@ -4929,13 +4931,13 @@ msgstr ""
 "ssh_agent: get_keys: för få eller för många paket-bytes använda, position "
 "(%u), längd (%i)"
 
-#: src/ssh_agent.cc:420
+#: src/ssh_agent.cc:421
 #, c-format
 msgid "ssh_agent: get_keys: attempted to sign data when not connected"
 msgstr ""
 "ssh_agent: get_keys: försökte signera data utan att vara kopplad till agenten"
 
-#: src/ssh_agent.cc:466
+#: src/ssh_agent.cc:467
 #, c-format
 msgid ""
 "ssh_agent: sign_data: not all or too many signature bytes consumed, location "
@@ -4944,7 +4946,7 @@ msgstr ""
 "ssh_agent: sign_data: för få eller för många signatur-bytes använda, "
 "position (%u), längd (%i)"
 
-#: src/ssh_agent.cc:472
+#: src/ssh_agent.cc:473
 #, c-format
 msgid ""
 "ssh_agent: sign_data: not all or too many packet bytes consumed, location "
@@ -4953,19 +4955,19 @@ msgstr ""
 "ssh_agent: sign_data: för få eller för många paket-bytes använda, position "
 "(%u), längd (%i)"
 
-#: src/ssh_agent.cc:482
+#: src/ssh_agent.cc:483
 #, c-format
 msgid "ssh_agent: add_identity: attempted to add a key when not connected"
 msgstr ""
 "ssh_agent: add_identity: försökte lägga till en nyckel utan att vara kopplad "
 "till agenten"
 
-#: src/ssh_agent.cc:498
+#: src/ssh_agent.cc:499
 #, c-format
 msgid "ssh_agent: add_identity: response packet of unexpected size (%u)"
 msgstr "ssh_agent: add_identity: svarspaket med oväntad storlek (%u)"
 
-#: src/ssh_agent.cc:501
+#: src/ssh_agent.cc:502
 #, c-format
 msgid "ssh_agent: packet type (%u) != 6"
 msgstr "ssh_agent: pakettypen (%u) != 6"
@@ -6777,8 +6779,8 @@ msgstr ""
 
 #: src/selectors.cc:172
 #, c-format
-msgid "expanded date '%s' -> '%s'"
-msgstr "expanderade datumangivelsen '%s' -> '%s'"
+msgid "expanded date '%s' to UTC -> '%s'"
+msgstr "expanderade datumangivelsen '%s' till UTC -> '%s'"
 
 #: src/selectors.cc:215
 #, c-format
@@ -7119,32 +7121,32 @@ msgstr "bytte namn till '%s' på vänstersidan"
 msgid "renamed to '%s' on the right"
 msgstr "bytte namn till '%s' på högersidan"
 
-#: src/merge_conflict.cc:1222
+#: src/merge_conflict.cc:1223
 #, c-format
 msgid "modified on the right, named %s"
 msgstr "förändrad på högersidan, kallad %s"
 
-#: src/merge_conflict.cc:1226
+#: src/merge_conflict.cc:1227
 #, c-format
 msgid "modified on the left, named %s"
 msgstr "förändrad på vänstersidan, kallad %s"
 
-#: src/merge_conflict.cc:1257
+#: src/merge_conflict.cc:1258
 #, c-format
 msgid "left_resolution: drop"
 msgstr "left_resolution: drop"
 
-#: src/merge_conflict.cc:1274
+#: src/merge_conflict.cc:1275
 #, c-format
 msgid "right_resolution: drop"
 msgstr "right_resolution: drop"
 
-#: src/merge_conflict.cc:1331
+#: src/merge_conflict.cc:1332
 #, c-format
 msgid "conflict: duplicate name '%s' for the directory '%s'"
 msgstr "konflikt: dubbelt namn '%s' för katalogen '%s'"
 
-#: src/merge_conflict.cc:1340
+#: src/merge_conflict.cc:1341
 #, c-format
 msgid ""
 "conflict: duplicate name '%s' for the directory\n"
@@ -7155,84 +7157,84 @@ msgstr ""
 "          heter '%s' i vänster och\n"
 "          heter '%s' i höger förälder."
 
-#: src/merge_conflict.cc:1358 src/merge_conflict.cc:1408
+#: src/merge_conflict.cc:1359 src/merge_conflict.cc:1409
 #, c-format
 msgid "added as a new file on the left"
 msgstr "la till en ny fil på vänstersidan"
 
-#: src/merge_conflict.cc:1360 src/merge_conflict.cc:1410
+#: src/merge_conflict.cc:1361 src/merge_conflict.cc:1411
 #, c-format
 msgid "added as a new directory on the left"
 msgstr "la till en ny katalog på vänstersidan"
 
-#: src/merge_conflict.cc:1368 src/merge_conflict.cc:1392
+#: src/merge_conflict.cc:1369 src/merge_conflict.cc:1393
 #, c-format
 msgid "added as a new file on the right"
 msgstr "la till en ny fil på högersidan"
 
-#: src/merge_conflict.cc:1370 src/merge_conflict.cc:1394
+#: src/merge_conflict.cc:1371 src/merge_conflict.cc:1395
 #, c-format
 msgid "added as a new directory on the right"
 msgstr "la till en ny katalog på högersidan"
 
-#: src/merge_conflict.cc:1383 src/merge_conflict.cc:1435
+#: src/merge_conflict.cc:1384 src/merge_conflict.cc:1436
 #, c-format
 msgid "renamed from file '%s' on the left"
 msgstr "bytte filens namn från '%s' på vänstersidan"
 
-#: src/merge_conflict.cc:1385 src/merge_conflict.cc:1437
+#: src/merge_conflict.cc:1386 src/merge_conflict.cc:1438
 #, c-format
 msgid "renamed from directory '%s' on the left"
 msgstr "bytte katalogens namn från '%s' på vänstersidan"
 
-#: src/merge_conflict.cc:1418 src/merge_conflict.cc:1445
+#: src/merge_conflict.cc:1419 src/merge_conflict.cc:1446
 #, c-format
 msgid "renamed from file '%s' on the right"
 msgstr "bytte filens namn från '%s' på högsidan"
 
-#: src/merge_conflict.cc:1420 src/merge_conflict.cc:1447
+#: src/merge_conflict.cc:1421 src/merge_conflict.cc:1448
 #, c-format
 msgid "renamed from directory '%s' on the right"
 msgstr "bytte katalogens namn från '%s' på högersidan"
 
-#: src/merge_conflict.cc:1498
+#: src/merge_conflict.cc:1499
 #, c-format
 msgid "conflict: multiple values for attribute '%s' on file '%s'"
 msgstr "konflikt: multipla värden på attributet '%s' för filen '%s'"
 
-#: src/merge_conflict.cc:1501
+#: src/merge_conflict.cc:1502
 #, c-format
 msgid "conflict: multiple values for attribute '%s' on directory '%s'"
 msgstr "konflikt: multipla värden på attributet '%s' för katalogen '%s'"
 
-#: src/merge_conflict.cc:1505
+#: src/merge_conflict.cc:1506
 #, c-format
 msgid "set to '%s' on the left"
 msgstr "satt till '%s' på vänstersidan"
 
-#: src/merge_conflict.cc:1507
+#: src/merge_conflict.cc:1508
 #, c-format
 msgid "deleted on the left"
 msgstr "borttagen på vänstersidan"
 
-#: src/merge_conflict.cc:1510
+#: src/merge_conflict.cc:1511
 #, c-format
 msgid "set to '%s' on the right"
 msgstr "satt till '%s' på högersidan"
 
-#: src/merge_conflict.cc:1512
+#: src/merge_conflict.cc:1513
 #, c-format
 msgid "deleted on the right"
 msgstr "borttagen på högersidan"
 
-#: src/merge_conflict.cc:1532
+#: src/merge_conflict.cc:1533
 #, c-format
 msgid ""
 "conflict: multiple values for attribute '%s' on file '%s' from revision %s"
 msgstr ""
 "konflikt: multipla värden på attributet '%s' för filen '%s' i revision %s"
 
-#: src/merge_conflict.cc:1535
+#: src/merge_conflict.cc:1536
 #, c-format
 msgid ""
 "conflict: multiple values for attribute '%s' on directory '%s' from revision "
@@ -7240,235 +7242,236 @@ msgid ""
 msgstr ""
 "konflikt: multipla värden på attributet '%s' för katalogen '%s' i revision %s"
 
-#: src/merge_conflict.cc:1541
+#: src/merge_conflict.cc:1542
 #, c-format
 msgid "set to '%s' on left file '%s'"
 msgstr "satt till '%s' på vänstra filen '%s'"
 
-#: src/merge_conflict.cc:1544
+#: src/merge_conflict.cc:1545
 #, c-format
 msgid "set to '%s' on left directory '%s'"
 msgstr "satt till '%s' på vänstra katalogen '%s'"
 
-#: src/merge_conflict.cc:1550
+#: src/merge_conflict.cc:1551
 #, c-format
 msgid "deleted from left file '%s'"
 msgstr "borttagen från vänstra filen '%s'"
 
-#: src/merge_conflict.cc:1553
+#: src/merge_conflict.cc:1554
 #, c-format
 msgid "deleted from left directory '%s'"
 msgstr "borttagen från vänstra katalogen '%s'"
 
-#: src/merge_conflict.cc:1560
+#: src/merge_conflict.cc:1561
 #, c-format
 msgid "set to '%s' on right file '%s'"
 msgstr "satt till '%s' på högra filen '%s'"
 
-#: src/merge_conflict.cc:1563
+#: src/merge_conflict.cc:1564
 #, c-format
 msgid "set to '%s' on right directory '%s'"
 msgstr "satt till '%s' på högra katalogen '%s'"
 
-#: src/merge_conflict.cc:1569
+#: src/merge_conflict.cc:1570
 #, c-format
 msgid "deleted from right file '%s'"
 msgstr "borttagen från högra filen '%s'"
 
-#: src/merge_conflict.cc:1572
+#: src/merge_conflict.cc:1573
 #, c-format
 msgid "deleted from right directory '%s'"
 msgstr "borttagen från högra katalogen '%s'"
 
-#: src/merge_conflict.cc:1647
+#: src/merge_conflict.cc:1648
 #, c-format
 msgid "conflict: content conflict on file '%s'"
 msgstr "konflikt: innehållskonflikt i filen '%s'"
 
-#: src/merge_conflict.cc:1649
+#: src/merge_conflict.cc:1650
 #, c-format
 msgid "content hash is %s on the left"
 msgstr "innehållets kontrollsumma är %s på vänstersidan"
 
-#: src/merge_conflict.cc:1650
+#: src/merge_conflict.cc:1651
 #, c-format
 msgid "content hash is %s on the right"
 msgstr "innehållets kontrollsumma är %s på högersidan"
 
-#: src/merge_conflict.cc:1669
+#: src/merge_conflict.cc:1670
 #, c-format
 msgid "conflict: content conflict on file '%s' from revision %s"
 msgstr "konflikt: innehållskonflikt i filen '%s' från revisionen %s"
 
-#: src/merge_conflict.cc:1671
+#: src/merge_conflict.cc:1672
 #, c-format
 msgid "content hash is %s on the left in file '%s'"
 msgstr "innehållets kontrollsumma är %s på vänstersidan för filen '%s'"
 
-#: src/merge_conflict.cc:1673
+#: src/merge_conflict.cc:1674
 #, c-format
 msgid "content hash is %s on the right in file '%s'"
 msgstr "innehållets kontrollsumma är %s på högersidan för filen '%s'"
 
-#: src/merge_conflict.cc:1714 src/merge_conflict.cc:1946
-#: src/merge_conflict.cc:2546
+#: src/merge_conflict.cc:1715 src/merge_conflict.cc:1947
+#: src/merge_conflict.cc:2547
 #, c-format
 msgid "conflicts file does not match current conflicts"
 msgstr "konfliktfilen stämmer inte med nuvarande konflikter"
 
-#: src/merge_conflict.cc:1715
+#: src/merge_conflict.cc:1716
 #, c-format
 msgid "%s is not a supported conflict resolution for %s"
 msgstr "%s stöds inte som konfliktlösning för %s"
 
-#: src/merge_conflict.cc:1716
+#: src/merge_conflict.cc:1717
 #, c-format
 msgid ""
 "history for '%s' from %s will be lost; see user manual Merge Conflicts "
 "section"
-msgstr "'%s' historia från %s kommer att gå förlorat; se manualen, 'Merge Conflicts'"
+msgstr ""
+"'%s' historia från %s kommer att gå förlorat; se manualen, 'Merge Conflicts'"
 
-#: src/merge_conflict.cc:1717
+#: src/merge_conflict.cc:1718
 msgid "extra chars at end of conflict"
 msgstr "extra tecken på slutet av konfliktdata"
 
-#: src/merge_conflict.cc:1933
+#: src/merge_conflict.cc:1934
 #, c-format
 msgid "expected orphaned_directory or orphaned_file, found %s"
 msgstr "väntade mig orphaned_directory eller orphaned_file, fann %s"
 
-#: src/merge_conflict.cc:2604
+#: src/merge_conflict.cc:2605
 #, c-format
 msgid "extra data in file"
 msgstr "extra data i filen"
 
-#: src/merge_conflict.cc:2732
+#: src/merge_conflict.cc:2738
 #, c-format
 msgid "left revision id does not match conflict file"
 msgstr "vänster revisionsidentitet stämmer inte med konfliktfilen"
 
-#: src/merge_conflict.cc:2738
+#: src/merge_conflict.cc:2744
 #, c-format
 msgid "right revision id does not match conflict file"
 msgstr "höger revisionsidentitet stämmer inte med konfliktfilen"
 
-#: src/merge_conflict.cc:2769
+#: src/merge_conflict.cc:2775
 #, c-format
 msgid "'%s' already exists"
 msgstr "'%s' finns redan"
 
-#: src/merge_conflict.cc:2771
+#: src/merge_conflict.cc:2777
 #, c-format
 msgid "directory '%s' does not exist or is unknown"
 msgstr "katalogen '%s' finns inte eller är okänd"
 
-#: src/merge_conflict.cc:2821
+#: src/merge_conflict.cc:2827
 #, c-format
 msgid "can't drop directory '%s'; it is not empty"
 msgstr "kan inte ta bort katalogen '%s'; den är inte tom"
 
-#: src/merge_conflict.cc:2835
+#: src/merge_conflict.cc:2841
 #, c-format
 msgid "no resolution provided for orphaned_node '%s'"
 msgstr "ingen lösning given för orphaned_node '%s'"
 
-#: src/merge_conflict.cc:2840
+#: src/merge_conflict.cc:2846
 #, c-format
 msgid "invalid resolution for orphaned_node '%s'"
 msgstr "ogiltig lösning för orphaned_node '%s'"
 
-#: src/merge_conflict.cc:2863 src/merge_conflict.cc:2896
+#: src/merge_conflict.cc:2869 src/merge_conflict.cc:2902
 #, c-format
 msgid "replacing content of '%s' from %s with '%s'"
 msgstr "ersätter innehållet för '%s' från %s med '%s'"
 
-#: src/merge_conflict.cc:2935
+#: src/merge_conflict.cc:2941
 #, c-format
 msgid "extra %s_resolution provided for dropped_modified '%s'"
 msgstr "extra %s_resolution given för dropped_modified '%s'"
 
-#: src/merge_conflict.cc:2942
+#: src/merge_conflict.cc:2948
 #, c-format
 msgid "no resolution provided for dropped_modified '%s'"
 msgstr "ingen lösning given för dropped_modified '%s'"
 
-#: src/merge_conflict.cc:2943
+#: src/merge_conflict.cc:2949
 #, c-format
 msgid "no %s_resolution provided for dropped_modified '%s'"
 msgstr "ingen %s_resolution given för dropped_modified '%s'"
 
-#: src/merge_conflict.cc:2980
+#: src/merge_conflict.cc:2986
 #, c-format
 msgid "dropping '%s' from %s"
 msgstr "slänger '%s' från %s"
 
-#: src/merge_conflict.cc:2988 src/merge_conflict.cc:2995
+#: src/merge_conflict.cc:2994 src/merge_conflict.cc:3001
 #, c-format
 msgid "keeping '%s' from %s"
 msgstr "behåller '%s' från %s"
 
-#: src/merge_conflict.cc:3017 src/merge_conflict.cc:3026
-#: src/merge_conflict.cc:3040 src/merge_conflict.cc:3052
+#: src/merge_conflict.cc:3023 src/merge_conflict.cc:3032
+#: src/merge_conflict.cc:3046 src/merge_conflict.cc:3058
 #, c-format
 msgid "renaming '%s' from %s to '%s'"
 msgstr "byter namn på '%s' från %s till '%s'"
 
-#: src/merge_conflict.cc:3176 src/merge_conflict.cc:3214
+#: src/merge_conflict.cc:3184 src/merge_conflict.cc:3222
 #, c-format
 msgid "inconsistent left/right resolutions for '%s'"
 msgstr "inkonsekvent lösning till höger och till vänster för '%s'"
 
-#: src/merge_conflict.cc:3178
+#: src/merge_conflict.cc:3186
 #, c-format
 msgid "replacing content of '%s' with '%s'"
 msgstr "ersätter innehållet i '%s' innehåll med '%s'"
 
-#: src/merge_conflict.cc:3205
+#: src/merge_conflict.cc:3213
 #, c-format
 msgid "can't drop '%s'; not empty"
 msgstr "kan inte ta bort '%s'; den är inte tom"
 
-#: src/merge_conflict.cc:3216
+#: src/merge_conflict.cc:3224
 #, c-format
 msgid "keeping '%s'"
 msgstr "behåller '%s'"
 
-#: src/merge_conflict.cc:3227
+#: src/merge_conflict.cc:3235
 #, c-format
 msgid "no resolution provided for duplicate_name '%s'"
 msgstr "ingen lösning given för det duplicerade '%s'"
 
-#: src/merge_conflict.cc:3327
+#: src/merge_conflict.cc:3335
 #, c-format
 msgid "merge of '%s', '%s' failed"
 msgstr "ihopslagningen av '%s', '%s' misslyckades"
 
-#: src/merge_conflict.cc:3329
+#: src/merge_conflict.cc:3337
 #, c-format
 msgid "merged '%s', '%s'"
 msgstr "slog ihop '%s', '%s'"
 
-#: src/merge_conflict.cc:3338
+#: src/merge_conflict.cc:3346
 #, c-format
 msgid "replacing content of '%s', '%s' with '%s'"
 msgstr "ersätter innehållet för '%s', '%s' med '%s'"
 
-#: src/merge_content.cc:330
+#: src/merge_content.cc:334
 #, c-format
 msgid "file '%s' does not exist in workspace"
 msgstr "filen '%s' existerar inte i arbetskopian"
 
-#: src/merge_content.cc:331
+#: src/merge_content.cc:335
 #, c-format
 msgid "'%s' in workspace is a directory, not a file"
 msgstr "'%s' i arbetskopian är en katalog, inte en fil"
 
-#: src/merge_content.cc:335
+#: src/merge_content.cc:339
 #, c-format
 msgid "file '%s' in workspace has id %s, wanted %s"
 msgstr "filen '%s' i arbetskopian har identiteten %s, %s eftersöktes"
 
-#: src/merge_content.cc:606
+#: src/merge_content.cc:610
 #, c-format
 msgid ""
 "help required for 3-way merge\n"
@@ -7483,20 +7486,20 @@ msgstr ""
 "[     höger] %s\n"
 "[ihopslagen] %s"
 
-#: src/merge_content.cc:785
+#: src/merge_content.cc:789
 #, c-format
 msgid "%d content conflict requires user intervention"
 msgid_plural "%d content conflicts require user intervention"
 msgstr[0] "%d innehållskonflikter, din hjälp behövs"
 msgstr[1] "%d innehållskonflikter, din hjälp behövs"
 
-#: src/merge_content.cc:801
+#: src/merge_content.cc:805
 #, c-format
 msgid "can't spawn external merger when non-interactive"
 msgstr ""
 "kan inte anropa extern ihopslagningsmekanism när jag inte är interaktiv"
 
-#: src/merge_content.cc:811
+#: src/merge_content.cc:815
 #, c-format
 msgid "merge failed due to unresolved conflicts"
 msgstr "ihopslagningen misslyckades på grund av olösta konflikter."
@@ -8315,97 +8318,97 @@ msgstr "tar bort körrättigheter för '%s'"
 msgid "error closing file '%s': %s"
 msgstr "fel vid stängning av filen '%s': %s"
 
-#: src/unix/fs.cc:52 src/win32/fs.cc:26
+#: src/unix/fs.cc:66 src/win32/fs.cc:26
 #, c-format
 msgid "cannot get working directory: %s"
 msgstr "kan inte finna katalogen vi står i: %s"
 
-#: src/unix/fs.cc:64 src/win32/fs.cc:42
+#: src/unix/fs.cc:76 src/win32/fs.cc:42
 #, c-format
 msgid "cannot change to directory '%s': %s"
 msgstr "kan inte byta till katalog '%s': %s"
 
-#: src/unix/fs.cc:86
+#: src/unix/fs.cc:98
 #, c-format
 msgid "could not find home directory for uid %d"
 msgstr "kunde inte finna hemkatalogen för uid %d"
 
-#: src/unix/fs.cc:119
+#: src/unix/fs.cc:131
 #, c-format
 msgid "could not find home directory for user '%s'"
 msgstr "kunde inte finns hemkatalogen för användaren '%s'"
 
-#: src/unix/fs.cc:137
+#: src/unix/fs.cc:149
 #, c-format
 msgid "error accessing file '%s': %s"
 msgstr "fel när jag försökte nå filen '%s': %s"
 
-#: src/unix/fs.cc:146
+#: src/unix/fs.cc:158
 #, c-format
 msgid "cannot handle special file '%s'"
 msgstr "kan inte hantera specialfilen '%s'"
 
-#: src/unix/fs.cc:162 src/win32/fs.cc:172
+#: src/unix/fs.cc:174 src/win32/fs.cc:172
 #, c-format
 msgid "could not open directory '%s': %s"
 msgstr "kunde inte öppna katalogen '%s': %s"
 
-#: src/unix/fs.cc:253
+#: src/unix/fs.cc:265
 #, c-format
 msgid "error accessing '%s/%s': %s"
 msgstr "fel när jag försökte nå '%s/%s': %s"
 
-#: src/unix/fs.cc:275
+#: src/unix/fs.cc:287
 #, c-format
 msgid "stat(%s) failed: %s"
 msgstr "anrop av stat(%s) misslyckades: %s"
 
-#: src/unix/fs.cc:287
+#: src/unix/fs.cc:299
 #, c-format
 msgid "chmod(%s) failed: %s"
 msgstr "anrop av chmod(%s) misslyckades: %s"
 
-#: src/unix/fs.cc:330
+#: src/unix/fs.cc:342
 #, c-format
 msgid "error reading file '%s': %s"
 msgstr "fel vid läsning filen '%s': %s"
 
-#: src/unix/fs.cc:345
+#: src/unix/fs.cc:357
 #, c-format
 msgid "error writing file '%s': %s"
 msgstr "fel vid skrivning till fil '%s': %s"
 
-#: src/unix/fs.cc:360
+#: src/unix/fs.cc:372
 #, c-format
 msgid "renaming '%s' to '%s' failed: %s"
 msgstr "byta namn på '%s' till '%s' misslyckades: %s"
 
-#: src/unix/fs.cc:374 src/unix/fs.cc:429 src/win32/fs.cc:248
+#: src/unix/fs.cc:386 src/unix/fs.cc:441 src/win32/fs.cc:248
 #, c-format
 msgid "could not remove '%s': %s"
 msgstr "kunde inte ta bort '%s': %s"
 
-#: src/unix/fs.cc:456 src/win32/fs.cc:310
+#: src/unix/fs.cc:468 src/win32/fs.cc:310
 #, c-format
 msgid "could not create directory '%s': %s"
 msgstr "kunde inte skapa katalogen '%s': %s"
 
-#: src/unix/fs.cc:522 src/win32/fs.cc:458
+#: src/unix/fs.cc:534 src/win32/fs.cc:458
 #, c-format
 msgid "cannot create temp file '%s': %s"
 msgstr "kan inte skapa tillfällig fil '%s': %s"
 
-#: src/unix/fs.cc:532
+#: src/unix/fs.cc:544
 #, c-format
 msgid "all %d possible temporary file names are in use"
 msgstr "alla %d möjliga tillfälliga filnamn används"
 
-#: src/unix/fs.cc:573 src/win32/fs.cc:519
+#: src/unix/fs.cc:585 src/win32/fs.cc:519
 #, c-format
 msgid "error writing to temp file '%s': %s"
 msgstr "fel vid skrivning till tillfällig fil '%s': %s"
 
-#: src/unix/fs.cc:578 src/win32/fs.cc:526
+#: src/unix/fs.cc:590 src/win32/fs.cc:526
 #, c-format
 msgid ""
 "giving up after four zero-length writes to '%s' (%d byte written, %d left)"
@@ -8626,13 +8629,11 @@ msgstr "denna monotone fungerar inte med Botan version 1.9.11 eller senare"
 msgid "this monotone binary requires Botan 1.9.11 or newer"
 msgstr "denna monotone kräver Botan version 1.9.11 eller senare"
 
-#: src/std_hooks.lua:56
-msgid "Press enter"
-msgstr "Tryck på Enter"
+#~ msgid "Press enter"
+#~ msgstr "Tryck på Enter"
 
-#: src/std_hooks.lua:58
-msgid "Press enter when the subprocess has completed"
-msgstr "Tryck [Retur] när underprocessen är klar"
+#~ msgid "Press enter when the subprocess has completed"
+#~ msgstr "Tryck [Retur] när underprocessen är klar"
 
 #~ msgid ""
 #~ "non-recursive add: Files in the directory '%s' will not be added "
