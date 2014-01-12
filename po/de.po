@@ -8334,7 +8334,7 @@ msgstr ""
 "und aktiviert bei weiterer Verwendung die Fehlerausgabe)"
 
 #: src/options_list.hh:513
-msgid "please us '-v' (or '-v -v -v' if there are previous '-q' options)"
+msgid "please use '-v' (or '-v -v -v' if there are previous '-q' options)"
 msgstr ""
 "bitte nutzen Sie '-v' (oder '-v -v -v' wenn vorherige '-q'-Optionen "
 "verwendet wurden)"

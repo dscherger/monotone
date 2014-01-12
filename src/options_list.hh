@@ -510,7 +510,7 @@ OPTION(verbosity, verbose, false, "verbose,v",
 #endif
 
 DEPRECATE(debug,
-          gettext_noop("please us '-v' (or '-v -v -v' if there are previous '-q' options)"),
+          gettext_noop("please use '-v' (or '-v -v -v' if there are previous '-q' options)"),
           1.0, 2.0)
 OPTION(globals, debug, false, "debug",
        gettext_noop("print debug log to stderr while running"))

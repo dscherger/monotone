@@ -8216,7 +8216,7 @@ msgstr ""
 "aumenta o detalhe (anula o '-q' prévio, e depois activa a saída de depuração)"
 
 #: src/options_list.hh:513
-msgid "please us '-v' (or '-v -v -v' if there are previous '-q' options)"
+msgid "please use '-v' (or '-v -v -v' if there are previous '-q' options)"
 msgstr "por favor use '-v' (ou '-v -v -v' se existirem opções -q prévias)"
 
 #: src/options_list.hh:516

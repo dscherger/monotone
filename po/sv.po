@@ -8149,7 +8149,7 @@ msgstr ""
 "felsökningstexter, vilket som applicerar först)"
 
 #: src/options_list.hh:513
-msgid "please us '-v' (or '-v -v -v' if there are previous '-q' options)"
+msgid "please use '-v' (or '-v -v -v' if there are previous '-q' options)"
 msgstr "var god använd '-v' (eller '-v -v -v' om där finns tidigare '-q')"
 
 #: src/options_list.hh:516

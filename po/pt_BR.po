@@ -7534,7 +7534,7 @@ msgid "increase verbosity (undo previous -q, and then enable debug output)"
 msgstr ""
 
 #: src/options_list.hh:512
-msgid "please us -v (or -v -v -v if there are previous -q options)"
+msgid "please use -v (or -v -v -v if there are previous -q options)"
 msgstr ""
 
 #: src/options_list.hh:515

@@ -8143,7 +8143,7 @@ msgstr ""
 "sortie de déboguage)"
 
 #: src/options_list.hh:513
-msgid "please us '-v' (or '-v -v -v' if there are previous '-q' options)"
+msgid "please use '-v' (or '-v -v -v' if there are previous '-q' options)"
 msgstr ""
 "veuillez utiliser « -v » (ou « -v -v -v » s'il y a des options « -q » "
 "précédentes)"
