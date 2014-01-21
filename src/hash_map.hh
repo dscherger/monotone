@@ -62,25 +62,25 @@ namespace hashmap {
   {
     size_t operator()(std::string const & s) const
     {
-      return std::tr1::hash<std::string>()(s);
+      return std::hash<std::string>()(s);
     }
   };
 
   template<typename _Key, typename _Value>
-  class hash_map : public std::tr1::unordered_map<_Key,
+  class hash_map : public std::unordered_map<_Key,
                                                   _Value,
                                                   hash<_Key>,
                                                   equal_to<_Key> >
   {};
 
   template<typename _Key>
-  class hash_set : public std::tr1::unordered_set<_Key,
+  class hash_set : public std::unordered_set<_Key,
                                                   hash<_Key>,
                                                   equal_to<_Key> >
   {};
 
   template<typename _Key, typename _Value>
-  class hash_multimap : public std::tr1::unordered_multimap<_Key,
+  class hash_multimap : public std::unordered_multimap<_Key,
                                                             _Value,
                                                             hash<_Key>,
                                                             equal_to<_Key> >
