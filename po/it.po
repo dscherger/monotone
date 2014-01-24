@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: monotone\n"
 "Report-Msgid-Bugs-To: https://code.monotone.ca/p/monotone/issues/\n"
 "POT-Creation-Date: 2014-01-12 19:28+0100\n"
-"PO-Revision-Date: 2014-01-12 20:03+0100\n"
-"Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
+"PO-Revision-Date: 2014-01-15 01:03+0100\n"
+"Last-Translator: Roberta <ripley@lapo.it>\n"
 "Language-Team: \n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
@@ -129,9 +129,9 @@ msgid "path is not normalized"
 msgstr "path non in forma normalizzata"
 
 #: src/paths.cc:486
-#, fuzzy, c-format
+#, c-format
 msgid "bookkeeping path is not in bookkeeping directory"
-msgstr "path‘%s’ is in bookkeeping dir"
+msgstr "bookkeeping path non è nella directory bookkeeping"
 
 #: src/paths.cc:827
 #, c-format
@@ -265,9 +265,9 @@ msgid "file '%s' does not exist"
 msgstr "il file ‘%s’ non esiste"
 
 #: src/file_io.cc:282
-#, fuzzy, c-format
+#, c-format
 msgid "file '%s' cannot be read as data; it is a directory"
-msgstr "il file ‘%s’ non può essere sovrascritto: è una directory"
+msgstr "il file ‘%s’ non può essere letto come dati: è una directory"
 
 #: src/file_io.cc:286
 #, c-format
@@ -403,16 +403,21 @@ msgid "warning: "
 msgstr "attenzione: "
 
 #: src/ui.cc:658
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "fatal: %s\n"
 "This is almost certainly a bug in monotone.\n"
 "Please report this error message, the output of '%s version --full',\n"
 "and a description of what you were doing to '%s'."
-msgstr "la directory sorgente da rinominare ‘%s’ è un file -- bug in monotone?"
+msgstr ""
+"fatale: %s\n"
+"C'è quasi certamente un bug in monotone.\n"
+"Per favore riporta questo messaggio di errore, l'output della '%s version --"
+"full',\n"
+"e una descrizione di cosa stavi facendo a '%s'."
 
 #: src/ui.cc:671
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "fatal: %s\n"
 "This is almost certainly a bug in monotone.\n"
@@ -422,7 +427,14 @@ msgid ""
 "database you were using, so please preserve it in case it can\n"
 "help in finding the bug."
 msgstr ""
-"il file sorgente da rinominare ‘%s’ è una directory -- bug in monotone?"
+"fatale: %s\n"
+"C'è quasi certamente un bug in monotone.\n"
+"Per favore riporta questo messaggio di errore, l'output della '%s version --"
+"full',\n"
+"e una descrizione di cosa stavi facendo a '%s'.\n"
+"Questo erroresembra essere stato innestato da qualcosa nel\n"
+"database che stavi usando, quindiperfavore conservalo nel caso questo possa\n"
+"aiutare a trovare il bug."
 
 #: src/ui.cc:713
 msgid "error: memory exhausted"
@@ -776,12 +788,14 @@ msgid "Authors"
 msgstr "Autori"
 
 #: src/cmd.cc:949
-#, fuzzy
 msgid ""
 "monotone was written originally by Graydon Hoare <graydon@pobox.com> in 2003 "
 "and has since then received numerous contributions from many individuals. A "
 "complete list of authors can be found in AUTHORS."
-msgstr "Autori"
+msgstr ""
+"monotone originariamente p stato scritto da Graydon Hoare <graydon@pobox."
+"com> nel 2003 e da allora ha ricevuto numerosi contributi da molte persone. "
+"Una lista completa degli autori si trova in AUTHORS."
 
 #: src/cmd.cc:954
 msgid ""
@@ -793,16 +807,16 @@ msgstr ""
 
 #: src/cmd.cc:957
 msgid "Copyright"
-msgstr ""
+msgstr "Copyright"
 
 #: src/cmd.cc:958
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "monotone and this man page is Copyright (c) 2003 \\- %s by the monotone "
 "development team."
 msgstr ""
-"Oggi, monotone è mantenuto da un collettivo di programmatori entusiasti, "
-"conosciuti come la squadra sviluppo di monotone."
+"monotone e questa pagina man è Copyright (c) 2003 \\- %s dalla squadra "
+"sviluppo di monotone."
 
 #: src/cmd.cc:970
 #, fuzzy, c-format
@@ -902,11 +916,9 @@ msgstr[0] "invierebbe %d revisione\n"
 msgstr[1] "invierebbe %d revisioni\n"
 
 #: src/cmd_netsync.cc:331
-#, fuzzy, c-format
+#, c-format
 msgid "%9d in branch '%s'\n"
-msgstr ""
-"il criterio di inclusione del ramo contiene un carattere virgolette:\n"
-"‘%s’"
+msgstr "%9d nel ramo '%s'\n"
 
 #: src/cmd_netsync.cc:541 src/cmd_netsync.cc:564 src/cmd_netsync.cc:590
 #: src/cmd_netsync.cc:625 src/cmd_netsync.cc:651 src/cmd_netsync.cc:691
@@ -1057,9 +1069,8 @@ msgstr ""
 "conosciuti, conosciuti, ignorati volutamente, assenti o cambiati di stato"
 
 #: src/cmd_list.cc:102
-#, fuzzy
 msgid "Lists certificates attached to a revision"
-msgstr "Stampa tutti i certificati relativi ad una revisione"
+msgstr "Elenca i certificati attaccati a una revisione"
 
 #: src/cmd_list.cc:130 src/cmd_list.cc:1060
 #, c-format
@@ -1177,23 +1188,22 @@ msgid "%s (in '%s')"
 msgstr "%s (in ‘%s’)"
 
 #: src/cmd_list.cc:664
-#, fuzzy, c-format
+#, c-format
 msgid "no known valid workspaces"
-msgstr "Elenca database gestiti e i loro spazi di lavoro conosciuti"
+msgstr "nessuno spazio di lavoro conosciuto valido"
 
 #: src/cmd_list.cc:668
-#, fuzzy
 msgid "Lists known workspaces of a specified database"
-msgstr "Elenca database gestiti e i loro spazi di lavoro conosciuti"
+msgstr "Elenca spazi di lavoro conosciuti di uno specifico database"
 
 #: src/cmd_list.cc:678
 msgid "Lists managed databases and their known workspaces"
 msgstr "Elenca database gestiti e i loro spazi di lavoro conosciuti"
 
 #: src/cmd_list.cc:685 src/database.cc:4992
-#, fuzzy, c-format
+#, c-format
 msgid "no default database location configured"
-msgstr "imposta locazione della cartella di configurazione"
+msgstr "nessuna postazione database di default configurata"
 
 #: src/cmd_list.cc:689 src/database.cc:5070
 #, fuzzy, c-format
@@ -1208,9 +1218,9 @@ msgid "ignoring database '%s'"
 msgstr "ignoro il database ‘%s’"
 
 #: src/cmd_list.cc:740
-#, fuzzy, c-format
+#, c-format
 msgid "%s (in %s):"
-msgstr "%s.. %s: "
+msgstr "%s (in %s): "
 
 #: src/cmd_list.cc:747
 msgid "Lists workspace files that belong to the current branch"
@@ -1454,11 +1464,8 @@ msgid "Puts a symbolic tag certificate on a revision"
 msgstr "Pone un tag simbolico su una revisione"
 
 #: src/cmd_key_cert.cc:376
-#, fuzzy
 msgid "REV (pass|fail|true|false|yes|no|1|0)"
-msgstr ""
-"non posso interpretare la striga test risultato ‘%s’; stringhe valide sono: "
-"1, 0, yes, no, true, false, pass, fail"
+msgstr "REV (pass|fail|true|false|yes|no|1|0)"
 
 #: src/cmd_key_cert.cc:377
 msgid "Notes the results of running a test on a revision"
@@ -1522,12 +1529,15 @@ msgid "target revision is not in current branch"
 msgstr "la revisione selezionata non è sul ramo attuale"
 
 #: src/cmd_merging.cc:176
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "target revision is in multiple branches:%s\n"
 "\n"
 "Try again with explicit '--branch'"
-msgstr "la revisione selezionata non è sul ramo attuale"
+msgstr ""
+"la revisione target è in più rami:%s\n"
+"\n"
+"Prova ancora con esplicito '--branch'"
 
 #: src/cmd_merging.cc:187
 #, fuzzy, c-format
@@ -1825,9 +1835,9 @@ msgid "%s is an ancestor of %s; no merge is needed."
 msgstr "‘%s’ è un antenato di ‘%s’: il merge non è necessario."
 
 #: src/cmd_merging.cc:1045
-#, fuzzy, c-format
+#, c-format
 msgid "0 conflicts"
-msgstr "deve essere tra 0 e 255"
+msgstr "0 conflitti"
 
 #: src/cmd_merging.cc:1061
 #, c-format
@@ -1838,8 +1848,8 @@ msgstr "[antenato] %s"
 #, c-format
 msgid "%d conflict with supported resolutions."
 msgid_plural "%d conflicts with supported resolutions."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d conflitto con soluzioni supportate."
+msgstr[1] "%d conflitti con soluzioni supportate."
 
 #: src/cmd_merging.cc:1091 src/cmd_conflicts.cc:298 src/cmd_conflicts.cc:311
 #, c-format
@@ -4102,19 +4112,19 @@ msgid "skipping '%s', not currently tracked"
 msgstr "il ramo ‘%s’ è attualmente unito:"
 
 #: src/work.cc:1874
-#, fuzzy, c-format
+#, c-format
 msgid "cannot remove '%s/', it is not empty"
-msgstr "impossibile eliminare la cartella non vuota ‘%s’"
+msgstr "impossibile eliminare '%s/', non è vuota"
 
 #: src/work.cc:1889
-#, fuzzy, c-format
+#, c-format
 msgid "directory '%s' not empty - it will be dropped but not deleted"
-msgstr "directory ‘%s’ cancellata a destra"
+msgstr "directory ‘%s’ non vuota - sarà fatta cadere, ma non cancellata"
 
 #: src/work.cc:1900
-#, fuzzy, c-format
+#, c-format
 msgid "file '%s' changed - it will be dropped but not deleted"
-msgstr "cancellato dal file ‘%s’ a sinistra"
+msgstr "file '%s' cambiato - sarà fatto cadere, ma non cancellato"
 
 #: src/work.cc:1904
 #, fuzzy, c-format
@@ -4140,9 +4150,9 @@ msgid "cannot move '%s' to a subdirectory of itself, '%s/%s'"
 msgstr "non riesco ad aprire il file ‘%s’ in lettura"
 
 #: src/work.cc:1955
-#, fuzzy, c-format
+#, c-format
 msgid "'%s' and '%s' are the same file"
-msgstr "%s e %s sono la stessa revisione, annullo"
+msgstr "'%s' e '%s' sono lo stesso file"
 
 #: src/work.cc:1971
 #, fuzzy, c-format
@@ -4908,6 +4918,8 @@ msgid ""
 "you have chosen to sign only with ssh-agent but ssh-agent does not seem to "
 "be running"
 msgstr ""
+"hai scelto di firmare solamente con ssh-agent ma ssh-agent pare non "
+"funzionare"
 
 #: src/key_store.cc:935
 #, fuzzy, c-format
@@ -6408,9 +6420,9 @@ msgid "Drops a database variable"
 msgstr "Elimina una variabile dal database"
 
 #: src/automate.cc:2366
-#, fuzzy, c-format
+#, c-format
 msgid "no variables found in domain '%s'"
-msgstr "Elenca le variabili presenti in un intero database o un dominio"
+msgstr "nessuna variabile trovata nel dominio '%s'"
 
 #: src/automate.cc:2383
 msgid "Prints the workspace root for the current directory"
@@ -7844,9 +7856,9 @@ msgid "option '%s' has multiple ambiguous expansions:"
 msgstr "l'opzione ‘%s’ ha espansioni multiple ambigue:"
 
 #: src/option.cc:347
-#, fuzzy, c-format
+#, c-format
 msgid "negation of '--%s'"
-msgstr "%s"
+msgstr "negazione di '--%s'"
 
 #: src/option.cc:512 src/option.cc:556
 #, c-format
@@ -8181,9 +8193,8 @@ msgid "please use '--no-builtin-rcfile' instead"
 msgstr "il file rc ‘%s’ non esiste"
 
 #: src/options_list.hh:478
-#, fuzzy
 msgid "old version of '--no-builtin-rcfile'"
-msgstr "il file rc ‘%s’ non esiste"
+msgstr "vecchia versioe di '--no-builtin-rcfile'"
 
 #: src/options_list.hh:484
 msgid "load extra lua file"
@@ -8215,9 +8226,8 @@ msgid "print debug log to stderr while running"
 msgstr "stampa i log di debug su stderr"
 
 #: src/options_list.hh:523
-#, fuzzy
 msgid "please use '-q -q'"
-msgstr "Per favore segnala errori a %s."
+msgstr "Per favore usare '-q -q'"
 
 #: src/options_list.hh:525
 msgid "suppress warning, verbose, informational and progress messages"
@@ -8388,9 +8398,9 @@ msgstr ""
 "potrebbe non eseguire il comando ‘man’ di formattazione pagina ‘%s’: %s"
 
 #: src/unix/process.cc:119
-#, fuzzy, c-format
+#, c-format
 msgid "error closing file '%s': %s"
-msgstr "errore: %s"
+msgstr "errore chiudendo il file '%s': %s"
 
 #: src/unix/fs.cc:66 src/win32/fs.cc:26
 #, c-format
@@ -8398,9 +8408,9 @@ msgid "cannot get working directory: %s"
 msgstr "impossibile cambiare la directory corrente: %s"
 
 #: src/unix/fs.cc:76 src/win32/fs.cc:42
-#, fuzzy, c-format
+#, c-format
 msgid "cannot change to directory '%s': %s"
-msgstr "impossibile cambiare la directory corrente: %s"
+msgstr "impossibile cambiare la directory '%s': %s"
 
 #: src/unix/fs.cc:98
 #, c-format
@@ -8443,9 +8453,9 @@ msgid "chmod(%s) failed: %s"
 msgstr "errore in chmod(%s): %s"
 
 #: src/unix/fs.cc:342
-#, fuzzy, c-format
+#, c-format
 msgid "error reading file '%s': %s"
-msgstr "errore durante la lettura della directory: %s"
+msgstr "errore leggendo il file '%s': %s"
 
 #: src/unix/fs.cc:357
 #, fuzzy, c-format
@@ -8478,9 +8488,9 @@ msgid "all %d possible temporary file names are in use"
 msgstr "tutti i %d possibili nomi di file temporanei sono in uso"
 
 #: src/unix/fs.cc:585 src/win32/fs.cc:519
-#, fuzzy, c-format
+#, c-format
 msgid "error writing to temp file '%s': %s"
-msgstr "errore: %s"
+msgstr "errore scrivendo il file temporaneo '%s': %s"
 
 #: src/unix/fs.cc:590 src/win32/fs.cc:526
 #, fuzzy, c-format
@@ -8658,21 +8668,19 @@ msgid "this monotone binary requires at least SQLite 3.3.14 to run"
 msgstr "errore sqlite: "
 
 #: src/monotone.cc:157
-#, fuzzy, c-format
+#, c-format
 msgid "monotone does not support Botan 1.7.14"
-msgstr "Benchmark delle implementazioni SHA-1 di botan"
+msgstr "monotone non supporta Botan 1.7.14"
 
 #: src/monotone.cc:163
-#, fuzzy, c-format
+#, c-format
 msgid "monotone does not support Botan 1.9.9"
-msgstr "Benchmark delle implementazioni SHA-1 di botan"
+msgstr "monotone non supporta Botan 1.9.9"
 
 #: src/monotone.cc:168
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires Botan 1.6.3 or newer"
-msgstr ""
-"all'altro capo c'è una versione più nuova di monotone, non compatibile con "
-"questa"
+msgstr "questo monotone binario richiede Botan 1.6.3 o più recente"
 
 #: src/monotone.cc:170
 #, fuzzy, c-format
@@ -8682,11 +8690,9 @@ msgstr ""
 "questa"
 
 #: src/monotone.cc:175
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires Botan 1.7.7 or newer"
-msgstr ""
-"all'altro capo c'è una versione più nuova di monotone, non compatibile con "
-"questa"
+msgstr "questo monotone binario richiede Botan 1.7.7 o più recente"
 
 #: src/monotone.cc:182 src/monotone.cc:189
 #, fuzzy, c-format
