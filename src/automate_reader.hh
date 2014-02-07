@@ -13,7 +13,7 @@
 #define __AUTOMATE_READER_HH__
 
 #include <vector>
-#include <iostream>
+#include <ios>
 
 class automate_reader
 {

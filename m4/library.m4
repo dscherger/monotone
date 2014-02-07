@@ -31,7 +31,7 @@ AC_DEFUN([MTN_FULL_PKG_CONFIG_PATH],
 [AC_REQUIRE([PKG_PROG_PKG_CONFIG])
 # The dummy "pkg-config" package is guaranteed to exist.
 if test -n "$PKG_CONFIG"; then
-  mtn__full_pkg_config_path=`$PKG_CONFIG --variable=pc_path pkg-config 2>&1 | sed 's/:.*$//'`
+  mtn__full_pkg_config_path=`$PKG_CONFIG --variable=pc_path pkg-config`
   #AC_MSG_NOTICE([detected pkg-config path: $mtn__full_pkg_config_path])
 fi
 ])

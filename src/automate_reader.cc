@@ -12,6 +12,8 @@
 #include "base.hh"
 #include "automate_reader.hh"
 
+#include <iostream>
+
 #include "sanity.hh"
 
 using std::istream;
