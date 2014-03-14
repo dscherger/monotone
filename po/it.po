@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: monotone\n"
 "Report-Msgid-Bugs-To: https://code.monotone.ca/p/monotone/issues/\n"
 "POT-Creation-Date: 2014-01-12 19:28+0100\n"
-"PO-Revision-Date: 2014-01-24 23:47+0100\n"
+"PO-Revision-Date: 2014-03-12 16:49+0100\n"
 "Last-Translator: Roberta <ripley@lapo.it>\n"
 "Language-Team: \n"
 "Language: it\n"
@@ -820,10 +820,9 @@ msgstr ""
 "sviluppo di monotone."
 
 #: src/cmd.cc:970
-#, fuzzy, c-format
+#, c-format
 msgid "no man page formatter command configured"
-msgstr ""
-"potrebbe non eseguire il comando ‘man’ di formattazione pagina ‘%s’: %s"
+msgstr "nessun comando man di formattazione pagina configurato"
 
 #: src/cmd.cc:974
 #, c-format
@@ -1545,11 +1544,13 @@ msgstr ""
 "Prova ancora con ‘--branch’ esplicito"
 
 #: src/cmd_merging.cc:187
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "target revision not in any branch.\n"
 "Next commit will use branch '%s'"
-msgstr "la revisione selezionata non è sul ramo attuale"
+msgstr ""
+"la revisione target non è in nessun ramo.\n"
+"Il prossimo commit userà il ramo ‘%s’"
 
 #: src/cmd_merging.cc:209 src/cmd_merging.cc:826 src/cmd_ws_commit.cc:370
 #: src/cmd_ws_commit.cc:1370 src/cmd_ws_commit.cc:2078
@@ -1616,14 +1617,14 @@ msgid "selected update target %s"
 msgstr "selezionata revisione %s per l'update"
 
 #: src/cmd_merging.cc:272
-#, fuzzy, c-format
+#, c-format
 msgid "switching to branch '%s'"
-msgstr "il ramo ‘%s’ è aggiornato rispetto al ramo ‘%s’"
+msgstr "cambia al ramo ‘%s’"
 
 #: src/cmd_merging.cc:355
-#, fuzzy, c-format
+#, c-format
 msgid "switched branch; next commit will use branch '%s'"
-msgstr "inizio il commit sul ramo ‘%s’"
+msgstr "cambio ramo; il prossimo commit userà il ramo ‘%s’"
 
 #: src/cmd_merging.cc:356
 #, c-format
@@ -2279,9 +2280,8 @@ msgid "no workspace given"
 msgstr "nessuno spazio di lavoro specificato"
 
 #: src/cmd_db.cc:478
-#, fuzzy
 msgid "Unregisters an existing workspace for the current database"
-msgstr "Registra un nuovo spazio di lavoro per il database corrente"
+msgstr "Deregistra uno spazio di lavoro esistente per il database corrente"
 
 #: src/cmd_db.cc:479
 msgid "This command removes WORKSPACE_PATH to the list of `known-workspaces'."
@@ -2465,11 +2465,13 @@ msgstr ""
 "ne viene usato uno unificato."
 
 #: src/cmd_diff_log.cc:444
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "'--diff-args' requires '--external'; try adding '--external' or remove '--"
 "diff-args'"
-msgstr "argomenti da passare all'hook per le diff esterne"
+msgstr ""
+"‘--diff-args‘ richiede  ‘--external‘; prova ad aggiungere ‘--external‘ o "
+"rimuovere ‘--diff-args‘"
 
 #: src/cmd_diff_log.cc:477
 msgid "[FILE [...]]"
@@ -2490,18 +2492,18 @@ msgid "try passing a '--from' revision to start at"
 msgstr "prova a specificare una revisione da cui partire con ‘--from’"
 
 #: src/cmd_diff_log.cc:684
-#, fuzzy, c-format
+#, c-format
 msgid "workspace has no parent revision, probably an empty branch"
 msgstr ""
-"il selettore vuoto di genitore ‘p:’ si riferisce alla revisione su cui è "
-"basato lo spazio di lavoro"
+"lo spazio di lavoro non ha revisione genitore, probabilmente un ramo vuoto"
 
 #: src/cmd_diff_log.cc:687
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "workspace parent revision %s not found - did you specify a wrong database?"
 msgstr ""
-"revisione genitore %s non esiste, hai specificato il database snagliato?"
+"la revisione genitore dello spazio di lavoro %s è stata trovata - hai "
+"specificato un database sbagliato?"
 
 #: src/cmd_diff_log.cc:973
 #, c-format
@@ -2529,12 +2531,15 @@ msgid "Lists the selected revision history"
 msgstr "elenca la storia della revisione selezionata"
 
 #: src/cmd_ws_commit.cc:179
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "a backup from a previously failed commit exists in '_MTN/commit'.\n"
 "This file must be removed before commit will proceed.\n"
 "You may recover the previous message from this file if necessary."
-msgstr "imposta il messaggio di ChangeLog del commit"
+msgstr ""
+"c'è un backup di un precedente commit fallito in '_MTN/commit'.\n"
+"Quel file deve essere rimosso prima diprocedere con commit.\n"
+"Puoi recuperare il precedente messaggio di quel file se necessario."
 
 #: src/cmd_ws_commit.cc:184
 msgid ""
@@ -2723,11 +2728,9 @@ msgstr ""
 "impossibile invertire"
 
 #: src/cmd_ws_commit.cc:673
-#, fuzzy, c-format
+#, c-format
 msgid "cannot disapprove root revision"
-msgstr ""
-"non posso rinominare la root dello spazio di lavoro (usa invece ‘%s "
-"pivot_root’)"
+msgstr "non posso rifiutare la revisione root "
 
 #: src/cmd_ws_commit.cc:703 src/cmd_ws_commit.cc:1807
 #, c-format
@@ -2949,13 +2952,12 @@ msgid "Prints all attributes for the specified path"
 msgstr "Stampa tutti gli attributi di uno specifico percorso"
 
 #: src/cmd_ws_commit.cc:1345
-#, fuzzy
 msgid ""
 "If an explicit revision is given, the file's attributes at this specific "
 "revision are returned."
 msgstr ""
-"Stampa il nome di un file in una revisione selezionata relativa a una "
-"revisione data"
+"Se viene specificata una revisione, gli attributi di file vengono resi a "
+"questa specifica revisione."
 
 #: src/cmd_ws_commit.cc:1386
 #, c-format
@@ -3230,11 +3232,9 @@ msgstr ""
 "testate"
 
 #: src/cmd_ws_commit.cc:2433
-#, fuzzy, c-format
+#, c-format
 msgid "next revision for bisection testing is %s\n"
-msgstr ""
-"Aggiorna lo spazio di lavoro alla prossima revisione per essere verificato "
-"dalla bisezione"
+msgstr "la prossima revisione per testare la bisezione è %s\n"
 
 #: src/cmd_ws_commit.cc:2434
 #, c-format
@@ -3358,11 +3358,12 @@ msgid "Prints the automation interface's version"
 msgstr "Stampa la versione dellinterfaccia di automazione"
 
 #: src/cmd_automate.cc:132
-#, fuzzy
 msgid ""
 "Emulates certain kinds of diagnostic / UI messages for debugging and testing "
 "purposes, such as stdio"
-msgstr "Comandi di aiuto per il debug"
+msgstr ""
+"Emula alcuni tipi di diagnostica / messaggi UI a scopo di debugging e "
+"verifica, come stdio"
 
 #: src/cmd_automate.cc:143
 #, c-format
@@ -3409,9 +3410,8 @@ msgid "Loads a file's contents into the database"
 msgstr "Carica il contenuto di un file nel database"
 
 #: src/cmd_files.cc:58
-#, fuzzy
 msgid "PARENT_FILEID LEFT_FILEID RIGHT_FILEID"
-msgstr "ID_FILE"
+msgstr "PARENT_FILEID LEFT_FILEID RIGHT_FILEID"
 
 #: src/cmd_files.cc:59
 msgid "Merges 3 files and outputs the result"
@@ -3687,16 +3687,14 @@ msgid "resolve_first_right keep"
 msgstr "mantengo resolve_first_right"
 
 #: src/cmd_conflicts.cc:217 src/cmd_conflicts.cc:256
-#, fuzzy, c-format
+#, c-format
 msgid "resolve_first_right user \"name\""
-msgstr ""
-"bisogna specificare ‘resolve_first_left’ o ‘resolve_first_right’ (non "
-"soltanto ‘resolve_first’)"
+msgstr "resolve_first_right utente \"name\""
 
 #: src/cmd_conflicts.cc:236
-#, fuzzy, c-format
+#, c-format
 msgid "duplicate_name %s"
-msgstr "conflitto: nome doppio ‘%s’ per la directory ‘%s’"
+msgstr "duplicate_name %s"
 
 #: src/cmd_conflicts.cc:247
 #, c-format
@@ -3714,18 +3712,14 @@ msgid "content %s"
 msgstr "contenuto %s"
 
 #: src/cmd_conflicts.cc:282
-#, fuzzy, c-format
+#, c-format
 msgid "resolve_first interactive \"file_name\""
-msgstr ""
-"bisogna specificare ‘resolve_first_left’ o ‘resolve_first_right’ (non "
-"soltanto ‘resolve_first’)"
+msgstr "resolve_first interattivo \"file_name\""
 
 #: src/cmd_conflicts.cc:283
-#, fuzzy, c-format
+#, c-format
 msgid "resolve_first user \"file_name\""
-msgstr ""
-"bisogna specificare ‘resolve_first_left’ o ‘resolve_first_right’ (non "
-"soltanto ‘resolve_first’)"
+msgstr "resolve_first utente \"file_name\""
 
 #: src/cmd_conflicts.cc:302
 #, c-format
@@ -3759,11 +3753,9 @@ msgid "wrong number of arguments"
 msgstr "numero errato di argomenti"
 
 #: src/cmd_conflicts.cc:465 src/cmd_conflicts.cc:478
-#, fuzzy, c-format
+#, c-format
 msgid "must specify resolve_first (not _left or _right)"
-msgstr ""
-"bisogna specificare ‘resolve_first_left’ o ‘resolve_first_right’ (non "
-"soltanto ‘resolve_first’)"
+msgstr "bisogna specificare resolve_first (no _left o _right)"
 
 #: src/cmd_conflicts.cc:468 src/cmd_conflicts.cc:481 src/cmd_conflicts.cc:581
 #: src/cmd_conflicts.cc:588 src/cmd_conflicts.cc:633 src/cmd_conflicts.cc:640
@@ -3782,17 +3774,14 @@ msgstr ""
 "soltanto ‘resolve_first’)"
 
 #: src/cmd_conflicts.cc:714
-#, fuzzy, c-format
+#, c-format
 msgid "interactive merge result saved in '%s'"
-msgstr ""
-"aggiornato al risultato di unione\n"
-"[sinistra] ‘%s’\n"
-"[destra] ‘%s’\n"
+msgstr "risultato unione interattiva salvato in ‘%s’"
 
 #: src/cmd_conflicts.cc:717
-#, fuzzy, c-format
+#, c-format
 msgid "interactive merge failed."
-msgstr "unione fallita"
+msgstr "unione interattiva fallita."
 
 #: src/cmd_conflicts.cc:741
 #, c-format
@@ -3826,9 +3815,8 @@ msgid "RESOLUTION"
 msgstr "RISOLUZIONE"
 
 #: src/cmd_conflicts.cc:789
-#, fuzzy
 msgid "Set the resolution for the first unresolved single-file conflict."
-msgstr "Fissa la soluzione destra per il primo conflitto due-file irrisolto"
+msgstr "Fissa la soluzione destra per il primo conflitto single-file irrisolto"
 
 #: src/cmd_conflicts.cc:803
 msgid "Set the left resolution for the first unresolved two-file conflict"
@@ -3839,9 +3827,8 @@ msgid "Set the right resolution for the first unresolved two-file conflict"
 msgstr "Fissa la soluzione destra per il primo conflitto due-file irrisolto"
 
 #: src/cmd_conflicts.cc:831
-#, fuzzy
 msgid "Delete any bookkeeping files related to conflict resolution"
-msgstr "non ignorare nessun file"
+msgstr "Cancellare ogni file contabilecorrelato alla soluzione del conflitto"
 
 #: src/lua_hooks.cc:104
 msgid "lua: "
@@ -3858,14 +3845,21 @@ msgid "rcfile '%s' does not exist"
 msgstr "il file rc ‘%s’ non esiste"
 
 #: src/transforms.cc:84
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "%s\n"
 "This may be due to a memory glitch, data corruption during\n"
 "a network transfer, corruption of your database or workspace,\n"
 "or a bug in monotone.  If the error persists, please report\n"
 "it to '%s'."
-msgstr "Per favore segnala errori a %s."
+msgstr ""
+"%s\n"
+"Può essere dovuto a un problema tecnico di memoria, danneggiamento dati "
+"durante\n"
+"un trasferimento di rete, danneggiamento del tuo database o spazio di "
+"lavoro,\n"
+"o un errore in monotone. Se l'errore persiste, prego riferiscilo\n"
+"a ‘%s‘."
 
 #: src/update.cc:74
 #, c-format
@@ -3950,9 +3944,9 @@ msgid "Failed to write options file '%s': %s"
 msgstr "Impossibile scrivere il file di opzioni ‘%s’: %s"
 
 #: src/work.cc:669
-#, fuzzy, c-format
+#, c-format
 msgid "could not unregister workspace from old database '%s'"
-msgstr "sto applicando i cambiamenti da %s sullo spazio di lavoro attuale"
+msgstr "non posso deregistrare lo spazio di lavoro del vecchio database ‘%s’"
 
 #: src/work.cc:733
 #, c-format
@@ -4038,9 +4032,9 @@ msgid "%d workspace conflicts"
 msgstr "%d conflitti nello spazio di lavoro"
 
 #: src/work.cc:1598
-#, fuzzy, c-format
+#, c-format
 msgid "moved conflicting path '%s' to '%s'"
-msgstr "conflitto di inclusione/esclusione sul percorso ‘%s’"
+msgstr "spostato il percorso conflittuale da ‘%s’ a ‘%s’"
 
 #: src/work.cc:1662
 #, c-format
@@ -4063,7 +4057,7 @@ msgid "not a file '%s'"
 msgstr "‘%s’ non è un file"
 
 #: src/work.cc:1702
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "%d missing items; use '%s ls missing' to view.\n"
 "To restore consistency, on each missing item run either\n"
@@ -4073,9 +4067,13 @@ msgid ""
 " '%s drop --missing' or\n"
 " '%s revert --missing'"
 msgstr ""
-"la revisione %s è frutto di un merge.\n"
-"Per applicare le modifiche relative a uno dei suoi genitori, usa:\n"
-"  %s pluck -r GENITORE -r %s"
+"%d item mancanti; per vedere usa ‘%s ls missing‘.\n"
+"Per ripristinare la consistenza, su ogni item mancante fai girare o\n"
+" ‘%s drop ITEM‘ per toglierlo in modo permanente, o\n"
+" ‘%s revert ITEM‘ per ripristinarlo.\n"
+"Per gestirli contemporaneamente, usa semplicemente\n"
+" ‘%s drop --missing‘ o\n"
+" ‘%s revert --missing‘"
 
 #: src/work.cc:1861
 #, c-format
@@ -4083,9 +4081,9 @@ msgid "unable to drop the root directory"
 msgstr "impossibile eliminare la directory root"
 
 #: src/work.cc:1864
-#, fuzzy, c-format
+#, c-format
 msgid "skipping '%s', not currently tracked"
-msgstr "il ramo ‘%s’ è attualmente unito:"
+msgstr "salto ‘%s’, attualmente non tracciato"
 
 #: src/work.cc:1874
 #, c-format
@@ -4115,15 +4113,14 @@ msgstr ""
 "pivot_root’)"
 
 #: src/work.cc:1948 src/work.cc:1997
-#, fuzzy, c-format
+#, c-format
 msgid "source file '%s' is not versioned"
-msgstr ""
-"il file sorgente da rinominare ‘%s’ è una directory -- bug in monotone?"
+msgstr "il file sorgente ‘%s’ non ha versioni"
 
 #: src/work.cc:1953 src/work.cc:2019
-#, fuzzy, c-format
+#, c-format
 msgid "cannot move '%s' to a subdirectory of itself, '%s/%s'"
-msgstr "non riesco ad aprire il file ‘%s’ in lettura"
+msgstr "non posso spostare ‘%s’ in una sotto directory di se stessa, ‘%s/%s’"
 
 #: src/work.cc:1955
 #, c-format
@@ -4131,29 +4128,29 @@ msgid "'%s' and '%s' are the same file"
 msgstr "‘%s’ e ‘%s’ sono lo stesso file"
 
 #: src/work.cc:1971
-#, fuzzy, c-format
+#, c-format
 msgid "destination path's parent directory '%s/' doesn't exist"
-msgstr "la directory di destinazione ‘%s/’ non esiste."
+msgstr "la directory genitore del percorso di destinazione ‘%s/’ non esiste"
 
 #: src/work.cc:1988
-#, fuzzy, c-format
+#, c-format
 msgid "destination '%s/' is not a directory"
-msgstr "la directory di destinazione della clonazione ‘%s’ esiste già"
+msgstr "la destinazione ‘%s/’ non è una directory"
 
 #: src/work.cc:2014
-#, fuzzy, c-format
+#, c-format
 msgid "destination '%s' already exists in the workspace manifest"
-msgstr "la directory di destinazione della clonazione ‘%s’ esiste già"
+msgstr "la destinazione ‘%s’ esiste già nel manifesto dello spazio di lavoro"
 
 #: src/work.cc:2037
-#, fuzzy, c-format
+#, c-format
 msgid "renaming '%s' to '%s' in workspace manifest"
-msgstr "aggiungo ‘%s’ al manifesto dello spazio di lavoro"
+msgstr "rinomino ‘%s’ in ‘%s’ nel manifesto dello spazio di lavoro"
 
 #: src/work.cc:2062
-#, fuzzy, c-format
+#, c-format
 msgid "'%s' doesn't exist in workspace, skipping"
-msgstr "salto ‘%s’, già considerato nello spazio di lavoro"
+msgstr "salto ‘%s’, non esiste nello spazio di lavoro"
 
 #: src/work.cc:2066
 #, fuzzy, c-format
@@ -4178,9 +4175,9 @@ msgid "proposed new root directory '%s' is not a directory"
 msgstr "la nuova directory root proposta ‘%s’ non è una directory"
 
 #: src/work.cc:2098
-#, fuzzy, c-format
+#, c-format
 msgid "proposed new root directory '%s' contains illegal path '%s'"
-msgstr "la nuova directory root proposta ‘%s’ non è una directory"
+msgstr "la nuova directory root proposta ‘%s’ contiene percorso illegale ‘%s’"
 
 #: src/work.cc:2108
 #, c-format
@@ -4211,9 +4208,9 @@ msgstr ""
 "percorsi conflittuali fuori dal percorso."
 
 #: src/work.cc:2210
-#, fuzzy, c-format
+#, c-format
 msgid "moved some conflicting files into '%s'"
-msgstr "conflitto di inclusione/esclusione sul percorso ‘%s’"
+msgstr "spostatti alcuni file conflittuali in ‘%s’"
 
 #: src/migrate_work.cc:79
 #, c-format
@@ -4281,9 +4278,9 @@ msgid "this workspace is in the current format, no migration is necessary"
 msgstr "Mostra la revisione dello spazio di lavoro attuale"
 
 #: src/cert.cc:127
-#, fuzzy, c-format
+#, c-format
 msgid "calculated cert hash %s does not match %s"
-msgstr "la revisione non corrisponde a hash"
+msgstr "il certificato calcolato %s hash non corrisponde a %s"
 
 # dopo i due punti sono valori interni da non tradurre
 #: src/project.cc:477
@@ -4385,11 +4382,13 @@ msgid ""
 msgstr "questo database contiene già dei roster"
 
 #: src/database.cc:653
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "database '%s' lacks some cached data.\n"
 "Run '%s db regenerate_caches' to restore use of this database"
-msgstr "Rigenera le cache immagazzinate nel database"
+msgstr ""
+"database ‘%s’ mancante di alcuni dati cache.\n"
+"Gira ‘%s db regenerate_caches’ per ripristinare l'uso di questo database"
 
 #: src/database.cc:956
 msgid "sqlite error: "
@@ -4577,19 +4576,19 @@ msgid "wanted %d rows got %d in query: %s"
 msgstr "mi aspettavo %d linee e ne ho ottenute %d nella query ‘%s’"
 
 #: src/database.cc:1902
-#, fuzzy, c-format
+#, c-format
 msgid "roster does not match hash"
-msgstr "la revisione non corrisponde a hash"
+msgstr "roster non corrisponde a hash"
 
 #: src/database.cc:1923
-#, fuzzy, c-format
+#, c-format
 msgid "roster_delta does not match hash"
-msgstr "la revisione non corrisponde a hash"
+msgstr "roster_delta non corrisponde a hash"
 
 #: src/database.cc:2108
-#, fuzzy, c-format
+#, c-format
 msgid "delta-reconstructed '%s' item does not match hash"
-msgstr "la revisione non corrisponde a hash"
+msgstr "l'elemento delta-reconstructed ‘%s’ non corrisponde a hash"
 
 #: src/database.cc:2516
 #, c-format
@@ -4614,9 +4613,9 @@ msgid "revision does not match hash"
 msgstr "la revisione non corrisponde a hash"
 
 #: src/database.cc:2998
-#, fuzzy, c-format
+#, c-format
 msgid "missing prerequisite revision %s"
-msgstr "manca un requisito per la revisione %s"
+msgstr "manca revisione prerequisita %s"
 
 #: src/database.cc:3000 src/database.cc:3011 src/database.cc:3027
 #: src/database.cc:3035
@@ -4770,9 +4769,9 @@ msgstr ""
 "pattern ‘%s’ non valido: impossibile usare caratteri non-ASCII nelle classi"
 
 #: src/key_store.cc:91
-#, fuzzy, c-format
+#, c-format
 msgid "no available keystore found"
-msgstr "nessuna revisione aggiornata disponibile"
+msgstr "nessun portachiave disponibile è stato trovato"
 
 #: src/key_store.cc:135 src/key_store.cc:139 src/key_store.cc:143
 #: src/key_store.cc:145 src/key_store.cc:150
@@ -5066,14 +5065,16 @@ msgid "malformed packet: invalid key name"
 msgstr "pacchetto non valido: nome di chiave non valido"
 
 #: src/packet.cc:168
-#, fuzzy, c-format
+#, c-format
 msgid "malformed packet: invalid public key data for '%s': %s"
-msgstr "pacchetto non valido: nome di chiave non valido"
+msgstr ""
+"pacchetto non valido: dati per la chiave pubblica non validi per ‘%s’: %s"
 
 #: src/packet.cc:189
-#, fuzzy, c-format
+#, c-format
 msgid "malformed packet: invalid private key data for '%s': %s"
-msgstr "pacchetto non valido: nome di chiave non valido"
+msgstr ""
+"pacchetto non valido: dati per la chiave privata non validi per ‘%s’: %s"
 
 #: src/packet.cc:205
 #, c-format
@@ -5086,14 +5087,14 @@ msgid "malformed packet: too many arguments in header"
 msgstr "pacchetto non valido: troppi argomenti nell'intestazione"
 
 #: src/packet.cc:341
-#, fuzzy, c-format
+#, c-format
 msgid "unknown packet type '%s'"
-msgstr "elemento di tipo sconosciuto 0x%x per ‘%s’"
+msgstr "tipo di pacchetto sconosciuto ‘%s’"
 
 #: src/key_packet.cc:91 src/key_packet.cc:97
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid base64 block"
-msgstr "pacchetto non valido: blocco base64 non valido"
+msgstr "key_packet non valido: blocco base64 non valido"
 
 #: src/key_packet.cc:104
 #, c-format
@@ -5101,24 +5102,26 @@ msgid "malformed key_packet: invalid key name"
 msgstr "pacchetto_chiave non valido: nome di chiave non valido"
 
 #: src/key_packet.cc:118
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid public key data for '%s': %s"
-msgstr "pacchetto non valido: nome di chiave non valido"
+msgstr ""
+"key_packet non valido: dati per la chiave pubblica non validi per ‘%s’: %s"
 
 #: src/key_packet.cc:137
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: invalid private key data for '%s': %s"
-msgstr "pacchetto non valido: nome di chiave non valido"
+msgstr ""
+"key_packet non valido: dati per la chiave privata non validi per ‘%s’: %s"
 
 #: src/key_packet.cc:149
-#, fuzzy, c-format
+#, c-format
 msgid "malformed key_packet: too many arguments in header"
-msgstr "pacchetto non valido: troppi argomenti nell'intestazione"
+msgstr "key_packet non valido: troppi argomenti nell'intestazione"
 
 #: src/key_packet.cc:213
-#, fuzzy, c-format
+#, c-format
 msgid "unknown key_packet type: '%s'"
-msgstr "elemento di tipo sconosciuto 0x%x per ‘%s’"
+msgstr "tipo sconosciuto di key_packet : ‘%s’"
 
 #: src/rcs_file.cc:354
 #, c-format
@@ -5165,9 +5168,9 @@ msgstr ""
 "%s"
 
 #: src/migrate_schema.cc:579
-#, fuzzy, c-format
+#, c-format
 msgid "moving key '%s' from database to '%s'"
-msgstr "cancello la chiave pubblica ‘%s’ dal database"
+msgstr "sposto la chiave ‘%s’ dal database ‘%s’"
 
 #: src/migrate_schema.cc:1139
 #, c-format
@@ -5204,9 +5207,9 @@ msgstr ""
 "%s"
 
 #: src/migrate_schema.cc:1165
-#, fuzzy, c-format
+#, c-format
 msgid "'%s' does not appear to be a monotone database\n"
-msgstr "%s (non è un database monotone)"
+msgstr "‘%s’ non sembra essere un database monotone\n"
 
 #: src/migrate_schema.cc:1169
 #, fuzzy, c-format
@@ -5304,14 +5307,16 @@ msgid ""
 msgstr "‘%s’ è di ostacolo"
 
 #: src/migrate_ancestry.cc:510
-#, fuzzy, c-format
+#, c-format
 msgid "path '%s' cannot be added, as there is a directory in the way"
-msgstr "la directory ‘%s’ è stata aggiunta sulla sinistra"
+msgstr ""
+"il percorso ‘%s’ non può essere aggiunto, come se nel percorso ci fosse una "
+"derectory"
 
 #: src/migrate_ancestry.cc:513
-#, fuzzy, c-format
+#, c-format
 msgid "path '%s' added twice with differing content"
-msgstr "contenuto %s"
+msgstr "percorso ‘%s’ aggiunto due volte con differenti contenuti"
 
 #: src/migrate_ancestry.cc:800
 #, fuzzy, c-format
@@ -5632,9 +5637,9 @@ msgstr ""
 "ottenuto ‘%s’"
 
 #: src/network/netsync_session.cc:1006
-#, fuzzy, c-format
+#, c-format
 msgid "received duplicate key %s"
-msgstr "Chiave doppia: %s"
+msgstr "ricevuta chiave duplicata %s"
 
 #: src/network/netsync_session.cc:1020
 #, fuzzy, c-format
@@ -5735,9 +5740,9 @@ msgid "keys"
 msgstr "chiavi"
 
 #: src/network/netsync_session.cc:1467
-#, fuzzy, c-format
+#, c-format
 msgid "cannot find key '%s'"
-msgstr "non è possibile trovare un file temporaneo (provate %d possibilità)"
+msgstr "non è possibile trovare la chiave ‘%s’"
 
 #: src/network/reactor.cc:182
 #, c-format
@@ -5745,12 +5750,12 @@ msgid "peer %s has been idle too long, disconnecting"
 msgstr "il peer ‘%s’ è stato fermo troppo a lungo, mi scollego"
 
 #: src/network/session.cc:199
-#, fuzzy, c-format
+#, c-format
 msgid "received warning from usher: %s"
-msgstr "%s: attenzione da remoto: "
+msgstr "ricevuto avviso da usciere: ‘%s’"
 
 #: src/network/session.cc:279
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
 "@ WARNING: SERVER IDENTIFICATION HAS CHANGED              @\n"
@@ -5761,8 +5766,14 @@ msgid ""
 "I expected %s\n"
 "'%s unset %s %s' overrides this check"
 msgstr ""
-"  eliminato da %s\n"
-"   l'attributo %s"
+"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
+"@ WARNING: SERVER IDENTIFICATION HAS CHANGED              @\n"
+"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
+"E' POSSIBILE CHE QUALCUNO STIA FACENDO QUALCOSA DI BRUTTO\n"
+"E' anche possibile che il server chiavi sia appena stato cambiato.\n"
+"Host remoto manda chiave %s,\n"
+"Mi aspettavo %s\n"
+"’%s unset %s %s’ sovrascrive questo controllo"
 
 #: src/network/session.cc:290
 #, c-format
@@ -5770,12 +5781,15 @@ msgid "server key changed"
 msgstr "la chiave del server è cambiata"
 
 #: src/network/session.cc:295
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "first time connecting to server %s.\n"
 "I'll assume it's really them, but you might want to double-check\n"
 "their key's fingerprint: %s"
-msgstr "hai già una chiave chiamata ‘%s’"
+msgstr ""
+"prima connessione al server %s.\n"
+"Suppongo siano realmente loro, ma tu puoi volere un doppio controllo\n"
+"impronta delle loro chiavi: %s"
 
 #: src/network/session.cc:308
 #, c-format
@@ -5856,9 +5870,9 @@ msgid "peer %s IO failed in confirmed state (success)"
 msgstr "IO del peer ‘%s’ fallito durante la conferma (successo)"
 
 #: src/network/session_base.cc:256
-#, fuzzy, c-format
+#, c-format
 msgid "network error on peer %s, disconnecting"
-msgstr "errore di rete: %s"
+msgstr "errore di rete su peer %s, disconnessione"
 
 #: src/netxx_pipe.cc:50 src/netxx_pipe.cc:189
 #, c-format
@@ -8336,41 +8350,39 @@ msgid "save the internal marks table after exporting revisions"
 msgstr "salva la tavola segni interni dopo l'esportazione di revisioni"
 
 #: src/safe_map.hh:25
-#, fuzzy, c-format
+#, c-format
 msgid "erasing nonexistent key from '%s'"
-msgstr "cancello la chiave pubblica ‘%s’ dal database"
+msgstr "cancello la chiave inesistente da ‘%s’"
 
 #: src/safe_map.hh:42 src/safe_map.hh:62
-#, fuzzy, c-format
+#, c-format
 msgid "inserting duplicate entry into '%s'"
-msgstr "Chiave doppia: %s"
+msgstr "inserisco chiave duplicata in ‘%s’"
 
 #: src/safe_map.hh:80
-#, fuzzy, c-format
+#, c-format
 msgid "fetching nonexistent entry from '%s'"
-msgstr "bisezione dalla revisione %s in corso"
+msgstr "prendo la voce inesistente da ‘%s’"
 
 #: src/unix/process.cc:63
-#, fuzzy, c-format
+#, c-format
 msgid "error getting status of file '%s': %s"
-msgstr "errore: %s"
+msgstr "errore dando lo stato del file ‘%s’: %s"
 
 #: src/unix/process.cc:87
-#, fuzzy, c-format
+#, c-format
 msgid "error opening file '%s': %s"
-msgstr "errore: %s"
+msgstr "errore aprendo il file ‘%s’: %s"
 
 #: src/unix/process.cc:103
-#, fuzzy, c-format
+#, c-format
 msgid "setting execute permission on '%s'"
-msgstr ""
-"potrebbe non eseguire il comando ‘man’ di formattazione pagina ‘%s’: %s"
+msgstr "imposto il permesso di esecuzione su ‘%s’"
 
 #: src/unix/process.cc:108
-#, fuzzy, c-format
+#, c-format
 msgid "clearing execute permission on '%s'"
-msgstr ""
-"potrebbe non eseguire il comando ‘man’ di formattazione pagina ‘%s’: %s"
+msgstr "libero il permesso di esecuzione su ‘%s’"
 
 #: src/unix/process.cc:119
 #, c-format
@@ -8393,19 +8405,19 @@ msgid "could not find home directory for uid %d"
 msgstr "impossibile trovare la cartella HOME per lo uid %d"
 
 #: src/unix/fs.cc:131
-#, fuzzy, c-format
+#, c-format
 msgid "could not find home directory for user '%s'"
-msgstr "impossibile trovare la cartella HOME per lo uid %d"
+msgstr "impossibile trovare la directory home per l'utente ‘%s’"
 
 #: src/unix/fs.cc:149
-#, fuzzy, c-format
+#, c-format
 msgid "error accessing file '%s': %s"
-msgstr "errore di accesso a ‘%s/%s’: %s"
+msgstr "errore di accesso al file ‘%s’: %s"
 
 #: src/unix/fs.cc:158
-#, fuzzy, c-format
+#, c-format
 msgid "cannot handle special file '%s'"
-msgstr "non riesco ad aprire il file ‘%s’ in lettura"
+msgstr "non riesco a gestire il file speciale ‘%s’"
 
 #: src/unix/fs.cc:174 src/win32/fs.cc:172
 #, c-format
@@ -8433,9 +8445,9 @@ msgid "error reading file '%s': %s"
 msgstr "errore leggendo il file ‘%s’: %s"
 
 #: src/unix/fs.cc:357
-#, fuzzy, c-format
+#, c-format
 msgid "error writing file '%s': %s"
-msgstr "errore: %s"
+msgstr "errore nello scrivere il file ‘%s’: %s"
 
 #: src/unix/fs.cc:372
 #, c-format
@@ -8453,9 +8465,9 @@ msgid "could not create directory '%s': %s"
 msgstr "non riesco a creare la directory‘%s’: %s"
 
 #: src/unix/fs.cc:534 src/win32/fs.cc:458
-#, fuzzy, c-format
+#, c-format
 msgid "cannot create temp file '%s': %s"
-msgstr "non riesco a creare la directory ‘%s’: è un file"
+msgstr "non posso creare il file temporaneo ‘%s’: %s"
 
 #: src/unix/fs.cc:544
 #, c-format
@@ -8633,14 +8645,16 @@ msgstr ""
 "eccezione"
 
 #: src/monotone.cc:143
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires at least SQLite 3.3.8 to run"
-msgstr "errore sqlite: "
+msgstr ""
+"questo binario di monotone richiede almeno SQLite 3.3.8 per funzionare "
 
 #: src/monotone.cc:146
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires at least SQLite 3.3.14 to run"
-msgstr "errore sqlite: "
+msgstr ""
+"questo binario di monotone richiede almeno SQLite 3.3.14 per funzionare "
 
 #: src/monotone.cc:157
 #, c-format
@@ -8658,11 +8672,9 @@ msgid "this monotone binary requires Botan 1.6.3 or newer"
 msgstr "questo binario di monotone richiede Botan 1.6.3 o più recente"
 
 #: src/monotone.cc:170
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary does not work with Botan 1.7.7 or newer"
-msgstr ""
-"all'altro capo c'è una versione più nuova di monotone, non compatibile con "
-"questa"
+msgstr "questo binario di monotone non funziona con Botan 1.7.7 o più recente"
 
 #: src/monotone.cc:175
 #, c-format
@@ -8670,39 +8682,29 @@ msgid "this monotone binary requires Botan 1.7.7 or newer"
 msgstr "questo binario di monotone richiede Botan 1.7.7 o più recente"
 
 #: src/monotone.cc:182 src/monotone.cc:189
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary does not work with Botan 1.9.4 or newer"
-msgstr ""
-"all'altro capo c'è una versione più nuova di monotone, non compatibile con "
-"questa"
+msgstr "questo binario di monotone non funziona con Botan 1.9.4 o più recente"
 
 #: src/monotone.cc:187
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires Botan 1.7.22 or newer"
-msgstr ""
-"all'altro capo c'è una versione più nuova di monotone, non compatibile con "
-"questa"
+msgstr "questo binario di monotone richiede Botan 1.7.22 o più recente"
 
 #: src/monotone.cc:195
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires Botan 1.9.4 or newer"
-msgstr ""
-"all'altro capo c'è una versione più nuova di monotone, non compatibile con "
-"questa"
+msgstr "questo binario di monotone richiede Botan 1.7.7 o più recente"
 
 #: src/monotone.cc:197
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary does not work with Botan 1.9.11 or newer"
-msgstr ""
-"all'altro capo c'è una versione più nuova di monotone, non compatibile con "
-"questa"
+msgstr "questo binario di monotone non funziona con Botan 1.9.11 o più recente"
 
 #: src/monotone.cc:202
-#, fuzzy, c-format
+#, c-format
 msgid "this monotone binary requires Botan 1.9.11 or newer"
-msgstr ""
-"all'altro capo c'è una versione più nuova di monotone, non compatibile con "
-"questa"
+msgstr "questo binario di monotone richiede Botan 1.9.11 o più recente"
 
 #: src/std_hooks.lua:69
 msgid "Press enter"
