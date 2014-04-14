@@ -87,6 +87,43 @@ namespace hashmap {
   {};
 }
 
+#elif !HAVE_TR1_UNORDERED_MAP_AND_SET && HAVE_CXX11_UNORDERED_MAP_AND_SET
+#define HASHMAP_PRESENT
+#include <functional>
+#include <unordered_map>
+#include <unordered_set>
+
+namespace hashmap {
+  template<>
+  struct hash<std::string>
+  {
+    size_t operator()(std::string const & s) const
+    {
+      return std::hash<std::string>()(s);
+    }
+  };
+
+  template<typename _Key, typename _Value>
+  class hash_map : public std::unordered_map<_Key,
+                                             _Value,
+                                             hash<_Key>,
+                                             equal_to<_Key> >
+  {};
+
+template<typename _Key>
+class hash_set : public std::unordered_set<_Key,
+                                           hash<_Key>,
+                                           equal_to<_Key> >
+{};
+
+  template<typename _Key, typename _Value>
+  class hash_multimap : public std::unordered_multimap<_Key,
+                                                       _Value,
+                                                       hash<_Key>,
+                                                       equal_to<_Key> >
+  {};
+}
+
 #elif defined(HAVE_GNUCXX_HASHMAP)
 #define HASHMAP_PRESENT
 #include <ext/hash_map>
