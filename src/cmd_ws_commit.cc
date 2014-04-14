@@ -1180,7 +1180,7 @@ drop_attr(app_state & app, args_vector const & args)
     {
       for (attr_map_t::iterator i = node->attrs.begin();
            i != node->attrs.end(); ++i)
-        i->second = make_pair(false, "");
+        i->second = make_pair(false, attr_value(""));
     }
   else
     {
@@ -1189,7 +1189,7 @@ drop_attr(app_state & app, args_vector const & args)
       E(node->attrs.find(a_key) != node->attrs.end(), origin::user,
         F("path '%s' does not have attribute '%s'")
         % path % a_key);
-      node->attrs[a_key] = make_pair(false, "");
+      node->attrs[a_key] = make_pair(false, attr_value(""));
     }
 
   cset cs;

@@ -23,7 +23,7 @@ public:
   // if given the empty filename, do nothing
   explicit cache_logger(std::string const & filename, int max_size);
 
-  bool logging() const { return _impl; }
+  bool logging() const { return static_cast<bool>(_impl); }
 
   void log_exists(bool exists, int position, int item_count, int est_size) const;
   void log_touch(bool exists, int position, int item_count, int est_size) const;

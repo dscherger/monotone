@@ -223,7 +223,7 @@ marking_t const & marking_map::get_marking_for_update(node_id nid)
 
 bool marking_map::contains(node_id nid) const
 {
-  return _store.get_if_present(nid);
+  return static_cast<bool>(_store.get_if_present(nid));
 }
 
 void marking_map::remove_marking(node_id nid)
@@ -727,7 +727,7 @@ roster_t::get_node_for_update(file_path const & p)
 bool
 roster_t::has_node(node_id n) const
 {
-  return nodes.get_if_present(n);
+  return static_cast<bool>(nodes.get_if_present(n));
 }
 
 bool
@@ -1916,8 +1916,8 @@ mark_merge_roster(roster_t const & left_roster,
       node_t const &left_node = left_roster.all_nodes().get_if_present(i->first);
       node_t const &right_node = right_roster.all_nodes().get_if_present(i->first);
 
-      bool exists_in_left = (left_node);
-      bool exists_in_right = (right_node);
+      bool exists_in_left = static_cast<bool>(left_node);
+      bool exists_in_right = static_cast<bool>(right_node);
 
       if (!exists_in_left && !exists_in_right)
         mark_new_node(new_rid, n, new_markings);
