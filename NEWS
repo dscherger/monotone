@@ -75,6 +75,8 @@ XXX XXX XX XX:XX:XX UTC 201X
         - Allow monotone to compile on platforms where MAXPATHLEN isn't
           defined (i.e. GNU/Hurd).
 
+        - Allow monotone to compile on C++11-enabled g++ and clang++.
+
         - Allow test suite to run on systems behind broken a DNS resolver.
 
         Internal

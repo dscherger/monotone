@@ -6,7 +6,7 @@ building and installation process for monotone
   * hardware prerequisites:
 
     - g++ consumes a lot of memory building monotone, due to
-      monotone's liberal use of C++ features. it may be possible to
+      monotone's liberal use of C++ features. It may be possible to
       build on a system with 128mb of memory, but not pleasant.
 
   * software prerequisites:
@@ -14,7 +14,7 @@ building and installation process for monotone
     - autoconf
     - automake
     - gettext
-    - a supported C++ compiler: g++ 3.2 or later
+    - a supported C++ compiler: g++ 3.2 or clang++ 3.3 or newer.
     - boost 1.33.0 or later: either an installed copy or an extracted
       tarball of its unbuilt sources somewhere in the file system are
       supported
@@ -93,6 +93,7 @@ building and installation process for monotone
            does not contain the libraries, see:
 
                 http://gcc.gnu.org/                  for g++
+                http://clang.llvm.org/               for clang++
                 http://www.boost.org/                for Boost
                 http://www.pcre.org/                 for PCRE
                 http://www.lua.org/                  for Lua

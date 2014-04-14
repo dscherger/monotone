@@ -19,8 +19,9 @@ Preparation
 
 2) Check out a fresh copy of the source in a separate directory and
    prepare it for building (if you use your main workspace, you
-   increase the changes of accidentally picking up weird stuff).
-   For example, {SOMEDIR} in the example here could be 'monotone-{NEW VERSION}'.
+   increase the changes of accidentally picking up weird stuff).  For
+   example, {SOMEDIR} in the example here could be 'monotone-{NEW
+   VERSION}'.
 
    $ mtn co -r h:net.venge.monotone {SOMEDIR}
    $ cd {SOMEDIR}
@@ -52,10 +53,11 @@ Check the documentation, and make appropriate changes
 
 5) Check the NEWS if any changes in the automation interface have happened.
 
-   Document changes in the wiki under http://wiki.monotone.ca/AutomateVersions/
-   by adding new commands with an 'A' marker or set a 'B' (for _B_ackwards
-   compatible change) or 'C' (for backwards in_C_ompatible change) markers for
-   changed commands.
+   Document changes in the wiki under
+   http://wiki.monotone.ca/AutomateVersions/ by adding new commands
+   with an 'A' marker or set a 'B' (for _B_ackwards compatible change)
+   or 'C' (for backwards in_C_ompatible change) markers for changed
+   commands.
 
    Decide whether the interface version has to be bumped in the minor
    ('A' and 'B' changes) or major ('C' changes) number.
@@ -63,9 +65,9 @@ Check the documentation, and make appropriate changes
    Add the new interface version in cmd_automate.cc
    (static string 'interface_version').
 
-   Verify that new / changed commands document their changes with the new
-   interface version properly (look for "@item (Added in|Changes)" stanzas), if
-   not, add the version numbers there.
+   Verify that new / changed commands document their changes with the
+   new interface version properly (look for "@item (Added in|Changes)"
+   stanzas), if not, add the version numbers there.
 
    Commit your changes.
 
@@ -170,7 +172,8 @@ Uploading, tagging and syncing
 14) Check if the releases newsfeed is properly updated, i.e. if the script
     <http://www.monotone.ca/releases.xml.php> can parse the NEWS file as is
     and links issues and URLs, while keeping the overall structure.
-    (If your NEWS entries match the previous ones, this shouldn't be a problem.)
+    (If your NEWS entries match the previous ones, this shouldn't be a
+    problem.)
 
     If you encounter problems, either patch the NEWS file or adapt the code
     in releases.xml.php and commit your changes accordingly.
