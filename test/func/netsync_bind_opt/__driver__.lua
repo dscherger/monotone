@@ -1,6 +1,14 @@
 skip_if(not existsonpath("netstat"))
 
 includecommon("netsync.lua")
+
+-- Heuristic check trying to figure if netstat works. A grsecurity
+-- enabled kernel may restrict access to /proc/net, therefore render
+-- netstat useless, i.e. it shows no entries.  Let's hope this doesn't
+-- yield too many false negatives.
+check({"netstat", "-a", "-n"}, 0, true, false)
+skip_if(not qgrep("tcp", "stdout") and not exists("/proc/net/tcp"))
+
 mtn_setup()
 netsync.setup()
 
