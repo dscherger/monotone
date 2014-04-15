@@ -5,7 +5,7 @@ building and installation process for monotone
 
   * hardware prerequisites:
 
-    - g++ consumes a lot of memory building monotone, due to
+    - C++ compilers consume a lot of memory building monotone, due to
       monotone's liberal use of C++ features. It may be possible to
       build on a system with 128mb of memory, but not pleasant.
 
@@ -32,7 +32,7 @@ building and installation process for monotone
 
            install the following packages:
              autoconf automake gettext g++ libboost-dev libz-dev
-             libbotan1.7-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
+             libbotan1.10-dev libsqlite3-dev libpcre3-dev liblua5.2-dev
              libidn11-dev libgmp3-dev libbz2-dev texinfo
 
            (monotone works with older and newer Botan versions as well, 
@@ -41,8 +41,11 @@ building and installation process for monotone
         on FreeBSD:
 
            install the following packages from the ports collection:
-             databases/sqlite3 devel/automake1.9 devel/boost devel/gettext
-             devel/gmake devel/pcre lang/lua security/botan dns/libidn
+             databases/sqlite3 devel/automake devel/boost devel/gettext
+             devel/gmake devel/pcre lang/lua security/botan110 dns/libidn
+
+           (monotone works with older and newer Botan versions as well, 
+            so security/botan is also good to go.)
 
         on OpenBSD:
 
@@ -77,10 +80,10 @@ building and installation process for monotone
              autoconf automake gettext boost zlib lua pcre botan
              sqlite3 libidn libiconv texinfo
 
-           monotone only uses header-only libraries from boost, so if you don't
-           like to spend a lot of time building boost via MacPorts, you can also
-           download and extract it manually and let CXXFLAGS point to the
-           include/ directory of the extracted version.
+           monotone only uses header-only libraries from boost, so if you
+           don't like to spend a lot of time building boost via MacPorts,
+           you can also download and extract it manually and let CXXFLAGS
+           point to the include/ directory of the extracted version.
 
         on Windows (using MinGW): see INSTALL_windows_native
 
