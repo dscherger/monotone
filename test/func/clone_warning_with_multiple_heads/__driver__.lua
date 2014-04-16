@@ -24,7 +24,6 @@ check(qgrep(REV2, "stderr"))
 check(qgrep(REV3, "stderr"))
 
 on_windows=(ostype == "Windows")
-on_cygwin=(string.find(ostype, 'CYGWIN') ~= nil)
 on_solaris=(string.find(ostype, 'SunOS') ~= nil)
-bad_platform=(on_solaris or on_windows or on_cygwin)
+bad_platform=(on_solaris or on_windows)
 xfail_if(bad_platform, not exists("test_dirA"))

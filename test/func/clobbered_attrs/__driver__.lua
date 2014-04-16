@@ -1,7 +1,6 @@
 -- attrs re-set on unrelated files
 
 skip_if(ostype=="Windows")
-skip_if(string.sub(ostype, 1, 6)=="CYGWIN") -- test -x broken
 skip_if(not existsonpath("chmod"))
 
 mtn_setup()
