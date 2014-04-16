@@ -10,20 +10,29 @@ To build Monotone on Cygwin for development and testing, the following
 packages are required (the versions listed are known to work; they may
 not be the exact versions used to build the official Cygwin package).
 Note that the monotone source code is compatible with Lua 5.2, but (as
-of 8 May 2012), Cygwin only has Lua 5.1.4.
+of 8 May 2012), Cygwin only has Lua 5.1.4. Monotone it is compatible
+with botan-devel-1.8 as well.
 
-   binutils-2.22.51
-   libboost-devel-1.48.0
-   botan-1.8.13
-   gcc4-g++-4.5.3
+   binutils-2.24.51
+   automake-1.14
+   autoconf2.5-2.69
+   make-4.0
+   libboost-devel-1.53.0
+   botan-devel-1.8.14 or botan1.10-devel-1.10.5
+   gcc-g++-4.8.2
    gettext-devel-0.18.1
-   libidn-devel-1.22
-   libpcre-devel-8.21
-   libsqlite3-devel-3.7.3
-   lua-5.1.4-11
-   zlib-devel-1.2.5
+   libidn-devel-1.26
+   libpcre-devel-8.34
+   libsqlite3-devel-3.8.4.1
+   lua-5.1.5-1
+   zlib-devel-1.2.8
 
-No special options are needed for configure.
+If you use botan-1.10, please pass the following options to configure:
+
+   ./configure botan_CFLAGS="-I/usr/include/botan-1.10" \
+               botan_LIBS="/usr/lib/libbotan-1.10.dll.a"
+
+No special options are needed for configure if botan-devel is used.
 
 There is a bug in the bash builtin 'pwd' in bash 4.1; it can return
 'c:/' syntax for absolute paths in some circumstances. See
