@@ -447,7 +447,8 @@ namespace commands
   complete_command(args_vector const & args)
   {
     // Handle categories early; no completion allowed.
-    if (CMD_REF(__root__)->find_command(make_command_id(args[0]())) != NULL)
+    commands::command* root_cmd = CMD_REF(__root__);
+    if (root_cmd->find_command(make_command_id(args[0]())) != NULL)
       return make_command_id(args[0]());
 
     command_id id;
@@ -457,7 +458,7 @@ namespace commands
 
     set< command_id > matches;
 
-    command::children_set const & cs = CMD_REF(__root__)->children();
+    command::children_set const & cs = root_cmd->children();
     for (command::children_set::const_iterator iter = cs.begin();
          iter != cs.end(); iter++)
       {

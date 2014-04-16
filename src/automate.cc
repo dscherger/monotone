@@ -2455,8 +2455,8 @@ automate_stdio_shared_setup(app_state & app,
       id.push_back(utf8(*i, origin::user));
     }
 
-  set< command_id > matches =
-    CMD_REF(automate)->complete_command(id);
+  commands::command* automate_cmd = CMD_REF(automate);
+  set<command_id> matches = automate_cmd->complete_command(id);
 
   if (matches.empty())
     {
@@ -2471,7 +2471,7 @@ automate_stdio_shared_setup(app_state & app,
 
   id = *matches.begin();
 
-  command const * cmd = CMD_REF(automate)->find_command(id);
+  command const * cmd = automate_cmd->find_command(id);
   I(cmd != NULL);
 
   acmd = dynamic_cast< automate const * >(cmd);
