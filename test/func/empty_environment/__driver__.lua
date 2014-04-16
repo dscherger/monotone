@@ -1,4 +1,3 @@
-
 skip_if(not existsonpath("env"))
 mtn_setup()
 
@@ -59,18 +58,26 @@ if ostype == "Windows" then
   file:close()
 elseif string.sub(ostype, 1, 6) == "CYGWIN" then
   for _,name in pairs({
-                        "cyggcc_s-1",
+                        "cygbotan-1.10-0",
+                        "cygbz2-1",
+                        "cygcrypto-1.0.0",
+                        "cyggcc_s-seh-1",
+                        "cyggmp-10",
                         "cygiconv-2",
                         "cygidn-11",
                         "cygintl-8",
                         "cyglua-5.1",
-                        "cygpcre-0",
+                        "cygpcre-1",
+                        "cygpcrecpp-0",
                         "cygsqlite3-0",
                         "cygstdc++-6",
                         "cygwin1",
                         "cygz",
-		      }) do
+                     }) do
     local file = getpathof(name, ".dll")
+    if file == nil then
+      err("Couldn't find file "..name..".dll, which we think mtn should depend on.");
+    end
     copy(file, name..".dll");
   end
 end
