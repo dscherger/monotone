@@ -28,7 +28,8 @@
 --                     LShift Ltd (http://www.lshift.net)
 --                     Thomas Keller <me@thomaskeller.biz>
 --                     Whoever wrote the function "get_netsync_read_permitted"
--- Copyright (c) 2010, Richard Levitte <richard@levitte.org)
+-- Copyright (c) 2010, Richard Levitte <richard@levitte.org>
+-- Copyright (c) 2014, Markus Wanner <markus@bluegap.ch>
 -- License: GPLv2 or later
 
 do
@@ -185,16 +186,22 @@ do
    local function summarize_certs(t)
       local str = "revision:            " .. t["revision"] .. "\n"
       local changelog
-      for name,values in pairs(t["certs"]) do
-	 local formatted_value = ""
-	 for j,val in pairs(values) do
-	    formatted_value = formatted_value .. name .. ":"
-	    if string.match(val, "\n")
-	    then formatted_value = formatted_value .. "\n"
-	    else formatted_value = formatted_value .. (string.rep(" ", 20 - (# name))) end
-	    formatted_value = formatted_value .. val .. "\n"
+      -- Certificate keys to print, in order roughly matching rev_output.cc
+      local cert_keys = {"author", "date", "branch", "tag", "suspend",
+                         "testresult", "changelog", "comment"}
+      for i, name in ipairs(cert_keys) do
+	 local values = t["certs"][name]
+	 if values ~= nil then
+	    local formatted_value = ""
+	    for j,val in pairs(values) do
+	       formatted_value = formatted_value .. name .. ":"
+	       if string.match(val, "\n")
+	       then formatted_value = formatted_value .. "\n"
+	       else formatted_value = formatted_value .. (string.rep(" ", 20 - (# name))) end
+	       formatted_value = formatted_value .. val .. "\n"
+	    end
+	    if name == "changelog" then changelog = formatted_value else str = str .. formatted_value end
 	 end
-	 if name == "changelog" then changelog = formatted_value else str = str .. formatted_value end
       end
       if nil ~= changelog then str = str .. changelog end
       return (str .. "manifest:\n" .. t["manifest"])
