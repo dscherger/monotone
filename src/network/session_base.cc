@@ -11,6 +11,8 @@
 #include "../base.hh"
 #include "session_base.hh"
 
+#include <sys/time.h>
+
 #include "../constants.hh"
 
 using std::min;
@@ -173,9 +175,33 @@ session_base::write_some()
 {
   I(!outbuf.empty());
   size_t writelen = outbuf.front().first.size() - outbuf.front().second;
-  Netxx::signed_size_type count = str->write(outbuf.front().first.data() + outbuf.front().second,
-                                            min(writelen,
-                                            constants::bufsz));
+
+  // We put NetXX in non-blocking mode, with a very small timeout.
+  // Therefore, a write() may return -1 if we fill the buffers faster than
+  // the OS can consume the data. Thus, we retry to write, actually
+  // blocking, until we reach the usual netsync timeout.
+  //
+  // So far, I've only seen this issue on Cygwin, where the
+  // netsync_largish_file test failed, before.
+  timeval abs_timeout, now;
+  gettimeofday(&abs_timeout, NULL);
+  abs_timeout.tv_sec += constants::netsync_timeout_seconds;
+
+  Netxx::signed_size_type count;
+  for (;;)
+    {
+      count = str->write(outbuf.front().first.data() + outbuf.front().second,
+                         min(writelen, constants::bufsz));
+      if (count < 0)
+        {
+          gettimeofday(&now, NULL);
+          if (now.tv_sec < abs_timeout.tv_sec)
+            continue;
+        }
+
+      break;
+    }
+
   if (count > 0)
     {
       if ((size_t)count == writelen)
@@ -253,8 +279,8 @@ session_base::do_io(Netxx::Probe::ready_type what)
     }
   catch (Netxx::Exception & e)
     {
-      P(F("network error on peer %s, disconnecting")
-        % peer_id);
+      P(F("disconnecting due to a network error on peer %s: %s")
+        % peer_id % e.what());
       ok = false;
     }
 
