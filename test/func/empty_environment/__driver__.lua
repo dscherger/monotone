@@ -59,7 +59,7 @@ if ostype == "Windows" then
 elseif string.sub(ostype, 1, 6) == "CYGWIN" then
   check({"ldd", monotone_path}, 0, true, false)
   for _,line in ipairs(readfile_lines("stdout")) do
-    name = string.match(line, "/usr/bin/(cyg[^%s]+)\.dll")
+    name = string.match(line, "/usr/bin/(cyg[^%s]+)\\.dll")
     if name ~= nil then
       local file = getpathof(name, ".dll")
       if file == nil then
