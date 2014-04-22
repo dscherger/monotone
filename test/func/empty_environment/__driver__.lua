@@ -58,14 +58,17 @@ if ostype == "Windows" then
   file:close()
 elseif string.sub(ostype, 1, 6) == "CYGWIN" then
   check({"ldd", monotone_path}, 0, true, false)
+  pattern = "/usr/bin/(cyg[^%s]+)%.dll"
   for _,line in ipairs(readfile_lines("stdout")) do
-    name = string.match(line, "/usr/bin/(cyg[^%s]+)\\.dll")
+    name = string.match(line, pattern)
     if name ~= nil then
       local file = getpathof(name, ".dll")
       if file == nil then
         err("Couldn't find file "..name..".dll, which we think mtn should depend on.");
       end
       copy(file, name..".dll");
+    else
+      L("No match against line: " .. line .. "\n")
     end
   end
 end
