@@ -1,5 +1,9 @@
 Visual Studio 2005
 
+WARNING: as you can tell from the VS version above, the visualc
+directory as well as this documentation is heavily out-dated. Please
+get in touch if you're interested in using MSVC to build monotone.
+
 Install libiconv:
 	http://gnuwin32.sourceforge.net/packages/libiconv.htm
 	"Complete package, except sources"

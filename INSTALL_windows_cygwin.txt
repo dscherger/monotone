@@ -1,6 +1,6 @@
 See INSTALL for general notes, such as running 'make' and 'make check'
 
-on Windows using Cygwin:
+Compiling on Windows using Cygwin:
 
 An official Cygwin package for monotone and all its dependencies is
 usually available soon after release; just run the Cygwin installer
@@ -10,8 +10,9 @@ To build Monotone on Cygwin for development and testing, the following
 packages are required (the versions listed are known to work; they may
 not be the exact versions used to build the official Cygwin package).
 Note that the monotone source code is compatible with Lua 5.2, but (as
-of 8 May 2012), Cygwin only has Lua 5.1.4. Monotone it is compatible
-with botan-devel-1.8 as well.
+of 23 Apr 2014), Cygwin only has Lua 5.1. Monotone is also compatible
+with multiple versions of botan and Cygwin provides two variants that
+both work.
 
    binutils-2.24.51
    automake-1.14
@@ -32,7 +33,8 @@ If you use botan-1.10, please pass the following options to configure:
    ./configure botan_CFLAGS="-I/usr/include/botan-1.10" \
                botan_LIBS="/usr/lib/libbotan-1.10.dll.a"
 
-No special options are needed for configure if botan-devel is used.
+No special options are needed for configure if botan-devel (i.e. 1.8)
+is used.
 
 There is a bug in the bash builtin 'pwd' in bash 4.1; it can return
 'c:/' syntax for absolute paths in some circumstances. See

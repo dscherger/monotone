@@ -1,7 +1,7 @@
-This directory keeps the Win32 MinGW specific files.
+This directory keeps files specific to native Windows
+compilation. Note that Cygwin does not use these, but the Unix files.
 
-Win32 Cygwin uses the Unix files.
-
-To build on MinGW, see ../../INSTALL_windows_native.txt
+To build on native Windows, see either INSTALL_windows_mingw.txt or
+INSTALL_windows_msvc.txt.
 
 To create a MinGW release see ../../innosetup/README.txt

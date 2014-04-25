@@ -375,7 +375,7 @@ examples_data =								\
 
 EXTRA_DIST =								\
 	HACKING INSTALL INSTALL_windows_cygwin.txt			\
-	INSTALL_windows_native.txt README.visualc8 UPGRADE		\
+	INSTALL_windows_mingw.txt INSTALL_windows_msvc.txt UPGRADE	\
 	util/audit-includes util/do-editor-vars.sh			\
 	$(wildcard $(srcdir)/m4/*.m4)					\
 									\
