@@ -38,10 +38,10 @@
 #define _netxx_streamserver_h_
 
 // Netxx includes
-#include <netxx/types.h>
-#include <netxx/timeout.h>
-#include <netxx/address.h>
-#include <netxx/peer.h>
+#include "types.h"
+#include "timeout.h"
+#include "address.h"
+#include "peer.h"
 
 namespace Netxx {
 

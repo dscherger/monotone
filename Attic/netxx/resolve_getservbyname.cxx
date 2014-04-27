@@ -40,7 +40,7 @@
 
 // Netxx includes
 #include "resolve.h"
-#include "netxx/types.h"
+#include "types.h"
 
 // standard includes
 #include <cstring>

@@ -38,7 +38,7 @@
 #include "common.h"
 
 // Netxx includes
-#include <netxx/peer.h>
+#include "peer.h"
 
 // standard includes
 #include <algorithm>

@@ -110,40 +110,59 @@ sub call {
     print $write "e";
 
     my @ret = ("", "");
+    my $stream = "";
+    my %input = (
+	"m" => "",
+	"e" => "",
+	"w" => "",
+	"p" => "",
+	"t" => "",
+	"l" => ""
+	);
     my $last;
 
     do {
         my $numString = "";
         my $ch;
+	my $firstchar = 1;
         while (($ch = getc($read)) ne ':' && ! eof $read) {
-            $numString = $numString . $ch;
+	    if (($ch lt '0' || $ch gt '9') && $firstchar) {
+		# Read through headers
+		do {
+		    while (($ch = getc($read)) ne "\n" && ! eof $read) {
+		    }
+		} while (($ch = getc($read)) ne "\n" && ! eof $read);
+		$firstchar = 0;
+	    } else {
+		$numString = $numString . $ch;
+	    }
         }
         die("Got wrong command number from monotone: ". $numString . ".") if ($numString != $self->{CmdNum});
-        my $err = getc($read);
-        die("Parser confused.") if ($err ne '0' && $err ne '1' && $err ne '2');
-        die("Parser confused.") if (getc($read) ne ':');
-        $last = getc($read);
-        die("Parser confused.") if ($last ne 'l' && $last ne 'm');
+        $stream = getc($read);
+        die("Parser confused.") if ($stream ne 'm'
+				    && $stream ne 'e' && $stream ne 'w'
+				    && $stream ne 'p' && $stream ne 't'
+				    && $stream ne 'l');
         die("Parser confused.") if (getc($read) ne ':');
         $numString = "";
         while (($ch = getc($read)) ne ':' && ! eof $read) {
             $numString = $numString . $ch;
         }
-        my $input = "";
         while ($numString > 0 && ! eof $read) {
-            $input = $input . getc($read);
+            $input{$stream} = $input{$stream} . getc($read);
             $numString--;
         }
-        if ($err eq '1') {
-            die("Syntax error in Monotone stdio");
-        } elsif ($err eq '2') {
-            $ret[1] = $ret[1] . $input;
-        } elsif ($err eq '0') {
-            $ret[0] = $ret[0] . $input;
-        }
-    } while ($last eq 'm' && ! eof $read);
+    } while ($stream ne 'l' && ! eof $read);
 
-    die("Parser confused.") if ($last ne 'l');
+    die("Parser confused.") if ($stream ne 'l');
+
+    if ($input{l} eq '1') {
+	die("Syntax error in Monotone stdio");
+    } elsif ($input{l} eq '2') {
+	$ret[1] = $ret[1] . $input{e};
+    } elsif ($input{l} eq '0') {
+	$ret[0] = $ret[0] . $input{m};
+    }
 
     $self->{CmdNum} += 1;
     return @ret;

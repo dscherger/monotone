@@ -1,0 +1,29 @@
+# This test checks that monotone.bash_completion can handle arguments that
+# are specified as 'PATH ...'
+
+send_user "\n===== BEGIN complete_commit  =====\n"
+expect -re "@ $"
+send "\n$mtn commit -m 'foobar' "
+expect {
+    -ex " commit " {}
+    timeout { failure "' commit '"; exit }
+}
+
+send "\t"
+expect {
+    -ex "commit-test1" {}
+    timeout { failure "'commit-test1'"; exit }
+}
+expect {
+    -ex "commit-test2" {}
+    timeout { failure "'commit-test2'"; exit }
+}
+
+send "commit-test1 commit-test\t"
+expect {
+    -ex "commit-test2" {}
+    timeout { failure "'commit-test1 commit-test2'"; exit }
+}
+
+send_user "\n===== END complete_commit  =====\n"
+success

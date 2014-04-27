@@ -112,7 +112,7 @@ VERSION=""
 [ -f ${MONOTONE} ] && VERSION=$(${MONOTONE} --version | sed 's/.*: \(.*\))/\1/')
 
 HOOKS=""
-[ -f ${DATADIR}/hooks.lua ] && HOOKS="--norc --rcfile=${DATADIR}/hooks.lua"
+[ -f ${DATADIR}/hooks.lua ] && HOOKS="--no-standard-rcfiles --rcfile=${DATADIR}/hooks.lua"
 
 server()
 {

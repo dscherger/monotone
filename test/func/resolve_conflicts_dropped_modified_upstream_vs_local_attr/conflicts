@@ -1,0 +1,15 @@
+    left [c0ed8c29ffad149af1c948969e8e80d270999b13]
+   right [dd1ba606b52fddb4431da3760ff65b65f6509a48]
+ancestor [1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2]
+
+          conflict dropped_modified
+     ancestor_name "file_2"
+  ancestor_file_id [7fc990de4797bd6534a5c1deb344e11964f6b353]
+         left_type "modified file"
+         left_name "file_2"
+      left_file_id [b7e3240a78dc6afce4507f5a18ab516963e72022]
+        right_type "dropped file"
+         right_rev [1e700864de7a2cbb1cf85c26f5e1e4ca335d2bc2]
+        right_name "file_2"
+     right_file_id [7fc990de4797bd6534a5c1deb344e11964f6b353]
+resolved_drop_left 

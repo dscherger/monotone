@@ -38,7 +38,7 @@
 #define _netxx_peer_h_
 
 // Netxx includes
-#include <netxx/types.h>
+#include "types.h"
 
 // standard includes
 #include <iosfwd>

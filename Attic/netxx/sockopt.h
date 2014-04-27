@@ -38,7 +38,7 @@
 #define _netxx_sockopt_h_
 
 // Netxx includes
-#include <netxx/types.h>
+#include "types.h"
 
 namespace Netxx {
 

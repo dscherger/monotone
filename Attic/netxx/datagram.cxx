@@ -38,9 +38,9 @@
 #include "common.h"
 
 // Netxx includes
-#include "netxx/datagram.h"
-#include "netxx/address.h"
-#include "netxx/peer.h"
+#include "datagram.h"
+#include "address.h"
+#include "peer.h"
 #include "socket.h"
 #include "sockaddr.h"
 #include "recvfrom.h"

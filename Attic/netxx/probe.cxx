@@ -38,9 +38,9 @@
 #include "common.h"
 
 // Netxx includes
-#include <netxx/probe.h>
-#include <netxx/types.h>
-#include <netxx/probeinfo.h>
+#include "probe.h"
+#include "types.h"
+#include "probeinfo.h"
 #include "probe_impl.h"
 
 // standard includes

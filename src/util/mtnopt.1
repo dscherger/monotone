@@ -1,0 +1,95 @@
+.TH MTNOPT 1 2011-02-22 monotone monotone
+.SH NAME
+mtnopt \- generate shell variables from monotone workspace options
+.SH SYNOPSIS
+.B mtnopt
+.RB [\| \-s \||\| \-c \||\| \-v \|]
+.RB [\| \-d 
+.IR dir \|]
+.RB [\| \-k
+.IR keys \|]
+.br
+.B mtnopt -h
+.br
+.SH DESCRIPTION
+.B mtnopt
+prints shell variable assignments for each value in the file of
+monotone workspace options,
+.IR _MTN/options ,
+in the current directory. For instance, if
+.I _MTN/options
+contained this text:
+.IP
+\f(CWdatabase "/home/user/src/monotone.mtn"\fP
+.br
+\f(CW  branch "net.venge.monotone"\fP
+.br
+\f(CW  keydir "/home/user/.monotone/keys"\fP
+.PP
+.B mtnopt
+would print:
+.IP
+\f(CWMTN_database="/home/user/src/monotone.mtn";\fP
+.br
+\f(CWMTN_branch="net.venge.monotone";\fP
+.br
+\f(CWMTN_keydir="/home/user/.monotone/keys";\fP
+.PP
+By default,
+.B mtnopt 
+attempts to guess appropriate syntax from the value of the
+.B SHELL
+environment variable.  This can be overridden with the 
+.B \-s
+and 
+.B \-c
+command\(hyline options.
+.SH OPTIONS
+.TP
+.B \-s
+Print variable assignments in 
+.BR sh (1)
+syntax.
+.TP
+.B \-c
+Print variable assignments in 
+.BR csh (1)
+syntax.
+.TP
+.B \-v
+Print only the values, with no indication of the corresponding option keys.
+.TP
+.BI \-d\  directory
+Look for 
+.I _MTN/options
+in
+.IR directory ,
+rather than in the current directory.
+.TP
+.BI \-k\  keys
+Print assignments for only those options that match the
+.BR egrep (1)
+regular expression
+.IR keys .
+.TP
+.B \-h
+Print a help message and exit.
+.SH BUGS
+.B mtnopt
+only looks in the current directory for the
+.I _MTN
+directory, so it will fail in a subdirectory of a workspace.
+.PP
+.B mtnopt
+should be aware of the set of possible options, rather than blindly
+printing whatever is in
+.IR _MTN/options .
+.PP
+The behavior when there is no
+.I _MTN/options
+file to be found is less than helpful.
+.SH SEE ALSO
+.BR mtn (1),
+.BR egrep (1),
+.BR sh (1),
+.BR csh (1)

@@ -1,0 +1,26 @@
+head	1.1;
+access;
+symbols;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2009.09.11.16.37.48;	author luigi;	state Exp;
+branches;
+next	;
+commitid	ocSbhx417effvh3u;
+
+
+desc
+@@
+
+
+1.1
+log
+@test
+@
+text
+@test
+
+@

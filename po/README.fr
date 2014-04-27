@@ -1,0 +1,251 @@
+French translation of monotone - fr.po
+
+The translation fr.po is distributed under the same license as
+the monotone package.
+
+Benoît Dejean <benoit@placenet.org>, 2005-2007
+Richard Levitte <richard@levitte.org>, 2006-2007
+Stéphane Gimenez <dev@gim.name>, 2007
+Steve Petruzzello <dlist@bluewin.ch>, 2010
+
+GUIDE DE TRADUCTION:
+--------------------
+
+[ ce texte et les termes sont originalement emprunté de subversion.
+  J'ai completé avec de retraductions des termes trouvé dans sv.po.
+  /Richard Levitte ]
+
+Vocabulaire technique, éventuellement discutable, utilisé
+de manière aussi consistante que possible dans la traduction.
+
+La traduction ne colle pas le texte de trop près, mais s'autorise
+quelques reformulations. Les messages abscons des erreurs internes
+de subversion ne sont pas toujours traduits : ils ont peu de chance
+d'être particulièrement éclairant pour l'utilisateur francophone,
+pas plus qu'ils ne le sont pour des anglophones, donc rien ne presse;-)
+
+Pour certains termes techniques, donner aussi l'anglais est utile.
+Par exemple que le terme est dans le nom même de la commande et est
+donc forcément apparent à l'utilisateur : "confier (commit)".
+Il fera donc plus facilement le lien entre la notion et la commande.
+
+L'accentuation des majuscules fait partie de l'orthographe de la langue
+française, et n'est donc pas négociable, même si personne ne le sait !
+
+La typographie en usage impose une espace insécable avant ':', ';', '?',
+'!', '»' et une après '«', mais aucune avant '.', ',', ')',
+Il n'y a pas d'espace après '(', mais après toutes les autres ponctuations.
+bdejean, 15/03/2007
+À propos des guillemets, en Français on utilise uniquement « et ».
+L'autre problème est que monotone n'est pas cohérent et va tantôt dire
+"file %s does not exist" et tantôt "file '%s' does not exist". Il faudrait
+corriger les chaînes sources.
+
+Voir éventuellement pour références les pointeurs suivants :
+ - WebDAV:	http://www.ics.uci.edu/~ejw/authoring/protocol/rfc2518.fr.html
+ - CVS:	        http://www.delafond.org/traducmanfr/man/man1/cvs.1.html
+ - WordReference: http://www.wordreference.com/enfr/
+ - Le grand dictionnaire terminologique:
+                http://www.granddictionnaire.com/
+
+NOMS ET GROUPES NOMINAUX
+
+access                  accès
+address                 adresse
+an ancestor             un ancêtre
+ancestry                des ancêtres / une ascendance
+approval                assentiment / consentement
+an argument             un argument ? un paramètre ?
+an author               un auteur
+automation              automatisation
+a backup                une copie (de sécurité)
+a base (revision)       (revision de) base
+a baseline              ?
+a Berkeley DB           une base Berkeley
+a bookkeeping directory
+                        un répertoire administratif
+a boolean               ?
+a branch                une branche
+a buffer                ?
+a bug                   un bogue
+a byte                  octet
+a cert / x certs        un certif / x certifs
+a change                une modification
+a changelog message     une entrée du journal
+a check                 un contrôle
+a checksum              une somme de contrôle
+a child                 un enfant / descendant
+a client                un client
+a conflict state        un conflit
+a commit                un changement (commit)
+a connection            une connexion
+a database              base de données
+a database schema       schéma / schéma de base de données
+a descendent            un descendant
+destination             destination / but
+an external definition  une référence externe
+a directory             un répertoire / un répertoire
+a disapproval           désapprobation
+disconnection           déconnexion
+a divergence            divergence
+an edge                 un côté (an edge)
+an editor               éditeur de texte
+an epoch                une époque
+an exchange             un échange
+a file                  un fichier
+fulltext                texte complet
+a graph                 un graphe
+a head                  une entrée ?
+history                 histoire
+a host                  un hôte
+a hostname              un nom d'hôte
+a hook                  une procédure automatique
+input                   entrée
+input/output            entrée-sortie (abbr. E/S)
+an interface            une interface
+an item                 un élément
+a key                   une clef
+a keystore              un entrepôt de clefs
+a label                 un label, une étiquette
+a layout                une disposition
+a loader                un chargeur
+a lock-token            une marque de verrou ? un nom de verrou ??
+a log                   un journal
+a log message           une entrée du journal
+a manifest              une manifeste ??
+a marking               un marquage
+a match                 une équivalence
+a merge                 un fusion
+a migration             une migration
+mutex                   exclusivité (mutex)
+a node                  un nœud
+note:                   note:
+OOB data                données hors-bande
+an option               une option
+an output               une sortie
+an overflow             débordement
+to overflow             déborder
+to override             supplanter ?
+a packet                un paquet
+a parent                un parent
+a path                  chemin, chemin local, objet (au sens quelque chose
+                        de versionné)
+a passphrase            une phrase de passe
+a pattern               un motif / un modèle
+a peer                  un pair
+a pegged revision       révision fixée
+progress                progrés
+a query                 une requête (base de données) / une question
+a recovery              rétablissement
+a repository, a repos   un dépôt
+a request               une demande
+a review                examination
+a revision              une révision
+a root                  une racine
+a roster                une liste ?
+a schedule              programmation (mise en attente ? prévu ? en cours ?)
+a selector              sélecteur
+a server                un serveur
+a service               un service
+a sink                  puits
+a source                source
+state                   état
+a subcommand            une sous-commande
+a tag                   une étiquette
+a target                une cible (destination ? objectif ? argument ?)
+text-base               copie de référence, texte/copie de base/pristine ?
+a token                 un lexème, un marqueur, un signe, un jeton, un nom,
+                        un identifiant...
+a tree                  arborescence [de fichiers et répertoires]
+an underflow            manque de données
+a URL                   une URL (une adresse, une localisation uniforme de
+                        ressource)
+version control         gestion(naire) de version ? versionnage ?
+version resource        ???
+a working copy          une copie de travail
+a work set              ensemble de travail
+a workspace             espace de travail
+
+
+VERBES
+
+to approve              approuver / autoriser
+to authenticate         authentifier
+to authorize            ?
+to branch               brancher ?
+to checkout             extraire, rapatrier, récupérer ?
+to commit               confier ?
+to connect              connecter
+to debug                déboguer
+to delete               supprimer
+to deny                 nier
+to disapprove           désapprouver
+to disconnect           déconnecter
+to drop                 supprimer
+to dump                 décharger (préféré à sauvegarder, qui implique
+                        d'écrire qqpart)
+to fail                 échouer
+to find                 trouver
+found                   trouvé / trouvée
+to get                  obtenir
+to give                 fournir
+ro initialize           initialiser
+to lock                 verrouiller
+to match (a pattern)    correspondre à
+to match (a non-pattern)        réunir
+to not match (a non-pattern)    ne pas correspondre à
+to merge                fusionner
+to migrate              migrer
+to mismatch             ne pas correspondre à
+to note                 noter
+to obstruct             bloquer
+to parse                décomposer / analyser
+parsing                 analyse (syntaxique)
+to process              traiter
+to propagate            propager
+to pull                 retirer / récupérer
+to push                 envoyer
+to query                questionner
+to rebuild              reconstruire
+to refuse               refuser
+to reject               rejeter
+to relocate             relocaliser (voire délocaliser (vers))
+to request              demander
+to revert               réinitialiser, revenir à l'ancienne version
+to review               examiner
+to serve                servir
+to set                  établir / mettre / placer / positionner
+to skip                 omettre
+to specify              déterminer / définir / préciser
+to spool                ???
+to store                sauvegarder
+to support              accepter, supporter ?
+to switch               aiguiller, ré-aiguiller, permuter? changer?
+to sync                 synchroniser
+to synchronize          synchroniser
+to terminate            finir
+to underflow            ??
+to unlock               déverrouiller
+to update               actualiser, mettre à jour
+to upgrade              mettre à niveau
+to usher                guider
+to violate              enfreindre
+
+
+ADJECTIFS
+
+bad                     erroné, mauvais, incorrect
+bogus                   boggué
+default                 valeurs, paramètres, réglages par défaut
+deprecated              déconseillé
+locked                  verrouillé
+malformed               mal formé, mal formée
+mismatched              dépareillé, mal assorti
+obstructed              bloqué
+out-of-date             obsolète
+parseable               analysable
+refined                 raffiné, spécialisé ?
+required                requis, obligatoire
+stale                   vieux
+valid                   valable
+invalid                 pas valable

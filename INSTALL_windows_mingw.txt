@@ -1,0 +1,201 @@
+See INSTALL for general notes, such as running 'make' and 'make check'
+
+Compiling on Windows using MinGW:
+
+Here we give sources for the various packages needed. We give
+directions to the download, rather than an exact URL, to make it easy
+to check for new versions.
+
+The versions given here may not be exactly the same versions as used to
+build the current release of monontone.
+
+These instructions work on a new computer, with only
+Windows XP installed.
+
+Some MinGW versions around 20120426 contained g++ 4.6.2, which is
+broken for C++ exceptions on MinGW. Please make sure to use a newer
+gcc version. mingw-get-inst-20110211 is the oldest release known to
+work before that, shipping g++ 4.5.2. We've also had good results with
+g++ 4.8.1.
+
+If you run a 64-bit Windows, you may want to consider MinGW-w64, instead.
+
+http://sourceforge.net/projects/mingw-w64/
+
+
+Package       | Version | location
+--------------------------
+Python        | 2.7.6   | http://www.python.org/
+                        | "Windows Installer" under "Quick Links (2.7.6)"
+                        | Used for the Botan install; current Botan versions may
+                        | also work with Python 3.3, but 2.7 is still recommended
+mingw-get-inst|20131004 | http://sourceforge.net/projects/mingw/files/
+                        | -> Installer
+                        | -> mingw-get-inst
+                        | Or:
+                        | http://sourceforge.net/projects/mingw-w64/
+                        | (please check the project website)
+boost         | 1.55.0  | http://sourceforge.net/projects/boost/files/
+                        | -> boost -> 1.55.0 -> boost_1_55_0.tar.bz2
+lua           | 5.2.3   | lua-5.2.3.tar.gz
+pcre          | 8.35    | http://www.pcre.org/
+                        | -> ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/
+                        | -> pcre-8.35.tar.bz2
+botan         | 1.10.8  | http://botan.randombit.net/download.html
+                        | "Source: >tar/gzip<" under "Current Stable Release"
+                        | _not_ the "windows binary installer"
+sqlite3       | 3.8.4.3 | http://www.sqlite.org/download.html
+                        | -> sqlite-autoconf-3080403.tar.gz
+libiconv      | 1.14    | ftp://ftp.gnu.org/gnu/libiconv/
+                        | -> libiconv-1.14.tar.gz
+libidn        | 1.28    | ftp://ftp.gnu.org/gnu/libidn/
+                        | -> libidn-1.24.tar.gz
+                        | -> OR: libidn-1.28.win32.zip (binary)
+Depends.exe   |         | http://www.dependencywalker.com/ ; also comes with Visual Studio
+
+In general, there are two versions of most tools on the
+MinGW site; mingw and msys. MinGW versions are intended to
+be run from a DOS shell, msys versions from an Msys shell.
+monotone configure requires the Msys shell, so we need the
+msys versions of autoconf and automake.
+
+Other tools will be linked with the monotone MinGW
+executable, so we need the MinGW versions of those.
+
+The tools listed here are sufficient to build the monotone
+executable and html and info documentation. However, the
+'distcheck' target also builds the documentation in
+postscript format, which requires tools not (yet) available
+for MinGW.
+
+The commands below assume you download files to C:\MinGW\Msys\1.0\ , which
+maps to both / and /usr/ under the Msys shell.
+
+01. Python (needed for the Botan configure script)
+  01.1 Run the installer, accept all defaults.
+  01.2 Add python to your PATH
+    Right-click on "My Computer", select "Properties"
+    Go to the "Advanced" tab, and click on "Environment Variables"
+    To add Python to everyone's path:
+      Select "Path" (case-insensitive) in the "System variables" at
+      the botton.  Click "Edit".  Add ";C:\Python27" (without the
+      quotes) to the end of the value.
+    To add Python to only your path:
+      If there is a "Path" entry in the "User variables for ..."
+      section, edit it as above.  If there is not a "Path" entry,
+      click on "New" in the User variables section, and enter "PATH"
+      as the variable name and "C:\Python27" as the value.
+    To verify your new PATH, you can go to Start->Run and enter "cmd",
+    then in the command window run "echo %PATH%" and look for the
+    Python directory in the output.
+
+02. MinGW
+
+  Run the installer, then make sure you're not using g++ 4.6.2. You
+  can already select the following components during setup:
+    C++ compiler
+    MinGW Developer Toolkit
+  Other than this, accept all defaults.
+  Open an Msys shell and make sure you have all of the following
+  components installed:
+  $ mingw-get install msys-autoconf msys-automake msys-sed msys-awk
+  $ mingw-get install msys-make mingw32-gcc mingw32-gcc-g++ mingw32-libz
+  $ mingw-get install mingw32-libz-dev mingw32-gettext
+
+03. boost; only need headers
+  in Msys shell:
+  $ cd /usr
+  $ mkdir src
+  $ cd src
+  $ tar -jxf ../boost_1_55_0.tar.bz2
+  $ cd boost_1_55_0
+  $ cp -a boost /c/mingw/include
+
+04. Lua
+  in Msys shell:
+   $ cd /usr/src
+   $ tar -zxf ../lua-5.2.3.tar.gz
+   $ cd lua-5.2.3
+   $ make mingw
+   $ make INSTALL_TOP=/c/mingw install
+
+05. pcre
+   $ cd /usr/src
+   $ tar -jxf ../pcre-8.35.tar.bz2
+   $ cd pcre-8.35
+   $ ./configure --prefix=/c/mingw
+   $ make
+   $ make install
+
+06. botan
+   $ cd /usr/src
+   $ tar -zxf ../Botan-1.10.8.tgz
+   $ cd Botan-1.10.8
+
+   On a 64 bit machine, configure will default to 64 bit compilation
+   options. However, some Botan source files do not yet support 64
+   bits. So force 32 bits.
+   $ ./configure.py --cc=gcc --os=mingw --cpu=x86_32
+
+   The Botan configure script generates paths with Python's
+   os.path.join(...), which in the case of the Windows Python
+   we installed uses '\' as the path separator. There are a
+   couple of places in the Makefile where this causes problems.
+   $ sed -i 's#\\\(.\)#/\1#g' Makefile
+
+   $ make
+   $ make DESTDIR=/c/mingw install
+
+07. sqlite3
+   $ cd /usr/src
+   $ tar -zxf ../sqlite-autoconf-3080403.tar.gz
+   $ cd sqlite-autoconf-3080403
+   $ ./configure --prefix=/c/mingw
+   $ make
+   $ make install
+
+08. libiconv
+   $ cd /usr/src
+   $ tar -zxf ../libiconv-1.14.tar.gz
+   $ cd libiconv-1.14
+   $ ./configure --prefix=/c/mingw
+   $ make
+   $ make install
+
+09. libidn
+   $ cd /usr/src
+   $ tar -zxf ../libidn-1.24.tar.gz
+   $ cd libidn-1.24
+   $ ./configure --prefix=/c/mingw
+   $ make
+   $ make install
+
+   If this fails to compile, you can use the pre-compiled binaries for
+   Windows and copy the DLLs and includes to /c/mingw as appropriate,
+   instead.
+
+10. Depends.exe
+   If you have Visual Studio installed, you should be able to skip this.
+   If you don't, then download the appropriate depends*.zip and
+   unpack it someplace in your %PATH% (for example, C:\MinGW\bin\).
+   This is only used by the testsuite, in particular the empty_environment test.
+   If you just want to build monotone for your own use, you can skip this and
+   just ignore that test failing.
+
+11. build monotone
+   You can skip the CXXFLAGS and LDFLAGS if you really want to, but if
+   you do that then libgcc_s and libstdc++-6 will be linked
+   dynamically and the resulting monotone binary will take several
+   extra seconds to start.
+   $ cd $MONOTONE_SOURCE_DIR
+   $ autoreconf -i # not needed if you use the distributed tarball
+   $ export CXXFLAGS="-static-libgcc -static-libstdc++ -I/c/mingw/include -g -O2 -Wall"
+   $ export LDFLAGS="-static-libgcc -static-libstdc++ -L/c/mingw/lib"
+   $ export botan_CFLAGS="-I/c/mingw/include/botan-1.10"
+   $ export botan_LIBS="-lbotan-1.10"
+   $ ./configure
+   $ make
+   $ make check
+
+See innosetup/README.txt for instructions on building the native Win32
+installer.

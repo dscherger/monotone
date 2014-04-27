@@ -38,8 +38,8 @@
 #include "common.h"
 
 // Netxx includes
-#include "netxx/sockopt.h"
-#include "netxx/types.h"
+#include "sockopt.h"
+#include "types.h"
 
 // standard includes
 #include <cstring>

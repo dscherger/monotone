@@ -10,23 +10,30 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT([monotone], [0.45dev], [monotone-devel@nongnu.org])
-AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
-AC_CONFIG_SRCDIR([app_state.cc])
+AC_INIT([monotone], [1.1], [https://code.monotone.ca/p/monotone/issues/], ,
+	[http://www.monotone.ca])
+AM_INIT_AUTOMAKE([1.9 tar-ustar dist-bzip2 no-dist-gzip std-options])
+AC_CONFIG_SRCDIR([src/app_state.cc])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile doc/Makefile])
 AC_LANG([C++])
+
+dnl We want to take advantage of automake 1.11's optional "quiet build"
+dnl mode if it's available, and we want to set up our own custom rules
+dnl to be quiet too, but this means we need $(AM_DEFAULT_VERBOSITY) to
+dnl be defined even when an older automake is in use.
+m4_ifdef([AM_SILENT_RULES],
+  [AM_SILENT_RULES],
+  [AM_DEFAULT_VERBOSITY=1
+   AC_SUBST([AM_DEFAULT_VERBOSITY])])
 
 dnl AM_INIT_AUTOMAKE only provides $(MKDIR_P) in 1.10 and later.
 dnl No, AC_PROG_MKDIR_P does not AC_SUBST its result variable, at least
 dnl not in 2.61.  Comments in programs.m4 suggest that it was meant to
 dnl but not properly implemented.
-if test x"$MKDIR_P" = x; then
-  if test x"$mkdir_p" != x; then
-    MKDIR_P="$mkdir_p"
-  else
-    AC_PROG_MKDIR_P
-  fi
+AC_PROG_MKDIR_P
+if test x"$MKDIR_P" = x && test x"$mkdir_p" != x; then
+  MKDIR_P="$mkdir_p"
 fi
 AC_SUBST([MKDIR_P])
 
@@ -35,6 +42,11 @@ AC_SUBST([MKDIR_P])
 AC_CANONICAL_HOST
 AC_MSG_CHECKING([category of operating system])
 
+BUILD_DATE=`date '+%F'`
+AC_SUBST([BUILD_DATE])
+AC_DEFINE_UNQUOTED([BUILD_DATE], ["$BUILD_DATE"],
+	[The date of the build, used in the manual page and other places.])
+
 WIN32_PLATFORM=false
 os_err_t="int"
 case "$host" in
@@ -42,6 +54,11 @@ case "$host" in
     AC_MSG_RESULT([Windows])
     WIN32_PLATFORM="true"
     os_err_t="unsigned int"
+    ac_executable_extensions=".exe"
+    
+    # Inno setup configuration
+    AC_CONFIG_FILES([monotone.iss:innosetup/monotone.iss.in])
+    AC_PATH_PROG(ISCC, [ISCC]) 
   ;;
 
   *-ibm-aix* )
@@ -110,6 +127,7 @@ AC_CXX_GNUCXX_HASHMAP
 AC_CXX_STLPORT_HASHMAP
 AC_CXX_TR1_UNORDERED_MAP
 AC_CXX_TR1_UNORDERED_MAP_CONST_CORRECT
+AC_CXX_11_UNORDERED_MAP_AND_SET
 AC_CXX_SYNC_WITH_STDIO_WORKS
 AC_CXX_TEMPLATE_STATIC_CONST_BUG
 
@@ -146,5 +164,10 @@ AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [#include <dirent.h>])
 
 AC_CHECK_FUNCS([__cxa_current_exception_type __cxa_demangle dirfd \
         fstatat mkdtemp mmap putenv setenv strptime unsetenv])
+
+# Work around an autoconf bug rendering abs_builddir useless. The bug
+# results in VPATH builds being unable to locate check_net, thus
+# skipping netsync tests. So this is not too crucial.
+abs_builddir=`pwd`
 
 AC_OUTPUT

@@ -7,9 +7,9 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "base.hh"
-#include "unit_tests.hh"
-#include "netxx_pipe.hh"
+#include "../../../src/base.hh"
+#include "../unit_tests.hh"
+#include "../../../src/netxx_pipe.hh"
 
 using std::string;
 using std::vector;

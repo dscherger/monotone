@@ -38,8 +38,8 @@
 #define _netxx_address_h_
 
 // Netxx includes
-#include <netxx/types.h>
-#include <netxx/peer.h>
+#include "types.h"
+#include "peer.h"
 
 // standard includes
 #include <string>

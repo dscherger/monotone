@@ -1,26 +1,9 @@
--- WARNING: this feature is not available in the mainline yet
--- you can find it in net.venge.monotone.ws_automate
-
--- include this in your monotonerc file to gain the extra commands.
-
--- Not all of the automate commands used by this lua code are committed
--- to trunk at present.  As such this should currently be treated as
--- sample code, not working commands.
-
-if alias_command == nil then
-    -- If we're using an older version of monotone that cannot handle lua commands
-    -- then turn make sure we don't error.
-    function alias_command(...) print("Warning: alias_command() not available in this version of Monotone.") end
-end
-
-if mtn_automate == nil or register_command == nil then
-    function register_command(...) print("Warning: register_command() not available in this version of Monotone.") end
-end
-
 alias_command("annotate", "blame")
 alias_command("annotate", "praise")
 
 function net_update(...)
+    -- could use 'mtn pull --update', or add --update to get_default_command_options for 'pull'
+    
     result, output = mtn_automate("get_option", "branch")	-- make sure we have a valid workspace
     if not result then
         print("Error from mtn automate call to get_option: ", ouput)
@@ -94,6 +77,8 @@ register_command("net_commit", "", "Commit, pull and push a workspace",
 alias_command("net_commit", "nci")
 
 function merge_update(...)
+    -- could use 'mtn merge --update', or add --update to get_default_command_options for 'merge'
+    
     result, output = mtn_automate("get_option", "branch")	-- make sure we have a valid workspace
     if not result then
         print("Error from mtn_automate call to get_option: ", output)

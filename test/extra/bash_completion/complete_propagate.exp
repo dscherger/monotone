@@ -1,0 +1,38 @@
+send_user "\n===== BEGIN complete_propagate  =====\n"
+expect -re "@ $"
+send_user "\n===== Testing for the 'propagate' command =====\n"
+send "\n$mtn propagate "
+expect {
+    -ex " propagate " {}
+    timeout { failure "' propagate '"; exit }
+}
+
+send "\t"
+expect {
+    -ex "prop-br1" {}
+    timeout { failure "'prop-bra1'"; exit }
+}
+expect {
+    -ex "prop-bra2" {}
+    timeout { failure "'prop-bra2'"; exit }
+}
+
+send "\003\n"
+
+expect -re "@ $"
+send_user "\n===== Testing that the 'propagate' completes the second branch correctly =====\n"
+# One \t is enough for the second branch name to expand
+send "\n$mtn propagate prop-br1 prop-bra"
+expect {
+    -ex " propagate " {}
+    timeout { failure "' propagate '"; exit }
+}
+
+send "\t"
+expect {
+    -ex "prop-bra2" {}
+    timeout { failure "'prop-bra2'"; exit }
+}
+
+send_user "\n===== END complete_propagate  =====\n"
+success

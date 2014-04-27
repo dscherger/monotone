@@ -38,10 +38,10 @@
 #include "common.h"
 
 // Netxx includes
-#include "netxx/datagramserver.h"
-#include "netxx/datagram.h"
-#include "netxx/address.h"
-#include "netxx/probeinfo.h"
+#include "datagramserver.h"
+#include "datagram.h"
+#include "address.h"
+#include "probeinfo.h"
 #include "serverbase.h"
 #include "socket.h"
 #include "recvfrom.h"

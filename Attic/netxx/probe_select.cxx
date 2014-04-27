@@ -43,8 +43,8 @@
 
 // Netxx includes
 #include "probe_impl.h"
-#include "netxx/types.h"
-#include "netxx/timeout.h"
+#include "types.h"
+#include "timeout.h"
 
 // standard includes
 #include <memory>

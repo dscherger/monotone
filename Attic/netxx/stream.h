@@ -38,8 +38,8 @@
 #define _netxx_stream_h_
 
 // Netxx includes
-#include <netxx/types.h>
-#include <netxx/streambase.h>
+#include "types.h"
+#include "streambase.h"
 
 namespace Netxx {
     

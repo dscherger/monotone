@@ -1,0 +1,204 @@
+// TODO: things to do that will break protocol compatibility
+//   -- need some way to upgrade anonymous to keyed pull, without user having
+//      to explicitly specify which they want
+//      just having a way to respond "access denied, try again" might work
+//      but perhaps better to have the anonymous command include a note "I
+//      _could_ use key <...> if you prefer", and if that would lead to more
+//      access, could reply "I do prefer".  (Does this lead to too much
+//      information exposure?  Allows anonymous people to probe what branches
+//      a key has access to.)
+//   -- "warning" packet type?
+//   -- Richard Levitte wants, when you (e.g.) request '*' but don't have
+//      access to all of it, you just get the parts you have access to
+//      (maybe with warnings about skipped branches).  to do this right,
+//      should have a way for the server to send back to the client "right,
+//      you're not getting the following branches: ...", so the client will
+//      not include them in its merkle trie.
+//   -- add some sort of vhost field to the client's first packet, saying who
+//      they expect to talk to
+
+//
+// This is the "new" network synchronization (netsync) system in
+// monotone. It is based on synchronizing pairs of merkle trees over an
+// interactive connection.
+//
+// A netsync process between peers treats each peer as either a source, a
+// sink, or both. When a peer is only a source, it will not write any new
+// items to its database. when a peer is only a sink, it will not send any
+// items from its database. When a peer is both a source and sink, it may
+// send and write items freely.
+//
+// The post-state of a netsync is that each sink contains a superset of the
+// items in its corresponding source; when peers are behaving as both
+// source and sink, this means that the post-state of the sync is for the
+// peers to have identical item sets.
+//
+//
+// Data structure
+// --------------
+//
+// Each node in a merkle tree contains a fixed number of slots. this number
+// is derived from a global parameter of the protocol -- the tree fanout --
+// such that the number of slots is 2^fanout. For now we will assume that
+// fanout is 4 thus there are 16 slots in a node, because this makes
+// illustration easier. The other parameter of the protocol is the size of
+// a hash; we use SHA1 so the hash is 20 bytes (160 bits) long.
+//
+// Each slot in a merkle tree node is in one of 3 states:
+//
+//   - empty
+//   - leaf
+//   - subtree
+//
+// In addition, each leaf contains a hash code which identifies an element
+// of the set being synchronized. Each subtree slot contains a hash code of
+// the node immediately beneath it in the merkle tree. Empty slots contain
+// no hash codes.
+//
+// Since empty slots have no hash code, they are represented implicitly by
+// a bitmap at the head of each merkle tree node. As an additional
+// integrity check, each merkle tree node contains a label indicating its
+// prefix in the tree, and a hash of its own contents.
+//
+// In total, then, the byte-level representation of a <160,4> merkle tree
+// node is as follows:
+//
+//      20 bytes       - hash of the remaining bytes in the node
+//       1 byte        - type of this node (manifest, file, key, mcert, fcert)
+//     1-N bytes       - level of this node in the tree (0 == "root", uleb128)
+//    0-20 bytes       - the prefix of this node, 4 bits * level,
+//                       rounded up to a byte
+//     1-N bytes       - number of leaves under this node (uleb128)
+//       4 bytes       - slot-state bitmap of the node
+//   0-320 bytes       - between 0 and 16 live slots in the node
+//
+// So, in the worst case such a node is 367 bytes, with these parameters.
+//
+//
+// Protocol
+// --------
+//
+// The protocol is a binary command-packet system over TCP; each packet
+// consists of a single byte which identifies the protocol version, a byte
+// which identifies the command name inside that version, a size_t sent as
+// a uleb128 indicating the length of the packet, that many bytes of
+// payload, and finally 20 bytes of SHA-1 HMAC calculated over the payload.
+// The key for the SHA-1 HMAC is 20 bytes of 0 during authentication, and a
+// 20-byte random key chosen by the client after authentication (discussed
+// below). Decoding involves simply buffering until a sufficient number of
+// bytes are received, then advancing the buffer pointer. Any time an
+// integrity check (the HMAC) fails, the protocol is assumed to have lost
+// synchronization, and the connection is dropped. The parties are free to
+// drop the TCP stream at any point, if too much data is received or too
+// much idle time passes; no commitments or transactions are made.
+//
+// Version Negotiation
+// -------------------
+//
+// Before the exchange begin, the client may receive one or more
+// "usher <message>" packets, any number sent by "usher" proxies and
+// one sent by more recent servers. It ignores the protocol version
+// field on these packets, but replys with a "usher_reply <host> <include>"
+// packet containing its own maximum supported protocol version.
+//
+// Older server begin by sending a "hello" packet (see below) that contains
+// their only supported protocol version. New servers first send a "usher"
+// packet and use the response to determine the client's maximum protocol
+// version, and then use the lesser of that or their own maximum version
+// in the "hello" packet and all later packets.
+//
+// When the client receive the "hello" packet it uses that version as the
+// protocol version for all remaining packets.
+//
+// If the "usher_reply" packet indicates a version that's older than the
+// minimum version supported by the server, the server sends an error packet
+// and closes the connection.
+//
+// If the "hello" packet indicates a version not supported by the client,
+// it sends an error packet and closes the connection.
+//
+// Authentication and setup
+// ------------------------
+//
+// The exchange begins in a non-authenticated state. The server sends a
+// "hello <id> <nonce>" command, which identifies the server's RSA key and
+// issues a nonce which must be used for a subsequent authentication.
+//
+// The client then responds with either:
+//
+// An "auth (source|sink|both) <include_pattern> <exclude_pattern> <id>
+// <nonce1> <hmac key> <sig>" command, which identifies its RSA key, notes the
+// role it wishes to play in the synchronization, identifies the pattern it
+// wishes to sync with, signs the previous nonce with its own key, and informs
+// the server of the HMAC key it wishes to use for this session (encrypted
+// with the server's public key); or
+//
+// An "anonymous (source|sink|both) <include_pattern> <exclude_pattern>
+// <hmac key>" command, which identifies the role it wishes to play in the
+// synchronization, the pattern it wishes to sync with, and the HMAC key it
+// wishes to use for this session (also encrypted with the server's public
+// key).
+//
+// The server then replies with a "confirm" command, which contains no
+// other data but will only have the correct HMAC integrity code if the
+// server received and properly decrypted the HMAC key offered by the
+// client. This transitions the peers into an authenticated state and
+// begins epoch refinement. If epoch refinement and epoch transmission
+// succeed, the peers switch to data refinement and data transmission.
+//
+//
+// Refinement
+// ----------
+//
+// Refinement is executed by "refiners"; there is a refiner for each
+// set of 'items' being exchanged: epochs, keys, certs, and revisions.
+// When refinement starts, each party knows only their own set of
+// items; when refinement completes, each party has learned of the
+// complete set of items it needs to send, and a count of items it's
+// expecting to receive.
+//
+// For more details on the refinement process, see refiner.cc.
+//
+//
+// Transmission
+// ------------
+//
+// Once the set of items to send has been determined (for keys, certs, and
+// revisions) each peer switches into a transmission mode. This mode
+// involves walking the revision graph in ancestry-order and sending all
+// the items the local peer has which the remote one does not. Since the
+// remote and local peers both know all the items which need to be
+// transferred (they learned during refinement) they know what to wait for
+// and what to send.  The mechanisms of the transmission phase (notably,
+// enumerator.cc) simply ensure that things are sent in the proper order,
+// and without over-filling the output buffer too much.
+//
+//
+// Shutdown
+// --------
+//
+// After transmission completes, one special command, "bye", is used to
+// shut down a connection gracefully. The shutdown sequence based on "bye"
+// commands is documented below in session::process_bye_cmd.
+//
+//
+// Note on epochs
+// --------------
+//
+// One refinement and transmission phase preceeds all the others: epochs.
+// Epochs are exchanged and compared in order to be sure that further
+// refinement and transmission (on certs and revisions) makes sense; they
+// are a sort of "immune system" to prevent incompatible databases (say
+// between rebuilds due to bugs in monotone) from cross-contaminating.  The
+// later refinements are only kicked off *after* all epochs are received
+// and compare correctly.
+//
+//
+// Note on dense coding
+// --------------------
+//
+// This protocol is "raw binary" (non-text) because coding density is
+// actually important here, and each packet consists of very
+// information-dense material that you wouldn't have a hope of typing in,
+// or interpreting manually anyways.
+//

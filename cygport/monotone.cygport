@@ -1,0 +1,6 @@
+DESCRIPTION="A free distributed version control system"
+HOMEPAGE="http://monotone.ca/"
+SRC_URI="http://monotone.ca/downloads/${PV}/${P}.tar.gz"
+
+# cygport adds -g -O2
+CXXFLAGS+="-I/usr/include/boost-1_33_1/"

@@ -38,9 +38,9 @@
 #define _netxx_streambase_h_
 
 // Netxx includes
-#include <netxx/types.h>
-#include <netxx/address.h>
-#include <netxx/timeout.h>
+#include "types.h"
+#include "address.h"
+#include "timeout.h"
 
 namespace Netxx {
     // forward declarations

@@ -38,7 +38,7 @@
 #define _netxx_accept_h_
 
 // Netxx includes
-#include "netxx/peer.h"
+#include "peer.h"
 
 namespace Netxx {
     class Socket;

@@ -38,8 +38,8 @@
 #include "common.h"
 
 // Netxx includes
-#include "netxx/stream.h"
-#include "netxx/probeinfo.h"
+#include "stream.h"
+#include "probeinfo.h"
 #include "socket.h"
 
 // standard includes

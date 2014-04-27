@@ -40,7 +40,7 @@
 // Netxx includes
 #include "common.h"
 #include "socket.h"
-#include "netxx/types.h"
+#include "types.h"
 
 namespace Netxx {
 

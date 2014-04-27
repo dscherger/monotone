@@ -38,8 +38,8 @@
 #define _netxx_socket_h_
 
 // Netxx includes
-#include <netxx/types.h>
-#include <netxx/address.h>
+#include "types.h"
+#include "address.h"
 #include "probe_impl.h"
 
 namespace Netxx {

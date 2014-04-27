@@ -1,0 +1,11 @@
+mtn_setup()
+
+addfile("foo", "bar")
+commit()
+to_disapprove = base_revision()
+addfile("xyzzy", "xyzzy")
+commit()
+addfile("123", "456")
+commit()
+check(mtn("disapprove", to_disapprove), 1, true, true)
+check(qgrep("cannot disapprove root revision", "stderr"))

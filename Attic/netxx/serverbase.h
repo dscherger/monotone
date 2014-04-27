@@ -38,10 +38,10 @@
 #define _netxx_serverbase_h_
 
 // Netxx includes
-#include <netxx/types.h>
-#include <netxx/timeout.h>
-#include <netxx/probe.h>
-#include <netxx/probeinfo.h>
+#include "types.h"
+#include "timeout.h"
+#include "probe.h"
+#include "probeinfo.h"
 #include "socket.h"
 #include "probe_impl.h"
 

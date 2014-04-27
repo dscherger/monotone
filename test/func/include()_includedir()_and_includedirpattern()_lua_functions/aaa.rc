@@ -1,0 +1,4 @@
+function paraponzi()
+  io.stdout:write("BOOGA BOOGA")
+end
+paraponzi()

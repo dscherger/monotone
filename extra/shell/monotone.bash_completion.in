@@ -1,0 +1,399 @@
+# -*- shell-script -*-
+
+# bash completion for monotone 1.0
+# Author: Richard Levitte <richard@levitte.org>
+#
+# Based on previous script by Olivier Andrieu <oandrieu@nerim.net>
+# with contributions by Matthew A. Nicholson <matt@matt-land.com>
+# and Matthew Sackman <matthew@wellquite.org>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
+# Requirements:
+#    the bash completion package <http://www.caliban.org/bash/>,
+# copy this file in the directory /etc/bash_completion.d
+
+
+# List information on the stuff to parse (this could really be in a
+# separate file that any completion package could load and use).
+# These lines were generated with the perl script
+# monotone_gen_bash_completion_table.pl
+# If you do it, be careful to set your locale to "C" and be sure the right
+# mtn is used (you can use the environment variable MTN to point at the right
+# one).
+# BEGIN ----------------------------------------------------------------------
+@generated-command-list@
+# END ------------------------------------------------------------------------
+    
+
+_monotone_previous_RETURN=`trap -p RETURN`
+_monotone_previous_SIGHUP=`trap -p SIGHUP`
+_monotone_previous_SIGINT=`trap -p SIGINT`
+_monotone_previous_SIGPIPE=`trap -p SIGPIPE`
+_monotone_previous_SIGTERM=`trap -p SIGTERM`
+if shopt -q extglob; then :; else
+    shopt -s extglob
+    trap "shopt -u extglob; ${_monotone_previous_RETURN:-trap - RETURN}; ${_monotone_previous_SIGHUP:-trap - SIGHUP}; ${_monotone_previous_SIGINT:-trap - SIGINT}; ${_monotone_previous_SIGPIPE:-trap - SIGPIPE}; ${_monotone_previous_SIGTERM:-trap - SIGTERM}" RETURN SIGHUP SIGINT SIGPIPE SIGTERM
+fi
+
+# Call monotone to complete IDs
+_monotone_complete() {
+    if (( "${#cur}" >=2 )) ; then
+	COMPREPLY=( "${COMPREPLY[@]}" $(${mtn} $mono_db complete $1 $cur 2> /dev/null) )
+    fi
+}
+
+_monotone_revisions() {
+    _monotone_complete revision
+}
+
+_monotone_manifests() {
+    _monotone_complete manifest ??????
+}
+
+_monotone_manifest_files() {
+    _monotone_complete file
+}
+
+_monotone_dirs() {
+    _filedir -d
+}
+
+_monotone_files() {
+    _filedir
+}
+
+_monotone_databases() {
+    _filedir mtn
+    _filedir db
+    COMPREPLY=(
+	"${COMPREPLY[@]}"
+	$(compgen -W "$(LANG=POSIX \
+                        ${mtn} list databases 2> /dev/null |\
+                        grep -v '^\s' |\
+                        sed -e 's/(in [^)]*):$//')" -- ${cur#*=} )
+    )
+}
+
+# Call monotone to complete key ids (private or public)
+_monotone_keys() {
+    local range
+    if [ "$1" = "privkey" ]; then
+	range='/\[private/,$'
+    else
+	range='1,/\[private/'
+    fi
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list keys 2> /dev/null |\
+                                sed -n ${range}'{/^[0-9a-f]/s/[0-9a-f]* //p}')" -- ${cur#*=} ) )
+}
+
+_monotone_branches() {
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list branches 2> /dev/null)" -- ${cur#*=} ) )
+}
+
+_monotone_tags() {
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list tags 2> /dev/null | awk '{print $1}')" -- ${cur#*=} ) )
+}
+
+_monotone_public_key() {
+    _monotone_keys pubkey
+}
+
+_monotone_refs() {
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W 'revs roots leaves' -- $cur) )
+}
+
+_monotone_ssh_sign() {
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W 'yes no only check' -- $cur) )
+}
+
+_monotone_ticker() {
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W 'count dot none' -- $cur) )
+}
+
+_monotone_address_port() {
+    if [[ "$cur" == *:* ]]; then
+	# remove backslash escape from the first colon
+	cur=${cur/\\:/:}
+	local userhost=${cur%%?(\\):*}
+	local port=${cur#*:}
+	COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W '4691' -- $port) )
+    else
+	COMPREPLY=( "${COMPREPLY[@]}" $(compgen -A hostname -- $cur) )
+    fi
+}
+
+_monotone_command_words() {
+    cmd_prev_line=
+    cmd_line=
+    cmd_words=()
+    cmd_cword=-1
+    arg_words=()
+    arg_cword=-1
+    cmd_cur=
+    cmd_prev=
+    local w pw i cmdi argi
+    w=
+    cmdi=0
+    argi=0
+    for i in ${!words[@]}; do
+	pw=$w
+	w=${words[$i]}
+
+	# We know that the first word is the command itself.  Because it might
+	# have a directory spec in it, just set it to the command we know.
+	if [ $cmdi -eq 0 ]; then
+	    w=mtn
+	fi
+
+	# if the current word is '--opt=val', split it up into '--opt' and 'val'
+	if [[ "$w" == --?*=* ]]; then
+	    if [[ "$pw" == -* \
+		&& " ${_monotone_options_noarg[*]} " != *\ $pw\ * ]]; then
+		# Current word is an argument to an earlier option,
+		# so we skip past it
+		continue
+	    fi
+	    pw="${w%%?(\\)=*}"
+	    w="${w#*=}"
+	# if the current word is '-oval', split it up into '-o' and 'val'
+	elif [[ "$w" == -[a-z]?* ]]; then
+	    if [[ "$pw" == -* \
+		&& " ${_monotone_options_noarg[*]} " != *\ $pw\ * ]]; then
+		# Current word is an argument to an earlier option,
+		# so we skip past it
+		continue
+	    fi
+	    pw="${w:0:2}"
+	    w="${w:2}"
+	elif [[ "$w" == -* ]]; then
+	    continue
+	fi
+	if [[ "$pw" != -* \
+	    || " ${_monotone_options_noarg[*]} " == *\ $pw\ * ]]; then
+	    if [[ -z "$cmd_line" \
+		|| -n "${_monotone_commands[$cmd_line]}" ]]; then
+		if [ $i -le $cword ]; then
+		    cmd_cword=$cmdi
+		    cmd_prev=$cmd_cur
+		    cmd_cur=$w
+		    cmd_prev_line=$cmd_line
+		    if [ -n "$cmd_line" ]; then
+	    		cmd_line="$cmd_line "
+		    fi
+		    cmd_line="$cmd_line$w"
+		    if [ -n "${_monotone_aliases[$cmd_line]}" ]; then
+			cmd_line=${_monotone_aliases[$cmd_line]}
+		    fi
+		fi
+		cmd_words[$cmdi]=$w
+		(( cmdi += 1 ))
+	    else
+		if [ $i -le $cword ]; then
+		    cmd_cword=-1
+		    arg_cword=$argi
+		    arg_prev=$arg_cur
+		    arg_cur=$w
+		fi
+		arg_words[$argi]=$w
+		(( argi += 1 ))
+	    fi
+    	fi
+    done
+}
+
+_monotone() {
+    local cur prev words cword mono_db mtn
+    local cmd_words cmd_cword cmd_cur cmd_prev cmd_line cmd_prev_line
+    local arg_words arg_cword arg_cur arg_prev 
+    local i cmdi argi
+    local x
+
+    local debug
+    debug=${DEBUG_MONOTONE_BASH_COMPLETIONS:-false}
+
+    if [[ $- == *v* ]]; then
+	original_v_value="-v"
+    else
+	original_v_value="+v"
+    fi
+    if [[ $- == *x* ]]; then
+	original_x_value="-x"
+    else
+	original_x_value="+x"
+    fi
+
+    if $debug; then
+	echo "COMP_WORDS:" "${COMP_WORDS[@]}"
+	echo "COMP_CWORD:" "$COMP_CWORD"
+    fi
+
+    COMPREPLY=()
+    _get_comp_words_by_ref -n := cur prev words cword
+    _split_longopt
+    _monotone_command_words
+    if [[ "$cur" == -[a-z]?* ]]; then
+	if ! [[ "$prev" == -* \
+	    && " ${_monotone_options_noarg[*]} " != *\ $prev\ * ]]; then
+	    prev="${cur:0:2}"
+	    cur="${cur:2}"
+	fi
+    fi
+
+    if $debug; then
+	echo "words:" "${words[@]}"
+	echo "cword:" "$cword"
+    fi
+
+    mtn=${words[0]}
+    for w in ${words[@]} ; do
+	if [[ "$w" == --db=* || "$w" == -d?* ]] ; then
+	    mono_db="$w" ; break
+	fi
+    done
+    if [ -z "$mono_db" ] ; then
+	for i in ${!words[@]} ; do
+	    [ $i -eq 0 ] && continue
+	    x="${words[$i-1]}"
+	    if [ "$x" = --db -o "$x" = -d ] ; then
+		mono_db="--db=${words[$i]}" ; break
+	    fi
+	done
+    fi
+
+    if $debug; then
+	echo "db: $mono_db"
+	echo "prev: $prev"
+	echo "cur: $cur"
+    fi
+
+    if $debug; then
+	set -x
+	set -v
+    fi
+    case $cur in
+	*/a:!(*/[[:alpha:]]:*) | *=a:!(*/[[:alpha:]]:*) | a:!(*/[[:alpha:]]:*) )
+            cur="${cur##*a:}"
+	    _monotone_public_keys
+	    ;;      
+	*/b:!(*/[[:alpha:]]:*) | *=b:!(*/[[:alpha:]]:*) | b:!(*/[[:alpha:]]:*) )
+	    cur="${cur##*b:}"
+	    _monotone_branches
+	    ;;
+        */h:!(*/[[:alpha:]]:*) | *=h:!(*/[[:alpha:]]:*) | h:!(*/[[:alpha:]]:*) )
+	    cur="${cur##*h:}"
+	    _monotone_branches
+	    ;;
+	*/i:!(*/[[:alpha:]]:*) | *=i:!(*/[[:alpha:]]:*) | i:!(*/[[:alpha:]]:*) )
+	    cur="${cur##*i:}"
+	    _monotone_revisions
+	    ;;
+	*/t:!(*/[[:alpha:]]:*) | *=t:!(*/[[:alpha:]]:*) | t:!(*/[[:alpha:]]:*) )
+	    cur="${cur##*t:}"
+	    _monotone_tags
+	    ;;
+	-* )
+	    if [ $cword -gt 0 ]; then
+		x=(
+		    ${_monotone_command_options["mtn"]}
+		    ${_monotone_command_options[$cmd_line]}
+		)
+	    fi
+	    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "${x[*]}" -- $cur) )
+	    ;;
+        * )
+	    if [[ "$prev" == -* \
+		&& " ${_monotone_options_arg[*]} " == *\ $prev\ * ]]; then
+		if [ -n "${_monotone_options_arg_fns[$prev]}" ]; then
+		    ${_monotone_options_arg_fns[$prev]}
+		fi
+	    else
+		COMPREPLY=(
+		    "${COMPREPLY[@]}"
+		    $(compgen -W "${_monotone_command_options["mtn"]}
+			${_monotone_command_options[$cmd_prev_line]}" -- $cur)
+		)
+		if [ $cmd_cword -ge 0 ]; then
+		    if [ -n "${_monotone_commands[$cmd_prev_line]}" ]; then
+			COMPREPLY=(
+			    "${COMPREPLY[@]}"
+			    $(compgen -W \
+				"${_monotone_commands[$cmd_prev_line]}" \
+				 -- $cur)
+			)
+		    fi
+		elif [ $arg_cword -ge 0 ]; then
+		    local args=( ${_monotone_command_args[$cmd_line]} )
+		    local argtype=${args[$arg_cword]}
+		    if [ $arg_cword -ge 1 ] && [ "$argtype" = "..." ]; then
+			argtype=${args[$arg_cword-1]}
+		    elif [ ${#args[*]} -ge 2 ] && \
+			[ -z "$argtype" -a "${args[${#args[*]}-1]}" = "..." ]; then
+			argtype=${args[${#args[*]}-2]}
+		    fi
+		    case $argtype in
+			*PATH | PATHS | *FILENAME | *FILE | SRC | SRC[0-9] | FILE[0-9] )
+			    _monotone_files
+			    ;;
+			*REVISION | REV* | NEW_REV* | OLD_REV* | *REVID | FROM | TO )
+			    _monotone_revisions
+			    ;;
+			DIR* | *ROOT | DEST_DIR | WORKSPACE_PATH )
+			    _monotone_dirs
+			    ;;
+			KEY* )
+			    _monotone_public_keys
+			    ;;
+			BRANCH* | SOURCE-BRANCH | DEST-BRANCH )
+			    _monotone_branches
+			    ;;
+			TAG* )
+			    _monotone_tags
+			    ;;
+			ADDR*:PORT* | HOST*:PORT* )
+			    _monotone_address_port
+			    ;;
+			RESOLUTION )
+			    # To be implemented, this one is complex
+			    ;;
+			\(*\) )
+			    COMPREPLY=(
+				"${COMPREPLY[@]}"
+				$(compgen -W "`echo "$argtype" | sed -e 's/[()]//g' -e 's/|/ /g'`" -- $cur) )
+			    ;;
+		    esac
+		fi
+	    fi
+    esac
+    set $original_v_value
+    unset original_v_value
+    set $original_x_value
+    unset original_x_value
+
+    # I copied this code from http://willcode4beer.com/tips.jsp?set=tabMaven
+    # -- Richard Levitte
+    ############################################################
+    # Work-around bash_completion issue where bash interprets a colon
+    # as a separator.
+    # Work-around borrowed from the darcs work-around for the same
+    # issue.
+    colonprefixes=${cur%"${cur##*:}"}
+    local i=${#COMPREPLY[*]}
+    while [ $((--i)) -ge 0 ]; do
+	COMPREPLY[$i]=${COMPREPLY[$i]#"$colonprefixes"}
+    done
+    ############################################################
+
+    if $debug; then
+	echo "COMPREPLY: ${COMPREPLY[@]}"
+    fi
+
+    return 0
+}
+
+complete -F _monotone mtn

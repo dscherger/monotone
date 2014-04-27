@@ -38,7 +38,7 @@
 #define _netxx_netbuf_h_
 
 // Netxx includes
-#include <netxx/streambase.h>
+#include "streambase.h"
 
 // standard includes
 #include <streambuf>

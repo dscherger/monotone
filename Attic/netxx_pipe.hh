@@ -11,8 +11,8 @@
 #define __NETXX_PIPE_HH__
 
 #include "vector.hh"
-#include <netxx/socket.h>
-#include <netxx/streambase.h>
+#include "netxx/socket.h"
+#include "netxx/streambase.h"
 #ifdef WIN32
 #  include <windows.h>
 #endif

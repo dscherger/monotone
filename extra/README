@@ -1,0 +1,68 @@
+This directory has all kinds of extra scripts, lua hooks and whatnot.
+They are all shown to work with the help of tests in $TOP/test/extra.
+
+The files are divided in subdirectories:
+
+- bin/
+  These are scripts that are used together with mtn.  They should be
+  installed in a directory bin/ (usually /usr/bin or /usr/local/bin).
+- building/
+  These are scripts and other files that can be used while building
+  monotone, for example for packaging.  These should really not be
+  installed anywhere, just distributed with the rest of the source.
+- shell/
+  Special scripts to be used by different shells, such as completion
+  packages.
+- mtn-hooks/
+  Lua hooks to be used from monotone.  Typically, you can add the
+  following two lines to your 'monotonerc' and then have a selection
+  of these hooks in the directory 'hooks.d' under your configuration
+  directory:
+
+	includedirpattern(get_confdir() .. "/hooks.d","*.conf")
+	includedirpattern(get_confdir() .. "/hooks.d","*.lua")
+
+Some files have extra documentation here:
+
+- bin/mtn-cleanup: A Perl script for returning a workspace to its
+  pristine state with the minimum of change (i.e. missing files are
+  restored, changed files are reverted and new files are removed).
+
+- building/dump-test-logs.sh: Dump the detailed logs for all tests
+  with an unexpected outcome to stdout.  This is intended for use in
+  super-automated build environments, e.g. the Debian build daemons,
+  where the easiest way to recover detailed test logs for a failed
+  build is to embed them in the overall 'make' output.  Run, with no
+  arguments, from the top level of a monotone build tree.
+
+- mtn-hooks/authorize_remote_automate.lua: This is a server hook to
+  authenticate remote automate operations, either by matching a key
+  identity with patterns in the file remote-automate-permissions, or
+  matching the command with a configured list of safe remote automate
+  commands (configured through the variable ARA_safe_commands, which
+  can be set up anywhere before this hook is loaded).
+
+- mtn-hooks/get_passphrase_from_file.lua: This creates a version of
+  the function get_passphrase() that reads passphrases from a file in
+  the monotone configuration directory called "passphrases".  This is
+  useful for automated startup of servers.
+
+- mtn-hooks/monotone-mail-notify.lua: a mail notification script which
+  offers an individual per-branch recipient configuration with a
+  syntax similar to the one found in ~/.monotone/read-permissions.  It
+  writes out details of each revision received to files which are then
+  picked up by the script monotone-mail-notify which requires bash,
+  source-highlight and mime-construct to build nicely structured
+  emails with summaries of the revision and its diffs.
+
+- shell/monotone.bash_completion.in: command line completion code for
+  bash.  It's not complete in itself, but the following creates a
+  correct bash completion file for your current monotone (this is
+  what's done with make):
+
+	( sed -e '/^[@]generated-command-list[@]$/,$d' \
+	      < monotone.bash_completion.in
+	  perl monotone_gen_bash_completion_table.pl
+	  sed -e '1,/^[@]generated-command-list[@]$/d' \
+	      < monotone.bash_completion.in
+	) > monotone.bash_completion

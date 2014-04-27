@@ -38,9 +38,9 @@
 #define _netxx_probe_h_
 
 // Netxx includes
-#include <netxx/types.h>
-#include <netxx/timeout.h>
-#include <netxx/probeinfo.h>
+#include "types.h"
+#include "timeout.h"
+#include "probeinfo.h"
 
 // standard includes
 #include <vector>

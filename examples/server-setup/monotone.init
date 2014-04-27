@@ -1,0 +1,58 @@
+#! /bin/sh
+
+set -e
+
+NAME=monotone
+EXECNAME=mtn
+DAEMON=/usr/bin/$EXECNAME
+PIDDIR=/var/run/$NAME
+SCRIPTNAME=/etc/init.d/$NAME
+MAINLOG=/var/log/$NAME/$EXECNAME.log
+ERRORLOG=/var/log/$NAME/error.log
+
+ADDRESS=0.0.0.0
+MTN_HOME=/var/lib/monotone
+MTN_CONFDIR=/etc/monotone
+MTN_KEYDIR=$MTN_HOME/keys
+MTN_DB=$MTN_HOME/default.mtn
+
+# Gracefully exit if the package has been removed.
+test -x $DAEMON || exit 0
+
+PIDFILE=$PIDDIR/$EXECNAME.pid
+
+case "$1" in
+    start)
+	# If /var/run is created in tmpfs, it will be wiped of previous data
+	if [ ! -d "$PIDDIR" ]; then
+	    mkdir -p "$PIDDIR" && chown monotone:monotone "$PIDDIR"
+	fi
+
+	# If there's a pid file, there may be a runnign server already
+	if [ -e "$PIDFILE" ] && kill -0 `cat "$PIDFILE"` 2>/dev/null; then
+	    echo "Already started $DESC : $NAME"
+	else
+	    rm -f "$PIDFILE"
+	    cd $MTN_HOME
+	    sudo -u monotone -b -H -n $DAEMON \
+		--confdir=$MTN_CONFDIR --db=$MTN_DB --keydir=$MTN_KEYDIR \
+		--no-standard-rcfiles --rcfile=$MTN_CONFDIR/hooks.lua \
+		--pid-file=$PIDFILE --timestamps --quiet \
+		--bind=$ADDRESS serve >> $MAINLOG 2>&1 < /dev/null &
+	    if [ -e "$PIDFILE" ]; then
+		echo "Starting $DESC : $NAME"
+	    else
+		echo "Failed starting $DESC"
+	    fi
+	fi
+	;;
+    stop)
+	if [ -e "$PIDFILE" ] && kill `cat "$PIDFILE"` 2>/dev/null; then
+	    echo "Stopped $DESC : $NAME"
+	fi
+	;;
+    *)
+	echo "Usage: $SCRIPTNAME {start|stop}" >&2
+	exit 1
+	;;
+esac

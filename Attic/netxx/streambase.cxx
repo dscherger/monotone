@@ -39,11 +39,11 @@
 #include "common.h"
 
 // Netxx includes
-#include "netxx/streambase.h"
-#include "netxx/sockopt.h"
-#include "netxx/address.h"
-#include "netxx/peer.h"
-#include "netxx/types.h"
+#include "streambase.h"
+#include "sockopt.h"
+#include "address.h"
+#include "peer.h"
+#include "types.h"
 #include "socket.h"
 
 // standard includes

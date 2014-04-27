@@ -38,7 +38,7 @@
 #define _netxx_probeinfo_h_
 
 // Netxx includes
-#include <netxx/types.h>
+#include "types.h"
 
 // standard includes
 #include <vector>

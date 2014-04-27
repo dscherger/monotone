@@ -1,0 +1,88 @@
+#! /usr/bin/env perl
+
+# Takes a mail file generated with mime-construct and extracts the headers
+# To:, From: and Subject:, reformats the boundary lines to use numbers
+# (counting from 1) and any line containing one of the following regexps:
+# /^revision:\s/
+# /^author:\s/
+# /^branch:\s/
+# /^new_manifest\s\[/
+# /^old_revision\s\[/
+# /^patch\s"/
+# /^\sfrom\s\[/
+# /^\s\s\sto\s\[/
+# Also, any attachment with the content type text/plain that starts with
+# a line of = signs (QUOTED-PRINTABLE =3D) is extracted as is.
+
+use strict;
+use warnings;
+
+my @boundary_stack = ();
+my %boundary_index = ();
+my $next_index = 0;
+
+while(1) {
+    # Start with headers, those are seen all the way until the first empty line
+
+    my $current_content_type;
+    while(<STDIN>) {
+	chomp;
+	last if /^$/;
+
+	if (m|^content-type:\s*([-a-z]+/[-a-z]+)\s*(?:;\s*([a-z]+)=(.+))?$|i) {
+	    $current_content_type = $1;
+	    my $parameter_name = $2;
+	    my $parameter_value = $3;
+	    if ($current_content_type =~ m|^multipart/.*$|) {
+		# $parameter_name should be "boundary"
+		push @boundary_stack, $parameter_value;
+		$boundary_index{$parameter_value} = ++$next_index;
+	    }
+	}
+
+	next unless /^(to|from|subject):\s/i;
+	print $_,"\n";
+    }
+
+    ### Now is the time for the main body, before the attachments
+
+    # The following is to detect a text/plain file that starts with a series
+    # of quoted-printable equal signs (=3D).
+    my $first_line = 1;
+    my $print_all = 0;
+
+    while(<STDIN>) {
+	chomp;
+
+	my $current_boundary = $boundary_stack[$#boundary_stack];
+	my $current_index = $boundary_index{$current_boundary};
+
+	if ($first_line && $current_content_type eq "text/plain" &&
+	    m|^(=3D)+=$|) {
+	    $print_all = 1;
+	}
+	$first_line = 0;
+	if ($_ eq "--$current_boundary") {
+	    print "--$current_index\n";
+	    last;
+	}
+	if ($_ eq "--$current_boundary--") {
+	    print "--$current_index--\n";
+	    pop @boundary_stack;
+	    last if $#boundary_stack < 0;
+	    next;
+	}
+
+	next unless $print_all ||
+	    /^(?:
+	       (?:revision|author|branch):\s
+	       |
+	       (?:new_manifest|old_revision|\s+from|\s+to|\s+content)\s\[
+	       |
+	       (?:patch|add_file)\s\"
+	       )/sx;
+	print $_,"\n";
+    }
+
+    last if eof(STDIN);
+}

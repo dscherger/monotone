@@ -39,8 +39,8 @@
 
 // Netxx includes
 #include "accept.h"
-#include "netxx/sockopt.h"
-#include "netxx/types.h"
+#include "sockopt.h"
+#include "types.h"
 #include "sockaddr.h"
 #include "socket.h"
 

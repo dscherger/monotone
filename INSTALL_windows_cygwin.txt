@@ -1,0 +1,46 @@
+See INSTALL for general notes, such as running 'make' and 'make check'
+
+Compiling on Windows using Cygwin:
+
+An official Cygwin package for monotone and all its dependencies is
+usually available soon after release; just run the Cygwin installer
+and install the 'monotone' package.
+
+To build Monotone on Cygwin for development and testing, the following
+packages are required (the versions listed are known to work; they may
+not be the exact versions used to build the official Cygwin package).
+Note that the monotone source code is compatible with Lua 5.2, but (as
+of 23 Apr 2014), Cygwin only has Lua 5.1. Monotone is also compatible
+with multiple versions of botan and Cygwin provides two variants that
+both work.
+
+   binutils-2.24.51
+   automake-1.14
+   autoconf2.5-2.69
+   make-4.0
+   libboost-devel-1.53.0
+   botan-devel-1.8.14 or botan1.10-devel-1.10.5
+   gcc-g++-4.8.2
+   gettext-devel-0.18.1
+   libidn-devel-1.26
+   libpcre-devel-8.34
+   libsqlite3-devel-3.8.4.1
+   lua-5.1.5-1
+   zlib-devel-1.2.8
+
+If you use botan-1.10, please pass the following options to configure:
+
+   ./configure botan_CFLAGS="-I/usr/include/botan-1.10" \
+               botan_LIBS="/usr/lib/libbotan-1.10.dll.a"
+
+No special options are needed for configure if botan-devel (i.e. 1.8)
+is used.
+
+There is a bug in the bash builtin 'pwd' in bash 4.1; it can return
+'c:/' syntax for absolute paths in some circumstances. See
+http://sourceware.org/ml/cygwin/2002-11/msg01111.html. In particular,
+this happens when starting a bash shell under Emacs, which results in
+configure creating Makefiles with some problems. A work-around is to
+put 'cd `/bin/pwd`' in your ~/.emacs_bash.
+
+See cygport/README for building a Cygwin package.

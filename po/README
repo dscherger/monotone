@@ -1,12 +1,43 @@
 This file gives instructions to get you started translating monotone's
-diagnostic messages into a new language.  We do not use the usual
-(gettext-provided) Makefile logic for .po files, so some of the
-commands below may be different from what you are used to.  Note
-especially that all "make" commands are done from the top level of the
-tree, *not* from the po subdirectory.  Also, with one exception noted
-below, nothing writes to the po subdirectory; the .pot file and the
-.merged.po and .gmo files created during a build appear at the top
-level.
+diagnostic messages into a new language.  The individual README.<lang>
+files in this directory contain copyright information and translation
+guidelines for the specific translation.
+
+
+Help resources
+--------------
+
+We have a separate (low-volume) mailing list set up for translation 
+issues, where we announce important information and where the translators
+can discuss issues on their own.  Please consider subscribing to it:
+
+   <http://lists.nongnu.org/mailman/listinfo/monotone-i18n>
+
+
+Online translation
+------------------
+
+monotone has a Transifex project registered, which you can use to translate
+your strings online:
+
+   <http://www.transifex.net/projects/p/monotone/>
+
+Your changes there might not be noticed immediately, so please drop us
+a note either by private mail or on the above mentioned mailing list,
+so we can pull your translation updates from there.
+
+
+Traditional translation
+-----------------------
+
+You can - of course - also just start with a new translation by checking
+out the latest source and work on the command line.  Be aware though that
+we do not use the usual (gettext-provided) Makefile logic for .po files,
+so some of the commands below may be different from what you are used to.
+Note especially that all "make" commands are done from the top level of
+the tree, *not* from the po subdirectory.  Also, the .pot file and the
+.merged.po and .gmo files created during a build appear in the po
+subdirectory.
 
 Before you begin:
 
@@ -34,38 +65,36 @@ Now the step-by-step HOWTO:
    Portugal Portuguese (pt_PT).  (Note: the pt_BR translation has not
    been updated for some time, so it is not included in po/LINGUAS.)
 
-2) Add a line for the compiled translation file to win32/monotone.iss
-   so that it is included in future Win32 installer packages.  The
-   line needs to look like this:
-
-Source: "..\po\CODE.gmo"; DestDir: "{app}\locale\CODE\LC_MESSAGES"; DestName: "monotone.mo"; Flags: ignoreversion
-
-   Everything on this line should be copied into monotone.iss exactly
-   as it appears except the word CODE, which you should replace with
-   the code you added to po/LINGUAS.
-
-3) Create a template file:
+2) Create a template file:
   
    $ cd <your source directory>
    $ autoreconf --install
    $ ./configure
-   $ make monotone.pot
+   $ make po/monotone.pot
 
-   This will create the file monotone.pot, which lists every message
+   This will create the file po/monotone.pot, which lists every message
    that you need to translate.  Copy this file to po/CODE.po (again,
    replace CODE with the code you added to po/LINGUAS).
    
-4) Fill out the header of your new .po file.  This mailing list post
+3) Fill out the header of your new .po file.  This mailing list post
    gives excellent advice on how to do so:
 
-     http://mail.gnome.org/archives/gnome-i18n/2004-July/msg00073.html
+     <http://mail.gnome.org/archives/gnome-i18n/2004-July/msg00073.html>
 
    and you may also wish to consult the relevant section of the
    gettext manual:
 
-     http://www.gnu.org/software/gettext/manual/html_node/Header-Entry.html
+     <http://www.gnu.org/software/gettext/manual/html_node/Header-Entry.html>
 
-   Two of the fields in the header deserve special attention:
+   ATTENTION: Do not change the generic comment as hinted in the above
+              resources, but rather create a separate README.CODE which
+              contains your copyright and any additional information you want
+              to give possible contributors.  This is needed because the
+              online translation system Transifex removes / replaces these
+              comments with generic information, and these unwanted changes
+              might get back into our tree by accident.
+
+   Two of the fields in the remaining header also deserve special attention:
 
    a) The encoding of the file (Content-Type: ...)  Set this to the
       encoding you'll use in your text editor to translate the
@@ -81,34 +110,34 @@ Source: "..\po\CODE.gmo"; DestDir: "{app}\locale\CODE\LC_MESSAGES"; DestName: "m
       which variation to use when.  For instruction in writing this
       header, please see the gettext manual:
 
-        http://www.gnu.org/software/gettext/manual/html_node/Plural-forms.html
+        <http://www.gnu.org/software/gettext/manual/html_node/Plural-forms.html>
 
       (By the way, if you find a message that should vary this way but
       doesn't list a plural form in the template file, please tell us
       about it on monotone-dev.)
 
-5) Start translating the entries.  When finished, commit the new .po
+4) Start translating the entries.  When finished, commit the new .po
    file and push your changes to monotone.ca.  Don't forget to commit
-   po/LINGUAS and win32/monotone.iss as well.
+   po/LINGUAS and po/README.CODE as well.
 
    If you're looking for a nice GUI to edit language files, we
    recommend KBabel, which comes with the kdesdk module of KDE, or
    poedit.  See these websites:
 
-     http://kbabel.kde.org/
-     http://www.poedit.net/
+     <http://kbabel.kde.org>
+     <http://www.poedit.net>
 
-6) To update your template when the sources change, you can use this
+5) To update your template when the sources change, you can use this
    command:
 
-   $ make CODE.po-update
+   $ make po/CODE.po-update
 
    This will update monotone.pot from the sources and then use the
    "msgmerge" utility to update your translation.  It updates
    po/CODE.po in place.  If you prefer for this not to happen, you can
    instead do
 
-   $ make CODE.merged.po
+   $ make po/CODE.merged.po
 
    which will drop the new .po file, with a ".merged.po" extension, in
    the directory where you ran "make".  You can then edit that file
@@ -116,4 +145,5 @@ Source: "..\po\CODE.gmo"; DestDir: "{app}\locale\CODE\LC_MESSAGES"; DestName: "m
 
    To check if new or fuzzy strings have arrived, use msgfmt:
 
-   $ msgfmt -cv po/CODE.po  # or CODE.merged.po
+   $ msgfmt -cv po/CODE.po  # or po/CODE.merged.po
+

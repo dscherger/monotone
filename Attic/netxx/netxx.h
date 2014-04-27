@@ -33,18 +33,18 @@
 #ifndef _netxx_netxx_h_
 #define _netxx_netxx_h_
 
-#include <netxx/address.h>
-#include <netxx/datagram.h>
-#include <netxx/datagramserver.h>
-#include <netxx/netbuf.h>
-#include <netxx/peer.h>
-#include <netxx/probe.h>
-#include <netxx/probeinfo.h>
-#include <netxx/sockopt.h>
-#include <netxx/stream.h>
-#include <netxx/streambase.h>
-#include <netxx/streamserver.h>
-#include <netxx/timeout.h>
-#include <netxx/types.h>
+#include "address.h"
+#include "datagram.h"
+#include "datagramserver.h"
+#include "netbuf.h"
+#include "peer.h"
+#include "probe.h"
+#include "probeinfo.h"
+#include "sockopt.h"
+#include "stream.h"
+#include "streambase.h"
+#include "streamserver.h"
+#include "timeout.h"
+#include "types.h"
 
 #endif

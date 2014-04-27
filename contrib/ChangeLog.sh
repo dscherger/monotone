@@ -10,6 +10,7 @@
 
 NUM=15
 MTN=mtn
+LANG=C; export LANG
 
 while ! [ $# -eq 0 ] ; do
 	case "$1" in

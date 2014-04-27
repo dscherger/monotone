@@ -1,0 +1,4 @@
+function notwowithoutthree()
+  io.stdout:write("hu hu")
+end
+notwowithoutthree()

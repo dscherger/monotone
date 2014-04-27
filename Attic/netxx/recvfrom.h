@@ -38,8 +38,8 @@
 #define _netxx_recvfrom_h_
 
 // local includes
-#include "netxx/types.h"
-#include "netxx/peer.h"
+#include "types.h"
+#include "peer.h"
 #include "socket.h"
 
 // standard includes

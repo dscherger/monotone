@@ -39,8 +39,8 @@
 #include "common.h"
 
 // Netxx includes
-#include "netxx/address.h"
-#include "netxx/types.h"
+#include "address.h"
+#include "types.h"
 #include "sockaddr.h"
 #include "resolve.h"
 

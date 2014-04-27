@@ -1,4 +1,0 @@
-function paraponzi()
-  io.write("BOOGA BOOGA")
-end
-paraponzi()

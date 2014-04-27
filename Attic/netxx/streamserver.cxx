@@ -38,12 +38,12 @@
 #include "common.h"
 
 // definition include
-#include "netxx/streamserver.h"
+#include "streamserver.h"
 
 // Netxx includes
-#include "netxx/address.h"
-#include "netxx/types.h"
-#include "netxx/probeinfo.h"
+#include "address.h"
+#include "types.h"
+#include "probeinfo.h"
 #include "serverbase.h"
 #include "socket.h"
 #include "accept.h"

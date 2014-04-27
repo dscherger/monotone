@@ -1,0 +1,36 @@
+    left [4228fbd8003cdd89e7eea51fcef10c3f91d78f69]
+   right [6cb6438a490a1ad4c69ff6cac23c75a903cd9cfd]
+ancestor [44c4d408ecf65b6b45fa2c6fa2a51e5b7485d8e1]
+
+        conflict dropped_modified
+   ancestor_name "dir2/file_10"
+ancestor_file_id [7368a4340573dca149c05db6f49638fafee766d0]
+       left_type "modified file"
+       left_name "dir2/file_10"
+    left_file_id [080c590e6e671b1b9ca0e752e1bc468c5167e2a9]
+      right_type "orphaned file"
+       right_rev [44c4d408ecf65b6b45fa2c6fa2a51e5b7485d8e1]
+      right_name "dir2/file_10"
+   right_file_id [7368a4340573dca149c05db6f49638fafee766d0]
+
+        conflict dropped_modified
+   ancestor_name "dir2/file_11"
+ancestor_file_id [498b49fddbd0418f62eb19d2096de816f3e34116]
+       left_type "modified file"
+       left_name "dir2/file_11"
+    left_file_id [ea74c930ce75ac43380f520f9cdd4e85f56ed049]
+      right_type "orphaned file"
+       right_rev [44c4d408ecf65b6b45fa2c6fa2a51e5b7485d8e1]
+      right_name "dir2/file_11"
+   right_file_id [498b49fddbd0418f62eb19d2096de816f3e34116]
+
+        conflict dropped_modified
+   ancestor_name "dir2/file_9"
+ancestor_file_id [6259d1132e063364597e6ee84a431b432f0e9cf9]
+       left_type "modified file"
+       left_name "dir2/file_9"
+    left_file_id [d1c21ac76fd433b5f1daead0438938b45f9e13a8]
+      right_type "orphaned file"
+       right_rev [44c4d408ecf65b6b45fa2c6fa2a51e5b7485d8e1]
+      right_name "dir2/file_9"
+   right_file_id [6259d1132e063364597e6ee84a431b432f0e9cf9]

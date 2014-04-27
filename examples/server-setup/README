@@ -1,0 +1,168 @@
+Server startup
+==============
+
+Server startup can be done in many ways, and the ideas are probably
+many.  Here's one of the possibilities, which is mostly a shameless
+rip-off from the monotone-server package in Debian.
+
+The monotone server really depends on a few sections of information:
+
+ - configuration information, which is controlled by the admin and
+   goes into /etc/monotone.
+ - dynamic information, which is the database itself and other things
+   belonging with it.  My suggestion is /var/lib/monotone.
+ - a script to start, stop and restart the server process.
+
+
+Creating the monotone user
+--------------------------
+
+For the sake of safety, the best is to run the monotone server process
+under its own user.  On Debian, it would be done like this:
+
+  adduser --system --group --home /var/lib/monotone --no-create-home \
+  	  --disabled-password --quiet --gecos "Monotone" monotone
+
+On FreeBSD, I'd do it like this (haven't tested, honestly):
+
+  adduser -d /var/lib/monotone -k /dev/null -w no -M 0750 -s /bin/false -S \
+  	  monotone
+
+
+Creating and populating directories
+-----------------------------------
+
+Now, time to create the other directories and populate them, set safer
+permissions and populate them.  Let's start on the directories:
+
+  mkdir /etc/monotone /etc/monotone/hooks.d
+  mkdir /var/lib/monotone/keys /var/log/monotone
+
+Now, time to populate them.  Copy the following files (found in this
+directory) to /etc/monotone:
+
+  - serverrc	This is a very simple file, all it does is load hooks
+    		with their corresponding configuration from
+    		/etc/monotone/hooks.d
+
+Copy your choice of the following files (from the monotone contrib/
+directory) to /etc/monotone/hooks.d:
+
+  - get_passphrase_from_file.lua 
+		This will use the file passphrases in the monotone
+		configuration directory (in this setup, it's
+		/etc/monotone) to open any key it needs to use, for
+		example the server key.
+  - authorize_remote_automate.lua
+		This will use the file remote-automate-permissions in
+		the monotone configuration directory to permit remote
+		automate operations to select users, through their
+		keys.
+  - monotone-mail-notify.lua, monotone-mail-notify.sh
+		This will send an email notification to an email
+		address of your choice, for the branches of your
+		choice.  Read the comments at the top of
+		monotone-mail-notify.lua for details.
+		Note: it needs mime-construct and source-highlight.
+
+There are more hooks to be found, have a look!
+
+
+Creating the database and server key
+------------------------------------
+
+Now, it's time to generate a server database and key.  Let's start
+with the database:
+
+  mtn --db /var/lib/monotone/default.mtn db init \
+       --no-standard-rcfiles \
+       --keydir=/var/lib/monotone/keys --confdir=/etc/monotone
+
+Then, let's create the server key.  For simplicity, I'm placing the
+key name (no spaces allowed here!) and password in shell variables
+(change anything within braces ({}) to things of your choice), and
+create /etc/monotone/passphrases:
+
+  KEYNAME="{servername}@{domain}"
+  KEYPASS="{I REALLY HOPE YOU USE SOMETHING SMARTER THAN THIS ;-)}"
+  yes "$KEYPASS" | \
+      mtn --db /var/lib/monotone/default.mtn genkey $KEYNAME --quiet \
+      	  --no-standard-rcfiles \
+       	  --keydir=/var/lib/monotone/keys --confdir=/etc/monotone
+  echo "$KEYNAME \"$KEYPASS\"" > /etc/monotone/passphrases
+
+
+Setting up permissions
+----------------------
+
+Finally, you might want to start on /etc/monotone/read-permissions and
+/etc/monotone/write-permissions.  You can use the examples from
+monotone's example directory to see how it should be done.
+
+Another way is to create the directories /etc/monotone/read-permissions.d
+and /etc/monotone/write-permissions.d, which can hold separate files
+with setups as you choose to separate it.  If you do this, there's a
+simple and useful script in monotone's contrib/ directory called
+mtn_makepermissions that compiles the files in read-permissions.d and
+write-permissions into the files read-permissions and write-permissions
+that monotone depends on.
+
+
+Ownership and protection
+------------------------
+
+At this point, things are set up, and it's time to get protective.
+First of all, let's make sure the monotone user owns everything:
+
+  chown -R monotone:monotone /etc/monotone
+  chown -R monotone:monotone /var/lib/monotone
+  chown -R monotone:monotone /var/log/monotone
+
+Now, set the permissions where it may be important:
+
+  chmod 0750 /etc/monotone
+  chmod 0750 /var/lib/monotone
+
+  chmod -R 0640 /etc/monotone/write-permissions*
+  chmod -R 0640 /etc/monotone/read-permissions*
+  chmod 0640 /etc/monotone/serverrc
+
+  chmod 0600 /var/lib/monotone/default.mtn
+
+  chmod 0400 /etc/monotone/passphrases
+
+
+Server startup
+--------------
+
+The last bit is the server startup.  It can be done in one of several
+ways.
+
+daemontools:
+
+  If you prefer to use daemontools (from http://cr.yp.to/daemontools.html),
+  set up the service by copying monotone.run (found in this directory)
+  to to your service directory (let's assume you have your services in
+  /var/services), like this:
+
+    mkdir /var/services/monotone
+    cp monotone.run /var/services/monotone/run
+
+  Now, all you have to do is start it:
+
+    svc -u /var/services/monotone
+
+SysV init style:
+
+  If you prefer to use something toward SysV init style, copy
+  monotone.init to /etc/init.d and make softlinks to /etc/rc?.d, as
+  follows.  Note that this script depends on sudo and that root has
+  permission to run as the user monotone.
+
+    cp monotone.init /etc/init.d/monotone
+    for starter in /etc/rc[2-5].d; do ln -s /etc/init.d/monotone $starter; done
+    for killer in /etc/rc[0126].d; do ln -s /etc/init.d/monotone $killer; done
+
+  To start it, all you have to do is this:
+
+    /etc/init.d/monotone start

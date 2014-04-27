@@ -1,11 +1,11 @@
 std_edit_comment = edit_comment
-function edit_comment(basetext, user_log_message)
+function edit_comment(user_log_message)
 	local tmp, tname = temp_file()
 	if (tmp == nil) then return nil end
 	if (user_log_message == "") then
 		local ChangeLog = io.open("ChangeLog", "r")
 		if ChangeLog == nil then
-			return std_edit_comment(basetext, user_log_message)
+			return std_edit_comment(user_log_message)
 		end
 		local line = ChangeLog:read()
 		local msg = ""
@@ -23,5 +23,5 @@ function edit_comment(basetext, user_log_message)
 		user_log_message = msg
 		io.close(ChangeLog)
 	end
-	return std_edit_comment(basetext, user_log_message)
+	return std_edit_comment(user_log_message)
 end

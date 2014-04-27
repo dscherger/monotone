@@ -31,9 +31,7 @@ AC_DEFUN([MTN_FULL_PKG_CONFIG_PATH],
 [AC_REQUIRE([PKG_PROG_PKG_CONFIG])
 # The dummy "pkg-config" package is guaranteed to exist.
 if test -n "$PKG_CONFIG"; then
-  mtn__full_pkg_config_path=`$PKG_CONFIG --debug pkg-config 2>&1 |
-    sed -ne "/^Scanning directory '/{; s///; s/'$//; p;}" | 
-    tr "$as_nl" ':' | sed 's/:$//'`
+  mtn__full_pkg_config_path=`$PKG_CONFIG --variable=pc_path pkg-config`
   #AC_MSG_NOTICE([detected pkg-config path: $mtn__full_pkg_config_path])
 fi
 ])
@@ -77,7 +75,7 @@ if $_notfound; then
 # also ensures that the ARG_VARs for the desired library are sane.
 PKG_CHECK_MODULES([$1], [$1$_verreq], 
  [_notfound=false],
- [:])
+ [AC_MSG_RESULT([$1.pc not found])])
 fi
 
 # Third, try looking for alternative names known to pkg-config for
@@ -234,7 +232,7 @@ AC_DEFUN([MTN_FIND_PCRE],
 ])
 
 AC_DEFUN([MTN_FIND_SQLITE],
-[MTN_CHECK_MODULE([sqlite], [3.3],
+[MTN_CHECK_MODULE([sqlite3], [3.3],
   [AC_LANG_PROGRAM(
     [#include <sqlite3.h>
      #if SQLITE_VERSION_NUMBER < 3003000

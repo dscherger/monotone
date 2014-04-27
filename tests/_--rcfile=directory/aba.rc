@@ -1,4 +1,0 @@
-function notwowithoutthree()
-  io.write("hu hu")
-end
-notwowithoutthree()
