@@ -54,7 +54,7 @@ public:
 #define ATOMIC_NOVERIFY(ty) hh_ATOMIC_NOVERIFY(ty)
 #define ATOMIC_BINARY(ty) hh_ATOMIC_BINARY(ty)
 
-#ifdef HAVE_EXTERN_TEMPLATE
+#if defined(HAVE_CXX11) || defined(HAVE_EXTERN_TEMPLATE)
 #define EXTERN extern
 #else
 #define EXTERN /* */
