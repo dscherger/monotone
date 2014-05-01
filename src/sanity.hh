@@ -461,7 +461,7 @@ Musing<T>::gasp(std::string & out) const
 // them.)  However, while fake_M does nothing directly, it doesn't pass its
 // line argument to ##; therefore, its line argument is fully expanded before
 // being passed to real_M.
-#ifdef HAVE_CXX11
+//
 // FIXME: no idea whether or not this works on anything other than g++ or
 // clang, but using decltype sounds promising.
 #define real_M(obj, line) Musing<decltype(obj)> this_is_a_musing_fnord_object_ ## line (obj, #obj, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
@@ -476,20 +476,6 @@ Musing<T>::gasp(std::string & out) const
 #define PERM_MM(obj) \
   new Musing<decltype(obj)>(*(new remove_reference<decltype(obj)>::type(obj)), \
                             #obj, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
-#elif HAVE_TYPEOF
-// even worse, this is g++ only!
-#define real_M(obj, line) Musing<typeof(obj)> this_is_a_musing_fnord_object_ ## line (obj, #obj, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
-#define fake_M(obj, line) real_M(obj, line)
-#define MM(obj) fake_M(obj, __LINE__)
-
-#define PERM_MM(obj) \
-  new Musing<typeof(obj)>(*(new remove_reference<typeof(obj)>::type(obj)), \
-                          #obj, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
-
-#else
-#define MM(obj) /* */
-#define PERM_MM(obj) /* */
-#endif
 
 // debugging utility to dump out vars like MM but without requiring a crash
 

@@ -54,11 +54,8 @@ public:
 #define ATOMIC_NOVERIFY(ty) hh_ATOMIC_NOVERIFY(ty)
 #define ATOMIC_BINARY(ty) hh_ATOMIC_BINARY(ty)
 
-#if defined(HAVE_CXX11) || defined(HAVE_EXTERN_TEMPLATE)
+/* vocab.cc will undef this, again. */
 #define EXTERN extern
-#else
-#define EXTERN /* */
-#endif
 
 #include "vocab_terms.hh"
 
