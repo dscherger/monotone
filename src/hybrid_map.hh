@@ -10,15 +10,16 @@
 #ifndef __HYBRID_MAP_HH__
 #define __HYBRID_MAP_HH__
 
-#include "sanity.hh"
-#include "hash_map.hh"
 #include <map>
+#include <unordered_map>
+
+#include "sanity.hh"
 
 template<typename Key, typename Val>
 class hybrid_map
 {
   typedef std::map<Key, Val> omap;
-  typedef hashmap::hash_map<Key, Val> umap;
+  typedef std::unordered_map<Key, Val> umap;
   omap ordered;
   umap unordered;
 public:

@@ -17,6 +17,7 @@
 #include <numeric>
 #include <set>
 #include <sstream>
+#include <unordered_map>
 #include "vector.hh"
 
 #include <string.h>
@@ -42,7 +43,6 @@
 #include "constants.hh"
 #include "dates.hh"
 #include "database.hh"
-#include "hash_map.hh"
 #include "keys.hh"
 #include "platform-wrapped.hh"
 #include "revision.hh"
@@ -90,6 +90,7 @@ using std::sort;
 using std::string;
 using std::vector;
 using std::accumulate;
+using std::unordered_map;
 
 using boost::shared_ptr;
 using boost::dynamic_pointer_cast;
@@ -212,13 +213,12 @@ namespace
                    format_bypass_mode,
                    cache_bypass_mode };
 
-  typedef hashmap::hash_map<revision_id, set<revision_id> > parent_id_map;
-  typedef hashmap::hash_map<revision_id, rev_height> height_map;
+  typedef unordered_map<revision_id, set<revision_id> > parent_id_map;
+  typedef unordered_map<revision_id, rev_height> height_map;
 
-  typedef hashmap::hash_map<key_id,
-                            pair<shared_ptr<Botan::PK_Verifier>,
-                                 shared_ptr<Botan::RSA_PublicKey> >
-                            > verifier_cache;
+  typedef unordered_map<key_id, pair<shared_ptr<Botan::PK_Verifier>,
+                                     shared_ptr<Botan::RSA_PublicKey> >
+                        > verifier_cache;
 
 } // anonymous namespace
 
