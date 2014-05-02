@@ -10,12 +10,12 @@
 #ifndef __MERKLE_TREE_HH__
 #define __MERKLE_TREE_HH__
 
+#include <memory>
 #include <map>
 #include <set>
 #include <functional>
 #include <unordered_map>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
 
 #include "vector.hh"
@@ -86,7 +86,7 @@ struct merkle_node
   void set_slot_state(size_t n, slot_state st);
 };
 
-typedef boost::shared_ptr<merkle_node> merkle_ptr;
+typedef std::shared_ptr<merkle_node> merkle_ptr;
 
 typedef std::pair<prefix,size_t> merkle_node_id;
 #if 1

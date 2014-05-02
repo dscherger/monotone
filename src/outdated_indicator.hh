@@ -22,24 +22,24 @@
 // When a factory is destroyed, all indicators made from
 // that factory become outdated.
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 class outdated_indicator_factory_impl;
 
 class outdated_indicator
 {
-  boost::shared_ptr<outdated_indicator_factory_impl> parent;
+  std::shared_ptr<outdated_indicator_factory_impl> parent;
   unsigned int when;
 public:
   outdated_indicator();
-  explicit outdated_indicator(boost::shared_ptr<outdated_indicator_factory_impl> p);
+  explicit outdated_indicator(std::shared_ptr<outdated_indicator_factory_impl> p);
   bool outdated() const;
 };
 
 
 class outdated_indicator_factory
 {
-  boost::shared_ptr<outdated_indicator_factory_impl> impl;
+  std::shared_ptr<outdated_indicator_factory_impl> impl;
 public:
   outdated_indicator_factory();
   ~outdated_indicator_factory();

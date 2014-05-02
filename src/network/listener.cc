@@ -23,7 +23,7 @@ using std::vector;
 using std::string;
 using std::to_string;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 listener::listener(app_state & app,
                    project_t & project,

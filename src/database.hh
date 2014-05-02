@@ -11,10 +11,10 @@
 #ifndef __DATABASE_HH__
 #define __DATABASE_HH__
 
+#include <memory>
 #include "vector.hh"
 #include <set>
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include "rev_types.hh"
 #include "cert.hh"
@@ -79,7 +79,7 @@ typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 class database_impl;
 struct key_identity_info;
 
-typedef std::map<system_path, boost::shared_ptr<database_impl> > database_cache;
+typedef std::map<system_path, std::shared_ptr<database_impl> > database_cache;
 
 class database
 {
@@ -499,7 +499,7 @@ public:
 private:
   static database_cache dbcache;
 
-  boost::shared_ptr<database_impl> imp;
+  std::shared_ptr<database_impl> imp;
   options opts;
   lua_hooks & lua;
   dboptions dbopts;

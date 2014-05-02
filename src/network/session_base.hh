@@ -11,9 +11,8 @@
 #ifndef __SESSION_BASE_HH__
 #define __SESSION_BASE_HH__
 
+#include <memory>
 #include <deque>
-
-#include <boost/shared_ptr.hpp>
 
 #include "../netxx/stream.h"
 #include "../netcmd.hh" // for protocol_voice
@@ -45,7 +44,7 @@ public:
   std::string peer_id;
   std::string name() { return peer_id; }
 private:
-  boost::shared_ptr<Netxx::StreamBase> str;
+  std::shared_ptr<Netxx::StreamBase> str;
   time_t last_io_time;
 public:
 
@@ -63,7 +62,7 @@ public:
 
   session_base(protocol_voice voice,
                std::string const & peer_id,
-               boost::shared_ptr<Netxx::StreamBase> str);
+               std::shared_ptr<Netxx::StreamBase> str);
   virtual ~session_base();
   virtual bool arm() = 0;
   virtual bool do_work(transaction_guard & guard) = 0;

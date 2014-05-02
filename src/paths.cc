@@ -868,7 +868,7 @@ IMPLEMENT_CONST_PRED(bookkeeping_path, true)
 
 // If this wasn't a user-supplied path, we should know
 // which kind it is.
-boost::shared_ptr<any_path>
+std::shared_ptr<any_path>
 new_optimal_path(std::string path, bool to_workspace_root)
 {
   utf8 const utf8_path = utf8(path, origin::user);
@@ -880,13 +880,13 @@ new_optimal_path(std::string path, bool to_workspace_root)
   catch (recoverable_failure &)
     {
       // not in workspace
-      return boost::shared_ptr<any_path>(new system_path(path, origin::user));
+      return std::shared_ptr<any_path>(new system_path(path, origin::user));
     }
 
   if (in_bookkeeping_dir(normalized))
-    return boost::shared_ptr<any_path>(new bookkeeping_path(normalized, origin::user));
+    return std::shared_ptr<any_path>(new bookkeeping_path(normalized, origin::user));
   else
-    return boost::shared_ptr<any_path>(new file_path(file_path_internal(normalized)));
+    return std::shared_ptr<any_path>(new file_path(file_path_internal(normalized)));
 };
 
 // Either conversion of S to a path_component, or composition of P / S, has

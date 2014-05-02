@@ -25,14 +25,14 @@
 #include "safe_map.hh"
 #include "vector.hh"
 #include <iostream>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 using std::make_pair;
 using std::map;
 using std::set;
 using std::string;
 using std::vector;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 ///////////////////////////////////////////////////////////////////////////
 // content_merge_database_adaptor
@@ -121,7 +121,7 @@ content_merge_database_adaptor::record_file(file_id const & parent_ident,
 
 void
 content_merge_database_adaptor::cache_roster(revision_id const & rid,
-                                             boost::shared_ptr<roster_t const> roster)
+                                             std::shared_ptr<roster_t const> roster)
 {
   safe_insert(rosters, make_pair(rid, roster));
 };
@@ -230,7 +230,7 @@ content_merge_database_adaptor::get_version(file_id const & ident,
 
 void
 content_merge_workspace_adaptor::cache_roster(revision_id const & rid,
-                                              boost::shared_ptr<roster_t const> roster)
+                                              std::shared_ptr<roster_t const> roster)
 {
   rosters.insert(std::make_pair(rid, roster));
 }

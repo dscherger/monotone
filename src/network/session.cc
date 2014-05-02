@@ -27,7 +27,7 @@ using std::string;
 using std::to_string;
 
 using boost::lexical_cast;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 
 static const var_domain known_servers_domain = var_domain("known-servers");

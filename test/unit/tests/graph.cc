@@ -8,6 +8,9 @@
 // PURPOSE.
 
 #include "../../../src/base.hh"
+
+#include <algorithm>
+
 #include "../unit_tests.hh"
 #include "../../../src/graph.hh"
 
@@ -25,6 +28,7 @@ using std::set;
 using std::string;
 using std::to_string;
 using std::vector;
+using std::set_difference;
 
 typedef std::multimap<id, id> rg_map;
 struct mock_reconstruction_graph : public reconstruction_graph

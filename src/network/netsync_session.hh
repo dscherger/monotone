@@ -15,8 +15,6 @@
 #include <set>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include "../enumerator.hh"
 #include "../netcmd.hh"
 #include "../refiner.hh"

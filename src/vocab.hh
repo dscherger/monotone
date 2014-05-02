@@ -10,7 +10,7 @@
 #ifndef __VOCAB_HH__
 #define __VOCAB_HH__
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "sanity.hh"
 
@@ -26,7 +26,7 @@
 
 class immutable_string
 {
-  boost::shared_ptr<std::string> _rep;
+  std::shared_ptr<std::string> _rep;
   static std::string empty;
 
 public:

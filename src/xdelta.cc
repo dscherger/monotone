@@ -27,13 +27,13 @@
 #include "base.hh"
 
 #include <algorithm>
-#include "vector.hh"
+#include <memory>
 #include <set>
 #include <unordered_map>
 #include <sstream>
 #include <cstring>  // memcmp
+#include "vector.hh"
 
-#include <boost/shared_ptr.hpp>
 #include <boost/version.hpp>
 
 #include "adler32.hh"
@@ -52,7 +52,7 @@ using std::vector;
 using std::memcmp;
 using std::lower_bound;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 struct identity
 {

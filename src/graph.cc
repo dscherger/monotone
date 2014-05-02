@@ -9,11 +9,11 @@
 
 #include "base.hh"
 
+#include <memory>
 #include <map>
 #include <unordered_set>
 #include <utility>
 #include <list>
-#include <boost/shared_ptr.hpp>
 
 #include "sanity.hh"
 #include "graph.hh"
@@ -23,7 +23,7 @@
 #include "rev_height.hh"
 #include "transforms.hh"
 
-using boost::shared_ptr;
+using std::shared_ptr;
 using std::string;
 using std::vector;
 using std::set;

@@ -21,7 +21,7 @@
 using std::logic_error;
 using std::search;
 using std::to_string;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 
 static bool operator==(marking_map const & a, marking_map const & b)

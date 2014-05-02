@@ -9,7 +9,9 @@
 // PURPOSE.
 
 #include "base.hh"
+
 #include <algorithm>
+#include <memory>
 #include <deque>
 #include <fstream>
 #include <iterator>
@@ -19,10 +21,9 @@
 #include <sstream>
 #include <unordered_map>
 #include "vector.hh"
+#include <string>
 
-#include <string.h>
 #include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
@@ -93,8 +94,8 @@ using std::vector;
 using std::accumulate;
 using std::unordered_map;
 
-using boost::shared_ptr;
-using boost::dynamic_pointer_cast;
+using std::shared_ptr;
+using std::dynamic_pointer_cast;
 using boost::lexical_cast;
 using boost::get;
 using boost::tuple;
@@ -539,7 +540,7 @@ database::init()
   if (dbcache.find(dbpath) == dbcache.end())
     {
       L(FL("creating new database_impl instance for %s") % dbpath);
-      dbcache.insert(make_pair(dbpath, boost::shared_ptr<database_impl>(
+      dbcache.insert(make_pair(dbpath, std::shared_ptr<database_impl>(
         new database_impl(dbpath, opts.dbname_type, opts.roster_cache_performance_log)
       )));
     }
@@ -3493,7 +3494,7 @@ database::check_signature(key_id const & id,
       L(FL("building verifier for %d-byte pub key") % pub_block.size());
       shared_ptr<X509_PublicKey> x509_key(Botan::X509::load_key(pub_block));
       shared_ptr<RSA_PublicKey> pub_key
-        = boost::dynamic_pointer_cast<RSA_PublicKey>(x509_key);
+        = std::dynamic_pointer_cast<RSA_PublicKey>(x509_key);
 
       E(pub_key, id.inner().made_from,
         F("failed to get RSA verifying key for %s") % id);

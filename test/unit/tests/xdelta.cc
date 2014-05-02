@@ -26,7 +26,7 @@ boost::uniform_smallint<size_t> xdelta_editgen(3, 10);
 boost::uniform_smallint<size_t> xdelta_lengen(1, 256);
 
 using std::string;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 UNIT_TEST(basic)
 {

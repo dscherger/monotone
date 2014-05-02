@@ -32,7 +32,7 @@
 using std::deque;
 using std::string;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 deque<server_initiated_sync_request> server_initiated_sync_requests;
 LUAEXT(server_request_sync, )

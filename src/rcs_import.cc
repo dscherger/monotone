@@ -19,7 +19,7 @@
 #include "vector.hh"
 #include <cstring> // memset
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/scoped_ptr.hpp>
 #include <boost/tokenizer.hpp>
 
@@ -57,7 +57,7 @@ using std::to_string;
 using std::vector;
 
 using boost::scoped_ptr;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 // cvs history recording stuff
 

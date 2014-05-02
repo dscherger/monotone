@@ -9,7 +9,9 @@
 // PURPOSE.
 
 #include "base.hh"
+
 #include <algorithm>
+#include <memory>
 #include <set>
 #include "vector.hh"
 #include <sstream>
@@ -238,12 +240,12 @@ void marking_map::put_marking(node_id nid, marking_t const & m)
 
 void marking_map::put_marking(node_id nid, const_marking_t const & m)
 {
-  I(_store.set_if_missing(nid, boost::const_pointer_cast<marking>(m)));
+  I(_store.set_if_missing(nid, std::const_pointer_cast<marking>(m)));
 }
 
 void marking_map::put_or_replace_marking(node_id nid, const_marking_t const & m)
 {
-  _store.set(nid, boost::const_pointer_cast<marking>(m));
+  _store.set(nid, std::const_pointer_cast<marking>(m));
 }
 
 size_t marking_map::size() const

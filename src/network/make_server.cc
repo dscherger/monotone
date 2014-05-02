@@ -16,7 +16,7 @@ using std::vector;
 using std::string;
 using std::to_string;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 shared_ptr<Netxx::StreamServer>
 make_server(vector<utf8> const & addresses,

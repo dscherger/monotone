@@ -287,8 +287,8 @@ get_roster_for_rid(database & db,
   // roster (and marking map).
   if (null_id(rid))
     {
-      cr.first = boost::shared_ptr<roster_t const>(new roster_t);
-      cr.second = boost::shared_ptr<marking_map const>(new marking_map);
+      cr.first = std::shared_ptr<roster_t const>(new roster_t);
+      cr.second = std::shared_ptr<marking_map const>(new marking_map);
     }
   else
     {

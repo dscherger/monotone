@@ -10,7 +10,8 @@
 #ifndef __XDELTA_HH__
 #define __XDELTA_HH__
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
+
 #include "vocab.hh"
 
 void
@@ -46,10 +47,10 @@ struct delta_applicator
   virtual void insert(std::string const & str) = 0;
 };
 
-boost::shared_ptr<delta_applicator> new_simple_applicator();
-boost::shared_ptr<delta_applicator> new_piecewise_applicator();
+std::shared_ptr<delta_applicator> new_simple_applicator();
+std::shared_ptr<delta_applicator> new_piecewise_applicator();
 
-void apply_delta(boost::shared_ptr<delta_applicator> da,
+void apply_delta(std::shared_ptr<delta_applicator> da,
                  std::string const & delta);
 
 u64 measure_delta_target_size(std::string const & delta);
