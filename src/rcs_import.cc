@@ -8,7 +8,9 @@
 // PURPOSE.
 
 #include "base.hh"
+
 #include <algorithm>
+#include <memory>
 #include <iterator>
 #include <list>
 #include <map>
@@ -19,8 +21,6 @@
 #include "vector.hh"
 #include <cstring> // memset
 
-#include <memory>
-#include <boost/scoped_ptr.hpp>
 #include <boost/tokenizer.hpp>
 
 #include "cert.hh"
@@ -56,7 +56,7 @@ using std::string;
 using std::to_string;
 using std::vector;
 
-using boost::scoped_ptr;
+using std::unique_ptr;
 using std::shared_ptr;
 
 // cvs history recording stuff
@@ -567,8 +567,8 @@ process_branch(database & db,
                cvs_history & cvs)
 {
   string curr_version = begin_version;
-  scoped_ptr< vector< piece > > next_lines(new vector<piece>);
-  scoped_ptr< vector< piece > > curr_lines(new vector<piece>
+  unique_ptr< vector< piece > > next_lines(new vector<piece>);
+  unique_ptr< vector< piece > > curr_lines(new vector<piece>
                                            (begin_lines.begin(),
                                             begin_lines.end()));
   data curr_data(begin_data), next_data;

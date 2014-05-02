@@ -10,8 +10,8 @@
 #ifndef __SSH_AGENT_H__
 #define __SSH_AGENT_H__
 
+#include <memory>
 #include "vector.hh"
-#include <boost/scoped_ptr.hpp>
 
 struct keypair;
 
@@ -37,7 +37,7 @@ struct ssh_agent
   bool connected();
 
 private:
-  boost::scoped_ptr<ssh_agent_state> s;
+  const std::unique_ptr<ssh_agent_state> s;
 };
 
 #endif

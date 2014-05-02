@@ -227,7 +227,7 @@ class database_impl
 {
   friend class database;
 
-  // for scoped_ptr's sake
+  // for unique_ptr's sake
 public:
   explicit database_impl(system_path const & f, db_type t,
                          system_path const & roster_cache_performance_log);
