@@ -20,6 +20,7 @@
 #include <exception>
 
 using std::string;
+using std::to_string;
 using std::exception;
 using boost::lexical_cast;
 
@@ -102,7 +103,7 @@ workspace::write_format()
     }
   else
     {
-      data f_dat(lexical_cast<string>(current_workspace_format) + "\n",
+      data f_dat(to_string(current_workspace_format) + "\n",
                  origin::workspace);
       write_data(f_path, f_dat);
     }

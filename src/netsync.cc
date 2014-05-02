@@ -32,7 +32,6 @@
 using std::deque;
 using std::string;
 
-using boost::lexical_cast;
 using boost::shared_ptr;
 
 deque<server_initiated_sync_request> server_initiated_sync_requests;

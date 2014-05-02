@@ -21,7 +21,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-#include "lexical_cast.hh"
 #include <boost/tokenizer.hpp>
 
 #include "cert.hh"
@@ -54,11 +53,11 @@ using std::sscanf;
 using std::stable_sort;
 using std::stack;
 using std::string;
+using std::to_string;
 using std::vector;
 
 using boost::scoped_ptr;
 using boost::shared_ptr;
-using boost::lexical_cast;
 
 // cvs history recording stuff
 
@@ -415,9 +414,9 @@ process_one_hunk(vector< piece > const & source,
     {
       throw oops("out_of_range while processing " + directive
                  + " with source.size() == "
-                 + lexical_cast<string>(source.size())
+                 + to_string(source.size())
                  + " and cursor == "
-                 + lexical_cast<string>(cursor));
+                 + to_string(cursor));
     }
 }
 

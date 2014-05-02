@@ -22,6 +22,7 @@ using std::ostringstream;
 using std::pair;
 using std::set;
 using std::string;
+using std::to_string;
 using std::vector;
 
 using boost::shared_ptr;
@@ -186,7 +187,7 @@ bool automate_session::do_work(transaction_guard & guard,
           write_automate_packet_cmd('e', err.second);
         if (!oss.str().empty())
           write_automate_packet_cmd('m', oss.str());
-        write_automate_packet_cmd('l', lexical_cast<string>(err.first));
+        write_automate_packet_cmd('l', to_string(err.first));
 
         global_sanity.set_out_of_band_handler();
 

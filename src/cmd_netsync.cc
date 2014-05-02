@@ -41,6 +41,7 @@ using std::ofstream;
 using std::map;
 using std::set;
 using std::string;
+using std::to_string;
 using std::vector;
 
 using boost::shared_ptr;
@@ -371,11 +372,11 @@ print_dryrun_info_auto(protocol_role role,
         }
 
       st.push_str_pair(syms::receive_revision,
-                       boost::lexical_cast<string>(counts->revs_in.min_count));
+                       to_string(counts->revs_in.min_count));
       st.push_str_pair(syms::receive_cert,
-                       boost::lexical_cast<string>(counts->certs_in.min_count));
+                       to_string(counts->certs_in.min_count));
       st.push_str_pair(syms::receive_key,
-                       boost::lexical_cast<string>(counts->keys_in.min_count));
+                       to_string(counts->keys_in.min_count));
     }
 
   if (role != sink_role)
@@ -383,11 +384,11 @@ print_dryrun_info_auto(protocol_role role,
       // source or sink_and_source; print source info
 
       st.push_str_pair(syms::send_revision,
-                       boost::lexical_cast<string>(counts->revs_out.items.size()));
+                       to_string(counts->revs_out.items.size()));
       st.push_str_pair(syms::send_cert,
-                       boost::lexical_cast<string>(counts->certs_out.min_count));
+                       to_string(counts->certs_out.min_count));
       st.push_str_pair(syms::send_key,
-                       boost::lexical_cast<string>(counts->keys_out.min_count));
+                       to_string(counts->keys_out.min_count));
 
       // count revisions per branch
       map<branch_name, int> branch_counts;
@@ -405,7 +406,7 @@ print_dryrun_info_auto(protocol_role role,
       for (map<branch_name, int>::iterator i = branch_counts.begin();
            i != branch_counts.end(); ++i)
         {
-          st.push_str_triple(syms::send_branch, i->first(), boost::lexical_cast<string>(i->second));
+          st.push_str_triple(syms::send_branch, i->first(), to_string(i->second));
         }
     }
 
