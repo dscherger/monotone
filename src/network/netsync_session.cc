@@ -85,12 +85,12 @@ netsync_session::netsync_session(session * owner,
   project(project),
   keys(keys),
   lua(lua),
-  byte_in_ticker(NULL),
-  byte_out_ticker(NULL),
-  cert_in_ticker(NULL),
-  cert_out_ticker(NULL),
-  revision_in_ticker(NULL),
-  revision_out_ticker(NULL),
+  byte_in_ticker(),
+  byte_out_ticker(),
+  cert_in_ticker(),
+  cert_out_ticker(),
+  revision_in_ticker(),
+  revision_out_ticker(),
   bytes_in(0), bytes_out(0),
   certs_in(0), certs_out(0),
   revs_in(0), revs_out(0),
@@ -528,13 +528,13 @@ netsync_session::note_item_arrived(netcmd_item_type ty, id const & ident)
     {
     case cert_item:
       decrement_if_nonzero(ty, cert_refiner.items_to_receive);
-      if (cert_in_ticker.get() != NULL)
+      if (!!cert_in_ticker)
         ++(*cert_in_ticker);
       ++certs_in;
       break;
     case revision_item:
       decrement_if_nonzero(ty, rev_refiner.items_to_receive);
-      if (revision_in_ticker.get() != NULL)
+      if (!!revision_in_ticker)
         ++(*revision_in_ticker);
       ++revs_in;
       break;
@@ -560,13 +560,13 @@ netsync_session::note_item_sent(netcmd_item_type ty, id const & ident)
     {
     case cert_item:
       cert_refiner.items_to_send.erase(ident);
-      if (cert_out_ticker.get() != NULL)
+      if (!!cert_out_ticker)
         ++(*cert_out_ticker);
       ++certs_out;
       break;
     case revision_item:
       rev_refiner.items_to_send.erase(ident);
-      if (revision_out_ticker.get() != NULL)
+      if (!!revision_out_ticker)
         ++(*revision_out_ticker);
       ++revs_out;
       break;
@@ -600,7 +600,7 @@ netsync_session::do_work(transaction_guard & guard,
 void
 netsync_session::note_bytes_in(int count)
 {
-  if (byte_in_ticker.get() != NULL)
+  if (!!byte_in_ticker)
     (*byte_in_ticker) += count;
   bytes_in += count;
 }
@@ -608,7 +608,7 @@ netsync_session::note_bytes_in(int count)
 void
 netsync_session::note_bytes_out(int count)
 {
-  if (byte_out_ticker.get() != NULL)
+  if (!!byte_out_ticker)
     (*byte_out_ticker) += count;
   bytes_out += count;
 }
