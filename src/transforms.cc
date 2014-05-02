@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -120,7 +121,7 @@ SPECIALIZE_XFORM(Base64_Encoder,);
 SPECIALIZE_XFORM(Base64_Decoder, Botan::IGNORE_WS);
 //SPECIALIZE_XFORM(Hex_Encoder, Hex_Encoder::Lowercase);
 template<> string xform<Botan::Hex_Encoder>(string const & in,
-                                            origin::type made_from)
+                                            origin::type /* made_from */ )
 {
   string out;
   out.reserve(in.size()<<1);

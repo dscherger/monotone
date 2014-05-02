@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -80,7 +81,7 @@ static bool
 acceptable_descendent(lua_hooks & lua,
                       project_t & project,
                       branch_name const & branch,
-                      revision_id const & base,
+                      revision_id const & /* base */ ,
                       map<key_id, bool> & base_results,
                       revision_id const & target)
 {

@@ -1,4 +1,4 @@
-// Copyright (C) 2008 - 2010, 2012, 2013 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008 - 2010, 2012 - 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -764,6 +764,8 @@ CMD(show_first, "show_first", "", CMD_REF(conflicts),
     "",
     options::opts::conflicts_opts)
 {
+  (void)execid;
+
   database db(app);
   conflicts_t conflicts (db, app.opts.conflicts_file);
 
@@ -777,6 +779,8 @@ CMD(show_remaining, "show_remaining", "", CMD_REF(conflicts),
     "",
     options::opts::conflicts_opts)
 {
+  (void)execid;
+
   database db(app);
   conflicts_t conflicts (db, app.opts.conflicts_file);
 
@@ -790,6 +794,8 @@ CMD(resolve_first, "resolve_first", "", CMD_REF(conflicts),
     "Use 'mtn conflicts show_first' to see possible resolutions.",
     options::opts::conflicts_opts)
 {
+  (void)execid;
+
   database db(app);
   conflicts_t conflicts (db, app.opts.conflicts_file);
 
@@ -804,6 +810,8 @@ CMD(resolve_first_left, "resolve_first_left", "", CMD_REF(conflicts),
     "",
     options::opts::conflicts_opts)
 {
+  (void)execid;
+
   database db(app);
   conflicts_t conflicts (db, app.opts.conflicts_file);
 
@@ -818,6 +826,8 @@ CMD(resolve_first_right, "resolve_first_right", "", CMD_REF(conflicts),
     "",
     options::opts::conflicts_opts)
 {
+  (void)execid;
+
   database db(app);
   conflicts_t conflicts (db, app.opts.conflicts_file);
 
@@ -832,6 +842,10 @@ CMD(clean, "clean", "", CMD_REF(conflicts),
     "",
     options::opts::none)
 {
+  (void)app;
+  (void)execid;
+  (void)args;
+
   if (path_exists(bookkeeping_conflicts_file))
     delete_file(bookkeeping_conflicts_file);
 
