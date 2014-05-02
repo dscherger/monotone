@@ -41,13 +41,7 @@
 template <typename T>
 void dump(T const &, std::string &)
 {
-  // the compiler will evaluate this somewhat odd construct (and issue an
-  // error) if and only if this base template is instantiated.  we do not
-  // use BOOST_STATIC_ASSERT mainly to avoid dragging it in everywhere;
-  // also we get better diagnostics this way (the error tells you what is
-  // wrong, not just that there's an assertion failure).
-  enum dummy { d = (sizeof(struct dump_must_be_specialized_for_this_type)
-                    == sizeof(T)) };
+  static_assert(sizeof(T) == 0, "missing specialization for dump");
 }
 
 template <> void dump(std::string const & obj, std::string & out);
