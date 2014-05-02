@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2007 Zack Weinberg <zackw@panix.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -289,7 +290,7 @@ pcre_compile_error(int errcode, char const * err,
 
 static void
 pcre_study_error(char const * err, char const * pattern,
-                 origin::type caused_by)
+                 origin::type /* caused_by FIXME-UNUSED */)
 {
   // This interface doesn't even *have* error codes.
   // If the error is not out-of-memory, it's a bug.
@@ -301,7 +302,9 @@ pcre_study_error(char const * err, char const * pattern,
 }
 
 static void
-pcre_exec_error(int errcode, origin::type regex_from, origin::type subject_from)
+pcre_exec_error(int errcode,
+                origin::type /* regex_from FIXME-UNUSED */ ,
+                origin::type subject_from)
 {
   // This interface provides error codes with symbolic constants for them!
   // But it doesn't provide string versions of them.  As most of them

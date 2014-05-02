@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2010, 2012 - 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-//               2008, 2010, 2012, 2013 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -239,8 +239,8 @@ void
 content_merge_workspace_adaptor::record_merge(file_id const & left_id,
                                               file_id const & right_id,
                                               file_id const & merged_id,
-                                              file_data const & left_data,
-                                              file_data const & right_data,
+                                              file_data const & /* left_data FIXME-UNUSED */ ,
+                                              file_data const & /* right_data FIXME-UNUSED */ ,
                                               file_data const & merged_data)
 {
   L(FL("temporarily recording merge of %s <-> %s into %s")
@@ -268,7 +268,7 @@ content_merge_workspace_adaptor::record_file(file_id const & id,
 void
 content_merge_workspace_adaptor::record_file(file_id const & parent_id,
                                              file_id const & merged_id,
-                                             file_data const & parent_data,
+                                             file_data const & /* parent_data FIXME-UNUSED */ ,
                                              file_data const & merged_data)
 {
   L(FL("temporarily recording file %s -> %s")
@@ -350,36 +350,36 @@ content_merge_workspace_adaptor::get_version(file_id const & ident,
 ///////////////////////////////////////////////////////////////////////////
 
 void
-content_merge_checkout_adaptor::record_merge(file_id const & left_ident,
-                                             file_id const & right_ident,
-                                             file_id const & merged_ident,
-                                             file_data const & left_data,
-                                             file_data const & right_data,
-                                             file_data const & merged_data)
+content_merge_checkout_adaptor::record_merge(file_id const & /* left_ident */ ,
+                                             file_id const & /* right_ident */ ,
+                                             file_id const & /* merged_ident */ ,
+                                             file_data const & /* left_data */ ,
+                                             file_data const & /* right_data */ ,
+                                             file_data const & /* merged_data */ )
 {
   I(false);
 }
 
 void
-content_merge_checkout_adaptor::record_file(file_id const & parent_ident,
-                                            file_id const & merged_ident,
-                                            file_data const & parent_data,
-                                            file_data const & merged_data)
+content_merge_checkout_adaptor::record_file(file_id const & /* parent_ident */ ,
+                                            file_id const & /* merged_ident */ ,
+                                            file_data const & /* parent_data */ ,
+                                            file_data const & /* merged_data */ )
 {
   I(false);
 }
 
 void
-content_merge_checkout_adaptor::record_file(file_id const & ident,
-                                            file_data const & data)
+content_merge_checkout_adaptor::record_file(file_id const & /* ident */ ,
+                                            file_data const & /* data */ )
 {
   I(false);
 }
 
 void
-content_merge_checkout_adaptor::get_ancestral_roster(node_id nid,
-                                                     revision_id & rid,
-                                                     shared_ptr<roster_t const> & anc)
+content_merge_checkout_adaptor::get_ancestral_roster(node_id /* nid */ ,
+                                                     revision_id & /* rid */ ,
+                                                     shared_ptr<roster_t const> & /* anc */ )
 {
   I(false);
 }
@@ -396,43 +396,43 @@ content_merge_checkout_adaptor::get_version(file_id const & ident,
 ///////////////////////////////////////////////////////////////////////////
 
 void
-content_merge_empty_adaptor::record_merge(file_id const & left_ident,
-                                          file_id const & right_ident,
-                                          file_id const & merged_ident,
-                                          file_data const & left_data,
-                                          file_data const & right_data,
-                                          file_data const & merged_data)
+content_merge_empty_adaptor::record_merge(file_id const & /* left_ident */ ,
+                                          file_id const & /* right_ident */ ,
+                                          file_id const & /* merged_ident */ ,
+                                          file_data const & /* left_data */ ,
+                                          file_data const & /* right_data */ ,
+                                          file_data const & /* merged_data */ )
 {
   I(false);
 }
 
 void
-content_merge_empty_adaptor::record_file(file_id const & ident,
-                                         file_data const & data)
+content_merge_empty_adaptor::record_file(file_id const & /* ident */ ,
+                                         file_data const & /* data */ )
 {
   I(false);
 }
 
 void
-content_merge_empty_adaptor::record_file(file_id const & parent_ident,
-                                         file_id const & merged_ident,
-                                         file_data const & parent_data,
-                                         file_data const & merged_data)
+content_merge_empty_adaptor::record_file(file_id const & /* parent_ident */ ,
+                                         file_id const & /* merged_ident */ ,
+                                         file_data const & /* parent_data */ ,
+                                         file_data const & /* merged_data */ )
 {
   I(false);
 }
 
 void
-content_merge_empty_adaptor::get_ancestral_roster(node_id nid,
-                                                  revision_id & rid,
-                                                  shared_ptr<roster_t const> & anc)
+content_merge_empty_adaptor::get_ancestral_roster(node_id /* nid */ ,
+                                                  revision_id & /* rid */ ,
+                                                  shared_ptr<roster_t const> & /* anc */ )
 {
   I(false);
 }
 
 void
-content_merge_empty_adaptor::get_version(file_id const & ident,
-                                         file_data & dat) const
+content_merge_empty_adaptor::get_version(file_id const & /* ident */ ,
+                                         file_data & /* dat */ ) const
 {
   I(false);
 }

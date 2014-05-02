@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -348,7 +349,8 @@ struct jaffer_edit_calculator
     return est_r + est_c;
   }
 
-  static long mid_split(long m, long n,
+  static long mid_split(long /* m FIXME-UNUSED */,
+                        long n,
                         cost_vec const & rr,
                         cost_vec const & cc,
                         long cost)
@@ -370,7 +372,7 @@ struct jaffer_edit_calculator
 
 
   static void order_edits(edit_vec const & edits,
-                          long sign,
+                          long /* sign FIXME-UNUSED */ ,
                           edit_vec & nedits)
   {
     nedits.clear();
@@ -615,7 +617,7 @@ template <typename A,
 void _edit_script(A begin_a, A end_a,
                   B begin_b, B end_b,
                   vector<long, QA(long)> & edits_out,
-                  LCS ignored_out)
+                  LCS /* ignored_out FIXME-UNUSED */ )
 {
   typedef jaffer_edit_calculator<A,B,LCS> calc_t;
   long len_a = end_a - begin_a;

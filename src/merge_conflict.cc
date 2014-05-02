@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2009, 2012, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005, 2012 Nathaniel Smith <njs@pobox.com>
-//               2008, 2009, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -1720,8 +1720,8 @@ static char const * const conflict_extra = N_("extra chars at end of conflict");
 static void
 read_missing_root_conflicts(basic_io::parser & pars,
                             bool & missing_root_conflict,
-                            roster_t const & left_roster,
-                            roster_t const & right_roster)
+                            roster_t const & /* left_roster FIXME-UNUSED */ ,
+                            roster_t const & /* right_roster FIXME-UNUSED */ )
 {
   // There can be only one of these
   if (pars.tok.in.lookahead != EOF && pars.symp(syms::missing_root))
@@ -2388,7 +2388,7 @@ static void
 read_attribute_conflict(basic_io::parser & pars,
                         attribute_conflict & conflict,
                         roster_t const & left_roster,
-                        roster_t const & right_roster)
+                        roster_t const & /* right_roster FIXME-UNUSED */ )
 {
   string tmp;
 
@@ -2655,7 +2655,7 @@ void
 roster_merge_result::write_conflict_file(database & db,
                                          lua_hooks & lua,
                                          bookkeeping_path const & file_name,
-                                         revision_id const & ancestor_rid,
+                                         revision_id const & /* ancestor_rid FIXME-UNUSED*/ ,
                                          revision_id const & left_rid,
                                          revision_id const & right_rid,
                                          boost::shared_ptr<roster_t> left_roster,
@@ -2790,7 +2790,7 @@ void
 roster_merge_result::resolve_orphaned_node_conflicts(lua_hooks & lua,
                                                       roster_t const & left_roster,
                                                       roster_t const & right_roster,
-                                                      content_merge_adaptor & adaptor)
+                                                      content_merge_adaptor & /* adaptor FIXME-UNUSED */ )
 {
   MM(left_roster);
   MM(right_roster);

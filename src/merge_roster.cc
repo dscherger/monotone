@@ -1,4 +1,4 @@
-// Copyright (C) 2008, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008, 2010, 2012, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 //               2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -358,7 +358,7 @@ namespace
   insert_if_unborn(node_t const & n,
                    marking_map const & markings,
                    set<revision_id> const & uncommon_ancestors,
-                   roster_t const & parent_roster,
+                   roster_t const & /* parent_roster FIXME-UNUSED */ ,
                    side_t const present_in,
                    roster_merge_result & result)
   {

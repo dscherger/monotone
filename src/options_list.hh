@@ -1,5 +1,5 @@
+// Copyright (C) 2008-2010, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
-//               2008-2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -123,7 +123,7 @@ template<typename T>
 void set_simple_option(std::set<T> & t, std::string const & arg)
 { t.insert(T(arg, origin::user)); }
 template<>
-void set_simple_option(bool & t, std::string const & arg)
+void set_simple_option(bool & t, std::string const & /* arg */ )
 { t = true; }
 void set_simple_option(u8 & t, std::string const & arg)
 {
@@ -206,6 +206,7 @@ OPTION(globals, xargs, true, "xargs,@",
        gettext_noop("insert command line arguments taken from the given file"))
 #ifdef option_bodies
 {
+  (void)arg;
 }
 #endif
 
@@ -337,6 +338,7 @@ OPTION(diff_options, diff_context, false, "context",
         gettext_noop("use context diff format"))
 #ifdef option_bodies
 {
+  (void)arg;
   diff_format = context_diff;
 }
 #endif
@@ -344,6 +346,7 @@ OPTION(diff_options, diff_external, false, "external",
         gettext_noop("use external diff hook for generating diffs"))
 #ifdef option_bodies
 {
+  (void)arg;
   diff_format = external_diff;
 }
 #endif
@@ -351,6 +354,7 @@ OPTION(diff_options, diff_unified, false, "unified",
        gettext_noop("use unified diff format"))
 #ifdef option_bodies
 {
+  (void)arg;
   diff_format = unified_diff;
 }
 #endif
@@ -471,13 +475,19 @@ DEPRECATE(old_norc, gettext_noop("please use '--no-standard-rcfiles' instead"), 
 OPTION(globals, old_norc, false, "norc",
        gettext_noop("old version of '--no-standard-rcfiles'"))
 #ifdef option_bodies
-{ norc = true; }
+{
+  (void)arg;
+  norc = true;
+}
 #endif
 DEPRECATE(old_nostd, gettext_noop("please use '--no-builtin-rcfile' instead"), 1.0, 2.0)
 OPTION(globals, old_nostd, false, "nostd",
        gettext_noop("old version of '--no-builtin-rcfile'"))
 #ifdef option_bodies
-{ nostd = true; }
+{
+  (void)arg;
+  nostd = true;
+}
 #endif
 
 GROUPED_SIMPLE_OPTION(globals, extra_rcfiles, "rcfile/clear-rcfiles", args_vector,
@@ -494,6 +504,7 @@ OPTION(verbosity, quiet, false, "quiet,q",
      gettext_noop("decrease verbosity (undo previous '-v', then disable informational output, then disable warnings)"))
 #ifdef option_bodies
 {
+  (void)arg;
   --verbosity;
   if (verbosity < -2)
     verbosity = -2;
@@ -503,6 +514,7 @@ OPTION(verbosity, verbose, false, "verbose,v",
        gettext_noop("increase verbosity (undo previous '-q', and then enable debug output)"))
 #ifdef option_bodies
 {
+  (void)arg;
   ++verbosity;
   if (verbosity > 1)
     verbosity = 1;
@@ -516,6 +528,7 @@ OPTION(globals, debug, false, "debug",
        gettext_noop("print debug log to stderr while running"))
 #ifdef option_bodies
 {
+  (void)arg;
   verbosity = 1;
 }
 #endif
@@ -525,6 +538,7 @@ OPTION(verbosity, reallyquiet, false, "reallyquiet",
      gettext_noop("suppress warning, verbose, informational and progress messages"))
 #ifdef option_bodies
 {
+  (void)arg;
   verbosity = -2;
 }
 #endif

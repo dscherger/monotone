@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -752,7 +753,7 @@ cvs_history::cvs_history() :
 
 void
 cvs_history::set_filename(string const & file,
-                          file_id const & ident)
+                          file_id const & /* ident FIXME-UNUSED */ )
 {
   L(FL("importing file '%s'") % file);
   I(file.size() > 2);

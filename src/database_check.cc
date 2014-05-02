@@ -1,4 +1,4 @@
-// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2010, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Derek Scherger <derek@echologic.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -196,7 +196,7 @@ check_files(database & db, map<file_id, checked_file> & checked_files)
 static void
 check_rosters_manifest(database & db,
                        map<revision_id, checked_roster> & checked_rosters,
-                       map<revision_id, checked_revision> & checked_revisions,
+                       map<revision_id, checked_revision> & /* checked_revisions FIXME-UNUSED */,
                        set<manifest_id> & found_manifests,
                        map<file_id, checked_file> & checked_files)
 {
