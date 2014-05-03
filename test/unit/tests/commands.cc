@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //               2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
 //
@@ -36,22 +37,22 @@ CMD_GROUP(__root__, "__root__", "", NULL, "", "");
 CMD_GROUP(top, "top", "", CMD_REF(__root__),
           "", "");
 CMD(test, "test", "", CMD_REF(top),
-    "", "", "", options::opts::none) {}
+    "", "", "", options::opts::none) {(void)app; (void)execid; (void)args;}
 CMD(test1, "test1", "alias1", CMD_REF(top),
-    "", "", "", options::opts::none) {}
+    "", "", "", options::opts::none) {(void)app; (void)execid; (void)args;}
 CMD(test2, "test2", "alias2", CMD_REF(top),
-    "", "", "", options::opts::none) {}
+    "", "", "", options::opts::none) {(void)app; (void)execid; (void)args;}
 CMD_HIDDEN(test3, "test3", "", CMD_REF(top),
-           "", "", "", options::opts::none) {}
+           "", "", "", options::opts::none) {(void)app; (void)execid; (void)args;}
 
 CMD_GROUP(testg, "testg", "aliasg", CMD_REF(top),
           "", "");
 CMD(testg1, "testg1", "", CMD_REF(testg),
-    "", "", "", options::opts::none) {}
+    "", "", "", options::opts::none) {(void)app; (void)execid; (void)args;}
 CMD(testg2, "testg2", "", CMD_REF(testg),
-    "", "", "", options::opts::none) {}
+    "", "", "", options::opts::none) {(void)app; (void)execid; (void)args;}
 CMD_HIDDEN(testg3, "testg3", "", CMD_REF(testg),
-           "", "", "", options::opts::none) {}
+           "", "", "", options::opts::none) {(void)app; (void)execid; (void)args;}
 
 static args_vector
 mkargs(const char *words)
