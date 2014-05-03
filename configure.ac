@@ -164,9 +164,4 @@ AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [#include <dirent.h>])
 AC_CHECK_FUNCS([__cxa_current_exception_type __cxa_demangle dirfd \
         fstatat mkdtemp mmap putenv setenv strptime unsetenv])
 
-# Work around an autoconf bug rendering abs_builddir useless. The bug
-# results in VPATH builds being unable to locate check_net, thus
-# skipping netsync tests. So this is not too crucial.
-abs_builddir=`pwd`
-
 AC_OUTPUT

@@ -4,6 +4,10 @@ check({"bash", "--version"}, 0, true)
 skip_if(qgrep("bash[, ]*version 3", "stdout"))
 
 function expect(test)
+   expect_if(false, test)
+end
+
+function expect_if(cond, test)
    if monotone_path == nil then
       monotone_path = os.getenv("mtn")
       if monotone_path == nil then
@@ -12,19 +16,21 @@ function expect(test)
    end
    check(get(test..".exp"), 0, false, false)
    if existsonpath("expect") then
-      check({"expect",
-	     "-c", "set mtn \""..cmd_as_str(mtn()).."\"",
+      mtn_cmd = table.remove(mtn(), 1)
+      xfail_if(cond, {"expect",
+	     "-c", "set mtn_cmd \""..mtn_cmd.."\"",
 	     "-c", "set initial_dir \""..initial_dir.."\"",
 	     "-c", "set srcdir \""..srcdir.."\"",
 	     "-c", "source library.exp",
 	     "-f", test..".exp"}, 0, true, false)
-      check(grep("<<success>>", "stdout"), 0, false, false)
+      xfail_if(cond, grep("<<success>>", "stdout"), 0, false, false)
    else
       check(false)
    end
 end
 
 get("library.exp")
+get("bashrc")
 
 mtn_setup()
 
@@ -40,7 +46,8 @@ check(mtn("update","-r","h:prop-br1"), 0, false, false)
 writefile("prop-test", "zoot")
 commit("prop-br1")
 
-expect("complete_propagate")
+-- This one doesn't properly expand when spaces in paths are involved.
+expect_if(string.find(mtn()[1], " ") ~= nil, "complete_propagate")
 
 -- complete_commit
 addfile("commit-test1", "foo")
