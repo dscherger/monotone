@@ -200,7 +200,7 @@ void Netxx::ServerBase::get_socket_list (Socket *&sockets, size_type &size)
 Netxx::Socket* Netxx::ServerBase::get_readable_socket (void)
 {
     Probe::result_type rt = probe_.ready(timeout_, Probe::ready_read);
-    if (rt.first == -1) return 0;
+    if (rt.first == invalid_socket) return 0;
     return sockets_map_[rt.first];
 }
 //####################################################################

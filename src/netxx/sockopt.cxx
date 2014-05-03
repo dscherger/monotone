@@ -61,7 +61,7 @@ struct Netxx::SockOpt::pimpl
     bool win_blocking_;
 };
 //####################################################################
-Netxx::SockOpt::SockOpt (int socketfd, bool revert)
+Netxx::SockOpt::SockOpt (socket_type socketfd, bool revert)
     : socket_(socketfd), revert_(revert)
 {
     pimpl_ = new pimpl(socket_);

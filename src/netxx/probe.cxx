@@ -113,7 +113,7 @@ std::pair<Netxx::socket_type, Netxx::Probe::ready_type> Netxx::Probe::ready (con
 
     if (rt != ready_none && !pimpl_->ready_queue_.empty()) {
         result = find_ready_match(pimpl_->ready_queue_, rt);
-        if (result.first != -1) return result;
+        if (result.first != invalid_socket) return result;
         none_match = true;
     }
 
