@@ -1,5 +1,5 @@
 // Copyright (C) 2007, 2008 Zack Weinberg <zackw@panix.com>
-//                          Markus Wanner <markus@bluegap.ch>
+//               2014 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -203,6 +203,15 @@ UNIT_TEST(roundtrip_localtimes)
   // this is the valid range of dates supported by 32 bit time_t
   date_t start("1901-12-13T20:45:52");
   date_t end("2038-01-19T03:14:07");
+  bool full_64bit_support = true;
+
+#ifndef HAVE_MKTIME_64BIT
+  // On Mac OS X, mktime returns -1 for dates that would need a negative
+  // value wider than 32-bit. We check for that during configuration and
+  // restrict us to a lower boundary of year 1902 and onwards in that case.
+  start = date_t("1902-01-01T00:00:00");
+  full_64bit_support = false;
+#endif
 
   OK(start);
   OK(end);
@@ -218,23 +227,28 @@ UNIT_TEST(roundtrip_localtimes)
   // however strptime does not like the timezone name when %c is used in
   // other locales. with LANG=en_CA.UTF-8 this test fails.
 
-  if (sizeof(time_t) <= 4)
+  // Check the lower boundary at around year 1901.
+  if (sizeof(time_t) <= 4 || !full_64bit_support)
     {
       UNIT_TEST_CHECK_THROW(start.as_formatted_localtime("%c"),
                             recoverable_failure);
       UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("Fri Dec 13 20:45:51 1901", "%c"),
                             recoverable_failure);
+    }
+  else
+    OK(start);
 
+  // Check the upper boundary at year 2038.
+  if (sizeof(time_t) <= 4)
+    {
       UNIT_TEST_CHECK_THROW(end.as_formatted_localtime("%c"),
                             recoverable_failure);
       UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("Tue Jan 19 03:14:08 2038", "%c"),
                             recoverable_failure);
     }
   else
-    {
-      OK(start);
-      OK(end);
-    }
+    OK(end);
+
 
   // this date represents 1 second before the unix epoch which has a time_t
   // value of -1. conveniently, mktime returns -1 to indicate that it was
