@@ -12,13 +12,12 @@
 #define __AUTOMATE_STDIO_HELPERS__
 
 #include <utility>
-
-#include <boost/function.hpp>
+#include <functional>
 
 #include "commands.hh"
 
 // these are in a class instead of stand-alone just because there's a
-// friend declaration in cmd.hh, which shouldn't have to know about boost::function
+// friend declaration in cmd.hh, which shouldn't have to know about std::function
 class automate_stdio_helpers
 {
 public:
@@ -38,8 +37,8 @@ public:
                              std::vector<std::pair<std::string,std::string> >
                              const & params,
                              std::ostream & os,
-                             boost::function<void()> init_fn,
-                             boost::function<void(commands::command_id const &)> pre_exec_fn);
+                             std::function<void()> init_fn,
+                             std::function<void(commands::command_id const &)> pre_exec_fn);
 };
 #endif
 // Local Variables:

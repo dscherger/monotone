@@ -14,8 +14,6 @@
 #include <ostream>
 #include <cstdio>
 
-#include "boost/current_function.hpp"
-
 #include "numeric_vocab.hh"
 #include "origin_type.hh"
 
@@ -464,7 +462,7 @@ Musing<T>::gasp(std::string & out) const
 //
 // FIXME: no idea whether or not this works on anything other than g++ or
 // clang, but using decltype sounds promising.
-#define real_M(obj, line) Musing<decltype(obj)> this_is_a_musing_fnord_object_ ## line (obj, #obj, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
+#define real_M(obj, line) Musing<decltype(obj)> this_is_a_musing_fnord_object_ ## line (obj, #obj, __FILE__, __LINE__, __func__)
 #define fake_M(obj, line) real_M(obj, line)
 #define MM(obj) fake_M(obj, __LINE__)
 
@@ -475,7 +473,7 @@ Musing<T>::gasp(std::string & out) const
 // are sanity::initialize.)
 #define PERM_MM(obj) \
   new Musing<decltype(obj)>(*(new remove_reference<decltype(obj)>::type(obj)), \
-                            #obj, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
+                            #obj, __FILE__, __LINE__, __func__)
 
 // debugging utility to dump out vars like MM but without requiring a crash
 
@@ -488,7 +486,7 @@ dump(T const & t, char const *var,
   global_sanity.print_var(value, var, file, line, func);
 };
 
-#define DUMP(foo) dump(foo, #foo, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
+#define DUMP(foo) dump(foo, #foo, __FILE__, __LINE__, __func__)
 
 #endif // __SANITY_HH__
 

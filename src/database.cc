@@ -22,10 +22,8 @@
 #include <unordered_map>
 #include "vector.hh"
 #include <string>
-
-#include <boost/bind.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
+#include <tuple>
+#include <functional>
 
 #include <botan/botan.h>
 #include <botan/rsa.h>
@@ -97,8 +95,9 @@ using std::unordered_map;
 using std::shared_ptr;
 using std::dynamic_pointer_cast;
 using boost::lexical_cast;
-using boost::get;
-using boost::tuple;
+using std::get;
+using std::tuple;
+using std::bind;
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,5)
 using Botan::PK_Encryptor_EME;
@@ -117,6 +116,8 @@ int const any_cols = -1;
 
 namespace
 {
+  using namespace std::placeholders;
+
   struct query_param
   {
     enum arg_type { text, blob, int64 };
@@ -4194,8 +4195,8 @@ void
 database::erase_bogus_certs(project_t const & project, vector<cert> & certs)
 {
   erase_bogus_certs_internal(certs, *this,
-                             boost::bind(&check_revision_cert_trust,
-                                         &project, &this->lua, _1, _2, _3, _4));
+                             bind(&check_revision_cert_trust,
+                                  &project, &this->lua, _1, _2, _3, _4));
 }
 void
 database::erase_bogus_certs(vector<cert> & certs,
@@ -4213,8 +4214,8 @@ database::get_manifest_certs(manifest_id const & id, std::vector<cert> & certs)
 {
   imp->get_oldstyle_certs(id.inner(), certs, "manifest_certs");
   erase_bogus_certs_internal(certs, *this,
-                             boost::bind(&check_manifest_cert_trust,
-                                         this, &this->lua, _1, _2, _3, _4));
+                             bind(&check_manifest_cert_trust,
+                                  this, &this->lua, _1, _2, _3, _4));
 }
 
 void
@@ -4222,8 +4223,8 @@ database::get_manifest_certs(cert_name const & name, std::vector<cert> & certs)
 {
   imp->get_oldstyle_certs(name, certs, "manifest_certs");
   erase_bogus_certs_internal(certs, *this,
-                             boost::bind(&check_manifest_cert_trust,
-                                         this, &this->lua, _1, _2, _3, _4));
+                             bind(&check_manifest_cert_trust,
+                                  this, &this->lua, _1, _2, _3, _4));
 }
 
 // completions

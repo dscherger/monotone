@@ -13,11 +13,8 @@
 #include <iterator>
 #include <sstream>
 #include <unistd.h>
+#include <functional>
 #include "vector.hh"
-
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/tuple/tuple.hpp>
 
 #include "app_state.hh"
 #include "automate_stdio_helpers.hh"
@@ -2512,8 +2509,8 @@ automate_stdio_shared_body(app_state & app,
                            std::vector<std::pair<std::string,std::string> >
                            const & params,
                            std::ostream & os,
-                           boost::function<void()> init_fn,
-                           boost::function<void(commands::command_id const &)> pre_exec_fn)
+                           std::function<void()> init_fn,
+                           std::function<void(commands::command_id const &)> pre_exec_fn)
 {
   using commands::command_id;
   using commands::command;

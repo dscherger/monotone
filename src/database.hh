@@ -14,7 +14,7 @@
 #include <memory>
 #include "vector.hh"
 #include <set>
-#include <boost/function.hpp>
+#include <functional>
 
 #include "rev_types.hh"
 #include "cert.hh"
@@ -351,10 +351,10 @@ public:
 
   void get_revision_cert(id const & hash, cert & c);
 
-  typedef boost::function<bool(std::set<key_id> const &,
-                               id const &,
-                               cert_name const &,
-                               cert_value const &)> cert_trust_checker;
+  typedef std::function<bool(std::set<key_id> const &,
+                             id const &,
+                             cert_name const &,
+                             cert_value const &)> cert_trust_checker;
   // this takes a project_t so it can translate key names for the trust hook
   void erase_bogus_certs(project_t const & project, std::vector<cert> & certs);
   // permit alternative trust functions

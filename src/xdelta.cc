@@ -34,8 +34,6 @@
 #include <cstring>  // memcmp
 #include "vector.hh"
 
-#include <boost/version.hpp>
-
 #include "adler32.hh"
 #include "numeric_vocab.hh"
 #include "sanity.hh"

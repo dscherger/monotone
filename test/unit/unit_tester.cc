@@ -17,7 +17,6 @@
 #include <cstring>
 #include <cerrno>
 
-#include <boost/function.hpp>
 #include <botan/botan.h>
 
 #include "../../src/option.hh"
