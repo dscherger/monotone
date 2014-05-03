@@ -12,11 +12,12 @@ proc failure {str} {
     }
 }
 
-# Escape weird characters - including spaces - from paths with a
-# backslash. Feel free to add allowed characters. Note that forward
-# and back slashes are allowed, as we escape the entire paths.
+# Escape characters that are legal in filenames, but which have
+# special meaning for bash - including spaces. Feel free to add
+# allowed characters. Note that forward and back slashes are allowed,
+# because we escape the entire paths, including path separators.
 proc escape {str} {
-    regsub -all {[^[:alnum:]_/\.\\]} $str {\\&}
+    regsub -all {[^[:alnum:]_/\-\!\(\)\.\\]} $str {\\&}
 }
 
 set timeout 2
