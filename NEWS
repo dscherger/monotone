@@ -61,6 +61,14 @@ XXX XXX XX XX:XX:XX UTC 201X
         - Fixed a failure to revert some files when inodeprints is
           enabled.
 
+        - Fix an early abort in netsync on Windows, which caused
+          problems transferring large files.
+
+        - Work around a 64-bit issue with mktime on Mac OS X for dates
+          in 1901 and before.
+
+        - Allow an ssh_agent socket path including dashes.
+
         - Monotone now works with Lua 5.2, even if it doesn't have
           backwards-compatibility compiled in.
 
@@ -77,7 +85,12 @@ XXX XXX XX XX:XX:XX UTC 201X
 
         - Allow monotone to compile on C++11-enabled g++ and clang++.
 
-        - Allow test suite to run on systems behind broken a DNS resolver.
+        - Allow the test suite to run on systems behind a broken DNS
+          resolver and in cases where names cannot be resolved at all.
+
+        - Allow the test suite to run from directories containing
+          spaces and lots of other minor tweaks to the test suite
+          making its results more reliable.
 
         Internal
 
