@@ -1,5 +1,5 @@
 // Copyright (C) 2007-2009 Zack Weinberg <zackw@panix.com>
-//                         Markus Wanner <markus@bluegap.ch>
+//               2008-2014 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -387,6 +387,14 @@ date_t::as_formatted_localtime(string const & fmt) const
     F("date '%s' is out of range and cannot be formatted")
     % as_iso_8601_extended());
 
+#ifndef HAVE_MKTIME_64BIT
+  // We limit ourselves to year 1902 and onwards on Mac OS X.
+  if (sizeof(time_t) > 4)
+    E(seconds >= -2145916800, origin::user,
+      F("date '%s' is out of range and cannot be formatted")
+      % as_iso_8601_extended());
+#endif
+
   time_t t(seconds); // seconds since unix epoch in UTC
   tm tb(*localtime(&t)); // converted to local timezone values
 
@@ -408,7 +416,6 @@ date_t::as_formatted_localtime(string const & fmt) const
   buf[0] = '#';
 
   size_t wrote = strftime(buf, sizeof buf, fmt.c_str(), &tb);
-
   if (wrote > 0)
     {
       string formatted(buf);
@@ -460,6 +467,15 @@ date_t::from_formatted_localtime(string const & s, string const & fmt)
     % tb.tm_wday
     % tb.tm_yday
     % tb.tm_isdst);
+
+#ifndef HAVE_MKTIME_64BIT
+  // On Mac OS X, mktime cannot handle dates that need more than 32-bits to
+  // represent - even though time_t is 64-bits wide.
+  if (sizeof(time_t) > 4)
+    E(tb.tm_year > 1, origin::user,
+      F("date '%s' is out of range and cannot be parsed")
+      % s);
+#endif
 
   // note that the time_t value here may underflow or overflow if our date
   // is outside of the representable range. for 32 bit time_t's the earliest
