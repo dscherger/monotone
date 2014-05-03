@@ -11,7 +11,6 @@
 #include "../unit_tests.hh"
 #include "../../../src/netcmd.hh"
 #include "../../../src/transforms.hh"
-#include "../../../src/lexical_cast.hh"
 
 using std::string;
 

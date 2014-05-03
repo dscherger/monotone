@@ -504,7 +504,7 @@ namespace
   {
     std::string s;
     parser.str(s);
-    return lexical_cast<node_id>(s);
+    return std::stoul(s);
   }
 
   void
