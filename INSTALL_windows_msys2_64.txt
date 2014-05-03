@@ -1,0 +1,99 @@
+See INSTALL for general notes, such as running 'make' and 'make check'
+
+on Windows (using MinGW64 64 bit via Msys2):
+
+Here we give sources for the various packages needed. We give
+directions to the download, rather than an exact URL, to make it easy
+to check for new versions.
+
+The versions given here may not be exactly the same versions as used to
+build the current release of monontone.
+
+These instructions work on a new computer, with only
+64 bit Windows 7 installed.
+
+Msys2 provides all of the tools required, and several of the packages.
+
+Package       | Version  | location
+--------------------------
+msys2 64 bit  |          | http://sourceforge.net/p/msys2/wiki/MSYS2%20installation/
+              |          | Downloading | 64-bit | latest version
+botan         | 1.10.8   | http://botan.randombit.net/download.html
+                         | "Source: >tar/bzip<" under "Current Stable Release"
+                         | _not_ the "windows binary installer"
+Depends.exe   |          | http://www.dependencywalker.com/ ; also comes with Visual Studio
+
+The tools listed here are sufficient to build the monotone
+executable and html and info documentation. However, the
+'distcheck' target also builds the documentation in
+postscript format, which requires tools not (yet) available
+for MinGW. FIXME: verify
+
+The commands below assume you download files to ~/Downloads.
+
+FIXME: replace this file with an msys2 PKGBUILD
+
+01. MSYS2
+    following instructions at http://sourceforge.net/p/msys2/wiki/MSYS2%20installation/
+
+    more detailed instruction at http://sourceforge.net/p/msys2/tickets/32/?limit=10&page=1#216b
+
+    for more help, consult the mailing list at https://lists.sourceforge.net/lists/listinfo/msys2-users
+
+    Create directory c:/Msys2
+
+    using 7-zip or Cygwin tar, unpack msys2-base-x86_64-20140216.tar.xz to c:/Msys2
+
+    from cmd.exe (_not_ Windows Explorer), run c:\Msys2\msys64\msys2_shell.bat
+        that starts an msys shell; exit it.
+
+    start cmd.exe again, run c:\Msys2\msys64\msys2_shell.bat again
+
+    in the msys64 shell, run 'pacman -Syu'. that gives errors about rebase. Exit the shell.
+
+    in cmd.exe, run c:\Msys2\msys64\autorebase.bat
+
+    in cmd.exe, run c:\Msys2\msys64\msys2_shell.bat
+
+    in the msys shell:
+
+    $ pacman -S mingw-w64-x86_64-toolchain
+        # install all (just hit return)
+        # IMPROVEME; don't need all of that
+        # but 'pacman -Qo g++' gives 'error: No package owns /usr/mingw64/bin/g++'
+
+    $ pacman -S autoconf automake
+    $ pacman -S mingw64/mingw-w64-x86_64-sqlite3 mingw64/mingw-w64-x86_64-boost
+    $ pacman -S mingw64/mingw-w64-x86_64-lua     mingw64/mingw-w64-x86_64-libidn
+    $ pacman -S mingw64/mingw-w64-x86_64-pcre
+    $ pacman -S msys/tar msys/make
+
+02. botan
+   $ mkdir /usr/src
+   $ cd /usr/src
+   $ export PATH=/mingw32/bin:$PATH
+   $ tar xf ~/Downloads/Botan-1.10.8.tbz
+   $ cd Botan-1.10.8
+   $ ./configure.py --prefix=/mingw64 --cc=gcc --os=mingw --cpu=x86_64
+   $ make install
+
+03. Depends.exe
+   If you have Visual Studio installed, you should be able to skip this.
+   If you don't, then download the appropriate depends*.zip and
+   unpack it someplace in your %PATH% (for example, C:\MinGW\bin\).
+   This is only used by the testsuite, in particular the empty_environment test.
+   If you just want to build monotone for your own use, you can skip this and
+   just ignore that test failing.
+
+04. build monotone
+   $ export PATH=/mingw32/bin:$PATH
+   $ cd /c/Projects/monotone
+   $ autoreconf -i # not needed if you use the distributed tarball
+   $ export botan_CFLAGS="-I/mingw64/include/botan-1.10"
+   $ export botan_LIBS="-lbotan-1.10"
+   $ ./configure
+   $ make
+
+See innosetup/README.txt for instructions on building the native Win32 installer.
+
+(ediff "INSTALL_windows_msys2_32.txt" INSTALL_windows_msys2_64.txt")
