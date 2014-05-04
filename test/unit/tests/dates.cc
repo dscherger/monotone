@@ -1,5 +1,5 @@
 // Copyright (C) 2007, 2008 Zack Weinberg <zackw@panix.com>
-//                          Markus Wanner <markus@bluegap.ch>
+//               2014 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -200,8 +200,16 @@ UNIT_TEST(roundtrip_localtimes)
     UNIT_TEST_CHECK(parsed == x);                                        \
   } while (0)
 
-  // this is the valid range of dates supported by 32 bit time_t
-  date_t start("1901-12-13T20:45:52");
+  // We originally intended to try the full range of dates supported by 32
+  // bit time_t. On the lower boundary, that would have been
+  // 1901-12-13T20:45:52. However, due to a bug on Mac OS X, we generally
+  // restrict ourselves to year 1902.
+  //
+  // Regarding the bug: Mac OS X's mktime returns -1 for dates that would
+  // need a negative value that exceeds the 32 bit range. Interestingly, it
+  // works just fine on the positive side. At the very least Mountan Lion
+  // and Mavericks show that issue, which we check for during configuration.
+  date_t start("1902-01-01T00:00:00");
   date_t end("2038-01-19T03:14:07");
 
   OK(start);
@@ -211,30 +219,37 @@ UNIT_TEST(roundtrip_localtimes)
   for (date_t date = start; date <= end; date += MILLISEC(DAY+HOUR+MIN+SEC))
     OK(date);
 
-  start -= 1000;
-  end += 1000;
+  start -= MILLISEC(SEC);   // add a second to exceed the 32-bit boundary
+  end += MILLISEC(20*DAY);  // add 20 days to certainly exceed the boundary
 
   // these tests run with LANG=C and TZ=UTC so the %c format seems to work
   // however strptime does not like the timezone name when %c is used in
   // other locales. with LANG=en_CA.UTF-8 this test fails.
 
-  if (sizeof(time_t) <= 4)
+
+  // Check the lower boundary at around year 1901, caped to 32-bits on Mac
+  // OS X, where STD_MKTIME_64BIT_WORKS == 0.
+  if (sizeof(time_t) <= 4 || STD_MKTIME_64BIT_WORKS == 0)
     {
       UNIT_TEST_CHECK_THROW(start.as_formatted_localtime("%c"),
                             recoverable_failure);
       UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("Fri Dec 13 20:45:51 1901", "%c"),
                             recoverable_failure);
+    }
+  else
+    OK(start);
 
+  // Check the upper boundary at year 2038. Working even on Mac OS X.
+  if (sizeof(time_t) <= 4)
+    {
       UNIT_TEST_CHECK_THROW(end.as_formatted_localtime("%c"),
                             recoverable_failure);
       UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("Tue Jan 19 03:14:08 2038", "%c"),
                             recoverable_failure);
     }
   else
-    {
-      OK(start);
-      OK(end);
-    }
+    OK(end);
+
 
   // this date represents 1 second before the unix epoch which has a time_t
   // value of -1. conveniently, mktime returns -1 to indicate that it was
@@ -264,12 +279,14 @@ UNIT_TEST(localtime_formats)
 
   // can we fiddle with LANG or TZ here?
 
-  // note that %c doesn't work for en_CA.UTF-8 because it includes a timezone label
-  // that strptime doesn't parse. this leaves some of the input string unprocessed
-  // which date_t::from_formatted_localtime doesn't allow.
+  // note that %c doesn't work for en_CA.UTF-8 because it includes a
+  // timezone label that strptime doesn't parse. this leaves some of the
+  // input string unprocessed which date_t::from_formatted_localtime doesn't
+  // allow.
 
-  // this is the valid range of dates supported by 32 bit time_t
-  date_t start("1901-12-13T20:45:52");
+  // this is the valid range of dates supported by 32 bit time_t; modulo
+  // some minor offset on the lower boundary for Mac OS X, see above.
+  date_t start("1902-01-01T00:00:00");
   date_t end("2038-01-19T03:14:07");
 
   // The 'y' (year in century) specification is taken to specify a year in

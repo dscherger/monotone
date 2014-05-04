@@ -1,7 +1,7 @@
 send_user "\n===== BEGIN complete_propagate  =====\n"
 expect -re "@ $"
 send_user "\n===== Testing for the 'propagate' command =====\n"
-send "\n$mtn propagate "
+send "\n[escape $mtn_cmd] propagate "
 expect {
     -ex " propagate " {}
     timeout { failure "' propagate '"; exit }
@@ -22,7 +22,7 @@ send "\003\n"
 expect -re "@ $"
 send_user "\n===== Testing that the 'propagate' completes the second branch correctly =====\n"
 # One \t is enough for the second branch name to expand
-send "\n$mtn propagate prop-br1 prop-bra"
+send "\n[escape $mtn_cmd] propagate prop-br1 prop-bra"
 expect {
     -ex " propagate " {}
     timeout { failure "' propagate '"; exit }

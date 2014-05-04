@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: monotone\n"
 "Report-Msgid-Bugs-To: https://code.monotone.ca/p/monotone/issues/\n"
-"POT-Creation-Date: 2012-11-30 23:06+0100\n"
+"POT-Creation-Date: 2014-05-03 01:17+0200\n"
 "PO-Revision-Date: 2011-03-14 10:18+0100\n"
 "Last-Translator: tommyd <me@thomaskeller.biz>\n"
 "Language-Team: Deutsch <me@thomaskeller.biz>\n"
@@ -26,7 +26,7 @@ msgstr "Fataler Fehler: Formatierung schlug fehl bei %s:%d: %s"
 msgid "misuse: "
 msgstr "falscher Gebrauch: "
 
-#: src/sanity.cc:357 src/database.cc:952 src/migrate_schema.cc:65
+#: src/sanity.cc:357 src/database.cc:955 src/migrate_schema.cc:65
 msgid "error: "
 msgstr "Fehler: "
 
@@ -55,7 +55,7 @@ msgstr "ungültiges Zeichen '%c' in '%s'"
 msgid "hex encoded ID '%s' size != %d"
 msgstr "Größe der hex-enkodierten ID '%s' ist ungleich %d"
 
-#: src/vocab.cc:53 src/database.cc:4229
+#: src/vocab.cc:53 src/database.cc:4245
 #, c-format
 msgid "bad character '%c' in id name '%s'"
 msgstr "ungültiges Zeichen '%c' in ID-Name '%s'"
@@ -502,12 +502,12 @@ msgstr "Falsche Eingabe für 'automate stdio': erwartete Zeichen '%c'"
 msgid "bad input to automate stdio: command name is missing"
 msgstr "Falsche Eingabe für 'automate stdio': Kommandoname fehlt"
 
-#: src/commands.cc:496
+#: src/commands.cc:497
 #, c-format
 msgid "unknown command '%s'"
 msgstr "unbekanntes Kommando '%s'"
 
-#: src/commands.cc:506
+#: src/commands.cc:507
 #, c-format
 msgid "'%s' is ambiguous; possible completions are:"
 msgstr "'%s' ist mehrdeutig; mögliche Vervollständigungen sind:"
@@ -868,8 +868,8 @@ msgstr "Führt KOMMANDO auf einem entfernten Rechner aus"
 
 #: src/cmd_netsync.cc:221 src/cmd_list.cc:1031 src/cmd_packet.cc:73
 #: src/cmd_packet.cc:134 src/cmd_packet.cc:254 src/cmd_key_cert.cc:81
-#: src/cmd_key_cert.cc:186 src/cmd_merging.cc:384 src/cmd_merging.cc:1149
-#: src/cmd_merging.cc:1227 src/cmd_ws_commit.cc:1144 src/cmd_ws_commit.cc:1350
+#: src/cmd_key_cert.cc:186 src/cmd_merging.cc:384 src/cmd_merging.cc:1150
+#: src/cmd_merging.cc:1228 src/cmd_ws_commit.cc:1144 src/cmd_ws_commit.cc:1350
 #: src/cmd_ws_commit.cc:1492 src/cmd_ws_commit.cc:1514 src/cmd_automate.cc:138
 #: src/cmd_files.cc:240 src/cmd_files.cc:337 src/cmd_files.cc:361
 #: src/cmd_files.cc:395 src/automate.cc:85 src/automate.cc:122
@@ -1016,7 +1016,7 @@ msgid "bookkeeping directory already exists in '%s'"
 msgstr "Das monotone-Systemverzeichnis existiert bereits in '%s'"
 
 #: src/cmd_netsync.cc:866 src/cmd_merging.cc:535 src/cmd_merging.cc:636
-#: src/cmd_merging.cc:641 src/cmd_merging.cc:1479 src/cmd_ws_commit.cc:1040
+#: src/cmd_merging.cc:641 src/cmd_merging.cc:1482 src/cmd_ws_commit.cc:1040
 #, c-format
 msgid "branch '%s' is empty"
 msgstr "Zweig '%s' ist leer"
@@ -1096,7 +1096,7 @@ msgstr ""
 msgid "ok"
 msgstr "in Ordnung"
 
-#: src/cmd_list.cc:176 src/database.cc:1327
+#: src/cmd_list.cc:176 src/database.cc:1330
 msgid "bad"
 msgstr "schlecht"
 
@@ -1202,12 +1202,12 @@ msgstr "Listet bekannte Arbeitsbereiche der gewählten Datenbank"
 msgid "Lists managed databases and their known workspaces"
 msgstr "Listet verwaltete Datenbanken und deren bekannte Arbeitsbereiche"
 
-#: src/cmd_list.cc:685 src/database.cc:4976
+#: src/cmd_list.cc:685 src/database.cc:4992
 #, c-format
 msgid "no default database location configured"
 msgstr "kein Standard-Datenbankpfad konfiguriert"
 
-#: src/cmd_list.cc:689 src/database.cc:5054
+#: src/cmd_list.cc:689 src/database.cc:5070
 #, c-format
 msgid "could not query default database glob"
 msgstr "konnte nicht das Standarddateimuster für Datenbanken abfragen"
@@ -1523,13 +1523,13 @@ msgid "empty comment"
 msgstr "leerer Kommentar"
 
 #: src/cmd_merging.cc:119 src/cmd_merging.cc:438 src/cmd_merging.cc:659
-#: src/cmd_merging.cc:854
+#: src/cmd_merging.cc:855
 #, c-format
 msgid "[left]  %s"
 msgstr "[links] %s"
 
 #: src/cmd_merging.cc:120 src/cmd_merging.cc:439 src/cmd_merging.cc:660
-#: src/cmd_merging.cc:855
+#: src/cmd_merging.cc:856
 #, c-format
 msgid "[right] %s"
 msgstr "[rechts] %s"
@@ -1559,7 +1559,7 @@ msgstr ""
 "Ziel-Revision befindet sich in keinem Zweig.\n"
 "Beim nächsten Einpflegen wird der Zweig '%s' genutzt"
 
-#: src/cmd_merging.cc:209 src/cmd_merging.cc:825 src/cmd_ws_commit.cc:370
+#: src/cmd_merging.cc:209 src/cmd_merging.cc:826 src/cmd_ws_commit.cc:370
 #: src/cmd_ws_commit.cc:1370 src/cmd_ws_commit.cc:2078
 #: src/cmd_ws_commit.cc:2306 src/cmd_ws_commit.cc:2421 src/cmd_files.cc:309
 #: src/cmd_files.cc:407 src/automate.cc:1068 src/automate.cc:1361
@@ -1657,7 +1657,7 @@ msgstr ""
 msgid "at most one revision selector may be specified"
 msgstr "höchstens ein Revisionsselektor darf angegeben werden"
 
-#: src/cmd_merging.cc:452 src/cmd_merging.cc:764
+#: src/cmd_merging.cc:452 src/cmd_merging.cc:765
 #, c-format
 msgid "[merged] %s"
 msgstr "[vereinigt] %s"
@@ -1666,7 +1666,7 @@ msgstr "[vereinigt] %s"
 msgid "Merges unmerged heads of a branch"
 msgstr "Führt nicht-vereinigte Köpfe eines Zweiges zusammen"
 
-#: src/cmd_merging.cc:528 src/cmd_merging.cc:1129 src/cmd_merging.cc:1470
+#: src/cmd_merging.cc:528 src/cmd_merging.cc:1130 src/cmd_merging.cc:1473
 #, c-format
 msgid "please specify a branch, with '--branch=BRANCH'"
 msgstr "bitte geben Sie einen Zweig mit '--branch=ZWEIG' an"
@@ -1731,34 +1731,34 @@ msgstr "kein Vereinigen notwendig; schiebe %s in Zweig '%s'"
 msgid "Path '%s' not found in destination tree."
 msgstr "Pfad '%s' wurde im Ziel-Baum nicht gefunden."
 
-#: src/cmd_merging.cc:771
+#: src/cmd_merging.cc:772
 msgid "SOURCE-BRANCH DEST-BRANCH"
 msgstr "QUELL-ZWEIG ZIEL-ZWEIG"
 
-#: src/cmd_merging.cc:772
+#: src/cmd_merging.cc:773
 msgid "Merges from one branch to another asymmetrically"
 msgstr "Überführt die Änderungen eines Zweigs auf einen anderen asymmetrisch"
 
-#: src/cmd_merging.cc:785
+#: src/cmd_merging.cc:786
 msgid "SOURCE-BRANCH DEST-BRANCH DIR"
 msgstr "QUELL-ZWEIG ZIEL-ZWEIG VERZEICHNIS"
 
-#: src/cmd_merging.cc:786
+#: src/cmd_merging.cc:787
 msgid "Merges one branch into a subdirectory in another branch"
 msgstr ""
 "Überführt die Änderungen eines Zweigs in ein Unterverzeichnis eines anderen "
 "Zweigs"
 
-#: src/cmd_merging.cc:795
+#: src/cmd_merging.cc:796
 msgid "OTHER-REVISION"
 msgstr "ANDERE-REVISION"
 
-#: src/cmd_merging.cc:796
+#: src/cmd_merging.cc:797
 msgid "Merges a revision into the current workspace's base revision"
 msgstr ""
 "Überführt die Änderungen einer Revision in den derzeitigen Arbeitsbereich"
 
-#: src/cmd_merging.cc:797
+#: src/cmd_merging.cc:798
 msgid ""
 "Merges OTHER-REVISION into the current workspace's base revision, and update "
 "the current workspace with the result.  There can be no pending changes in "
@@ -1773,24 +1773,24 @@ msgstr ""
 "Elternrevision beim Einpflegen aufgenommen.  Der gewählte Zweig des "
 "Arbeitsbereiches bleibt unverändert."
 
-#: src/cmd_merging.cc:832
+#: src/cmd_merging.cc:833
 #, c-format
 msgid "'%s' can only be used in a workspace with no pending changes"
 msgstr ""
 "'%s' kann nur in Arbeitsbereichen genutzt werden, die keine Änderungen "
 "aufweisen."
 
-#: src/cmd_merging.cc:846
+#: src/cmd_merging.cc:847
 #, c-format
 msgid "workspace is already at revision %s"
 msgstr "Arbeitsbereich ist bereits auf die Revision %s aktualisiert"
 
-#: src/cmd_merging.cc:849
+#: src/cmd_merging.cc:850
 #, c-format
 msgid "revision %s is already an ancestor of your workspace"
 msgstr "Revision %s ist bereits ein Vorfahre Ihres Arbeitsbereichs"
 
-#: src/cmd_merging.cc:851
+#: src/cmd_merging.cc:852
 #, c-format
 msgid ""
 "revision %s is a descendant of the workspace parent,\n"
@@ -1799,7 +1799,7 @@ msgstr ""
 "Revision %s ist ein Nachkomme der Basisrevision Ihres Arbeitsbereichs,\n"
 "meinten Sie 'mtn update -r %s'?"
 
-#: src/cmd_merging.cc:905
+#: src/cmd_merging.cc:906
 #, c-format
 msgid ""
 "updated to result of merge\n"
@@ -1810,78 +1810,78 @@ msgstr ""
 " [links] %s\n"
 "[rechts] %s\n"
 
-#: src/cmd_merging.cc:913
+#: src/cmd_merging.cc:914
 msgid "LEFT-REVISION RIGHT-REVISION DEST-BRANCH"
 msgstr "LINKE_REVISION RECHTE_REVISION ZIEL_ZWEIG"
 
-#: src/cmd_merging.cc:914
+#: src/cmd_merging.cc:915
 msgid "Merges two explicitly given revisions"
 msgstr "Vereinigt zwei explizit übergebene Revisionen"
 
-#: src/cmd_merging.cc:915
+#: src/cmd_merging.cc:916
 msgid ""
 "The results of the merge are placed on the branch specified by DEST-BRANCH."
 msgstr "Das Ergebnis der Vereinigung wird in den Zweig ZIEL_ZWEIG platziert."
 
-#: src/cmd_merging.cc:937
+#: src/cmd_merging.cc:938
 #, c-format
 msgid "%s and %s are the same revision, aborting"
 msgstr "%s und %s sind dieselben Revisionen, breche ab"
 
-#: src/cmd_merging.cc:940 src/cmd_merging.cc:943
+#: src/cmd_merging.cc:941 src/cmd_merging.cc:944
 #, c-format
 msgid "%s is already an ancestor of %s"
 msgstr "%s ist bereits ein Vorfahre von %s"
 
-#: src/cmd_merging.cc:988
+#: src/cmd_merging.cc:989
 #, c-format
 msgid "[left]     %s"
 msgstr "[links]    %s"
 
-#: src/cmd_merging.cc:989
+#: src/cmd_merging.cc:990
 #, c-format
 msgid "[right]    %s"
 msgstr "[rechts]    %s"
 
-#: src/cmd_merging.cc:1001 src/cmd_merging.cc:1016
+#: src/cmd_merging.cc:1002 src/cmd_merging.cc:1017
 #, c-format
 msgid "%s is an ancestor of %s; no merge is needed."
 msgstr "%s ist ein Vorgänger von %s; kein Vereinigen notwendig."
 
-#: src/cmd_merging.cc:1044
+#: src/cmd_merging.cc:1045
 #, c-format
 msgid "0 conflicts"
 msgstr "0 Konflikte"
 
-#: src/cmd_merging.cc:1060
+#: src/cmd_merging.cc:1061
 #, c-format
 msgid "[ancestor] %s"
 msgstr "[Vorfahr] %s"
 
-#: src/cmd_merging.cc:1085
+#: src/cmd_merging.cc:1086
 #, c-format
 msgid "%d conflict with supported resolutions."
 msgid_plural "%d conflicts with supported resolutions."
 msgstr[0] "%d Konflikt mit unterstützten Konfliktlösungen"
 msgstr[1] "%d Konflikte mit unterstützten Konfliktlösungen"
 
-#: src/cmd_merging.cc:1090 src/cmd_conflicts.cc:298 src/cmd_conflicts.cc:311
+#: src/cmd_merging.cc:1091 src/cmd_conflicts.cc:298 src/cmd_conflicts.cc:311
 #, c-format
 msgid "warning: %d conflict with no supported resolutions."
 msgid_plural "warning: %d conflicts with no supported resolutions."
 msgstr[0] "Warnung: %d Konflikt ohne unterstützte Konfliktlösungen"
 msgstr[1] "Warnung: %d Konflikte ohne unterstützte Konfliktlösungen"
 
-#: src/cmd_merging.cc:1097
+#: src/cmd_merging.cc:1098
 msgid "REV REV"
 msgstr "REVISION REVISION"
 
-#: src/cmd_merging.cc:1098
+#: src/cmd_merging.cc:1099
 msgid "Shows what conflicts need resolution between two revisions"
 msgstr ""
 "Zeigt, welche Konflikte zwischen zwei Revisionen behoben werden müssten."
 
-#: src/cmd_merging.cc:1099
+#: src/cmd_merging.cc:1100
 msgid ""
 "The conflicts are calculated based on the two revisions given in the REV "
 "parameters."
@@ -1889,21 +1889,21 @@ msgstr ""
 "Die Konflikte werden basierend auf den zwei übergebenen REVISION-Argumenten "
 "berechnet."
 
-#: src/cmd_merging.cc:1136
+#: src/cmd_merging.cc:1137
 #, c-format
 msgid "branch '%s' has only 1 head; must be at least 2 for conflicts"
 msgstr ""
 "Zweig '%s' hat nur einen Kopf; es müssen mindestens zwei für conflicts sein"
 
-#: src/cmd_merging.cc:1169
+#: src/cmd_merging.cc:1170
 msgid "[LEFT_REVID RIGHT_REVID]"
 msgstr "[LINKE_REVID RECHTE_REVID]"
 
-#: src/cmd_merging.cc:1170
+#: src/cmd_merging.cc:1171
 msgid "Shows the conflicts between two revisions"
 msgstr "Zeigt die Konflikte zwischen zwei Revisionen"
 
-#: src/cmd_merging.cc:1171
+#: src/cmd_merging.cc:1172
 msgid ""
 "If no arguments are given, LEFT_REVID and RIGHT_REVID default to the first "
 "two heads that would be chosen by the 'merge' command."
@@ -1912,11 +1912,11 @@ msgstr ""
 "standardmäßig mit den ersten zwei Köpfen vorbelegt, die auch das 'merge'-"
 "Kommando auswählen würde."
 
-#: src/cmd_merging.cc:1188
+#: src/cmd_merging.cc:1189
 msgid "Store the conflicts from merging two revisions"
 msgstr "Speichert die Konflikte vom Zusammenführen zweier Revisionen"
 
-#: src/cmd_merging.cc:1189
+#: src/cmd_merging.cc:1190
 #, c-format
 msgid ""
 "If no arguments are given, LEFT_REVID and RIGHT_REVID default to the first "
@@ -1928,21 +1928,21 @@ msgstr ""
 "Kommando auswählen würde. Wenn die Option '--conflicts-file' nicht übergeben "
 "wird, wird '%s' benutzt."
 
-#: src/cmd_merging.cc:1198 src/options_list.hh:603 src/options_list.hh:624
+#: src/cmd_merging.cc:1199 src/options_list.hh:603 src/options_list.hh:624
 #, c-format
 msgid "conflicts file must be under '_MTN'"
 msgstr "Konfliktdatei muss sich unterhalb des '_MTN'-Verzeichnisses befinden"
 
-#: src/cmd_merging.cc:1210
+#: src/cmd_merging.cc:1211
 #, c-format
 msgid "stored in '%s'"
 msgstr "in '%s' gespeichert"
 
-#: src/cmd_merging.cc:1213
+#: src/cmd_merging.cc:1214
 msgid "LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME"
 msgstr "LINKE_REVID LINKER_DATEINAME RECHTE_REVID RECHTER_DATEINAME"
 
-#: src/cmd_merging.cc:1214
+#: src/cmd_merging.cc:1215
 msgid ""
 "Prints the results of the internal line merger, given two child revisions "
 "and file names"
@@ -1950,22 +1950,22 @@ msgstr ""
 "Gibt die Ergebnisse des internen Zeilenzusammenführers anhand der "
 "übergebenen beiden Kindrevisionen und Dateinamen aus"
 
-#: src/cmd_merging.cc:1266
+#: src/cmd_merging.cc:1269
 #, c-format
 msgid "internal line merger failed"
 msgstr "Ausführung des internen Zeilenzusammenführers fehlgeschlagen"
 
-#: src/cmd_merging.cc:1271
+#: src/cmd_merging.cc:1274
 msgid "[PATH...]"
 msgstr "[PFAD...]"
 
-#: src/cmd_merging.cc:1272
+#: src/cmd_merging.cc:1275
 msgid "Applies changes made at arbitrary places in history"
 msgstr ""
 "Wendet Änderungen an, die an beliebigen Stellen in der Historie vollzogen "
 "wurden"
 
-#: src/cmd_merging.cc:1273
+#: src/cmd_merging.cc:1276
 msgid ""
 "This command takes changes made at any point in history, and edits your "
 "current workspace to include those changes.  The end result is identical to "
@@ -1988,7 +1988,7 @@ msgstr ""
 "Wenn zwei Revisionen übergeben wurden, werden die Änderungen, die zwischen "
 "der ersten und der zweiten Revision gemacht wurden, angewendet."
 
-#: src/cmd_merging.cc:1297
+#: src/cmd_merging.cc:1300
 #, c-format
 msgid ""
 "revision %s is a merge.\n"
@@ -2000,50 +2000,50 @@ msgstr ""
 "Sie:\n"
 "  %s pluck -r ELTERNREVISION -r %s"
 
-#: src/cmd_merging.cc:1313
+#: src/cmd_merging.cc:1316
 #, c-format
 msgid "no changes to apply"
 msgstr "keine Änderungen anwendbar"
 
-#: src/cmd_merging.cc:1375
+#: src/cmd_merging.cc:1378
 #, c-format
 msgid "no changes to be applied"
 msgstr "Es gab keine Änderungen vorzunehmen."
 
-#: src/cmd_merging.cc:1425
+#: src/cmd_merging.cc:1428
 #, c-format
 msgid "no changes were applied"
 msgstr "Es wurden keine Änderungen vorgenommen."
 
-#: src/cmd_merging.cc:1429
+#: src/cmd_merging.cc:1432
 #, c-format
 msgid "applied changes to workspace"
 msgstr "Änderungen auf Arbeitsbereich angewendet"
 
-#: src/cmd_merging.cc:1461
+#: src/cmd_merging.cc:1464
 msgid "Shows unmerged head revisions of a branch"
 msgstr "Zeigt nicht-vereinigte Köpfe (Revisionen) eines Zweiges"
 
-#: src/cmd_merging.cc:1481
+#: src/cmd_merging.cc:1484
 #, c-format
 msgid "branch '%s' is currently merged:"
 msgstr "Zweig '%s' ist derzeit vereinigt:"
 
-#: src/cmd_merging.cc:1483
+#: src/cmd_merging.cc:1486
 #, c-format
 msgid "branch '%s' is currently unmerged:"
 msgstr "Zweig '%s' ist derzeit nicht vereinigt:"
 
-#: src/cmd_merging.cc:1490 src/automate.cc:1444
+#: src/cmd_merging.cc:1493 src/automate.cc:1444
 msgid "[REVID]"
 msgstr "[REVISIONS_ID]"
 
-#: src/cmd_merging.cc:1491
+#: src/cmd_merging.cc:1494
 msgid "Dumps the roster associated with a given identifier"
 msgstr ""
 "Exportiert den Katalog, welcher einer gegebenen Revisions-ID zugeordnet ist"
 
-#: src/cmd_merging.cc:1492
+#: src/cmd_merging.cc:1495
 msgid "If no REVID is given, the workspace is used."
 msgstr "Wenn keine REVID übergeben wurde, wird der Arbeitsbereich genutzt."
 
@@ -2430,7 +2430,7 @@ msgstr ""
 "Dieses Kommando läd alle Zertifikate aus der Datenbank und kann somit für "
 "die Zeitmessung der Zertifikats-Ladeperformance genutzt werden."
 
-#: src/cmd_db.cc:721 src/database.cc:1315
+#: src/cmd_db.cc:721 src/database.cc:1318
 #, c-format
 msgid "loading certs"
 msgstr "lade Zertifikat"
@@ -3623,12 +3623,12 @@ msgstr "resolve_first drop"
 msgid "resolve_first rename \"file_name\""
 msgstr "resolve_first rename \"Dateiname\""
 
-#: src/cmd_conflicts.cc:121 src/merge_conflict.cc:1207
+#: src/cmd_conflicts.cc:121 src/merge_conflict.cc:1208
 #, c-format
 msgid "conflict: file '%s'"
 msgstr "Konflikt: Datei '%s'"
 
-#: src/cmd_conflicts.cc:127 src/merge_conflict.cc:1213
+#: src/cmd_conflicts.cc:127 src/merge_conflict.cc:1214
 #, c-format
 msgid "orphaned on the left"
 msgstr "auf linker Seite verwaist"
@@ -3643,27 +3643,27 @@ msgstr "auf rechter Seite verändert"
 msgid "modified on the left"
 msgstr "auf linker Seite verändert"
 
-#: src/cmd_conflicts.cc:133 src/merge_conflict.cc:1229
+#: src/cmd_conflicts.cc:133 src/merge_conflict.cc:1230
 #, c-format
 msgid "orphaned on the right"
 msgstr "auf rechter Seite verwaist"
 
-#: src/cmd_conflicts.cc:142 src/merge_conflict.cc:1218
+#: src/cmd_conflicts.cc:142 src/merge_conflict.cc:1219
 #, c-format
 msgid "dropped on the left"
 msgstr "auf linker Seite gelöscht"
 
-#: src/cmd_conflicts.cc:146 src/merge_conflict.cc:1220
+#: src/cmd_conflicts.cc:146 src/merge_conflict.cc:1221
 #, c-format
 msgid "dropped and recreated on the left"
 msgstr "auf linker Seite gelöscht und neu erstellt"
 
-#: src/cmd_conflicts.cc:156 src/merge_conflict.cc:1234
+#: src/cmd_conflicts.cc:156 src/merge_conflict.cc:1235
 #, c-format
 msgid "dropped on the right"
 msgstr "auf rechter Seite gelöscht"
 
-#: src/cmd_conflicts.cc:159 src/merge_conflict.cc:1236
+#: src/cmd_conflicts.cc:159 src/merge_conflict.cc:1237
 #, c-format
 msgid "dropped and recreated on the right"
 msgstr "auf rechter Seite gelöscht und neu erzeugt"
@@ -3701,7 +3701,8 @@ msgstr "resolve_first_left rename"
 #: src/cmd_conflicts.cc:195
 #, c-format
 msgid "resolve_first_left user_rename \"new_content_name\" \"new_file_name\""
-msgstr "resolve_first_left user_rename \"neuer_Inhaltsname\" \"neuer_Dateiname\""
+msgstr ""
+"resolve_first_left user_rename \"neuer_Inhaltsname\" \"neuer_Dateiname\""
 
 #: src/cmd_conflicts.cc:201 src/cmd_conflicts.cc:246
 #, c-format
@@ -3726,7 +3727,8 @@ msgstr "resolve_first_right rename"
 #: src/cmd_conflicts.cc:211
 #, c-format
 msgid "resolve_first_right user_rename \"new_content_name\" \"new_file_name\""
-msgstr "resolve_first_right user_rename \"neuer_Inhaltsname\" \"neuer_Dateiname\""
+msgstr ""
+"resolve_first_right user_rename \"neuer_Inhaltsname\" \"neuer_Dateiname\""
 
 #: src/cmd_conflicts.cc:216 src/cmd_conflicts.cc:254
 #, c-format
@@ -3773,80 +3775,80 @@ msgstr "resolve_first user \"Dateiname\""
 msgid "all conflicts resolved"
 msgstr "alle Konflikte aufgelöst"
 
-#: src/cmd_conflicts.cc:340
+#: src/cmd_conflicts.cc:341
 #, c-format
 msgid "'%s' is not a supported conflict resolution for %s"
 msgstr "'%s' ist keine unterstützte Konfliktlösung für %s"
 
-#: src/cmd_conflicts.cc:390 src/cmd_conflicts.cc:395
+#: src/cmd_conflicts.cc:391 src/cmd_conflicts.cc:396
 #, c-format
 msgid "too many arguments"
 msgstr "zu viele Argumente"
 
-#: src/cmd_conflicts.cc:401 src/cmd_conflicts.cc:419
+#: src/cmd_conflicts.cc:402 src/cmd_conflicts.cc:420
 #, c-format
 msgid "other resolution is %s; specify 'drop', 'rename', or 'user_rename'"
-msgstr "andere Konfliktlösung ist %s; benutze 'drop', 'rename' oder 'user_rename'"
+msgstr ""
+"andere Konfliktlösung ist %s; benutze 'drop', 'rename' oder 'user_rename'"
 
-#: src/cmd_conflicts.cc:407 src/cmd_conflicts.cc:413 src/cmd_conflicts.cc:427
-#: src/cmd_conflicts.cc:446 src/cmd_conflicts.cc:534 src/cmd_conflicts.cc:540
-#: src/cmd_conflicts.cc:573 src/cmd_conflicts.cc:579 src/cmd_conflicts.cc:586
-#: src/cmd_conflicts.cc:594 src/cmd_conflicts.cc:601 src/cmd_conflicts.cc:625
-#: src/cmd_conflicts.cc:631 src/cmd_conflicts.cc:638 src/cmd_conflicts.cc:646
-#: src/cmd_conflicts.cc:653 src/cmd_conflicts.cc:705 src/cmd_conflicts.cc:720
-#: src/cmd_conflicts.cc:769 src/cmd_conflicts.cc:782
+#: src/cmd_conflicts.cc:408 src/cmd_conflicts.cc:414 src/cmd_conflicts.cc:428
+#: src/cmd_conflicts.cc:447 src/cmd_conflicts.cc:535 src/cmd_conflicts.cc:541
+#: src/cmd_conflicts.cc:574 src/cmd_conflicts.cc:580 src/cmd_conflicts.cc:587
+#: src/cmd_conflicts.cc:595 src/cmd_conflicts.cc:602 src/cmd_conflicts.cc:626
+#: src/cmd_conflicts.cc:632 src/cmd_conflicts.cc:639 src/cmd_conflicts.cc:647
+#: src/cmd_conflicts.cc:654 src/cmd_conflicts.cc:706 src/cmd_conflicts.cc:721
+#: src/cmd_conflicts.cc:770 src/cmd_conflicts.cc:783
 #, c-format
 msgid "wrong number of arguments"
 msgstr "falsche Anzahl an Parametern"
 
-#: src/cmd_conflicts.cc:464 src/cmd_conflicts.cc:477
+#: src/cmd_conflicts.cc:465 src/cmd_conflicts.cc:478
 #, c-format
 msgid "must specify resolve_first (not _left or _right)"
 msgstr "resolve_first muss angeben werden (nicht _left oder _right)"
 
-#: src/cmd_conflicts.cc:467 src/cmd_conflicts.cc:480 src/cmd_conflicts.cc:580
-#: src/cmd_conflicts.cc:587 src/cmd_conflicts.cc:632 src/cmd_conflicts.cc:639
-#: src/merge_conflict.cc:2095 src/merge_conflict.cc:2102
+#: src/cmd_conflicts.cc:468 src/cmd_conflicts.cc:481 src/cmd_conflicts.cc:581
+#: src/cmd_conflicts.cc:588 src/cmd_conflicts.cc:633 src/cmd_conflicts.cc:640
+#: src/merge_conflict.cc:2096 src/merge_conflict.cc:2103
 #, c-format
 msgid "orphaned files must be renamed"
 msgstr "verwaiste Dateien müssen umbenannt werden"
 
-#: src/cmd_conflicts.cc:566 src/cmd_conflicts.cc:618
+#: src/cmd_conflicts.cc:567 src/cmd_conflicts.cc:619
 #, c-format
 msgid ""
 "must specify 'resolve_first_left' or 'resolve_first_right' (not just "
 "'resolve_first')"
 msgstr ""
-"'resolve_first_left' oder 'resolve_first_right' muss angegeben werden (nicht nur "
-"'resolve_first')"
+"'resolve_first_left' oder 'resolve_first_right' muss angegeben werden (nicht "
+"nur 'resolve_first')"
 
-
-#: src/cmd_conflicts.cc:713
+#: src/cmd_conflicts.cc:714
 #, c-format
 msgid "interactive merge result saved in '%s'"
 msgstr "interaktives Ergebnis der Vereinigung in '%s' gespeichert"
 
-#: src/cmd_conflicts.cc:716
+#: src/cmd_conflicts.cc:717
 #, c-format
 msgid "interactive merge failed."
 msgstr "interaktives Vereinigen fehlgeschlagen"
 
-#: src/cmd_conflicts.cc:740
+#: src/cmd_conflicts.cc:741
 #, c-format
 msgid "no resolvable yet unresolved left side conflicts"
 msgstr "keine lösbaren oder nicht aufgelösten linksseitigen Konflikte"
 
-#: src/cmd_conflicts.cc:744
+#: src/cmd_conflicts.cc:745
 #, c-format
 msgid "no resolvable yet unresolved right side conflicts"
 msgstr "keine lösbaren oder nicht aufgelösten rechtsseitigen Konflikte"
 
-#: src/cmd_conflicts.cc:748
+#: src/cmd_conflicts.cc:749
 #, c-format
 msgid "no resolvable yet unresolved single-file conflicts"
 msgstr "keine lösbaren oder nicht aufgelösten Einzeldatei-Konflikte"
 
-#: src/cmd_conflicts.cc:762
+#: src/cmd_conflicts.cc:763
 msgid ""
 "Show the first unresolved conflict in the conflicts file, and possible "
 "resolutions"
@@ -3854,31 +3856,31 @@ msgstr ""
 "Zeigt den ersten nicht aufgelösten Konflikt in der Konfliktdatei und "
 "mögliche Konfliktlösungen"
 
-#: src/cmd_conflicts.cc:775
+#: src/cmd_conflicts.cc:776
 msgid "Show the remaining unresolved conflicts in the conflicts file"
 msgstr "Zeigt die verbliebenen ungelösten Probleme in der Konfliktdatei"
 
-#: src/cmd_conflicts.cc:787 src/cmd_conflicts.cc:801 src/cmd_conflicts.cc:815
+#: src/cmd_conflicts.cc:788 src/cmd_conflicts.cc:802 src/cmd_conflicts.cc:816
 msgid "RESOLUTION"
 msgstr "LÖSUNG"
 
-#: src/cmd_conflicts.cc:788
+#: src/cmd_conflicts.cc:789
 msgid "Set the resolution for the first unresolved single-file conflict."
 msgstr "Setzt die Lösung für den ersten, nicht gelösten Einzeldatei-Konflikt."
 
-#: src/cmd_conflicts.cc:802
+#: src/cmd_conflicts.cc:803
 msgid "Set the left resolution for the first unresolved two-file conflict"
 msgstr ""
 "Setzt die linksseitige Lösung für den ersten, nicht aufgelösten Zwei-Dateien-"
 "Konflikt"
 
-#: src/cmd_conflicts.cc:816
+#: src/cmd_conflicts.cc:817
 msgid "Set the right resolution for the first unresolved two-file conflict"
 msgstr ""
 "Setzt die rechtsseitige Lösung für den ersten, nicht aufgelösten Zwei-"
 "Dateien-Konflikt"
 
-#: src/cmd_conflicts.cc:830
+#: src/cmd_conflicts.cc:831
 msgid "Delete any bookkeeping files related to conflict resolution"
 msgstr ""
 "Entfernt alle konfliktlösungsrelevanten Dateien aus dem monotone-Systempfad"
@@ -4031,7 +4033,7 @@ msgstr "übergehe ignorierbare Datei '%s'"
 msgid "skipping '%s', already accounted for in workspace"
 msgstr "übergehe '%s', bereits im Arbeitsbereich festgehalten"
 
-#: src/work.cc:1321 src/merge_conflict.cc:2824 src/merge_conflict.cc:3200
+#: src/work.cc:1321 src/merge_conflict.cc:2830 src/merge_conflict.cc:3208
 #, c-format
 msgid "dropping '%s'"
 msgstr "entferne '%s'"
@@ -4041,7 +4043,7 @@ msgstr "entferne '%s'"
 msgid "path '%s' already exists"
 msgstr "Pfad '%s' existiert bereits"
 
-#: src/work.cc:1361 src/merge_conflict.cc:2829 src/merge_conflict.cc:3221
+#: src/work.cc:1361 src/merge_conflict.cc:2835 src/merge_conflict.cc:3229
 #, c-format
 msgid "renaming '%s' to '%s'"
 msgstr "benenne '%s' nach '%s' um"
@@ -4433,17 +4435,17 @@ msgstr ""
 "mehrere Zweigzertifikate für Revision %s gefunden, bitte geben Sie einen "
 "Zweignamen an"
 
-#: src/database.cc:586
+#: src/database.cc:589
 #, c-format
 msgid "initializing new database '%s'"
 msgstr "initialisiere neue Datenbank '%s'"
 
-#: src/database.cc:595
+#: src/database.cc:598
 #, c-format
 msgid "this database already contains rosters"
 msgstr "diese Datenbank enthält bereits Kataloge"
 
-#: src/database.cc:617
+#: src/database.cc:620
 #, c-format
 msgid ""
 "database '%s' contains old-style revisions.\n"
@@ -4462,7 +4464,7 @@ msgstr ""
 "  und holen Sie sich dann eine aktualisierte Kopie.\n"
 "Wir bitten die Unannehmlichkeiten zu entschuldigen."
 
-#: src/database.cc:627
+#: src/database.cc:630
 #, c-format
 msgid ""
 "database '%s' contains manifests but no revisions.\n"
@@ -4475,7 +4477,7 @@ msgstr ""
 "Bitte konsultieren Sie 'http://wiki.monotone.ca/upgradefromchangesets/' für "
 "Details"
 
-#: src/database.cc:650
+#: src/database.cc:653
 #, c-format
 msgid ""
 "database '%s' lacks some cached data.\n"
@@ -4485,25 +4487,25 @@ msgstr ""
 "Führen Sie '%s db regenerate_caches' aus, um diese Datenbank wieder "
 "benutzbar zu machen"
 
-#: src/database.cc:953
+#: src/database.cc:956
 msgid "sqlite error: "
 msgstr "SQLite-Fehler: "
 
-#: src/database.cc:977
+#: src/database.cc:980
 msgid "not set"
 msgstr "nicht gesetzt"
 
-#: src/database.cc:990
+#: src/database.cc:993
 msgid " (not a monotone database)"
 msgstr " (keine monotone-Datenbank)"
 
-#: src/database.cc:1040 src/database.cc:1072 src/database.cc:1772
-#: src/database.cc:1792
+#: src/database.cc:1043 src/database.cc:1075 src/database.cc:1775
+#: src/database.cc:1795
 #, c-format
 msgid "%u"
 msgstr "%u"
 
-#: src/database.cc:1091
+#: src/database.cc:1094
 #, c-format
 msgid ""
 "creator code      : %s\n"
@@ -4560,12 +4562,12 @@ msgstr ""
 "  Seitengröße          : %s\n"
 "  Cache-Größe          : %s"
 
-#: src/database.cc:1157
+#: src/database.cc:1160
 #, c-format
 msgid "invalid date '%s' for revision %s; skipped"
 msgstr "ungültiges Datum '%s' für Revision %s; wird übergangen"
 
-#: src/database.cc:1239
+#: src/database.cc:1242
 #, c-format
 msgid ""
 "timestamp correctness between revisions:\n"
@@ -4612,85 +4614,85 @@ msgstr ""
 "  95. Prozentrang         : %s Sekunden\n"
 "  99. Prozentrang         : %s Sekunden\n"
 
-#: src/database.cc:1290
+#: src/database.cc:1293
 #, c-format
 msgid "database schema version: %s"
 msgstr "Datenbankschema-Version: %s"
 
-#: src/database.cc:1324
+#: src/database.cc:1327
 #, c-format
 msgid "checking"
 msgstr "überprüfe"
 
-#: src/database.cc:1326
+#: src/database.cc:1329
 msgid "checked"
 msgstr "überprüft"
 
-#: src/database.cc:1328
+#: src/database.cc:1331
 msgid "fixed"
 msgstr "repariert"
 
-#: src/database.cc:1331
+#: src/database.cc:1334
 msgid "dropped"
 msgstr "entfernt"
 
-#: src/database.cc:1386
+#: src/database.cc:1389
 #, c-format
 msgid "checked %d certs, found %d bad, fixed %d, dropped %d"
 msgstr ""
 "überprüfte %d Zertifikate, fand %d schlechte, reparierte %d, entfernte %d"
 
-#: src/database.cc:1391
+#: src/database.cc:1394
 #, c-format
 msgid "checked %d certs, found %d bad, fixed %d"
 msgstr "überprüfte %d Zertifikate, fand %d schlechte, reparierte %d"
 
-#: src/database.cc:1454
+#: src/database.cc:1457
 #, c-format
 msgid "multiple statements in query: %s"
 msgstr "mehrere Befehle in Anfrage: %s"
 
-#: src/database.cc:1460
+#: src/database.cc:1463
 #, c-format
 msgid "wanted %d columns got %d in query: %s"
 msgstr "erwarte %d, erhielt %d Spalten in Anfrage: %s"
 
-#: src/database.cc:1539
+#: src/database.cc:1542
 #, c-format
 msgid "null result in query: %s"
 msgstr "Null-Ergebnis in Anfrage: %s"
 
-#: src/database.cc:1565
+#: src/database.cc:1568
 #, c-format
 msgid "wanted %d rows got %d in query: %s"
 msgstr "erwarte %d, erhielt %d Zeilen in Anfrage: %s"
 
-#: src/database.cc:1899
+#: src/database.cc:1902
 #, c-format
 msgid "roster does not match hash"
 msgstr "Katalog passt nicht auf Prüfsumme"
 
-#: src/database.cc:1920
+#: src/database.cc:1923
 #, c-format
 msgid "roster_delta does not match hash"
 msgstr "Katalog-Delta passt nicht auf Prüfsumme"
 
-#: src/database.cc:2105
+#: src/database.cc:2108
 #, c-format
 msgid "delta-reconstructed '%s' item does not match hash"
 msgstr "Vom Delta rekonstruiertes Element '%s' passt nicht auf Prüfsumme"
 
-#: src/database.cc:2513
+#: src/database.cc:2516
 #, c-format
 msgid "file preimage '%s' missing in db"
 msgstr "Datei-Urbild '%s' fehlt in der Datenbank"
 
-#: src/database.cc:2514
+#: src/database.cc:2517
 #, c-format
 msgid "dropping delta '%s' -> '%s'"
 msgstr "übergehe Delta '%s' -> '%s'"
 
-#: src/database.cc:2530
+#: src/database.cc:2533
 #, c-format
 msgid ""
 "unknown delta direction '%s'; assuming 'reverse'. Valid values are "
@@ -4699,63 +4701,63 @@ msgstr ""
 "Unbekannte Delta-Richtung '%s'; habe 'reverse' vermutet. Gültige Werte sind "
 "'reverse', 'forward' und 'both'."
 
-#: src/database.cc:2863
+#: src/database.cc:2866
 #, c-format
 msgid "revision does not match hash"
 msgstr "Revision passt nicht auf Prüfsumme"
 
-#: src/database.cc:2995
+#: src/database.cc:2998
 #, c-format
 msgid "missing prerequisite revision %s"
 msgstr "fehlende vorausgesetzte Revision %s"
 
-#: src/database.cc:2997 src/database.cc:3008 src/database.cc:3024
-#: src/database.cc:3032
+#: src/database.cc:3000 src/database.cc:3011 src/database.cc:3027
+#: src/database.cc:3035
 #, c-format
 msgid "dropping revision %s"
 msgstr "entferne Revision %s"
 
-#: src/database.cc:3007
+#: src/database.cc:3010
 #, c-format
 msgid "missing prerequisite file %s"
 msgstr "fehlende, erforderliche Datei %s"
 
-#: src/database.cc:3022
+#: src/database.cc:3025
 #, c-format
 msgid "missing prerequisite file pre-delta %s"
 msgstr "fehlendes, erforderliches Datei-Pre-Delta %s"
 
-#: src/database.cc:3030
+#: src/database.cc:3033
 #, c-format
 msgid "missing prerequisite file post-delta %s"
 msgstr "fehlendes, erforderliches Datei-Post-Delta %s"
 
-#: src/database.cc:3163
+#: src/database.cc:3166
 #, c-format
 msgid "revision contains incorrect manifest_id"
 msgstr "Revision beinhaltet ungültige manifest_id"
 
-#: src/database.cc:3487
+#: src/database.cc:3499
 #, c-format
 msgid "failed to get RSA verifying key for %s"
 msgstr "RSA konnte den Schlüssel für %s nicht überprüfen"
 
-#: src/database.cc:3626
+#: src/database.cc:3642
 #, c-format
 msgid "your database contains multiple keys named '%s'"
 msgstr "Ihre Datenbank beinhaltet mehrere Schlüssel mit dem Namen '%s'"
 
-#: src/database.cc:3787
+#: src/database.cc:3803
 #, c-format
 msgid "cert revision %s does not exist in db"
 msgstr "Zertifikats-Revision %s existiert nicht in der Datenbank"
 
-#: src/database.cc:3789
+#: src/database.cc:3805
 #, c-format
 msgid "dropping cert"
 msgstr "entferne Zertifikat"
 
-#: src/database.cc:3799
+#: src/database.cc:3815
 #, c-format
 msgid ""
 "the branch name\n"
@@ -4779,34 +4781,34 @@ msgstr ""
 "Kommando '%s local kill_certs' um das Zweigzertifikat wieder zu löschen\n"
 "und danach ein neues mit gültigen Zweignamen zu erstellen."
 
-#: src/database.cc:4116
+#: src/database.cc:4132
 #, c-format
 msgid "ignoring bad signature by '%s' on '%s'"
 msgstr "ignoriere ungültige Signatur von '%s' vom '%s'"
 
-#: src/database.cc:4121
+#: src/database.cc:4137
 #, c-format
 msgid "ignoring unknown signature by '%s' on '%s'"
 msgstr "ignoriere unbekannte Signatur von '%s' vom '%s'"
 
-#: src/database.cc:4123
+#: src/database.cc:4139
 #, c-format
 msgid "trust function disliked %d signers of '%s' cert on revision %s"
 msgstr ""
 "Vertrauensfunktion lehnt %d Unterzeichner des Zertifikats '%s' auf Revision "
 "%s ab"
 
-#: src/database.cc:4811 src/database.cc:4953
+#: src/database.cc:4827 src/database.cc:4969
 #, c-format
 msgid "no database specified"
 msgstr "keine Datenbank spezifiziert"
 
-#: src/database.cc:4824
+#: src/database.cc:4840
 #, c-format
 msgid "database '%s' does not exist"
 msgstr "Datenbank '%s' existiert nicht"
 
-#: src/database.cc:4832
+#: src/database.cc:4848
 #, c-format
 msgid ""
 "'%s' is a workspace, not a database\n"
@@ -4815,17 +4817,17 @@ msgstr ""
 "'%s' ist ein Arbeitsverzeichnis, keine Datenbank\n"
 "(meinten Sie '%s'?)"
 
-#: src/database.cc:4836
+#: src/database.cc:4852
 #, c-format
 msgid "'%s' is a directory, not a database"
 msgstr "'%s' ist ein Verzeichnis, keine Datenbank"
 
-#: src/database.cc:4844
+#: src/database.cc:4860
 #, c-format
 msgid "database '%s' already exists"
 msgstr "Datenbank '%s' existiert bereits"
 
-#: src/database.cc:4849
+#: src/database.cc:4865
 #, c-format
 msgid ""
 "existing (possibly stale) journal file '%s' has same stem as new database "
@@ -4836,106 +4838,106 @@ msgstr ""
 "'%s'.\n"
 "Datenbankerstellung abgebrochen"
 
-#: src/database.cc:5011
+#: src/database.cc:5027
 #, c-format
 msgid "the database alias '%s' has multiple ambiguous expansions:"
 msgstr "der Datenbankalias '%s' kann auf mehrere Arten erweitert werden:"
 
-#: src/database.cc:5034
+#: src/database.cc:5050
 #, c-format
 msgid "could not query default database alias"
 msgstr "konnte nicht den Standarddatenbankalias abfragen"
 
-#: src/database.cc:5036
+#: src/database.cc:5052
 #, c-format
 msgid "using default database '%s'"
 msgstr "nutze Standarddatenbank '%s'"
 
-#: src/database.cc:5046
+#: src/database.cc:5062
 #, c-format
 msgid "invalid database alias '%s': does not start with a colon"
 msgstr "ungültiger Datenbankalias '%s': beginnt nicht mit einem Doppelpunkt"
 
-#: src/database.cc:5050
+#: src/database.cc:5066
 #, c-format
 msgid "invalid database alias '%s': must not be empty"
 msgstr "ungültiger Datenbankalias '%s': darf nicht leer sein"
 
-#: src/database.cc:5066
+#: src/database.cc:5082
 #, c-format
 msgid "invalid database alias '%s': does contain invalid characters"
 msgstr "ungültiger Datenbankalias '%s': beinhaltet ungültige Zeichen"
 
-#: src/key_store.cc:90
+#: src/key_store.cc:91
 #, c-format
 msgid "no available keystore found"
 msgstr "kein verfügbarer Schlüsselbund gefunden"
 
-#: src/key_store.cc:134 src/key_store.cc:138 src/key_store.cc:142
-#: src/key_store.cc:144 src/key_store.cc:149
+#: src/key_store.cc:135 src/key_store.cc:139 src/key_store.cc:143
+#: src/key_store.cc:145 src/key_store.cc:150
 #, c-format
 msgid "extraneous data in key store"
 msgstr "belanglose Daten im Schlüsselbund"
 
-#: src/key_store.cc:160
+#: src/key_store.cc:161
 #, c-format
 msgid "key store has multiple copies of the key with id %s"
 msgstr "der Schlüsselbund hat mehrere Kopien des Schlüssels mit der ID %s"
 
-#: src/key_store.cc:169
+#: src/key_store.cc:170
 #, c-format
 msgid "converting old-format private key %s"
 msgstr "konvertiere privaten Schlüssel mit altem Format %s"
 
-#: src/key_store.cc:227
+#: src/key_store.cc:228
 #, c-format
 msgid "ignored invalid key file '%s' in key store"
 msgstr "ignoriere ungültige Schlüsseldatei '%s' im Schlüsselbund"
 
-#: src/key_store.cc:422 src/key_store.cc:426 src/key_store.cc:429
-#: src/key_store.cc:431 src/key_store.cc:434
+#: src/key_store.cc:423 src/key_store.cc:427 src/key_store.cc:430
+#: src/key_store.cc:432 src/key_store.cc:435
 #, c-format
 msgid "invalid data in key file"
 msgstr "ungültige Daten in Schlüsseldatei"
 
-#: src/key_store.cc:442
+#: src/key_store.cc:443
 #, c-format
 msgid "expected key with id %s in key file '%s', got key with id %s"
 msgstr ""
 "erwartete Schlüssel mit ID %s in Schlüsseldatei '%s', erhielt jedoch "
 "Schlüssel mit ID %s"
 
-#: src/key_store.cc:508
+#: src/key_store.cc:509
 #, c-format
 msgid "enter new passphrase for key ID [%s] (%s): "
 msgstr "neues Passwort für Schlüssel-ID [%s] (%s): "
 
-#: src/key_store.cc:511
+#: src/key_store.cc:512
 #, c-format
 msgid "enter passphrase for key ID [%s] (%s): "
 msgstr "Passwort für Schlüssel-ID [%s] (%s): "
 
-#: src/key_store.cc:515
+#: src/key_store.cc:516
 #, c-format
 msgid "confirm passphrase for key ID [%s] (%s): "
 msgstr "Passwortbestätigung für Schlüssel-ID [%s] (%s): "
 
-#: src/key_store.cc:535
+#: src/key_store.cc:536
 #, c-format
 msgid "too many failed passphrases"
 msgstr "Passwort zu oft falsch eingegeben"
 
-#: src/key_store.cc:536
+#: src/key_store.cc:537
 #, c-format
 msgid "passphrases do not match, try again"
 msgstr "Passwörter stimmen nicht überein, bitte noch einmal versuchen"
 
-#: src/key_store.cc:567 src/keys.cc:43
+#: src/key_store.cc:568 src/keys.cc:43
 #, c-format
 msgid "no key pair %s found in key store '%s'"
 msgstr "kein Schlüsselpaar %s im Schlüsselbund '%s' gefunden"
 
-#: src/key_store.cc:633
+#: src/key_store.cc:634
 #, c-format
 msgid ""
 "failed to decrypt old private RSA key, probably incorrect passphrase or "
@@ -4944,48 +4946,48 @@ msgstr ""
 "konnte alten, privaten RSA-Schlüssel nicht entschlüsseln; Passwort ist "
 "womöglich falsch oder der 'get_passphrase'-Luahook fehlt"
 
-#: src/key_store.cc:646
+#: src/key_store.cc:647
 #, c-format
 msgid "failed to extract RSA private key from PKCS#8 keypair"
 msgstr ""
 "konnte privaten RSA-Schlüssel nicht vom PKCS#8-Schlüsselpaar extrahieren"
 
-#: src/key_store.cc:686
+#: src/key_store.cc:687
 #, c-format
 msgid "key '%s' already exists"
 msgstr "Schlüssel '%s' existiert bereits"
 
-#: src/key_store.cc:698
+#: src/key_store.cc:699
 #, c-format
 msgid "generating key-pair '%s'"
 msgstr "erzeuge Schlüsselpaar '%s'"
 
-#: src/key_store.cc:746
+#: src/key_store.cc:763
 #, c-format
 msgid "storing key-pair %s in '%s/'"
 msgstr "speichere Schlüsselpaar %s in '%s/'"
 
-#: src/key_store.cc:759
+#: src/key_store.cc:776
 #, c-format
 msgid "storing public key %s in '%s'"
 msgstr "speichere öffentlichen Schlüssel %s in '%s'"
 
-#: src/key_store.cc:775
+#: src/key_store.cc:792
 #, c-format
 msgid "key '%s' has hash '%s'"
 msgstr "Der Schlüssel '%s' hat die Prüfsumme '%s'"
 
-#: src/key_store.cc:789
+#: src/key_store.cc:806
 #, c-format
 msgid "no key pair '%s' found in key store '%s'"
 msgstr "kein Schlüsselpaar '%s' in Schlüsselbund '%s' gefunden"
 
-#: src/key_store.cc:845
+#: src/key_store.cc:881
 #, c-format
 msgid "Botan error decrypting data: '%s'"
 msgstr "Botan-Fehler beim Entschlüsseln von Daten: '%s'"
 
-#: src/key_store.cc:868
+#: src/key_store.cc:904
 #, c-format
 msgid ""
 "you have chosen to sign only with ssh-agent but ssh-agent does not seem to "
@@ -4994,12 +4996,12 @@ msgstr ""
 "Sie haben ausgewählt, nur mit ssh-agent zu signieren, aber derzeit scheint "
 "ssh-agent nicht zu laufen"
 
-#: src/key_store.cc:898
+#: src/key_store.cc:935
 #, c-format
 msgid "you don't seem to have your monotone key imported "
 msgstr "anscheinend haben Sie Ihren monotone-Schlüssel nicht importiert"
 
-#: src/key_store.cc:952
+#: src/key_store.cc:995
 #, c-format
 msgid ""
 "make_signature: ssh signature (%i) != monotone signature (%i)\n"
@@ -5010,24 +5012,24 @@ msgstr ""
 "ssh-Signatur     : %s\n"
 "monotone-Signatur: %s"
 
-#: src/key_store.cc:968
+#: src/key_store.cc:1011
 #, c-format
 msgid "make_signature: signature is not valid"
 msgstr "make_signature: Signatur ist ungültig"
 
-#: src/key_store.cc:980
+#: src/key_store.cc:1023
 #, c-format
 msgid "no ssh-agent is available, cannot add key %s"
 msgstr "es ist kein ssh-agent verfügbar; kann Schlüssel %s nicht hinzufügen"
 
-#: src/key_store.cc:1087
+#: src/key_store.cc:1140
 #, c-format
 msgid "failed to decrypt old private RSA key, probably incorrect passphrase"
 msgstr ""
 "konnte alten, privaten RSA-Schlüssel nicht entschlüsseln; Passwort ist "
 "womöglich falsch"
 
-#: src/key_store.cc:1124
+#: src/key_store.cc:1187
 #, c-format
 msgid "public and private keys for %s do not match"
 msgstr "öffentlicher und privater Schlüssel für %s stimmen nicht überein"
@@ -5071,14 +5073,14 @@ msgstr ""
 "ssh_agent: get_keys: nicht alle oder zu viele Paket-Bytes verarbeitet, "
 "location (%u), length (%i)"
 
-#: src/ssh_agent.cc:420
+#: src/ssh_agent.cc:421
 #, c-format
 msgid "ssh_agent: get_keys: attempted to sign data when not connected"
 msgstr ""
 "ssh_agent: get_keys: Versuch, Daten ohne bestehende Verbindung zu "
 "unterschreiben"
 
-#: src/ssh_agent.cc:466
+#: src/ssh_agent.cc:467
 #, c-format
 msgid ""
 "ssh_agent: sign_data: not all or too many signature bytes consumed, location "
@@ -5087,7 +5089,7 @@ msgstr ""
 "ssh_agent: sign_data: nicht alle oder zu viele Signatur-Bytes verarbeitet, "
 "location (%u), length (%i)"
 
-#: src/ssh_agent.cc:472
+#: src/ssh_agent.cc:473
 #, c-format
 msgid ""
 "ssh_agent: sign_data: not all or too many packet bytes consumed, location "
@@ -5096,19 +5098,19 @@ msgstr ""
 "ssh_agent: sign_data: nicht alle oder zu viele Paket-Bytes verarbeitet, "
 "location (%u), length (%i)"
 
-#: src/ssh_agent.cc:482
+#: src/ssh_agent.cc:483
 #, c-format
 msgid "ssh_agent: add_identity: attempted to add a key when not connected"
 msgstr ""
 "ssh_agent: add_identity: Versuch, einen Schlüssel ohne bestehende Verbindung "
 "hinzuzufügen"
 
-#: src/ssh_agent.cc:498
+#: src/ssh_agent.cc:499
 #, c-format
 msgid "ssh_agent: add_identity: response packet of unexpected size (%u)"
 msgstr "ssh_agent: add_identity: Antwort-Paket mit nicht erwarteter Größe (%u)"
 
-#: src/ssh_agent.cc:501
+#: src/ssh_agent.cc:502
 #, c-format
 msgid "ssh_agent: packet type (%u) != 6"
 msgstr "ssh_agent: Paket-Type (%u) != 6"
@@ -5950,12 +5952,12 @@ msgstr "entdeckte 'replay'-Attacke in 'auth netcmd'"
 msgid "bad client signature"
 msgstr "ungültige Client-Signatur"
 
-#: src/network/session_base.cc:151
+#: src/network/session_base.cc:153
 #, c-format
 msgid "peer %s IO terminated connection in working state (error)"
 msgstr "Peer %s E/A beendete Verbindung im 'working state' (Fehler)"
 
-#: src/network/session_base.cc:156
+#: src/network/session_base.cc:158
 #, c-format
 msgid ""
 "peer %s IO terminated connection in shutdown state (possibly client "
@@ -5964,32 +5966,32 @@ msgstr ""
 "Peer %s E/A beendete Verbindung im 'shutdown state' (evtl. vom Client falsch "
 "berichteter Fehler)"
 
-#: src/network/session_base.cc:228
+#: src/network/session_base.cc:254
 #, c-format
 msgid "got OOB from peer %s, disconnecting"
 msgstr "erhielt OOB vom Peer %s, trenne Verbindung"
 
-#: src/network/session_base.cc:237
+#: src/network/session_base.cc:263
 #, c-format
 msgid "peer %s IO failed in working state (error)"
 msgstr "Peer %s E/A im 'working state' fehlgeschlagen (Fehler)"
 
-#: src/network/session_base.cc:242
+#: src/network/session_base.cc:268
 #, c-format
 msgid "peer %s IO failed in shutdown state (possibly client misreported error)"
 msgstr ""
 "Peer %s E/A im 'shutdown state' fehlgeschlagen (evtl. vom Client falsch "
 "berichteter Fehler)"
 
-#: src/network/session_base.cc:248
+#: src/network/session_base.cc:274
 #, c-format
 msgid "peer %s IO failed in confirmed state (success)"
 msgstr "Peer %s E/A im 'confirmed state' fehlgeschlagen (Erfolg)"
 
-#: src/network/session_base.cc:256
+#: src/network/session_base.cc:282
 #, c-format
-msgid "network error on peer %s, disconnecting"
-msgstr "Netzwerk-Fehler an Peer %s, trenne Verbindung"
+msgid "disconnecting due to a network error on peer %s: %s"
+msgstr "Trenne Verbindung wegen Netzwerkfehler auf Peer %s: %s"
 
 #: src/netxx_pipe.cc:50 src/netxx_pipe.cc:189
 #, c-format
@@ -7141,7 +7143,8 @@ msgstr "Hinweis: Ihr Arbeitsbereich wurde nicht aktualisiert."
 #: src/merge_roster.cc:420
 #, c-format
 msgid "unsupported '%s' conflict resolution in mtn:resolve_conflict attribute"
-msgstr "nicht unterstützte '%s'-Konfliktlösung in 'mtn:resolve_conflict'-Attribut"
+msgstr ""
+"nicht unterstützte '%s'-Konfliktlösung in 'mtn:resolve_conflict'-Attribut"
 
 #: src/merge_conflict.cc:590
 #, c-format
@@ -7292,32 +7295,32 @@ msgstr "umbenannt zu '%s' auf linker Seite"
 msgid "renamed to '%s' on the right"
 msgstr "umbenannt zu '%s' auf rechter Seite"
 
-#: src/merge_conflict.cc:1222
+#: src/merge_conflict.cc:1223
 #, c-format
 msgid "modified on the right, named %s"
 msgstr "auf rechter Seite verändert, umbenannt nach %s"
 
-#: src/merge_conflict.cc:1226
+#: src/merge_conflict.cc:1227
 #, c-format
 msgid "modified on the left, named %s"
 msgstr "auf linker Seite verändert, umbenannt nach %s"
 
-#: src/merge_conflict.cc:1257
+#: src/merge_conflict.cc:1258
 #, c-format
 msgid "left_resolution: drop"
 msgstr "left_resolution: drop"
 
-#: src/merge_conflict.cc:1274
+#: src/merge_conflict.cc:1275
 #, c-format
 msgid "right_resolution: drop"
 msgstr "right_resolution: drop"
 
-#: src/merge_conflict.cc:1331
+#: src/merge_conflict.cc:1332
 #, c-format
 msgid "conflict: duplicate name '%s' for the directory '%s'"
 msgstr "Konflikt: doppelter Name '%s' für das Verzeichnis '%s'"
 
-#: src/merge_conflict.cc:1340
+#: src/merge_conflict.cc:1341
 #, c-format
 msgid ""
 "conflict: duplicate name '%s' for the directory\n"
@@ -7328,84 +7331,84 @@ msgstr ""
 "          names '%s' auf linker Seite und\n"
 "          names '%s' auf rechter Seite."
 
-#: src/merge_conflict.cc:1358 src/merge_conflict.cc:1408
+#: src/merge_conflict.cc:1359 src/merge_conflict.cc:1409
 #, c-format
 msgid "added as a new file on the left"
 msgstr "als neue Datei auf linker Seite hinzugefügt"
 
-#: src/merge_conflict.cc:1360 src/merge_conflict.cc:1410
+#: src/merge_conflict.cc:1361 src/merge_conflict.cc:1411
 #, c-format
 msgid "added as a new directory on the left"
 msgstr "als neues Verzeichnis auf linker Seite hinzugefügt"
 
-#: src/merge_conflict.cc:1368 src/merge_conflict.cc:1392
+#: src/merge_conflict.cc:1369 src/merge_conflict.cc:1393
 #, c-format
 msgid "added as a new file on the right"
 msgstr "als neue Datei auf rechter Seite hinzugefügt"
 
-#: src/merge_conflict.cc:1370 src/merge_conflict.cc:1394
+#: src/merge_conflict.cc:1371 src/merge_conflict.cc:1395
 #, c-format
 msgid "added as a new directory on the right"
 msgstr "als neues Verzeichnis auf rechter Seite hinzugefügt"
 
-#: src/merge_conflict.cc:1383 src/merge_conflict.cc:1435
+#: src/merge_conflict.cc:1384 src/merge_conflict.cc:1436
 #, c-format
 msgid "renamed from file '%s' on the left"
 msgstr "von Datei '%s' auf linker Seite umbenannt"
 
-#: src/merge_conflict.cc:1385 src/merge_conflict.cc:1437
+#: src/merge_conflict.cc:1386 src/merge_conflict.cc:1438
 #, c-format
 msgid "renamed from directory '%s' on the left"
 msgstr "von Verzeichnis '%s' auf linker Seite umbenannt"
 
-#: src/merge_conflict.cc:1418 src/merge_conflict.cc:1445
+#: src/merge_conflict.cc:1419 src/merge_conflict.cc:1446
 #, c-format
 msgid "renamed from file '%s' on the right"
 msgstr "von Datei '%s' auf rechter Seite umbenannt"
 
-#: src/merge_conflict.cc:1420 src/merge_conflict.cc:1447
+#: src/merge_conflict.cc:1421 src/merge_conflict.cc:1448
 #, c-format
 msgid "renamed from directory '%s' on the right"
 msgstr "von Verzeichnis '%s' auf rechter Seite umbenannt"
 
-#: src/merge_conflict.cc:1498
+#: src/merge_conflict.cc:1499
 #, c-format
 msgid "conflict: multiple values for attribute '%s' on file '%s'"
 msgstr "Konflikt: mehrere Werte für Attribut '%s' auf Datei '%s'"
 
-#: src/merge_conflict.cc:1501
+#: src/merge_conflict.cc:1502
 #, c-format
 msgid "conflict: multiple values for attribute '%s' on directory '%s'"
 msgstr "Konflikt: mehrere Werte für das Attribut '%s' auf Verzeichnis '%s'"
 
-#: src/merge_conflict.cc:1505
+#: src/merge_conflict.cc:1506
 #, c-format
 msgid "set to '%s' on the left"
 msgstr "auf '%s' auf linker Seite gesetzt"
 
-#: src/merge_conflict.cc:1507
+#: src/merge_conflict.cc:1508
 #, c-format
 msgid "deleted on the left"
 msgstr "auf linker Seite gelöscht"
 
-#: src/merge_conflict.cc:1510
+#: src/merge_conflict.cc:1511
 #, c-format
 msgid "set to '%s' on the right"
 msgstr "auf '%s' auf rechter Seite gelöscht"
 
-#: src/merge_conflict.cc:1512
+#: src/merge_conflict.cc:1513
 #, c-format
 msgid "deleted on the right"
 msgstr "auf rechter Seite gelöscht"
 
-#: src/merge_conflict.cc:1532
+#: src/merge_conflict.cc:1533
 #, c-format
 msgid ""
 "conflict: multiple values for attribute '%s' on file '%s' from revision %s"
 msgstr ""
 "Konflikt: mehrere Werte für Attribut '%s' auf Datei '%s' von Revision %s"
 
-#: src/merge_conflict.cc:1535
+#: src/merge_conflict.cc:1536
 #, c-format
 msgid ""
 "conflict: multiple values for attribute '%s' on directory '%s' from revision "
@@ -7414,236 +7417,239 @@ msgstr ""
 "Konflikt: mehrere Werte für Attribut '%s' auf Verzeichnis '%s' von Revision "
 "'%s'"
 
-#: src/merge_conflict.cc:1541
+#: src/merge_conflict.cc:1542
 #, c-format
 msgid "set to '%s' on left file '%s'"
 msgstr "auf '%s' auf linker Datei '%s' gesetzt"
 
-#: src/merge_conflict.cc:1544
+#: src/merge_conflict.cc:1545
 #, c-format
 msgid "set to '%s' on left directory '%s'"
 msgstr "auf '%s' auf linkem Verzeichnis '%s' gesetzt"
 
-#: src/merge_conflict.cc:1550
+#: src/merge_conflict.cc:1551
 #, c-format
 msgid "deleted from left file '%s'"
 msgstr "von linker Datei '%s' gelöscht"
 
-#: src/merge_conflict.cc:1553
+#: src/merge_conflict.cc:1554
 #, c-format
 msgid "deleted from left directory '%s'"
 msgstr "von linkem Verzeichnis '%s' gelöscht"
 
-#: src/merge_conflict.cc:1560
+#: src/merge_conflict.cc:1561
 #, c-format
 msgid "set to '%s' on right file '%s'"
 msgstr "auf '%s' auf rechter Datei '%s' gesetzt"
 
-#: src/merge_conflict.cc:1563
+#: src/merge_conflict.cc:1564
 #, c-format
 msgid "set to '%s' on right directory '%s'"
 msgstr "auf '%s' auf rechtem Verzeichnis '%s' gesetzt"
 
-#: src/merge_conflict.cc:1569
+#: src/merge_conflict.cc:1570
 #, c-format
 msgid "deleted from right file '%s'"
 msgstr "von rechter Datei '%s' gelöscht"
 
-#: src/merge_conflict.cc:1572
+#: src/merge_conflict.cc:1573
 #, c-format
 msgid "deleted from right directory '%s'"
 msgstr "von linkem Verzeichnis '%s' gelöscht"
 
-#: src/merge_conflict.cc:1647
+#: src/merge_conflict.cc:1648
 #, c-format
 msgid "conflict: content conflict on file '%s'"
 msgstr "Konflikt: Inhaltskonflikt in Datei '%s'"
 
-#: src/merge_conflict.cc:1649
+#: src/merge_conflict.cc:1650
 #, c-format
 msgid "content hash is %s on the left"
 msgstr "Inhalts-Prüfsumme ist %s auf linker Seite"
 
-#: src/merge_conflict.cc:1650
+#: src/merge_conflict.cc:1651
 #, c-format
 msgid "content hash is %s on the right"
 msgstr "Inhalts-Prüfsumme ist %s auf rechter Seite"
 
-#: src/merge_conflict.cc:1669
+#: src/merge_conflict.cc:1670
 #, c-format
 msgid "conflict: content conflict on file '%s' from revision %s"
 msgstr "Konflik: Inhaltskonflikt in '%s' von Revision %s"
 
-#: src/merge_conflict.cc:1671
+#: src/merge_conflict.cc:1672
 #, c-format
 msgid "content hash is %s on the left in file '%s'"
 msgstr "Inhalts-Prüfsumme ist %s auf linker Seite in Datei '%s'"
 
-#: src/merge_conflict.cc:1673
+#: src/merge_conflict.cc:1674
 #, c-format
 msgid "content hash is %s on the right in file '%s'"
 msgstr "Inhalts-Prüfsumme ist %s auf rechter Seite in Datei '%s'"
 
-#: src/merge_conflict.cc:1714 src/merge_conflict.cc:1946
-#: src/merge_conflict.cc:2546
+#: src/merge_conflict.cc:1715 src/merge_conflict.cc:1947
+#: src/merge_conflict.cc:2547
 #, c-format
 msgid "conflicts file does not match current conflicts"
 msgstr "Konfliktlösungsdatei passt nicht auf derzeitige Konflikte"
 
-#: src/merge_conflict.cc:1715
+#: src/merge_conflict.cc:1716
 #, c-format
 msgid "%s is not a supported conflict resolution for %s"
 msgstr "%s ist keine unterstützte Konfliktlösung für %s"
 
-#: src/merge_conflict.cc:1716
+#: src/merge_conflict.cc:1717
 #, c-format
 msgid ""
 "history for '%s' from %s will be lost; see user manual Merge Conflicts "
 "section"
 msgstr ""
-"Historie von '%s' von %s wird verloren gehen; konsultieren Sie den Abschnitt \"Merge Conflicts\" im Benutzerhandbuch"
+"Historie von '%s' von %s wird verloren gehen; konsultieren Sie den Abschnitt "
+"\"Merge Conflicts\" im Benutzerhandbuch"
 
-#: src/merge_conflict.cc:1717
+#: src/merge_conflict.cc:1718
 msgid "extra chars at end of conflict"
 msgstr "zusätzliche Zeichen am Ende des Konflikts"
 
-#: src/merge_conflict.cc:1933
+#: src/merge_conflict.cc:1934
 #, c-format
 msgid "expected orphaned_directory or orphaned_file, found %s"
 msgstr "erwartete orphaned_directory oder orphaned_file, erhielt %s"
 
-#: src/merge_conflict.cc:2604
+#: src/merge_conflict.cc:2605
 #, c-format
 msgid "extra data in file"
 msgstr "zusätzliche Daten in Datei"
 
-#: src/merge_conflict.cc:2732
+#: src/merge_conflict.cc:2738
 #, c-format
 msgid "left revision id does not match conflict file"
 msgstr "linke Revisions-ID passt nicht auf Konfliktlösungsdatei"
 
-#: src/merge_conflict.cc:2738
+#: src/merge_conflict.cc:2744
 #, c-format
 msgid "right revision id does not match conflict file"
 msgstr "rechte Revisions-ID passt nicht auf Konfliktlösungsdatei"
 
-#: src/merge_conflict.cc:2769
+#: src/merge_conflict.cc:2775
 #, c-format
 msgid "'%s' already exists"
 msgstr "'%s' existiert bereits"
 
-#: src/merge_conflict.cc:2771
+#: src/merge_conflict.cc:2777
 #, c-format
 msgid "directory '%s' does not exist or is unknown"
 msgstr "Das Verzeichnis '%s' existiert nicht oder ist unbekannt"
 
-#: src/merge_conflict.cc:2821
+#: src/merge_conflict.cc:2827
 #, c-format
 msgid "can't drop directory '%s'; it is not empty"
 msgstr "kann Verzeichnis '%s' nicht entfernen; Verzeichnis ist nicht leer"
 
-#: src/merge_conflict.cc:2835
+#: src/merge_conflict.cc:2841
 #, c-format
 msgid "no resolution provided for orphaned_node '%s'"
 msgstr "keine Lösung für verwaisten Knoten '%s' angegeben"
 
-#: src/merge_conflict.cc:2840
+#: src/merge_conflict.cc:2846
 #, c-format
 msgid "invalid resolution for orphaned_node '%s'"
 msgstr "ungültige Lösung für verwaisten Knoten '%s'"
 
-#: src/merge_conflict.cc:2863 src/merge_conflict.cc:2896
+#: src/merge_conflict.cc:2869 src/merge_conflict.cc:2902
 #, c-format
 msgid "replacing content of '%s' from %s with '%s'"
 msgstr "ersetze Inhalt von '%s' von %s mit '%s'"
 
-#: src/merge_conflict.cc:2935
+#: src/merge_conflict.cc:2941
 #, c-format
 msgid "extra %s_resolution provided for dropped_modified '%s'"
-msgstr "zusätzliche %s_resolution-Lösung für dropped_modified-Konflikt '%s' angegeben"
+msgstr ""
+"zusätzliche %s_resolution-Lösung für dropped_modified-Konflikt '%s' angegeben"
 
-#: src/merge_conflict.cc:2942
+#: src/merge_conflict.cc:2948
 #, c-format
 msgid "no resolution provided for dropped_modified '%s'"
 msgstr "keine Lösung für dropped_modified-Konflikt '%s' angegeben"
 
-#: src/merge_conflict.cc:2943
+#: src/merge_conflict.cc:2949
 #, c-format
 msgid "no %s_resolution provided for dropped_modified '%s'"
-msgstr "keine %s_resolution-Lösung für dropped_modified-Konflikt '%s' angegeben"
+msgstr ""
+"keine %s_resolution-Lösung für dropped_modified-Konflikt '%s' angegeben"
 
-#: src/merge_conflict.cc:2980
+#: src/merge_conflict.cc:2986
 #, c-format
 msgid "dropping '%s' from %s"
 msgstr "entferne '%s' von %s"
 
-#: src/merge_conflict.cc:2988 src/merge_conflict.cc:2995
+#: src/merge_conflict.cc:2994 src/merge_conflict.cc:3001
 #, c-format
 msgid "keeping '%s' from %s"
 msgstr "behalte '%s' von %s"
 
-#: src/merge_conflict.cc:3017 src/merge_conflict.cc:3026
-#: src/merge_conflict.cc:3040 src/merge_conflict.cc:3052
+#: src/merge_conflict.cc:3023 src/merge_conflict.cc:3032
+#: src/merge_conflict.cc:3046 src/merge_conflict.cc:3058
 #, c-format
 msgid "renaming '%s' from %s to '%s'"
 msgstr "benenne '%s' von %s nach '%s' um"
 
-#: src/merge_conflict.cc:3176 src/merge_conflict.cc:3214
+#: src/merge_conflict.cc:3184 src/merge_conflict.cc:3222
 #, c-format
 msgid "inconsistent left/right resolutions for '%s'"
 msgstr "inkonsistente Konfliktlösungen auf beiden Seiten für '%s'"
 
-#: src/merge_conflict.cc:3178
+#: src/merge_conflict.cc:3186
 #, c-format
 msgid "replacing content of '%s' with '%s'"
 msgstr "ersetze Inhalt von '%s' mit '%s'"
 
-#: src/merge_conflict.cc:3205
+#: src/merge_conflict.cc:3213
 #, c-format
 msgid "can't drop '%s'; not empty"
 msgstr "kann '%s' nicht entfernen; nicht leer"
 
-#: src/merge_conflict.cc:3216
+#: src/merge_conflict.cc:3224
 #, c-format
 msgid "keeping '%s'"
 msgstr "behalte '%s'"
 
-#: src/merge_conflict.cc:3227
+#: src/merge_conflict.cc:3235
 #, c-format
 msgid "no resolution provided for duplicate_name '%s'"
 msgstr "keine Lösung für doppelten Namenskonflikt '%s' angegeben"
 
-#: src/merge_conflict.cc:3327
+#: src/merge_conflict.cc:3335
 #, c-format
 msgid "merge of '%s', '%s' failed"
 msgstr "Vereinigung von '%s', '%s' schlug fehl"
 
-#: src/merge_conflict.cc:3329
+#: src/merge_conflict.cc:3337
 #, c-format
 msgid "merged '%s', '%s'"
 msgstr "vereinigt '%s', '%s'"
 
-#: src/merge_conflict.cc:3338
+#: src/merge_conflict.cc:3346
 #, c-format
 msgid "replacing content of '%s', '%s' with '%s'"
 msgstr "ersetze Inhalt von '%s', '%s' mit '%s'"
 
-#: src/merge_content.cc:330
+#: src/merge_content.cc:334
 #, c-format
 msgid "file '%s' does not exist in workspace"
 msgstr "Datei '%s' existiert nicht im Arbeitsbereich"
 
-#: src/merge_content.cc:331
+#: src/merge_content.cc:335
 #, c-format
 msgid "'%s' in workspace is a directory, not a file"
 msgstr "'%s' im Arbeitsbereich ist ein Verzeichnis, keine Datei"
 
-#: src/merge_content.cc:335
+#: src/merge_content.cc:339
 #, c-format
 msgid "file '%s' in workspace has id %s, wanted %s"
 msgstr "Datei '%s' im Arbeitsbereich hat die ID %s, erwartete %s"
 
-#: src/merge_content.cc:606
+#: src/merge_content.cc:610
 #, c-format
 msgid ""
 "help required for 3-way merge\n"
@@ -7658,19 +7664,19 @@ msgstr ""
 "[   rechts] %s\n"
 "[vereinigt] %s"
 
-#: src/merge_content.cc:785
+#: src/merge_content.cc:789
 #, c-format
 msgid "%d content conflict requires user intervention"
 msgid_plural "%d content conflicts require user intervention"
 msgstr[0] "%d Inhaltskonflikt erfordert einen Benutzereingriff"
 msgstr[1] "%d Inhaltskonflikte erfordern einen Benutzereingriff"
 
-#: src/merge_content.cc:801
+#: src/merge_content.cc:805
 #, c-format
 msgid "can't spawn external merger when non-interactive"
 msgstr "kann externes Merge-Werkzeug im nicht-interaktiven Modus nicht starten"
 
-#: src/merge_content.cc:811
+#: src/merge_content.cc:815
 #, c-format
 msgid "merge failed due to unresolved conflicts"
 msgstr "Vereinigung schlug wegen nicht aufgelösten Konflikten fehl"
@@ -8514,97 +8520,97 @@ msgstr "entferne Ausführungsberechtigung von '%s'"
 msgid "error closing file '%s': %s"
 msgstr "Fehler beim Schließen der Datei '%s': %s"
 
-#: src/unix/fs.cc:52 src/win32/fs.cc:26
+#: src/unix/fs.cc:66 src/win32/fs.cc:26
 #, c-format
 msgid "cannot get working directory: %s"
 msgstr "kann Arbeitsverzeichnis nicht ermitteln: %s"
 
-#: src/unix/fs.cc:64 src/win32/fs.cc:42
+#: src/unix/fs.cc:76 src/win32/fs.cc:42
 #, c-format
 msgid "cannot change to directory '%s': %s"
 msgstr "kann nicht in Verzeichnis '%s' wechseln: %s"
 
-#: src/unix/fs.cc:86
+#: src/unix/fs.cc:98
 #, c-format
 msgid "could not find home directory for uid %d"
 msgstr "konnte Heimatverzeichnis für UID %d nicht finden"
 
-#: src/unix/fs.cc:119
+#: src/unix/fs.cc:131
 #, c-format
 msgid "could not find home directory for user '%s'"
 msgstr "konnte Heimatverzeichnis von Benutzer '%s' nicht finden"
 
-#: src/unix/fs.cc:137
+#: src/unix/fs.cc:149
 #, c-format
 msgid "error accessing file '%s': %s"
 msgstr "Fehler beim Zugriff auf die Datei '%s': %s"
 
-#: src/unix/fs.cc:146
+#: src/unix/fs.cc:158
 #, c-format
 msgid "cannot handle special file '%s'"
 msgstr "kann nicht mit spezieller Datei '%s' umgehen"
 
-#: src/unix/fs.cc:162 src/win32/fs.cc:172
+#: src/unix/fs.cc:174 src/win32/fs.cc:172
 #, c-format
 msgid "could not open directory '%s': %s"
 msgstr "konnte Verzeichnis '%s' nicht öffnen: %s"
 
-#: src/unix/fs.cc:253
+#: src/unix/fs.cc:265
 #, c-format
 msgid "error accessing '%s/%s': %s"
 msgstr "Fehler beim Zugriff auf '%s/%s': %s"
 
-#: src/unix/fs.cc:275
+#: src/unix/fs.cc:287
 #, c-format
 msgid "stat(%s) failed: %s"
 msgstr "stat(%s) schlug fehl: %s"
 
-#: src/unix/fs.cc:287
+#: src/unix/fs.cc:299
 #, c-format
 msgid "chmod(%s) failed: %s"
 msgstr "chmod(%s) schlug fehl: %s"
 
-#: src/unix/fs.cc:330
+#: src/unix/fs.cc:342
 #, c-format
 msgid "error reading file '%s': %s"
 msgstr "Fehler beim Lesen der Datei '%s': %s"
 
-#: src/unix/fs.cc:345
+#: src/unix/fs.cc:357
 #, c-format
 msgid "error writing file '%s': %s"
 msgstr "Fehler beim Schreiben der Datei '%s': %s"
 
-#: src/unix/fs.cc:360
+#: src/unix/fs.cc:372
 #, c-format
 msgid "renaming '%s' to '%s' failed: %s"
 msgstr "Umbenennung von '%s' nach '%s' schlug fehl: %s"
 
-#: src/unix/fs.cc:374 src/unix/fs.cc:429 src/win32/fs.cc:248
+#: src/unix/fs.cc:386 src/unix/fs.cc:441 src/win32/fs.cc:248
 #, c-format
 msgid "could not remove '%s': %s"
 msgstr "konnte '%s' nicht entfernen: %s"
 
-#: src/unix/fs.cc:456 src/win32/fs.cc:310
+#: src/unix/fs.cc:468 src/win32/fs.cc:310
 #, c-format
 msgid "could not create directory '%s': %s"
 msgstr "konnte Verzeichnis '%s' nicht erstellen: %s"
 
-#: src/unix/fs.cc:522 src/win32/fs.cc:458
+#: src/unix/fs.cc:534 src/win32/fs.cc:458
 #, c-format
 msgid "cannot create temp file '%s': %s"
 msgstr "Kann temporäre Datei '%s' nicht anlegen: %s"
 
-#: src/unix/fs.cc:532
+#: src/unix/fs.cc:544
 #, c-format
 msgid "all %d possible temporary file names are in use"
 msgstr "alle %d möglichen, temporären Dateinamen sind in Benutzung"
 
-#: src/unix/fs.cc:573 src/win32/fs.cc:519
+#: src/unix/fs.cc:585 src/win32/fs.cc:519
 #, c-format
 msgid "error writing to temp file '%s': %s"
 msgstr "Fehler beim Schreiben zur temporären Datei '%s': %s"
 
-#: src/unix/fs.cc:578 src/win32/fs.cc:526
+#: src/unix/fs.cc:590 src/win32/fs.cc:526
 #, c-format
 msgid ""
 "giving up after four zero-length writes to '%s' (%d byte written, %d left)"
@@ -8833,13 +8839,14 @@ msgstr "dieses monotone arbeitet nicht mit Botan 1.9.11 oder neuer zusammen"
 msgid "this monotone binary requires Botan 1.9.11 or newer"
 msgstr "dieses monotone benötigt Botan 1.9.11 oder neuer"
 
-#: src/std_hooks.lua:56
-msgid "Press enter"
-msgstr "Drücken Sie die Eingabetaste"
+#~ msgid "network error on peer %s, disconnecting"
+#~ msgstr "Netzwerk-Fehler an Peer %s, trenne Verbindung"
 
-#: src/std_hooks.lua:58
-msgid "Press enter when the subprocess has completed"
-msgstr "Drücken Sie die Eingabetaste, wenn der Unterprozess beendet ist"
+#~ msgid "Press enter"
+#~ msgstr "Drücken Sie die Eingabetaste"
+
+#~ msgid "Press enter when the subprocess has completed"
+#~ msgstr "Drücken Sie die Eingabetaste, wenn der Unterprozess beendet ist"
 
 #~ msgid ""
 #~ "non-recursive add: Files in the directory '%s' will not be added "
