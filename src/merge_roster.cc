@@ -358,7 +358,6 @@ namespace
   insert_if_unborn(node_t const & n,
                    marking_map const & markings,
                    set<revision_id> const & uncommon_ancestors,
-                   roster_t const & /* parent_roster FIXME-UNUSED */ ,
                    side_t const present_in,
                    roster_merge_result & result)
   {
@@ -619,14 +618,14 @@ roster_merge(roster_t const & left_parent,
 
           case parallel::in_left:
             insert_if_unborn(i.left_data(),
-                             left_markings, left_uncommon_ancestors, left_parent,
+                             left_markings, left_uncommon_ancestors,
                              left_side, // present_in
                              result);
             break;
 
           case parallel::in_right:
             insert_if_unborn(i.right_data(),
-                             right_markings, right_uncommon_ancestors, right_parent,
+                             right_markings, right_uncommon_ancestors,
                              right_side, // present_in
                              result);
             break;

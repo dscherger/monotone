@@ -30,10 +30,8 @@ using std::vector;
 static NORETURN(void pcre_compile_error(int errcode, char const * err,
                                         int erroff, char const * pattern,
                                         origin::type caused_by));
-static NORETURN(void pcre_study_error(char const * err, char const * pattern,
-                                      origin::type caused_by));
+static NORETURN(void pcre_study_error(char const * err, char const * pattern));
 static NORETURN(void pcre_exec_error(int errcode,
-                                     origin::type regex_from,
                                      origin::type subject_from));
 
 inline unsigned int
@@ -138,7 +136,7 @@ private:
 
     pcre_extra *ed = pcre_study(basedat, 0, &err);
     if (err)
-      pcre_study_error(err, pattern, made_from);
+      pcre_study_error(err, pattern);
     if (!ed)
       {
         // I resent that C++ requires this cast.
@@ -186,7 +184,7 @@ private:
     else if (rc == PCRE_ERROR_NOMATCH)
       return false;
     else
-      pcre_exec_error(rc, made_from, subject_origin);
+      pcre_exec_error(rc, subject_origin);
   }
 
   bool
@@ -229,7 +227,7 @@ private:
     if (rc == PCRE_ERROR_NOMATCH)
       return false;
     else if (rc < 0)
-      pcre_exec_error(rc, made_from, subject_origin); // throws
+      pcre_exec_error(rc, subject_origin); // throws
 
     for (int i=0; i < cap_count; ++i)
       {
@@ -289,8 +287,7 @@ pcre_compile_error(int errcode, char const * err,
 }
 
 static void
-pcre_study_error(char const * err, char const * pattern,
-                 origin::type /* caused_by FIXME-UNUSED */)
+pcre_study_error(char const * err, char const * pattern)
 {
   // This interface doesn't even *have* error codes.
   // If the error is not out-of-memory, it's a bug.
@@ -303,7 +300,6 @@ pcre_study_error(char const * err, char const * pattern,
 
 static void
 pcre_exec_error(int errcode,
-                origin::type /* regex_from FIXME-UNUSED */ ,
                 origin::type subject_from)
 {
   // This interface provides error codes with symbolic constants for them!

@@ -239,8 +239,8 @@ void
 content_merge_workspace_adaptor::record_merge(file_id const & left_id,
                                               file_id const & right_id,
                                               file_id const & merged_id,
-                                              file_data const & /* left_data FIXME-UNUSED */ ,
-                                              file_data const & /* right_data FIXME-UNUSED */ ,
+                                              file_data const & /* left_data */ ,
+                                              file_data const & /* right_data */ ,
                                               file_data const & merged_data)
 {
   L(FL("temporarily recording merge of %s <-> %s into %s")
@@ -268,7 +268,7 @@ content_merge_workspace_adaptor::record_file(file_id const & id,
 void
 content_merge_workspace_adaptor::record_file(file_id const & parent_id,
                                              file_id const & merged_id,
-                                             file_data const & /* parent_data FIXME-UNUSED */ ,
+                                             file_data const & /* parent_data */ ,
                                              file_data const & merged_data)
 {
   L(FL("temporarily recording file %s -> %s")
@@ -750,7 +750,7 @@ resolve_merge_conflicts(lua_hooks & lua,
 
           // Resolve the ones we can, if they have resolutions specified. Each
           // conflict list is deleted once all are resolved.
-          result.resolve_orphaned_node_conflicts(lua, left_roster, right_roster, adaptor);
+          result.resolve_orphaned_node_conflicts(lua, left_roster, right_roster);
           result.resolve_dropped_modified_conflicts(lua, left_roster, right_roster,
                                                     dynamic_cast <content_merge_database_adaptor&>(adaptor), nis);
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);

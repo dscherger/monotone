@@ -201,8 +201,7 @@ cvs_history
   ticker n_tree_branches;
 
   cvs_history();
-  void set_filename(string const & file,
-                    file_id const & ident);
+  void set_filename(string const & file);
 
   void index_branchpoint_symbols(rcs_file const & r);
 
@@ -683,7 +682,7 @@ import_rcs_file_with_cvs(database & db, string const & filename,
                   origin::user);
     calculate_ident(dat, fid);
 
-    cvs.set_filename(filename, fid);
+    cvs.set_filename(filename);
     cvs.index_branchpoint_symbols (r);
     db.put_file(fid, dat);
 
@@ -752,8 +751,7 @@ cvs_history::cvs_history() :
 }
 
 void
-cvs_history::set_filename(string const & file,
-                          file_id const & /* ident FIXME-UNUSED */ )
+cvs_history::set_filename(string const & file)
 {
   L(FL("importing file '%s'") % file);
   I(file.size() > 2);
