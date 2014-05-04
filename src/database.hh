@@ -11,10 +11,10 @@
 #ifndef __DATABASE_HH__
 #define __DATABASE_HH__
 
+#include <memory>
 #include "vector.hh"
 #include <set>
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
+#include <functional>
 
 #include "rev_types.hh"
 #include "cert.hh"
@@ -79,7 +79,7 @@ typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 class database_impl;
 struct key_identity_info;
 
-typedef std::map<system_path, boost::shared_ptr<database_impl> > database_cache;
+typedef std::map<system_path, std::shared_ptr<database_impl> > database_cache;
 
 class database
 {
@@ -351,10 +351,10 @@ public:
 
   void get_revision_cert(id const & hash, cert & c);
 
-  typedef boost::function<bool(std::set<key_id> const &,
-                               id const &,
-                               cert_name const &,
-                               cert_value const &)> cert_trust_checker;
+  typedef std::function<bool(std::set<key_id> const &,
+                             id const &,
+                             cert_name const &,
+                             cert_value const &)> cert_trust_checker;
   // this takes a project_t so it can translate key names for the trust hook
   void erase_bogus_certs(project_t const & project, std::vector<cert> & certs);
   // permit alternative trust functions
@@ -499,7 +499,7 @@ public:
 private:
   static database_cache dbcache;
 
-  boost::shared_ptr<database_impl> imp;
+  std::shared_ptr<database_impl> imp;
   options opts;
   lua_hooks & lua;
   dboptions dbopts;

@@ -17,7 +17,6 @@
 #include <cerrno>
 #include <queue>
 
-#include "lexical_cast.hh"
 #include "basic_io.hh"
 #include "cset.hh"
 #include "file_io.hh"
@@ -42,9 +41,8 @@ using std::map;
 using std::pair;
 using std::set;
 using std::string;
+using std::to_string;
 using std::vector;
-
-using boost::lexical_cast;
 
 // workspace / book-keeping file code
 
@@ -289,8 +287,8 @@ get_roster_for_rid(database & db,
   // roster (and marking map).
   if (null_id(rid))
     {
-      cr.first = boost::shared_ptr<roster_t const>(new roster_t);
-      cr.second = boost::shared_ptr<marking_map const>(new marking_map);
+      cr.first = std::shared_ptr<roster_t const>(new roster_t);
+      cr.second = std::shared_ptr<marking_map const>(new marking_map);
     }
   else
     {
@@ -1258,7 +1256,7 @@ path_for_detached_nids()
 static inline bookkeeping_path
 path_for_detached_nid(node_id nid)
 {
-  return path_for_detached_nids() / path_component(lexical_cast<string>(nid),
+  return path_for_detached_nids() / path_component(to_string(nid),
                                                    origin::internal);
 }
 

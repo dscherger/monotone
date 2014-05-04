@@ -88,8 +88,8 @@ concrete_option::concrete_option()
 concrete_option::concrete_option(char const * names,
                                  char const * desc,
                                  bool arg,
-                                 boost::function<void (std::string)> set,
-                                 boost::function<void ()> reset,
+                                 std::function<void (std::string)> set,
+                                 std::function<void ()> reset,
                                  bool hide,
                                  char const * deprecate)
 {
@@ -141,9 +141,9 @@ concrete_option_set::concrete_option_set(concrete_option const & opt)
 // essentially the opposite of std::bind1st
 class discard_argument
 {
-  boost::function<void()> functor;
- public:
-  discard_argument(boost::function<void()> const & from)
+  std::function<void()> functor;
+public:
+  discard_argument(std::function<void()> const & from)
     : functor(from)
     {}
     void operator()(std::string const &)
@@ -153,8 +153,8 @@ class discard_argument
 concrete_option_set &
 concrete_option_set::operator()(char const * names,
                                 char const * desc,
-                                boost::function<void ()> set,
-                                boost::function<void ()> reset,
+                                std::function<void ()> set,
+                                std::function<void ()> reset,
                                 bool hide,
                                 char const * deprecate)
 {
@@ -166,8 +166,8 @@ concrete_option_set::operator()(char const * names,
 concrete_option_set &
 concrete_option_set::operator()(char const * names,
                                 char const * desc,
-                                boost::function<void (string)> set,
-                                boost::function<void ()> reset,
+                                std::function<void (string)> set,
+                                std::function<void ()> reset,
                                 bool hide,
                                 char const * deprecate)
 {

@@ -9,6 +9,8 @@
 // PURPOSE.
 
 #include "base.hh"
+
+#include <algorithm>
 #include <map>
 #include <iostream>
 #include <sstream>
@@ -44,6 +46,7 @@ using std::set;
 using std::string;
 using std::vector;
 using std::priority_queue;
+using std::set_difference;
 
 static void
 get_data(database & db,

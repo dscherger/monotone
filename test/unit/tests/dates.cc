@@ -23,7 +23,7 @@ UNIT_TEST(our_timegm)
   OK(0);
 
   t.year = 2000;
-  OK(s64_C(946684800));
+  OK(946684800LL);
 
   // Make sure our_timegm works for years before 1970 as well.
   t.year = 1960;
@@ -345,12 +345,12 @@ UNIT_TEST(localtime_formats)
 
 UNIT_TEST(from_unix_epoch)
 {
-#define OK_(x,y) do {                              \
+#define OK_(x, y) do {                             \
     string s_ = date_t(x).as_iso_8601_extended();  \
     L(FL("date_t: %lu -> %s") % (x) % s_);         \
     UNIT_TEST_CHECK(s_ == (y));                    \
   } while (0)
-#define OK(x,y) OK_(s64_C(x),y)
+#define OK(x, y) OK_(x, y)
 
   // every month boundary in 1970
   OK(0,          "1970-01-01T00:00:00");

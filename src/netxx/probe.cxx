@@ -71,7 +71,7 @@ Netxx::Probe::Probe (void)
 //####################################################################
 Netxx::Probe::Probe (const Probe &other) 
 {
-    std::auto_ptr<pimpl> ap(pimpl_ = new pimpl);
+    std::unique_ptr<pimpl> ap(pimpl_ = new pimpl);
 
     pimpl_->ready_queue_    = other.pimpl_->ready_queue_;
     pimpl_->pilist_	    = other.pimpl_->pilist_;

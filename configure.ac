@@ -1,4 +1,5 @@
 # Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+#               2014 Markus Wanner <markus@bluegap.ch>
 #
 # This program is made available under the GNU GPL version 2.0 or
 # greater. See the accompanying file COPYING for details.
@@ -120,15 +121,9 @@ dnl (A line with nothing but a # on it is ignored by the preprocessor.)
 AC_CHECK_HEADERS([cxxabi.h fcntl.h netinet/in.h],,, [#])
 
 # check for language features and compiler bugs
-AC_CXX_TYPEOF
-AC_CXX_EXTERN_TEMPLATE
-AC_CXX_GNUCXX_HASHMAP
-AC_CXX_STLPORT_HASHMAP
-AC_CXX_TR1_UNORDERED_MAP
-AC_CXX_TR1_UNORDERED_MAP_CONST_CORRECT
-AC_CXX_11_UNORDERED_MAP_AND_SET
-AC_CXX_SYNC_WITH_STDIO_WORKS
+AX_CXX_COMPILE_STDCXX_11(, mandatory)
 AC_CXX_TEMPLATE_STATIC_CONST_BUG
+AC_CXX_SYNC_WITH_STDIO_WORKS
 AC_CXX_MKTIME_64BIT_WORKS
 
 # Checks for typedefs and structures.

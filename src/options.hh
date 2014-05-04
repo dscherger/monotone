@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <list>
+#include <functional>
 #include <climits>
 
 #include "option.hh"
@@ -115,7 +116,7 @@ struct options
   options();
   const options & operator = (options const & other);
 
-  typedef boost::function<void()> reset_function;
+  typedef std::function<void()> reset_function;
   typedef option::option<options> option_type;
   typedef option::option_set<options> options_type;
   typedef options_type const & (*static_options_fun)();

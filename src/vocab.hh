@@ -10,7 +10,7 @@
 #ifndef __VOCAB_HH__
 #define __VOCAB_HH__
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "sanity.hh"
 
@@ -26,7 +26,7 @@
 
 class immutable_string
 {
-  boost::shared_ptr<std::string> _rep;
+  std::shared_ptr<std::string> _rep;
   static std::string empty;
 
 public:
@@ -54,11 +54,8 @@ public:
 #define ATOMIC_NOVERIFY(ty) hh_ATOMIC_NOVERIFY(ty)
 #define ATOMIC_BINARY(ty) hh_ATOMIC_BINARY(ty)
 
-#ifdef HAVE_EXTERN_TEMPLATE
+/* vocab.cc will undef this, again. */
 #define EXTERN extern
-#else
-#define EXTERN /* */
-#endif
 
 #include "vocab_terms.hh"
 

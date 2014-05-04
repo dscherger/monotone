@@ -10,8 +10,9 @@
 #ifndef __BOTAN_PIPE_CACHE_HH__
 #define __BOTAN_PIPE_CACHE_HH__
 
+#include <memory>
+
 #include <botan/botan.h>
-#include <boost/scoped_ptr.hpp>
 
 #include "sanity.hh"
 
@@ -35,7 +36,7 @@ class cached_botan_pipe
 {
   friend class pipe_cache_cleanup;
   cached_botan_pipe * next_tbd;
-  boost::scoped_ptr<Botan::Pipe> pipe;
+  std::unique_ptr<Botan::Pipe> pipe;
 
 public:
   cached_botan_pipe(Botan::Pipe * p);

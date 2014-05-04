@@ -11,11 +11,12 @@
 #ifndef __CONNECTION_INFO_HH__
 #define __CONNECTION_INFO_HH__
 
+#include <memory>
+
 #include "../netxx/types.h"
 #include "../database.hh"
 #include "../options.hh"
 #include "../automate_ostream.hh"
-#include <boost/shared_ptr.hpp>
 
 struct globish;
 struct server_initiated_sync_request;
@@ -23,7 +24,7 @@ struct uri_t;
 
 struct netsync_connection_info;
 
-typedef boost::shared_ptr<netsync_connection_info> shared_conn_info;
+typedef std::shared_ptr<netsync_connection_info> shared_conn_info;
 
 template<typename item_type>
 class future_set
@@ -67,7 +68,7 @@ public:
 };
 
 class connection_counts;
-typedef boost::shared_ptr<connection_counts> shared_conn_counts;
+typedef std::shared_ptr<connection_counts> shared_conn_counts;
 
 class connection_counts
 {

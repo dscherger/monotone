@@ -101,11 +101,12 @@
 //       i.e., nothing fancy necessary, for purposes of F() just treat it like
 //       it were a string
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/concept_check.hpp>
-#include "origin_type.hh"
 #include <map>
 #include <stdexcept>
+
+#include "origin_type.hh"
 
 class any_path;
 class file_path;
@@ -459,7 +460,7 @@ struct path_always_false : public path_predicate<T>
 // 'path' is an external path. If to_workspace_root, path is relative to
 // workspace root, or absolute. Otherwise, it is relative to the current
 // working directory, or absolute.
-boost::shared_ptr<any_path> new_optimal_path(std::string path, bool to_workspace_root);
+std::shared_ptr<any_path> new_optimal_path(std::string path, bool to_workspace_root);
 
 // record the initial path.  must be called before any use of system_path.
 void

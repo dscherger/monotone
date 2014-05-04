@@ -21,7 +21,7 @@
 
 using std::make_pair;
 using std::string;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 namespace
 {
@@ -105,7 +105,7 @@ put_added_conflict_left(basic_io::stanza & st,
   // access functions to content_merge_adaptor.
 
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
-  boost::shared_ptr<roster_t const> roster(db_adaptor.rosters[db_adaptor.left_rid]);
+  std::shared_ptr<roster_t const> roster(db_adaptor.rosters[db_adaptor.left_rid]);
   file_path name;
 
   roster->get_name (nid, name);
@@ -131,7 +131,7 @@ put_added_conflict_right(basic_io::stanza & st,
                          node_id const nid)
 {
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
-  boost::shared_ptr<roster_t const> roster(db_adaptor.rosters[db_adaptor.right_rid]);
+  std::shared_ptr<roster_t const> roster(db_adaptor.rosters[db_adaptor.right_rid]);
   I(0 != roster);
 
   file_path name;
@@ -160,9 +160,9 @@ put_rename_conflict_left(basic_io::stanza & st,
                          node_id const nid)
 {
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
-  boost::shared_ptr<roster_t const> ancestor_roster(db_adaptor.rosters[db_adaptor.lca]);
+  std::shared_ptr<roster_t const> ancestor_roster(db_adaptor.rosters[db_adaptor.lca]);
   I(0 != ancestor_roster);
-  boost::shared_ptr<roster_t const> left_roster(db_adaptor.rosters[db_adaptor.left_rid]);
+  std::shared_ptr<roster_t const> left_roster(db_adaptor.rosters[db_adaptor.left_rid]);
 
   file_path ancestor_name;
   file_path left_name;
@@ -287,9 +287,9 @@ put_rename_conflict_right (basic_io::stanza & st,
                            node_id const nid)
 {
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
-  boost::shared_ptr<roster_t const> ancestor_roster(db_adaptor.rosters[db_adaptor.lca]);
+  std::shared_ptr<roster_t const> ancestor_roster(db_adaptor.rosters[db_adaptor.lca]);
   I(0 != ancestor_roster);
-  boost::shared_ptr<roster_t const> right_roster(db_adaptor.rosters[db_adaptor.right_rid]);
+  std::shared_ptr<roster_t const> right_roster(db_adaptor.rosters[db_adaptor.right_rid]);
   I(0 != right_roster);
 
   file_path ancestor_name;
@@ -346,13 +346,13 @@ put_attr_conflict (basic_io::stanza & st,
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
 
   // This ensures that the ancestor roster is computed
-  boost::shared_ptr<roster_t const> ancestor_roster;
+  std::shared_ptr<roster_t const> ancestor_roster;
   revision_id ancestor_rid;
   db_adaptor.get_ancestral_roster (conflict.nid, ancestor_rid, ancestor_roster);
 
-  boost::shared_ptr<roster_t const> left_roster(db_adaptor.rosters[db_adaptor.left_rid]);
+  std::shared_ptr<roster_t const> left_roster(db_adaptor.rosters[db_adaptor.left_rid]);
   I(0 != left_roster);
-  boost::shared_ptr<roster_t const> right_roster(db_adaptor.rosters[db_adaptor.right_rid]);
+  std::shared_ptr<roster_t const> right_roster(db_adaptor.rosters[db_adaptor.right_rid]);
   I(0 != right_roster);
 
   file_path ancestor_name;
@@ -497,7 +497,7 @@ put_content_conflict (basic_io::stanza & st,
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
 
   // This ensures that the ancestor roster is computed
-  boost::shared_ptr<roster_t const> ancestor_roster;
+  std::shared_ptr<roster_t const> ancestor_roster;
   revision_id ancestor_rid;
   db_adaptor.get_ancestral_roster (conflict.nid, ancestor_rid, ancestor_roster);
 
@@ -2658,9 +2658,9 @@ roster_merge_result::write_conflict_file(database & db,
                                          revision_id const & ancestor_rid,
                                          revision_id const & left_rid,
                                          revision_id const & right_rid,
-                                         boost::shared_ptr<roster_t> left_roster,
+                                         std::shared_ptr<roster_t> left_roster,
                                          marking_map const & left_marking,
-                                         boost::shared_ptr<roster_t> right_roster,
+                                         std::shared_ptr<roster_t> right_roster,
                                          marking_map const & right_marking)
 {
   std::ostringstream output;
@@ -2855,7 +2855,7 @@ create_new_node(roster_t const &            parent_roster,
                 string const &              side_image,
                 node_id const &             parent_nid,
                 roster_t &                  result_roster,
-                boost::shared_ptr<any_path> new_content,
+                std::shared_ptr<any_path> new_content,
                 content_merge_adaptor &     adaptor,
                 temp_node_id_source &       nis)
 {
@@ -2891,7 +2891,7 @@ replace_content(roster_t const &            parent_roster,
                 string const &              side_image,
                 node_id  const &            nid,
                 roster_t &                  result_roster,
-                boost::shared_ptr<any_path> new_content,
+                std::shared_ptr<any_path> new_content,
                 content_merge_adaptor &     adaptor)
 {
   file_path parent_name;

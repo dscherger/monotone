@@ -9,7 +9,9 @@
 // PURPOSE.
 
 #include "base.hh"
+
 #include <algorithm>
+#include <memory>
 #include <set>
 #include "vector.hh"
 #include <sstream>
@@ -23,7 +25,6 @@
 #include "vocab.hh"
 #include "transforms.hh"
 #include "simplestring_xform.hh"
-#include "lexical_cast.hh"
 #include "file_io.hh"
 #include "parallel_iter.hh"
 #include "restrictions.hh"
@@ -41,9 +42,8 @@ using std::set;
 using std::set_union;
 using std::stack;
 using std::string;
+using std::to_string;
 using std::vector;
-
-using boost::lexical_cast;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -240,12 +240,12 @@ void marking_map::put_marking(node_id nid, marking_t const & m)
 
 void marking_map::put_marking(node_id nid, const_marking_t const & m)
 {
-  I(_store.set_if_missing(nid, boost::const_pointer_cast<marking>(m)));
+  I(_store.set_if_missing(nid, std::const_pointer_cast<marking>(m)));
 }
 
 void marking_map::put_or_replace_marking(node_id nid, const_marking_t const & m)
 {
-  _store.set(nid, boost::const_pointer_cast<marking>(m));
+  _store.set(nid, std::const_pointer_cast<marking>(m));
 }
 
 size_t marking_map::size() const
@@ -2892,7 +2892,7 @@ roster_t::print_to(data & dat,
           I(curr->self != the_null_node);
           contents.append(symbol_length - 5, ' ');
           contents.append("ident \"");
-          contents.append(lexical_cast<string>(curr->self));
+          contents.append(to_string(curr->self));
           contents.append("\"\n");
         }
 

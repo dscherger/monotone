@@ -23,14 +23,14 @@ struct conflicts_t
 {
   roster_merge_result result;
   revision_id ancestor_rid, left_rid, right_rid;
-  boost::shared_ptr<roster_t> ancestor_roster;
-  boost::shared_ptr<roster_t> left_roster;
-  boost::shared_ptr<roster_t> right_roster;
+  std::shared_ptr<roster_t> ancestor_roster;
+  std::shared_ptr<roster_t> left_roster;
+  std::shared_ptr<roster_t> right_roster;
   marking_map left_marking, right_marking;
 
   conflicts_t(database & db, bookkeeping_path const & file):
-    left_roster(boost::shared_ptr<roster_t>(new roster_t())),
-    right_roster(boost::shared_ptr<roster_t>(new roster_t()))
+    left_roster(std::shared_ptr<roster_t>(new roster_t())),
+    right_roster(std::shared_ptr<roster_t>(new roster_t()))
   {
     result.clear(); // default constructor doesn't do this.
 
@@ -355,7 +355,7 @@ do_interactive_merge(database & db,
 
   if (!conflicts.ancestor_roster)
     {
-      conflicts.ancestor_roster = boost::shared_ptr<roster_t>(new roster_t());
+      conflicts.ancestor_roster = std::shared_ptr<roster_t>(new roster_t());
       db.get_roster(conflicts.ancestor_rid, *conflicts.ancestor_roster);
     }
 
@@ -710,7 +710,7 @@ set_first_conflict(database & db,
                                            conflict.ancestor, conflict.left, conflict.right, result_path))
                     {
                       conflict.resolution.resolution  = resolve_conflicts::content_user;
-                      conflict.resolution.content = boost::shared_ptr<any_path>(new bookkeeping_path(result_path));
+                      conflict.resolution.content = std::shared_ptr<any_path>(new bookkeeping_path(result_path));
                       P(F("interactive merge result saved in '%s'") % result_path.as_internal());
                     }
                   else

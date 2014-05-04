@@ -42,7 +42,7 @@ content_merge_adaptor
 
   virtual void get_ancestral_roster(node_id nid,
                                     revision_id & rid,
-                                    boost::shared_ptr<roster_t const> & anc) = 0;
+                                    std::shared_ptr<roster_t const> & anc) = 0;
 
   virtual void get_version(file_id const & ident,
                            file_data & dat) const = 0;
@@ -61,7 +61,7 @@ content_merge_database_adaptor
   marking_map const & left_mm;
   marking_map const & right_mm;
   std::set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
-  std::map<revision_id, boost::shared_ptr<roster_t const> > rosters;
+  std::map<revision_id, std::shared_ptr<roster_t const> > rosters;
   content_merge_database_adaptor(database & db,
                                  revision_id const & left,
                                  revision_id const & right,
@@ -85,11 +85,11 @@ content_merge_database_adaptor
                    file_data const & merged_data);
 
   void cache_roster(revision_id const & rid,
-                    boost::shared_ptr<roster_t const> roster);
+                    std::shared_ptr<roster_t const> roster);
 
   void get_ancestral_roster(node_id nid,
                             revision_id & rid,
-                            boost::shared_ptr<roster_t const> & anc);
+                            std::shared_ptr<roster_t const> & anc);
 
   // Search uncommon_ancestors (which must be left_uncommon_ancestors or
   // right_uncommon_ancestors); return rev, file_path, and file_id for nid
@@ -112,14 +112,14 @@ content_merge_workspace_adaptor
   std::map<file_id, file_data> temporary_store;
   database & db;
   revision_id const lca;
-  boost::shared_ptr<roster_t const> base;
+  std::shared_ptr<roster_t const> base;
   marking_map const & left_mm;
   marking_map const & right_mm;
-  std::map<revision_id, boost::shared_ptr<roster_t const> > rosters;
+  std::map<revision_id, std::shared_ptr<roster_t const> > rosters;
   std::map<file_id, file_path> content_paths;
   content_merge_workspace_adaptor(database & db,
                                   revision_id const & lca,
-                                  boost::shared_ptr<roster_t const> base,
+                                  std::shared_ptr<roster_t const> base,
                                   marking_map const & left_mm,
                                   marking_map const & right_mm,
                                   std::map<file_id, file_path> const & paths)
@@ -128,7 +128,7 @@ content_merge_workspace_adaptor
   {}
 
   void cache_roster(revision_id const & rid,
-                    boost::shared_ptr<roster_t const> roster);
+                    std::shared_ptr<roster_t const> roster);
 
   void record_merge(file_id const & left_ident,
                     file_id const & right_ident,
@@ -147,7 +147,7 @@ content_merge_workspace_adaptor
 
   void get_ancestral_roster(node_id nid,
                             revision_id & rid,
-                            boost::shared_ptr<roster_t const> & anc);
+                            std::shared_ptr<roster_t const> & anc);
 
   void get_version(file_id const & ident,
                    file_data & dat) const;
@@ -179,7 +179,7 @@ content_merge_checkout_adaptor
 
   void get_ancestral_roster(node_id nid,
                             revision_id & rid,
-                            boost::shared_ptr<roster_t const> & anc);
+                            std::shared_ptr<roster_t const> & anc);
 
   void get_version(file_id const & ident,
                    file_data & dat) const;
@@ -208,7 +208,7 @@ content_merge_empty_adaptor
 
   void get_ancestral_roster(node_id nid,
                             revision_id & rid,
-                            boost::shared_ptr<roster_t const> & anc);
+                            std::shared_ptr<roster_t const> & anc);
 
   void get_version(file_id const & ident,
                    file_data & dat) const;

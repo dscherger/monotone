@@ -10,7 +10,7 @@
 #ifndef __APP_STATE_HH__
 #define __APP_STATE_HH__
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "options.hh"
 #include "option_reset_info.hh"

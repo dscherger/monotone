@@ -13,8 +13,6 @@
 // all network i/o decoding and encoding in netcmd and merkle is done using
 // the primitives in this header. it has to be very correct.
 
-#include <boost/static_assert.hpp>
-
 #include "numeric_vocab.hh"
 #include "sanity.hh"
 #include "string_queue.hh"
@@ -62,7 +60,8 @@ try_extract_datum_uleb128(std::string const & in,
                           std::string const & name,
                           T & out)
 {
-  BOOST_STATIC_ASSERT(std::numeric_limits<T>::is_signed == false);
+  static_assert(std::numeric_limits<T>::is_signed == false,
+                "try_extract_datum_uleb128 needs a signed base type");
   size_t shift = 0;
   size_t maxbytes = sizeof(T) + 1 + (sizeof(T) / 8);
   out = 0;
@@ -97,7 +96,8 @@ try_extract_datum_uleb128(string_queue const & in,
                           std::string const & name,
                           T & out)
 {
-  BOOST_STATIC_ASSERT(std::numeric_limits<T>::is_signed == false);
+  static_assert(std::numeric_limits<T>::is_signed == false,
+                "try_extract_datum_uleb128 needs a signed base type");
   size_t shift = 0;
   size_t maxbytes = sizeof(T) + 1 + (sizeof(T) / 8);
   out = 0;
@@ -144,7 +144,8 @@ template <typename T>
 inline void
 insert_datum_uleb128(T in, std::string & out)
 {
-  BOOST_STATIC_ASSERT(std::numeric_limits<T>::is_signed == false);
+  static_assert(std::numeric_limits<T>::is_signed == false,
+                "try_extract_datum_uleb128 needs a signed base type");
   size_t maxbytes = sizeof(T) + 1 + (sizeof(T) / 8);
   while (maxbytes > 0)
     {
@@ -169,7 +170,8 @@ template <typename T>
 inline void
 insert_datum_uleb128(T in, string_queue & out)
 {
-  BOOST_STATIC_ASSERT(std::numeric_limits<T>::is_signed == false);
+  static_assert(std::numeric_limits<T>::is_signed == false,
+                "try_extract_datum_uleb128 needs a signed base type");
   size_t maxbytes = sizeof(T) + 1 + (sizeof(T) / 8);
   while (maxbytes > 0)
     {
@@ -267,7 +269,8 @@ extract_variable_length_string(std::string const & buf,
                                std::string const & name,
                                size_t maxlen = std::numeric_limits<size_t>::max())
 {
-  BOOST_STATIC_ASSERT(sizeof(std::string::size_type) == sizeof(size_t));
+  static_assert(sizeof(std::string::size_type) == sizeof(size_t),
+    "size_type of std::string doesn't match size_t in size");
   size_t len = extract_datum_uleb128<size_t>(buf, pos, name);
   if (len > maxlen)
     throw bad_decode(F("decoding variable length string of %d bytes for '%s', maximum is %d")

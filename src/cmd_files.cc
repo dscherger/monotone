@@ -24,13 +24,12 @@
 #include "database.hh"
 #include "work.hh"
 #include "roster.hh"
-#include "lexical_cast.hh"
 
 using std::cout;
 using std::ostream_iterator;
 using std::string;
 using std::vector;
-using boost::lexical_cast;
+using std::to_string;
 
 // fload, fmerge, and fdiff are simple commands for debugging the line
 // merger.
@@ -369,7 +368,7 @@ CMD_AUTOMATE(get_file_size, N_("FILEID"),
 
   file_size size;
   db.get_file_size(ident, size);
-  output << lexical_cast<string>(size) << "\n";
+  output << to_string(size) << "\n";
 }
 
 // Name: get_file_of

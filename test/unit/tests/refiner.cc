@@ -8,17 +8,21 @@
 // PURPOSE.
 
 #include "../../../src/base.hh"
+
+#include <algorithm>
+#include <memory>
+#include <deque>
+
 #include "../unit_tests.hh"
 #include "../../../src/refiner.hh"
 #include "../randomizer.hh"
 
-#include <deque>
-#include <boost/shared_ptr.hpp>
-
+using std::shared_ptr;
 using std::deque;
 using std::set;
 using std::string;
-using boost::shared_ptr;
+using std::set_difference;
+using std::set_union;
 
 struct
 refiner_pair

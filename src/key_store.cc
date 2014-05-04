@@ -41,9 +41,9 @@ using std::pair;
 using std::string;
 using std::vector;
 
-using boost::scoped_ptr;
-using boost::shared_ptr;
-using boost::dynamic_pointer_cast;
+using std::unique_ptr;
+using std::shared_ptr;
+using std::dynamic_pointer_cast;
 
 using Botan::RSA_PrivateKey;
 using Botan::RSA_PublicKey;
@@ -76,7 +76,7 @@ struct key_store_state
   map<key_id, shared_ptr<PK_Signer> > signer_cache;
 
   // Initialized when first required.
-  scoped_ptr<ssh_agent> agent;
+  unique_ptr<ssh_agent> agent;
 
   key_store_state(app_state & app)
     : key_dir(app.opts.key_dir), ssh_sign_mode(app.opts.ssh_sign),

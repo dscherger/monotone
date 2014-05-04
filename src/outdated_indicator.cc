@@ -53,7 +53,7 @@ outdated_indicator::outdated_indicator()
   : parent(), when(0)
 {}
 
-outdated_indicator::outdated_indicator(boost::shared_ptr<outdated_indicator_factory_impl> p)
+outdated_indicator::outdated_indicator(std::shared_ptr<outdated_indicator_factory_impl> p)
   : parent(p), when(p->dispense())
 {}
 

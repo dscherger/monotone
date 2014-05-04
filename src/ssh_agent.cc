@@ -8,9 +8,10 @@
 // PURPOSE.
 
 #include "base.hh"
-#include <stdlib.h>
 
-#include <boost/shared_ptr.hpp>
+#include <stdlib.h>
+#include <memory>
+
 #include <botan/botan.h>
 #include <botan/rsa.h>
 #include <botan/numthry.h>
@@ -31,8 +32,8 @@
 using std::string;
 using std::vector;
 
-using boost::shared_ptr;
-using boost::dynamic_pointer_cast;
+using std::shared_ptr;
+using std::dynamic_pointer_cast;
 
 using Botan::RSA_PublicKey;
 using Botan::RSA_PrivateKey;

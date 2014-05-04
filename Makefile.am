@@ -31,7 +31,7 @@ LUAEXT_SOURCES = 							\
 	src/vocab.hh src/vocab.cc src/vocab_terms.hh			\
 	src/vocab_macros.hh src/vocab_cast.hh src/charset.cc		\
 	src/charset.hh src/paths.cc src/paths.hh src/interner.hh	\
-	src/hash_map.hh src/vocab_hash.hh src/luaext_mkstemp.cc		\
+	src/vocab_hash.hh src/luaext_mkstemp.cc				\
 	src/luaext_parse_basic_io.cc src/luaext_guess_binary.cc		\
 	src/luaext_platform.cc src/luaext_globish.cc src/lua.cc		\
 	src/lua.hh src/mkstemp.cc src/file_io.cc src/file_io.hh		\

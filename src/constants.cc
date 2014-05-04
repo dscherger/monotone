@@ -19,6 +19,10 @@
 // typing and it saves an indirection.
 
 #include "base.hh"
+
+#include <climits>
+#include <cstdint>
+
 #include "constants.hh"
 
 namespace constants
@@ -77,26 +81,39 @@ namespace constants
   // constants:: all over them.
 }
 
-#include <boost/static_assert.hpp>
-
 // constraint checks for fundamental types
 // n.b. sizeof([unsigned] char) is *defined* to be 1 by the C++ standard.
-BOOST_STATIC_ASSERT(std::numeric_limits<unsigned char>::digits == 8);
-BOOST_STATIC_ASSERT(sizeof(u8) == 1);
-BOOST_STATIC_ASSERT(sizeof(u16) == 2);
-BOOST_STATIC_ASSERT(sizeof(u32) == 4);
-BOOST_STATIC_ASSERT(sizeof(u64) == 8);
+static_assert(std::numeric_limits<unsigned char>::digits == 8,
+              "unsigned char is not exactly 8 bits wide");
+static_assert(sizeof(u8) == 1, "u8 is not exactly 8 bits wide");
+static_assert(sizeof(u16) == 2, "u16 is not exactly 16 bits wide");
+static_assert(sizeof(u32) == 4, "u32 is not exactly 32 bits wide");
+static_assert(sizeof(u64) == 8, "u64 is not exactly 64 bits wide");
+
+// a couple 
+static_assert(std::numeric_limits<s64>::max() == INT64_MAX,
+              "type of constant with LL-postfix doesn't reach INT64_MAX");
+static_assert(std::numeric_limits<decltype(0LL) >::max() >= INT64_MAX,
+              "how to write a 64-bit constant?");
 
 // constraint checks for relations between constants above
 using namespace constants;
-BOOST_STATIC_ASSERT(merkle_num_tree_levels > 0);
-BOOST_STATIC_ASSERT(merkle_num_tree_levels < 256);
-BOOST_STATIC_ASSERT(merkle_fanout_bits > 0);
-BOOST_STATIC_ASSERT(merkle_fanout_bits < 32);
-BOOST_STATIC_ASSERT(merkle_hash_length_in_bits > 0);
-BOOST_STATIC_ASSERT((merkle_hash_length_in_bits % merkle_fanout_bits) == 0);
-BOOST_STATIC_ASSERT(merkle_bitmap_length_in_bits > 0);
-BOOST_STATIC_ASSERT((merkle_bitmap_length_in_bits % 8) == 0);
+static_assert(merkle_num_tree_levels > 0,
+  "merkle_num_tree_levels must be positive");
+static_assert(merkle_num_tree_levels < 256,
+  "merkle_num_tree_levels must not exceed 256");
+static_assert(merkle_fanout_bits > 0,
+  "merkle_fanout_bits must be positive");
+static_assert(merkle_fanout_bits < 32,
+  "merkle_fanout_bits must not exceed 32");
+static_assert(merkle_hash_length_in_bits > 0,
+  "merkle_hash_length_in_bits must be positive");
+static_assert((merkle_hash_length_in_bits % merkle_fanout_bits) == 0,
+  "merkle_hash_length_in_bits must be divisible by merkle_fanout_bits");
+static_assert(merkle_bitmap_length_in_bits > 0,
+  "merkle_bitmap_length_in_bits must be positive");
+static_assert((merkle_bitmap_length_in_bits % 8) == 0,
+  "merkle_bitmap_length_in_bits must be divisible by 8");
 
 // Local Variables:
 // mode: C++

@@ -16,11 +16,12 @@
 // roster.hh, and database.hh when all that is necessary is these
 // declarations.
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
+#include "vector.hh"
+
 #include "vocab.hh"
 #include "numeric_vocab.hh"
 #include "hybrid_map.hh"
-#include "vector.hh"
 #include "cow_trie.hh"
 
 // full definitions in basic_io.hh
@@ -57,7 +58,7 @@ class path_component;
 
 // full definitions in revision.hh
 struct revision_t;
-typedef std::map<revision_id, boost::shared_ptr<cset> > edge_map;
+typedef std::map<revision_id, std::shared_ptr<cset> > edge_map;
 typedef edge_map::value_type edge_entry;
 
 // full definitions in rev_height.hh
@@ -72,16 +73,16 @@ struct marking;
 class roster_t;
 class editable_roster_base;
 
-typedef boost::shared_ptr<node> node_t;
-typedef boost::shared_ptr<file_node> file_t;
-typedef boost::shared_ptr<dir_node> dir_t;
+typedef std::shared_ptr<node> node_t;
+typedef std::shared_ptr<file_node> file_t;
+typedef std::shared_ptr<dir_node> dir_t;
 
-typedef boost::shared_ptr<node const> const_node_t;
-typedef boost::shared_ptr<file_node const> const_file_t;
-typedef boost::shared_ptr<dir_node const> const_dir_t;
+typedef std::shared_ptr<node const> const_node_t;
+typedef std::shared_ptr<file_node const> const_file_t;
+typedef std::shared_ptr<dir_node const> const_dir_t;
 
-typedef boost::shared_ptr<marking> marking_t;
-typedef boost::shared_ptr<marking const> const_marking_t;
+typedef std::shared_ptr<marking> marking_t;
+typedef std::shared_ptr<marking const> const_marking_t;
 class marking_map;
 
 typedef std::map<path_component, node_t> dir_map;
@@ -98,8 +99,8 @@ class database;
 class conditional_transaction_guard;
 class transaction_guard;
 
-typedef boost::shared_ptr<roster_t const> roster_t_cp;
-typedef boost::shared_ptr<marking_map const> marking_map_cp;
+typedef std::shared_ptr<roster_t const> roster_t_cp;
+typedef std::shared_ptr<marking_map const> marking_map_cp;
 typedef std::pair<roster_t_cp, marking_map_cp> cached_roster;
 
 typedef std::map<revision_id, cached_roster> parent_map;
