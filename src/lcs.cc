@@ -372,7 +372,6 @@ struct jaffer_edit_calculator
 
 
   static void order_edits(edit_vec const & edits,
-                          long /* sign FIXME-UNUSED */ ,
                           edit_vec & nedits)
   {
     nedits.clear();
@@ -617,8 +616,9 @@ template <typename A,
 void _edit_script(A begin_a, A end_a,
                   B begin_b, B end_b,
                   vector<long, QA(long)> & edits_out,
-                  LCS /* ignored_out FIXME-UNUSED */ )
+                  LCS /* ignored_out */ )
 {
+  // ignored_out is used to tell the template machinery what type to use for calc_t.
   typedef jaffer_edit_calculator<A,B,LCS> calc_t;
   long len_a = end_a - begin_a;
   long len_b = end_b - begin_b;
@@ -630,14 +630,14 @@ void _edit_script(A begin_a, A end_a,
   if (len_b < len_a)
     {
       calc_t::diff_to_edits (b, len_b, a, len_a, edits);
-      calc_t::order_edits (edits, -1, ordered);
+      calc_t::order_edits (edits, ordered);
       for (size_t i = 0; i < ordered.size(); ++i)
         ordered[i] *= -1;
     }
   else
     {
       calc_t::diff_to_edits (a, len_a, b, len_b, edits);
-      calc_t::order_edits (edits, 1, ordered);
+      calc_t::order_edits (edits, ordered);
     }
 
   edits_out.clear();
@@ -664,13 +664,13 @@ void _longest_common_subsequence(A begin_a, A end_a,
   if (len_b < len_a)
     {
       calc_t::diff_to_edits(b, len_b, a, len_a, edits);
-      calc_t::order_edits(edits, -1, ordered);
+      calc_t::order_edits(edits, ordered);
       calc_t::edits_to_lcs(ordered, b, len_b, len_a, out);
     }
   else
     {
       calc_t::diff_to_edits(a, len_a, b, len_b, edits);
-      calc_t::order_edits(edits, 1, ordered);
+      calc_t::order_edits(edits, ordered);
       calc_t::edits_to_lcs(ordered, a, len_a, len_b, out);
     }
 }

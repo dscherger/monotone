@@ -2207,7 +2207,6 @@ namespace
 
   void delta_only_in_from(roster_t const & from,
                           node_id nid,
-                          node_t /* n FIXME-UNUSED */ ,
                           cset & cs)
   {
     file_path pth;
@@ -2319,7 +2318,7 @@ make_cset(roster_t const & from, roster_t const & to, cset & cs)
 
         case parallel::in_left:
           // deleted
-          delta_only_in_from(from, i.left_key(), i.left_data(), cs);
+          delta_only_in_from(from, i.left_key(), cs);
           break;
 
         case parallel::in_right:

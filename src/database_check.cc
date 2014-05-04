@@ -196,7 +196,6 @@ check_files(database & db, map<file_id, checked_file> & checked_files)
 static void
 check_rosters_manifest(database & db,
                        map<revision_id, checked_roster> & checked_rosters,
-                       map<revision_id, checked_revision> & /* checked_revisions FIXME-UNUSED */,
                        set<manifest_id> & found_manifests,
                        map<file_id, checked_file> & checked_files)
 {
@@ -1065,8 +1064,8 @@ check_db(database & db)
 
   check_db_integrity_check(db);
   check_files(db, checked_files);
-  check_rosters_manifest(db, checked_rosters, checked_revisions,
-                         found_manifests, checked_files);
+  check_rosters_manifest(db, checked_rosters, found_manifests,
+                         checked_files);
   check_revisions(db, checked_revisions, checked_rosters, found_manifests,
                   missing_rosters);
   check_rosters_marking(db, checked_rosters, checked_revisions);
