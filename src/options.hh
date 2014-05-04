@@ -40,7 +40,7 @@ public:
     else
       value = low - 1;
   }
-  restricted_long(std::string const & x, origin::type /* o FIXME-UNUSED */ )
+  restricted_long(std::string const & x, origin::type /* o */ )
   {
     value = boost::lexical_cast<long>(x);
     if (value < low)

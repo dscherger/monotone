@@ -252,8 +252,8 @@ namespace
         return true;
     }
     //####################################################################
-    void make_uds (const char */* filename */,
-                   Netxx::Address::container_type & /* addrs */)
+    void make_uds (const char *filename,
+                   Netxx::Address::container_type & addrs)
     {
 #   ifndef WIN32
 
@@ -262,7 +262,9 @@ namespace
 
         std::strncpy(sau->sun_path, filename, sizeof(sau->sun_path) - 1);
         addrs.push_back(Netxx::Peer(filename, 0, sau, saddr.get_sa_size()));
-
+#   else
+        (void)filename;
+        (void)addrs;
 #   endif
     }
     //####################################################################

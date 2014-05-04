@@ -92,8 +92,7 @@ void calculate_extents(vector<long, QA(long)> const & a_b_edits,
                        vector<long, QA(long)> & prefix,
                        vector<extent> & extents,
                        vector<long, QA(long)> & suffix,
-                       size_t const a_len,
-                       interner<long> & /* intern FIXME-UNUSED */ )
+                       size_t const a_len)
 {
   extents.reserve(a_len * 2);
 
@@ -397,12 +396,12 @@ void merge_via_edit_scripts(vector<string> const & ancestor,
   L(FL("calculating left extents on %d edits") % left_edits.size());
   calculate_extents(left_edits, left_interned,
                     left_prefix, left_extents, left_suffix,
-                    anc_interned.size(), in);
+                    anc_interned.size());
 
   L(FL("calculating right extents on %d edits") % right_edits.size());
   calculate_extents(right_edits, right_interned,
                     right_prefix, right_extents, right_suffix,
-                    anc_interned.size(), in);
+                    anc_interned.size());
 
   L(FL("normalizing %d right extents") % right_extents.size());
   normalize_extents(right_extents, anc_interned, right_interned);

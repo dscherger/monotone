@@ -48,11 +48,13 @@
 //####################################################################
 struct Netxx::SockOpt::pimpl
 {
-    pimpl (int /* socket */ )
+    pimpl (int socket)
         : fcntl_flags_(0), fcntl_changed_(false), win_blocking_(false)
     {
 #       ifndef WIN32
             fcntl_flags_ = fcntl(socket, F_GETFL, 0);
+#       else
+            (void)socket;
 #       endif
     }
 
