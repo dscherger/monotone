@@ -43,12 +43,10 @@ int main() {
 	])], ac_cv_cxx_mktime_64bit=yes, ac_cv_cxx_mktime_64bit=no,
 	     ac_cv_cxx_mktime_64bit=no)
   ])
-  if test x$ac_cv_cxx_mktime_64bit = xno; then
-    HAVE_MKTIME_64BIT=0
-  else
-    HAVE_MKTIME_64BIT=1
-    AC_DEFINE(HAVE_MKTIME_64BIT,1,
-              [define if mktime is 64-bit capable])
-  fi
-  AC_SUBST(HAVE_MKTIME_64BIT)
+  case "$ac_cv_cxx_mktime_64bit" in
+    *yes) value=1;;
+    *) value=0;;
+  esac
+  AC_DEFINE_UNQUOTED(STD_MKTIME_64BIT_WORKS, $value,
+    [Set to 1 if mktime is 64-bit capable, 0 otherwise])
 ])
