@@ -53,32 +53,3 @@ AC_DEFUN([AC_CXX_TR1_UNORDERED_MAP_CONST_CORRECT],
  fi
 ])
 
-dnl @synopsis AC_CXX_11_UNORDERED_MAP_AND_SET
-dnl
-dnl Checks for unordered_set and unordered_map in the std namespace,
-dnl despite C++11 (possibly) not being enabled.
-dnl
-dnl @author Markus Wanner <markus@bluegap.ch>
-dnl @version 2014-02-02
-
-AC_DEFUN([AC_CXX_11_UNORDERED_MAP_AND_SET],
-[AC_LANG_ASSERT([C++])
- AC_CACHE_CHECK([whether the compiler supports std::unordered_map],
-                       ac_cv_cxx_11_unordered_map_and_set,
-          [AC_COMPILE_IFELSE([AC_LANG_SOURCE([
-        #include <functional>
-        #include <unordered_map>
-        #include <unordered_set>
-        using std::hash;
-        using std::unordered_map;
-        using std::unordered_set;
-        using std::unordered_multimap;
-        ])],
-              ac_cv_cxx_11_unordered_map_and_set=yes,
-              ac_cv_cxx_11_unordered_map_and_set=no)])
-        if test x$ac_cv_cxx_11_unordered_map_and_set = xyes; then
-          AC_DEFINE(HAVE_CXX11_UNORDERED_MAP_AND_SET, 1,
-                    [Define to 1 if your C++ compiler provides
-        std::unordered_map and std::unordered_set.])
-        fi
-])
