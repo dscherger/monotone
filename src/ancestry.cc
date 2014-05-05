@@ -501,7 +501,6 @@ ancestry_difference(database & db, revision_id const & a,
                     set<revision_id> & new_stuff)
 {
   new_stuff.clear();
-  typedef multimap<revision_id, revision_id>::const_iterator gi;
   multimap<revision_id, revision_id> inverse_graph;
 
   db.get_reverse_ancestry(inverse_graph);

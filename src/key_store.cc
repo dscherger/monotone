@@ -800,7 +800,6 @@ key_store::change_key_passphrase(key_id const & id)
   key_name name;
   keypair kp;
   {
-    bool found = false;
     s->maybe_read_key_dir();
     key_map::const_iterator i = s->keys.find(id);
     E(i != s->keys.end(), origin::user,

@@ -909,7 +909,6 @@ lua_hooks::hook_get_netsync_connect_command(uri_t const & uri,
                                             bool debug,
                                             vector<string> & argv)
 {
-  bool cmd = false, exec_ok = false;
   Lua ll(st);
   ll.func("get_netsync_connect_command");
 
