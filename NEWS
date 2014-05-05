@@ -9,7 +9,7 @@ XXX XXX XX XX:XX:XX UTC 201X
 
         New features
 
-        - 'automate atttributes' now also works without a workspace
+        - 'automate get_attributes' now also works without a workspace
           and returns the attributes for a specific file from the
           revision's manifest
 
