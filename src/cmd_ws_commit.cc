@@ -1,4 +1,4 @@
-// Copyright (C) 2010, 2011, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2010, 2011, 2012, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -167,7 +167,8 @@ date_fmt_valid(string date_fmt)
 static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               project_t & project,
-                              revision_id const rid, revision_t const & rev,
+                              revision_id const /* rid */,
+                              revision_t const & rev,
                               string & author, date_t & date, branch_name & branch,
                               set<branch_name> const & old_branches,
                               string const & date_fmt, utf8 & log_message)
@@ -540,6 +541,8 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
        "file name."),
     options::opts::depth | options::opts::exclude | options::opts::missing)
 {
+  (void)execid;
+
   revert(app, args, false);
 }
 
@@ -549,6 +552,8 @@ CMD(undrop, "undrop", "", CMD_REF(workspace), N_("PATH..."),
        "Otherwise, it just removes the 'drop' from the manifest."),
     options::opts::none)
 {
+  (void)execid;
+
   revert(app, args, true);
 }
 
@@ -902,6 +907,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
     "",
     options::opts::depth | options::opts::exclude)
 {
+  (void)execid;
+
   roster_t new_roster;
   parent_map old_rosters;
   revision_t rev;
@@ -1140,6 +1147,9 @@ CMD_AUTOMATE(checkout, N_("[DIRECTORY]"),
     options::opts::branch | options::opts::revision |
     options::opts::move_conflicting_paths)
 {
+  (void)execid;
+  (void)output;
+
   E(args.size() < 2, origin::user,
     F("wrong argument count"));
 
@@ -1346,6 +1356,8 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
                 "at this specific revision are returned."),
              options::opts::revision)
 {
+  (void)execid;
+
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -1488,6 +1500,9 @@ CMD_AUTOMATE(set_attribute, N_("PATH KEY VALUE"),
              "",
              options::opts::none)
 {
+  (void)execid;
+  (void)output;
+
   E(args.size() == 3, origin::user,
     F("wrong argument count"));
 
@@ -1510,6 +1525,9 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
              "",
              options::opts::none)
 {
+  (void)execid;
+  (void)output;
+
   E(args.size() ==1 || args.size() == 2, origin::user,
     F("wrong argument count"));
 
@@ -1910,6 +1928,8 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   options::opts::no_ignore | options::opts::exclude |
   options::opts::author | options::opts::date)
 {
+  (void)execid;
+
   revision_id ident;
   system_path dir;
   database db(app);
@@ -2041,6 +2061,9 @@ CMD(refresh_inodeprints, "refresh_inodeprints", "", CMD_REF(tree), "",
     "",
     options::opts::none)
 {
+  (void)execid;
+  (void)args;
+
   database db(app);
   workspace work(app);
   work.enable_inodeprints();

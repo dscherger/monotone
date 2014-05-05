@@ -30,7 +30,7 @@ namespace Botan {
 // specializations given below.  give a compile error instead of a link
 // error.
 template<typename XFM> std::string
-xform(std::string const & in, origin::type made_from)
+xform(std::string const & in, origin::type /* made_from */)
 {
   enum dummy { d = (sizeof(struct xform_must_be_specialized_for_this_type)
                     == sizeof(XFM)) };

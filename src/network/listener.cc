@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -46,7 +46,7 @@ listener::listener(app_state & app,
 }
 
 bool
-listener::do_io(Netxx::Probe::ready_type event)
+listener::do_io(Netxx::Probe::ready_type /* event */)
 {
   L(FL("accepting new connection on %s : %s")
     % (addr.get_name()?addr.get_name():"") % lexical_cast<string>(addr.get_port()));

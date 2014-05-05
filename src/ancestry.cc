@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -361,7 +362,7 @@ namespace
 {
   struct no_failures : public is_failure
   {
-    virtual bool operator()(revision_id const & rid)
+    virtual bool operator()(revision_id const & /* rid */ )
     {
       return false;
     }

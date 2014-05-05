@@ -1,6 +1,6 @@
-// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2010, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 //               2006 Timothy Brownawell <tbrownaw@gmail.com>
-//               2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -217,6 +217,8 @@ CMD_AUTOMATE_NO_STDIO(remote,
                       options::opts::min_netsync_version |
                       options::opts::set_default)
 {
+  (void)execid;
+
   E(args.size() >= 1, origin::user,
     F("wrong argument count"));
 
@@ -436,7 +438,7 @@ print_cert(bool send,
 static void
 print_info_auto(protocol_role role,
                 shared_conn_counts counts,
-                project_t & project,
+                project_t & /* project */ ,
                 std::ostream & output)
 {
   // print info for automate session
@@ -546,6 +548,8 @@ CMD(push, "push", "", CMD_REF(network),
     options::opts::set_default | options::opts::exclude |
     options::opts::keys_to_push | options::opts::dryrun)
 {
+  (void)execid;
+
   database db(app);
   key_store keys(app);
   project_t project(db);
@@ -569,6 +573,8 @@ CMD_AUTOMATE(push, N_("[URI]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              options::opts::set_default | options::opts::exclude |
              options::opts::keys_to_push | options::opts::dryrun)
 {
+  (void)execid;
+
   database db(app);
   key_store keys(app);
   project_t project(db);
@@ -595,6 +601,8 @@ CMD(pull, "pull", "", CMD_REF(network),
     options::opts::set_default | options::opts::exclude |
     options::opts::auto_update | options::opts::dryrun)
 {
+  (void)execid;
+
   database db(app);
   key_store keys(app);
   project_t project(db);
@@ -630,6 +638,8 @@ CMD_AUTOMATE(pull, N_("[URI]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              options::opts::set_default | options::opts::exclude |
              options::opts::dryrun)
 {
+  (void)execid;
+
   database db(app);
   key_store keys(app);
   project_t project(db);
@@ -657,6 +667,8 @@ CMD(sync, "sync", "", CMD_REF(network),
     options::opts::keys_to_push | options::opts::auto_update |
     options::opts::dryrun)
 {
+  (void)execid;
+
   database db(app);
   key_store keys(app);
   project_t project(db);
@@ -695,6 +707,8 @@ CMD_AUTOMATE(sync, N_("[URI]\n[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              options::opts::set_default | options::opts::exclude |
              options::opts::keys_to_push | options::opts::dryrun)
 {
+  (void)execid;
+
   database db(app);
   key_store keys(app);
   project_t project(db);

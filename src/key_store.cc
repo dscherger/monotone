@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Timothy Brownawell <tbrownaw@gmail.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -130,23 +131,23 @@ namespace
     key_store_state & kss;
 
     keyreader(key_store_state & kss): kss(kss) {}
-    virtual void consume_file_data(file_id const & ident,
-                                   file_data const & dat)
+    virtual void consume_file_data(file_id const & /* ident */,
+                                   file_data const & /* dat */)
     {E(false, origin::system, F("extraneous data in key store"));}
-    virtual void consume_file_delta(file_id const & id_old,
-                                    file_id const & id_new,
-                                    file_delta const & del)
-    {E(false, origin::system, F("extraneous data in key store"));}
-
-    virtual void consume_revision_data(revision_id const & ident,
-                                       revision_data const & dat)
-    {E(false, origin::system, F("extraneous data in key store"));}
-    virtual void consume_revision_cert(cert const & t)
+    virtual void consume_file_delta(file_id const & /* id_old */,
+                                    file_id const & /* id_new */,
+                                    file_delta const & /* del */)
     {E(false, origin::system, F("extraneous data in key store"));}
 
+    virtual void consume_revision_data(revision_id const & /* ident */,
+                                       revision_data const & /* dat */)
+    {E(false, origin::system, F("extraneous data in key store"));}
+    virtual void consume_revision_cert(cert const & /* t */)
+    {E(false, origin::system, F("extraneous data in key store"));}
 
-    virtual void consume_public_key(key_name const & ident,
-                                    rsa_pub_key const & k)
+
+    virtual void consume_public_key(key_name const & /* ident */,
+                                    rsa_pub_key const & /* k */)
     {E(false, origin::system, F("extraneous data in key store"));}
 
     virtual void consume_key_pair(key_name const & name,
@@ -418,20 +419,20 @@ struct key_delete_validator : public packet_consumer
   key_delete_validator(key_id const & id, system_path const & f)
     : expected_ident(id), file(f) {}
   virtual ~key_delete_validator() {}
-  virtual void consume_file_data(file_id const & ident,
-                                 file_data const & dat)
+  virtual void consume_file_data(file_id const & /* ident */,
+                                 file_data const & /* dat */)
   { E(false, origin::system, F("invalid data in key file")); }
-  virtual void consume_file_delta(file_id const & id_old,
-                                  file_id const & id_new,
-                                  file_delta const & del)
+  virtual void consume_file_delta(file_id const & /* id_old */,
+                                  file_id const & /* id_new */,
+                                  file_delta const & /* del */)
   { E(false, origin::system, F("invalid data in key file")); }
-  virtual void consume_revision_data(revision_id const & ident,
-                                     revision_data const & dat)
+  virtual void consume_revision_data(revision_id const & /* ident */,
+                                     revision_data const & /* dat */)
   { E(false, origin::system, F("invalid data in key file")); }
-  virtual void consume_revision_cert(cert const & t)
+  virtual void consume_revision_cert(cert const & /* t */)
   { E(false, origin::system, F("invalid data in key file")); }
-  virtual void consume_public_key(key_name const & ident,
-                                  rsa_pub_key const & k)
+  virtual void consume_public_key(key_name const & /* ident */,
+                                  rsa_pub_key const & /* k */)
   { E(false, origin::system, F("invalid data in key file")); }
   virtual void consume_key_pair(key_name const & name,
                                 keypair const & kp)
@@ -443,8 +444,8 @@ struct key_delete_validator : public packet_consumer
        F("expected key with id %s in key file '%s', got key with id %s")
          % expected_ident % file % ident);
   }
-  virtual void consume_old_private_key(key_name const & ident,
-                                       old_arc4_rsa_priv_key const & k)
+  virtual void consume_old_private_key(key_name const & /* ident */,
+                                       old_arc4_rsa_priv_key const & /* k */)
   { L(FL("skipping id check before deleting old private key in '%s'") % file); }
 };
 

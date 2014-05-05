@@ -1,4 +1,4 @@
-// Copyright (C) 2009, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2009, 2010, 2012, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -1514,24 +1514,24 @@ simulated_working_tree::attach_node(node_id nid, file_path const & dst)
 }
 
 void
-simulated_working_tree::apply_delta(file_path const & path,
-                                    file_id const & old_id,
-                                    file_id const & new_id)
+simulated_working_tree::apply_delta(file_path const & /* path */,
+                                    file_id const & /* old_id */,
+                                    file_id const & /* new_id */)
 {
   // this may fail if path is not a file but that will be caught
   // earlier in update_current_roster_from_filesystem
 }
 
 void
-simulated_working_tree::clear_attr(file_path const & path,
-                                   attr_key const & key)
+simulated_working_tree::clear_attr(file_path const & /* path */,
+                                   attr_key const & /* key */)
 {
 }
 
 void
-simulated_working_tree::set_attr(file_path const & path,
-                                 attr_key const & key,
-                                 attr_value const & val)
+simulated_working_tree::set_attr(file_path const & /* path */,
+                                 attr_key const & /* key */,
+                                 attr_value const & /* val */)
 {
 }
 

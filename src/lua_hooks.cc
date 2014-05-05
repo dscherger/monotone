@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -38,7 +38,7 @@ extern char const std_hooks_constant[];
 using std::make_pair;
 using std::sort;
 
-static int panic_thrower(lua_State * st)
+static int panic_thrower(lua_State * /* st */ )
 {
   throw oops("lua panic");
 }

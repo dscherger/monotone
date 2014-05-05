@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -39,7 +40,7 @@ public:
     else
       value = low - 1;
   }
-  restricted_long(std::string const & x, origin::type o)
+  restricted_long(std::string const & x, origin::type /* o */ )
   {
     value = boost::lexical_cast<long>(x);
     if (value < low)
