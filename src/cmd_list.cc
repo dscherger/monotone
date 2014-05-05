@@ -1,5 +1,5 @@
-// Copyright (C) 2012, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -502,8 +502,6 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
     "",
     options::opts::none)
 {
-  (void)execid;
-
   database db(app);
   map<branch_name, epoch_data> epochs;
   db.get_epochs(epochs);
@@ -671,9 +669,6 @@ CMD(workspaces, "workspaces", "", CMD_REF(list), "",
     "",
     options::opts::none)
 {
-  (void)execid;
-  (void)args;
-
   database db(app.opts, app.lua);
   db.ensure_open();
   print_workspace_info(db, app.lua, cout);
@@ -684,9 +679,6 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
     "",
     options::opts::none)
 {
-  (void)execid;
-  (void)args;
-
   vector<system_path> search_paths, files, dirs;
 
   E(app.lua.hook_get_default_database_locations(search_paths), origin::user,
@@ -756,8 +748,6 @@ CMD(known, "known", "", CMD_REF(list), "",
     "",
     options::opts::depth | options::opts::exclude)
 {
-  (void)execid;
-
   database db(app);
   workspace work(app);
 
@@ -822,8 +812,6 @@ CMD(unknown, "unknown", "", CMD_REF(list), "[PATH]",
     "",
     options::opts::depth | options::opts::exclude | options::opts::recursive)
 {
-  (void)execid;
-
   set<file_path> unknown, _;
   get_unknown_ignored(app, args, app.opts.recursive, unknown, _);
 
@@ -840,8 +828,6 @@ CMD(ignored, "ignored", "", CMD_REF(list), "[PATH]",
     "",
     options::opts::depth | options::opts::exclude | options::opts::recursive)
 {
-  (void)execid;
-
   set<file_path> _, ignored;
   get_unknown_ignored(app, args, app.opts.recursive, _, ignored);
 
@@ -854,8 +840,6 @@ CMD(missing, "missing", "", CMD_REF(list), "",
     "",
     options::opts::depth | options::opts::exclude)
 {
-  (void)execid;
-
   database db(app);
   workspace work(app);
   temp_node_id_source nis;
@@ -879,8 +863,6 @@ CMD(changed, "changed", "", CMD_REF(list), "[PATH...]",
     "",
     options::opts::depth | options::opts::exclude)
 {
-  (void)execid;
-
   database db(app);
   workspace work(app);
 
@@ -986,8 +968,6 @@ CMD_AUTOMATE(keys, "",
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.empty(), origin::user,
     F("no arguments needed"));
 
@@ -1047,8 +1027,6 @@ CMD_AUTOMATE(certs, N_("REV"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 

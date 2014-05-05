@@ -1,4 +1,4 @@
-// Copyright (C) 2010, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -69,9 +69,6 @@ CMD_AUTOMATE(put_public_key, N_("KEY-PACKET-DATA"),
              "",
              options::opts::none)
 {
-  (void)execid;
-  (void)output;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -133,8 +130,6 @@ CMD_AUTOMATE(get_public_key, N_("KEY_NAME_OR_HASH"),
     "",
     options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -255,9 +250,6 @@ CMD_AUTOMATE(read_packets, N_("PACKET-DATA"),
              "",
              options::opts::none)
 {
-  (void)execid;
-  (void)output;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -274,8 +266,6 @@ CMD(read, "read", "", CMD_REF(packet_io), "[FILE1 [FILE2 [...]]]",
     N_("If no files are provided, the standard input is used."),
     options::opts::none)
 {
-  (void)execid;
-
   database db(app);
   key_store keys(app);
   packet_db_writer dbw(db, keys);

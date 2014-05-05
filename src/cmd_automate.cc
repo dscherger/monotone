@@ -1,5 +1,5 @@
 // Copyright (C) 2002, 2008 Graydon Hoare <graydon@pobox.com>
-//               2010, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -109,9 +109,6 @@ CMD_AUTOMATE(interface_version, "",
              "",
              options::opts::none)
 {
-  (void)app;
-  (void)execid;
-
   E(args.empty(), origin::user,
     F("no arguments needed"));
 
@@ -137,10 +134,6 @@ CMD_AUTOMATE_HIDDEN(bandtest, "{ info | warning | error | ticker }",
              "",
              options::opts::none)
 {
-  (void)app;
-  (void)execid;
-  (void)output;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -238,8 +231,6 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
                       "",
                       options::opts::automate_stdio_size)
 {
-  (void)execid;
-
   E(args.empty(), origin::user,
     F("no arguments needed"));
 

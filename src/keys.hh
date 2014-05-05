@@ -20,7 +20,7 @@ class database;
 struct keypair;
 class globish;
 
-class netsync_connection_info;
+struct netsync_connection_info;
 typedef boost::shared_ptr<netsync_connection_info> shared_conn_info;
 
 enum key_cache_flag { cache_disable, cache_enable };
