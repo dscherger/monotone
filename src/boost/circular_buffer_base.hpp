@@ -534,8 +534,8 @@ private:
     friend iterator;
     friend const_iterator;
 #else
-    friend struct cb_details::cb_iterator< circular_buffer<T, Alloc>, cb_details::cb_const_traits<Alloc> >;
-    friend struct cb_details::cb_iterator< circular_buffer<T, Alloc>, cb_details::cb_nonconst_traits<Alloc> >;
+    friend class cb_details::cb_iterator< circular_buffer<T, Alloc>, cb_details::cb_const_traits<Alloc> >;
+    friend class cb_details::cb_iterator< circular_buffer<T, Alloc>, cb_details::cb_nonconst_traits<Alloc> >;
 #endif
 
 public:

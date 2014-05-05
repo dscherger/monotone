@@ -40,8 +40,9 @@ using Botan::BigInt;
 using Botan::SecureVector;
 using Botan::X509_PublicKey;
 
-struct ssh_agent_state : ssh_agent_platform
+class ssh_agent_state : public ssh_agent_platform
 {
+public:
   vector<RSA_PublicKey> keys; // cache
 
   void read_packet(string & packet);

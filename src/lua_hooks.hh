@@ -31,8 +31,8 @@ struct uri_t;
 class app_state;
 class key_store;
 struct lua_State;
-struct globish;
-struct options;
+class globish;
+class options;
 class project_t;
 struct key_identity_info;
 

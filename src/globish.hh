@@ -49,8 +49,9 @@
 
 class arg_type;
 
-struct globish : origin_aware
+class globish : public origin_aware
 {
+public:
   globish() : compiled_pattern() {}
   globish(char const * pat, origin::type made_from);
   globish(std::string const & pat, origin::type made_from);
@@ -72,8 +73,9 @@ template <> void dump(globish const &, std::string &);
 
 // convenience functor for when you want to match all things
 // that _do_ match one glob but do _not_ match another
-struct globish_matcher
+class globish_matcher
 {
+public:
   globish_matcher(globish const & incl, globish const & excl)
     : included(incl), excluded(excl) {}
 

@@ -12,7 +12,7 @@
 
 #include "vocab.hh"
 
-struct options;
+class options;
 class project_t;
 class lua_hooks;
 class key_store;
