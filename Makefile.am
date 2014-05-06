@@ -1,4 +1,5 @@
 # Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+#               2014 Markus Wanner <markus@bluegap.ch>
 #
 # This program is made available under the GNU GPL version 2.0 or
 # greater. See the accompanying file COPYING for details.
@@ -117,7 +118,6 @@ MOST_SOURCES = 								\
 									\
 	src/cleanup.hh src/cycle_detector.hh src/adler32.hh		\
 	src/netio.hh src/gettext.h					\
-	src/package_revision.cc src/package_full_revision.cc		\
 	src/option.cc src/option.hh src/options.cc src/options.hh	\
 	src/options_list.hh src/options_applicator.hh			\
 	src/options_applicator.cc src/option_reset_info.hh		\
@@ -220,7 +220,7 @@ UNIT_TEST_SUPPORT =						\
 
 bin_PROGRAMS = mtn
 mtn_SOURCES = $(MOST_SOURCES) src/monotone.cc
-nodist_mtn_SOURCES = src/std_hooks.cc src/schema.cc
+nodist_mtn_SOURCES = src/std_hooks.cc src/schema.cc src/package_revision.cc src/package_full_revision.cc
 
 noinst_PROGRAMS = util/txt2c
 util_txt2c_SOURCES = util/txt2c.cc
@@ -705,8 +705,8 @@ test/func.status : mtn$(EXEEXT) test/bin/check_net$(EXEEXT)
 
 # Creates the needed artifacts for manual test execution
 .PHONY: testers
-testers: mtn$(EXEEXT) $(check_PROGRAMS)	\
-	 run_tester_tests run_func_tests run_unit_tests run_extra_tests
+testers: mtn$(EXEEXT) $(check_PROGRAMS) \
+	run_tester_tests run_unit_tests run_func_tests run_extra_tests
 
 # We want the tests re-run even if the .status files already exist.
 # .PHONY does not work for that (bad interaction with pattern rules),
