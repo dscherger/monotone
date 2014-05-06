@@ -179,20 +179,21 @@ UNIT_TESTEES =								\
 # these files contain the actual unit tests
 # yes, we have to list them all explicitly, with directory prefix, or
 # automake gets very confused
-UNIT_TESTERS =									\
-	test/unit/tests/basic_io.cc test/unit/tests/charset.cc			\
-	test/unit/tests/commands.cc test/unit/tests/cset.cc			\
-	test/unit/tests/git_change.cc test/unit/tests/globish.cc		\
-	test/unit/tests/graph.cc test/unit/tests/merge_3way.cc			\
-	test/unit/tests/merge_roster.cc test/unit/tests/mkstemp.cc		\
-	test/unit/tests/netcmd.cc test/unit/tests/netxx_pipe.cc			\
-	test/unit/tests/option.cc test/unit/tests/outdated_indicator.cc		\
-	test/unit/tests/pcrewrap.cc test/unit/tests/refiner.cc 			\
-	test/unit/tests/restrictions.cc test/unit/tests/revision.cc		\
-	test/unit/tests/simplestring_xform.cc test/unit/tests/transforms.cc	\
-	test/unit/tests/uri.cc test/unit/tests/vocab.cc				\
-	test/unit/tests/xdelta.cc test/unit/tests/numeric_vocab.cc		\
-	test/unit/tests/sha1.cc test/unit/tests/string_queue.cc			\
+UNIT_TESTERS =								\
+	test/unit/tests/basic_io.cc test/unit/tests/charset.cc		\
+	test/unit/tests/commands.cc test/unit/tests/cset.cc		\
+	test/unit/tests/git_change.cc test/unit/tests/globish.cc	\
+	test/unit/tests/graph.cc test/unit/tests/merge_3way.cc		\
+	test/unit/tests/merge_roster.cc test/unit/tests/mkstemp.cc	\
+	test/unit/tests/netcmd.cc test/unit/tests/netxx_pipe.cc		\
+	test/unit/tests/option.cc test/unit/tests/outdated_indicator.cc	\
+	test/unit/tests/pcrewrap.cc test/unit/tests/refiner.cc 		\
+	test/unit/tests/restrictions.cc test/unit/tests/revision.cc	\
+	test/unit/tests/simplestring_xform.cc				\
+	test/unit/tests/transforms.cc					\
+	test/unit/tests/uri.cc test/unit/tests/vocab.cc			\
+	test/unit/tests/xdelta.cc test/unit/tests/numeric_vocab.cc	\
+	test/unit/tests/sha1.cc test/unit/tests/string_queue.cc		\
 	test/unit/unit_tester.cc
 
 # these files contain unit tests that need access to private interfaces
