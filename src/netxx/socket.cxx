@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
  * Copyright (C) 2001-2004 Peter J Jones (pjones@pmade.org)
  * All Rights Reserved
  *
@@ -59,11 +60,11 @@ Netxx::Socket::Socket (void)
     : socketfd_(const_invalid_socket), probe_ready_(false), type_ready_(false)
 {
 #   if defined(WIN32)
-	WSADATA wsdata;
+        WSADATA wsdata;
 
-	if (WSAStartup(MAKEWORD(2,2), &wsdata) != 0) {
-	    throw Exception("failed to load WinSock");
-	}
+        if (WSAStartup(MAKEWORD(2,2), &wsdata) != 0) {
+            throw Exception("failed to load WinSock");
+        }
 #   endif
 }
 //####################################################################
@@ -71,11 +72,11 @@ Netxx::Socket::Socket (Type type)
     : socketfd_(const_invalid_socket), probe_ready_(false), type_ready_(true), type_(type)
 {
 #   if defined(WIN32)
-	WSADATA wsdata;
+        WSADATA wsdata;
 
-	if (WSAStartup(MAKEWORD(2,2), &wsdata) != 0) {
-	    throw Exception("failed to load WinSock");
-	}
+        if (WSAStartup(MAKEWORD(2,2), &wsdata) != 0) {
+            throw Exception("failed to load WinSock");
+        }
 #   endif
 
     int socket_domain=0;
@@ -84,9 +85,9 @@ Netxx::Socket::Socket (Type type)
     get_domain_and_type(type, socket_domain, socket_type);
 
     if ( (socket_fd = socket(socket_domain, socket_type, 0)) < 0) {
-	std::string error("failure from socket(2): ");
-	error += str_error(get_last_error());
-	throw Exception(error);
+        std::string error("failure from socket(2): ");
+        error += str_error(get_last_error());
+        throw Exception(error);
     }
 
     socketfd_ = socket_fd;
@@ -96,11 +97,11 @@ Netxx::Socket::Socket (int socketfd)
     : socketfd_(socketfd), probe_ready_(false), type_ready_(false)
 {
 #   if defined(WIN32)
-	WSADATA wsdata;
+        WSADATA wsdata;
 
-	if (WSAStartup(MAKEWORD(2,2), &wsdata) != 0) {
-	    throw Exception("failed to load WinSock");
-	}
+        if (WSAStartup(MAKEWORD(2,2), &wsdata) != 0) {
+            throw Exception("failed to load WinSock");
+        }
 #   endif
 }
 //####################################################################
@@ -108,39 +109,40 @@ Netxx::Socket::Socket (const Socket &other)
     : probe_ready_(false), type_ready_(other.type_ready_), type_(other.type_)
 {
     if (other.socketfd_ != const_invalid_socket) {
-	socket_type dup_socket;
+        socket_type dup_socket;
 
-#	if defined(WIN32)
-	    WSADATA wsdata;
+#       if defined(WIN32)
+            WSADATA wsdata;
 
-	    if (WSAStartup(MAKEWORD(2,2), &wsdata) != 0)
-		throw Exception("failed to load WinSock");
+            if (WSAStartup(MAKEWORD(2,2), &wsdata) != 0)
+                throw Exception("failed to load WinSock");
 
-	    WSAPROTOCOL_INFO proto_info;
-	    std::memset(&proto_info, 0, sizeof(proto_info));
+            WSAPROTOCOL_INFO proto_info;
+            std::memset(&proto_info, 0, sizeof(proto_info));
 
-	    if (WSADuplicateSocket(other.socketfd_, GetCurrentProcessId(), &proto_info)) {
-		throw Exception("failed to duplicate socket");
-	    }
+            if (WSADuplicateSocket(other.socketfd_, GetCurrentProcessId(), &proto_info)) {
+                throw Exception("failed to duplicate socket");
+            }
 
-	    if ( (dup_socket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO,
-		    FROM_PROTOCOL_INFO, &proto_info, 0, WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET)
-	    {
-		throw Exception("failed to init duplicated socket");
-	    }
-#	else
-	    dup_socket = dup(other.socketfd_);
+            if ( (dup_socket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO,
+                    FROM_PROTOCOL_INFO, &proto_info, 0, WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET)
+              // FIXME: warning about signed vs unsigned compare; fixed in msys2-mingw branch
+            {
+                throw Exception("failed to init duplicated socket");
+            }
+#       else
+            dup_socket = dup(other.socketfd_);
 
-	    if (dup_socket < 0) {
-		std::string error("dup(2) call failed: ");
-		error += str_error(get_last_error());
-		throw Exception(error);
-	    }
-#	endif
+            if (dup_socket < 0) {
+                std::string error("dup(2) call failed: ");
+                error += str_error(get_last_error());
+                throw Exception(error);
+            }
+#       endif
 
-	socketfd_ = dup_socket;
+        socketfd_ = dup_socket;
     } else {
-	socketfd_ = const_invalid_socket;
+        socketfd_ = const_invalid_socket;
     }
 }
 //####################################################################
@@ -165,7 +167,7 @@ Netxx::Socket::~Socket (void)
     close();
 
 #   if defined(WIN32)
-	WSACleanup();
+        WSACleanup();
 #   endif
 }
 //####################################################################
@@ -175,45 +177,45 @@ Netxx::signed_size_type Netxx::Socket::write (const void *buffer, size_type leng
     signed_size_type rc;
 
     for (;;) {
-	if (timeout && !writable(timeout)) return -1;
+        if (timeout && !writable(timeout)) return -1;
 
-	if ( (rc = send(socketfd_, buffer_ptr, length, 0)) < 0) {
-	    error_type error_code = get_last_error();
-	    if (error_code == EWOULDBLOCK) error_code = EAGAIN;
+        if ( (rc = send(socketfd_, buffer_ptr, length, 0)) < 0) {
+            error_type error_code = get_last_error();
+            if (error_code == EWOULDBLOCK) error_code = EAGAIN;
 
-	    switch (error_code) {
-		case EPIPE:
-		case ECONNRESET:
+            switch (error_code) {
+                case EPIPE:
+                case ECONNRESET:
 #ifdef ETIMEDOUT
-		case ETIMEDOUT:
+                case ETIMEDOUT:
 #endif
-		    return 0;
+                    return 0;
 
-		case EINTR:
-		    continue;
+                case EINTR:
+                    continue;
 
-		case EAGAIN:
-		    return -1;
+                case EAGAIN:
+                    return -1;
 
 #if defined(WIN32)
-		case WSAENETRESET:
-		case WSAESHUTDOWN:
-		case WSAEHOSTUNREACH:
-		case WSAECONNABORTED:
-		case WSAETIMEDOUT:
-		    return 0;
+                case WSAENETRESET:
+                case WSAESHUTDOWN:
+                case WSAEHOSTUNREACH:
+                case WSAECONNABORTED:
+                case WSAETIMEDOUT:
+                    return 0;
 #endif
 
-		default:
-		{
-		    std::string error("send failed: ");
-		    error += str_error(error_code);
-		    throw Exception(error);
-		}
-	    }
-	}
+                default:
+                {
+                    std::string error("send failed: ");
+                    error += str_error(error_code);
+                    throw Exception(error);
+                }
+            }
+        }
 
-	break;
+        break;
     }
 
     return rc;
@@ -224,54 +226,54 @@ Netxx::signed_size_type Netxx::Socket::read (void *buffer, size_type length, con
     signed_size_type rc;
 
 #   if defined(WIN32)
-	char *buffer_ptr = static_cast<char*>(buffer);
+        char *buffer_ptr = static_cast<char*>(buffer);
 #   else
-	void *buffer_ptr(buffer);
+        void *buffer_ptr(buffer);
 #   endif
 
     for (;;) {
-	if (timeout && !readable(timeout)) return -1;
+        if (timeout && !readable(timeout)) return -1;
 
-	if ( (rc = recv(socketfd_, buffer_ptr, length, 0)) < 0) {
-	    error_type error_code = get_last_error();
-	    if (error_code == EWOULDBLOCK) error_code = EAGAIN;
+        if ( (rc = recv(socketfd_, buffer_ptr, length, 0)) < 0) {
+            error_type error_code = get_last_error();
+            if (error_code == EWOULDBLOCK) error_code = EAGAIN;
 
-	    switch (error_code) {
-		case ECONNRESET:
+            switch (error_code) {
+                case ECONNRESET:
 #ifdef ETIMEDOUT
                 case ETIMEDOUT:
 #endif
-		    return 0;
+                    return 0;
 
-		case EINTR:
-		    continue;
+                case EINTR:
+                    continue;
 
-		case EAGAIN:
-		    return -1;
+                case EAGAIN:
+                    return -1;
 
 #if defined(WIN32)
 
-		case WSAEMSGSIZE:
-		    return length;
+                case WSAEMSGSIZE:
+                    return length;
 
-		case WSAENETRESET:
-		case WSAESHUTDOWN:
-		case WSAECONNABORTED:
-		case WSAETIMEDOUT: // FIXME should this be return -1?
-		    return 0;
+                case WSAENETRESET:
+                case WSAESHUTDOWN:
+                case WSAECONNABORTED:
+                case WSAETIMEDOUT: // FIXME should this be return -1?
+                    return 0;
 
 #endif
 
-		default:
-		{
-		    std::string error("recv failure: ");
-		    error += str_error(error_code);
-		    throw Exception(error);
-		}
-	    }
-	}
+                default:
+                {
+                    std::string error("recv failure: ");
+                    error += str_error(error_code);
+                    throw Exception(error);
+                }
+            }
+        }
 
-	break;
+        break;
     }
 
     return rc;
@@ -280,8 +282,8 @@ Netxx::signed_size_type Netxx::Socket::read (void *buffer, size_type length, con
 bool Netxx::Socket::readable (const Timeout &timeout)
 {
     if (!probe_ready_) {
-	probe_.add(socketfd_);
-	probe_ready_ = true;
+        probe_.add(socketfd_);
+        probe_ready_ = true;
     }
 
     Probe_impl::probe_type pt = probe_.probe(timeout, Probe::ready_read);
@@ -292,8 +294,8 @@ bool Netxx::Socket::readable (const Timeout &timeout)
 bool Netxx::Socket::writable (const Timeout &timeout)
 {
     if (!probe_ready_) {
-	probe_.add(socketfd_);
-	probe_ready_ = true;
+        probe_.add(socketfd_);
+        probe_ready_ = true;
     }
 
     Probe_impl::probe_type pt = probe_.probe(timeout, Probe::ready_write);
@@ -304,8 +306,8 @@ bool Netxx::Socket::writable (const Timeout &timeout)
 bool Netxx::Socket::readable_or_writable (const Timeout &timeout)
 {
     if (!probe_ready_) {
-	probe_.add(socketfd_);
-	probe_ready_ = true;
+        probe_.add(socketfd_);
+        probe_ready_ = true;
     }
 
     Probe_impl::probe_type pt = probe_.probe(timeout, Probe::ready_read|Probe::ready_write);
@@ -316,13 +318,13 @@ bool Netxx::Socket::readable_or_writable (const Timeout &timeout)
 void Netxx::Socket::close (void)
 {
     if (socketfd_ != const_invalid_socket) {
-#	if defined(WIN32)
-	    closesocket(socketfd_);
-#	else
-	    ::close(socketfd_);
-#	endif
+#       if defined(WIN32)
+            closesocket(socketfd_);
+#       else
+            ::close(socketfd_);
+#       endif
 
-	socketfd_ = const_invalid_socket;
+        socketfd_ = const_invalid_socket;
     }
 }
 //####################################################################
@@ -380,44 +382,44 @@ namespace
     //####################################################################
     void get_domain_and_type (Netxx::Socket::Type stype, int &domain, int &type)
     {
-	switch (stype) {
-	    case Netxx::Socket::TCP:
-		domain = PF_INET;
-		type	= SOCK_STREAM;
-		break;
+        switch (stype) {
+            case Netxx::Socket::TCP:
+                domain = PF_INET;
+                type    = SOCK_STREAM;
+                break;
 
-	    case Netxx::Socket::UDP:
-		domain	= PF_INET;
-		type	= SOCK_DGRAM;
-		break;
+            case Netxx::Socket::UDP:
+                domain  = PF_INET;
+                type    = SOCK_DGRAM;
+                break;
 
 #   ifndef NETXX_NO_INET6
-	    case Netxx::Socket::TCP6:
-		domain	= PF_INET6;
-		type	= SOCK_STREAM;
-		break;
+            case Netxx::Socket::TCP6:
+                domain  = PF_INET6;
+                type    = SOCK_STREAM;
+                break;
 
-	    case Netxx::Socket::UDP6:
-		domain	= PF_INET6;
-		type	= SOCK_DGRAM;
-		break;
+            case Netxx::Socket::UDP6:
+                domain  = PF_INET6;
+                type    = SOCK_DGRAM;
+                break;
 #   endif
 #   ifndef WIN32
-	    case Netxx::Socket::LOCALSTREAM:
-		domain	= PF_LOCAL;
-		type	= SOCK_STREAM;
-		break;
+            case Netxx::Socket::LOCALSTREAM:
+                domain  = PF_LOCAL;
+                type    = SOCK_STREAM;
+                break;
 
-	    case Netxx::Socket::LOCALDGRAM:
-		domain	= PF_LOCAL;
-		type	= SOCK_DGRAM;
-		break;
+            case Netxx::Socket::LOCALDGRAM:
+                domain  = PF_LOCAL;
+                type    = SOCK_DGRAM;
+                break;
 #   endif
-	    default:
-		domain = PF_INET;
-		type	= SOCK_STREAM;
-		break;
-	}
+            default:
+                domain = PF_INET;
+                type    = SOCK_STREAM;
+                break;
+        }
     }
     //####################################################################
 } // end anonymous namespace

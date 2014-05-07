@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -783,7 +784,7 @@ namespace {
   };
 }
 static void
-migrate_add_branch_leaf_cache(sqlite3 * db, key_store & keys)
+migrate_add_branch_leaf_cache(sqlite3 * db, key_store & /* keys */)
 {
   sql::exec(db,
             "CREATE TABLE branch_leaves\n"

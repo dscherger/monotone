@@ -167,7 +167,8 @@ date_fmt_valid(string date_fmt)
 static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               project_t & project,
-                              revision_id const rid, revision_t const & rev,
+                              revision_id const /* rid */,
+                              revision_t const & rev,
                               string & author, date_t & date, branch_name & branch,
                               set<branch_name> const & old_branches,
                               string const & date_fmt, utf8 & log_message)

@@ -23,7 +23,7 @@
 #include "hmac.hh"
 #include "string_queue.hh"
 
-struct globish;
+class globish;
 class database;
 class project_t;
 class key_store;

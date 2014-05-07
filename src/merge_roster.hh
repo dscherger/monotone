@@ -1,4 +1,4 @@
-// Copyright (C) 2005, 2010 Nathaniel Smith <njs@pobox.com>
+// Copyright (C) 2005, 2010, 2014 Nathaniel Smith <njs@pobox.com>
 //               2008, 2009, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -297,8 +297,7 @@ struct roster_merge_result
                                       std::ostream & output) const;
   void resolve_orphaned_node_conflicts(lua_hooks & lua,
                                        roster_t const & left_roster,
-                                       roster_t const & right_roster,
-                                       content_merge_adaptor & adaptor);
+                                       roster_t const & right_roster);
 
   void report_multiple_name_conflicts(roster_t const & left,
                                       roster_t const & right,
@@ -364,7 +363,6 @@ struct roster_merge_result
   void write_conflict_file(database & db,
                            lua_hooks & lua,
                            bookkeeping_path const & file_name,
-                           revision_id const & ancestor_rid,
                            revision_id const & left_rid,
                            revision_id const & right_rid,
                            boost::shared_ptr<roster_t> left_roster,

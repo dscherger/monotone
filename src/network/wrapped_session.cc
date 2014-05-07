@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2009 Timothy Brownawell <tbrownaw@prjek.net>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -88,10 +89,11 @@ void wrapped_session::request_automate()
   owner->request_automate();
 }
 
-void wrapped_session::on_begin(size_t ident, key_identity_info const & remote_key)
+void wrapped_session::on_begin(size_t /* ident */,
+                               key_identity_info const & /* remote_key */)
 { }
 
-void wrapped_session::on_end(size_t ident)
+void wrapped_session::on_end(size_t /* ident */)
 { }
 
 // Local Variables:
