@@ -20,7 +20,7 @@ class node_restriction;
 struct content_merge_adaptor;
 class lua_hooks;
 struct i18n_format;
-struct options;
+class options;
 class app_state;
 
 //

@@ -48,7 +48,7 @@ origin::type get_made_from(Thing const & thing)
   return thing.made_from;
 }
 template<> inline
-origin::type get_made_from<std::string>(std::string const & thing)
+origin::type get_made_from<std::string>(std::string const & /* thing */ )
 {
   return origin::internal;
 }
@@ -58,7 +58,7 @@ Thing from_string(std::string const & str, origin::type made_from)
   return Thing(str, made_from);
 }
 template<> inline
-std::string from_string<std::string>(std::string const & str, origin::type made_from)
+std::string from_string<std::string>(std::string const & str, origin::type /* made_from */ )
 {
   return str;
 }

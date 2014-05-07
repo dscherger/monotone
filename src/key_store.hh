@@ -24,7 +24,7 @@
 #include "paths.hh"
 
 class app_state;
-struct globish;
+class globish;
 class database;
 
 struct keypair

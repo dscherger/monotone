@@ -40,9 +40,9 @@ EOF
       dnl GCC
       if test "$GXX" = "yes"; then
         if test -z "$ansi"; then
-          ac_cv_prog_cxx_warnings="-Wall -W -Wno-unused"
+          ac_cv_prog_cxx_warnings="-Wall -Wextra -Wno-unused -Wno-unused-parameter"
         else
-          ac_cv_prog_cxx_warnings="-Wall -W -Wno-unused -ansi -pedantic"
+          ac_cv_prog_cxx_warnings="-Wall -Wextra -Wno-unused -Wno-unused-parameter -ansi -pedantic"
         fi
 
       dnl Most compilers print some kind of a version string with some command

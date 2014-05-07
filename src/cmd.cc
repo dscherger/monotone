@@ -381,8 +381,6 @@ namespace commands {
                      bool show_hidden_commands,
                      ostream & out)
   {
-    command const * cmd = find_command(ident);
-
     if (ident.empty())
       {
         out << format_text(F("Command groups:")) << "\n\n";

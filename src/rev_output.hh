@@ -14,7 +14,7 @@
 #include "vocab.hh"
 
 struct date_t;
-struct cert;
+class cert;
 
 void
 revision_header(revision_id const rid, revision_t const & rev, 

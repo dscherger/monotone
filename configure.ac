@@ -38,20 +38,20 @@ if test x"$MKDIR_P" = x && test x"$mkdir_p" != x; then
 fi
 AC_SUBST([MKDIR_P])
 
-# Operating system categorization.  Don't add more entries to this
-# case statement if you can possibly avoid it.
-AC_CANONICAL_HOST
-AC_MSG_CHECKING([category of operating system])
-
 BUILD_DATE=`date '+%F'`
 AC_SUBST([BUILD_DATE])
 AC_DEFINE_UNQUOTED([BUILD_DATE], ["$BUILD_DATE"],
 	[The date of the build, used in the manual page and other places.])
 
+# Operating system categorization.  Don't add more entries to this
+# case statement if you can possibly avoid it.
+AC_CANONICAL_HOST
+AC_MSG_CHECKING([category of operating system])
+
 WIN32_PLATFORM=false
 os_err_t="int"
 case "$host" in
-  *-mingw32 | *-pc-pw32 | *-pc-mks | *-winnt )
+  *-mingw32 | *-pc-msys | *-pc-pw32 | *-pc-mks | *-winnt )
     AC_MSG_RESULT([Windows])
     WIN32_PLATFORM="true"
     os_err_t="unsigned int"

@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -92,8 +92,7 @@ void calculate_extents(vector<long, QA(long)> const & a_b_edits,
                        vector<long, QA(long)> & prefix,
                        vector<extent> & extents,
                        vector<long, QA(long)> & suffix,
-                       size_t const a_len,
-                       interner<long> & intern)
+                       size_t const a_len)
 {
   extents.reserve(a_len * 2);
 
@@ -397,12 +396,12 @@ void merge_via_edit_scripts(vector<string> const & ancestor,
   L(FL("calculating left extents on %d edits") % left_edits.size());
   calculate_extents(left_edits, left_interned,
                     left_prefix, left_extents, left_suffix,
-                    anc_interned.size(), in);
+                    anc_interned.size());
 
   L(FL("calculating right extents on %d edits") % right_edits.size());
   calculate_extents(right_edits, right_interned,
                     right_prefix, right_extents, right_suffix,
-                    anc_interned.size(), in);
+                    anc_interned.size());
 
   L(FL("normalizing %d right extents") % right_extents.size());
   normalize_extents(right_extents, anc_interned, right_interned);

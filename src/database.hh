@@ -25,7 +25,7 @@ using std::vector;
 class app_state;
 class lua_hooks;
 struct date_t;
-struct globish;
+class globish;
 class key_store;
 class outdated_indicator;
 class rev_height;

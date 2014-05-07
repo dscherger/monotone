@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -25,8 +25,8 @@ listener_base::listener_base(shared_ptr<Netxx::StreamServer> srv)
 listener_base::~listener_base()
 {
 }
-bool listener_base::timed_out(time_t now) { return false; }
-bool listener_base::do_work(transaction_guard & guard) { return true; }
+bool listener_base::timed_out(time_t /* now */) { return false; }
+bool listener_base::do_work(transaction_guard & /* guard */) { return true; }
 bool listener_base::arm() { return false; }
 bool listener_base::can_timeout() { return false; }
 

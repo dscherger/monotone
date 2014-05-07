@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2009, 2012, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005, 2012 Nathaniel Smith <njs@pobox.com>
-//               2008, 2009, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -1719,9 +1719,7 @@ static char const * const conflict_extra = N_("extra chars at end of conflict");
 
 static void
 read_missing_root_conflicts(basic_io::parser & pars,
-                            bool & missing_root_conflict,
-                            roster_t const & left_roster,
-                            roster_t const & right_roster)
+                            bool & missing_root_conflict)
 {
   // There can be only one of these
   if (pars.tok.in.lookahead != EOF && pars.symp(syms::missing_root))
@@ -2387,8 +2385,7 @@ read_attr_state_right(basic_io::parser & pars,
 static void
 read_attribute_conflict(basic_io::parser & pars,
                         attribute_conflict & conflict,
-                        roster_t const & left_roster,
-                        roster_t const & right_roster)
+                        roster_t const & left_roster)
 {
   string tmp;
 
@@ -2429,8 +2426,7 @@ read_attribute_conflict(basic_io::parser & pars,
 static void
 read_attribute_conflicts(basic_io::parser & pars,
                          std::vector<attribute_conflict> & conflicts,
-                         roster_t const & left_roster,
-                         roster_t const & right_roster)
+                         roster_t const & left_roster)
 {
   while (pars.tok.in.lookahead != EOF && pars.symp(syms::attribute))
     {
@@ -2438,7 +2434,7 @@ read_attribute_conflicts(basic_io::parser & pars,
 
       pars.sym();
 
-      read_attribute_conflict(pars, conflict, left_roster, right_roster);
+      read_attribute_conflict(pars, conflict, left_roster);
 
       conflicts.push_back(conflict);
 
@@ -2589,7 +2585,7 @@ read_conflict_file_core(basic_io::parser pars,
     {
       // Read in the ones we know how to resolve. Also read in the ones we
       // don't know how to resolve, so we can report them.
-      read_missing_root_conflicts(pars, result.missing_root_conflict, left_roster, right_roster);
+      read_missing_root_conflicts(pars, result.missing_root_conflict);
       read_invalid_name_conflicts(pars, result.invalid_name_conflicts, left_roster, right_roster);
       read_directory_loop_conflicts(pars, result.directory_loop_conflicts, left_roster, right_roster);
       read_orphaned_node_conflicts(pars, result.orphaned_node_conflicts, left_roster, right_roster);
@@ -2597,7 +2593,7 @@ read_conflict_file_core(basic_io::parser pars,
       read_dropped_modified_conflicts
         (pars, result.dropped_modified_conflicts, left_rid, left_roster, right_rid, right_roster);
       read_duplicate_name_conflicts(pars, result.duplicate_name_conflicts, left_roster, right_roster);
-      read_attribute_conflicts(pars, result.attribute_conflicts, left_roster, right_roster);
+      read_attribute_conflicts(pars, result.attribute_conflicts, left_roster);
       read_file_content_conflicts(pars, result.file_content_conflicts, left_roster, right_roster);
     }
 
@@ -2655,7 +2651,6 @@ void
 roster_merge_result::write_conflict_file(database & db,
                                          lua_hooks & lua,
                                          bookkeeping_path const & file_name,
-                                         revision_id const & ancestor_rid,
                                          revision_id const & left_rid,
                                          revision_id const & right_rid,
                                          boost::shared_ptr<roster_t> left_roster,
@@ -2788,9 +2783,8 @@ attach_node (lua_hooks & lua,
 
 void
 roster_merge_result::resolve_orphaned_node_conflicts(lua_hooks & lua,
-                                                      roster_t const & left_roster,
-                                                      roster_t const & right_roster,
-                                                      content_merge_adaptor & adaptor)
+                                                     roster_t const & left_roster,
+                                                     roster_t const & right_roster)
 {
   MM(left_roster);
   MM(right_roster);
