@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2008 Timothy Brownawell <tbrownaw@prjek.net>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -90,7 +91,7 @@ bool automate_session::finished_working() const
 }
 
 void automate_session::prepare_to_confirm(key_identity_info const & remote_key,
-                                          bool use_transport_auth)
+                                          bool /* use_transport_auth */)
 {
   remote_identity = remote_key;
 }
@@ -139,7 +140,7 @@ public:
       % join_words(id) % peer);
   }
 };
-bool automate_session::do_work(transaction_guard & guard,
+bool automate_session::do_work(transaction_guard & /* guard */,
                                netcmd const * const cmd_in)
 {
   if (!cmd_in)

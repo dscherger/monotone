@@ -1,4 +1,4 @@
-// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2010, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -782,7 +782,7 @@ dump_row(ostream &out, sqlite3_stmt *stmt, string const& table_name)
 }
 
 static int
-dump_table_cb(void *data, int n, char **vals, char **cols)
+dump_table_cb(void *data, int n, char **vals, char ** /* cols */)
 {
   dump_request *dump = reinterpret_cast<dump_request *>(data);
   I(dump != NULL);
@@ -816,7 +816,7 @@ dump_table_cb(void *data, int n, char **vals, char **cols)
 }
 
 static int
-dump_index_cb(void *data, int n, char **vals, char **cols)
+dump_index_cb(void *data, int n, char **vals, char ** /* cols */)
 {
   dump_request *dump = reinterpret_cast<dump_request *>(data);
   I(dump != NULL);
@@ -832,7 +832,7 @@ dump_index_cb(void *data, int n, char **vals, char **cols)
 }
 
 static int
-dump_user_version_cb(void *data, int n, char **vals, char **cols)
+dump_user_version_cb(void *data, int n, char **vals, char ** /* cols */)
 {
   dump_request *dump = reinterpret_cast<dump_request *>(data);
   I(dump != NULL);
@@ -855,21 +855,20 @@ database::dump(ostream & out)
     req.out = &out;
     req.sql = imp->sql();
     out << "BEGIN EXCLUSIVE;\n";
-    int res;
-    res = sqlite3_exec(req.sql,
+    sqlite3_exec(req.sql,
                           "SELECT name, type, sql FROM sqlite_master "
                           "WHERE type='table' AND sql NOT NULL "
                           "AND name not like 'sqlite_stat%' "
                           "ORDER BY name",
                           dump_table_cb, &req, NULL);
     assert_sqlite3_ok(req.sql);
-    res = sqlite3_exec(req.sql,
+    sqlite3_exec(req.sql,
                           "SELECT name, type, sql FROM sqlite_master "
                           "WHERE type='index' AND sql NOT NULL "
                           "ORDER BY name",
                           dump_index_cb, &req, NULL);
     assert_sqlite3_ok(req.sql);
-    res = sqlite3_exec(req.sql,
+    sqlite3_exec(req.sql,
                        "PRAGMA user_version;",
                        dump_user_version_cb, &req, NULL);
     assert_sqlite3_ok(req.sql);
@@ -1276,7 +1275,7 @@ database::info(ostream & out, bool analyze)
     % *(diffs.begin() + int(diffs.size() * 0.05))
     % *(diffs.begin() + int(diffs.size() * 0.10))
     % *(diffs.begin() + int(diffs.size() * 0.25))
-    % *(diffs.begin() + int(diffs.size() * 0.50))
+    % median
     % *(diffs.begin() + int(diffs.size() * 0.75))
     % *(diffs.begin() + int(diffs.size() * 0.90))
     % *(diffs.begin() + int(diffs.size() * 0.95))
@@ -2153,7 +2152,8 @@ public:
     return try_get_markings_from_roster_delta(del, nid, markings);
   }
 
-  void look_at_roster(roster_t const & roster, marking_map const & mm)
+  void look_at_roster(roster_t const & /* roster */,
+                      marking_map const & mm)
   {
     markings = mm.get_marking(nid);
   }
@@ -2174,7 +2174,7 @@ public:
     return try_get_content_from_roster_delta(del, nid, content);
   }
 
-  void look_at_roster(roster_t const & roster, marking_map const & mm)
+  void look_at_roster(roster_t const & roster, marking_map const & /* mm */)
   {
     if (roster.has_node(nid))
       content = downcast_to_file_t(roster.get_node(nid))->content;
@@ -2433,7 +2433,6 @@ database::get_file_sizes(roster_t const & roster,
   node_map const & nodes = roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
     {
-      node_id nid = i->first;
       if (!is_file_t(i->second))
         continue;
 
@@ -4770,7 +4769,8 @@ struct rev_height_graph : rev_graph
   {
     db.get_revision_parents(rev, parents);
   }
-  virtual void get_children(revision_id const & rev, set<revision_id> & parents) const
+  virtual void get_children(revision_id const & /* rev */,
+                            set<revision_id> & /* parents */) const
   {
     // not required
     I(false);

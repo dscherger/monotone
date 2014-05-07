@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Eric Anderson <anderse@hpl.hp.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -243,7 +244,7 @@ private:
   // used to avoid integer wraparound, 500 megs should be enough:
   static const size_t max_string_queue_size = 500 * 1024 * 1024;
   static const size_t max_string_queue_incr = 500 * 1024 * 1024;
-  string_queue (string_queue & from)
+  string_queue (string_queue & /* from */ )
     {
       std::abort ();
     }

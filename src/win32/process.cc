@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Jon Bright <jon@siliconcircus.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -79,19 +80,19 @@ existsonpath(const char *exe)
 }
 
 bool
-is_executable(const char *path)
+is_executable(const char * /* path */ )
 {
   return false; /* Basically meaningless on win32 */
 }
 
 int
-set_executable(const char *path)
+set_executable(const char * /* path */ )
 {
   return 0; /* Basically meaningless on win32 */
 }
 
 int
-clear_executable(const char *path)
+clear_executable(const char * /* path */ )
 {
   return 0; /* Basically meaningless on win32 */
 }
@@ -221,7 +222,9 @@ process_spawn_redirected(char const * in,
 }
 
 pid_t
-process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
+process_spawn_pipe(char const * const /* argv */ [],
+                   FILE** /* in */,
+                   FILE** /* out */ )
 {
   // XXX: not implemented on Win32 yet
   return -1;
@@ -249,7 +252,7 @@ process_wait(pid_t pid, int *res, int timeout)
 }
 
 int
-process_kill(pid_t pid, int signal)
+process_kill(pid_t pid, int /* signal */ )
 {
   HANDLE hProcess = (HANDLE)pid;
   if (TerminateProcess(hProcess, 1)==0)

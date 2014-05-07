@@ -1,6 +1,6 @@
-// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2010, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 //
-// This program is made available under the GNU GPL version 3.0 or
+// This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
 //
 // This program is distributed WITHOUT ANY WARRANTY; without even the
@@ -11,7 +11,9 @@
 
 #include "../sanity.hh"
 
-void parse_date(const std::string s, const std::string fmt, struct tm *tp)
+void parse_date(const std::string /* s */,
+                const std::string /* fmt */,
+                struct tm * /* tp */)
 {
   // Apparently the Win32 API does not provide a date parsing function.
   //

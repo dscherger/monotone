@@ -17,7 +17,7 @@
 #include "../automate_ostream.hh"
 #include <boost/shared_ptr.hpp>
 
-struct globish;
+class globish;
 struct server_initiated_sync_request;
 struct uri_t;
 

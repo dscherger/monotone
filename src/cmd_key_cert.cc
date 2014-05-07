@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -74,6 +75,8 @@ CMD_AUTOMATE(generate_key, N_("KEY_NAME PASSPHRASE"),
              "",
              options::opts::force_duplicate_key)
 {
+  (void)execid;
+
   // not unified with CMD(genkey), because the call to create_key_pair is
   // significantly different.
 
@@ -182,6 +185,9 @@ CMD_AUTOMATE(drop_public_key, N_("KEY_NAME_OR_HASH"),
     "",
     options::opts::none)
 {
+  (void)execid;
+  (void)output;
+
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 

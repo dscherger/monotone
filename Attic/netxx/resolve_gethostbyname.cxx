@@ -1,11 +1,12 @@
 /*
+ * Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
  * Copyright (C) 2001-2004 Peter J Jones (pjones@pmade.org)
  * All Rights Reserved
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
@@ -15,7 +16,7 @@
  * 3. Neither the name of the Author nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS''
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -50,25 +51,27 @@
 void Netxx::resolve_hostname (const char *hostname, port_type port, bool use_ipv6, std::vector<Peer> &addrs)
 {
     { // first try to see if this address is already an IPv4 address
-	SockAddr saddr(AF_INET, port);
-	sockaddr_in *sai = reinterpret_cast<sockaddr_in*>(saddr.get_sa());;
+        SockAddr saddr(AF_INET, port);
+        sockaddr_in *sai = reinterpret_cast<sockaddr_in*>(saddr.get_sa());;
 
-	if (inet_pton(AF_INET, hostname, &(sai->sin_addr)) == 1) {
-	    addrs.push_back(Peer(hostname, port, sai, saddr.get_sa_size()));
-	    return;
-	}
+        if (inet_pton(AF_INET, hostname, &(sai->sin_addr)) == 1) {
+            addrs.push_back(Peer(hostname, port, sai, saddr.get_sa_size()));
+            return;
+        }
     }
 
 #ifndef NETXX_NO_INET6
     if (use_ipv6) { // now try to see if this address is already an IPv6 address
-	SockAddr saddr(AF_INET6, port);
-	sockaddr_in6 *sai6 = reinterpret_cast<sockaddr_in6*>(saddr.get_sa());
+        SockAddr saddr(AF_INET6, port);
+        sockaddr_in6 *sai6 = reinterpret_cast<sockaddr_in6*>(saddr.get_sa());
 
-	if (inet_pton(AF_INET6, hostname, &(sai6->sin6_addr)) == 1) {
-	    addrs.push_back(Peer(hostname, port, sai6, saddr.get_sa_size()));
-	    return;
-	}
+        if (inet_pton(AF_INET6, hostname, &(sai6->sin6_addr)) == 1) {
+            addrs.push_back(Peer(hostname, port, sai6, saddr.get_sa_size()));
+            return;
+        }
     }
+#else
+    (void)use_ipv6;
 #endif
 
     /*
@@ -79,38 +82,38 @@ void Netxx::resolve_hostname (const char *hostname, port_type port, bool use_ipv
      */
     hostent *he; // WARNING not MT safe
     if ( (he = gethostbyname(hostname)) == 0) {
-	std::string error("name resolution failure for "); error += hostname;
+        std::string error("name resolution failure for "); error += hostname;
 // HACK: Winsock uses a totally different error reporting mechanism.
 #ifdef WIN32
         error += ": "; error += str_error(get_last_error());
 #else
-	error += ": "; error += hstrerror(h_errno);
+        error += ": "; error += hstrerror(h_errno);
 #endif
-	throw NetworkException(error);
+        throw NetworkException(error);
     }
 
     for (char **ii = he->h_addr_list; *ii != 0; ++ii) {
-	switch (he->h_addrtype) {
-	    case AF_INET:
-	    {
-		SockAddr saddr(AF_INET, port);
-		sockaddr_in *sai = reinterpret_cast<sockaddr_in*>(saddr.get_sa());
-		std::memcpy(&(sai->sin_addr), *ii, sizeof(sai->sin_addr));
-		addrs.push_back(Peer(he->h_name, port, sai, saddr.get_sa_size()));
-	    }
-	    break;
+        switch (he->h_addrtype) {
+            case AF_INET:
+            {
+                SockAddr saddr(AF_INET, port);
+                sockaddr_in *sai = reinterpret_cast<sockaddr_in*>(saddr.get_sa());
+                std::memcpy(&(sai->sin_addr), *ii, sizeof(sai->sin_addr));
+                addrs.push_back(Peer(he->h_name, port, sai, saddr.get_sa_size()));
+            }
+            break;
 
 #ifndef NETXX_NO_INET6
-	    case AF_INET6:
-	    {
-		SockAddr saddr(AF_INET6, port);
-		sockaddr_in6 *sai6 = reinterpret_cast<sockaddr_in6*>(saddr.get_sa());
-		std::memcpy(&(sai6->sin6_addr), *ii, sizeof(sai6->sin6_addr));
-		addrs.push_back(Peer(he->h_name, port, sai6, saddr.get_sa_size()));
-	    }
-	    break;
+            case AF_INET6:
+            {
+                SockAddr saddr(AF_INET6, port);
+                sockaddr_in6 *sai6 = reinterpret_cast<sockaddr_in6*>(saddr.get_sa());
+                std::memcpy(&(sai6->sin6_addr), *ii, sizeof(sai6->sin6_addr));
+                addrs.push_back(Peer(he->h_name, port, sai6, saddr.get_sa_size()));
+            }
+            break;
 #endif
-	}
+        }
     }
 }
 //####################################################################

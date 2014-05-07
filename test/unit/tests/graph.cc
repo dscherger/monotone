@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2006 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -200,7 +201,8 @@ struct mock_rev_graph : rev_graph
     }
   }
 
-  virtual void get_children(revision_id const & node, set<revision_id> & parents) const
+  virtual void get_children(revision_id const & /* node */,
+                            set<revision_id> & /* parents */) const
   {
     // not required
     I(false);

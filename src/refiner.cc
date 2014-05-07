@@ -259,8 +259,8 @@ refiner::process_refinement_command(refinement_type ty,
   string typestr;
 
   netcmd_item_type_to_string(their_node.type, typestr);
-  size_t lev = static_cast<size_t>(their_node.level);
 
+  //   size_t lev = static_cast<size_t>(their_node.level);
   //   L(FL("%s received refinement %s netcmd on %s node '%s', level %d") %
   //   voicestr() % (ty == refinement_query ? "query" : "response") %
   //   typestr % hpref % lev);
