@@ -1,4 +1,4 @@
-// Copyright (C) 2009, 2010, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2009, 2010, 2012, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -442,6 +442,8 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
     options::opts::revision | options::opts::depth | options::opts::exclude |
     options::opts::diff_options)
 {
+  (void)execid;
+
   if (app.opts.external_diff_args_given)
     E(app.opts.diff_format == external_diff, origin::user,
       F("'--diff-args' requires '--external'; try adding '--external' or remove '--diff-args'"));
@@ -484,6 +486,8 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
              options::opts::revision | options::opts::depth |
              options::opts::exclude)
 {
+  (void)execid;
+
   roster_t old_roster, new_roster;
   string dummy_header;
   bool old_from_db;
@@ -1006,6 +1010,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     options::opts::no_merges | options::opts::no_files |
     options::opts::no_graph)
 {
+  (void)execid;
+
   log_common (app, args, false, cout);
 }
 
@@ -1017,6 +1023,8 @@ CMD_AUTOMATE(log, N_("[PATH] ..."),
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges)
 {
+  (void)execid;
+
   log_common (app, args, true, output);
 }
 

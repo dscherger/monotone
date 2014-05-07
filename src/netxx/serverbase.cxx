@@ -1,11 +1,12 @@
 /*
+ * Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
  * Copyright (C) 2001-2004 Peter J Jones (pjones@pmade.org)
  * All Rights Reserved
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
@@ -15,7 +16,7 @@
  * 3. Neither the name of the Author nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS''
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -56,14 +57,14 @@
 #include <functional>
 
 //####################################################################
-namespace 
+namespace
 {
 #   ifndef WIN32
-	struct unlink_functor : public std::unary_function<std::string, void> 
-	{
-	    void operator() (const std::string &file)
-	    { unlink(file.c_str()); }
-	};
+        struct unlink_functor : public std::unary_function<std::string, void>
+        {
+            void operator() (const std::string &file)
+            { unlink(file.c_str()); }
+        };
 #   endif
 }
 //####################################################################
@@ -71,19 +72,19 @@ Netxx::ServerBase::ServerBase (const Timeout &timeout)
     : timeout_(timeout), sockets_(0), sockets_size_(0)
 { /* must not call bind_to from here */ }
 //####################################################################
-Netxx::ServerBase::~ServerBase (void) 
+Netxx::ServerBase::~ServerBase (void)
 {
 #   ifndef WIN32
-	if (sockets_ && !files_.empty()) {
-	    std::for_each(sockets_, sockets_ + sockets_size_, std::mem_fun_ref(&Socket::close));
-	    std::for_each(files_.begin(), files_.end(), unlink_functor());
-	}
+        if (sockets_ && !files_.empty()) {
+            std::for_each(sockets_, sockets_ + sockets_size_, std::mem_fun_ref(&Socket::close));
+            std::for_each(files_.begin(), files_.end(), unlink_functor());
+        }
 #   endif
 
     if (sockets_) delete [] sockets_;
 }
 //####################################################################
-void Netxx::ServerBase::bind_to(const Address &addr, bool stream_server) 
+void Netxx::ServerBase::bind_to(const Address &addr, bool stream_server)
 {
     if (sockets_) throw Exception("bug in Netxx, ServerBase::sockets_ != 0");
 
@@ -102,123 +103,123 @@ void Netxx::ServerBase::bind_to(const Address &addr, bool stream_server)
      */
     Address::const_iterator addr_it=addr.begin(), addr_end=addr.end();
     for (size_type current_socket=0; addr_it != addr_end; ++addr_it, ++current_socket) {
-	const sockaddr *sa = static_cast<const sockaddr*>(addr_it->get_sa());
-	size_type sa_size = addr_it->get_sa_size();
+        const sockaddr *sa = static_cast<const sockaddr*>(addr_it->get_sa());
+        size_type sa_size = addr_it->get_sa_size();
 
-	Socket::Type stype;
-	switch (sa->sa_family) {
-	    case AF_INET:
-		stype = stream_server ? Socket::TCP : Socket::UDP;
-		break;
+        Socket::Type stype;
+        switch (sa->sa_family) {
+            case AF_INET:
+                stype = stream_server ? Socket::TCP : Socket::UDP;
+                break;
 
-#	ifndef NETXX_NO_INET6
-	    case AF_INET6:
-		stype = stream_server ? Socket::TCP6 : Socket::UDP6;
-		break;
-#	endif
+#       ifndef NETXX_NO_INET6
+            case AF_INET6:
+                stype = stream_server ? Socket::TCP6 : Socket::UDP6;
+                break;
+#       endif
 
-#	ifndef WIN32
-	    case AF_LOCAL:
-		stype = stream_server ? Socket::LOCALSTREAM : Socket::LOCALDGRAM;
-		break;
-#	endif
+#       ifndef WIN32
+            case AF_LOCAL:
+                stype = stream_server ? Socket::LOCALSTREAM : Socket::LOCALDGRAM;
+                break;
+#       endif
 
-	    default:
-		stype = stream_server ? Socket::TCP : Socket::UDP;
-		break;
-	}
+            default:
+                stype = stream_server ? Socket::TCP : Socket::UDP;
+                break;
+        }
 
-	Socket tmp_socket(stype);
-	socket_type socketfd = tmp_socket.get_socketfd();
-	tmp_socket.swap(sockets_[current_socket]);
+        Socket tmp_socket(stype);
+        socket_type socketfd = tmp_socket.get_socketfd();
+        tmp_socket.swap(sockets_[current_socket]);
 
-	SockOpt socket_opt(socketfd);
-	socket_opt.set_reuse_address();
+        SockOpt socket_opt(socketfd);
+        socket_opt.set_reuse_address();
 
-#	ifndef NETXX_NO_INET6
-	if (sa->sa_family == AF_INET6)
-	    socket_opt.set_ipv6_listen_for_v6_only();
-#	endif
+#       ifndef NETXX_NO_INET6
+        if (sa->sa_family == AF_INET6)
+            socket_opt.set_ipv6_listen_for_v6_only();
+#       endif
 
-	if (bind(socketfd, sa, sa_size) != 0) {
-	    std::string error("bind(2) error: ");
-	    error += Netxx::str_error(Netxx::get_last_error());
-	    throw NetworkException(error);
-	}
+        if (bind(socketfd, sa, sa_size) != 0) {
+            std::string error("bind(2) error: ");
+            error += Netxx::str_error(Netxx::get_last_error());
+            throw NetworkException(error);
+        }
 
-	sockets_map_[socketfd] = &(sockets_[current_socket]);
-	pi_.add_socket(socketfd);
+        sockets_map_[socketfd] = &(sockets_[current_socket]);
+        pi_.add_socket(socketfd);
 
-#	ifndef WIN32
-	    /*
-	     * check to see if we need to record a filename. we would need
-	     * to record a filename for local domain sockets in order to
-	     * remove the file when the server is done with it.
-	     *
-	     * also take this time to set the mode for the socket file to
-	     * something sane. this may be a bad assumption here but I think
-	     * this is a good value for a domain socket.
-	     */
-	    if (sa->sa_family == AF_LOCAL) {
-		const sockaddr_un *saun = reinterpret_cast<const sockaddr_un*>(sa);
+#       ifndef WIN32
+            /*
+             * check to see if we need to record a filename. we would need
+             * to record a filename for local domain sockets in order to
+             * remove the file when the server is done with it.
+             *
+             * also take this time to set the mode for the socket file to
+             * something sane. this may be a bad assumption here but I think
+             * this is a good value for a domain socket.
+             */
+            if (sa->sa_family == AF_LOCAL) {
+                const sockaddr_un *saun = reinterpret_cast<const sockaddr_un*>(sa);
 
-		/*
-		 * This will make a local domain socket more like a real
-		 * socket since anyone with local file system access can
-		 * connect to it.
-		 */
-		chmod(saun->sun_path, 0666);
+                /*
+                 * This will make a local domain socket more like a real
+                 * socket since anyone with local file system access can
+                 * connect to it.
+                 */
+                chmod(saun->sun_path, 0666);
 
-		if (saun->sun_path[0] == '/') {
-		    files_.push_back(saun->sun_path);
-		} else {
-		    /*
-		     * the original (netxx) code here relied on MAXPATHLEN,
-		     * which isn't defined on hurd. As netxx seems to only
-		     * live on within monotone, we can as well make it
-		     * inter-dependent. And the unix/fs.cc variant certainly
-		     * gets more test mileage than anything special here.
-		     */
-		    std::string fullpath = get_current_working_dir();
-		    fullpath += '/'; fullpath += saun->sun_path;
-		    files_.push_back(fullpath);
-		}
-	    }
-#	endif
+                if (saun->sun_path[0] == '/') {
+                    files_.push_back(saun->sun_path);
+                } else {
+                    /*
+                     * the original (netxx) code here relied on MAXPATHLEN,
+                     * which isn't defined on hurd. As netxx seems to only
+                     * live on within monotone, we can as well make it
+                     * inter-dependent. And the unix/fs.cc variant certainly
+                     * gets more test mileage than anything special here.
+                     */
+                    std::string fullpath = get_current_working_dir();
+                    fullpath += '/'; fullpath += saun->sun_path;
+                    files_.push_back(fullpath);
+                }
+            }
+#       endif
     }
 
     probe_.add(*this);
 }
 //####################################################################
-void Netxx::ServerBase::get_socket_list (Socket *&sockets, size_type &size) 
+void Netxx::ServerBase::get_socket_list (Socket *&sockets, size_type &size)
 {
     sockets = sockets_;
     size = sockets_size_;
 }
 //####################################################################
-Netxx::Socket* Netxx::ServerBase::get_readable_socket (void) 
+Netxx::Socket* Netxx::ServerBase::get_readable_socket (void)
 {
     Probe::result_type rt = probe_.ready(timeout_, Probe::ready_read);
     if (rt.first == -1) return 0;
     return sockets_map_[rt.first];
 }
 //####################################################################
-void Netxx::ServerBase::set_timeout (const Timeout &timeout) 
+void Netxx::ServerBase::set_timeout (const Timeout &timeout)
 {
     timeout_ = timeout;
 }
 //####################################################################
-const Netxx::Timeout& Netxx::ServerBase::get_timeout (void) const 
+const Netxx::Timeout& Netxx::ServerBase::get_timeout (void) const
 {
     return timeout_;
 }
 //####################################################################
-const Netxx::ProbeInfo* Netxx::ServerBase::get_probe_info (void) const 
+const Netxx::ProbeInfo* Netxx::ServerBase::get_probe_info (void) const
 {
     return &pi_;
 }
 //####################################################################
-bool Netxx::ServerBase::has_socket (socket_type socketfd) const 
+bool Netxx::ServerBase::has_socket (socket_type socketfd) const
 {
     return sockets_map_.find(socketfd) != sockets_map_.end();
 }

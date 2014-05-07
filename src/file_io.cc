@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -375,7 +376,7 @@ write_data_userprivate(system_path const & path,
 tree_walker::~tree_walker() {}
 
 bool
-tree_walker::visit_dir(file_path const & path)
+tree_walker::visit_dir(file_path const & /* path */ )
 {
   return true;
 }

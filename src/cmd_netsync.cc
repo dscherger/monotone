@@ -437,7 +437,7 @@ print_cert(bool send,
 static void
 print_info_auto(protocol_role role,
                 shared_conn_counts counts,
-                project_t & project,
+                project_t & /* project */,
                 std::ostream & output)
 {
   // print info for automate session

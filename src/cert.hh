@@ -20,8 +20,9 @@ class database;
 // about revisions, using certs, without needing anyone's special
 // permission.
 
-struct cert : public origin_aware
+class cert : public origin_aware
 {
+public:
   cert() {}
 
   cert(revision_id const & ident,

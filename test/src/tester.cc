@@ -36,7 +36,7 @@ extern char const testlib_constant[];
 // Lua uses the c i/o functions, so we need to too.
 struct tester_sanity : public sanity
 {
-  void inform_log(std::string const &msg)
+  void inform_log(std::string const & /* msg */)
   {/*fprintf(stdout, "%s", msg.c_str());*/}
   void inform_message(std::string const &msg)
   {fprintf(stdout, "%s", msg.c_str());};

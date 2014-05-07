@@ -60,7 +60,7 @@ extern pipe_cache_cleanup * global_pipe_cleanup_object;
 class pipe_cache_cleanup
 {
   friend class cached_botan_pipe;
-  struct cached_botan_pipe * to_be_destroyed;
+  class cached_botan_pipe * to_be_destroyed;
 
 public:
   pipe_cache_cleanup() : to_be_destroyed(0)

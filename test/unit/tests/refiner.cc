@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -46,7 +47,7 @@ refiner_pair
       p.events.push_back(shared_ptr<msg>(new msg(is_client, ty, our_node)));
     }
 
-    virtual void queue_done_cmd(netcmd_item_type ty,
+    virtual void queue_done_cmd(netcmd_item_type /* ty FIXMED-UNUSED */,
                                 size_t n_items)
     {
       p.events.push_back(shared_ptr<msg>(new msg(is_client, n_items)));

@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -62,7 +62,8 @@ LUAEXT(server_request_sync, )
 
 
 static shared_ptr<Netxx::StreamBase>
-build_stream_to_server(options & opts, lua_hooks & lua,
+build_stream_to_server(options & /* opts */,
+                       lua_hooks & /* lua */,
                        shared_conn_info const & info,
                        Netxx::Timeout timeout)
 {
@@ -268,8 +269,8 @@ LUAEXT(server_set_listening, )
 
 static void
 serve_connections(app_state & app,
-                  options & opts,
-                  lua_hooks & lua,
+                  options & /* opts */,
+                  lua_hooks & /* lua */,
                   project_t & project,
                   key_store & keys,
                   protocol_role role,

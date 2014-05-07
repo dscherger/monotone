@@ -121,7 +121,7 @@ public:
     set(key, _empty_value);
   }
   _Value const &get_if_present(_Key key) const {
-    _Value *p;
+    _Value *p = NULL;
     if (walk(_data, key, levels-1, &p))
       return *p;
     else

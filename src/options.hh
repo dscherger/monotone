@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -11,7 +12,7 @@
 #define __OPTIONS_HH__
 
 /*
- * This defines 'struct options', which includes the variables and options
+ * This defines 'class options', which includes the variables and options
  * defined in options_list.hh as members. Options and optsets are available
  * statically as options::opts::<name>, and option variables are available
  * as options::<name>.
@@ -40,7 +41,7 @@ public:
     else
       value = low - 1;
   }
-  restricted_long(std::string const & x, origin::type o)
+  restricted_long(std::string const & x, origin::type /* o */ )
   {
     value = boost::lexical_cast<long>(x);
     if (value < low)
@@ -111,8 +112,9 @@ public:
   }
 };
 
-struct options
+class options
 {
+public:
   options();
   const options & operator = (options const & other);
 

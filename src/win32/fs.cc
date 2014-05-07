@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 nathaniel smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -13,6 +14,7 @@
 #include <errno.h>
 #include <windows.h>
 #include <shlobj.h>
+#include <shellapi.h>
 #include <direct.h>
 
 #include "../sanity.hh"

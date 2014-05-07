@@ -18,7 +18,7 @@
 #include "../options.hh"
 #include "../automate_ostream.hh"
 
-struct globish;
+class globish;
 struct server_initiated_sync_request;
 struct uri_t;
 

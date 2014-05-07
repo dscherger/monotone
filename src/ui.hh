@@ -19,7 +19,7 @@
 struct i18n_format;
 class system_path;
 struct usage;
-struct options;
+class options;
 
 struct ticker
 {

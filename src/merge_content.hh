@@ -19,7 +19,7 @@
 class database;
 class lua_hooks;
 struct roster_merge_result;
-struct options;
+class options;
 
 struct
 content_merge_adaptor

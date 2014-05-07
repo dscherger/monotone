@@ -1,4 +1,4 @@
-// Copyright (C) 2008 - 2010, 2012, 2013 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008 - 2010, 2012 - 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -42,7 +42,7 @@ struct conflicts_t
   void write (database & db, lua_hooks & lua, bookkeeping_path const & file)
     {
       result.write_conflict_file
-        (db, lua, file, ancestor_rid, left_rid, right_rid,
+        (db, lua, file, left_rid, right_rid,
          left_roster, left_marking, right_roster, right_marking);
     };
 };

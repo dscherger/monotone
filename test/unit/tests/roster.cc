@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -998,7 +998,8 @@ namespace
       safe_insert(values, make_pair(scalar_c, make_pair(true, attr_value("c"))));
     }
     virtual void
-    set(revision_id const & scalar_origin_rid, scalar_val val,
+    set(revision_id const & /* scalar_origin_rid FIXMED-UNUSED */,
+        scalar_val val,
         std::set<revision_id> const & this_scalar_mark,
         roster_t & roster, marking_map & markings)
     {

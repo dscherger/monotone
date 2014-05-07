@@ -122,8 +122,9 @@ namespace Netxx
 
   // We only act specially if a PipeStream is added (directly or via
   // the StreamBase parent reference).
-  struct PipeCompatibleProbe : Probe
+  class PipeCompatibleProbe : public Probe
     {
+    public:
       void add(PipeStream &ps, ready_type rt=ready_none);
       void add(const StreamBase &sb, ready_type rt=ready_none);
       void add(const StreamServer &ss, ready_type rt=ready_none);

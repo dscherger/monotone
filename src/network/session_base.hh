@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -29,8 +29,8 @@ class session_base : public reactable
   bool write_some();
   void mark_recent_io();
 protected:
-  virtual void note_bytes_in(int count) { return; }
-  virtual void note_bytes_out(int count) { return; }
+  virtual void note_bytes_in(int /* count */) { return; }
+  virtual void note_bytes_out(int /* count */) { return; }
   string_queue inbuf;
 private:
   std::deque< std::pair<std::string, size_t> > outbuf;

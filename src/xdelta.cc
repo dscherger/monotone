@@ -1,3 +1,4 @@
+// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -745,7 +746,7 @@ inverse_delta_writing_applicator :
       new_pos(0)
   {}
 
-  virtual void begin(string const & base) {}
+  virtual void begin(string const & /* base */) {}
   virtual void next() {}
   virtual void finish(string & out)
   {

@@ -1,4 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2014 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -197,7 +198,7 @@ namespace commands { \
     cmdpreset_ ## C C ## _cmdpreset;                            \
   }                                                             \
   void commands::cmdpreset_ ## C ::preset(options & opts) const
-  
+
 
 #define _CMD2(C, name, aliases, parent, hidden, params, abstract, desc, opts) \
 namespace commands {                                                 \
@@ -239,9 +240,9 @@ void commands::cmd_ ## C::exec(app_state & app,                      \
   };                                                                 \
   cmd_ ## C C ## _cmd;                                               \
 }                                                                    \
-void commands::cmd_ ## C::exec(app_state & app,                      \
-                               command_id const & execid,            \
-                               args_vector const & args) const       \
+void commands::cmd_ ## C::exec(app_state & /* app */,                \
+                               command_id const & /* execid */,      \
+                               args_vector const & /* args */ ) const \
 {                                                                    \
   I(false);                                                          \
 }

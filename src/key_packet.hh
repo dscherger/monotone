@@ -16,7 +16,7 @@
 
 #include "vocab.hh"
 
-struct cert;
+class cert;
 struct keypair;
 
 // packet streams are ascii text, formatted for comfortable viewing on a

@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -522,7 +522,7 @@ decrement_if_nonzero(netcmd_item_type ty,
 }
 
 void
-netsync_session::note_item_arrived(netcmd_item_type ty, id const & ident)
+netsync_session::note_item_arrived(netcmd_item_type ty, id const & /* ident */)
 {
   switch (ty)
     {
@@ -1133,7 +1133,7 @@ netsync_session::send_all_data(netcmd_item_type ty, set<id> const & items)
 
 bool
 netsync_session::dispatch_payload(netcmd const & cmd,
-                                  transaction_guard & guard)
+                                  transaction_guard & /* guard */)
 {
 
   switch (cmd.get_cmd_code())

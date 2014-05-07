@@ -12,7 +12,7 @@
 
 #include "vocab.hh"
 
-struct options;
+class options;
 class project_t;
 class lua_hooks;
 class key_store;
@@ -20,7 +20,7 @@ class database;
 struct keypair;
 class globish;
 
-class netsync_connection_info;
+struct netsync_connection_info;
 typedef std::shared_ptr<netsync_connection_info> shared_conn_info;
 
 enum key_cache_flag { cache_disable, cache_enable };
