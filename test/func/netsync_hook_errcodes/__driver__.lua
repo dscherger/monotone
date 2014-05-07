@@ -14,7 +14,7 @@ function get_errcode(who)
    local dat = readfile("testnotes-" .. who .. ".log")
    local _, _, errcode = string.find(dat, "\n%d+ end: status = (%d+)\n")
    if errcode == nil then errcode = "<missing>" end
-   L("Error code for ", who, " is ", errcode)
+   L("Error code for ", who, " is ", errcode, "\n")
    return errcode
 end
 
