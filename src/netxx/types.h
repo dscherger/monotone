@@ -1,11 +1,12 @@
 /*
+ * Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
  * Copyright (C) 2001-2004 Peter J Jones (pjones@pmade.org)
  * All Rights Reserved
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
@@ -15,7 +16,7 @@
  * 3. Neither the name of the Author nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS''
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -37,12 +38,16 @@
 #ifndef _netxx_types_h_
 #define _netxx_types_h_
 
+#ifdef WIN32
+    #include <windows.h>
+#endif
+
 // standard includes
 #include <stdexcept>
 #include <string>
 
 namespace Netxx {
-    
+
     /// unsigned size type (used for object sizes)
     typedef unsigned int size_type;
 
@@ -53,18 +58,24 @@ namespace Netxx {
     typedef unsigned short port_type;
 
     /// type for representing socket file descriptors
+#ifdef WIN32
+    typedef SOCKET socket_type;
+    socket_type const invalid_socket = INVALID_SOCKET;
+#else
     typedef signed int socket_type;
+    socket_type const invalid_socket = -1;
+#endif
 
     /**
      * The Netxx::NetworkException class is used by the Netxx library to signal
-     * an error condition associated with a network issue that would not result 
-     * from a bug in the calling program. It is derived from std::runtime_error 
-     * which is derived from std::exception. This makes it suitable to only catch 
+     * an error condition associated with a network issue that would not result
+     * from a bug in the calling program. It is derived from std::runtime_error
+     * which is derived from std::exception. This makes it suitable to only catch
      * std::exception objects if you wish.
     **/
     struct NetworkException : public std::runtime_error {
-	NetworkException (const std::string &what_arg) :
-	    std::runtime_error(what_arg) { }
+        NetworkException (const std::string &what_arg) :
+            std::runtime_error(what_arg) { }
     }; // end Netxx::NetworkException
 
     /**
@@ -74,8 +85,8 @@ namespace Netxx {
      * std::exception objects if you wish.
     **/
     struct Exception : public std::runtime_error {
-	Exception (const std::string &what_arg) :
-	    std::runtime_error(what_arg) { }
+        Exception (const std::string &what_arg) :
+            std::runtime_error(what_arg) { }
     }; // end Netxx::Exception
 
 } // end Netxx namespace

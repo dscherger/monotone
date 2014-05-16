@@ -86,6 +86,8 @@ building and installation process for monotone
            point to the include/ directory of the extracted version.
 
         on Windows (using MinGW): see INSTALL_windows_mingw.txt
+                   (using MinGW64 32 bit): see INSTALL_windows_msys2_mingw-32.txt
+                   (using MinGW64 64 bit): see INSTALL_windows_msys2_mingw-64.txt
                    (using Cygwin): see INSTALL_windows_cygwin.txt
                    (Visual Studio is not really supported, but
                    INSTALL_windows_msvc.txt has some old hints)

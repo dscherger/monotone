@@ -143,10 +143,10 @@ Netxx::signed_size_type Netxx::Datagram::send (const Peer &peer, const void *buf
     /*
      * make sure our socket is setup to handle this type of peer
      */
-    if (peer.get_socketfd() != -1 && peer.get_socketfd() == pimpl_->socket_.get_socketfd()) {
+    if (peer.get_socketfd() != invalid_socket && peer.get_socketfd() == pimpl_->socket_.get_socketfd()) {
         // we have to be ready!
         correct_type = true;
-    } else if (pimpl_->socket_.get_socketfd() >= 0) {
+    } else if (pimpl_->socket_.get_socketfd() != invalid_socket) {
         Socket::Type stype = pimpl_->socket_.get_type();
 
         switch (stype) {
@@ -219,7 +219,7 @@ Netxx::Datagram::receive_type Netxx::Datagram::receive (void *buffer, size_type 
      * yet. We can't receive a datagram because we don't know if it should
      * be a AF_INET, AF_INET6 or even a AF_LOCAL datagram.
      */
-    if (pimpl_->socket_.get_socketfd() < 0)
+    if (pimpl_->socket_.get_socketfd() != invalid_socket)
         throw Exception("can't receive datagram unless one is sent first");
 
     if (pimpl_->timeout_ && !pimpl_->socket_.readable(pimpl_->timeout_))

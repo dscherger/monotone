@@ -1,5 +1,5 @@
+// Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -51,7 +51,7 @@ session_base::timed_out(time_t now)
 bool
 session_base::is_pipe_pair()
 {
-  return str->get_socketfd() == -1;
+  return str->get_socketfd() == Netxx::invalid_socket;
 }
 
 vector<Netxx::socket_type>
@@ -59,7 +59,7 @@ session_base::get_sockets()
 {
   vector<Netxx::socket_type> out;
   Netxx::socket_type fd = str->get_socketfd();
-  if (fd == -1)
+  if (fd == Netxx::invalid_socket)
     {
       shared_ptr<Netxx::PipeStream> pipe =
         std::dynamic_pointer_cast<Netxx::PipeStream, Netxx::StreamBase>(str);

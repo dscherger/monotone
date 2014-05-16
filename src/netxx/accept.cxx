@@ -1,11 +1,12 @@
 /*
+ * Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
  * Copyright (C) 2001-2004 Peter J Jones (pjones@pmade.org)
  * All Rights Reserved
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
@@ -15,7 +16,7 @@
  * 3. Neither the name of the Author nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS''
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -45,7 +46,7 @@
 #include "socket.h"
 
 //####################################################################
-Netxx::Peer Netxx::call_accept (Socket &socket, bool dont_block) 
+Netxx::Peer Netxx::call_accept (Socket &socket, bool dont_block)
 {
     SockOpt socket_options(socket.get_socketfd(), true);
     if (dont_block) socket_options.set_non_blocking();
@@ -56,26 +57,26 @@ Netxx::Peer Netxx::call_accept (Socket &socket, bool dont_block)
     os_socklen_ptr_type sa_size_ptr = get_socklen_ptr(sa_size);
 
     for (;;) {
-	socket_type client = accept(socket.get_socketfd(), sa, sa_size_ptr);
-	if (client >= 0) return Peer(client, sa, sa_size);
+        socket_type client = accept(socket.get_socketfd(), sa, sa_size_ptr);
+        if (client != invalid_socket) return Peer(client, sa, sa_size);
 
-	error_type error_code = get_last_error();
+        error_type error_code = get_last_error();
 
-	switch (error_code) {
-	    case EINTR:
-		continue;
+        switch (error_code) {
+            case EINTR:
+                continue;
 
-	    case EWOULDBLOCK:
-	    case ECONNABORTED:
-		return Peer();
+            case EWOULDBLOCK:
+            case ECONNABORTED:
+                return Peer();
 
-	    default:
-	    {
-		std::string error("accept(2) error: ");
-		error += str_error(error_code);
-		throw Netxx::Exception(error);
-	    }
-	}
+            default:
+            {
+                std::string error("accept(2) error: ");
+                error += str_error(error_code);
+                throw Netxx::Exception(error);
+            }
+        }
     }
 }
 //####################################################################

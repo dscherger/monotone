@@ -52,12 +52,11 @@
 //####################################################################
 namespace
 {
-    const Netxx::socket_type const_invalid_socket = -1;
     void get_domain_and_type (Netxx::Socket::Type stype, int &domain, int &type);
 }
 //####################################################################
 Netxx::Socket::Socket (void)
-    : socketfd_(const_invalid_socket), probe_ready_(false), type_ready_(false)
+    : socketfd_(invalid_socket), probe_ready_(false), type_ready_(false)
 {
 #   if defined(WIN32)
         WSADATA wsdata;
@@ -69,7 +68,7 @@ Netxx::Socket::Socket (void)
 }
 //####################################################################
 Netxx::Socket::Socket (Type type)
-    : socketfd_(const_invalid_socket), probe_ready_(false), type_ready_(true), type_(type)
+    : socketfd_(invalid_socket), probe_ready_(false), type_ready_(true), type_(type)
 {
 #   if defined(WIN32)
         WSADATA wsdata;
@@ -79,12 +78,13 @@ Netxx::Socket::Socket (Type type)
         }
 #   endif
 
-    int socket_domain=0;
-    socket_type socket_type=0, socket_fd=0;
+    int         socket_domain = 0;
+    int         sock_type     = 0;
+    socket_type socket_fd     = 0;
 
-    get_domain_and_type(type, socket_domain, socket_type);
+    get_domain_and_type(type, socket_domain, sock_type);
 
-    if ( (socket_fd = socket(socket_domain, socket_type, 0)) < 0) {
+    if ( (socket_fd = socket(socket_domain, sock_type, 0)) == invalid_socket) {
         std::string error("failure from socket(2): ");
         error += str_error(get_last_error());
         throw Exception(error);
@@ -93,7 +93,7 @@ Netxx::Socket::Socket (Type type)
     socketfd_ = socket_fd;
 }
 //####################################################################
-Netxx::Socket::Socket (int socketfd)
+Netxx::Socket::Socket (socket_type socketfd)
     : socketfd_(socketfd), probe_ready_(false), type_ready_(false)
 {
 #   if defined(WIN32)
@@ -108,7 +108,7 @@ Netxx::Socket::Socket (int socketfd)
 Netxx::Socket::Socket (const Socket &other)
     : probe_ready_(false), type_ready_(other.type_ready_), type_(other.type_)
 {
-    if (other.socketfd_ != const_invalid_socket) {
+    if (other.socketfd_ != invalid_socket) {
         socket_type dup_socket;
 
 #       if defined(WIN32)
@@ -126,7 +126,6 @@ Netxx::Socket::Socket (const Socket &other)
 
             if ( (dup_socket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO,
                     FROM_PROTOCOL_INFO, &proto_info, 0, WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET)
-              // FIXME: warning about signed vs unsigned compare; fixed in msys2-mingw branch
             {
                 throw Exception("failed to init duplicated socket");
             }
@@ -142,7 +141,7 @@ Netxx::Socket::Socket (const Socket &other)
 
         socketfd_ = dup_socket;
     } else {
-        socketfd_ = const_invalid_socket;
+        socketfd_ = invalid_socket;
     }
 }
 //####################################################################
@@ -317,20 +316,20 @@ bool Netxx::Socket::readable_or_writable (const Timeout &timeout)
 //####################################################################
 void Netxx::Socket::close (void)
 {
-    if (socketfd_ != const_invalid_socket) {
+    if (socketfd_ != invalid_socket) {
 #       if defined(WIN32)
             closesocket(socketfd_);
 #       else
             ::close(socketfd_);
 #       endif
 
-        socketfd_ = const_invalid_socket;
+        socketfd_ = invalid_socket;
     }
 }
 //####################################################################
 void Netxx::Socket::release (void)
 {
-  socketfd_ = const_invalid_socket;
+  socketfd_ = invalid_socket;
 }
 //####################################################################
 Netxx::Socket::Type Netxx::Socket::get_type (void) const
@@ -339,7 +338,7 @@ Netxx::Socket::Type Netxx::Socket::get_type (void) const
     return type_;
 }
 //####################################################################
-int Netxx::Socket::get_socketfd (void) const
+Netxx::socket_type Netxx::Socket::get_socketfd (void) const
 {
     return socketfd_;
 }
@@ -354,7 +353,7 @@ void Netxx::Socket::set_socketfd (socket_type socketfd)
 //####################################################################
 bool Netxx::Socket::operator! (void) const
 {
-    return socketfd_ == const_invalid_socket;
+    return socketfd_ == invalid_socket;
 }
 //####################################################################
 bool Netxx::Socket::operator< (const Socket &other) const
