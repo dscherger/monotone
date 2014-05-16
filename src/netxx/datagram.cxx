@@ -35,6 +35,8 @@
  * This file contains the implementation of the Netxx::Datagram class.
 **/
 
+#undef __STRICT_ANSI__
+
 // common header
 #include "common.h"
 
@@ -50,6 +52,7 @@
 #include <string>
 #include <memory>
 #include <cstring>
+#include <cstdlib>
 #include <vector>
 
 //####################################################################
