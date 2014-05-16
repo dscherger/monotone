@@ -40,7 +40,7 @@ NOTE:
 Publish the binary on the monotone website with proper permissions:
 
 chmod a+r monotone-<version>-setup.exe
-scp -p monotone-<version>-setup.exe mtn-uploads@monotone.ca:<version>
+scp -P 2201 -p monotone-<version>-setup.exe mtn-uploads@monotone.ca:<version>
 
 Download from the web (http://www.monotone.ca/downloads.php), install
 and test, both the installed mtn and the documentation.
