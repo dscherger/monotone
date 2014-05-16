@@ -50,7 +50,7 @@ AC_MSG_CHECKING([category of operating system])
 WIN32_PLATFORM=false
 os_err_t="int"
 case "$host" in
-  *-mingw32 | *-pc-msys | *-pc-pw32 | *-pc-mks | *-winnt )
+  *-mingw32 | *-msys | *-pc-pw32 | *-pc-mks | *-winnt )
     AC_MSG_RESULT([Windows])
     WIN32_PLATFORM="true"
     os_err_t="unsigned int"
