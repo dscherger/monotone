@@ -9,6 +9,12 @@
 // PURPOSE.
 
 #include "base.hh"
+
+#include <memory>
+#include <sstream>
+#include <queue>
+#include "vector.hh"
+
 #include "migration.hh"
 #include "revision.hh"
 #include "roster.hh"
@@ -25,11 +31,8 @@
 #include "vocab_cast.hh"
 
 #include "safe_map.hh"
-#include <sstream>
-#include <queue>
-#include "vector.hh"
-#include <boost/shared_ptr.hpp>
 
+using std::shared_ptr;
 using std::back_inserter;
 using std::deque;
 using std::make_pair;
@@ -41,7 +44,7 @@ using std::queue;
 using std::set;
 using std::string;
 using std::vector;
-using boost::shared_ptr;
+using std::set_difference;
 
 // Stuff related to rebuilding the revision graph. Unfortunately this is a
 // real enough error case that we need support code for it.

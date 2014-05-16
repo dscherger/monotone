@@ -11,10 +11,9 @@
 #define __VOCAB_HASH_HH__
 
 #include "vocab.hh"
-#include "hash_map.hh"
 
 #define ENCODING(enc)                                  \
-  namespace hashmap {                                  \
+  namespace std {                                      \
     template<typename INNER>                           \
       struct hash<enc<INNER> >                         \
       {                                                \
@@ -27,7 +26,7 @@
 #define ENCODING_NOVERIFY(enc) ENCODING(enc)
 
 #define DECORATE(dec)                                  \
-  namespace hashmap {                                  \
+  namespace std {                                      \
     template<typename INNER>                           \
       struct hash<dec<INNER> >                         \
       {                                                \
@@ -39,7 +38,7 @@
   }
 
 #define ATOMIC(ty)                                     \
-  namespace hashmap {                                  \
+  namespace std {                                      \
     template<>                                         \
       struct hash<ty>                                  \
       {                                                \
@@ -51,7 +50,7 @@
   }
 
 #define ATOMIC_BINARY(ty)                              \
-  namespace hashmap {                                  \
+  namespace std {                                      \
     template<>                                         \
       struct hash<ty>                                  \
       {                                                \

@@ -11,13 +11,13 @@
 #ifndef __CACHE_LOGGER_HH__
 #define __CACHE_LOGGER_HH__
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 class cache_logger_impl;
 
 class cache_logger
 {
-  boost::shared_ptr<cache_logger_impl> _impl;
+  std::shared_ptr<cache_logger_impl> _impl;
   int max_size;
 public:
   // if given the empty filename, do nothing

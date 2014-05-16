@@ -15,8 +15,6 @@
 #include <set>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include "../enumerator.hh"
 #include "../netcmd.hh"
 #include "../refiner.hh"
@@ -43,12 +41,12 @@ netsync_session:
   lua_hooks & lua;
   std::vector<key_id> keys_to_push;
 
-  std::auto_ptr<ticker> byte_in_ticker;
-  std::auto_ptr<ticker> byte_out_ticker;
-  std::auto_ptr<ticker> cert_in_ticker;
-  std::auto_ptr<ticker> cert_out_ticker;
-  std::auto_ptr<ticker> revision_in_ticker;
-  std::auto_ptr<ticker> revision_out_ticker;
+  std::unique_ptr<ticker> byte_in_ticker;
+  std::unique_ptr<ticker> byte_out_ticker;
+  std::unique_ptr<ticker> cert_in_ticker;
+  std::unique_ptr<ticker> cert_out_ticker;
+  std::unique_ptr<ticker> revision_in_ticker;
+  std::unique_ptr<ticker> revision_out_ticker;
   size_t bytes_in, bytes_out;
   size_t certs_in, certs_out;
   size_t revs_in, revs_out;

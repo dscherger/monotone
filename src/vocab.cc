@@ -9,8 +9,10 @@
 
 
 #include "base.hh"
+
+#include <unordered_set>
+
 #include "constants.hh"
-#include "hash_map.hh"
 #include "sanity.hh"
 #include "vocab.hh"
 #include "char_classifiers.hh"
@@ -134,7 +136,7 @@ verify(netsync_hmac_value & val)
 struct
 symtab_impl
 {
-  typedef hashmap::hash_set<string> hset;
+  typedef std::unordered_set<string> hset;
   hset vals;
   symtab_impl() : vals() {}
   void clear() { vals.clear(); }

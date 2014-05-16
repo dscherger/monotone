@@ -23,9 +23,9 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include <functional>
 #include "vector.hh"
 
-#include <boost/function.hpp>
 #include "lexical_cast.hh"
 
 #include "sanity.hh"
@@ -89,8 +89,8 @@ namespace option {
     std::string shortname;
     std::string cancelname;
     bool has_arg;
-    boost::function<void (std::string)> setter;
-    boost::function<void ()> resetter;
+    std::function<void (std::string)> setter;
+    std::function<void ()> resetter;
     bool hidden;
     char const * deprecated;
 
@@ -98,8 +98,8 @@ namespace option {
     concrete_option(char const * names,
                     char const * desc,
                     bool arg,
-                    boost::function<void (std::string)> set,
-                    boost::function<void ()> reset,
+                    std::function<void (std::string)> set,
+                    std::function<void ()> reset,
                     bool hide = false,
                     char const * deprecate = 0);
 
@@ -120,15 +120,15 @@ namespace option {
     concrete_option_set &
     operator()(char const * names,
                char const * desc,
-               boost::function<void ()> set,
-               boost::function<void ()> reset = 0,
+               std::function<void ()> set,
+               std::function<void ()> reset = 0,
                bool hide = false,
                char const * deprecate = 0);
     concrete_option_set &
     operator()(char const * names,
                char const * desc,
-               boost::function<void (std::string)> set,
-               boost::function<void ()> reset = 0,
+               std::function<void (std::string)> set,
+               std::function<void ()> reset = 0,
                bool hide = false,
                char const * deprecate = 0);
 
@@ -207,17 +207,17 @@ namespace option {
 
   // convenience functions to generate a setter for a var
   template<typename T> inline
-  boost::function<void(std::string)> setter(T & item)
+  std::function<void(std::string)> setter(T & item)
   {
     return setter_class<T>(item);
   }
-  inline boost::function<void()> setter(bool & item)
+  inline std::function<void()> setter(bool & item)
   {
     return setter_class<bool>(item);
   }
   // convenience function to generate a resetter for a var
   template<typename T> inline
-  boost::function<void()> resetter(T & item, T const & value = T())
+  std::function<void()> resetter(T & item, T const & value = T())
   {
     return resetter_class<T>(item, value);
   }
@@ -227,8 +227,8 @@ namespace option {
   struct binder_only
   {
     T * obj;
-    boost::function<void(T*)> fun;
-    binder_only(boost::function<void(T*)> const & f, T * o)
+    std::function<void(T*)> fun;
+    binder_only(std::function<void(T*)> const & f, T * o)
       : obj(o), fun(f)
       {}
     void operator()()
@@ -245,8 +245,8 @@ namespace option {
     char const * description;
     char const * names;
     bool has_arg;
-    boost::function<void (T*, std::string)> setter;
-    boost::function<void (T*)> resetter;
+    std::function<void (T*, std::string)> setter;
+    std::function<void (T*)> resetter;
     bool hidden;
     char const * deprecated;
 

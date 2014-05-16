@@ -35,7 +35,7 @@ class listener : public listener_base
   protocol_role role;
   Netxx::Timeout timeout;
 
-  boost::shared_ptr<transaction_guard> & guard;
+  std::shared_ptr<transaction_guard> & guard;
   Netxx::Address addr;
 public:
 
@@ -45,7 +45,7 @@ public:
            reactor & react,
            protocol_role role,
            std::vector<utf8> const & addresses,
-           boost::shared_ptr<transaction_guard> &guard,
+           std::shared_ptr<transaction_guard> &guard,
            bool use_ipv6);
 
   bool do_io(Netxx::Probe::ready_type event);

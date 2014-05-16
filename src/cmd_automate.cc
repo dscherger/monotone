@@ -12,6 +12,7 @@
 #include <iostream>
 #include <sstream>
 #include <map>
+#include <functional>
 #include <unistd.h>
 
 #include "cmd.hh"
@@ -261,7 +262,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           pair<int, string> err = automate_stdio_helpers::
             automate_stdio_shared_body(app, cmdline, params, os,
                                        local_stdio_pre_fn(ar, cmdline, params),
-                                       boost::function<void(command_id const &)>());
+                                       std::function<void(command_id const &)>());
           if (err.first != 0)
             os.write_out_of_band('e', err.second);
           os.end_cmd(err.first);

@@ -9,7 +9,9 @@
 // PURPOSE.
 
 #include "base.hh"
+
 #include <algorithm>
+#include <memory>
 #include <iterator>
 #include <list>
 #include <map>
@@ -20,9 +22,6 @@
 #include "vector.hh"
 #include <cstring> // memset
 
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include "lexical_cast.hh"
 #include <boost/tokenizer.hpp>
 
 #include "cert.hh"
@@ -55,11 +54,11 @@ using std::sscanf;
 using std::stable_sort;
 using std::stack;
 using std::string;
+using std::to_string;
 using std::vector;
 
-using boost::scoped_ptr;
-using boost::shared_ptr;
-using boost::lexical_cast;
+using std::unique_ptr;
+using std::shared_ptr;
 
 // cvs history recording stuff
 
@@ -415,9 +414,9 @@ process_one_hunk(vector< piece > const & source,
     {
       throw oops("out_of_range while processing " + directive
                  + " with source.size() == "
-                 + lexical_cast<string>(source.size())
+                 + to_string(source.size())
                  + " and cursor == "
-                 + lexical_cast<string>(cursor));
+                 + to_string(cursor));
     }
 }
 
@@ -568,8 +567,8 @@ process_branch(database & db,
                cvs_history & cvs)
 {
   string curr_version = begin_version;
-  scoped_ptr< vector< piece > > next_lines(new vector<piece>);
-  scoped_ptr< vector< piece > > curr_lines(new vector<piece>
+  unique_ptr< vector< piece > > next_lines(new vector<piece>);
+  unique_ptr< vector< piece > > curr_lines(new vector<piece>
                                            (begin_lines.begin(),
                                             begin_lines.end()));
   data curr_data(begin_data), next_data;

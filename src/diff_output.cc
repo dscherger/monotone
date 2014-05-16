@@ -9,6 +9,9 @@
 // PURPOSE.
 
 #include "base.hh"
+
+#include <memory>
+
 #include "diff_output.hh"
 #include "file_io.hh"
 #include "interner.hh"
@@ -18,7 +21,6 @@
 
 #include <ostream>
 #include <iterator>
-#include <boost/scoped_ptr.hpp>
 
 using std::max;
 using std::min;
@@ -26,7 +28,7 @@ using std::ostream;
 using std::ostream_iterator;
 using std::string;
 using std::vector;
-using boost::scoped_ptr;
+using std::unique_ptr;
 
 // This file handles printing out various diff formats for the case where
 // someone wants to *read* a diff rather than apply it.  The actual diff
@@ -38,7 +40,7 @@ struct hunk_consumer
   vector<string> const & b;
   size_t ctx;
   ostream & ost;
-  boost::scoped_ptr<pcre::regex const> encloser_re;
+  unique_ptr<pcre::regex const> encloser_re;
   size_t a_begin, b_begin, a_len, b_len;
   long skew;
 
@@ -56,7 +58,7 @@ struct hunk_consumer
                 size_t ctx,
                 ostream & ost,
                 string const & encloser_pattern)
-    : a(a), b(b), ctx(ctx), ost(ost), encloser_re(0),
+    : a(a), b(b), ctx(ctx), ost(ost),
       a_begin(0), b_begin(0), a_len(0), b_len(0), skew(0),
       encloser_last_match(a.rend()), encloser_last_search(a.rend())
   {

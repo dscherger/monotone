@@ -22,15 +22,14 @@
 #include "options.hh"
 #include "vocab_cast.hh"
 #include "simplestring_xform.hh"
-#include "lexical_cast.hh"
 
 using std::make_pair;
 using std::multimap;
 using std::pair;
 using std::set;
 using std::string;
+using std::to_string;
 using std::vector;
-using boost::lexical_cast;
 
 bool
 operator<(key_identity_info const & left,
@@ -479,7 +478,7 @@ project_t::put_revision_testresult(key_store & keys,
       % results);
 
   put_cert(keys, id, testresult_cert_name,
-           cert_value(lexical_cast<string>(passed), origin::internal));
+           cert_value(to_string(passed), origin::internal));
 }
 
 void

@@ -71,7 +71,7 @@ Netxx::Probe_impl::Probe_impl (void)
 //####################################################################
 Netxx::Probe_impl::Probe_impl (const Probe_impl &other) 
 {
-    std::auto_ptr<pimpl> ap(new pimpl); pimpl_ = ap.get();
+    std::unique_ptr<pimpl> ap(new pimpl); pimpl_ = ap.get();
 
     static_cast<pimpl*>(pimpl_)->rd_sockets_ = static_cast<pimpl*>(other.pimpl_)->rd_sockets_;
     static_cast<pimpl*>(pimpl_)->wr_sockets_ = static_cast<pimpl*>(other.pimpl_)->wr_sockets_;

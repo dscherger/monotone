@@ -66,7 +66,7 @@ class session : public session_base
   project_t & project;
   key_store & keys;
   std::string peer;
-  boost::shared_ptr<wrapped_session> wrapped;
+  std::shared_ptr<wrapped_session> wrapped;
 
   int unnoted_bytes_in;
   int unnoted_bytes_out;
@@ -80,9 +80,9 @@ public:
           key_store & keys,
           protocol_voice voice,
           std::string const & peer,
-          boost::shared_ptr<Netxx::StreamBase> sock);
+          std::shared_ptr<Netxx::StreamBase> sock);
   ~session();
-  void set_inner(boost::shared_ptr<wrapped_session> wrapped);
+  void set_inner(std::shared_ptr<wrapped_session> wrapped);
 
   bool arm();
   bool do_work(transaction_guard & guard);

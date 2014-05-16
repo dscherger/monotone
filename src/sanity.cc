@@ -19,7 +19,6 @@
 // circular_buffer is not in Boost 1.34; it's in monotone/boost.
 #include "boost/circular_buffer.hpp"
 
-#include "lexical_cast.hh"
 #include "constants.hh"
 #include "platform.hh"
 #include "file_io.hh" // make_dir_for
@@ -35,10 +34,10 @@ using std::ostream_iterator;
 using std::ostringstream;
 using std::out_of_range;
 using std::string;
+using std::to_string;
 using std::vector;
 
 using boost::format;
-using boost::lexical_cast;
 
 // set by sanity::initialize
 std::string const * prog_name_ptr;
@@ -491,33 +490,33 @@ dump(bool const & obj, string & out)
 template <> void
 dump(int const & val, string & out)
 {
-  out = lexical_cast<string>(val);
+  out = to_string(val);
 }
 template <> void
 dump(unsigned int const & val, string & out)
 {
-  out = lexical_cast<string>(val);
+  out = to_string(val);
 }
 template <> void
 dump(long const & val, string & out)
 {
-  out = lexical_cast<string>(val);
+  out = to_string(val);
 }
 template <> void
 dump(unsigned long const & val, string & out)
 {
-  out = lexical_cast<string>(val);
+  out = to_string(val);
 }
 #ifdef USING_LONG_LONG
 template <> void
 dump(long long const & val, string & out)
 {
-  out = lexical_cast<string>(val);
+  out = to_string(val);
 }
 template <> void
 dump(unsigned long long const & val, string & out)
 {
-  out = lexical_cast<string>(val);
+  out = to_string(val);
 }
 #endif
 

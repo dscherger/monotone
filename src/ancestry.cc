@@ -9,6 +9,12 @@
 // PURPOSE.
 
 #include "base.hh"
+
+#include <memory>
+#include <stack>
+
+#include <boost/dynamic_bitset.hpp>
+
 #include "sanity.hh"
 #include "revision.hh"
 #include "rev_height.hh"
@@ -18,10 +24,8 @@
 #include "interner.hh"
 
 #include "safe_map.hh"
-#include <stack>
-#include <boost/shared_ptr.hpp>
-#include <boost/dynamic_bitset.hpp>
 
+using std::shared_ptr;
 using std::make_pair;
 using std::map;
 using std::max;
@@ -31,7 +35,6 @@ using std::set;
 using std::stack;
 using std::vector;
 
-using boost::shared_ptr;
 using boost::dynamic_bitset;
 
 // For a surprisingly long time, we have been using an algorithm which

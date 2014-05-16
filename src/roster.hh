@@ -129,7 +129,7 @@ is_root_dir_t(node_t n)
 inline dir_t
 downcast_to_dir_t(node_t const & n)
 {
-  dir_t d = boost::dynamic_pointer_cast<dir_node, node>(n);
+  dir_t d = std::dynamic_pointer_cast<dir_node, node>(n);
   I(static_cast<bool>(d));
   return d;
 }
@@ -137,7 +137,7 @@ downcast_to_dir_t(node_t const & n)
 inline file_t
 downcast_to_file_t(node_t const & n)
 {
-  file_t f = boost::dynamic_pointer_cast<file_node, node>(n);
+  file_t f = std::dynamic_pointer_cast<file_node, node>(n);
   I(static_cast<bool>(f));
   return f;
 }
@@ -145,7 +145,7 @@ downcast_to_file_t(node_t const & n)
 inline const_dir_t
 downcast_to_dir_t(const_node_t const & n)
 {
-  const_dir_t d = boost::dynamic_pointer_cast<dir_node const, node const>(n);
+  const_dir_t d = std::dynamic_pointer_cast<dir_node const, node const>(n);
   I(static_cast<bool>(d));
   return d;
 }
@@ -153,7 +153,7 @@ downcast_to_dir_t(const_node_t const & n)
 inline const_file_t
 downcast_to_file_t(const_node_t const & n)
 {
-  const_file_t f = boost::dynamic_pointer_cast<file_node const, node const>(n);
+  const_file_t f = std::dynamic_pointer_cast<file_node const, node const>(n);
   I(static_cast<bool>(f));
   return f;
 }

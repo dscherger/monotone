@@ -11,8 +11,15 @@
 // interface. the global user_interface object 'ui' owns clog, so no
 // writing to it directly!
 
-
 #include "base.hh"
+
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <algorithm>
+#include <map>
+#include <set>
+
 #include "platform.hh"
 #include "paths.hh"
 #include "sanity.hh"
@@ -22,16 +29,7 @@
 #include "simplestring_xform.hh"
 #include "constants.hh"
 #include "commands.hh"
-
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <algorithm>
-#include <map>
-#include <set>
-#include "lexical_cast.hh"
 #include "safe_map.hh"
-
 #include <cstring>
 
 #include "current_exception.hh"
@@ -46,10 +44,9 @@ using std::map;
 using std::max;
 using std::ofstream;
 using std::string;
+using std::to_string;
 using std::vector;
 using std::set;
-
-using boost::lexical_cast;
 
 struct user_interface ui;
 
@@ -416,7 +413,7 @@ void tick_write_dot::write_ticks()
 
           tickline1 +=
             i->second->shortname + "=\"" + i->second->name + "\""
-            + "/" + lexical_cast<string>(i->second->mod);
+            + "/" + to_string(i->second->mod);
           first_tick = false;
         }
 
@@ -471,17 +468,17 @@ void tick_write_stdio::write_ticks()
       if (it == last_ticks.end())
         {
           headers += i->second->shortname + ":" + i->second->name + ";";
-          sizes   += i->second->shortname + "=" +  lexical_cast<string>(i->second->total) + ";";
+          sizes   += i->second->shortname + "=" +  to_string(i->second->total) + ";";
           last_ticks[i->second->shortname] = i->second->total;
         }
       else
       if (it->second != i->second->total)
         {
-          sizes   += i->second->shortname + "=" +  lexical_cast<string>(i->second->total) + ";";
+          sizes   += i->second->shortname + "=" +  to_string(i->second->total) + ";";
           last_ticks[i->second->shortname] = i->second->total;
         }
 
-      tickline += i->second->shortname + "#" + lexical_cast<string>(i->second->ticks) + ";";
+      tickline += i->second->shortname + "#" + to_string(i->second->ticks) + ";";
     }
 
   if (!headers.empty())
