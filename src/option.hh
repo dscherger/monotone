@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <map>
 #include <set>
+#include <algorithm>
 #include "vector.hh"
 
 #include <boost/function.hpp>
