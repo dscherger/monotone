@@ -8,7 +8,6 @@
 // PURPOSE.
 
 #include "../base.hh"
-#undef __STRICT_ANSI__
 
 #include <sys/types.h>
 #include <sys/wait.h>

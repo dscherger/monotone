@@ -16,6 +16,9 @@
 // Configuration directives
 #include "config.h"
 
+// Cygwin seems to not like strict ANSI. Disable it globally, for now.
+#undef __STRICT_ANSI__
+
 // autoconf prior to 2.64 doesn't define this
 #ifndef PACKAGE_URL
 #define PACKAGE_URL "http://www.monotone.ca"
