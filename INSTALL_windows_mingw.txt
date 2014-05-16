@@ -183,19 +183,21 @@ maps to both / and /usr/ under the Msys shell.
    just ignore that test failing.
 
 11. build monotone
-   You can skip the CXXFLAGS and LDFLAGS if you really want to, but if
-   you do that then libgcc_s and libstdc++-6 will be linked
-   dynamically and the resulting monotone binary will take several
-   extra seconds to start.
    $ cd $MONOTONE_SOURCE_DIR
    $ autoreconf -i # not needed if you use the distributed tarball
-   $ export CXXFLAGS="-static-libgcc -static-libstdc++ -I/c/mingw/include -g -O2 -Wall"
-   $ export LDFLAGS="-static-libgcc -static-libstdc++ -L/c/mingw/lib"
-   $ export botan_CFLAGS="-I/c/mingw/include/botan-1.10"
-   $ export botan_LIBS="-lbotan-1.10"
-   $ ./configure
+   $ ./configure                                       \
+   >    CXXFLAGS="-static-libstdc++ -g -O2 -Wall"      \
+   >    LDFLAGS="-static-libstdc++"                    \
+   >    botan_CFLAGS="-I/c/mingw/include/botan-1.10"   \
+   >    botan_LIBS="-lbotan-1.10"
    $ make
    $ make check
+
+   Statically linking against libgcc and libc++ (add '-static-libgcc'
+   to CXXFLAGS and LDFLAGS) may improve starting time of mtn.exe a
+   bit. However, with gcc-4.8.1, we ran into problems with
+   '-static-libgcc', so you may want to stick to the above recommended
+   configure command.
 
 See innosetup/README.txt for instructions on building the native Win32
 installer.

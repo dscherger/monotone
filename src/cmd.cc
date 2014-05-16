@@ -1,6 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //               2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
-//               2014 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -382,8 +381,6 @@ namespace commands {
                      bool show_hidden_commands,
                      ostream & out)
   {
-    command const * cmd = find_command(ident);
-
     if (ident.empty())
       {
         out << format_text(F("Command groups:")) << "\n\n";
@@ -434,8 +431,7 @@ namespace commands {
       CMD_REF(user)->children().insert(this);
     }
 
-    void exec(app_state & app,
-              command_id const & /* execid */,
+    void exec(app_state & app, command_id const & execid,
               args_vector const & args) const
     {
       I(st);
@@ -512,8 +508,6 @@ CMD_NO_WORKSPACE(help, "help", "", CMD_REF(informative),
     "",
     options::opts::show_hidden_commands)
 {
-  (void)execid;
-
   if (args.size() < 1)
     {
       app.opts.help = true;
@@ -530,8 +524,6 @@ CMD_NO_WORKSPACE(version, "version", "", CMD_REF(informative), "",
     "",
     options::opts::full)
 {
-  (void)execid;
-
   E(args.empty(), origin::user,
     F("no arguments allowed"));
 
@@ -547,9 +539,6 @@ CMD_HIDDEN(check_glob, "check_glob", "", CMD_REF(debug),
            "",
            options::opts::none)
 {
-  (void)app;
-  (void)execid;
-
   globish g = typecast_vocab<globish>(idx(args,0));
   string s(idx(args,1)());
 
@@ -563,9 +552,6 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
            "",
            options::opts::none)
 {
-  (void)app;
-  (void)execid;
-
   if (args.size() != 1)
     throw usage(execid);
   bool spoon_exists(false);
@@ -919,9 +905,6 @@ CMD_NO_WORKSPACE(manpage, "manpage", "", CMD_REF(informative), "",
     "",
     options::opts::show_hidden_commands | options::opts::formatted)
 {
-  (void)execid;
-  (void)args;
-
   stringstream ss;
   ss << man_title("monotone");
   ss << man_section(_("Name"));

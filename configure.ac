@@ -1,4 +1,5 @@
 # Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+#               2014 Markus Wanner <markus@bluegap.ch>
 #
 # This program is made available under the GNU GPL version 2.0 or
 # greater. See the accompanying file COPYING for details.
@@ -10,7 +11,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT([monotone], [1.1], [https://code.monotone.ca/p/monotone/issues/], ,
+AC_INIT([monotone], [1.2dev], [https://code.monotone.ca/p/monotone/issues/], ,
 	[http://www.monotone.ca])
 AM_INIT_AUTOMAKE([1.9 tar-ustar dist-bzip2 no-dist-gzip std-options])
 AC_CONFIG_SRCDIR([src/app_state.cc])
@@ -120,15 +121,18 @@ dnl (A line with nothing but a # on it is ignored by the preprocessor.)
 AC_CHECK_HEADERS([cxxabi.h fcntl.h netinet/in.h],,, [#])
 
 # check for language features and compiler bugs
-AC_CXX_TYPEOF
-AC_CXX_EXTERN_TEMPLATE
-AC_CXX_GNUCXX_HASHMAP
-AC_CXX_STLPORT_HASHMAP
-AC_CXX_TR1_UNORDERED_MAP
-AC_CXX_TR1_UNORDERED_MAP_CONST_CORRECT
-AC_CXX_11_UNORDERED_MAP_AND_SET
-AC_CXX_SYNC_WITH_STDIO_WORKS
+AX_CXX_COMPILE_STDCXX_11(, optional)
+if test x$ac_success = xno; then
+  AC_CXX_TYPEOF
+  AC_CXX_EXTERN_TEMPLATE
+  AC_CXX_GNUCXX_HASHMAP
+  AC_CXX_STLPORT_HASHMAP
+  AC_CXX_TR1_UNORDERED_MAP
+  AC_CXX_TR1_UNORDERED_MAP_CONST_CORRECT
+fi
 AC_CXX_TEMPLATE_STATIC_CONST_BUG
+AC_CXX_SYNC_WITH_STDIO_WORKS
+AC_CXX_MKTIME_64BIT_WORKS
 
 # Checks for typedefs and structures.
 MTN_NUMERIC_VOCAB
@@ -163,10 +167,5 @@ AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [#include <dirent.h>])
 
 AC_CHECK_FUNCS([__cxa_current_exception_type __cxa_demangle dirfd \
         fstatat mkdtemp mmap putenv setenv strptime unsetenv])
-
-# Work around an autoconf bug rendering abs_builddir useless. The bug
-# results in VPATH builds being unable to locate check_net, thus
-# skipping netsync tests. So this is not too crucial.
-abs_builddir=`pwd`
 
 AC_OUTPUT

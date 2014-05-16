@@ -3,7 +3,7 @@
 
 send_user "\n===== BEGIN complete_commit  =====\n"
 expect -re "@ $"
-send "\n$mtn commit -m 'foobar' "
+send "\n[escape $mtn_cmd] commit -m 'foobar' "
 expect {
     -ex " commit " {}
     timeout { failure "' commit '"; exit }

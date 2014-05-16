@@ -79,7 +79,7 @@ end
 
 check({"ssh-agent"}, 0, true, false)
 for line in io.lines("stdout") do
-   for k, v in string.gmatch(line, "([%w_]+)=([%w/%.-]+)") do
+   for k, v in string.gmatch(line, "([%w_]+)=([%w/%.-_]+)") do
       set_env(k, v)
    end
 end

@@ -1,5 +1,5 @@
-// Copyright (C) 2007, 2010, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Nathaniel Smith <njs@pobox.com>
+//               2007, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -81,8 +81,6 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() < 2, origin::user,
     F("wrong argument count"));
 
@@ -120,8 +118,6 @@ CMD_AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() > 0, origin::user,
     F("wrong argument count"));
 
@@ -175,8 +171,6 @@ CMD_AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() > 0, origin::user,
     F("wrong argument count"));
 
@@ -231,8 +225,6 @@ CMD_AUTOMATE(erase_ancestors, N_("[REV1 [REV2 [REV3 [...]]]]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   database db(app);
 
   set<revision_id> revs;
@@ -266,8 +258,6 @@ CMD_AUTOMATE(erase_descendants, N_("[REV1 [REV2 [REV3 [...]]]]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   database db(app);
 
   set<revision_id> revs;
@@ -298,8 +288,6 @@ CMD_AUTOMATE(toposort, N_("[REV1 [REV2 [REV3 [...]]]]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   database db(app);
 
   set<revision_id> revs;
@@ -339,8 +327,6 @@ CMD_AUTOMATE(ancestry_difference, N_("NEW_REV [OLD_REV1 [OLD_REV2 [...]]]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() > 0, origin::user,
     F("wrong argument count"));
 
@@ -387,8 +373,6 @@ CMD_AUTOMATE(leaves, "",
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
@@ -415,8 +399,6 @@ CMD_AUTOMATE(roots, "",
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
@@ -447,8 +429,6 @@ CMD_AUTOMATE(parents, N_("REV"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -480,8 +460,6 @@ CMD_AUTOMATE(children, N_("REV"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -523,8 +501,6 @@ CMD_AUTOMATE(graph, "",
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
@@ -573,8 +549,6 @@ CMD_AUTOMATE(select, N_("SELECTOR"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -1082,8 +1056,6 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
              options::opts::exclude |
              options::opts::automate_inventory_opts)
 {
-  (void)execid;
-
   database db(app);
   workspace work(app);
 
@@ -1303,8 +1275,6 @@ CMD_AUTOMATE(get_revision, N_("REVID"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -1379,8 +1349,6 @@ CMD_AUTOMATE(get_base_revision_id, "",
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
@@ -1409,8 +1377,6 @@ CMD_AUTOMATE(get_current_revision_id, "",
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
@@ -1480,8 +1446,6 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   database db(app);
 
   E(args.size() < 2, origin::user,
@@ -1621,8 +1585,6 @@ CMD_AUTOMATE(get_extended_manifest_of, "REVISION",
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -1659,8 +1621,6 @@ CMD_AUTOMATE(packet_for_rdata, N_("REVID"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -1693,8 +1653,6 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -1729,8 +1687,6 @@ CMD_AUTOMATE(packet_for_fdata, N_("FILEID"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -1763,8 +1719,6 @@ CMD_AUTOMATE(packet_for_fdelta, N_("OLD_FILE NEW_FILE"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 2, origin::user,
     F("wrong argument count"));
 
@@ -1805,8 +1759,6 @@ CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() > 0, origin::user,
     F("wrong argument count"));
 
@@ -1845,8 +1797,6 @@ CMD_AUTOMATE(branches, "",
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
@@ -1899,8 +1849,6 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() < 2, origin::user,
     F("wrong argument count"));
 
@@ -1984,8 +1932,6 @@ CMD_AUTOMATE(get_option, N_("OPTION"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -2019,8 +1965,6 @@ CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 2, origin::user,
     F("wrong argument count"));
 
@@ -2084,8 +2028,6 @@ CMD_AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 3, origin::user,
     F("wrong argument count"));
 
@@ -2138,8 +2080,6 @@ CMD_AUTOMATE(put_file, N_("[FILEID] CONTENTS"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1 || args.size() == 2, origin::user,
     F("wrong argument count"));
 
@@ -2195,8 +2135,6 @@ CMD_AUTOMATE(put_revision, N_("REVISION-DATA"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -2257,9 +2195,6 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
              "",
              options::opts::none)
 {
-  (void)execid;
-  (void)output;
-
   E(args.size() == 3, origin::user,
     F("wrong argument count"));
 
@@ -2296,8 +2231,6 @@ CMD_AUTOMATE(get_db_variables, N_("[DOMAIN]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() < 2, origin::user,
     F("wrong argument count"));
 
@@ -2368,9 +2301,6 @@ CMD_AUTOMATE(set_db_variable, N_("DOMAIN NAME VALUE"),
              "",
              options::opts::none)
 {
-  (void)execid;
-  (void)output;
-
   E(args.size() == 3, origin::user,
     F("wrong argument count"));
 
@@ -2401,9 +2331,6 @@ CMD_AUTOMATE(drop_db_variables, N_("DOMAIN [NAME]"),
              "",
              options::opts::none)
 {
-  (void)execid;
-  (void)output;
-
   E(args.size() == 1 || args.size() == 2, origin::user,
     F("wrong argument count"));
 
@@ -2457,10 +2384,6 @@ CMD_AUTOMATE(get_workspace_root, "",
              "",
              options::opts::none)
 {
-  (void)execid;
-  (void)output;
-  (void)args;
-
   workspace work(app);
   output << get_current_working_dir() << '\n';
 }
@@ -2484,8 +2407,6 @@ CMD_AUTOMATE(lua, "LUA_FUNCTION [ARG1 [ARG2 [...]]]",
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() >= 1, origin::user,
     F("wrong argument count"));
 

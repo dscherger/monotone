@@ -1,4 +1,3 @@
-// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -41,9 +40,6 @@ CMD(fload, "fload", "", CMD_REF(debug), "",
     "",
     options::opts::none)
 {
-  (void)execid;
-  (void)args;
-
   data dat;
   read_data_stdin(dat);
 
@@ -210,8 +206,6 @@ CMD(identify, "identify", "", CMD_REF(debug), N_("[PATH]"),
        "one from the standard input is calculated."),
     options::opts::none)
 {
-  (void)app;
-
   if (args.size() > 1)
     throw usage(execid);
 
@@ -242,9 +236,6 @@ CMD_AUTOMATE(identify, N_("PATH"),
              "",
              options::opts::none)
 {
-  (void)app;
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -342,8 +333,6 @@ CMD_AUTOMATE(get_file, N_("FILEID"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -368,8 +357,6 @@ CMD_AUTOMATE(get_file_size, N_("FILEID"),
              "",
              options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
@@ -404,8 +391,6 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
              "",
              options::opts::revision)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 

@@ -1,6 +1,5 @@
-// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //               2009 Derek Scherger <derek@echologic.com>
-//               2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -32,9 +31,6 @@ CMD(rcs_import, "rcs_import", "", CMD_REF(debug), N_("RCSFILE..."),
        "You probably want to use cvs_import."),
     options::opts::branch)
 {
-  (void)execid;
-  (void)app;
-
   if (args.size() < 1)
     throw usage(execid);
 

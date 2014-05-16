@@ -1,4 +1,3 @@
-// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -370,14 +369,12 @@ LUAEXT(normalize_path, )
 
 LUAEXT(save_env, )
 {
-  (void)LS;
   orig_env_vars.clear();
   return 0;
 }
 
 LUAEXT(restore_env, )
 {
-  (void)LS;
   for (map<string,string>::const_iterator i = orig_env_vars.begin();
        i != orig_env_vars.end(); ++i)
     set_env(i->first.c_str(), i->second.c_str());
@@ -428,7 +425,6 @@ LUAEXT(timed_wait, )
 
 LUAEXT(require_not_root, )
 {
-  (void)LS;
   // E() doesn't work here, I just get "warning: " in the
   // output.  Why?
   if (running_as_root())

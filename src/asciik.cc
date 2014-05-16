@@ -1,4 +1,3 @@
-// Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2006 Nathaniel Smith <njs@pobox.com>
 //               2007 Lapo Luchini <lapo@lapo.it>
 //               2007 Gabriele Dini Ciacci <dark.schneider@iol.it>
@@ -376,8 +375,6 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
     "",
     options::opts::none)
 {
-  (void)execid;
-
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
 

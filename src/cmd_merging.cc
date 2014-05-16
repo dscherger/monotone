@@ -1,5 +1,5 @@
-// Copyright (C) 2008, 2010, 2012 - 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2008, 2010, 2012, 2013 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -195,7 +195,7 @@ pick_branch_for_update(options & opts, database & db,
 // also used from maybe_workspace_updater.cc
 void
 update(app_state & app,
-       args_vector const & /* args */ )
+       args_vector const & args)
 {
   database db(app);
   workspace work(app);
@@ -380,9 +380,6 @@ CMD_AUTOMATE(update, "",
              options::opts::branch | options::opts::revision |
              options::opts::move_conflicting_paths)
 {
-  (void)execid;
-  (void)output;
-
   E(args.empty(), origin::user,
     F("wrong argument count"));
 
@@ -1176,8 +1173,6 @@ CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
                 "first two heads that would be chosen by the 'merge' command."),
              options::opts::branch | options::opts::ignore_suspend_certs)
 {
-  (void)execid;
-
   database    db(app);
   project_t   project(db);
   revision_id l_id, r_id;
@@ -1197,8 +1192,6 @@ CMD(store, "store", "", CMD_REF(conflicts),
        "'--conflicts-file' is not given, '%s' is used.") % bookkeeping_conflicts_file).str(),
     options::opts::branch | options::opts::conflicts_opts)
 {
-  (void)execid;
-
   database    db(app);
   project_t   project(db);
   revision_id left_id, right_id;
@@ -1223,8 +1216,6 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
              "",
              options::opts::none)
 {
-  (void)execid;
-
   // We would have liked to take arguments of ancestor, left, right revision
   // and file ids; those are provided by show_conflicts and would save
   // computing the common ancestor and searching for file names. But we need

@@ -8,25 +8,33 @@ proc failure {str} {
     if {$str == ""} {
 	send_user "\n<<failure>>\n"
     } else {
-	send_user "\n<<failure when expecting $str>>\n"
+	send_user "\n<<failure: $str>>\n"
     }
+}
+
+# Escape characters that are legal in filenames, but which have
+# special meaning for bash - including spaces. Feel free to add
+# allowed characters. Note that forward and back slashes are allowed,
+# because we escape the entire paths, including path separators.
+proc escape {str} {
+    regsub -all {[^[:alnum:]_/\-\!\(\)\.\\]} $str {\\&}
 }
 
 set timeout 2
 set env(initial_dir) $initial_dir
 set env(srcdir) $srcdir
 # some user's ~/.bash_profile start xserver etc; don't do that
-spawn "bash" "--init-file" "/dev/null" "--rcfile" "$srcdir/extra/bash_completion/bashrc"
+spawn "bash" "--init-file" "/dev/null" "--rcfile" "bashrc"
 # If there is no completion package, it's no point trying this.
 # Make sure we do get a prompt.
 expect {
-    -timeout 20
+    -timeout 200
     timeout { failure "no prompt"; exit }
     "No bash completion package present." {
 	failure "No bash completion package present."; exit
     }
     -re "@ $"
 }
-send ". $initial_dir/extra/shell/monotone.bash_completion\n"
+send ". [escape $initial_dir]/extra/shell/monotone.bash_completion\n"
 # Wait for the last line to be echoed
 expect "shell/monotone.bash_completion"

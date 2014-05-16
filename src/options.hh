@@ -12,7 +12,7 @@
 #define __OPTIONS_HH__
 
 /*
- * This defines 'struct options', which includes the variables and options
+ * This defines 'class options', which includes the variables and options
  * defined in options_list.hh as members. Options and optsets are available
  * statically as options::opts::<name>, and option variables are available
  * as options::<name>.
@@ -111,8 +111,9 @@ public:
   }
 };
 
-struct options
+class options
 {
+public:
   options();
   const options & operator = (options const & other);
 

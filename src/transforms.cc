@@ -54,7 +54,8 @@ using Botan::Hash_Filter;
 // paradigm "must" be used. this program is intended for source code
 // control and I make no bones about it.
 
-NORETURN(static inline void error_in_transform(std::exception & e));
+NORETURN(static inline void error_in_transform(std::exception & e,
+                                               origin::type caused_by));
 
 static inline void
 error_in_transform(std::exception & e, origin::type caused_by)
