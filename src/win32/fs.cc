@@ -8,10 +8,10 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#define WIN32_LEAN_AND_MEAN
 #include "../base.hh"
+
+#include <cerrno>
 #include <io.h>
-#include <errno.h>
 #include <windows.h>
 #include <shlobj.h>
 #include <shellapi.h>

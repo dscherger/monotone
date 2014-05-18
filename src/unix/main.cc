@@ -35,9 +35,10 @@
 
 
 #include "../base.hh"
-#include <signal.h>
-#include <time.h>
-#include <string.h>
+
+#include <csignal>
+#include <ctime>
+#include <cstring>
 #include <sys/resource.h>
 #include <unistd.h>
 

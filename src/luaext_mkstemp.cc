@@ -8,11 +8,12 @@
 // PURPOSE.
 
 #include "base.hh"
+
+#include <cerrno>
+#include <cstring>
+
 #include "lua.hh"
 #include "file_io.hh"
-
-#include <errno.h>
-#include <cstring>
 
 using std::string;
 using std::strerror;

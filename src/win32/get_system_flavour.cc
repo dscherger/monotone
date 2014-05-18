@@ -8,10 +8,10 @@
 // PURPOSE.
 
 #include "../base.hh"
-#include "../sanity.hh"
 
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+#include "../sanity.hh"
 
 struct table_entry
 {

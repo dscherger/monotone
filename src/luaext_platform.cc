@@ -8,11 +8,11 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "lua.hh"
 
-#include <signal.h>
+#include <csignal>
 #include <cstdlib>
 
+#include "lua.hh"
 #include "platform.hh"
 #include "sanity.hh"
 

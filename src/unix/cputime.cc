@@ -8,7 +8,8 @@
 // PURPOSE.
 
 #include "../base.hh"
-#include <time.h>
+
+#include <ctime>
 
 double
 cpu_now()

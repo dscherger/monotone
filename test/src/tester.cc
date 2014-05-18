@@ -8,9 +8,15 @@
 // PURPOSE.
 
 #include "../../src/base.hh"
-#include <botan/botan.h>
-#include "../../src/botan_pipe_cache.hh"
 
+#include <cstring>
+#include <botan/botan.h>
+
+#ifdef WIN32
+#include <windows.h>
+#endif
+
+#include "../../src/botan_pipe_cache.hh"
 #include "../../src/lua.hh"
 #include "../../src/paths.hh"
 #include "../../src/platform.hh"
@@ -19,12 +25,6 @@
 #include "../../src/vector.hh"
 #include "../../src/sanity.hh"
 #include "../../src/lexical_cast.hh"
-#include <cstring>
-
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN // no gui definitions
-#include <windows.h>
-#endif
 
 using std::string;
 using std::map;

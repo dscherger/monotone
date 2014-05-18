@@ -23,11 +23,10 @@
 // data structures, so we use the lowest-level API that appears to be
 // available (GetStdHandle()/WriteFile()).
 
-
-#define WIN32_LEAN_AND_MEAN
 #include "../base.hh"
+
+#include <cstring>
 #include <windows.h>
-#include <string.h>
 
 // Disable the C runtime's built-in filename globbing.
 int _CRT_glob = 0;

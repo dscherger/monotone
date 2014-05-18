@@ -50,17 +50,17 @@
 // and it can be extremely poor quality (RANDU, anyone?)
 
 #include "base.hh"
-#include "file_io.hh"
-#include "numeric_vocab.hh"
 
-#include <errno.h>
-#include <string.h>
-#include <time.h>
-
+#include <cerrno>
+#include <cstring>
+#include <ctime>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include "file_io.hh"
+#include "numeric_vocab.hh"
 
 #ifdef _MSC_VER  // bleh, is this really necessary?
  #undef open

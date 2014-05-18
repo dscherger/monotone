@@ -8,10 +8,11 @@
 // PURPOSE.
 
 #include "../base.hh"
-#include <unistd.h>
-#include <string.h>
-#include <termios.h>
+
+#include <cstring>
 #include <iostream>
+#include <unistd.h>
+#include <termios.h>
 
 #include "../sanity.hh"
 

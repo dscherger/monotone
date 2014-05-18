@@ -16,15 +16,16 @@
    will exit unsuccessfully and produce diagnostics on stderr.  */
 
 #include "config.h"
-#include <stdio.h>
+
+#include <cstdio>
 
 #if defined HAVE_SOCKET && defined HAVE_NETINET_IN_H
 
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <errno.h>
-#include <time.h>
+#include <cstdlib>
+#include <cstring>
+#include <csignal>
+#include <cerrno>
+#include <ctime>
 
 #include <sys/types.h>
 #include <sys/wait.h>

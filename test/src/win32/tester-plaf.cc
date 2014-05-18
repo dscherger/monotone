@@ -10,14 +10,13 @@
 
 // Tester-specific platform interface glue, Windows version.
 
-#define WIN32_LEAN_AND_MEAN // we don't need the GUI interfaces
-
 #include "../../../src/base.hh"
+
+#include <windows.h>
+
 #include "../tester-plaf.hh"
 #include "../../../src/sanity.hh"
 #include "../../../src/platform.hh"
-
-#include <windows.h>
 
 time_t get_last_write_time(char const * name)
 {

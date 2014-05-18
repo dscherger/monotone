@@ -8,10 +8,12 @@
 // PURPOSE.
 
 #include "../../../src/base.hh"
+
+#include <cstdlib>
+
 #include "../unit_tests.hh"
 #include "../../../src/charset.hh"
 #include "../../../src/simplestring_xform.hh"
-#include <stdlib.h>
 
 #define IDNA_ACE_PREFIX "xn--"
 #define IDNA_SUCCESS 0

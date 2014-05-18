@@ -10,9 +10,11 @@
 #ifndef __SSH_AGENT_PLATFORM_HH__
 #define __SSH_AGENT_PLATFORM_HH__
 
-#include "../numeric_vocab.hh"
-#define WIN32_LEAN_AND_MEAN // no gui definitions
+#include "../base.hh"
+
 #include <windows.h>
+
+#include "../numeric_vocab.hh"
 
 class ssh_agent_platform {
 private:

@@ -8,7 +8,8 @@
 // PURPOSE.
 
 #include "base.hh"
-#include <stdlib.h>
+
+#include <cstdlib>
 
 #include <boost/shared_ptr.hpp>
 #include <botan/botan.h>

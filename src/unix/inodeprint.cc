@@ -8,8 +8,9 @@
 // PURPOSE.
 
 #include "../base.hh"
+
 #include <sys/stat.h>
-#include <time.h>
+#include <ctime>
 
 #include "../platform.hh"
 

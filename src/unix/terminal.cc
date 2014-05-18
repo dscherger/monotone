@@ -9,7 +9,8 @@
 // PURPOSE.
 
 #include "../base.hh"
-#include <stdlib.h>
+
+#include <cstdlib>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <termios.h>

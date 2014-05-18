@@ -11,21 +11,22 @@
 // Tester-specific platform interface glue, Unix version.
 
 #include "../../../src/base.hh"
-#include "../../../src/sanity.hh"
-#include "../../../src/platform.hh"
-#include "../tester-plaf.hh"
-#include <map>
 
 #include <sys/stat.h>
 #include <sys/times.h>
 #include <sys/wait.h>
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
-#include <signal.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include <csignal>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
+#include <map>
+
+#include "../../../src/sanity.hh"
+#include "../../../src/platform.hh"
+#include "../tester-plaf.hh"
 
 using std::string;
 using std::map;

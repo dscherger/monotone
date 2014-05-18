@@ -8,7 +8,8 @@
 // PURPOSE.
 
 #include "../base.hh"
-#include <string.h>
+
+#include <cstring>
 
 #include "../sanity.hh"
 #include "../platform.hh"

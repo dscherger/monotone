@@ -16,9 +16,6 @@
 // Configuration directives
 #include "config.h"
 
-// Cygwin seems to not like strict ANSI. Disable it globally, for now.
-#undef __STRICT_ANSI__
-
 // autoconf prior to 2.64 doesn't define this
 #ifndef PACKAGE_URL
 #define PACKAGE_URL "http://www.monotone.ca"
@@ -31,6 +28,14 @@
 // Undefine this if you do not want to support SQLite versions older
 // than 3.3.14.
 #define SUPPORT_SQLITE_BEFORE_3003014
+
+#ifdef WIN32
+// Keep out all the GUI stuff on Windows.
+#define WIN32_LEAN_AND_MEAN
+#else
+// Cygwin somehow enables strict ansi, which we don't want.
+#undef __STRICT_ANSI__
+#endif
 
 #include <iosfwd>
 #include <string>  // it would be nice if there were a <stringfwd>

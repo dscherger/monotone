@@ -9,11 +9,12 @@
 
 
 #include "base.hh"
+
 #include <iterator>
 #include <fstream>
 #include <sstream>
-#include <locale.h>
-#include <stdlib.h>
+#include <clocale>
+#include <cstdlib>
 
 #include <sqlite3.h>
 #include <botan/botan.h>

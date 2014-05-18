@@ -9,6 +9,7 @@
 // PURPOSE.
 
 #include "base.hh"
+
 #include <algorithm>
 #include <deque>
 #include <fstream>
@@ -18,8 +19,8 @@
 #include <set>
 #include <sstream>
 #include "vector.hh"
+#include <cstring>
 
-#include <string.h>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>

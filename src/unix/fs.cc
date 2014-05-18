@@ -13,18 +13,18 @@
 #endif
 
 #include "../base.hh"
+
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <pwd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 #include <dirent.h>
-#include <cstdlib>
 
 #include "../sanity.hh"
 #include "../platform.hh"

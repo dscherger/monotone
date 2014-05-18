@@ -9,8 +9,18 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "cmd.hh"
 
+#ifndef _WIN32
+#include <csignal>
+#include <cerrno>
+#else
+#include <io.h>
+#endif
+
+#include <iostream>
+#include <cstring>
+
+#include "cmd.hh"
 #include "lua.hh"
 #include "app_state.hh"
 #include "globish.hh"
@@ -21,16 +31,6 @@
 #include "charset.hh"
 #include "simplestring_xform.hh"
 #include "vocab_cast.hh"
-
-#ifndef _WIN32
-#include <signal.h>
-#include <errno.h>
-#else
-#include <io.h>
-#endif
-
-#include <iostream>
-#include <cstring>
 
 using std::string;
 using std::stringstream;

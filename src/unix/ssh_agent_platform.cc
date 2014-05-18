@@ -8,17 +8,18 @@
 // PURPOSE.
 
 #include "../base.hh"
-#include "../sanity.hh"
-#include "ssh_agent_platform.hh"
 
+#include <cstdlib>
+#include <cstring>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
 #include <unistd.h>
+
+#include "../sanity.hh"
+#include "ssh_agent_platform.hh"
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0

@@ -13,9 +13,10 @@
 // this describes functions to be found, alternatively, in win32/* or unix/*
 // directories.
 
+#include "base.hh"
 
-#include <stdio.h>
-#include <time.h>
+#include <cstdio>
+#include <ctime>
 
 void read_password(std::string const & prompt, char * buf, size_t bufsz);
 void get_system_flavour(std::string & ident);

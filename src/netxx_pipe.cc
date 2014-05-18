@@ -8,10 +8,7 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "netxx_pipe.hh"
-#include "sanity.hh"
-#include "platform.hh"
-#include "netxx/streamserver.h"
+
 #include <cstring> // strerror
 #include <cstdlib> // exit
 #include <cassert> // assert
@@ -24,8 +21,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
-#include <errno.h>
+#include <cerrno>
 #endif
+
+#include "netxx_pipe.hh"
+#include "sanity.hh"
+#include "platform.hh"
+#include "netxx/streamserver.h"
 
 using std::vector;
 using std::string;
