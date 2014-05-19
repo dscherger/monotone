@@ -21,7 +21,7 @@
 #include <sstream>
 #include <unordered_map>
 #include "vector.hh"
-#include <cstring>
+#include <string>
 #include <tuple>
 #include <functional>
 

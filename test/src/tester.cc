@@ -24,7 +24,6 @@
 #include "tester-plaf.hh"
 #include "../../src/vector.hh"
 #include "../../src/sanity.hh"
-#include "../../src/lexical_cast.hh"
 
 using std::string;
 using std::map;
