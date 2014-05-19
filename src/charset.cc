@@ -10,7 +10,6 @@
 #include "base.hh"
 #include "vector.hh"
 
-#include <boost/tokenizer.hpp>
 #include <idna.h>
 #include <stringprep.h>
 
@@ -23,8 +22,6 @@
 using std::string;
 using std::vector;
 using std::free;
-
-using boost::char_separator;
 
 // General character code conversion routines.
 

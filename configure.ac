@@ -121,15 +121,7 @@ dnl (A line with nothing but a # on it is ignored by the preprocessor.)
 AC_CHECK_HEADERS([cxxabi.h fcntl.h netinet/in.h],,, [#])
 
 # check for language features and compiler bugs
-AX_CXX_COMPILE_STDCXX_11(, optional)
-if test x$ac_success = xno; then
-  AC_CXX_TYPEOF
-  AC_CXX_EXTERN_TEMPLATE
-  AC_CXX_GNUCXX_HASHMAP
-  AC_CXX_STLPORT_HASHMAP
-  AC_CXX_TR1_UNORDERED_MAP
-  AC_CXX_TR1_UNORDERED_MAP_CONST_CORRECT
-fi
+AX_CXX_COMPILE_STDCXX_11(, mandatory)
 AC_CXX_TEMPLATE_STATIC_CONST_BUG
 AC_CXX_SYNC_WITH_STDIO_WORKS
 AC_CXX_MKTIME_64BIT_WORKS

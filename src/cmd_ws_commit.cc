@@ -9,6 +9,8 @@
 // PURPOSE.
 
 #include "base.hh"
+
+#include <algorithm>
 #include <deque>
 #include <iostream>
 #include <map>
@@ -37,6 +39,7 @@
 #include "rev_output.hh"
 #include "vocab_cast.hh"
 
+using std::shared_ptr;
 using std::cout;
 using std::make_pair;
 using std::make_pair;
@@ -46,8 +49,8 @@ using std::pair;
 using std::set;
 using std::string;
 using std::vector;
-
-using boost::shared_ptr;
+using std::set_difference;
+using std::set_intersection;
 
 static void
 get_old_branch_names(database & db, parent_map const & parents,

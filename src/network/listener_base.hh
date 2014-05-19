@@ -11,9 +11,9 @@
 #ifndef __LISTENER_BASE_HH__
 #define __LISTENER_BASE_HH__
 
-#include "reactable.hh"
+#include <memory>
 
-#include <boost/shared_ptr.hpp>
+#include "reactable.hh"
 
 // This is not currently needed because there's only one kind of listener.
 // But it's already here and not hurting anything, and might be useful if
@@ -22,9 +22,9 @@
 class listener_base : public reactable
 {
 protected:
-  boost::shared_ptr<Netxx::StreamServer> srv;
+  std::shared_ptr<Netxx::StreamServer> srv;
 public:
-  listener_base(boost::shared_ptr<Netxx::StreamServer> srv);
+  listener_base(std::shared_ptr<Netxx::StreamServer> srv);
   virtual ~listener_base();
   virtual bool do_io(Netxx::Probe::ready_type event) = 0;
   bool timed_out(time_t now);

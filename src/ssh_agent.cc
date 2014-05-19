@@ -10,8 +10,8 @@
 #include "base.hh"
 
 #include <cstdlib>
+#include <memory>
 
-#include <boost/shared_ptr.hpp>
 #include <botan/botan.h>
 #include <botan/rsa.h>
 #include <botan/numthry.h>
@@ -32,8 +32,8 @@
 using std::string;
 using std::vector;
 
-using boost::shared_ptr;
-using boost::dynamic_pointer_cast;
+using std::shared_ptr;
+using std::dynamic_pointer_cast;
 
 using Botan::RSA_PublicKey;
 using Botan::RSA_PrivateKey;
@@ -393,7 +393,7 @@ ssh_agent::has_key(const keypair & key)
   L(FL("has_key: building %d-byte pub key") % pub_block.size());
   shared_ptr<X509_PublicKey> x509_key =
     shared_ptr<X509_PublicKey>(Botan::X509::load_key(pub_block));
-  shared_ptr<RSA_PublicKey> pub_key = 
+  shared_ptr<RSA_PublicKey> pub_key =
     dynamic_pointer_cast<RSA_PublicKey>(x509_key);
 
   if (!pub_key)

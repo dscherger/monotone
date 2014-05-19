@@ -20,7 +20,8 @@
 
 using std::logic_error;
 using std::search;
-using boost::shared_ptr;
+using std::to_string;
+using std::shared_ptr;
 
 
 static bool operator==(marking_map const & a, marking_map const & b)
@@ -283,7 +284,7 @@ string new_word(randomizer & rng)
       tmp += wordchars[rng.uniform(wordchars.size())];
     }
   while (tmp.size() < 10 && !rng.flip(10));
-  return tmp + lexical_cast<string>(tick++);
+  return tmp + to_string(tick++);
 }
 
 file_id new_ident(randomizer & rng)

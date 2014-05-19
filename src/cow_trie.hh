@@ -3,7 +3,7 @@
 // You may use, copy, modify, distribute, etc, this file with no other
 // restriction than that this notice not be removed.
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <vector>
 
 // This is *NOT* a normal STL-compatible container! It pretends well enough
@@ -32,7 +32,7 @@ private:
 
   struct middle_node_type : node_type
   {
-    boost::shared_ptr<node_type> contents[(1<<_Bits)];
+    std::shared_ptr<node_type> contents[(1<<_Bits)];
   };
   struct leaf_node_type : node_type
   {
@@ -41,9 +41,9 @@ private:
 
   _Value _empty_value;
   unsigned _count;
-  boost::shared_ptr<node_type> _data;
+  std::shared_ptr<node_type> _data;
 
-  bool walk(boost::shared_ptr<node_type> & d, _Key key, int level, _Value **ret)
+  bool walk(std::shared_ptr<node_type> & d, _Key key, int level, _Value **ret)
   {
     if (!d)
       {
@@ -55,22 +55,22 @@ private:
     if (!d.unique())
       {
 	if (level > 0)
-	  d.reset(new middle_node_type(*boost::static_pointer_cast<middle_node_type>(d)));
+	  d.reset(new middle_node_type(*std::static_pointer_cast<middle_node_type>(d)));
 	else
-	  d.reset(new leaf_node_type(*boost::static_pointer_cast<leaf_node_type>(d)));
+	  d.reset(new leaf_node_type(*std::static_pointer_cast<leaf_node_type>(d)));
       }
     unsigned idx = (key >> (_Bits * level)) & mask;
     if (level > 0)
-      return walk(boost::static_pointer_cast<middle_node_type>(d)->contents[idx],
+      return walk(std::static_pointer_cast<middle_node_type>(d)->contents[idx],
 		  key, level-1, ret);
     else
       {
-	*ret = &boost::static_pointer_cast<leaf_node_type>(d)->contents[idx];
+	*ret = &std::static_pointer_cast<leaf_node_type>(d)->contents[idx];
 	return true;
       }
   }
 
-  bool walk(boost::shared_ptr<node_type> const & d, _Key key, int level, _Value **ret) const
+  bool walk(std::shared_ptr<node_type> const & d, _Key key, int level, _Value **ret) const
   {
     if (!d)
       {
@@ -78,11 +78,11 @@ private:
       }
     unsigned idx = (key >> (_Bits * level)) & mask;
     if (level > 0)
-      return walk(boost::static_pointer_cast<middle_node_type>(d)->contents[idx],
+      return walk(std::static_pointer_cast<middle_node_type>(d)->contents[idx],
 		  key, level-1, ret);
     else
       {
-	*ret = &boost::static_pointer_cast<leaf_node_type>(d)->contents[idx];
+	*ret = &std::static_pointer_cast<leaf_node_type>(d)->contents[idx];
 	return true;
       }
   }
@@ -145,7 +145,7 @@ public:
   {
     struct stack_item
     {
-      boost::shared_ptr<node_type> ptr;
+      std::shared_ptr<node_type> ptr;
       unsigned idx;
       bool operator==(stack_item const & other) const
       {
@@ -183,10 +183,10 @@ public:
       while (!stack.empty())
 	{
 	  stack_item & item = stack.back();
-	  boost::shared_ptr<middle_node_type> middle
-	    = boost::static_pointer_cast<middle_node_type>(item.ptr);
-	  boost::shared_ptr<leaf_node_type> leaf
-	    = boost::static_pointer_cast<leaf_node_type>(item.ptr);
+	  std::shared_ptr<middle_node_type> middle
+	    = std::static_pointer_cast<middle_node_type>(item.ptr);
+	  std::shared_ptr<leaf_node_type> leaf
+	    = std::static_pointer_cast<leaf_node_type>(item.ptr);
 	  for (++item.idx; item.idx < (1<<_Bits); ++item.idx)
 	    {
 	      if (stack.size() == levels)

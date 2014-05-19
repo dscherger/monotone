@@ -9,8 +9,13 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "selectors.hh"
 
+#include <algorithm>
+#include <memory>
+
+#include <boost/tokenizer.hpp>
+
+#include "selectors.hh"
 #include "sanity.hh"
 #include "constants.hh"
 #include "database.hh"
@@ -25,19 +30,16 @@
 #include "vector.hh"
 #include "vocab_cast.hh"
 
-#include <algorithm>
-#include <boost/shared_ptr.hpp>
-#include <boost/tokenizer.hpp>
-
 using std::make_pair;
 using std::pair;
 using std::set;
 using std::string;
 using std::vector;
 using std::set_intersection;
+using std::set_difference;
 using std::inserter;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 void
 diagnose_ambiguous_expansion(options const & opts, lua_hooks & lua,
@@ -858,8 +860,8 @@ shared_ptr<selector> selector::create(options const & opts,
               E(lhs, origin::user,
                 F("selector '%s' is invalid, because there is a '%s' someplace it shouldn't be")
                 % orig % op);
-              shared_ptr<or_selector> lhs_as_or = boost::dynamic_pointer_cast<or_selector>(lhs);
-              shared_ptr<and_selector> lhs_as_and = boost::dynamic_pointer_cast<and_selector>(lhs);
+              shared_ptr<or_selector> lhs_as_or = std::dynamic_pointer_cast<or_selector>(lhs);
+              shared_ptr<and_selector> lhs_as_and = std::dynamic_pointer_cast<and_selector>(lhs);
               E(op == "/" || !lhs_as_and, origin::user,
                 F("selector '%s' is invalid, don't mix '/' and '|' operators without parentheses")
                 % orig);
@@ -917,7 +919,7 @@ complete(options const & opts, lua_hooks & lua,
   shared_ptr<selector> sel = selector::create(opts, lua, project, str);
 
   // avoid logging if there's no expansion to be done
-  shared_ptr<ident_selector> isel = boost::dynamic_pointer_cast<ident_selector>(sel);
+  shared_ptr<ident_selector> isel = std::dynamic_pointer_cast<ident_selector>(sel);
   if (isel && isel->is_full_length())
     {
       completions.insert(isel->get_assuming_full_length());

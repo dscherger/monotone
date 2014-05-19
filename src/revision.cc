@@ -8,6 +8,9 @@
 // PURPOSE.
 
 #include "base.hh"
+
+#include <memory>
+
 #include "revision.hh"
 #include "roster.hh"
 
@@ -16,12 +19,11 @@
 #include "transforms.hh"
 
 #include "safe_map.hh"
-#include <boost/shared_ptr.hpp>
 
 using std::make_pair;
 using std::map;
 using std::string;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 void revision_t::check_sane() const
 {

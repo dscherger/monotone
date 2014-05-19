@@ -35,9 +35,6 @@
 // for maps, but it will only work on maps that use the default (std::less)
 // sort order.
 
-
-#include "lexical_cast.hh"
-
 #include "sanity.hh"
 
 namespace parallel
@@ -156,7 +153,7 @@ namespace parallel
   template <typename M> void
   dump(iter<M> const & i, std::string & out)
   {
-    out = boost::lexical_cast<std::string>(i.state());
+    out = std::to_string(i.state());
     switch (i.state())
       {
       case in_left: out += " in_left"; break;

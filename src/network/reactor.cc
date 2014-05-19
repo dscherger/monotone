@@ -20,7 +20,7 @@ using std::map;
 using std::set;
 using std::vector;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 void reactor::ready_for_io(shared_ptr<reactable> item,
                            transaction_guard & guard)

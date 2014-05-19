@@ -8,21 +8,22 @@
 // PURPOSE.
 
 #include "base.hh"
+
+#include <memory>
 #include <map>
+#include <unordered_set>
 #include <utility>
 #include <list>
-#include <boost/shared_ptr.hpp>
 
 #include "sanity.hh"
 #include "graph.hh"
 #include "safe_map.hh"
 #include "numeric_vocab.hh"
-#include "hash_map.hh"
 #include "vocab_hash.hh"
 #include "rev_height.hh"
 #include "transforms.hh"
 
-using boost::shared_ptr;
+using std::shared_ptr;
 using std::string;
 using std::vector;
 using std::set;
@@ -31,8 +32,7 @@ using std::map;
 using std::multimap;
 using std::make_pair;
 using std::list;
-
-using hashmap::hash_set;
+using std::unordered_set;
 
 void
 get_reconstruction_path(id const & start,
@@ -191,7 +191,7 @@ typedef std::pair<rev_height, revision_id> height_rev_pair;
 
 static void
 advance_frontier(set<height_rev_pair> & frontier,
-                 hash_set<revision_id> & seen,
+                 unordered_set<revision_id> & seen,
                  rev_graph const & rg)
 {
   const height_rev_pair h_node = *frontier.rbegin();
@@ -237,7 +237,7 @@ get_uncommon_ancestors(revision_id const & a,
     b_frontier.insert(make_pair(h, b));
   }
 
-  hash_set<revision_id> a_seen, b_seen, common_seen;
+  unordered_set<revision_id> a_seen, b_seen, common_seen;
   a_seen.insert(a);
   b_seen.insert(b);
 

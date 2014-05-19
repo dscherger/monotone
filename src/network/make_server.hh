@@ -11,15 +11,14 @@
 #ifndef __MAKE_SERVER_HH__
 #define __MAKE_SERVER_HH__
 
+#include <memory>
 #include "../vector.hh"
-
-#include <boost/shared_ptr.hpp>
 
 #include "../netxx/streamserver.h"
 
 class utf8;
 
-boost::shared_ptr<Netxx::StreamServer>
+std::shared_ptr<Netxx::StreamServer>
 make_server(std::vector<utf8> const & addresses,
             Netxx::port_type default_port,
             Netxx::Timeout timeout,

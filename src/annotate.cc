@@ -8,10 +8,11 @@
 // PURPOSE.
 
 #include "base.hh"
+
+#include <memory>
 #include <set>
 #include <iostream>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/key_extractors.hpp>
@@ -45,7 +46,7 @@ using std::string;
 using std::vector;
 using std::pair;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 using boost::multi_index::multi_index_container;
 using boost::multi_index::indexed_by;

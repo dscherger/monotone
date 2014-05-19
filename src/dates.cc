@@ -9,12 +9,14 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "dates.hh"
-#include "sanity.hh"
-#include "platform.hh"
 
 #include <ctime>
 #include <climits>
+#include <cstdint>
+
+#include "dates.hh"
+#include "sanity.hh"
+#include "platform.hh"
 
 // Generic date handling routines for Monotone.
 //
@@ -89,17 +91,17 @@ struct broken_down_time {
 //  been in effect on that day in history (the 'proleptic' calendar).  Also,
 //  we make no attempt to handle leap seconds.
 
-s64 const INVALID = PROBABLE_S64_MAX;
+s64 const INVALID = INT64_MAX;
 
 // This is the date 292278994-01-01T00:00:00.000. The year 292,278,994
 // overflows a signed 64-bit millisecond counter somewhere in August, so
 // we've rounded down to the last whole year that fits.
-s64 const LATEST_SUPPORTED_DATE = s64_C(9223372017129600000);
+s64 const LATEST_SUPPORTED_DATE = 9223372017129600000LL;
 
 // This is the date 0001-01-01T00:00:00.000.  There is no year zero in the
 // Gregorian calendar, and what are you doing using monotone to version
 // data from before the common era, anyway?
-s64 const EARLIEST_SUPPORTED_DATE = s64_C(-62135596800000);
+s64 const EARLIEST_SUPPORTED_DATE = -62135596800000LL;
 
 // These constants are all in seconds.
 u32 const SEC  = 1;
@@ -146,10 +148,6 @@ valid_ms_count(s64 d)
 static void
 our_gmtime(s64 ts, broken_down_time & tb)
 {
-  // validate our assumptions about which basic type is u64 (see above).
-  I(PROBABLE_S64_MAX == numeric_limits<s64>::max());
-  I(LATEST_SUPPORTED_DATE < PROBABLE_S64_MAX);
-
   I(valid_ms_count(ts));
 
   // All subsequent calculations are easier if 't' is always positive, so we

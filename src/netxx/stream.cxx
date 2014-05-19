@@ -60,7 +60,7 @@ struct Netxx::Stream::pimpl
 Netxx::Stream::Stream (const Address &address, const Timeout &timeout)
     : StreamBase(timeout)
 {
-    std::auto_ptr<pimpl> ap(pimpl_ = new pimpl);
+    std::unique_ptr<pimpl> ap(pimpl_ = new pimpl);
 
     make_connection(pimpl_->socket_, address);
     pimpl_->pi_.add_socket(pimpl_->socket_.get_socketfd());
@@ -71,7 +71,7 @@ Netxx::Stream::Stream (const Address &address, const Timeout &timeout)
 Netxx::Stream::Stream (socket_type socketfd, const Timeout &timeout)
     : StreamBase(timeout)
 {
-    std::auto_ptr<pimpl> ap(pimpl_ = new pimpl(socketfd));
+    std::unique_ptr<pimpl> ap(pimpl_ = new pimpl(socketfd));
 
     pimpl_->pi_.add_socket(pimpl_->socket_.get_socketfd());
 
@@ -82,7 +82,7 @@ Netxx::Stream::Stream (const char *uri, port_type default_port, const Timeout &t
     : StreamBase(timeout)
 {
     Address addr(uri, default_port);
-    std::auto_ptr<pimpl> ap(pimpl_ = new pimpl);
+    std::unique_ptr<pimpl> ap(pimpl_ = new pimpl);
 
     make_connection(pimpl_->socket_, addr);
     pimpl_->pi_.add_socket(pimpl_->socket_.get_socketfd());

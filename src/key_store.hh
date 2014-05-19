@@ -10,7 +10,7 @@
 #ifndef __KEY_STORE_H__
 #define __KEY_STORE_H__
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 #include <botan/botan.h>
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
@@ -44,7 +44,7 @@ struct key_store_state;
 class key_store
 {
 private:
-  boost::scoped_ptr<key_store_state> s;
+  const std::unique_ptr<key_store_state> s;
 
 public:
   key_id signing_key;

@@ -16,7 +16,7 @@
 using std::string;
 using std::vector;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 listener_base::listener_base(shared_ptr<Netxx::StreamServer> srv)
   : srv(srv)

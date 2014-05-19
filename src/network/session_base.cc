@@ -19,7 +19,7 @@ using std::min;
 using std::string;
 using std::vector;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 session_base::session_base(protocol_voice voice,
                            string const & peer_id,
@@ -62,7 +62,7 @@ session_base::get_sockets()
   if (fd == Netxx::invalid_socket)
     {
       shared_ptr<Netxx::PipeStream> pipe =
-        boost::dynamic_pointer_cast<Netxx::PipeStream, Netxx::StreamBase>(str);
+        std::dynamic_pointer_cast<Netxx::PipeStream, Netxx::StreamBase>(str);
       I(pipe);
       out.push_back(pipe->get_readfd());
       out.push_back(pipe->get_writefd());

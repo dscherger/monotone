@@ -11,7 +11,7 @@
 #ifndef __ROSTER_MERGE_HH__
 #define __ROSTER_MERGE_HH__
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "rev_types.hh"
 #include "database.hh"
@@ -40,7 +40,7 @@ namespace resolve_conflicts
   struct file_resolution_t
   {
     resolution_t resolution;
-    boost::shared_ptr<any_path> content;
+    std::shared_ptr<any_path> content;
     file_path rename;
 
     file_resolution_t() :
@@ -365,9 +365,9 @@ struct roster_merge_result
                            bookkeeping_path const & file_name,
                            revision_id const & left_rid,
                            revision_id const & right_rid,
-                           boost::shared_ptr<roster_t> left_roster,
+                           std::shared_ptr<roster_t> left_roster,
                            marking_map const & left_marking,
-                           boost::shared_ptr<roster_t> right_roster,
+                           std::shared_ptr<roster_t> right_roster,
                            marking_map const & right_marking);
 };
 
