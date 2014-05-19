@@ -1,3 +1,4 @@
+// Copyright 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright 2010 Timothy Brownawell <tbrownaw@prjek.net>
 // You may use, copy, modify, distribute, etc, this file with no other
 // restriction than that this notice not be removed.
@@ -27,20 +28,22 @@ private:
   enum { mask = (1<<_Bits)-1 };
   enum { levels = (sizeof(_Key) * 8 + _Bits - 1) / _Bits };
 
-  struct middle_node_type
+  struct node_type {};
+
+  struct middle_node_type : node_type
   {
-    boost::shared_ptr<void> contents[(1<<_Bits)];
+    boost::shared_ptr<node_type> contents[(1<<_Bits)];
   };
-  struct leaf_node_type
+  struct leaf_node_type : node_type
   {
     _Value contents[1<<_Bits];
   };
 
   _Value _empty_value;
   unsigned _count;
-  boost::shared_ptr<void> _data;
+  boost::shared_ptr<node_type> _data;
 
-  bool walk(boost::shared_ptr<void> & d, _Key key, int level, _Value **ret)
+  bool walk(boost::shared_ptr<node_type> & d, _Key key, int level, _Value **ret)
   {
     if (!d)
       {
@@ -67,7 +70,7 @@ private:
       }
   }
 
-  bool walk(boost::shared_ptr<void> const & d, _Key key, int level, _Value **ret) const
+  bool walk(boost::shared_ptr<node_type> const & d, _Key key, int level, _Value **ret) const
   {
     if (!d)
       {
@@ -142,7 +145,7 @@ public:
   {
     struct stack_item
     {
-      boost::shared_ptr<void> ptr;
+      boost::shared_ptr<node_type> ptr;
       unsigned idx;
       bool operator==(stack_item const & other) const
       {
