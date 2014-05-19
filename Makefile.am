@@ -576,9 +576,13 @@ install-examples-data: $(examples_data)
 uninstall-examples-data:
 	@$(call _uninstall_data,$(examples_data),$(examples_prefix),$(examplesdir))
 
+# Another attempt at working around abs_topbuilddir not being defined
+# or not absolute.
+abs_topbuilddir=$(shell cd $(top_builddir); pwd)
+
 # build an OS X installer
 # requires sudo since packagemaker just looks at directory permissions.
-PKG_INST_ROOT = $(PWD)/$(top_builddir)/pkg_inst_root
+PKG_INST_ROOT = $(abs_topbuilddir)/pkg_inst_root
 monotone-$(PACKAGE_VERSION).pkg: doc/monotone.pdf doc/html
 	sudo rm -rf $(PKG_INST_ROOT)
 	rm -rf "$@"
@@ -687,7 +691,7 @@ check-testers: test/tester.status test/unit.status test/func.status test/extra.s
 run_%_tests: Makefile
 	$(AM_V_GEN){ echo '#!/bin/sh';							  	\
 	  echo 'export LANG=C';								  	\
-	  echo 'PATH="$(PWD)/$(top_builddir):$(PWD)/$(top_builddir)/test/bin:$$PATH"';	  		\
+	  echo 'PATH="$(abs_topbuilddir):$(abs_topbuilddir)/test/bin:$$PATH"';	  		\
 	  echo '$(top_builddir)/test/bin/tester "$(srcdir)/test/$*-testsuite.lua" "$$@"';	\
 	  echo 'echo $$? > $(top_builddir)/test/$*.status';			  	  	\
 	  echo 'exit 0'; } > $@ && \
@@ -696,7 +700,7 @@ run_%_tests: Makefile
 # The leading + causes Make to treat this as a recursive invocation,
 # allowing it to participate in the jobserver protocol.
 test/%.status: test/%-testsuite.lua test/bin/tester$(EXEEXT) FORCE
-	+@$(AM_V_at)LANG=C PATH="$(top_builddir):$(top_builddir)/test/bin:$$PATH"	\
+	+@$(AM_V_at)LANG=C PATH="$(abs_topbuilddir):$(abs_topbuilddir)/test/bin:$$PATH"	\
 		$(top_builddir)/test/bin/tester				\
 		"$(srcdir)/test/$*-testsuite.lua";			\
 		echo $$? > $@
@@ -815,7 +819,7 @@ extra/building/dump-test-logs.sh: extra/building/dump-test-logs.sh.in Makefile
 # creates, and also make sure that the shell command exits
 # successfully; the rm -f ensures both
 src/package_revision_raw.txt:
-	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
+	$(AM_V_GEN)REAL_BLDDIR=$(abs_topbuilddir); \
 	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_base_revision_id) 2>/dev/null >$@ \
 	|| (cd $(srcdir) && mtn --root=. automate get_base_revision_id) 2>/dev/null >$@ \
 	|| rm -f $@
@@ -840,7 +844,7 @@ src/package_revision.txt: src/package_revision_raw.txt
 # See above comment.
 .PHONY: src/package_full_revision_raw.txt
 src/package_full_revision_raw.txt:
-	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
+	$(AM_V_GEN)REAL_BLDDIR=$(abs_topbuilddir); \
 	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
 	|| (cd $(srcdir) && mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
 	|| rm -f $@
@@ -920,7 +924,7 @@ dist-hook: dist-nls
 	    -o -name '*~' -o -name '#*#' -o -name '*.swp' \) -delete
 
 mtn.1: mtn$(EXEEXT)
-	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
+	$(AM_V_GEN)REAL_BLDDIR=$(abs_topbuilddir); \
 	(cd $(srcdir) && $$REAL_BLDDIR/mtn manpage --norc) 2>/dev/null >$@ || rm -f $@
 
 doc/monotone.dvi: dvi
