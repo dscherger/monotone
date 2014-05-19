@@ -10,8 +10,6 @@
 #ifndef __SSH_AGENT_PLATFORM_HH__
 #define __SSH_AGENT_PLATFORM_HH__
 
-#include "../base.hh"
-
 #include <windows.h>
 
 #include "../numeric_vocab.hh"

@@ -13,8 +13,6 @@
 // this describes functions to be found, alternatively, in win32/* or unix/*
 // directories.
 
-#include "base.hh"
-
 #include <cstdio>
 #include <ctime>
 
