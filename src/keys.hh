@@ -21,7 +21,7 @@ struct keypair;
 class globish;
 
 struct netsync_connection_info;
-typedef boost::shared_ptr<netsync_connection_info> shared_conn_info;
+typedef std::shared_ptr<netsync_connection_info> shared_conn_info;
 
 enum key_cache_flag { cache_disable, cache_enable };
 enum key_requiredness_flag {key_optional, key_required};

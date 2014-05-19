@@ -12,7 +12,6 @@
 #include "../unit_tests.hh"
 #include "../../../src/merge_content.hh"
 
-#include "../../../src/lexical_cast.hh"
 #include "../../../src/paths.hh"
 #include "../randomfile.hh"
 #include "../../../src/simplestring_xform.hh"
@@ -21,9 +20,8 @@ using std::cerr;
 using std::cout;
 using std::stringstream;
 using std::string;
+using std::to_string;
 using std::vector;
-
-using boost::lexical_cast;
 
 static void dump_incorrect_merge(vector<string> const & expected,
                                  vector<string> const & got,
@@ -80,16 +78,16 @@ UNIT_TEST(merge_prepend)
   vector<string> anc, d1, d2, m1, m2, gm;
   for (int i = 10; i < 20; ++i)
     {
-      d2.push_back(lexical_cast<string>(i));
-      gm.push_back(lexical_cast<string>(i));
+      d2.push_back(to_string(i));
+      gm.push_back(to_string(i));
     }
 
   for (int i = 0; i < 10; ++i)
     {
-      anc.push_back(lexical_cast<string>(i));
-      d1.push_back(lexical_cast<string>(i));
-      d2.push_back(lexical_cast<string>(i));
-      gm.push_back(lexical_cast<string>(i));
+      anc.push_back(to_string(i));
+      d1.push_back(to_string(i));
+      d2.push_back(to_string(i));
+      gm.push_back(to_string(i));
     }
 
   UNIT_TEST_CHECK(merge3(anc, d1, d2, m1));
@@ -109,7 +107,7 @@ UNIT_TEST(merge_append)
   UNIT_TEST_CHECKPOINT("append test");
   vector<string> anc, d1, d2, m1, m2, gm;
   for (int i = 0; i < 10; ++i)
-      anc.push_back(lexical_cast<string>(i));
+      anc.push_back(to_string(i));
 
   d1 = anc;
   d2 = anc;
@@ -117,8 +115,8 @@ UNIT_TEST(merge_append)
 
   for (int i = 10; i < 20; ++i)
     {
-      d2.push_back(lexical_cast<string>(i));
-      gm.push_back(lexical_cast<string>(i));
+      d2.push_back(to_string(i));
+      gm.push_back(to_string(i));
     }
 
   UNIT_TEST_CHECK(merge3(anc, d1, d2, m1));

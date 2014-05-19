@@ -53,7 +53,7 @@
 //####################################################################
 Netxx::DatagramServer::DatagramServer (port_type port, const Timeout &timeout) 
 {
-    std::auto_ptr<ServerBase> ap(pimpl_ = new ServerBase(timeout));
+    std::unique_ptr<ServerBase> ap(pimpl_ = new ServerBase(timeout));
 
     Address addr;
     addr.add_all_addresses(port);
@@ -64,7 +64,7 @@ Netxx::DatagramServer::DatagramServer (port_type port, const Timeout &timeout)
 //####################################################################
 Netxx::DatagramServer::DatagramServer (const Address &addr, const Timeout &timeout) 
 {
-    std::auto_ptr<ServerBase> ap(pimpl_ = new ServerBase(timeout));
+    std::unique_ptr<ServerBase> ap(pimpl_ = new ServerBase(timeout));
 
     pimpl_->bind_to(addr, false);
 

@@ -11,10 +11,9 @@
 #define __NUMERIC_VOCAB__
 
 #include <cstddef>
-#include <climits>              // Some architectures need this for CHAR_BIT
-                                // The lack of this was reported as bug #19984
+#include <climits>          // Some architectures need this for CHAR_BIT
+                            // The lack of this was reported as bug #19984
 #include <limits>
-#include <boost/static_assert.hpp>
 
 typedef TYPE_U8  u8;
 typedef TYPE_U16 u16;
@@ -34,7 +33,8 @@ template <typename T, typename V>
 inline T
 widen(V const & v)
 {
-  BOOST_STATIC_ASSERT(sizeof(T) >= sizeof(V));
+  static_assert(sizeof(T) >= sizeof(V),
+                "widen cannot shrink to smaller data types.");
   if (std::numeric_limits<T>::is_signed)
     return static_cast<T>(v);
   else if (!std::numeric_limits<V>::is_signed)
@@ -49,26 +49,9 @@ widen(V const & v)
     }
 }
 
-// Writing a 64-bit constant is tricky.  We cannot use the macros that
-// <stdint.h> provides in C99 (INT64_C, or even INT64_MAX) because those
-// macros are not in C++'s version of <stdint.h>.  std::numeric_limits<s64>
-// cannot be used directly, so we have to resort to #ifdef chains on the old
-// skool C limits macros.  BOOST_STATIC_ASSERT is defined in a way that
-// doesn't let us use std::numeric_limits<s64>::max(), so we rely on
-// one of the users (the unit tests for dates.cc) to check it at runtime.
-
-#if defined LONG_MAX && LONG_MAX > UINT_MAX
-  #define PROBABLE_S64_MAX LONG_MAX
-  #define s64_C(x) x##L
-#elif defined LLONG_MAX && LLONG_MAX > UINT_MAX
-  #define PROBABLE_S64_MAX LLONG_MAX
-  #define s64_C(x) x##LL
-#elif defined LONG_LONG_MAX && LONG_LONG_MAX > UINT_MAX
-  #define PROBABLE_S64_MAX LONG_LONG_MAX
-  #define s64_C(x) x##LL
-#else
-  #error "How do I write a constant of type s64?"
-#endif
+// With C++11, writing a 64-bit constant shouldn't be as tricky as it used
+// to be.  A couple extra pedantic static_asserts on 64-bit constants have
+// found a new home in constants.cc.
 
 #endif
 

@@ -15,8 +15,6 @@
 #include <iostream>
 #include <iterator>
 
-#include <boost/tuple/tuple.hpp>
-
 #include "basic_io.hh"
 #include "cert.hh"
 #include "charset.hh"

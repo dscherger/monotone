@@ -59,7 +59,7 @@ namespace
 //####################################################################
 Netxx::StreamServer::StreamServer (port_type port, const Timeout &timeout, int listen_backlog) 
 {
-    std::auto_ptr<ServerBase> ap(pimpl_ = new ServerBase(timeout));
+    std::unique_ptr<ServerBase> ap(pimpl_ = new ServerBase(timeout));
 
     Address addr;
     addr.add_all_addresses(port);
@@ -70,7 +70,7 @@ Netxx::StreamServer::StreamServer (port_type port, const Timeout &timeout, int l
 //####################################################################
 Netxx::StreamServer::StreamServer (const Address &addr, const Timeout &timeout, int listen_backlog) 
 {
-    std::auto_ptr<ServerBase> ap(pimpl_ = new ServerBase(timeout));
+    std::unique_ptr<ServerBase> ap(pimpl_ = new ServerBase(timeout));
 
     init(addr, listen_backlog);
 

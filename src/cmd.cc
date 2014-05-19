@@ -34,13 +34,12 @@
 
 using std::string;
 using std::stringstream;
+using std::to_string;
 using std::vector;
 using std::set;
 using std::ostream;
 using std::make_pair;
 using std::cout;
-using boost::lexical_cast;
-
 using std::cerr;
 using std::endl;
 
@@ -600,7 +599,7 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
 #ifndef _WIN32
       try
         {
-          int signo = boost::lexical_cast<int>(idx(args,0)());
+          int signo = std::stoi(idx(args,0)());
           if (0 < signo && signo <= 15)
             {
               raise(signo);
@@ -608,7 +607,10 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
               I(!"crash: raise returned");
             }
         }
-      catch (boost::bad_lexical_cast&)
+      catch (std::invalid_argument&)
+        { // fall through and throw usage
+        }
+      catch (std::out_of_range&)
         { // fall through and throw usage
         }
 #endif
@@ -663,7 +665,7 @@ man_definition(vector<string> const & labels, string const & content, int width 
   out += ".IP \"" + man_hyphens(*labels.begin()) + "\"";
 
   if (width != -1)
-    out += " " + lexical_cast<string>(width);
+    out += " " + to_string(width);
   out += "\n";
 
   if (labels.size() > 1)

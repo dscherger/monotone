@@ -10,15 +10,16 @@
 #ifndef __INTERNER_HH__
 #define __INTERNER_HH__
 
+#include <unordered_map>
+
 #include "vector.hh"
-#include "hash_map.hh"
 #include "sanity.hh"
 
 template <typename T>
 struct
 interner
 {
-  typedef typename hashmap::hash_map<std::string, T> hmap;
+  typedef typename std::unordered_map<std::string, T> hmap;
 
   hmap fwd;
   std::vector<std::string> rev;

@@ -41,7 +41,7 @@ using std::string;
 using std::vector;
 using std::strlen;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 static void
 add_dormant_attrs(const_node_t parent, node_t child)

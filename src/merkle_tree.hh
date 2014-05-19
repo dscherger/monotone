@@ -10,16 +10,17 @@
 #ifndef __MERKLE_TREE_HH__
 #define __MERKLE_TREE_HH__
 
+#include <memory>
 #include <map>
 #include <set>
+#include <functional>
+#include <unordered_map>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
 
 #include "vector.hh"
 #include "vocab.hh"
 #include "transforms.hh"
-#include "hash_map.hh"
 
 // This file contains data structures and functions for managing merkle
 // trees. A merkle tree is, conceptually, a general recursive construction
@@ -85,10 +86,11 @@ struct merkle_node
   void set_slot_state(size_t n, slot_state st);
 };
 
-typedef boost::shared_ptr<merkle_node> merkle_ptr;
+typedef std::shared_ptr<merkle_node> merkle_ptr;
 
 typedef std::pair<prefix,size_t> merkle_node_id;
-namespace hashmap {
+#if 1
+namespace std {
   template<>
   struct hash<merkle_node_id>
   {
@@ -99,8 +101,20 @@ namespace hashmap {
     }
   };
 }
-typedef hashmap::hash_map<merkle_node_id, merkle_ptr> merkle_table;
+typedef std::unordered_map<merkle_node_id,
+                           merkle_ptr,
+                           std::hash<merkle_node_id> > merkle_table;
+#else
+typedef std::unordered_map<merkle_node_id,
+                           merkle_ptr,
+                           [] (merkle_node_id const & m)
+                             {
+                               return hash<std::string>(m.first()) +
+                                 m.second;
+                             }
+> merkle_table;
 
+#endif
 
 size_t prefix_length_in_bits(size_t level);
 size_t prefix_length_in_bytes(size_t level);

@@ -26,17 +26,16 @@
 // take a look in diff_patch.(cc|hh) for a nice interface to that.
 
 #include "base.hh"
+
 #include <algorithm>
-#include "vector.hh"
+#include <memory>
 #include <set>
+#include <unordered_map>
 #include <sstream>
 #include <cstring>  // memcmp
-
-#include <boost/shared_ptr.hpp>
-#include <boost/version.hpp>
+#include "vector.hh"
 
 #include "adler32.hh"
-#include "hash_map.hh"
 #include "numeric_vocab.hh"
 #include "sanity.hh"
 #include "xdelta.hh"
@@ -52,11 +51,15 @@ using std::vector;
 using std::memcmp;
 using std::lower_bound;
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
-struct identity {size_t operator()(u32 const & v) const { return static_cast<size_t>(v);}};
+struct identity
+{
+  size_t operator()(u32 const & v) const
+  { return static_cast<size_t>(v); }
+};
 typedef pair<string::size_type, string::size_type> extent;
-typedef hashmap::hash_map<u32, extent> match_table;
+typedef std::unordered_map<u32, extent> match_table;
 
 struct
 insn

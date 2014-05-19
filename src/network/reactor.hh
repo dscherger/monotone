@@ -11,10 +11,9 @@
 #ifndef __REACTOR_HH__
 #define __REACTOR_HH__
 
+#include <memory>
 #include <map>
 #include <set>
-
-#include <boost/shared_ptr.hpp>
 
 #include "../netxx_pipe.hh"
 
@@ -29,19 +28,19 @@ class reactor
   bool can_have_timeout;
 
   Netxx::PipeCompatibleProbe probe;
-  std::set<boost::shared_ptr<reactable> > items;
+  std::set<std::shared_ptr<reactable> > items;
 
-  std::map<Netxx::socket_type, boost::shared_ptr<reactable> > lookup;
+  std::map<Netxx::socket_type, std::shared_ptr<reactable> > lookup;
 
   bool readying;
   int have_armed;
-  void ready_for_io(boost::shared_ptr<reactable> item,
+  void ready_for_io(std::shared_ptr<reactable> item,
                     transaction_guard & guard);
 public:
   reactor();
-  void add(boost::shared_ptr<reactable> item,
+  void add(std::shared_ptr<reactable> item,
            transaction_guard & guard);
-  void remove(boost::shared_ptr<reactable> item);
+  void remove(std::shared_ptr<reactable> item);
 
   int size() const;
 

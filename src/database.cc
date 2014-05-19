@@ -11,6 +11,7 @@
 #include "base.hh"
 
 #include <algorithm>
+#include <memory>
 #include <deque>
 #include <fstream>
 #include <iterator>
@@ -18,13 +19,11 @@
 #include <numeric>
 #include <set>
 #include <sstream>
+#include <unordered_map>
 #include "vector.hh"
 #include <cstring>
-
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
+#include <tuple>
+#include <functional>
 
 #include <botan/botan.h>
 #include <botan/rsa.h>
@@ -43,7 +42,6 @@
 #include "constants.hh"
 #include "dates.hh"
 #include "database.hh"
-#include "hash_map.hh"
 #include "keys.hh"
 #include "platform-wrapped.hh"
 #include "revision.hh"
@@ -89,15 +87,17 @@ using std::remove_if;
 using std::set;
 using std::sort;
 using std::string;
+using std::to_string;
 using std::vector;
 using std::accumulate;
+using std::unordered_map;
 
-using boost::shared_ptr;
-using boost::dynamic_pointer_cast;
+using std::shared_ptr;
+using std::dynamic_pointer_cast;
 using boost::lexical_cast;
-using boost::get;
-using boost::tuple;
-using boost::lexical_cast;
+using std::get;
+using std::tuple;
+using std::bind;
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,5)
 using Botan::PK_Encryptor_EME;
@@ -116,6 +116,8 @@ int const any_cols = -1;
 
 namespace
 {
+  using namespace std::placeholders;
+
   struct query_param
   {
     enum arg_type { text, blob, int64 };
@@ -213,13 +215,12 @@ namespace
                    format_bypass_mode,
                    cache_bypass_mode };
 
-  typedef hashmap::hash_map<revision_id, set<revision_id> > parent_id_map;
-  typedef hashmap::hash_map<revision_id, rev_height> height_map;
+  typedef unordered_map<revision_id, set<revision_id> > parent_id_map;
+  typedef unordered_map<revision_id, rev_height> height_map;
 
-  typedef hashmap::hash_map<key_id,
-                            pair<shared_ptr<Botan::PK_Verifier>,
-                                 shared_ptr<Botan::RSA_PublicKey> >
-                            > verifier_cache;
+  typedef unordered_map<key_id, pair<shared_ptr<Botan::PK_Verifier>,
+                                     shared_ptr<Botan::RSA_PublicKey> >
+                        > verifier_cache;
 
 } // anonymous namespace
 
@@ -227,7 +228,7 @@ class database_impl
 {
   friend class database;
 
-  // for scoped_ptr's sake
+  // for unique_ptr's sake
 public:
   explicit database_impl(system_path const & f, db_type t,
                          system_path const & roster_cache_performance_log);
@@ -540,7 +541,7 @@ database::init()
   if (dbcache.find(dbpath) == dbcache.end())
     {
       L(FL("creating new database_impl instance for %s") % dbpath);
-      dbcache.insert(make_pair(dbpath, boost::shared_ptr<database_impl>(
+      dbcache.insert(make_pair(dbpath, std::shared_ptr<database_impl>(
         new database_impl(dbpath, opts.dbname_type, opts.roster_cache_performance_log)
       )));
     }
@@ -1486,7 +1487,7 @@ database_impl::fetch(results & res,
             }
           else if (query.args[param-1].type == query_param::int64)
             {
-              log = lexical_cast<string>(query.args[param-1].int_data);
+              log = to_string(query.args[param-1].int_data);
             }
           else
             {
@@ -3493,7 +3494,7 @@ database::check_signature(key_id const & id,
       L(FL("building verifier for %d-byte pub key") % pub_block.size());
       shared_ptr<X509_PublicKey> x509_key(Botan::X509::load_key(pub_block));
       shared_ptr<RSA_PublicKey> pub_key
-        = boost::dynamic_pointer_cast<RSA_PublicKey>(x509_key);
+        = std::dynamic_pointer_cast<RSA_PublicKey>(x509_key);
 
       E(pub_key, id.inner().made_from,
         F("failed to get RSA verifying key for %s") % id);
@@ -4193,8 +4194,8 @@ void
 database::erase_bogus_certs(project_t const & project, vector<cert> & certs)
 {
   erase_bogus_certs_internal(certs, *this,
-                             boost::bind(&check_revision_cert_trust,
-                                         &project, &this->lua, _1, _2, _3, _4));
+                             bind(&check_revision_cert_trust,
+                                  &project, &this->lua, _1, _2, _3, _4));
 }
 void
 database::erase_bogus_certs(vector<cert> & certs,
@@ -4212,8 +4213,8 @@ database::get_manifest_certs(manifest_id const & id, std::vector<cert> & certs)
 {
   imp->get_oldstyle_certs(id.inner(), certs, "manifest_certs");
   erase_bogus_certs_internal(certs, *this,
-                             boost::bind(&check_manifest_cert_trust,
-                                         this, &this->lua, _1, _2, _3, _4));
+                             bind(&check_manifest_cert_trust,
+                                  this, &this->lua, _1, _2, _3, _4));
 }
 
 void
@@ -4221,8 +4222,8 @@ database::get_manifest_certs(cert_name const & name, std::vector<cert> & certs)
 {
   imp->get_oldstyle_certs(name, certs, "manifest_certs");
   erase_bogus_certs_internal(certs, *this,
-                             boost::bind(&check_manifest_cert_trust,
-                                         this, &this->lua, _1, _2, _3, _4));
+                             bind(&check_manifest_cert_trust,
+                                  this, &this->lua, _1, _2, _3, _4));
 }
 
 // completions
@@ -4816,7 +4817,7 @@ database::next_node_id()
       n = lexical_cast<u64>(res[0][0]);
       ++n;
       imp->execute(query("UPDATE next_roster_node_number SET node = ?")
-                   % text(lexical_cast<string>(n)));
+                   % text(to_string(n)));
     }
   guard.commit();
   return static_cast<node_id>(n);

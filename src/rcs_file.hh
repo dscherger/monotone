@@ -10,9 +10,9 @@
 #ifndef __RCS_FILE_HH__
 #define __RCS_FILE_HH__
 
-#include "vector.hh"
+#include <memory>
 #include <map>
-#include <boost/shared_ptr.hpp>
+#include "vector.hh"
 
 struct rcs_admin
 {
@@ -41,16 +41,16 @@ struct rcs_deltatext
 struct rcs_file
 {
   rcs_admin admin;
-  std::map<std::string, boost::shared_ptr<rcs_delta> > deltas;
-  std::map<std::string, boost::shared_ptr<rcs_deltatext> > deltatexts;
+  std::map<std::string, std::shared_ptr<rcs_delta> > deltas;
+  std::map<std::string, std::shared_ptr<rcs_deltatext> > deltatexts;
   void push_delta(rcs_delta const & d)
   {
-    boost::shared_ptr<rcs_delta> dp(new rcs_delta(d));
+    std::shared_ptr<rcs_delta> dp(new rcs_delta(d));
     deltas.insert(make_pair(dp->num,dp));
   }
   void push_deltatext(rcs_deltatext const & dt)
   {
-    boost::shared_ptr<rcs_deltatext> dp(new rcs_deltatext(dt));
+    std::shared_ptr<rcs_deltatext> dp(new rcs_deltatext(dt));
     deltatexts.insert(make_pair(dp->num, dp));
   }
 };

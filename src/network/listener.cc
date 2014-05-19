@@ -9,7 +9,6 @@
 // PURPOSE.
 
 #include "../base.hh"
-#include "../lexical_cast.hh"
 #include "../netxx/sockopt.h"
 #include "../netxx/stream.h"
 #include "../netxx/streamserver.h"
@@ -22,9 +21,9 @@
 
 using std::vector;
 using std::string;
+using std::to_string;
 
-using boost::lexical_cast;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 listener::listener(app_state & app,
                    project_t & project,
@@ -49,7 +48,7 @@ bool
 listener::do_io(Netxx::Probe::ready_type /* event */)
 {
   L(FL("accepting new connection on %s : %s")
-    % (addr.get_name()?addr.get_name():"") % lexical_cast<string>(addr.get_port()));
+    % (addr.get_name()?addr.get_name():"") % to_string(addr.get_port()));
   Netxx::Peer client = srv->accept_connection();
 
   if (!client)
@@ -59,7 +58,7 @@ listener::do_io(Netxx::Probe::ready_type /* event */)
   else
     {
       P(F("accepted new client connection from %s : %s")
-        % client.get_address() % lexical_cast<string>(client.get_port()));
+        % client.get_address() % to_string(client.get_port()));
 
       // 'false' here means not to revert changes when the SockOpt
       // goes out of scope.
@@ -72,7 +71,7 @@ listener::do_io(Netxx::Probe::ready_type /* event */)
 
       shared_ptr<session> sess(new session(app, project, keys,
                                            server_voice,
-                                           lexical_cast<string>(client),
+                                           to_string(client),
                                            str));
       sess->begin_service();
       I(guard);

@@ -8,11 +8,11 @@
 // PURPOSE.
 
 #include "base.hh"
+
 #include <algorithm>
+#include <memory>
 #include <set>
 #include <utility>
-
-#include <boost/shared_ptr.hpp>
 
 #include "refiner.hh"
 #include "vocab.hh"
