@@ -9,13 +9,14 @@
 // PURPOSE.
 
 #include "base.hh"
-
-#include <set>
-#include <map>
+#include <boost/tokenizer.hpp>
+#include "lexical_cast.hh"
 #include <sqlite3.h>
 #include <cstring>
 
-#include <boost/tokenizer.hpp>
+// ...ow.
+#include <set>
+#include <map>
 
 #include "sanity.hh"
 #include "migration.hh"
@@ -24,7 +25,6 @@
 #include "constants.hh"
 
 using std::string;
-using std::to_string;
 
 // this file knows how to migrate schema databases. the general strategy is
 // to hash each schema we ever use, and make a list of the SQL commands
@@ -682,7 +682,7 @@ static void
 migrate_add_ccode(sqlite3 * db, key_store &)
 {
   string cmd = "PRAGMA user_version = ";
-  cmd += to_string(mtn_creator_code);
+  cmd += boost::lexical_cast<string>(mtn_creator_code);
   sql::exec(db, cmd.c_str());
 }
 
@@ -1044,7 +1044,7 @@ calculate_schema_id(sqlite3 * db, string & ident)
   if (code != 0)
     {
       schema += " PRAGMA user_version = ";
-      schema += to_string(code);
+      schema += boost::lexical_cast<string>(code);
     }
 
   id tid;

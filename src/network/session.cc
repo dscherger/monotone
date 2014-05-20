@@ -24,7 +24,6 @@
 #include "netsync_session.hh"
 
 using std::string;
-using std::to_string;
 
 using boost::lexical_cast;
 using std::shared_ptr;
@@ -378,7 +377,7 @@ bool session::do_work(transaction_guard & guard)
   catch (netsync_error & err)
     {
       W(F("error: %s") % err.msg);
-      string const errmsg(to_string(error_code) + " " + err.msg);
+      string const errmsg(lexical_cast<string>(error_code) + " " + err.msg);
       L(FL("queueing 'error' command"));
       netcmd cmd(get_version());
       cmd.write_error_cmd(errmsg);

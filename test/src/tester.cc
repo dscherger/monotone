@@ -24,11 +24,14 @@
 #include "tester-plaf.hh"
 #include "../../src/vector.hh"
 #include "../../src/sanity.hh"
+#include "../../src/lexical_cast.hh"
+#include "../../src/lexical_cast.hh"
 
 using std::string;
 using std::map;
 using std::vector;
-using std::logic_error;
+using boost::lexical_cast;
+using boost::bad_lexical_cast;
 
 // defined in testlib.c, generated from testlib.lua
 extern char const testlib_constant[];
@@ -764,14 +767,14 @@ parse_makeflags(char const * mflags,
             break;
           try
             {
-              jxx = std::stoi(*i);
+              jxx = lexical_cast<int>(*i);
               if (jxx <= 0)
                 {
                   W(F("-j %d makes no sense, option ignored") % jxx);
                   jxx = 0;
                 }
             }
-          catch (logic_error &)
+          catch (bad_lexical_cast &)
             {
               i--;
             }
@@ -783,11 +786,11 @@ parse_makeflags(char const * mflags,
             break;
           try
             {
-              double dummy = std::stod(*i);
+              double dummy = lexical_cast<double>(*i);
               W(F("no support for -l %f: forcing -j1") % dummy);
               jxx = 1;
             }
-          catch (logic_error &)
+          catch (bad_lexical_cast &)
             {
               i--;
             }
@@ -832,7 +835,7 @@ parse_command_line(int argc, char const * const * argv,
           if (i+1 < argc)
             try
               {
-                jxx = std::stoi(argv[i]);
+                jxx = lexical_cast<int>(argv[i]);
                 if (jxx <= 0)
                   {
                     W(F("-j %d makes no sense, option ignored") % jxx);
@@ -840,7 +843,7 @@ parse_command_line(int argc, char const * const * argv,
                   }
                 i++;
               }
-            catch (logic_error &)
+            catch (bad_lexical_cast &)
               {
                 // it wasn't a number.
               }
@@ -1024,7 +1027,7 @@ int main(int argc, char **argv)
       P(F("%s\n") % e.what());
       retcode = 1;
     }
-  catch (logic_error & e)
+  catch (std::logic_error & e)
     {
       P(F("Invariant failure: %s\n") % e.what());
       retcode = 3;

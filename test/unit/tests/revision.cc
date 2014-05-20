@@ -10,9 +10,9 @@
 #include "../../../src/base.hh"
 #include "../unit_tests.hh"
 #include "../../../src/revision.hh"
+#include "../../../src/lexical_cast.hh"
 
 using std::string;
-using std::to_string;
 
 UNIT_TEST(from_network)
 {
@@ -51,7 +51,7 @@ UNIT_TEST(from_network)
   for (unsigned i = 0; i < sizeof(bad_revisions)/sizeof(char const*); ++i)
     {
       UNIT_TEST_CHECKPOINT((string("iteration ")
-                            + to_string(i)).c_str());
+                            + boost::lexical_cast<string>(i)).c_str());
       UNIT_TEST_CHECK_THROW(read_revision(data(bad_revisions[i],
                                                origin::network),
                                           rev),

@@ -11,10 +11,9 @@
 #define __RANDOMFILE_HH__
 
 #include "../../src/vector.hh"
+#include "../../src/lexical_cast.hh"
 
 #include "randomizer.hh"
-
-using std::to_string;
 
 struct file_randomizer
 {
@@ -55,7 +54,7 @@ struct file_randomizer
     lines.clear();
     for (int i = 0; i < num_lines; ++i)
       {
-        lines.push_back(std::string("initial ") + to_string(i));
+        lines.push_back(std::string("initial ") + boost::lexical_cast<std::string>(i));
       }
   }
 
@@ -63,7 +62,7 @@ struct file_randomizer
     lines.clear();
     for (int i = 0; i < num_lines; ++i)
       {
-        lines.push_back(std::string("append ") + to_string(i));
+        lines.push_back(std::string("append ") + boost::lexical_cast<std::string>(i));
       }
   }
 
@@ -71,7 +70,7 @@ struct file_randomizer
     lines.clear();
     for (int i = 0; i < num_lines; ++i)
       {
-        lines.push_back(std::string("prepend ") + to_string(i));
+        lines.push_back(std::string("prepend ") + boost::lexical_cast<std::string>(i));
       }
   }
 
@@ -90,7 +89,7 @@ struct file_randomizer
     for (int i = 0; i < nlines; ++i)
       {
         lines.insert(lines.begin() + random_index(),
-                     std::string("insert ") + to_string(i));
+                     std::string("insert ") + boost::lexical_cast<std::string>(i));
       }
   }
 
@@ -122,7 +121,7 @@ struct file_randomizer
     for (int h = 0; h < n_hunks; ++h)
       {
         file_randomizer hr(rng);
-        hr.set_prefix(std::string("hunk ") + to_string(h) + " -- ");
+        hr.set_prefix(std::string("hunk ") + boost::lexical_cast<std::string>(h) + " -- ");
         hr.initial_sequential_lines(10);
         if (rng.flip())
           {

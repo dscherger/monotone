@@ -8,9 +8,6 @@
 // PURPOSE.
 
 #include "base.hh"
-
-#include <exception>
-
 #include "sanity.hh"
 #include "cset.hh"
 #include "simplestring_xform.hh"
@@ -19,9 +16,12 @@
 #include "work.hh"
 #include "transforms.hh"
 
+#include "lexical_cast.hh"
+#include <exception>
+
 using std::string;
-using std::to_string;
 using std::exception;
+using boost::lexical_cast;
 
 // This file's primary entry point is workspace::migrate_format.  It is
 // responsible for migrating workspace directories from metadata formats
@@ -71,7 +71,7 @@ get_workspace_format()
       try
         {
           read_data(f_path, f_dat);
-          format = std::stoul(remove_ws(f_dat()));
+          format = lexical_cast<unsigned int>(remove_ws(f_dat()));
         }
       catch (exception & e)
         {
@@ -102,7 +102,7 @@ workspace::write_format()
     }
   else
     {
-      data f_dat(to_string(current_workspace_format) + "\n",
+      data f_dat(lexical_cast<string>(current_workspace_format) + "\n",
                  origin::workspace);
       write_data(f_path, f_dat);
     }

@@ -87,17 +87,16 @@ using std::remove_if;
 using std::set;
 using std::sort;
 using std::string;
-using std::to_string;
 using std::vector;
 using std::accumulate;
 using std::unordered_map;
 
 using std::shared_ptr;
 using std::dynamic_pointer_cast;
-using boost::lexical_cast;
 using std::get;
 using std::tuple;
 using std::bind;
+using boost::lexical_cast;
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,5)
 using Botan::PK_Encryptor_EME;
@@ -1487,7 +1486,7 @@ database_impl::fetch(results & res,
             }
           else if (query.args[param-1].type == query_param::int64)
             {
-              log = to_string(query.args[param-1].int_data);
+              log = lexical_cast<string>(query.args[param-1].int_data);
             }
           else
             {
@@ -4817,7 +4816,7 @@ database::next_node_id()
       n = lexical_cast<u64>(res[0][0]);
       ++n;
       imp->execute(query("UPDATE next_roster_node_number SET node = ?")
-                   % text(to_string(n)));
+                   % text(lexical_cast<string>(n)));
     }
   guard.commit();
   return static_cast<node_id>(n);

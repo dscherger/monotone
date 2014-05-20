@@ -16,6 +16,7 @@
 #include <functional>
 #include "vector.hh"
 
+#include "lexical_cast.hh"
 #include "app_state.hh"
 #include "automate_stdio_helpers.hh"
 #include "project.hh"
@@ -61,7 +62,6 @@ using std::sort;
 using std::streamsize;
 using std::string;
 using std::vector;
-using std::to_string;
 
 
 // Name: heads
@@ -1510,7 +1510,7 @@ print_extended_manifest(roster_t const & roster, marking_map const & mm,
           map<file_id, file_size>::const_iterator s = file_sizes.find(ftmp->content);
           I(s != file_sizes.end());
           st.push_str_pair(basic_io::syms::size,
-                           to_string(s->second));
+                           boost::lexical_cast<string>(s->second));
         }
 
       // Push the non-dormant part of the attr map

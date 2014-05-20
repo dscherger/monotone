@@ -20,7 +20,6 @@
 
 using std::logic_error;
 using std::search;
-using std::to_string;
 using std::shared_ptr;
 
 
@@ -284,7 +283,7 @@ string new_word(randomizer & rng)
       tmp += wordchars[rng.uniform(wordchars.size())];
     }
   while (tmp.size() < 10 && !rng.flip(10));
-  return tmp + to_string(tick++);
+  return tmp + lexical_cast<string>(tick++);
 }
 
 file_id new_ident(randomizer & rng)

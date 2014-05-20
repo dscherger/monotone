@@ -18,16 +18,17 @@
 #include "../randomizer.hh"
 
 #include "../../../src/transforms.hh"
+#include "../../../src/lexical_cast.hh"
 #include "../../../src/paths.hh"
 #include "../../../src/rev_height.hh"
 #include "../../../src/safe_map.hh"
 
+using boost::lexical_cast;
 using std::make_pair;
 using std::map;
 using std::pair;
 using std::set;
 using std::string;
-using std::to_string;
 using std::vector;
 using std::set_difference;
 
@@ -62,7 +63,7 @@ make_random_reconstruction_graph(size_t num_nodes, size_t num_random_edges,
   for (size_t i = 0; i != num_nodes; ++i)
     {
       id hash;
-      string s(to_string(i));
+      string s(lexical_cast<string>(i));
       calculate_ident(data(s, origin::internal), hash);
       all_nodes.push_back(hash);
     }

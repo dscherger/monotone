@@ -25,6 +25,7 @@
 #include "vocab.hh"
 #include "transforms.hh"
 #include "simplestring_xform.hh"
+#include "lexical_cast.hh"
 #include "file_io.hh"
 #include "parallel_iter.hh"
 #include "restrictions.hh"
@@ -42,8 +43,9 @@ using std::set;
 using std::set_union;
 using std::stack;
 using std::string;
-using std::to_string;
 using std::vector;
+
+using boost::lexical_cast;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -2892,7 +2894,7 @@ roster_t::print_to(data & dat,
           I(curr->self != the_null_node);
           contents.append(symbol_length - 5, ' ');
           contents.append("ident \"");
-          contents.append(to_string(curr->self));
+          contents.append(lexical_cast<string>(curr->self));
           contents.append("\"\n");
         }
 

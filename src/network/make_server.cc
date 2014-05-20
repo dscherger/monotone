@@ -9,13 +9,14 @@
 // PURPOSE.
 
 #include "../base.hh"
+#include "../lexical_cast.hh"
 #include "../vocab.hh"
 #include "make_server.hh"
 
 using std::vector;
 using std::string;
-using std::to_string;
 
+using boost::lexical_cast;
 using std::shared_ptr;
 
 shared_ptr<Netxx::StreamServer>
@@ -60,7 +61,7 @@ make_server(vector<utf8> const & addresses,
       name = addr.get_name();
       P(F("beginning service on %s : %s")
         % (name != NULL ? name : _("<all interfaces>"))
-        % to_string(addr.get_port()));
+        % lexical_cast<string>(addr.get_port()));
 
       return ret;
     }

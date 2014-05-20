@@ -22,6 +22,7 @@
 #include "vector.hh"
 #include <cstring> // memset
 
+#include "lexical_cast.hh"
 #include <boost/tokenizer.hpp>
 
 #include "cert.hh"
@@ -54,11 +55,11 @@ using std::sscanf;
 using std::stable_sort;
 using std::stack;
 using std::string;
-using std::to_string;
 using std::vector;
 
 using std::unique_ptr;
 using std::shared_ptr;
+using boost::lexical_cast;
 
 // cvs history recording stuff
 
@@ -414,9 +415,9 @@ process_one_hunk(vector< piece > const & source,
     {
       throw oops("out_of_range while processing " + directive
                  + " with source.size() == "
-                 + to_string(source.size())
+                 + lexical_cast<string>(source.size())
                  + " and cursor == "
-                 + to_string(cursor));
+                 + lexical_cast<string>(cursor));
     }
 }
 

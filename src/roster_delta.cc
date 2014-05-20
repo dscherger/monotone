@@ -29,7 +29,6 @@ using boost::lexical_cast;
 using std::pair;
 using std::make_pair;
 using std::string;
-using std::to_string;
 
 namespace
 {
@@ -402,7 +401,7 @@ namespace
     contents.append(symbol_length - sym().size(), ' ');
     contents.append(sym());
     contents.append(" \"");
-    contents.append(to_string(nid));
+    contents.append(lexical_cast<string>(nid));
     contents.append("\"\n");
   }
 
@@ -412,7 +411,7 @@ namespace
   {
     contents.append(symbol_length - 8, ' ');
     contents.append("location \"");
-    contents.append(to_string(loc.first));
+    contents.append(lexical_cast<string>(loc.first));
     contents.append("\" \"");
     append_with_escaped_quotes(contents, loc.second());
     contents.append("\"\n");
@@ -476,7 +475,7 @@ namespace
         contents.append("        attr \"");
         append_with_escaped_quotes(contents, i->second.first());
         contents.append("\"\n       value \"");
-        contents.append(to_string(i->second.second.first));
+        contents.append(lexical_cast<string>(i->second.second.first));
         contents.append("\" \"");
         append_with_escaped_quotes(contents, i->second.second.second());
         contents.append("\"\n\n");
@@ -504,7 +503,7 @@ namespace
   {
     std::string s;
     parser.str(s);
-    return std::stoul(s);
+    return lexical_cast<node_id>(s);
   }
 
   void
