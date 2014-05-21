@@ -3,7 +3,7 @@
 // stdint.h. awesome.  (from change_set.cc, required for UINT32_C)
 #define __STDC_CONSTANT_MACROS
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 #define BOOST_NO_STDC_NAMESPACE
 #endif
 

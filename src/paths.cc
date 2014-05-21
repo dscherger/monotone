@@ -166,7 +166,7 @@ is_absolute_here(string const & path)
     return false;
   if (path[0] == '/')
     return true;
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   if (path[0] == '\\')
     return true;
   if (path.size() > 1 && path[1] == ':')
@@ -261,7 +261,7 @@ normalize_path(string const & in)
   string leader;
   MM(inT);
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   // the first thing we do is kill all the backslashes
   for (string::iterator i = inT.begin(); i != inT.end(); i++)
     if (*i == '\\')
@@ -287,7 +287,7 @@ normalize_path(string const & in)
               inT = inT.substr(f);
             }
         }
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
       else
         {
           I(inT.size() > 1 && inT[1] == ':');
@@ -523,7 +523,7 @@ any_path::basename() const
 {
   string const & s = data;
   string::size_type sep = s.rfind('/');
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   if (sep == string::npos && s.size()>= 2 && s[1] == ':')
     sep = 1;
 #endif
@@ -541,7 +541,7 @@ any_path::dirname() const
 {
   string const & s = data;
   string::size_type sep = s.rfind('/');
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   if (sep == string::npos && s.size()>= 2 && s[1] == ':')
     sep = 1;
 #endif
@@ -554,7 +554,7 @@ any_path::dirname() const
 
   // dirname() of a direct child of the root is the root
   if (sep == 0 || (sep == 1 && s[1] == '/')
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
       || (sep == 1 || (sep == 2 && s[1] == ':'))
 #endif
       )
@@ -580,7 +580,7 @@ system_path::dirname() const
 {
   string const & s = data;
   string::size_type sep = s.rfind('/');
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   if (sep == string::npos && s.size()>= 2 && s[1] == ':')
     sep = 1;
 #endif
@@ -592,7 +592,7 @@ system_path::dirname() const
 
   // dirname() of a direct child of the root is the root
   if (sep == 0 || (sep == 1 && s[1] == '/')
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
       || (sep == 1 || (sep == 2 && s[1] == ':'))
 #endif
       )
@@ -1003,7 +1003,7 @@ find_and_go_to_workspace(string const & search_root)
 
   if (search_root.empty())
     {
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
       std::string cur_str = get_current_working_dir();
       current = system_path(cur_str, origin::system);
       if (cur_str[0] == '/' || cur_str[0] == '\\')

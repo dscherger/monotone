@@ -12,7 +12,7 @@
 #include <cstring>
 #include <botan/botan.h>
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #endif
 
@@ -939,7 +939,7 @@ int main(int argc, char **argv)
 
       if (run_one)
         {
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
           // This is a self-invocation, requesting that we actually run a
           // single named test.  Contra the help above, the command line
           // arguments are the absolute pathname of the testsuite definition,

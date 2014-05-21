@@ -84,7 +84,7 @@ void Netxx::resolve_hostname (const char *hostname, port_type port, bool use_ipv
     if ( (he = gethostbyname(hostname)) == 0) {
         std::string error("name resolution failure for "); error += hostname;
 // HACK: Winsock uses a totally different error reporting mechanism.
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
         error += ": "; error += str_error(get_last_error());
 #else
         error += ": "; error += hstrerror(h_errno);

@@ -59,7 +59,7 @@
 //####################################################################
 namespace
 {
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
         struct unlink_functor : public std::unary_function<std::string, void>
         {
             void operator() (const std::string &file)
@@ -74,7 +74,7 @@ Netxx::ServerBase::ServerBase (const Timeout &timeout)
 //####################################################################
 Netxx::ServerBase::~ServerBase (void)
 {
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
         if (sockets_ && !files_.empty()) {
             std::for_each(sockets_, sockets_ + sockets_size_, std::mem_fun_ref(&Socket::close));
             std::for_each(files_.begin(), files_.end(), unlink_functor());
@@ -118,7 +118,7 @@ void Netxx::ServerBase::bind_to(const Address &addr, bool stream_server)
                 break;
 #       endif
 
-#       ifndef WIN32
+#       if !defined(_WIN32) && !defined(_WIN64)
             case AF_LOCAL:
                 stype = stream_server ? Socket::LOCALSTREAM : Socket::LOCALDGRAM;
                 break;
@@ -150,7 +150,7 @@ void Netxx::ServerBase::bind_to(const Address &addr, bool stream_server)
         sockets_map_[socketfd] = &(sockets_[current_socket]);
         pi_.add_socket(socketfd);
 
-#       ifndef WIN32
+#       if !defined(_WIN32) && !defined(_WIN64)
             /*
              * check to see if we need to record a filename. we would need
              * to record a filename for local domain sockets in order to

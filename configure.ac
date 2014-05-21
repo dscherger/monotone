@@ -136,7 +136,9 @@ AC_CHECK_TYPE([off_t],
   [],
   [AC_DEFINE([off_t], [long int],
          [Define to `long int' if <sys/types.h> does not define.])],
-  [#include <sys/types.h>])
+  [#undef __STRICT_ANSI__
+   #include <sys/types.h>
+  ])
 
 AC_CHECK_TYPE([pid_t],
   [],

@@ -70,7 +70,7 @@ struct Netxx::Datagram::pimpl
 
     ~pimpl (void)
     {
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
         if (!files_.empty()) {
             socket_.close();
 
@@ -153,7 +153,7 @@ Netxx::signed_size_type Netxx::Datagram::send (const Peer &peer, const void *buf
         Socket::Type stype = pimpl_->socket_.get_type();
 
         switch (stype) {
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
             case Socket::LOCALDGRAM:
                 correct_type = sa->sa_family == AF_LOCAL;
                 break;
@@ -188,7 +188,7 @@ Netxx::signed_size_type Netxx::Datagram::send (const Peer &peer, const void *buf
                 break;
 #   endif
 
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
             case AF_LOCAL:
                 stype = Socket::LOCALDGRAM;
                 break;
@@ -278,7 +278,7 @@ namespace
                 break;
 # endif
 
-# ifndef WIN32
+# if !defined(_WIN32) && !defined(_WIN64)
             case AF_LOCAL:
                 stype = Netxx::Socket::LOCALDGRAM;
                 break;
@@ -301,7 +301,7 @@ namespace
     //####################################################################
     void call_bind (Netxx::Socket &socket, std::vector<std::string> &files)
     {
-#       ifndef WIN32
+#       if !defined(_WIN32) && !defined(_WIN64)
             if (socket.get_type() == Netxx::Socket::LOCALDGRAM) {
                 Netxx::SockAddr socket_addr(socket.get_type());
                 sockaddr_un *saun = reinterpret_cast<sockaddr_un*>(socket_addr.get_sa());
@@ -338,7 +338,7 @@ namespace
     //####################################################################
     void get_tmp_filename (std::string &tmp_name)
     {
-#       ifndef WIN32
+#       if !defined(_WIN32) && !defined(_WIN64)
             char buffer[] = "/tmp/Netxx_Domain_Socket.XXXXXXXXXXXXXXXXX";
             int fd;
 

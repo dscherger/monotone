@@ -198,7 +198,7 @@ UNIT_TEST(file_path_external_null_prefix)
   check_fp_normalizes_to("..foo/bar", "..foo/bar");
   check_fp_normalizes_to(".", "");
   check_fp_normalizes_to("", "");
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(_WIN64)
   check_fp_normalizes_to("foo:bar", "foo:bar");
 #endif
   check_fp_normalizes_to("foo/with,other+@weird*%#$=stuff/bar",
@@ -241,7 +241,7 @@ UNIT_TEST(file_path_external_prefix_a_b)
                             "//blah",
                             "\\foo",
                             "c:\\foo",
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
                             "c:foo",
                             "c:/foo",
 #endif
@@ -279,7 +279,7 @@ UNIT_TEST(file_path_external_prefix_a_b)
   check_fp_normalizes_to("..foo/bar", "a/b/..foo/bar");
   check_fp_normalizes_to(".", "a/b");
   check_fp_normalizes_to("", "a/b");
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(_WIN64)
   check_fp_normalizes_to("foo:bar", "a/b/foo:bar");
 #endif
   check_fp_normalizes_to("foo/with,other+@weird*%#$=stuff/bar",
@@ -298,7 +298,7 @@ UNIT_TEST(file_path_external_prefix_a_b)
   check_fp_normalizes_to("../..", "");
   check_fp_normalizes_to("_MTN/foo", "a/b/_MTN/foo");
   check_fp_normalizes_to("_MTN", "a/b/_MTN");
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(_WIN64)
   check_fp_normalizes_to("c:foo", "a/b/c:foo");
   check_fp_normalizes_to("c:/foo", "a/b/c:/foo");
 #endif
@@ -346,7 +346,7 @@ UNIT_TEST(basename)
     { "//foo/bar",  "bar"   },
     { "~/foo/bar",  "bar"   },
     { "c:/foo/bar", "bar"   },
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
     { "c:/",        ""      },
     { "c:foo",      "foo"   },
 #else
@@ -451,7 +451,7 @@ UNIT_TEST(dirname)
     { "/foo/bar",   "/foo"        },
     { "//foo/bar",  "//foo"       },
     { "~/foo/bar",  "~/foo"       },
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
     { "c:",         "c:"          },
     { "c:foo",      "c:"          },
     { "c:/",        "c:/"         },
@@ -601,7 +601,7 @@ UNIT_TEST(system)
   check_system_normalizes_to("foo/bar", "/a/b/foo/bar");
   check_system_normalizes_to("/foo/bar", "/foo/bar");
   check_system_normalizes_to("//foo/bar", "//foo/bar");
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   check_system_normalizes_to("c:foo", "c:foo");
   check_system_normalizes_to("c:/foo", "c:/foo");
   check_system_normalizes_to("c:\\foo", "c:/foo");
@@ -629,7 +629,7 @@ UNIT_TEST(system)
   // can't do particularly interesting checking of tilde expansion, but at
   // least we can check that it's doing _something_...
   string tilde_expanded = system_path("~/foo").as_external();
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   UNIT_TEST_CHECK(tilde_expanded[1] == ':');
 #else
   UNIT_TEST_CHECK(tilde_expanded[0] == '/');
@@ -640,7 +640,7 @@ UNIT_TEST(system)
   //UNIT_TEST_CHECK(tilde_expanded.find('~') == string::npos);
 
   // on Windows, ~name is not expanded
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   UNIT_TEST_CHECK(system_path("~this_user_does_not_exist_anywhere")
                   .as_external()
                   == "/a/b/~this_user_does_not_exist_anywhere");
@@ -984,7 +984,7 @@ UNIT_TEST(test_external_string_is_bookkeeping_path_prefix__MTN)
   char const * const no[] = {"../foo",
                        "../foo/bar",
                        "../foo/_MTN",
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
                        "c:/foo/foo", // don't throw informative_failure exception
 #else
                        "/foo/foo", // don't throw informative_failure exception

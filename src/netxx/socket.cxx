@@ -403,7 +403,7 @@ namespace
                 type    = SOCK_DGRAM;
                 break;
 #   endif
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
             case Netxx::Socket::LOCALSTREAM:
                 domain  = PF_LOCAL;
                 type    = SOCK_STREAM;

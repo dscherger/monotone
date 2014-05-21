@@ -458,7 +458,7 @@ SIMPLE_OPTION(no_ignore, "no-respect-ignore/respect-ignore", bool,
 SIMPLE_OPTION(no_merges, "no-merges/merges", bool,
               gettext_noop("exclude merges when printing logs"))
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 # define NORC_TEXT gettext_noop("do not load '%APPDATA%\\monotone\\monotonerc' or " \
                                 "'_MTN\\monotonerc' lua files")
 #else

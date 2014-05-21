@@ -23,7 +23,7 @@
 #include "platform.hh"
 #include "key_store.hh"
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 #include "win32/ssh_agent_platform.hh"
 #else
 #include "unix/ssh_agent_platform.hh"

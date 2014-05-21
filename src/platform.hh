@@ -37,7 +37,7 @@ int process_sleep(unsigned int seconds);
 // stop "\n"->"\r\n" from breaking automate on Windows
 void make_io_binary();
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 std::string munge_argv_into_cmdline(const char* const argv[]);
 #endif
 // for term selection
@@ -99,7 +99,7 @@ bool inodeprint_file(std::string const & file, inodeprint_calculator & calc);
 pid_t get_process_id();
 
 // netsync wants to ignore sigpipe; this is meaningless on Win32
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 inline void ignore_sigpipe() {}
 #else
 void ignore_sigpipe(); // in unix/process.cc

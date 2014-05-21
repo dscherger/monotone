@@ -67,7 +67,7 @@ private:
 	sockaddr_in6 sa_in6;
 #   endif
 
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
 	sockaddr_un sa_un;
 #   endif
 

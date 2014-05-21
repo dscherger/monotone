@@ -82,7 +82,7 @@ AC_DEFUN([AC_CXX_SYNC_WITH_STDIO_WORKS],
   AC_LINK_IFELSE([AC_LANG_SOURCE([[
     #include <cstdlib>
     #include <iostream>
-    #ifdef WIN32
+    #if defined(_WIN32) || defined(_WIN64)
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
     #define sleep(x) Sleep((x) * 1000)

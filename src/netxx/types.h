@@ -38,8 +38,9 @@
 #ifndef _netxx_types_h_
 #define _netxx_types_h_
 
-#ifdef WIN32
-    #include <windows.h>
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#include <winsock2.h>
 #endif
 
 // standard includes
@@ -58,7 +59,7 @@ namespace Netxx {
     typedef unsigned short port_type;
 
     /// type for representing socket file descriptors
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
     typedef SOCKET socket_type;
     socket_type const invalid_socket = INVALID_SOCKET;
 #else

@@ -29,11 +29,13 @@
 // than 3.3.14.
 #define SUPPORT_SQLITE_BEFORE_3003014
 
-#ifdef WIN32
 // Keep out all the GUI stuff on Windows.
+#if defined(_WIN32) || defined(_WIN64)
 #define WIN32_LEAN_AND_MEAN
-#else
+#endif
+
 // Cygwin somehow enables strict ansi, which we don't want.
+#ifdef __STRICT_ANSI__
 #undef __STRICT_ANSI__
 #endif
 

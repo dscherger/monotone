@@ -54,7 +54,7 @@ int inet_pton (int family, const char *strptr, void *addrptr)
 	return 0;
     }
 
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
 	errno = EAFNOSUPPORT;
 #   endif
 

@@ -9,8 +9,10 @@
 // PURPOSE.
 
 #include "../base.hh"
+
 #include <windows.h>
 #include <io.h>
+#include <cstdlib>
 
 #include "../platform.hh"
 

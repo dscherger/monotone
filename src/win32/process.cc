@@ -12,6 +12,7 @@
 #include <iostream>
 #include <sstream>
 #include <windows.h>
+#include <cstdlib>
 #include <cstring>
 
 #include "../sanity.hh"

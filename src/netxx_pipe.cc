@@ -13,7 +13,7 @@
 #include <cstdlib> // exit
 #include <cassert> // assert
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
@@ -38,7 +38,7 @@ using std::strerror;
 
 Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
     :
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   child(INVALID_HANDLE_VALUE),
   bytes_available(0),
   read_in_progress(false)
@@ -48,7 +48,7 @@ Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
   child(0)
 #endif
 {
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   E(0, origin::system, F("this transport not supported on native Win32; use Cygwin"));
 
   // keeping code in case someone wants to try fixing it
@@ -78,7 +78,7 @@ Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
 }
 
 
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(_WIN64)
 
 // Create pipes for stdio and fork subprocess, returns -1 on error, 0
 // to child and PID to parent.
@@ -146,7 +146,7 @@ pipe_and_fork(int fd1[2], int fd2[2])
 }
 #endif
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 static string
 err_msg()
 {
@@ -162,7 +162,7 @@ err_msg()
 Netxx::PipeStream::PipeStream (const string & cmd,
                                const vector<string> & args)
   :
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   child(INVALID_HANDLE_VALUE),
   bytes_available(0),
   read_in_progress(false)
@@ -186,7 +186,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
     newargv[newargc++] = i->c_str();
   newargv[newargc] = 0;
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 
   E(0, origin::system, F("this transport not supported on native Win32; use Cygwin"));
 
@@ -297,7 +297,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
 Netxx::signed_size_type
 Netxx::PipeStream::read (void *buffer, size_type length)
 {
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 
   if (length > bytes_available)
     length = bytes_available;
@@ -319,7 +319,7 @@ Netxx::PipeStream::read (void *buffer, size_type length)
 Netxx::signed_size_type
 Netxx::PipeStream::write(const void *buffer, size_type length)
 {
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   DWORD written = 0;
   BOOL ok = WriteFile(named_pipe, buffer, length, &written, NULL);
   E(ok, origin::system, F("WriteFile call failed: %s") % err_msg());
@@ -333,7 +333,7 @@ void
 Netxx::PipeStream::close (void)
 {
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   if (named_pipe != INVALID_HANDLE_VALUE)
     CloseHandle(named_pipe);
   named_pipe = INVALID_HANDLE_VALUE;
@@ -363,7 +363,7 @@ Netxx::PipeStream::close (void)
 Netxx::socket_type
 Netxx::PipeStream::get_socketfd (void) const
 {
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   return (Netxx::socket_type) named_pipe;
 #else
   return Netxx::socket_type(-1);
@@ -376,7 +376,7 @@ Netxx::PipeStream::get_probe_info (void) const
   return 0;
 }
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 
 static string
 status_name(DWORD wstatus)

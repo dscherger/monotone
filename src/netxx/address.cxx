@@ -180,7 +180,7 @@ namespace
     {
         const char *start_pos = uri, *stop_pos;
 
-#       ifndef WIN32
+#       if !defined(_WIN32) && !defined(_WIN64)
             // see if the URI is a Unix filepath
             if (*uri == '/') {
                 protocol = const_local_service;
@@ -198,7 +198,7 @@ namespace
             if (uri != start_pos) protocol.assign(start_pos, uri - start_pos);
             start_pos = uri + 3;
 
-#           ifndef WIN32
+#           if !defined(_WIN32) && !defined(_WIN64)
                 // check to see if it is a local domain socket
                 if (std::strcmp(protocol.c_str(), const_local_service) == 0) {
                     name = start_pos;
@@ -255,7 +255,7 @@ namespace
     void make_uds (const char *filename,
                    Netxx::Address::container_type & addrs)
     {
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
 
         Netxx::SockAddr saddr(AF_LOCAL);
         sockaddr_un *sau = reinterpret_cast<sockaddr_un*>(saddr.get_sa());

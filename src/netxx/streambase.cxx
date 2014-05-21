@@ -131,7 +131,7 @@ namespace
 		break;
 #endif
 
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(_WIN64)
 	    case AF_LOCAL:
 		stype = Netxx::Socket::LOCALSTREAM;
 		break;

@@ -188,7 +188,7 @@ UNIT_TEST(from_string)
 #undef NO
 }
 
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(_WIN64)
 // parse_date (used by from_formatted_localtime) not implemented on Win32
 UNIT_TEST(roundtrip_localtimes)
 {
@@ -266,7 +266,7 @@ UNIT_TEST(roundtrip_localtimes)
 }
 #endif
 
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(_WIN64)
 // parse_date (used by from_formatted_localtime) not implemented on Win32
 UNIT_TEST(localtime_formats)
 {

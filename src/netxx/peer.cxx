@@ -100,7 +100,7 @@ Netxx::Peer::Peer (socket_type socketfd, void *saddr, size_type saddr_size)
 	break;
 #   endif
 
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
 	case AF_LOCAL:
 	    addr_ = reinterpret_cast<sockaddr_un*>(sa)->sun_path;
 	    break;

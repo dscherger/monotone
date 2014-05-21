@@ -53,7 +53,7 @@ const char *inet_ntop (int family, const void *addrptr, char *strptr, std::size_
 	snprintf(temp, sizeof(temp), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
 
 	if (std::strlen(temp) >= len) {
-#	    ifndef WIN32
+#	    if !defined(_WIN32) && !defined(_WIN64)
 		errno = ENOSPC;
 #	    endif
 	    return 0;
@@ -63,7 +63,7 @@ const char *inet_ntop (int family, const void *addrptr, char *strptr, std::size_
 	return strptr;
     }
 
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
 	errno = EAFNOSUPPORT;
 #   endif
 

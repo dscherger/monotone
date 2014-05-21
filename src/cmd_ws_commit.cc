@@ -1838,7 +1838,7 @@ CMD_PRESET_OPTIONS(commit)
 {
   // Dates are never parseable on Win32 (see win32/parse_date.cc),
   // so don't warn about that, just use the default format.
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   opts.no_format_dates = true;
 #else
   opts.no_format_dates = false;

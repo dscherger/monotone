@@ -13,7 +13,7 @@
 #include "vector.hh"
 #include "netxx/socket.h"
 #include "netxx/streambase.h"
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 #  include <windows.h>
 #endif
 
@@ -47,7 +47,7 @@ namespace Netxx
 
   class PipeStream : public StreamBase
     {
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
       HANDLE named_pipe;
       HANDLE child;
       char readbuf[1024];
@@ -73,7 +73,7 @@ namespace Netxx
       virtual const ProbeInfo* get_probe_info (void) const;
       int get_readfd(void) const
         {
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
           return -1;
 #else
           return readfd;
@@ -81,7 +81,7 @@ namespace Netxx
         }
       int get_writefd(void) const
         {
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
           return -1;
 #else
           return writefd;
@@ -89,7 +89,7 @@ namespace Netxx
         }
     };
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
 
   // This probe can either handle _one_ PipeStream or several network
   // Streams so if !is_pipe this acts like a Probe.

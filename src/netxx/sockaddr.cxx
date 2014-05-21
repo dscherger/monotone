@@ -60,7 +60,7 @@ Netxx::SockAddr::SockAddr (Socket::Type type, port_type port)
 	    break;
 #   endif
 
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
 	case Socket::LOCALSTREAM:
 	case Socket::LOCALDGRAM:
 	    setup(AF_LOCAL, 0);
@@ -114,7 +114,7 @@ void Netxx::SockAddr::setup (int af_type, port_type port)
 # endif
 
 
-#   ifndef WIN32
+#   if !defined(_WIN32) && !defined(_WIN64)
 	case AF_LOCAL:
 	    std::memset(&(sa_union_.sa_un), 0, sizeof(sa_union_.sa_un));
 	    sa_union_.sa_un.sun_family = AF_LOCAL;

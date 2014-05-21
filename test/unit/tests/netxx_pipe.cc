@@ -14,7 +14,7 @@
 using std::string;
 using std::vector;
 
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(_WIN64)
 
 UNIT_TEST(simple_pipe)
 { try
@@ -36,7 +36,7 @@ UNIT_TEST(simple_pipe)
   probe.add(pipe, Netxx::Probe::ready_write);
   res = probe.ready(short_time);
   I(res.second & Netxx::Probe::ready_write);
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
   I(res.first==pipe.get_socketfd());
 #else
   I(res.first==pipe.get_writefd());
@@ -58,7 +58,7 @@ UNIT_TEST(simple_pipe)
           res = probe.ready(timeout);
           E(res.second & Netxx::Probe::ready_read, origin::system,
             F("timeout reading data %d") % c);
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
           I(res.first == pipe.get_socketfd());
 #else
           I(res.first == pipe.get_readfd());

@@ -22,7 +22,7 @@ AC_DEFUN([AC_NET_IPV6],
          AC_MSG_FAILURE([IPv6 explicitly requested but it could not be found])
        fi
        enable_ipv6=no],
-		    [#ifdef WIN32
+		    [#if defined(_WIN32) || defined(_WIN64)
                      #include <winsock2.h>
                      #else
                      #include <sys/types.h>
