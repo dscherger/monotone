@@ -700,8 +700,8 @@ run_%_tests: Makefile
 # The leading + causes Make to treat this as a recursive invocation,
 # allowing it to participate in the jobserver protocol.
 test/%.status: test/%-testsuite.lua test/bin/tester$(EXEEXT) FORCE
-	+@$(AM_V_at)LANG=C PATH="$(abs_topbuilddir):$(abs_topbuilddir)/test/bin:$$PATH"	\
-		$(top_builddir)/test/bin/tester				\
+	+$(AM_V_at)LANG=C PATH="$(abs_topbuilddir):$(abs_topbuilddir)/test/bin:$$PATH"	\
+		"$(top_builddir)/test/bin/tester"			\
 		"$(srcdir)/test/$*-testsuite.lua";			\
 		echo $$? > $@
 test/unit.status : test/bin/unit_tester$(EXEEXT)
