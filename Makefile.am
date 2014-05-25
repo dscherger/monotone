@@ -143,12 +143,6 @@ NETXX_SOURCES =								\
 	src/netxx/stream.h src/netxx/streambase.h 			\
 	src/netxx/streamserver.h src/netxx/timeout.h src/netxx/types.h
 
-BOOST_SANDBOX_SOURCES =							\
-	src/boost/circular_buffer_adaptor.hpp				\
-	src/boost/circular_buffer_base.hpp				\
-	src/boost/circular_buffer_fwd.hpp				\
-	src/boost/circular_buffer.hpp
-
 UNIX_PLATFORM_SOURCES =							\
 	src/unix/read_password.cc src/unix/get_system_flavour.cc	\
 	src/unix/process.cc src/unix/terminal.cc src/unix/inodeprint.cc	\
@@ -241,8 +235,7 @@ nodist_test_bin_tester_SOURCES = test/src/testlib.cc
 
 noinst_LIBRARIES = src/libplatform.a src/lib3rdparty.a
 src_libplatform_a_SOURCES = src/platform.hh
-src_lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
-			    $(NETXX_SOURCES)
+src_lib3rdparty_a_SOURCES = $(NETXX_SOURCES)
 
 bashcompdir = $(sysconfdir)/bash_completion.d
 bashcomp_DATA = extra/shell/monotone.bash_completion
