@@ -15,9 +15,7 @@
 #include "vector.hh"
 
 #include <boost/format.hpp>
-
-// circular_buffer is not in Boost 1.34; it's in monotone/boost.
-#include "boost/circular_buffer.hpp"
+#include <boost/circular_buffer.hpp>
 
 #include "lexical_cast.hh"
 #include "constants.hh"

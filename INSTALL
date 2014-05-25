@@ -15,7 +15,7 @@ building and installation process for monotone
     - automake
     - gettext
     - a supported C++ compiler: g++ 3.2 or clang++ 3.3 or newer.
-    - boost 1.33.0 or later: either an installed copy or an extracted
+    - boost 1.35.0 or later: either an installed copy or an extracted
       tarball of its unbuilt sources somewhere in the file system are
       supported
     - zlib 1.1.4 or later
@@ -31,7 +31,7 @@ building and installation process for monotone
         on Debian and Ubuntu:
 
            install the following packages:
-             autoconf automake gettext g++ libboost-dev libz-dev
+             autoconf automake gettext g++ libboost1.35-dev libz-dev
              libbotan1.10-dev libsqlite3-dev libpcre3-dev liblua5.2-dev
              libidn11-dev libgmp3-dev libbz2-dev texinfo
 
@@ -129,10 +129,10 @@ building and installation process for monotone
     if the command shows a single directory named 'boost', you do not have
     to take any extra steps.  configure will automatically find the
     necessary files.  instead, if the command shows a directory name of the
-    form boost_1_33_1, boost-1.33.1 or similar, you will have to pass that
+    form boost_1_35_1, boost-1.35.1 or similar, you will have to pass that
     to the configure script.  do so as follows:
 
-      ./configure CPPFLAGS="-I/usr/include/boost-1.33.1"
+      ./configure CPPFLAGS="-I/usr/include/boost-1.35.1"
 
     if no directories are shown, look for prebuilt boost packages for your
     system and install them.  if there aren't any, resort to the procedure
@@ -144,7 +144,7 @@ building and installation process for monotone
     your system -- for example, your home directory.  once done, tell the
     configure script where the files are:
 
-      ./configure CPPFLAGS="-I${HOME}/boost-1.33.1"
+      ./configure CPPFLAGS="-I${HOME}/boost-1.35.1"
 
   it is important to note that, once monotone is built, you can get rid of
   all the boost sources or boost development packages from your system.
