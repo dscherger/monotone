@@ -20,6 +20,10 @@ XXX XXX XX XX XX XX UTC XXXX
 
         Internal
 
+        - Monotone sources now make use of C++11, meaning a somewhat
+          recent compiler is required to build, now.. Please see
+          INSTALL for details.
+
         -
 
         Other
