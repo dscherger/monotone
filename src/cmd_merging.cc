@@ -336,10 +336,9 @@ update(app_state & app,
   merged_roster.check_sane(true);
 
   // Now finally modify the workspace
-  cset update;
-  make_cset(*working_roster, merged_roster, update);
-  work.perform_content_update(*working_roster, merged_roster, update, wca, true,
-                              app.opts.move_conflicting_paths);
+  cset update(*working_roster, merged_roster);
+  work.perform_content_update(*working_roster, merged_roster, update, wca,
+                              true, app.opts.move_conflicting_paths);
 
   revision_t remaining
     = make_revision_for_workspace(chosen_rid, chosen_roster, merged_roster);
@@ -893,12 +892,11 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
 
   // Note: the csets in merged_rev are _not_ suitable for submission to
   // perform_content_update, because content changes have been dropped.
-  cset update;
-  make_cset(*left.first, merge_result.roster, update);
+  cset update(*left.first, merge_result.roster);
 
   // small race condition here...
-  work.perform_content_update(*left.first, merge_result.roster, update, wca, true,
-                              app.opts.move_conflicting_paths);
+  work.perform_content_update(*left.first, merge_result.roster, update, wca,
+                              true, app.opts.move_conflicting_paths);
   work.put_work_rev(merged_rev);
   work.maybe_update_inodeprints(db);
 
@@ -1371,8 +1369,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
     make_restricted_roster(*from_roster, to_true_roster,
                            restricted_roster, mask);
 
-    make_cset(*from_roster, restricted_roster, from_to_to);
-    make_cset(restricted_roster, to_true_roster, from_to_to_excluded);
+    from_to_to = cset(*from_roster, restricted_roster);
+    from_to_to_excluded = cset(restricted_roster, to_true_roster);
   }
   E(!from_to_to.empty(), origin::user, F("no changes to be applied"));
   // ...and use it to create the TO roster
@@ -1421,12 +1419,11 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   merged_roster.check_sane(true);
 
   // we apply the working to merged cset to the workspace
-  cset update;
+  cset update(*working_roster, merged_roster);
   MM(update);
-  make_cset(*working_roster, merged_roster, update);
   E(!update.empty(), origin::no_fault, F("no changes were applied"));
-  work.perform_content_update(*working_roster, merged_roster, update, wca, true,
-                              app.opts.move_conflicting_paths);
+  work.perform_content_update(*working_roster, merged_roster, update, wca,
+                              true, app.opts.move_conflicting_paths);
 
   P(F("applied changes to workspace"));
 

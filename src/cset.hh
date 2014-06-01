@@ -56,6 +56,9 @@ public:
   cset() = default;
   cset(cset const &) = delete;
   cset(cset &&) = default;
+  cset(roster_t const & from, roster_t const & to);
+
+  cset & operator = (cset &&) = default;
 
   // Deletions.
   std::set<file_path> nodes_deleted;

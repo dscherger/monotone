@@ -872,12 +872,10 @@ store_roster_merge_result(database & db,
 
   calculate_ident(merged_roster, merged_rev.new_manifest);
 
-  shared_ptr<cset> left_to_merged(new cset);
-  make_cset(left_roster, merged_roster, *left_to_merged);
+  shared_ptr<cset> left_to_merged(new cset(left_roster, merged_roster));
   safe_insert(merged_rev.edges, make_pair(left_rid, left_to_merged));
 
-  shared_ptr<cset> right_to_merged(new cset);
-  make_cset(right_roster, merged_roster, *right_to_merged);
+  shared_ptr<cset> right_to_merged(new cset(right_roster, merged_roster));
   safe_insert(merged_rev.edges, make_pair(right_rid, right_to_merged));
 
   revision_data merged_data;

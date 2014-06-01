@@ -402,9 +402,7 @@ void dump_header(std::string const & revs,
                  std::ostream & out,
                  bool show_if_empty)
 {
-  cset changes;
-  make_cset(old_roster, new_roster, changes);
-
+  cset changes(old_roster, new_roster);
   data summary;
   write_cset(changes, summary);
   if (summary().empty() && !show_if_empty)

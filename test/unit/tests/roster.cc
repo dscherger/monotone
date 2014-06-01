@@ -150,9 +150,8 @@ apply_cset_and_do_testing(roster_t & r, cset const & cs, node_id_source & nis)
   editable_roster_base e(r, nis);
   cs.apply_to(e);
 
-  cset derived;
+  cset derived(original, r);
   MM(derived);
-  make_cset(original, r, derived);
 
   do_testing_on_two_equivalent_csets(cs, derived);
   do_testing_on_one_roster(r);
@@ -199,10 +198,8 @@ tests_on_two_rosters(roster_t const & a, roster_t const & b, node_id_source & ni
   do_testing_on_one_roster(a);
   do_testing_on_one_roster(b);
 
-  cset a_to_b; MM(a_to_b);
-  cset b_to_a; MM(b_to_a);
-  make_cset(a, b, a_to_b);
-  make_cset(b, a, b_to_a);
+  cset a_to_b(a, b); MM(a_to_b);
+  cset b_to_a(b, a); MM(b_to_a);
   roster_t a2(b); MM(a2);
   roster_t b2(a); MM(b2);
   // we can't use a cset to entirely empty out a roster, so don't bother doing
@@ -242,10 +239,8 @@ tests_on_two_rosters(roster_t const & a, roster_t const & b, node_id_source & ni
   I(a_dat == a2_dat);
   I(b_dat == b2_dat);
 
-  cset a2_to_b2; MM(a2_to_b2);
-  cset b2_to_a2; MM(b2_to_a2);
-  make_cset(a2, b2, a2_to_b2);
-  make_cset(b2, a2, b2_to_a2);
+  cset a2_to_b2(a2, b2); MM(a2_to_b2);
+  cset b2_to_a2(b2, a2); MM(b2_to_a2);
   do_testing_on_two_equivalent_csets(a_to_b, a2_to_b2);
   do_testing_on_two_equivalent_csets(b_to_a, b2_to_a2);
 
@@ -1088,8 +1083,7 @@ run_with_0_roster_parents(a_scalar & s, revision_id scalar_origin_rid,
   s.set(scalar_origin_rid, new_val, new_mark_set, expected_roster, expected_markings);
 
   roster_t empty_roster;
-  cset cs; MM(cs);
-  make_cset(empty_roster, expected_roster, cs);
+  cset cs(empty_roster, expected_roster); MM(cs);
 
   roster_t new_roster; MM(new_roster);
   marking_map new_markings; MM(new_markings);
@@ -1136,8 +1130,7 @@ run_with_1_roster_parent(a_scalar & s,
   s.set(scalar_origin_rid, parent_val, parent_mark_set, parent_roster, parent_markings);
   s.set(scalar_origin_rid, new_val, new_mark_set, expected_roster, expected_markings);
 
-  cset cs; MM(cs);
-  make_cset(parent_roster, expected_roster, cs);
+  cset cs(parent_roster, expected_roster); MM(cs);
 
   roster_t new_roster; MM(new_roster);
   marking_map new_markings; MM(new_markings);
@@ -1184,10 +1177,8 @@ run_with_2_roster_parents(a_scalar & s,
   s.set(scalar_origin_rid, right_val, right_mark_set, right_roster, right_markings);
   s.set(scalar_origin_rid, new_val, new_mark_set, expected_roster, expected_markings);
 
-  cset left_cs; MM(left_cs);
-  cset right_cs; MM(right_cs);
-  make_cset(left_roster, expected_roster, left_cs);
-  make_cset(right_roster, expected_roster, right_cs);
+  cset left_cs(left_roster, expected_roster); MM(left_cs);
+  cset right_cs(right_roster, expected_roster); MM(right_cs);
 
   set<revision_id> left_uncommon_ancestors; MM(left_uncommon_ancestors);
   left_uncommon_ancestors.insert(left_rid);
@@ -1680,7 +1671,7 @@ UNIT_TEST(die_die_die_merge)
      logic_error);
 }
 // nodes can't change type file->dir or dir->file
-//    make_cset fails
+//    cset constructor (from rosters) fails
 //    merging a file and a dir with the same nid and no mention of what should
 //      happen to them fails
 
@@ -1717,8 +1708,8 @@ UNIT_TEST(same_nid_diff_type)
   file_roster.check_sane_against(file_markings);
 
   cset cs; MM(cs);
-  UNIT_TEST_CHECK_THROW(make_cset(dir_roster, file_roster, cs), logic_error);
-  UNIT_TEST_CHECK_THROW(make_cset(file_roster, dir_roster, cs), logic_error);
+  UNIT_TEST_CHECK_THROW(cs = cset(dir_roster, file_roster), logic_error);
+  UNIT_TEST_CHECK_THROW(cs = cset(file_roster, dir_roster), logic_error);
 
   cset left_cs; MM(left_cs);
   cset right_cs; MM(right_cs);

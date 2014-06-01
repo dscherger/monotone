@@ -77,9 +77,7 @@ make_revision(revision_id const & old_rev_id,
               roster_t const & old_roster,
               roster_t const & new_roster)
 {
-  shared_ptr<cset> cs(new cset());
-
-  make_cset(old_roster, new_roster, *cs);
+  shared_ptr<cset> cs(new cset(old_roster, new_roster));
 
   revision_t rev;
   calculate_ident(new_roster, rev.new_manifest);
@@ -130,8 +128,7 @@ make_revision(parent_map const & old_rosters,
        i != old_rosters.end();
        i++)
     {
-      shared_ptr<cset> cs(new cset());
-      make_cset(parent_roster(i), new_roster, *cs);
+      shared_ptr<cset> cs(new cset(parent_roster(i), new_roster));
       safe_insert(edges, make_pair(parent_id(i), cs));
     }
 
@@ -182,12 +179,12 @@ make_restricted_revision(parent_map const & old_rosters,
        i != old_rosters.end();
        i++)
     {
-      shared_ptr<cset> included(new cset());
       roster_t restricted_roster;
-
       make_restricted_roster(parent_roster(i), new_roster,
                              restricted_roster, mask);
-      make_cset(parent_roster(i), restricted_roster, *included);
+
+      shared_ptr<cset> included(new cset(parent_roster(i),
+                                         restricted_roster));
       safe_insert(edges, make_pair(parent_id(i), included));
     }
 
@@ -208,13 +205,13 @@ make_restricted_revision(parent_map const & old_rosters,
        i != old_rosters.end();
        i++)
     {
-      shared_ptr<cset> included(new cset());
       roster_t restricted_roster;
-
       make_restricted_roster(parent_roster(i), new_roster,
                              restricted_roster, mask);
-      make_cset(parent_roster(i), restricted_roster, *included);
-      make_cset(restricted_roster, new_roster, excluded);
+
+      shared_ptr<cset> included(new cset(parent_roster(i),
+                                         restricted_roster));
+      excluded = cset(restricted_roster, new_roster);
       safe_insert(edges, make_pair(parent_id(i), included));
       if (!excluded.empty())
         no_excludes = false;
@@ -255,9 +252,8 @@ make_revision_for_workspace(revision_id const & old_rev_id,
   MM(old_rev_id);
   MM(old_roster);
   MM(new_roster);
-  cset changes;
-  make_cset(old_roster, new_roster, changes);
-  return make_revision_for_workspace(old_rev_id, move(changes));
+  return make_revision_for_workspace(old_rev_id,
+                                     cset(old_roster, new_roster));
 }
 
 revision_t
@@ -269,8 +265,7 @@ make_revision_for_workspace(parent_map const & old_rosters,
        i != old_rosters.end();
        i++)
     {
-      shared_ptr<cset> cs(new cset());
-      make_cset(parent_roster(i), new_roster, *cs);
+      shared_ptr<cset> cs(new cset(parent_roster(i), new_roster));
       cs->deltas_applied.clear();
       safe_insert(edges, make_pair(parent_id(i), cs));
     }

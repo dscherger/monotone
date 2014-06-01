@@ -830,9 +830,8 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
               u64 parent = i->first;
               revision_id parent_rid = safe_get(node_to_new_rev, parent);
               shared_ptr<roster_t> parent_roster = i->second.first;
-              shared_ptr<cset> cs = shared_ptr<cset>(new cset());
-              MM(*cs);
-              make_cset(*parent_roster, child_roster, *cs);
+              shared_ptr<cset> cs
+                = shared_ptr<cset>(new cset(*parent_roster, child_roster));
               safe_insert(rev.edges, make_pair(parent_rid, cs));
             }
 
@@ -844,10 +843,10 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
           if (rev.edges.empty())
             {
               revision_id parent_rid;
-              shared_ptr<roster_t> parent_roster = shared_ptr<roster_t>(new roster_t());
-              shared_ptr<cset> cs = shared_ptr<cset>(new cset());
-              MM(*cs);
-              make_cset(*parent_roster, child_roster, *cs);
+              shared_ptr<roster_t> parent_roster
+                = shared_ptr<roster_t>(new roster_t());
+              shared_ptr<cset> cs
+                = shared_ptr<cset>(new cset(*parent_roster, child_roster));
               safe_insert(rev.edges, make_pair (parent_rid, cs));
 
             }

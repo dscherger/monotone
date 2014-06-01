@@ -2305,10 +2305,9 @@ namespace
   }
 }
 
-void
-make_cset(roster_t const & from, roster_t const & to, cset & cs)
+cset::cset(roster_t const & from, roster_t const & to)
 {
-  cs.clear();
+  MM(*this);
   parallel::iter<node_map> i(from.all_nodes(), to.all_nodes());
   while (i.next())
     {
@@ -2320,17 +2319,18 @@ make_cset(roster_t const & from, roster_t const & to, cset & cs)
 
         case parallel::in_left:
           // deleted
-          delta_only_in_from(from, i.left_key(), cs);
+          delta_only_in_from(from, i.left_key(), *this);
           break;
 
         case parallel::in_right:
           // added
-          delta_only_in_to(to, i.right_key(), i.right_data(), cs);
+          delta_only_in_to(to, i.right_key(), i.right_data(), *this);
           break;
 
         case parallel::in_both:
           // moved/renamed/patched/attribute changes
-          delta_in_both(i.left_key(), from, i.left_data(), to, i.right_data(), cs);
+          delta_in_both(i.left_key(), from, i.left_data(), to,
+                        i.right_data(), *this);
           break;
         }
     }

@@ -359,7 +359,6 @@ revert(app_state & app,
        bool undrop)
 {
   roster_t old_roster, new_roster;
-  cset preserved;
 
   E(app.opts.missing || !args.empty() || !app.opts.exclude.empty(),
     origin::user,
@@ -426,7 +425,7 @@ revert(app_state & app,
   make_restricted_roster(new_roster, old_roster, restricted_roster,
                          mask);
 
-  make_cset(old_roster, restricted_roster, preserved);
+  cset preserved(old_roster, restricted_roster);
 
   // At this point, all three rosters have accounted for additions,
   // deletions and renames but they all have content hashes from the
@@ -436,7 +435,7 @@ revert(app_state & app,
   // The preserved cset will be left pending in MTN/revision
 
   // if/when reverting through the editable_tree interface use
-  // make_cset(new_roster, restricted_roster, reverted);
+  // reverted = cset(new_roster, restricted_roster);
   // to get a cset that gets us back to the restricted roster
   // from the current workspace roster
 
@@ -682,7 +681,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
     roster_t old_roster, new_roster;
     db.get_roster(edge_old_revision(old_edge), old_roster);
     db.get_roster(child_rev, new_roster);
-    make_cset(new_roster, old_roster, *cs_inverse);
+    *cs_inverse = cset(new_roster, old_roster);
   }
   rev_inverse.edges.insert(make_pair(child_rev, cs_inverse));
 
@@ -1107,14 +1106,11 @@ checkout_common(app_state & app,
     % revid % dir);
   db.get_roster(revid, current_roster);
 
-  revision_t workrev = make_revision_for_workspace(revid, cset());
-  work.put_work_rev(workrev);
-
-  cset checkout;
-  make_cset(empty_roster, current_roster, checkout);
-
-  content_merge_checkout_adaptor wca(db);
-  work.perform_content_update(empty_roster, current_roster, checkout, wca, false,
+  work.put_work_rev(make_revision_for_workspace(revid, cset()));
+  work.perform_content_update(empty_roster, current_roster,
+                              cset(empty_roster, current_roster),
+                              content_merge_checkout_adaptor(db),
+                              false,
                               app.opts.move_conflicting_paths);
 
   work.maybe_update_inodeprints(db);
@@ -1195,11 +1191,9 @@ drop_attr(app_state & app, args_vector const & args)
       node->attrs[a_key] = make_pair(false, attr_value(""));
     }
 
-  cset cs;
-  make_cset(old_roster, new_roster, cs);
-
   content_merge_empty_adaptor empty;
-  work.perform_content_update(old_roster, new_roster, cs, empty);
+  work.perform_content_update(old_roster, new_roster,
+                              cset(old_roster, new_roster), empty);
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
@@ -1300,11 +1294,10 @@ set_attr(app_state & app, args_vector const & args)
 
   node->attrs[a_key] = make_pair(true, a_value);
 
-  cset cs;
-  make_cset(old_roster, new_roster, cs);
-
   content_merge_empty_adaptor empty;
-  work.perform_content_update(old_roster, new_roster, cs, empty);
+  work.perform_content_update(old_roster, new_roster,
+                              cset(old_roster, new_roster),
+                              empty);
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
@@ -1991,9 +1984,9 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   // commit
   if (!app.opts.dryrun)
     {
-        perform_commit(app, db, work, project,
-                       make_command_id("workspace commit"),
-                       vector<file_path>());
+      perform_commit(app, db, work, project,
+                     make_command_id("workspace commit"),
+                     vector<file_path>());
       remove_on_fail.commit();
     }
   else
@@ -2090,12 +2083,9 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   roster_t starting_roster;
   db.get_roster(starting_id, starting_roster);
 
-  cset update;
-  make_cset(current_roster, starting_roster, update);
-
-  content_merge_checkout_adaptor adaptor(db);
-  work.perform_content_update(current_roster, starting_roster, update,
-                              adaptor);
+  work.perform_content_update(current_roster, starting_roster,
+                              cset(current_roster, starting_roster),
+                              content_merge_checkout_adaptor(db));
   work.put_work_rev(make_revision_for_workspace(starting_id, cset()));
   work.maybe_update_inodeprints(db);
 
@@ -2370,13 +2360,10 @@ bisect_update(app_state & app, bisect::type type)
 
   roster_t selected_roster;
   db.get_roster(selected_id, selected_roster);
-
-  cset update;
-  make_cset(current_roster, selected_roster, update);
-
-  content_merge_checkout_adaptor adaptor(db);
-  work.perform_content_update(current_roster, selected_roster, update,
-                              adaptor, true,
+  work.perform_content_update(current_roster, selected_roster,
+                              cset(current_roster, selected_roster),
+                              content_merge_checkout_adaptor(db),
+                              true,
                               app.opts.move_conflicting_paths);
   work.put_work_rev(make_revision_for_workspace(selected_id, cset()));
   work.maybe_update_inodeprints(db);
