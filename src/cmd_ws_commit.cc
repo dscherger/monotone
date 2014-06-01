@@ -39,9 +39,9 @@
 #include "rev_output.hh"
 #include "vocab_cast.hh"
 
+using std::move;
 using std::shared_ptr;
 using std::cout;
-using std::make_pair;
 using std::make_pair;
 using std::map;
 using std::ostringstream;
@@ -531,8 +531,9 @@ revert(app_state & app,
   // been rewritten above but this may leave rename targets laying
   // around.
 
-  revision_t remaining;
-  make_revision_for_workspace(parent_id(parents.begin()), preserved, remaining);
+  revision_t remaining
+    = make_revision_for_workspace(parent_id(parents.begin()),
+                                  move(preserved));
 
   work.put_work_rev(remaining);
   work.maybe_update_inodeprints(db, mask);
@@ -908,7 +909,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 {
   roster_t new_roster;
   parent_map old_rosters;
-  revision_t rev;
   temp_node_id_source nis;
 
   database db(app);
@@ -926,7 +926,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
                         old_rosters, new_roster, ignored_file(work));
 
   work.update_current_roster_from_filesystem(new_roster, mask);
-  make_restricted_revision(old_rosters, new_roster, mask, rev);
+  revision_t rev = make_restricted_revision(old_rosters, new_roster, mask);
 
   vector<bisect::entry> info;
   work.get_bisect_info(info);
@@ -1107,8 +1107,7 @@ checkout_common(app_state & app,
     % revid % dir);
   db.get_roster(revid, current_roster);
 
-  revision_t workrev;
-  make_revision_for_workspace(revid, cset(), workrev);
+  revision_t workrev = make_revision_for_workspace(revid, cset());
   work.put_work_rev(workrev);
 
   cset checkout;
@@ -1205,8 +1204,7 @@ drop_attr(app_state & app, args_vector const & args)
   parent_map parents;
   work.get_parent_rosters(db, parents);
 
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
+  revision_t new_work = make_revision_for_workspace(parents, new_roster);
   work.put_work_rev(new_work);
 }
 
@@ -1311,9 +1309,7 @@ set_attr(app_state & app, args_vector const & args)
   parent_map parents;
   work.get_parent_rosters(db, parents);
 
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  work.put_work_rev(new_work);
+  work.put_work_rev(make_revision_for_workspace(parents, new_roster));
 }
 
 CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
@@ -1530,7 +1526,6 @@ void perform_commit(app_state & app,
 
   utf8 log_message("");
   bool log_message_given;
-  revision_t restricted_rev;
   parent_map old_rosters;
   roster_t new_roster;
   temp_node_id_source nis;
@@ -1547,8 +1542,9 @@ void perform_commit(app_state & app,
                         old_rosters, new_roster, ignored_file(work));
 
   work.update_current_roster_from_filesystem(new_roster, mask);
-  make_restricted_revision(old_rosters, new_roster, mask, restricted_rev,
-                           excluded, join_words(execid));
+  revision_t restricted_rev
+    = make_restricted_revision(old_rosters, new_roster, mask,
+                               excluded, join_words(execid));
   restricted_rev.check_sane();
   E(restricted_rev.is_nontrivial(), origin::user, F("no changes to commit"));
 
@@ -1796,11 +1792,10 @@ void perform_commit(app_state & app,
 
   // the work revision is now whatever changes remain on top of the revision
   // we just checked in.
-  revision_t remaining;
-  make_revision_for_workspace(restricted_rev_id, excluded, remaining);
 
   // small race condition here...
-  work.put_work_rev(remaining);
+  work.put_work_rev(make_revision_for_workspace(restricted_rev_id,
+                                                move(excluded)));
   P(F("committed revision %s") % restricted_rev_id);
 
   work.blank_user_log();
@@ -1898,9 +1893,7 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
 
   workspace work(app);
-  revision_t rev;
-  make_revision_for_workspace(revision_id(), cset(), rev);
-  work.put_work_rev(rev);
+  work.put_work_rev(make_revision_for_workspace(revision_id(), cset()));
 
   remove_on_fail.commit();
 }
@@ -1974,10 +1967,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
 
   workspace::create_workspace(app.opts, app.lua, dir);
   workspace work(app);
-
-  revision_t rev;
-  make_revision_for_workspace(ident, cset(), rev);
-  work.put_work_rev(rev);
+  work.put_work_rev(make_revision_for_workspace(ident, cset()));
 
   // prepare stuff for 'add' and so on.
   options save_opts;
@@ -2104,13 +2094,9 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   make_cset(current_roster, starting_roster, update);
 
   content_merge_checkout_adaptor adaptor(db);
-  work.perform_content_update(current_roster, starting_roster, update, adaptor);
-
-  revision_t starting_rev;
-  cset empty;
-  make_revision_for_workspace(starting_id, empty, starting_rev);
-
-  work.put_work_rev(starting_rev);
+  work.perform_content_update(current_roster, starting_roster, update,
+                              adaptor);
+  work.put_work_rev(make_revision_for_workspace(starting_id, cset()));
   work.maybe_update_inodeprints(db);
 
   // note that the various bisect commands didn't change the workspace
@@ -2389,14 +2375,10 @@ bisect_update(app_state & app, bisect::type type)
   make_cset(current_roster, selected_roster, update);
 
   content_merge_checkout_adaptor adaptor(db);
-  work.perform_content_update(current_roster, selected_roster, update, adaptor,
-                              true, app.opts.move_conflicting_paths);
-
-  revision_t selected_rev;
-  cset empty;
-  make_revision_for_workspace(selected_id, empty, selected_rev);
-
-  work.put_work_rev(selected_rev);
+  work.perform_content_update(current_roster, selected_roster, update,
+                              adaptor, true,
+                              app.opts.move_conflicting_paths);
+  work.put_work_rev(make_revision_for_workspace(selected_id, cset()));
   work.maybe_update_inodeprints(db);
 
   // this may have updated to a revision not in the branch specified by

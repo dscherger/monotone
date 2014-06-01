@@ -59,6 +59,8 @@ private:
 struct node
 {
   node();
+  node(node const & other) = delete;
+  node(node && other) = delete;
   node(node_id i);
   node_id self;
   node_id parent; // the_null_node iff this is a root dir

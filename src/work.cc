@@ -1805,10 +1805,7 @@ workspace::perform_additions(database & db, set<file_path> const & paths,
 
   parent_map parents;
   get_parent_rosters(db, parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  put_work_rev(new_work);
+  put_work_rev(make_revision_for_workspace(parents, new_roster));
 }
 
 static bool
@@ -1912,9 +1909,7 @@ workspace::perform_deletions(database & db,
         }
     }
 
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  put_work_rev(new_work);
+  put_work_rev(make_revision_for_workspace(parents, new_roster));
 }
 
 void
@@ -2039,10 +2034,7 @@ workspace::perform_rename(database & db,
 
   parent_map parents;
   get_parent_rosters(db, parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  put_work_rev(new_work);
+  put_work_rev(make_revision_for_workspace(parents, new_roster));
 
   if (!bookkeep_only)
     for (set< pair<file_path, file_path> >::const_iterator i = renames.begin();
@@ -2129,15 +2121,13 @@ workspace::perform_pivot_root(database & db,
   {
     parent_map parents;
     get_parent_rosters(db, parents);
-
-    revision_t new_work;
-    make_revision_for_workspace(parents, new_roster, new_work);
-    put_work_rev(new_work);
+    put_work_rev(make_revision_for_workspace(parents, new_roster));
   }
   if (!bookkeep_only)
     {
       content_merge_empty_adaptor cmea;
-      perform_content_update(old_roster, new_roster, cs, cmea, true, move_conflicting_paths);
+      perform_content_update(old_roster, new_roster, cs, cmea, true,
+                             move_conflicting_paths);
     }
 }
 

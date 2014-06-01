@@ -28,9 +28,13 @@ public:                                                \
   enc() {}                                             \
   explicit enc(char const * const s);                  \
   enc(std::string const & s, origin::type m);          \
+  enc(std::string && s, origin::type m);               \
   enc(enc<INNER> const & other);                       \
+  enc(enc<INNER> && other);                            \
   enc<INNER> const &                                   \
   operator=(enc<INNER> const & other);                 \
+  enc<INNER> const &                                   \
+  operator=(enc<INNER> && other);                      \
   std::string const & operator()() const               \
     { return s.get(); }                                \
   bool operator<(enc<INNER> const & x) const           \
@@ -65,14 +69,19 @@ public:                                                \
   dec() {}                                             \
   explicit dec(char const * const s);                  \
   dec(std::string const & s, origin::type m);          \
+  dec(std::string && s, origin::type m);               \
   explicit dec(INNER const & inner);                   \
+  explicit dec(INNER && inner);                        \
   dec(dec<INNER> const & other);                       \
+  dec(dec<INNER> && other);                            \
   bool operator<(dec<INNER> const & x) const           \
     { return i < x.i; }                                \
   INNER const & inner() const                          \
     { return i; }                                      \
   dec<INNER> const &                                   \
   operator=(dec<INNER> const & other);                 \
+  dec<INNER> const &                                   \
+  operator=(dec<INNER> && other);                      \
   bool operator==(dec<INNER> const & x) const          \
     { return i == x.i; }                               \
   bool operator!=(dec<INNER> const & x) const          \
@@ -96,8 +105,11 @@ public:                                                \
   ty() {}                                              \
   explicit ty(char const * const str);                 \
   ty(std::string const & str, origin::type m);         \
+  ty(std::string && str, origin::type m);              \
   ty(ty const & other);                                \
+  ty(ty && other);                                     \
   ty const & operator=(ty const & other);              \
+  ty const & operator=(ty && other);                   \
   std::string const & operator()() const               \
     { return s.get(); }                                \
   bool operator<(ty const & x) const                   \
@@ -143,13 +155,35 @@ ty::ty(string const & str,                   \
     : str)                                   \
 { verify(*this); }                           \
                                              \
+ty::ty(string && str,                        \
+       origin::type m) :                     \
+  origin_aware(m),                           \
+  s((ty ## _tab_active > 0)                  \
+    ? (ty ## _tab.unique(move(str)))         \
+    : move(str))                             \
+{ verify(*this); }                           \
+                                             \
 ty::ty(ty const & other) :                   \
   origin_aware(other), s(other.s) {}         \
+                                             \
+ty::ty(ty && other) :                        \
+  origin_aware(other),                       \
+  s(move(other.s)) {}                        \
                                              \
 ty const & ty::operator=(ty const & other)   \
 {                                            \
   s = other.s;                               \
   made_from = other.made_from;               \
+  return *this;                              \
+}                                            \
+                                             \
+ty const & ty::operator=(ty && other)        \
+{                                            \
+  if (this != &other)                        \
+    {                                        \
+      swap(s, other.s);                      \
+      made_from = other.made_from;           \
+    }                                        \
   return *this;                              \
 }                                            \
                                              \
@@ -198,13 +232,34 @@ ty::ty(string const & str,                   \
     : str)                                   \
 { verify(*this); }                           \
                                              \
+ty::ty(string && str,                        \
+       origin::type m) :                     \
+  origin_aware(m),                           \
+  s((ty ## _tab_active > 0)                  \
+    ? (ty ## _tab.unique(move(str)))         \
+    : move(str))                             \
+{ verify(*this); }                           \
+                                             \
 ty::ty(ty const & other) :                   \
   origin_aware(other), s(other.s) {}         \
+                                             \
+ty::ty(ty && other) :                        \
+  origin_aware(other), s(move(other.s)) {}   \
                                              \
 ty const & ty::operator=(ty const & other)   \
 {                                            \
   s = other.s;                               \
   made_from = other.made_from;               \
+  return *this;                              \
+}                                            \
+                                             \
+ty const & ty::operator=(ty && other)        \
+{                                            \
+  if (this != &other)                        \
+    {                                        \
+      swap(s, other.s);                      \
+      made_from = other.made_from;           \
+    }                                        \
   return *this;                              \
 }                                            \
                                              \
@@ -238,8 +293,17 @@ enc<INNER>::enc(string const & s, origin::type m) :      \
   { verify(*this); }                                     \
                                                          \
 template<typename INNER>                                 \
+enc<INNER>::enc(string && s, origin::type m) :           \
+  origin_aware(m), s(move(s))                            \
+  { verify(*this); }                                     \
+                                                         \
+template<typename INNER>                                 \
 enc<INNER>::enc(enc<INNER> const & other)                \
   : origin_aware(other), s(other.s) {}                   \
+                                                         \
+template<typename INNER>                                 \
+enc<INNER>::enc(enc<INNER> && other)                     \
+  : origin_aware(other), s(move(other.s)) {}             \
                                                          \
 template<typename INNER>                                 \
 enc<INNER> const &                                       \
@@ -247,6 +311,18 @@ enc<INNER>::operator=(enc<INNER> const & other)          \
 {                                                        \
   s = other.s;                                           \
   made_from = other.made_from;                           \
+  return *this;                                          \
+}                                                        \
+                                                         \
+template<typename INNER>                                 \
+enc<INNER> const &                                       \
+enc<INNER>::operator=(enc<INNER> && other)               \
+{                                                        \
+  if (this != &other)                                    \
+    {                                                    \
+      swap(s, other.s);                                  \
+      made_from = other.made_from;                       \
+    }                                                    \
   return *this;                                          \
 }                                                        \
                                                          \
@@ -273,6 +349,10 @@ dec<INNER>::dec(dec<INNER> const & other)                \
   : i(other.i) {}                                        \
                                                          \
 template<typename INNER>                                 \
+dec<INNER>::dec(dec<INNER> && other)                     \
+  : i(move(other.i)) {}                                  \
+                                                         \
+template<typename INNER>                                 \
 dec<INNER>::dec(char const * const s)                    \
   : i(s) { verify(i); }                                  \
                                                          \
@@ -282,13 +362,31 @@ dec<INNER>::dec(std::string const & s,                   \
   : i(s, m) { verify(i); }                               \
                                                          \
 template<typename INNER>                                 \
+dec<INNER>::dec(std::string && s,                        \
+                origin::type m)                          \
+  : i(move(s), m) { verify(i); }                         \
+                                                         \
+template<typename INNER>                                 \
 dec<INNER>::dec(INNER const & inner)                     \
   : i(inner) {}                                          \
+                                                         \
+template<typename INNER>                                 \
+dec<INNER>::dec(INNER && inner)                          \
+  : i(move(inner)) {}                                    \
                                                          \
 template<typename INNER>                                 \
 dec<INNER> const &                                       \
 dec<INNER>::operator=(dec<INNER> const & other)          \
   { i = other.i; return *this; }                         \
+                                                         \
+template<typename INNER>                                 \
+dec<INNER> const &                                       \
+dec<INNER>::operator=(dec<INNER> && other)               \
+  {                                                      \
+    if (this != &other)                                  \
+      swap(i, other.i);                                  \
+    return *this;                                        \
+  }                                                      \
                                                          \
 template <typename INNER>                                \
 std::ostream & operator<<(std::ostream & o,              \

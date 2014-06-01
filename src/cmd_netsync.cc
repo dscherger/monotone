@@ -893,8 +893,7 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
   db.get_roster(ident, current_roster);
 
   workspace work(app);
-  revision_t workrev;
-  make_revision_for_workspace(ident, cset(), workrev);
+  revision_t workrev = make_revision_for_workspace(ident, cset());
   work.put_work_rev(workrev);
 
   cset checkout;

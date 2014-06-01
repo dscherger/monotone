@@ -18,6 +18,8 @@
 #include "char_classifiers.hh"
 #include "transforms.hh"
 
+using std::move;
+using std::swap;
 using std::string;
 
 std::string immutable_string::empty;

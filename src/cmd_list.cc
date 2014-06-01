@@ -877,8 +877,7 @@ CMD(changed, "changed", "", CMD_REF(list), "[PATH...]",
                         parents, new_roster, ignored_file(work));
 
   work.update_current_roster_from_filesystem(new_roster, mask);
-  revision_t rrev;
-  make_restricted_revision(parents, new_roster, mask, rrev);
+  revision_t rrev = make_restricted_revision(parents, new_roster, mask);
 
   // to be printed sorted, with duplicates removed
   set<file_path> print_paths;

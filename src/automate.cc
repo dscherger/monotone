@@ -1306,7 +1306,6 @@ CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
 
   roster_t new_roster;
   parent_map old_rosters;
-  revision_t rev;
   cset excluded;
 
   database db(app);
@@ -1320,10 +1319,8 @@ CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
                         old_rosters, new_roster);
 
   work.update_current_roster_from_filesystem(new_roster, mask);
-
-  make_revision(old_rosters, new_roster, rev);
-  make_restricted_revision(old_rosters, new_roster, mask, rev,
-                           excluded, join_words(execid));
+  revision_t rev = make_restricted_revision(old_rosters, new_roster, mask,
+                                            excluded, join_words(execid));
   rev.check_sane();
 
   calculate_ident(rev, ident);
@@ -1383,14 +1380,13 @@ CMD_AUTOMATE(get_current_revision_id, "",
   parent_map parents;
   roster_t new_roster;
   revision_id new_revision_id;
-  revision_t rev;
   temp_node_id_source nis;
 
   work.get_current_roster_shape(db, nis, new_roster);
   work.update_current_roster_from_filesystem(new_roster);
 
   work.get_parent_rosters(db, parents);
-  make_revision(parents, new_roster, rev);
+  revision_t rev = make_revision(parents, new_roster);
 
   calculate_ident(rev, new_revision_id);
 

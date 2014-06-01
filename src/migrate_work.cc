@@ -19,6 +19,7 @@
 #include "lexical_cast.hh"
 #include <exception>
 
+using std::move;
 using std::string;
 using std::exception;
 using boost::lexical_cast;
@@ -202,35 +203,38 @@ migrate_1_to_2()
   MM(base_rid);
 
   cset workcs;
-  MM(workcs);
   bookkeeping_path workcs_path = bookkeeping_root / "work";
   bool delete_workcs = false;
-  if (file_exists(workcs_path))
-    {
-      delete_workcs = true;
-      data workcs_data; MM(workcs_data);
-      try
-        {
-          read_data(workcs_path, workcs_data);
-        }
-      catch (exception & e)
-        {
-          E(false, origin::system,
-            F("workspace is corrupt: reading '%s': %s")
-            % workcs_path % e.what());
-        }
+  {
+    MM(workcs);
+    if (file_exists(workcs_path))
+      {
+        delete_workcs = true;
+        data workcs_data; MM(workcs_data);
+        try
+          {
+            read_data(workcs_path, workcs_data);
+          }
+        catch (exception & e)
+          {
+            E(false, origin::system,
+              F("workspace is corrupt: reading '%s': %s")
+              % workcs_path % e.what());
+          }
 
-      read_cset(workcs_data, workcs);
-    }
-  else
-    require_path_is_nonexistent(workcs_path,
-                                F("workspace is corrupt: "
-                                  "%s exists but is not a regular file")
-                                % workcs_path);
+        read_cset(workcs_data, workcs);
+      }
+    else
+      require_path_is_nonexistent(workcs_path,
+                                  F("workspace is corrupt: "
+                                    "%s exists but is not a regular file")
+                                  % workcs_path);
 
-  revision_t rev;
+    // Let MM(workcs) get out of scope, here, so we can safely move it to
+    // the revision to construct.
+  }
+  revision_t rev = make_revision_for_workspace(base_rid, move(workcs));
   MM(rev);
-  make_revision_for_workspace(base_rid, workcs, rev);
   data rev_data;
   write_revision(rev, rev_data);
   write_data(rev_path, rev_data);

@@ -20,6 +20,8 @@
 
 #include "safe_map.hh"
 
+using std::move;
+using std::swap;
 using std::make_pair;
 using std::map;
 using std::string;
@@ -70,39 +72,16 @@ revision_t::is_nontrivial() const
     return !edge_changes(edges.begin()).empty();
 }
 
-revision_t::revision_t(revision_t const & other)
-  : origin_aware(other)
-{
-  /* behave like normal constructor if other is empty */
-  made_for = made_for_nobody;
-  if (null_id(other.new_manifest) && other.edges.empty()) return;
-  other.check_sane();
-  new_manifest = other.new_manifest;
-  edges = other.edges;
-  made_for = other.made_for;
-}
-
-revision_t const &
-revision_t::operator=(revision_t const & other)
-{
-  other.check_sane();
-  new_manifest = other.new_manifest;
-  edges = other.edges;
-  made_for = other.made_for;
-  return *this;
-}
-
-void
+revision_t
 make_revision(revision_id const & old_rev_id,
               roster_t const & old_roster,
-              roster_t const & new_roster,
-              revision_t & rev)
+              roster_t const & new_roster)
 {
   shared_ptr<cset> cs(new cset());
 
-  rev.edges.clear();
   make_cset(old_roster, new_roster, *cs);
 
+  revision_t rev;
   calculate_ident(new_roster, rev.new_manifest);
 
   if (global_sanity.debug_p())
@@ -111,13 +90,14 @@ make_revision(revision_id const & old_rev_id,
 
   safe_insert(rev.edges, make_pair(old_rev_id, cs));
   rev.made_for = made_for_database;
+
+  return rev;
 }
 
-void
+revision_t
 make_revision(revision_id const & old_rev_id,
               roster_t const & old_roster,
-              cset const & changes,
-              revision_t & rev)
+              cset && changes)
 {
   roster_t new_roster = old_roster;
   {
@@ -126,9 +106,9 @@ make_revision(revision_id const & old_rev_id,
     changes.apply_to(er);
   }
 
-  shared_ptr<cset> cs(new cset(changes));
-  rev.edges.clear();
+  shared_ptr<cset> cs(new cset(move(changes)));
 
+  revision_t rev;
   calculate_ident(new_roster, rev.new_manifest);
 
   if (global_sanity.debug_p())
@@ -137,12 +117,13 @@ make_revision(revision_id const & old_rev_id,
 
   safe_insert(rev.edges, make_pair(old_rev_id, cs));
   rev.made_for = made_for_database;
+
+  return rev;
 }
 
-void
+revision_t
 make_revision(parent_map const & old_rosters,
-              roster_t const & new_roster,
-              revision_t & rev)
+              roster_t const & new_roster)
 {
   edge_map edges;
   for (parent_map::const_iterator i = old_rosters.begin();
@@ -154,18 +135,20 @@ make_revision(parent_map const & old_rosters,
       safe_insert(edges, make_pair(parent_id(i), cs));
     }
 
-  rev.edges = edges;
+  revision_t rev;
+  rev.edges = move(edges);
   calculate_ident(new_roster, rev.new_manifest);
 
   if (global_sanity.debug_p())
     L(FL("new manifest_id is %s")
       % rev.new_manifest);
+
+  return rev;
 }
 
-static void
+static revision_t
 recalculate_manifest_id_for_restricted_rev(parent_map const & old_rosters,
-                                           edge_map & edges,
-                                           revision_t & rev)
+                                           edge_map && edges)
 {
   // In order to get the correct manifest ID, recalculate the new roster
   // using one of the restricted csets.  It doesn't matter which of the
@@ -178,19 +161,21 @@ recalculate_manifest_id_for_restricted_rev(parent_map const & old_rosters,
   editable_roster_base er(restricted_roster, nis);
   safe_get(edges, rid)->apply_to(er);
 
+  revision_t rev;
   calculate_ident(restricted_roster, rev.new_manifest);
-  rev.edges = edges;
+  rev.edges = move(edges);
 
   if (global_sanity.debug_p())
     L(FL("new manifest_id is %s")
       % rev.new_manifest);
+
+  return rev;
 }
 
-void
+revision_t
 make_restricted_revision(parent_map const & old_rosters,
                          roster_t const & new_roster,
-                         node_restriction const & mask,
-                         revision_t & rev)
+                         node_restriction const & mask)
 {
   edge_map edges;
   for (parent_map::const_iterator i = old_rosters.begin();
@@ -206,14 +191,14 @@ make_restricted_revision(parent_map const & old_rosters,
       safe_insert(edges, make_pair(parent_id(i), included));
     }
 
-  recalculate_manifest_id_for_restricted_rev(old_rosters, edges, rev);
+  return recalculate_manifest_id_for_restricted_rev(old_rosters,
+                                                    move(edges));
 }
 
-void
+revision_t
 make_restricted_revision(parent_map const & old_rosters,
                          roster_t const & new_roster,
                          node_restriction const & mask,
-                         revision_t & rev,
                          cset & excluded,
                          utf8 const & cmd_name)
 {
@@ -239,47 +224,45 @@ make_restricted_revision(parent_map const & old_rosters,
     F("the command '%s %s' cannot be restricted in a two-parent workspace")
     % prog_name % cmd_name);
 
-  recalculate_manifest_id_for_restricted_rev(old_rosters, edges, rev);
+  return recalculate_manifest_id_for_restricted_rev(old_rosters,
+                                                    move(edges));
 }
 
 // Workspace-only revisions, with fake rev.new_manifest and content
 // changes suppressed.
-void
+revision_t
 make_revision_for_workspace(revision_id const & old_rev_id,
-                            cset const & changes,
-                            revision_t & rev)
+                            cset && changes)
 {
   MM(old_rev_id);
   MM(changes);
-  MM(rev);
-  shared_ptr<cset> cs(new cset(changes));
+  shared_ptr<cset> cs(new cset(move(changes)));
   cs->deltas_applied.clear();
 
-  rev.edges.clear();
+  revision_t rev;
+  MM(rev);
   safe_insert(rev.edges, make_pair(old_rev_id, cs));
   rev.new_manifest = manifest_id(fake_id());
   rev.made_for = made_for_workspace;
+  return rev;
 }
 
-void
+revision_t
 make_revision_for_workspace(revision_id const & old_rev_id,
                             roster_t const & old_roster,
-                            roster_t const & new_roster,
-                            revision_t & rev)
+                            roster_t const & new_roster)
 {
   MM(old_rev_id);
   MM(old_roster);
   MM(new_roster);
-  MM(rev);
   cset changes;
   make_cset(old_roster, new_roster, changes);
-  make_revision_for_workspace(old_rev_id, changes, rev);
+  return make_revision_for_workspace(old_rev_id, move(changes));
 }
 
-void
+revision_t
 make_revision_for_workspace(parent_map const & old_rosters,
-                            roster_t const & new_roster,
-                            revision_t & rev)
+                            roster_t const & new_roster)
 {
   edge_map edges;
   for (parent_map::const_iterator i = old_rosters.begin();
@@ -292,9 +275,11 @@ make_revision_for_workspace(parent_map const & old_rosters,
       safe_insert(edges, make_pair(parent_id(i), cs));
     }
 
-  rev.edges = edges;
+  revision_t rev;
+  rev.edges = move(edges);
   rev.new_manifest = manifest_id(fake_id());
   rev.made_for = made_for_workspace;
+  return rev;
 }
 
 // i/o stuff

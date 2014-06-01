@@ -34,8 +34,8 @@ namespace basic_io
 
 // full definitions in cset.hh
 typedef u32 node_id;
-struct cset;
-struct editable_tree;
+class cset;
+class editable_tree;
 
 const node_id first_temp_node = 1U << (sizeof(node_id) * 8 - 1);
 inline bool temp_node(node_id n)

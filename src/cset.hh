@@ -18,8 +18,11 @@
 // destructively; this may be the filesystem or an in-memory
 // representation (a roster / mfest).
 
-struct editable_tree
+class editable_tree
 {
+public:
+
+public:
   // Detaching existing nodes (for renaming or deleting)
   virtual node_id detach_node(file_path const & src) = 0;
   virtual void drop_detached_node(node_id nid) = 0;
@@ -47,8 +50,13 @@ struct editable_tree
 
 // In-memory representation of a change set.
 
-struct cset
+class cset
 {
+public:
+  cset() = default;
+  cset(cset const &) = delete;
+  cset(cset &&) = default;
+
   // Deletions.
   std::set<file_path> nodes_deleted;
 

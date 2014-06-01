@@ -46,17 +46,23 @@ class path_restriction;
 
 enum made_for { made_for_nobody, made_for_workspace, made_for_database };
 
-struct
+class
 revision_t : public origin_aware
 {
+public:
+  revision_t() : made_for(made_for_nobody) {}
+
+  // moveable, not copyable
+  revision_t(revision_t && other) = default;
+  revision_t(revision_t const &) = delete;
+  revision_t & operator=(revision_t && other) = default;
+
   void check_sane() const;
   bool is_merge_node() const;
   // trivial revisions are ones that have no effect -- e.g., commit should
   // refuse to commit them, saying that there are no changes to commit.
   bool is_nontrivial() const;
-  revision_t() : made_for(made_for_nobody) {}
-  revision_t(revision_t const & other);
-  revision_t const & operator=(revision_t const & other);
+
   manifest_id new_manifest;
   edge_map edges;
   // workspace::put_work_rev refuses to apply a rev that doesn't have this
@@ -184,55 +190,47 @@ select_nodes_modified_by_rev(database & db,
                              roster_t const roster,
                              std::set<node_id> & nodes_modified);
 
-void
+revision_t
 make_revision(revision_id const & old_rev_id,
               roster_t const & old_roster,
-              roster_t const & new_roster,
-              revision_t & rev);
+              roster_t const & new_roster);
 
-void
+revision_t
 make_revision(parent_map const & old_rosters,
-              roster_t const & new_roster,
-              revision_t & rev);
+              roster_t const & new_roster);
 
 // This overload takes a base roster and a changeset instead.
-void
+revision_t
 make_revision(revision_id const & old_rev_id,
               roster_t const & old_roster,
-              cset const & changes,
-              revision_t & rev);
+              cset && changes);
 
 // These functions produce a faked "new_manifest" id and discard all
 // content-only changes from the cset.  They are only to be used to
 // construct a revision that will be written to the workspace.  Don't use
 // them for revisions written to the database or presented to the user.
-void
+revision_t
 make_revision_for_workspace(revision_id const & old_rev_id,
-                            cset const & changes,
-                            revision_t & rev);
+                            cset && changes);
 
-void
+revision_t
 make_revision_for_workspace(revision_id const & old_rev_id,
                             roster_t const & old_roster,
-                            roster_t const & new_roster,
-                            revision_t & rev);
+                            roster_t const & new_roster);
 
-void
+revision_t
 make_revision_for_workspace(parent_map const & old_rosters,
-                            roster_t const & new_roster,
-                            revision_t & rev);
+                            roster_t const & new_roster);
 
-void
+revision_t
+make_restricted_revision(parent_map const & old_rosters,
+                         roster_t const & new_roster,
+                         node_restriction const & mask);
+
+revision_t
 make_restricted_revision(parent_map const & old_rosters,
                          roster_t const & new_roster,
                          node_restriction const & mask,
-                         revision_t & rev);
-
-void
-make_restricted_revision(parent_map const & old_rosters,
-                         roster_t const & new_roster,
-                         node_restriction const & mask,
-                         revision_t & rev,
                          cset & excluded,
                          utf8 const & cmd_name);
 

@@ -302,9 +302,9 @@ update(app_state & app,
   work.get_current_roster_shape(db, nis, *working_roster);
   work.update_current_roster_from_filesystem(*working_roster);
 
-  revision_t working_rev;
+  revision_t working_rev = make_revision_for_workspace(parents,
+                                                       *working_roster);
   revision_id working_rid;
-  make_revision_for_workspace(parents, *working_roster, working_rev);
   calculate_ident(working_rev, working_rid);
 
   // Get the CHOSEN roster
@@ -341,9 +341,8 @@ update(app_state & app,
   work.perform_content_update(*working_roster, merged_roster, update, wca, true,
                               app.opts.move_conflicting_paths);
 
-  revision_t remaining;
-  make_revision_for_workspace(chosen_rid, chosen_roster,
-                              merged_roster, remaining);
+  revision_t remaining
+    = make_revision_for_workspace(chosen_rid, chosen_roster, merged_roster);
 
   // small race condition here... FIXME: what is it?
   work.put_update_id(old_rid);
@@ -836,8 +835,8 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
     left_id = parent_id(parents.begin());
     left = parent_cached_roster(parents.begin());
 
-    revision_t working_rev;
-    make_revision_for_workspace(parents, *working_roster, working_rev);
+    revision_t working_rev
+      = make_revision_for_workspace(parents, *working_roster);
     calculate_ident(working_rev, working_rid);
   }
 
@@ -889,8 +888,8 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   safe_insert(parents, std::make_pair(left_id, left));
   safe_insert(parents, std::make_pair(right_id, right));
 
-  revision_t merged_rev;
-  make_revision_for_workspace(parents, merge_result.roster, merged_rev);
+  revision_t merged_rev
+    = make_revision_for_workspace(parents, merge_result.roster);
 
   // Note: the csets in merged_rev are _not_ suitable for submission to
   // perform_content_update, because content changes have been dropped.
@@ -1388,9 +1387,9 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   parent_map parents;
   work.get_parent_rosters(db, parents);
 
-  revision_t working_rev;
+  revision_t working_rev
+    = make_revision_for_workspace(parents, *working_roster);
   revision_id working_rid;
-  make_revision_for_workspace(parents, *working_roster, working_rev);
   calculate_ident(working_rev, working_rid);
 
   // Now do the merge
@@ -1432,9 +1431,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   P(F("applied changes to workspace"));
 
   // and record any remaining changes in _MTN/revision
-  revision_t remaining;
+  revision_t remaining = make_revision_for_workspace(parents, merged_roster);
   MM(remaining);
-  make_revision_for_workspace(parents, merged_roster, remaining);
 
   // small race condition here...
   work.put_work_rev(remaining);
