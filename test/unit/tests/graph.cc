@@ -61,12 +61,10 @@ make_random_reconstruction_graph(size_t num_nodes, size_t num_random_edges,
                                  randomizer & rng)
 {
   for (size_t i = 0; i != num_nodes; ++i)
-    {
-      id hash;
-      string s(lexical_cast<string>(i));
-      calculate_ident(data(s, origin::internal), hash);
-      all_nodes.push_back(hash);
-    }
+    all_nodes.push_back
+      (calculate_ident(data(string(lexical_cast<string>(i)),
+                            origin::internal)));
+
   // We put a single long chain of edges in, to make sure that everything is
   // reconstructable somehow.
   for (size_t i = 1; i != num_nodes; ++i)

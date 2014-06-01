@@ -230,8 +230,7 @@ check_rosters_manifest(database & db,
         }
       checked_rosters[*i].found = true;
 
-      manifest_id man_id;
-      calculate_ident(ros, man_id);
+      manifest_id man_id = calculate_ident(ros);
       checked_rosters[*i].man_id = man_id;
       found_manifests.insert(man_id);
 
@@ -361,11 +360,9 @@ check_revisions(database & db,
       checked_revisions[*i].parseable = true;
 
       // normalisation check
-      revision_id norm_ident;
       revision_data norm_data;
       write_revision(rev, norm_data);
-      calculate_ident(norm_data, norm_ident);
-      if (norm_ident == *i)
+      if (calculate_ident(norm_data) == *i)
           checked_revisions[*i].normalized = true;
 
       // roster checks
@@ -499,12 +496,9 @@ check_certs(database & db,
       checked.found_key = checked_keys[i->key].found;
 
       if (checked.found_key)
-        {
-          string signed_text;
-          i->signable_text(signed_text);
-          checked.good_sig
-            = (db.check_signature(i->key, signed_text, i->sig) == cert_ok);
-        }
+        checked.good_sig
+          = (db.check_signature(i->key, i->signable_text(), i->sig)
+             == cert_ok);
 
       checked_keys[i->key].sigs++;
       checked_revisions[i->ident].checked_certs.push_back(checked);

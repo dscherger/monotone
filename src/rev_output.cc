@@ -144,8 +144,7 @@ revision_summary(revision_t const & rev, utf8 & summary)
   // other format strings.
 
   ostringstream out;
-  revision_id rid;
-  calculate_ident(rev, rid);
+  revision_id rid = calculate_ident(rev);
 
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {

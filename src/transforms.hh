@@ -136,17 +136,13 @@ void unpack(base64< gzip<T> > const & in, T & out);
 
 // version (a.k.a. sha1 fingerprint) calculation
 
-void calculate_ident(data const & dat,
-                     id & ident);
+id calculate_ident(data const & dat);
 
-void calculate_ident(file_data const & dat,
-                     file_id & ident);
+file_id calculate_ident(file_data const & dat);
 
-void calculate_ident(manifest_data const & dat,
-                     manifest_id & ident);
+manifest_id calculate_ident(manifest_data const & dat);
 
-void calculate_ident(revision_data const & dat,
-                     revision_id & ident);
+revision_id calculate_ident(revision_data const & dat);
 
 #endif // __TRANSFORMS_HH__
 

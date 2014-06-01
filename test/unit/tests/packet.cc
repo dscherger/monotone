@@ -184,14 +184,12 @@ UNIT_TEST(roundabout)
 
     // an fdata packet
     file_data fdata(data("this is some file data"));
-    file_id fid;
-    calculate_ident(fdata, fid);
+    file_id fid = calculate_ident(fdata);
     pw.consume_file_data(fid, fdata);
 
     // an fdelta packet
     file_data fdata2(data("this is some file data which is not the same as the first one"));
-    file_id fid2;
-    calculate_ident(fdata2, fid2);
+    file_id fid2 = calculate_ident(fdata2);
     delta del;
     diff(fdata.inner(), fdata2.inner(), del);
     pw.consume_file_delta(fid, fid2, file_delta(del));
@@ -206,8 +204,7 @@ UNIT_TEST(roundabout)
       "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", origin::internal), cs));
     revision_data rdat;
     write_revision(rev, rdat);
-    revision_id rid;
-    calculate_ident(rdat, rid);
+    revision_id rid = calculate_ident(rdat);
     pw.consume_revision_data(rid, rdat);
 
     // a cert packet

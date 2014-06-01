@@ -495,7 +495,7 @@ insert_into_db(database & db, data const & curr_data,
   }
   delta del;
   diff(curr_data, next_data, del);
-  calculate_ident(file_data(next_data), next_id);
+  next_id = calculate_ident(file_data(next_data));
   rcs_put_raw_file_edge(db, next_id, curr_id, del);
 }
 
@@ -677,10 +677,9 @@ import_rcs_file_with_cvs(database & db, string const & filename,
     I(r.deltatexts.find(r.admin.head) != r.deltatexts.end());
     I(r.deltas.find(r.admin.head) != r.deltas.end());
 
-    file_id fid;
     file_data dat(r.deltatexts.find(r.admin.head)->second->text,
                   origin::user);
-    calculate_ident(dat, fid);
+    file_id fid = calculate_ident(dat);
 
     cvs.set_filename(filename);
     cvs.index_branchpoint_symbols (r);
@@ -1451,12 +1450,11 @@ cluster_consumer::consume_cluster(cvs_cluster const & c)
   build_cset(c, *cs);
 
   cs->apply_to(editable_ros);
-  manifest_id child_mid;
-  calculate_ident(ros, child_mid);
+  manifest_id child_mid = calculate_ident(ros);
   rev->made_for = made_for_database;
   rev->new_manifest = child_mid;
   rev->edges.insert(make_pair(parent_rid, cs));
-  calculate_ident(*rev, child_rid);
+  child_rid = calculate_ident(*rev);
 
   preps.push_back(prepared_revision(child_rid, rev, c));
 

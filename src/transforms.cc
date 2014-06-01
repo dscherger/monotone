@@ -257,15 +257,14 @@ template void unpack<delta>(base64< gzip<delta> > const &, delta &);
 
 // identifier (a.k.a. sha1 signature) calculation
 
-void
-calculate_ident(data const & dat,
-                id & ident)
+id
+calculate_ident(data const & dat)
 {
   static cached_botan_pipe p(new Pipe(new Hash_Filter("SHA-160")));
   try
     {
       p->process_msg(dat());
-      ident = id(p->read_all_as_string(Pipe::LAST_MESSAGE), dat.made_from);
+      return id(p->read_all_as_string(Pipe::LAST_MESSAGE), dat.made_from);
     }
   catch (std::exception & e)
     {
@@ -274,31 +273,22 @@ calculate_ident(data const & dat,
     }
 }
 
-void
-calculate_ident(file_data const & dat,
-                file_id & ident)
+file_id
+calculate_ident(file_data const & dat)
 {
-  id tmp;
-  calculate_ident(dat.inner(), tmp);
-  ident = file_id(tmp);
+  return file_id(calculate_ident(dat.inner()));
 }
 
-void
-calculate_ident(manifest_data const & dat,
-                manifest_id & ident)
+manifest_id
+calculate_ident(manifest_data const & dat)
 {
-  id tmp;
-  calculate_ident(dat.inner(), tmp);
-  ident = manifest_id(tmp);
+  return manifest_id(calculate_ident(dat.inner()));
 }
 
-void
-calculate_ident(revision_data const & dat,
-                revision_id & ident)
+revision_id
+calculate_ident(revision_data const & dat)
 {
-  id tmp;
-  calculate_ident(dat.inner(), tmp);
-  ident = revision_id(tmp);
+  return revision_id(calculate_ident(dat.inner()));
 }
 
 

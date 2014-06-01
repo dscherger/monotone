@@ -1348,8 +1348,7 @@ database::fix_bad_certs(bool drop_not_fixable)
           ++tick_bad;
           ++num_bad;
           bool fixed = false;
-          string signable;
-          c.signable_text(signable);
+          string signable = c.signable_text();
           for (vector<key_id>::const_iterator key_iter = all_keys.begin();
                key_iter != all_keys.end(); ++key_iter)
             {
@@ -1359,9 +1358,7 @@ database::fix_bad_certs(bool drop_not_fixable)
                   key_name candidate_name;
                   rsa_pub_key junk;
                   get_pubkey(keyid, candidate_name, junk);
-                  id chk_id;
-                  c.hash_code(candidate_name, chk_id);
-                  if (chk_id == certid)
+                  if (c.hash_code(candidate_name) == certid)
                     {
                       imp->execute(query("UPDATE revision_certs SET keypair_id = ? WHERE hash = ?")
                                    % blob(keyid.inner()()) % blob(certid()));
@@ -1896,8 +1893,7 @@ database_impl::get_roster_base(revision_id const & ident,
   fetch(res, 2, one_row, q % blob(ident.inner()()));
 
   id checksum(res[0][0], origin::database);
-  id calculated;
-  calculate_ident(data(res[0][1], origin::database), calculated);
+  id calculated = calculate_ident(data(res[0][1], origin::database));
   E(calculated == checksum, origin::database,
     F("roster does not match hash"));
 
@@ -1917,8 +1913,7 @@ database_impl::get_roster_delta(id const & ident,
   fetch(res, 2, one_row, q % blob(ident()) % blob(base()));
 
   id checksum(res[0][0], origin::database);
-  id calculated;
-  calculate_ident(data(res[0][1], origin::database), calculated);
+  id calculated = calculate_ident(data(res[0][1], origin::database));
   E(calculated == checksum, origin::database,
     F("roster_delta does not match hash"));
 
@@ -1937,8 +1932,7 @@ database_impl::write_delayed_file(file_id const & ident,
 
   // ident is a hash, which we should check
   I(!null_id(ident));
-  file_id tid;
-  calculate_ident(dat, tid);
+  file_id tid = calculate_ident(dat);
   MM(ident);
   MM(tid);
   I(tid == ident);
@@ -1959,8 +1953,7 @@ database_impl::write_delayed_roster(revision_id const & ident,
 
   // ident is a number, and we should calculate a checksum on what
   // we write
-  id checksum;
-  calculate_ident(typecast_vocab<data>(dat_packed), checksum);
+  id checksum = calculate_ident(typecast_vocab<data>(dat_packed));
 
   // and then write it
   execute(query("INSERT INTO rosters (id, checksum, data) VALUES (?, ?, ?)")
@@ -2009,9 +2002,7 @@ database_impl::put_roster_delta(revision_id const & ident,
   gzip<delta> del_packed;
   encode_gzip(del.inner(), del_packed);
 
-  id checksum;
-  calculate_ident(typecast_vocab<data>(del_packed), checksum);
-
+  id checksum = calculate_ident(typecast_vocab<data>(del_packed));
   query q("INSERT INTO roster_deltas (id, base, checksum, delta) VALUES (?, ?, ?, ?)");
   execute(q
           % blob(ident.inner()())
@@ -2102,9 +2093,7 @@ database_impl::get_version(id const & ident,
   appl->finish(tmp);
   dat = data(tmp, origin::database);
 
-  id final;
-  calculate_ident(dat, final);
-  E(final == ident, origin::database,
+  E(calculate_ident(dat) == ident, origin::database,
     F("delta-reconstructed '%s' item does not match hash")
     % data_table);
 
@@ -2319,8 +2308,8 @@ database::get_roster_version(revision_id const & ros_id,
   // this is the only thing that can catch it.
   roster->check_sane_against(*marking);
   manifest_id expected_mid, actual_mid;
+  actual_mid = calculate_ident(*roster);
   get_revision_manifest(ros_id, expected_mid);
-  calculate_ident(*roster, actual_mid);
   I(expected_mid == actual_mid);
 
   // const'ify the objects, to save them and pass them out
@@ -2859,12 +2848,8 @@ database::get_revision(revision_id const & id,
   decode_gzip(gzdata,rdat);
 
   // verify that we got a revision with the right id
-  {
-    revision_id tmp;
-    calculate_ident(revision_data(rdat), tmp);
-    E(id == tmp, origin::database,
-      F("revision does not match hash"));
-  }
+  E(id == calculate_ident(revision_data(rdat)), origin::database,
+    F("revision does not match hash"));
 
   dat = revision_data(rdat);
 }
@@ -3158,11 +3143,9 @@ database::put_roster_for_revision(revision_id const & new_id,
   // to the db
   shared_ptr<roster_t> ros_writeable(new roster_t); MM(*ros_writeable);
   shared_ptr<marking_map> mm_writeable(new marking_map); MM(*mm_writeable);
-  manifest_id roster_manifest_id;
-  MM(roster_manifest_id);
   make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable);
-  calculate_ident(*ros_writeable, roster_manifest_id, false);
-  E(rev.new_manifest == roster_manifest_id, rev.made_from,
+  E(rev.new_manifest == calculate_ident(*ros_writeable, false),
+    rev.made_from,
     F("revision contains incorrect manifest_id"));
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
@@ -3392,8 +3375,7 @@ database::put_key(key_name const & pub_id,
 {
   MM(pub_id);
   MM(pub);
-  key_id thash;
-  key_hash_code(pub_id, pub, thash);
+  key_id thash = key_hash_code(pub_id, pub);
 
   if (public_key_exists(thash))
     {
@@ -3527,9 +3509,7 @@ database::check_signature(key_id const & id,
 cert_status
 database::check_cert(cert const & t)
 {
-  string signed_text;
-  t.signable_text(signed_text);
-  return check_signature(t.key, signed_text, t.sig);
+  return check_signature(t.key, t.signable_text(), t.sig);
 }
 
 // cert management
@@ -3566,8 +3546,7 @@ database_impl::put_cert(cert const & t,
         % blob(t.key.inner()()));
   key_name keyname(res[0][0], origin::database);
 
-  id thash;
-  t.hash_code(keyname, thash);
+  id thash = t.hash_code(keyname);
   rsa_sha1_signature sig;
 
   string insert = "INSERT INTO " + table + " VALUES(?, ?, ?, ?, ?, ?)";
@@ -4124,8 +4103,7 @@ namespace {
           }
         else
           {
-            string txt;
-            out.signable_text(txt);
+            string txt = out.signable_text();
             for (set<key_id>::const_iterator b = i->second.bad_sigs.begin();
                  b != i->second.bad_sigs.end(); ++b)
               {
@@ -4471,8 +4449,7 @@ database::epoch_exists(epoch_id const & eid)
 void
 database::set_epoch(branch_name const & branch, epoch_data const & epo)
 {
-  epoch_id eid;
-  epoch_hash_code(branch, epo, eid);
+  epoch_id eid = epoch_hash_code(branch, epo);
   I(epo.inner()().size() == constants::epochlen_bytes);
   imp->execute(query("INSERT OR REPLACE INTO branch_epochs VALUES(?, ?, ?)")
                % blob(eid.inner()())

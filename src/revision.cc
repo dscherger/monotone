@@ -80,7 +80,7 @@ make_revision(revision_id const & old_rev_id,
   shared_ptr<cset> cs(new cset(old_roster, new_roster));
 
   revision_t rev;
-  calculate_ident(new_roster, rev.new_manifest);
+  rev.new_manifest = calculate_ident(new_roster);
 
   if (global_sanity.debug_p())
     L(FL("new manifest_id is %s")
@@ -107,7 +107,7 @@ make_revision(revision_id const & old_rev_id,
   shared_ptr<cset> cs(new cset(move(changes)));
 
   revision_t rev;
-  calculate_ident(new_roster, rev.new_manifest);
+  rev.new_manifest = calculate_ident(new_roster);
 
   if (global_sanity.debug_p())
     L(FL("new manifest_id is %s")
@@ -134,7 +134,7 @@ make_revision(parent_map const & old_rosters,
 
   revision_t rev;
   rev.edges = move(edges);
-  calculate_ident(new_roster, rev.new_manifest);
+  rev.new_manifest = calculate_ident(new_roster);
 
   if (global_sanity.debug_p())
     L(FL("new manifest_id is %s")
@@ -159,7 +159,7 @@ recalculate_manifest_id_for_restricted_rev(parent_map const & old_rosters,
   safe_get(edges, rid)->apply_to(er);
 
   revision_t rev;
-  calculate_ident(restricted_roster, rev.new_manifest);
+  rev.new_manifest = calculate_ident(restricted_roster);
   rev.edges = move(edges);
 
   if (global_sanity.debug_p())
@@ -426,14 +426,12 @@ write_revision(revision_t const & rev,
   dat = revision_data(d);
 }
 
-void calculate_ident(revision_t const & cs,
-                     revision_id & ident)
+revision_id
+calculate_ident(revision_t const & rev)
 {
   data tmp;
-  id tid;
-  write_revision(cs, tmp);
-  calculate_ident(tmp, tid);
-  ident = revision_id(tid);
+  write_revision(rev, tmp);
+  return revision_id(calculate_ident(tmp));
 }
 
 // Local Variables:

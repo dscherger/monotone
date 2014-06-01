@@ -18,8 +18,8 @@ void read_epoch(std::string const & in,
                 branch_name & branch, epoch_data & epoch);
 void write_epoch(branch_name const & branch, epoch_data const & epoch,
                  std::string & out);
-void epoch_hash_code(branch_name const & branch, epoch_data const & epoch,
-                     epoch_id & eid);
+epoch_id epoch_hash_code(branch_name const & branch,
+                         epoch_data const & epoch);
 
 #endif
 

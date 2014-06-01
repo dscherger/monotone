@@ -456,13 +456,12 @@ ident_existing_file(file_path const & p, file_id & ident, path::status status)
       return false;
     }
 
-  calculate_ident(p, ident);
+  ident = calculate_ident(p);
   return true;
 }
 
-void
-calculate_ident(file_path const & file,
-                file_id & ident)
+file_id
+calculate_ident(file_path const & file)
 {
   // no conversions necessary, use streaming form
   static cached_botan_pipe
@@ -473,8 +472,8 @@ calculate_ident(file_path const & file,
   Botan::DataSource_Stream infile(file.as_external(), true);
   p->process_msg(infile);
 
-  ident = file_id(p->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
-                  origin::internal);
+  return file_id(p->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
+                 origin::internal);
 }
 
 // Local Variables:

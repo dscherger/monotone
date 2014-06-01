@@ -30,15 +30,15 @@ UNIT_TEST(calculate_ident)
 {
   data input(string("the only blender which can be turned into the most powerful vaccum cleaner"),
              origin::internal);
-  id output;
   string ident("86e03bdb3870e2a207dfd0dcbfd4c4f2e3bc97bd");
-  calculate_ident(input, output);
+  id output = calculate_ident(input);
   UNIT_TEST_CHECK(output() == decode_hexenc(ident, origin::internal));
 }
 
 UNIT_TEST(corruption_check)
 {
-  data input(string("i'm so fragile, fragile when you're here"), origin::internal);
+  data input(string("i'm so fragile, fragile when you're here"),
+             origin::internal);
   gzip<data> gzd;
   encode_gzip(input, gzd);
 

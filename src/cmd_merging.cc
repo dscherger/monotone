@@ -304,8 +304,7 @@ update(app_state & app,
 
   revision_t working_rev = make_revision_for_workspace(parents,
                                                        *working_roster);
-  revision_id working_rid;
-  calculate_ident(working_rev, working_rid);
+  revision_id working_rid = calculate_ident(working_rev);
 
   // Get the CHOSEN roster
   roster_t chosen_roster; MM(chosen_roster);
@@ -834,9 +833,8 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
     left_id = parent_id(parents.begin());
     left = parent_cached_roster(parents.begin());
 
-    revision_t working_rev
-      = make_revision_for_workspace(parents, *working_roster);
-    calculate_ident(working_rev, working_rid);
+    working_rid = calculate_ident
+      (make_revision_for_workspace(parents, *working_roster));
   }
 
   complete(app.opts, app.lua, project, idx(args, 0)(), right_id);
@@ -1385,10 +1383,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   parent_map parents;
   work.get_parent_rosters(db, parents);
 
-  revision_t working_rev
-    = make_revision_for_workspace(parents, *working_roster);
-  revision_id working_rid;
-  calculate_ident(working_rev, working_rid);
+  revision_id working_rid = calculate_ident
+    (make_revision_for_workspace(parents, *working_roster));
 
   // Now do the merge
   roster_merge_result result;

@@ -1395,9 +1395,7 @@ editable_working_tree::apply_delta(file_path const & pth,
   require_path_is_file(pth,
                        F("file '%s' does not exist") % pth,
                        F("file '%s' is a directory") % pth);
-  file_id curr_id;
-  calculate_ident(pth, curr_id);
-  E(curr_id == old_id, origin::system,
+  E(calculate_ident(pth) == old_id, origin::system,
     F("content of file '%s' has changed, not overwriting") % pth);
   P(F("updating '%s'") % pth);
 

@@ -990,8 +990,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
         key_name keyid;
         rsa_pub_key pub;
         read_pubkey(dat, keyid, pub);
-        key_id tmp;
-        key_hash_code(keyid, pub, tmp);
+        key_id tmp = key_hash_code(keyid, pub);
         if (! (tmp.inner() == item))
           {
             throw bad_decode(F("hash check failed for public key '%s' (%s);"
@@ -1039,10 +1038,10 @@ netsync_session::process_data_cmd(netcmd_item_type type,
             key_name keyname;
             rsa_pub_key junk;
             project.db.get_pubkey(c.key, keyname, junk);
-            id tmp;
-            c.hash_code(keyname, tmp);
+            id tmp = c.hash_code(keyname);
             if (! (tmp == item))
-              throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
+              throw bad_decode(F("hash check failed for revision cert '%s'")
+                               % hitem());
             if (project.db.put_revision_cert(c))
               counts->certs_in.add_item(c);
           }
@@ -1053,9 +1052,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
       {
         L(FL("received revision '%s'") % hitem());
         data d(dat, origin::network);
-        id tmp;
-        calculate_ident(d, tmp);
-        if (!(tmp == item))
+        if (!(calculate_ident(d) == item))
           throw bad_decode(F("hash check failed for revision %s") % item);
         revision_t rev;
         read_revision(d, rev);
@@ -1068,9 +1065,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
       {
         L(FL("received file '%s'") % hitem());
         data d(dat, origin::network);
-        id tmp;
-        calculate_ident(d, tmp);
-        if (!(tmp == item))
+        if (!(calculate_ident(d) == item))
           throw bad_decode(F("hash check failed for file %s") % item);
         project.db.put_file(file_id(item),
                             file_data(d));
@@ -1416,8 +1411,7 @@ netsync_session::rebuild_merkle_trees(set<branch_name> const & branchnames)
         // Then insert all epochs into merkle tree.
         j = epochs.find(branch);
         I(j != epochs.end());
-        epoch_id eid;
-        epoch_hash_code(j->first, j->second, eid);
+        epoch_id eid = epoch_hash_code(j->first, j->second);
         epoch_refiner.note_local_item(eid.inner());
       }
   }

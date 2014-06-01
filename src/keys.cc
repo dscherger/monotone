@@ -218,16 +218,13 @@ cache_user_key(options const & opts,
   get_user_key(opts, lua, project.db, keys, project, key);
 }
 
-void
+key_id
 key_hash_code(key_name const & ident,
-              rsa_pub_key const & pub,
-              key_id & out)
+              rsa_pub_key const & pub)
 {
   data tdat(ident() + ":" + remove_ws(encode_base64(pub)()),
             origin::internal);
-  id tmp;
-  calculate_ident(tdat, tmp);
-  out = key_id(tmp);
+  return key_id(calculate_ident(tdat));
 }
 
 // helper to compare if two keys have the same hash
@@ -238,10 +235,7 @@ keys_match(key_name const & id1,
            key_name const & id2,
            rsa_pub_key const & key2)
 {
-  key_id hash1, hash2;
-  key_hash_code(id1, key1, hash1);
-  key_hash_code(id2, key2, hash2);
-  return hash1 == hash2;
+  return key_hash_code(id1, key1) == key_hash_code(id2, key2);
 }
 
 // Local Variables:

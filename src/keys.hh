@@ -70,10 +70,9 @@ load_key_pair(key_store & keys,
 
 // netsync stuff
 
-void
+key_id
 key_hash_code(key_name const & ident,
-              rsa_pub_key const & pub,
-              key_id & out);
+              rsa_pub_key const & pub);
 
 bool
 keys_match(key_name const & id1,

@@ -49,11 +49,11 @@ UNIT_TEST(short_message)
   int failures = 0;
   for (int i = 0; short_message_in[i]; i++)
     {
-      data input(decode_hexenc_as<data>(short_message_in[i], origin::internal));
-      id expect(decode_hexenc_as<id>(short_message_out[i], origin::internal));
-      id output;
-
-      calculate_ident(input, output);
+      data input(decode_hexenc_as<data>(short_message_in[i],
+                                        origin::internal));
+      id expect(decode_hexenc_as<id>(short_message_out[i],
+                                     origin::internal));
+      id output = calculate_ident(input);
       if (expect != output)
         {
           hexenc<id> houtput, hexpect;
@@ -73,11 +73,11 @@ UNIT_TEST(long_message)
   int failures = 0;
   for (int i = 0; long_message_in[i]; i++)
     {
-      data input(decode_hexenc_as<data>(long_message_in[i], origin::internal));
-      id expect(decode_hexenc_as<id>(long_message_out[i], origin::internal));
-      id output;
-
-      calculate_ident(input, output);
+      data input(decode_hexenc_as<data>(long_message_in[i],
+                                        origin::internal));
+      id expect(decode_hexenc_as<id>(long_message_out[i],
+                                     origin::internal));
+      id output = calculate_ident(input);
       if (expect != output)
         {
           hexenc<id> houtput, hexpect;
@@ -108,7 +108,7 @@ UNIT_TEST(pseudo_message)
       for (int i = 3; i < 1003; i++)
         {
           data msg(MD[i-3] + MD[i-2] + MD[i-1], origin::internal);
-          calculate_ident(msg, output);
+          output = calculate_ident(msg);
           MD[i] = output();
         }
 

@@ -811,18 +811,19 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
               }
           }
 
-          // Now knit the parent node IDs into child node IDs (which are currently all
-          // tmpids), wherever possible.
-          fixup_node_identities(parent_rosters, child_roster, node_to_renames[child]);
+          // Now knit the parent node IDs into child node IDs (which are
+          // currently all tmpids), wherever possible.
+          fixup_node_identities(parent_rosters, child_roster,
+                                node_to_renames[child]);
 
           revision_t rev;
-          rev.made_for = made_for_database;
           MM(rev);
-          calculate_ident(child_roster, rev.new_manifest);
+          rev.made_for = made_for_database;
+          rev.new_manifest = calculate_ident(child_roster);
 
-          // For each parent, construct an edge in the revision structure by analyzing the
-          // relationship between the parent roster and the child roster (and placing the
-          // result in a cset)
+          // For each parent, construct an edge in the revision structure by
+          // analyzing the relationship between the parent roster and the
+          // child roster (and placing the result in a cset)
 
           for (parent_roster_map::const_iterator i = parent_rosters.begin();
                i != parent_rosters.end(); ++i)
@@ -854,8 +855,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
           // Finally, put all this excitement into the database and save
           // the new_rid for use in the cert-writing pass.
 
-          revision_id new_rid;
-          calculate_ident(rev, new_rid);
+          revision_id new_rid = calculate_ident(rev);
           node_to_new_rev.insert(make_pair(child, new_rid));
           new_rev_to_node.insert(make_pair(new_rid, child));
 

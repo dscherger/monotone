@@ -56,8 +56,8 @@ public:
   bool operator<(cert const & other) const;
   bool operator==(cert const & other) const;
 
-  void hash_code(key_name const & keyname, id & out) const;
-  void signable_text(std::string & out) const;
+  id hash_code(key_name const & keyname) const;
+  std::string signable_text() const;
   void marshal_for_netio(key_name const & keyname, std::string & out) const;
   void marshal_for_netio_v6(key_name const & keyname, std::string & out) const;
 };

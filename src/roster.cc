@@ -3109,16 +3109,13 @@ write_manifest_of_roster(roster_t const & ros,
   dat = manifest_data(tmp);
 }
 
-void calculate_ident(roster_t const & ros,
-                     manifest_id & ident,
-                     bool do_sanity_check)
+manifest_id calculate_ident(roster_t const & ros,
+                            bool do_sanity_check)
 {
   manifest_data tmp;
   if (!ros.all_nodes().empty())
-    {
-      write_manifest_of_roster(ros, tmp, do_sanity_check);
-    }
-  calculate_ident(tmp, ident);
+    write_manifest_of_roster(ros, tmp, do_sanity_check);
+  return calculate_ident(tmp);
 }
 
 ////////////////////////////////////////////////////////////////////

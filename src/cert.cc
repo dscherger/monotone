@@ -69,8 +69,7 @@ read_cert(database & db, string const & in, cert & t,
   tmp.name = cert_name(name, origin::network);
   tmp.value = cert_value(val, origin::network);
   tmp.sig = rsa_sha1_signature(sig, origin::network);
-  string signable;
-  tmp.signable_text(signable);
+  string signable = tmp.signable_text();
 
   key_id keyid;
   switch(ver)
@@ -121,9 +120,8 @@ read_cert(database & db, string const & in, cert & t,
   rsa_pub_key junk;
   db.get_pubkey(tmp.key, keyname, junk);
 
-  id check;
-  tmp.hash_code(keyname, check);
-  if (!(check == hash))
+  id check = tmp.hash_code(keyname);
+  if (check != hash)
     throw bad_decode(F("calculated cert hash %s does not match %s")
                      % check % hash);
   t = tmp;
@@ -152,10 +150,7 @@ cert::cert(database & db, std::string const & s, origin::type m)
 void
 cert::marshal_for_netio(key_name const & keyname, string & out) const
 {
-  id hash;
-  hash_code(keyname, hash);
-
-  out.append(hash());
+  out.append(hash_code(keyname)());
   out.append(this->ident.inner()());
   insert_variable_length_string(this->name(), out);
   insert_variable_length_string(this->value(), out);
@@ -166,10 +161,7 @@ cert::marshal_for_netio(key_name const & keyname, string & out) const
 void
 cert::marshal_for_netio_v6(key_name const & keyname, string & out) const
 {
-  id hash;
-  hash_code(keyname, hash);
-
-  out.append(hash());
+  out.append(hash_code(keyname)());
   out.append(this->ident.inner()());
   insert_variable_length_string(this->name(), out);
   insert_variable_length_string(this->value(), out);
@@ -177,14 +169,14 @@ cert::marshal_for_netio_v6(key_name const & keyname, string & out) const
   insert_variable_length_string(this->sig(), out);
 }
 
-void
-cert::signable_text(string & out) const
+string
+cert::signable_text() const
 {
   base64<cert_value> val_encoded(encode_base64(this->value));
   string ident_encoded(encode_hexenc(this->ident.inner()(),
                                      this->ident.inner().made_from));
 
-  out.clear();
+  string out;
   out.reserve(4 + this->name().size() + ident_encoded.size()
               + val_encoded().size());
 
@@ -197,10 +189,11 @@ cert::signable_text(string & out) const
   out += ']';
 
   L(FL("cert: signable text %s") % out);
+  return out;
 }
 
-void
-cert::hash_code(key_name const & keyname, id & out) const
+id
+cert::hash_code(key_name const & keyname) const
 {
   base64<rsa_sha1_signature> sig_encoded(encode_base64(this->sig));
   base64<cert_value> val_encoded(encode_base64(this->value));
@@ -222,7 +215,7 @@ cert::hash_code(key_name const & keyname, id & out) const
   append_without_ws(tmp, sig_encoded());
 
   data tdat(tmp, origin::internal);
-  calculate_ident(tdat, out);
+  return calculate_ident(tdat);
 }
 
 // Local Variables:

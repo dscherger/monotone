@@ -46,11 +46,9 @@ CMD(fload, "fload", "", CMD_REF(debug), "",
   file_id f_id;
   file_data f_data(dat);
 
-  calculate_ident (f_data, f_id);
-
   database db(app);
   transaction_guard guard(db);
-  db.put_file(f_id, f_data);
+  db.put_file(calculate_ident(f_data), f_data);
   guard.commit();
 }
 
@@ -216,9 +214,7 @@ CMD(identify, "identify", "", CMD_REF(debug), N_("[PATH]"),
   else
     read_data_for_command_line(idx(args, 0), dat);
 
-  id ident;
-  calculate_ident(dat, ident);
-  cout << ident << '\n';
+  cout << calculate_ident(dat) << '\n';
 }
 
 // Name: identify
@@ -247,9 +243,7 @@ CMD_AUTOMATE(identify, N_("PATH"),
   data dat;
   read_data_for_command_line(path, dat);
 
-  id ident;
-  calculate_ident(dat, ident);
-  output << ident << '\n';
+  output << calculate_ident(dat) << '\n';
 }
 
 static void

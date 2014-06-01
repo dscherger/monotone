@@ -62,7 +62,6 @@ public:
   // trivial revisions are ones that have no effect -- e.g., commit should
   // refuse to commit them, saying that there are no changes to commit.
   bool is_nontrivial() const;
-
   manifest_id new_manifest;
   edge_map edges;
   // workspace::put_work_rev refuses to apply a rev that doesn't have this
@@ -133,8 +132,8 @@ void
 write_revision(revision_t const & rev,
                revision_data & dat);
 
-void calculate_ident(revision_t const & cs,
-                     revision_id & ident);
+revision_id
+calculate_ident(revision_t const & rev);
 
 // sanity checking
 

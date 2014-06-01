@@ -296,8 +296,7 @@ sqlite3_sha1_fn_body(sqlite3_context *f, int nargs, sqlite3_value ** args,
         }
     }
 
-  id hash;
-  calculate_ident(data(tmp, origin::database), hash);
+  id hash = calculate_ident(data(tmp, origin::database));
   sqlite3_result_blob(f, hash().c_str(), hash().size(), SQLITE_TRANSIENT);
 }
 
@@ -1047,8 +1046,7 @@ calculate_schema_id(sqlite3 * db, string & ident)
       schema += boost::lexical_cast<string>(code);
     }
 
-  id tid;
-  calculate_ident(data(schema, origin::database), tid);
+  id tid = calculate_ident(data(schema, origin::database));
   ident = encode_hexenc(tid(), tid.made_from);
   L(FL("calculated schema id %s") % ident);
 }

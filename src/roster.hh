@@ -506,9 +506,8 @@ write_manifest_of_roster(roster_t const & ros,
                          bool do_sanity_check = true);
 
 
-void calculate_ident(roster_t const & ros,
-                     manifest_id & ident,
-                     bool do_sanity_check = true);
+manifest_id calculate_ident(roster_t const & ros,
+                            bool do_sanity_check = true);
 
 // for roster_delta
 

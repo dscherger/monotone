@@ -2868,8 +2868,7 @@ create_new_node(roster_t const &            parent_roster,
   read_data(*new_content, result_raw_data);
 
   file_data result_data = file_data(result_raw_data);
-  file_id result_fid;
-  calculate_ident(result_data, result_fid);
+  file_id result_fid = calculate_ident(result_data);
 
   // User could specify no changes in content
   if (result_fid != parent_fid)
@@ -2902,10 +2901,10 @@ replace_content(roster_t const &            parent_roster,
   read_data(*new_content, result_raw_data);
 
   file_data result_data = file_data(result_raw_data);
-  file_id result_fid;
-  calculate_ident(result_data, result_fid);
+  file_id result_fid = calculate_ident(result_data);
 
-  file_t result_node = downcast_to_file_t(result_roster.get_node_for_update(nid));
+  file_t result_node =
+    downcast_to_file_t(result_roster.get_node_for_update(nid));
   result_node->content = result_fid;
 
   // User could specify no changes in content
@@ -3187,9 +3186,10 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
         read_data(*resolution.content, result_raw_data);
 
         result_data = file_data(result_raw_data);
-        calculate_ident(result_data, result_fid);
+        result_fid = calculate_ident(result_data);
 
-        file_t result_node = downcast_to_file_t(result_roster.get_node_for_update(nid));
+        file_t result_node
+          = downcast_to_file_t(result_roster.get_node_for_update(nid));
         result_node->content = result_fid;
 
         adaptor.record_file(fid, result_fid, parent_data, result_data);
@@ -3349,9 +3349,11 @@ roster_merge_result::resolve_file_content_conflicts(lua_hooks & lua,
               read_data(*conflict.resolution.content, result_raw_data);
 
               result_data = file_data(result_raw_data);
-              calculate_ident(result_data, result_id);
+              result_id = calculate_ident(result_data);
 
-              file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.nid));
+              file_t result_node
+                = downcast_to_file_t(roster.get_node_for_update(
+                                       conflict.nid));
               result_node->content = result_id;
 
               adaptor.record_merge(conflict.left, conflict.right, result_id,

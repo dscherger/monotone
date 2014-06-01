@@ -334,7 +334,7 @@ content_merge_workspace_adaptor::get_version(file_id const & ident,
                            F("file '%s' does not exist in workspace") % i->second,
                            F("'%s' in workspace is a directory, not a file") % i->second);
       read_data(i->second, tmp);
-      calculate_ident(file_data(tmp), fid);
+      fid = calculate_ident(file_data(tmp));
       E(fid == ident, origin::system,
         F("file '%s' in workspace has id %s, wanted %s")
         % i->second
@@ -556,7 +556,7 @@ content_merger::try_auto_merge(file_path const & anc_path,
                          left_data, right_data, merge_data))
     {
       L(FL("internal 3-way merged ok"));
-      calculate_ident(merge_data, merged_id);
+      merged_id = calculate_ident(merge_data);
 
       adaptor.record_merge(left_id, right_id, merged_id,
                            left_data, right_data, merge_data);
@@ -624,7 +624,7 @@ content_merger::try_user_merge(file_path const & anc_path,
       file_data merge_data(merged_unpacked);
 
       L(FL("lua merge3 hook merged ok"));
-      calculate_ident(merge_data, merged_id);
+      merged_id = calculate_ident(merge_data);
 
       adaptor.record_merge(left_id, right_id, merged_id,
                            left_data, right_data, merge_data);
@@ -870,7 +870,7 @@ store_roster_merge_result(database & db,
   revision_t merged_rev;
   merged_rev.made_for = made_for_database;
 
-  calculate_ident(merged_roster, merged_rev.new_manifest);
+  merged_rev.new_manifest = calculate_ident(merged_roster);
 
   shared_ptr<cset> left_to_merged(new cset(left_roster, merged_roster));
   safe_insert(merged_rev.edges, make_pair(left_rid, left_to_merged));
@@ -880,7 +880,7 @@ store_roster_merge_result(database & db,
 
   revision_data merged_data;
   write_revision(merged_rev, merged_data);
-  calculate_ident(merged_data, merged_rid);
+  merged_rid = calculate_ident(merged_data);
   {
     transaction_guard guard(db);
 

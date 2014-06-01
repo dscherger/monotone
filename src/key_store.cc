@@ -155,8 +155,7 @@ namespace
     {
       L(FL("reading key pair '%s' from key store") % name);
 
-      key_id ident;
-      key_hash_code(name, kp.pub, ident);
+      key_id ident = key_hash_code(name, kp.pub);
       E(kss.put_key_pair_memory(full_key_info(ident, key_info(name, kp))),
         origin::system,
         F("key store has multiple copies of the key with id %s") % ident);
@@ -393,8 +392,7 @@ bool
 key_store::put_key_pair(key_name const & name,
                         keypair const & kp)
 {
-  key_id ident;
-  key_hash_code(name, kp.pub, ident);
+  key_id ident = key_hash_code(name, kp.pub);
   return s->put_key_pair(full_key_info(ident, key_info(name, kp)));
 }
 
@@ -438,8 +436,7 @@ struct key_delete_validator : public packet_consumer
                                 keypair const & kp)
   {
      L(FL("reading key pair '%s' from key store for validation") % name);
-     key_id ident;
-     key_hash_code(name, kp.pub, ident);
+     key_id ident = key_hash_code(name, kp.pub);
      E(ident == expected_ident, origin::user,
        F("expected key with id %s in key file '%s', got key with id %s")
          % expected_ident % file % ident);
@@ -784,8 +781,7 @@ key_store::create_key_pair(database & db,
       guard.commit();
     }
 
-  key_id hash;
-  key_hash_code(ident, kp.pub, hash);
+  key_id hash = key_hash_code(ident, kp.pub);
   if (maybe_hash)
     *maybe_hash = hash;
   if (create_mode == create_verbose)
@@ -1186,8 +1182,7 @@ key_store_state::migrate_old_key_pair
   if (!pub().empty() && !keys_match(id, pub, id, kp.pub))
     W(F("public and private keys for %s do not match") % id);
 
-  key_id hash;
-  key_hash_code(id, kp.pub, hash);
+  key_id hash = key_hash_code(id, kp.pub);
   put_key_pair(full_key_info(hash, key_info(id, kp)));
 }
 

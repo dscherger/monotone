@@ -1302,7 +1302,6 @@ CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
 {
   temp_node_id_source nis;
   revision_data dat;
-  revision_id ident;
 
   roster_t new_roster;
   parent_map old_rosters;
@@ -1323,10 +1322,9 @@ CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
                                             excluded, join_words(execid));
   rev.check_sane();
 
-  calculate_ident(rev, ident);
   write_revision(rev, dat);
 
-  L(FL("dumping revision %s") % ident);
+  L(FL("dumping revision %s") % calculate_ident(rev));
   output << dat;
 }
 
@@ -1388,9 +1386,7 @@ CMD_AUTOMATE(get_current_revision_id, "",
   work.get_parent_rosters(db, parents);
   revision_t rev = make_revision(parents, new_roster);
 
-  calculate_ident(rev, new_revision_id);
-
-  output << new_revision_id << '\n';
+  output << calculate_ident(rev) << '\n';
 }
 
 // Name: get_manifest_of
@@ -1445,7 +1441,6 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
     F("wrong argument count"));
 
   manifest_data dat;
-  manifest_id mid;
   roster_t new_roster;
 
   if (args.size() == 0)
@@ -1465,9 +1460,8 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
       db.get_roster(rid, new_roster);
     }
 
-  calculate_ident(new_roster, mid);
   write_manifest_of_roster(new_roster, dat);
-  L(FL("dumping manifest %s") % mid);
+  L(FL("dumping manifest %s") % calculate_ident(new_roster));
   output << dat;
 }
 
@@ -2083,14 +2077,13 @@ CMD_AUTOMATE(put_file, N_("[FILEID] CONTENTS"),
   if (args.size() == 1)
     {
       file_data dat = typecast_vocab<file_data>(idx(args, 0));
-      calculate_ident(dat, sha1sum);
-
+      sha1sum = calculate_ident(dat);
       db.put_file(sha1sum, dat);
     }
   else if (args.size() == 2)
     {
       file_data dat = typecast_vocab<file_data>(idx(args, 1));
-      calculate_ident(dat, sha1sum);
+      sha1sum = calculate_ident(dat);
       file_id base_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user));
       E(db.file_version_exists(base_id), origin::user,
         F("no file version %s found in database") % base_id);
@@ -2149,18 +2142,13 @@ CMD_AUTOMATE(put_revision, N_("REVISION-DATA"),
       e->second->apply_to(eros);
       if (null_id(rev.new_manifest))
         // first edge, initialize manifest
-        calculate_ident(new_roster, rev.new_manifest);
+        rev.new_manifest = calculate_ident(new_roster);
       else
         // following edge, make sure that all csets end at the same manifest
-        {
-          manifest_id calculated;
-          calculate_ident(new_roster, calculated);
-          I(calculated == rev.new_manifest);
-        }
+        I(calculate_ident(new_roster) == rev.new_manifest);
     }
 
-  revision_id id;
-  calculate_ident(rev, id);
+  revision_id id = calculate_ident(rev);
 
   // If the database refuses the revision, make sure this is because it's
   // already there.

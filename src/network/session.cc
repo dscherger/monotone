@@ -258,7 +258,8 @@ bool session::do_work(transaction_guard & guard)
 
                 if (use_transport_auth)
                   {
-                    key_hash_code(their_keyname, their_key, remote_peer_key_id);
+                    remote_peer_key_id = key_hash_code(their_keyname,
+                                                       their_key);
 
                     var_value printable_key_hash;
                     {

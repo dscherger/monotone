@@ -39,16 +39,12 @@ write_epoch(branch_name const & branch, epoch_data const & epoch,
   out += epoch.inner()();
 }
 
-void
-epoch_hash_code(branch_name const & branch, epoch_data const & epoch,
-                epoch_id & eid)
+epoch_id
+epoch_hash_code(branch_name const & branch, epoch_data const & epoch)
 {
   string tmp(branch() + ":" + encode_hexenc(epoch.inner()(),
                                             epoch.inner().made_from));
-  data tdat(tmp, origin::internal);
-  id out;
-  calculate_ident(tdat, out);
-  eid = epoch_id(out);
+  return epoch_id(calculate_ident(data(tmp, origin::internal)));
 }
 
 // Local Variables:

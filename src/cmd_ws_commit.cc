@@ -464,10 +464,8 @@ revert(app_state & app,
 
           if (file_exists(path))
             {
-              file_id ident;
-              calculate_ident(path, ident);
               // don't touch unchanged files
-              if (ident == f->content)
+              if (calculate_ident(path) == f->content)
                 {
                   L(FL("skipping unchanged %s") % path);
                   revert = false;
@@ -692,7 +690,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
     revision_data rdat;
 
     write_revision(rev_inverse, rdat);
-    calculate_ident(rdat, inv_id);
+    inv_id = calculate_ident(rdat);
     db.put_revision(inv_id, rdat);
 
     project.put_standard_certs_from_options(app.opts, app.lua, keys,
@@ -968,7 +966,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         throw;
     }
 
-  calculate_ident(rev, rid);
+  rid = calculate_ident(rev);
 
   set<branch_name> old_branches;
   get_old_branch_names(db, old_rosters, old_branches);
@@ -1544,8 +1542,7 @@ void perform_commit(app_state & app,
   set<branch_name> old_branches;
   get_old_branch_names(db, old_rosters, old_branches);
 
-  revision_id restricted_rev_id;
-  calculate_ident(restricted_rev, restricted_rev_id);
+  revision_id restricted_rev_id = calculate_ident(restricted_rev);
 
   // We need the 'if' because guess_branch will try to override any branch
   // picked up from _MTN/options.
@@ -1718,8 +1715,7 @@ void perform_commit(app_state & app,
                     db.get_file_version(old_content, old_data);
                     read_data(path, new_data);
                     // sanity check
-                    file_id tid;
-                    calculate_ident(file_data(new_data), tid);
+                    file_id tid = calculate_ident(file_data(new_data));
                     E(tid == new_content, origin::user,
                       F("file '%s' modified during commit, aborting")
                       % path);
@@ -1748,8 +1744,7 @@ void perform_commit(app_state & app,
                 data new_data;
                 read_data(path, new_data);
                 // sanity check
-                file_id tid;
-                calculate_ident(file_data(new_data), tid);
+                file_id tid = calculate_ident(file_data(new_data));
                 E(tid == new_content, origin::user,
                   F("file '%s' modified during commit, aborting")
                   % path);
