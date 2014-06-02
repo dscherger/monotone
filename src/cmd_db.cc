@@ -209,9 +209,7 @@ CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "REVID",
   if (workspace::found)
     {
       workspace work(app);
-      revision_t old_work_rev;
-      work.get_work_rev(old_work_rev);
-
+      revision_t old_work_rev = work.get_work_rev();
       for (edge_map::const_iterator i = old_work_rev.edges.begin();
            i != old_work_rev.edges.end(); i++)
         {
@@ -520,9 +518,7 @@ CMD(cleanup_workspace_list, "cleanup_workspace_list", "", CMD_REF(variables), ""
           continue;
         }
 
-      options workspace_opts;
-      workspace::get_options(workspace_path, workspace_opts);
-
+      options workspace_opts = workspace::get_options(workspace_path);
       system_path workspace_db_path;
       helper.get_database_path(workspace_opts, workspace_db_path);
 

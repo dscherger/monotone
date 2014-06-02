@@ -223,9 +223,7 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
   if (app.opts.revision.empty())
     {
       workspace work(app);
-      temp_node_id_source nis;
-
-      work.get_current_roster_shape(db, nis, roster);
+      roster = work.get_current_roster_shape(db);
     }
   else
     {
@@ -635,8 +633,7 @@ print_workspace_info(database & db, lua_hooks & lua,
           continue;
         }
 
-      options workspace_opts;
-      workspace::get_options(workspace_path, workspace_opts);
+      options workspace_opts = workspace::get_options(workspace_path);
 
       system_path workspace_db_path;
       helper.get_database_path(workspace_opts, workspace_db_path);
@@ -749,10 +746,7 @@ CMD(known, "known", "", CMD_REF(list), "",
   database db(app);
   workspace work(app);
 
-  roster_t new_roster;
-  temp_node_id_source nis;
-  work.get_current_roster_shape(db, nis, new_roster);
-
+  roster_t new_roster = work.get_current_roster_shape(db);
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude),
                         app.opts.depth,
@@ -840,17 +834,14 @@ CMD(missing, "missing", "", CMD_REF(list), "",
 {
   database db(app);
   workspace work(app);
-  temp_node_id_source nis;
-  roster_t current_roster_shape;
-  work.get_current_roster_shape(db, nis, current_roster_shape);
+
+  roster_t current_roster_shape = work.get_current_roster_shape(db);
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude),
                         app.opts.depth,
                         current_roster_shape, ignored_file(work));
 
-  set<file_path> missing;
-  work.find_missing(current_roster_shape, mask, missing);
-
+  set<file_path> missing = work.find_missing(current_roster_shape, mask);
   copy(missing.begin(), missing.end(),
        ostream_iterator<file_path>(cout, "\n"));
 }
@@ -864,13 +855,8 @@ CMD(changed, "changed", "", CMD_REF(list), "[PATH...]",
   database db(app);
   workspace work(app);
 
-  parent_map parents;
-  roster_t new_roster;
-  temp_node_id_source nis;
-  work.get_current_roster_shape(db, nis, new_roster);
-
-  work.get_parent_rosters(db, parents);
-
+  roster_t new_roster = work.get_current_roster_shape(db);
+  parent_map parents = work.get_parent_rosters(db);
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude),
                         app.opts.depth,

@@ -27,12 +27,11 @@ namespace {
     if (!workspace::found)
       return not_updatable;
     workspace work(app);
-    revision_t rev;
-    work.get_work_rev(rev);
+    revision_t rev = work.get_work_rev();
     if (rev.edges.size() != 1)
       return not_updatable;
     options workspace_opts;
-    work.get_options(workspace_opts);
+    work.append_options_to(workspace_opts);
     std::set<revision_id> heads;
     project.get_branch_heads(workspace_opts.branch, heads, false);
     

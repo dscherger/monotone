@@ -151,7 +151,7 @@ namespace commands {
     if ((subcmd ? subcmd : cmd)->use_workspace_options())
       {
         workspace::check_format();
-        workspace::get_options(app.opts);
+        workspace::append_options_to(app.opts);
       }
 
     optset.from_command_line(app.reset_info.cmdline_args);

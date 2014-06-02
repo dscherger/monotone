@@ -202,9 +202,7 @@ update(app_state & app,
   project_t project(db);
 
   // Figure out where we are
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
-
+  parent_map parents = work.get_parent_rosters(db);
   E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
@@ -299,7 +297,7 @@ update(app_state & app,
   shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
 
   MM(*working_roster);
-  work.get_current_roster_shape(db, nis, *working_roster);
+  *working_roster = work.get_current_roster_shape(db, nis);
   work.update_current_roster_from_filesystem(*working_roster);
 
   revision_t working_rev = make_revision_for_workspace(parents,
@@ -817,13 +815,11 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   revision_id working_rid;
 
   {
-    parent_map parents;
-    work.get_parent_rosters(db, parents);
+    parent_map parents = work.get_parent_rosters(db);
     E(parents.size() == 1, origin::user,
       F("this command can only be used in a single-parent workspace"));
 
-    temp_node_id_source nis;
-    work.get_current_roster_shape(db, nis, *working_roster);
+    *working_roster = work.get_current_roster_shape(db);
     work.update_current_roster_from_filesystem(*working_roster);
 
     E(parent_roster(parents.begin()) == *working_roster, origin::user,
@@ -1347,7 +1343,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   // Get the WORKING roster
   shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
   MM(*working_roster);
-  work.get_current_roster_shape(db, nis, *working_roster);
+  *working_roster = work.get_current_roster_shape(db, nis);
 
   work.update_current_roster_from_filesystem(*working_roster);
 
@@ -1380,9 +1376,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
     from_to_to.apply_to(editable_to_roster);
   }
 
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
-
+  parent_map parents = work.get_parent_rosters(db);
   revision_id working_rid = calculate_ident
     (make_revision_for_workspace(parents, *working_roster));
 
@@ -1432,9 +1426,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
 
   // add a note to the user log file about what we did
   {
-    utf8 log;
-    work.read_user_log(log);
-    std::string log_str = log();
+    std::string log_str = work.read_user_log()();
     if (!log_str.empty())
       log_str += "\n";
     if (from_to_to_excluded.empty())
@@ -1492,13 +1484,11 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
 
   if (args.empty())
     {
-      parent_map parents;
-      temp_node_id_source nis;
-      revision_id rid(fake_id());
-
       workspace work(app);
-      work.get_parent_rosters(db, parents);
-      work.get_current_roster_shape(db, nis, roster);
+
+      revision_id rid(fake_id());
+      parent_map parents = work.get_parent_rosters(db);
+      roster = work.get_current_roster_shape(db);
       work.update_current_roster_from_filesystem(roster);
 
       if (parents.empty())
