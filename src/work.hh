@@ -132,9 +132,9 @@ public:
   explicit workspace(lua_hooks & lua, i18n_format const & explanation);
 
   // Methods for manipulating the workspace's content.
-  void find_missing(roster_t const & new_roster_shape,
-                    node_restriction const & mask,
-                    std::set<file_path> & missing);
+  std::set<file_path>
+  find_missing(roster_t const & new_roster_shape,
+               node_restriction const & mask);
 
   void find_unknown_and_ignored(database & db,
                                 path_restriction const & mask,
@@ -181,11 +181,11 @@ public:
   void put_work_rev(revision_t const & rev);
 
   // read the (partial) revision describing the current workspace.
-  void get_work_rev(revision_t & rev);
+  revision_t get_work_rev();
 
   // read the revision id that was the parent of this workspace before
   // the last update occured. this is used for the u: (update) selector
-  void get_update_id(revision_id & update_id);
+  revision_id get_update_id();
 
   // write the revision id that was the parent of this workspace before
   // update completes. this is used for the u: (update) selector
@@ -199,14 +199,16 @@ public:
   // hashes.  If you need the current roster with correct file content
   // hashes, call update_current_roster_from_filesystem on the result of
   // this function.  Under almost all conditions, NIS should be a
-  // temp_node_id_source.
-  void get_current_roster_shape(database & db, node_id_source & nis,
-                                roster_t & ros);
+  // temp_node_id_source - that's what the first, simpler variant
+  // automatically provides.
+  roster_t get_current_roster_shape(database & db);
+  roster_t get_current_roster_shape(database & db,
+                                    node_id_source & nis);
 
   // This returns a map whose keys are revision_ids and whose values are
   // rosters, there being one such pair for each parent of the current
   // revision.
-  void get_parent_rosters(database & db, parent_map & parents);
+  parent_map get_parent_rosters(database & db);
 
   // This updates the file-content hashes in ROSTER, which is assumed to be
   // the "current" roster returned by one of the above get_*_roster_shape
@@ -223,7 +225,7 @@ public:
   // the user log is then blanked. If the commit does not succeed, no
   // change is made to the user log file.
 
-  void read_user_log(utf8 & dat);
+  utf8 read_user_log();
   void write_user_log(utf8 const & dat);
   void blank_user_log();
   bool has_contents_user_log();
@@ -234,7 +236,7 @@ public:
   // expected. Once all the values have been extracted the backup file is
   // removed.
 
-  void load_commit_text(utf8 & dat);
+  utf8 load_commit_text();
   void save_commit_text(utf8 const & dat);
   void clear_commit_text();
 
@@ -242,11 +244,10 @@ public:
   // _MTN/options. it keeps a list of name/value pairs which are considered
   // "persistent options", associated with a particular workspace and
   // implied unless overridden on the command line.
-  static void get_options(options & opts);
+  static void append_options_to(options & opts);
   // like above, just that it reads the options from the given workspace,
   // not the one we found earlier
-  static void get_options(system_path const & workspace_root,
-                          options & opts);
+  static options get_options(system_path const & workspace_root);
   static void set_options(options const & opts,
                           lua_hooks & lua,
                           bool branch_is_sticky = false);
@@ -256,7 +257,7 @@ public:
   // the "bisect" infromation file is a file that records current status
   // information for the bisect search.
 
-  void get_bisect_info(std::vector<bisect::entry> & bisect);
+  std::vector<bisect::entry> get_bisect_info();
   void put_bisect_info(std::vector<bisect::entry> const & bisect);
   void remove_bisect_info();
 
@@ -276,15 +277,15 @@ public:
   static void write_format();
   void migrate_format();
 
-  // the "local dump file' is a debugging file, stored in _MTN/debug.  if we
+  // the "local dump file" is a debugging file, stored in _MTN/debug.  if we
   // crash, we save some debugging information here.
 
-  static void get_local_dump_path(bookkeeping_path & d_path);
+  static bookkeeping_path get_local_dump_path();
 
   // the 'inodeprints file' contains inode fingerprints
 
   bool in_inodeprints_mode();
-  void read_inodeprints(data & dat);
+  data read_inodeprints();
   void write_inodeprints(data const & dat);
 
   void enable_inodeprints();

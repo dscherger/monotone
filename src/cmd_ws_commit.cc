@@ -52,10 +52,10 @@ using std::vector;
 using std::set_difference;
 using std::set_intersection;
 
-static void
-get_old_branch_names(database & db, parent_map const & parents,
-                     set<branch_name> & old_branch_names)
+static set<branch_name>
+get_old_branch_names(database & db, parent_map const & parents)
 {
+  set<branch_name> old_branch_names;
   for (parent_map::const_iterator i = parents.begin();
        i != parents.end(); ++i)
     {
@@ -67,6 +67,7 @@ get_old_branch_names(database & db, parent_map const & parents,
           old_branch_names.insert(typecast_vocab<branch_name>(b->value));
         }
     }
+  return old_branch_names;
 }
 
 class message_reader
@@ -176,9 +177,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
                               set<branch_name> const & old_branches,
                               string const & date_fmt, utf8 & log_message)
 {
-  utf8 backup;
-  work.load_commit_text(backup);
-
+  utf8 backup = work.load_commit_text();
   E(backup().empty(), origin::user,
     F("a backup from a previously failed commit exists in '_MTN/commit'.\n"
       "This file must be removed before commit will proceed.\n"
@@ -199,8 +198,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   bool is_date_fmt_valid = date_fmt_valid(date_fmt);
 
-  utf8 changelog;
-  work.read_user_log(changelog);
+  utf8 changelog = work.read_user_log();
 
   // ensure there are two blank lines after the changelog
 
@@ -367,16 +365,12 @@ revert(app_state & app,
   database db(app);
   workspace work(app);
 
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
+  parent_map parents = work.get_parent_rosters(db);
   E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
   old_roster = parent_roster(parents.begin());
 
-  {
-    temp_node_id_source nis;
-    work.get_current_roster_shape(db, nis, new_roster);
-  }
+  new_roster = work.get_current_roster_shape(db);
 
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude),
@@ -390,8 +384,7 @@ revert(app_state & app,
       // restriction we first find all missing files included by the
       // specified args and then make a restriction that includes only
       // these missing files.
-      set<file_path> missing;
-      work.find_missing(new_roster, mask, missing);
+      set<file_path> missing = work.find_missing(new_roster, mask);
       if (missing.empty())
         {
           P(F("no missing files to revert"));
@@ -810,14 +803,12 @@ void perform_drop(app_state & app,
   set<file_path> paths;
   if (app.opts.missing)
     {
-      temp_node_id_source nis;
-      roster_t current_roster_shape;
-      work.get_current_roster_shape(db, nis, current_roster_shape);
+      roster_t current_roster_shape = work.get_current_roster_shape(db);
       node_restriction mask(roots,
                             args_to_paths(app.opts.exclude),
                             app.opts.depth,
                             current_roster_shape, ignored_file(work));
-      work.find_missing(current_roster_shape, mask, paths);
+      paths = work.find_missing(current_roster_shape, mask);
     }
   else
     {
@@ -904,8 +895,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
     "",
     options::opts::depth | options::opts::exclude)
 {
-  roster_t new_roster;
-  parent_map old_rosters;
   temp_node_id_source nis;
 
   database db(app);
@@ -914,8 +903,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 
-  work.get_parent_rosters(db, old_rosters);
-  work.get_current_roster_shape(db, nis, new_roster);
+  parent_map old_rosters = work.get_parent_rosters(db);
+  roster_t new_roster = work.get_current_roster_shape(db);
 
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude),
@@ -925,8 +914,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   work.update_current_roster_from_filesystem(new_roster, mask);
   revision_t rev = make_restricted_revision(old_rosters, new_roster, mask);
 
-  vector<bisect::entry> info;
-  work.get_bisect_info(info);
+  vector<bisect::entry> info = work.get_bisect_info();
 
   if (!info.empty())
     {
@@ -968,11 +956,9 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   rid = calculate_ident(rev);
 
-  set<branch_name> old_branches;
-  get_old_branch_names(db, old_rosters, old_branches);
+  set<branch_name> old_branches = get_old_branch_names(db, old_rosters);
 
-  utf8 changelog;
-  work.read_user_log(changelog);
+  utf8 changelog = work.read_user_log();
 
   utf8 header;
   utf8 summary;
@@ -1159,11 +1145,7 @@ drop_attr(app_state & app, args_vector const & args)
   database db(app);
   workspace work(app);
 
-  roster_t old_roster;
-  temp_node_id_source nis;
-
-  work.get_current_roster_shape(db, nis, old_roster);
-
+  roster_t old_roster = work.get_current_roster_shape(db);
   file_path path = file_path_external(idx(args, 0));
 
   E(old_roster.has_node(path), origin::user,
@@ -1192,12 +1174,8 @@ drop_attr(app_state & app, args_vector const & args)
   content_merge_empty_adaptor empty;
   work.perform_content_update(old_roster, new_roster,
                               cset(old_roster, new_roster), empty);
-
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
-
-  revision_t new_work = make_revision_for_workspace(parents, new_roster);
-  work.put_work_rev(new_work);
+  work.put_work_rev
+    (make_revision_for_workspace(work.get_parent_rosters(db), new_roster));
 }
 
 CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
@@ -1223,12 +1201,9 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
   if (args.size() != 1 && args.size() != 2)
     throw usage(execid);
 
-  roster_t new_roster;
-  temp_node_id_source nis;
-
   database db(app);
   workspace work(app);
-  work.get_current_roster_shape(db, nis, new_roster);
+  roster_t new_roster = work.get_current_roster_shape(db);
 
   file_path path = file_path_external(idx(args, 0));
 
@@ -1274,11 +1249,7 @@ set_attr(app_state & app, args_vector const & args)
   database db(app);
   workspace work(app);
 
-  roster_t old_roster;
-  temp_node_id_source nis;
-
-  work.get_current_roster_shape(db, nis, old_roster);
-
+  roster_t old_roster = work.get_current_roster_shape(db);
   file_path path = file_path_external(idx(args, 0));
 
   E(old_roster.has_node(path), origin::user,
@@ -1297,9 +1268,7 @@ set_attr(app_state & app, args_vector const & args)
                               cset(old_roster, new_roster),
                               empty);
 
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
-
+  parent_map parents = work.get_parent_rosters(db);
   work.put_work_rev(make_revision_for_workspace(parents, new_roster));
 }
 
@@ -1351,12 +1320,9 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
       from_database = false;
       workspace work(app);
 
-      parent_map parents;
-      temp_node_id_source nis;
-
       // get the base and the current roster of this workspace
-      work.get_current_roster_shape(db, nis, current);
-      work.get_parent_rosters(db, parents);
+      current = work.get_current_roster_shape(db);
+      parent_map parents = work.get_parent_rosters(db);
       E(parents.size() == 1, origin::user,
         F("this command can only be used in a single-parent workspace"));
       base = parent_roster(parents.begin());
@@ -1517,15 +1483,11 @@ void perform_commit(app_state & app,
 
   utf8 log_message("");
   bool log_message_given;
-  parent_map old_rosters;
-  roster_t new_roster;
-  temp_node_id_source nis;
-  cset excluded;
 
   string date_fmt = get_date_format(app.opts, app.lua, date_time_long);
 
-  work.get_parent_rosters(db, old_rosters);
-  work.get_current_roster_shape(db, nis, new_roster);
+  parent_map old_rosters = work.get_parent_rosters(db);
+  roster_t new_roster = work.get_current_roster_shape(db);
 
   node_restriction mask(paths,
                         args_to_paths(app.opts.exclude),
@@ -1533,15 +1495,15 @@ void perform_commit(app_state & app,
                         old_rosters, new_roster, ignored_file(work));
 
   work.update_current_roster_from_filesystem(new_roster, mask);
+
+  cset excluded;
   revision_t restricted_rev
     = make_restricted_revision(old_rosters, new_roster, mask,
                                excluded, join_words(execid));
   restricted_rev.check_sane();
   E(restricted_rev.is_nontrivial(), origin::user, F("no changes to commit"));
 
-  set<branch_name> old_branches;
-  get_old_branch_names(db, old_rosters, old_branches);
-
+  set<branch_name> old_branches = get_old_branch_names(db, old_rosters);
   revision_id restricted_rev_id = calculate_ident(restricted_rev);
 
   // We need the 'if' because guess_branch will try to override any branch
@@ -2049,21 +2011,17 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   workspace work(app);
   project_t project(db);
 
-  vector<bisect::entry> info;
-  work.get_bisect_info(info);
+  vector<bisect::entry> info = work.get_bisect_info();
 
   E(!info.empty(), origin::user, F("no bisection in progress"));
 
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
+  parent_map parents = work.get_parent_rosters(db);
   E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
   revision_id current_id = parent_id(*parents.begin());
 
-  temp_node_id_source nis;
-  roster_t current_roster;
-  work.get_current_roster_shape(db, nis, current_roster);
+  roster_t current_roster = work.get_current_roster_shape(db);
   work.update_current_roster_from_filesystem(current_roster);
 
   E(parent_roster(parents.begin()) == current_roster, origin::user,
@@ -2275,16 +2233,12 @@ bisect_update(app_state & app, bisect::type type)
   workspace work(app);
   project_t project(db);
 
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
+  parent_map parents = work.get_parent_rosters(db);
   E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
   revision_id current_id = parent_id(*parents.begin());
-
-  temp_node_id_source nis;
-  roster_t current_roster;
-  work.get_current_roster_shape(db, nis, current_roster);
+  roster_t current_roster = work.get_current_roster_shape(db);
   work.update_current_roster_from_filesystem(current_roster);
 
   E(parent_roster(parents.begin()) == current_roster, origin::user,
@@ -2306,8 +2260,7 @@ bisect_update(app_state & app, bisect::type type)
         marked_ids.insert(rids.begin(), rids.end());
       }
 
-  vector<bisect::entry> info;
-  work.get_bisect_info(info);
+  vector<bisect::entry> info = work.get_bisect_info();
 
   if (info.empty())
     {
@@ -2383,16 +2336,13 @@ CMD(bisect_status, "status", "", CMD_REF(bisect), "",
   workspace work(app);
   project_t project(db);
 
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
+  parent_map parents = work.get_parent_rosters(db);
   E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
   revision_id current_id = parent_id(*parents.begin());
 
-  vector<bisect::entry> info;
-  work.get_bisect_info(info);
-
+  vector<bisect::entry> info = work.get_bisect_info();
   revision_id selected_id;
   bisect_select(app.opts, app.lua, project, info, current_id, selected_id);
 

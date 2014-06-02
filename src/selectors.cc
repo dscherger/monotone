@@ -307,11 +307,8 @@ public:
         workspace work(lua, F("the empty parent selector p: refers to "
                               "the base revision of the workspace"));
 
-        parent_map parents;
+        parent_map parents = work.get_parent_rosters(project.db);
         set<revision_id> parent_ids;
-
-        work.get_parent_rosters(project.db, parents);
-
         for (parent_map::const_iterator i = parents.begin();
              i != parents.end(); ++i)
           {
@@ -355,8 +352,7 @@ public:
     workspace work(lua, F("the update selector u: refers to the "
                           "revision before the last update in the "
                           "workspace"));
-    revision_id update_id;
-    work.get_update_id(update_id);
+    revision_id update_id = work.get_update_id();
     value = encode_hexenc(update_id.inner()(), origin::internal);
   }
   virtual set<revision_id> complete(project_t & project)
@@ -370,16 +366,15 @@ class working_base_selector : public selector
 {
   set<revision_id> ret;
 public:
-  working_base_selector(string const & arg, project_t & project, lua_hooks & lua)
+  working_base_selector(string const & arg, project_t & project,
+                        lua_hooks & lua)
   {
     E(arg.empty(), origin::user,
       F("no value is allowed with the base revision selector w:"));
 
     workspace work(lua, F("the selector w: returns the "
                           "base revision(s) of the workspace"));
-    parent_map parents;
-    work.get_parent_rosters(project.db, parents);
-
+    parent_map parents = work.get_parent_rosters(project.db);
     for (parent_map::const_iterator i = parents.begin();
          i != parents.end(); ++i)
       {

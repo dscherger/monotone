@@ -252,7 +252,6 @@ prepare_diff(app_state & app,
              bool & new_from_db,
              std::string & revheader)
 {
-  temp_node_id_source nis;
   ostringstream header;
 
   // initialize before transaction so we have a database to work with.
@@ -268,10 +267,9 @@ prepare_diff(app_state & app,
     {
       roster_t left_roster, restricted_roster, right_roster;
       revision_id old_rid;
-      parent_map parents;
       workspace work(app);
 
-      work.get_parent_rosters(db, parents);
+      parent_map parents = work.get_parent_rosters(db);
 
       // With no arguments, which parent should we diff against?
       E(parents.size() == 1, origin::user,
@@ -280,7 +278,7 @@ prepare_diff(app_state & app,
 
       old_rid = parent_id(parents.begin());
       left_roster = parent_roster(parents.begin());
-      work.get_current_roster_shape(db, nis, right_roster);
+      right_roster = work.get_current_roster_shape(db);
 
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude),
@@ -306,10 +304,11 @@ prepare_diff(app_state & app,
       revision_id r_old_id;
       workspace work(app);
 
-      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), r_old_id);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(),
+               r_old_id);
 
       db.get_roster(r_old_id, left_roster);
-      work.get_current_roster_shape(db, nis, right_roster);
+      right_roster = work.get_current_roster_shape(db);
 
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude),
@@ -676,11 +675,11 @@ log_common (app_state & app,
   set<revision_id> starting_revs;
   if (app.opts.from.empty() && app.opts.revision.empty())
     {
-      // only set default --from revs if no --revision selectors were specified
+      // only set default --from revs if no --revision selectors were
+      // specified
       workspace work(app, F("try passing a '--from' revision to start at"));
 
-      revision_t rev;
-      work.get_work_rev(rev);
+      revision_t rev = work.get_work_rev();
       for (edge_map::const_iterator i = rev.edges.begin();
            i != rev.edges.end(); i++)
         {
@@ -782,11 +781,8 @@ log_common (app_state & app,
         {
           workspace work(app);
           roster_t new_roster;
-          parent_map parents;
-          temp_node_id_source nis;
-
-          work.get_parent_rosters(db, parents);
-          work.get_current_roster_shape(db, nis, new_roster);
+          parent_map parents = work.get_parent_rosters(db);
+          work.get_current_roster_shape(db);
 
           mask = node_restriction(args_to_paths(args),
                                   args_to_paths(app.opts.exclude),
@@ -795,13 +791,11 @@ log_common (app_state & app,
                                   restriction::explicit_includes);
 
           if (app.opts.diffs)
-            {
-              mask_diff = node_restriction(args_to_paths(args),
-                                           args_to_paths(app.opts.exclude),
-                                           app.opts.depth, parents, new_roster,
-                                           ignored_file(work),
-                                           restriction::implicit_includes);
-            }
+            mask_diff = node_restriction(args_to_paths(args),
+                                         args_to_paths(app.opts.exclude),
+                                         app.opts.depth, parents, new_roster,
+                                         ignored_file(work),
+                                         restriction::implicit_includes);
         }
       else
         {

@@ -809,11 +809,7 @@ struct inventory_itemizer : public tree_walker
     : mask(m), inventory(i), work(work)
   {
     if (work.in_inodeprints_mode())
-      {
-        data dat;
-        work.read_inodeprints(dat);
-        read_inodeprint_map(dat, ipm);
-      }
+      read_inodeprint_map(work.read_inodeprints(), ipm);
   }
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
@@ -1056,19 +1052,16 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
   database db(app);
   workspace work(app);
 
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
+  parent_map parents = work.get_parent_rosters(db);
   // for now, until we've figured out what the format could look like
   // and what conceptional model we can implement
   // see: http://wiki.monotone.ca/MultiParentWorkspaceFallout/
   E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
-  roster_t new_roster, old_roster = parent_roster(parents.begin());
+  roster_t old_roster = parent_roster(parents.begin()),
+    new_roster = work.get_current_roster_shape(db);
   marking_map old_marking = parent_marking(parents.begin());
-  temp_node_id_source nis;
-
-  work.get_current_roster_shape(db, nis, new_roster);
 
   inventory_map inventory;
   vector<file_path> includes = args_to_paths(args);
@@ -1300,28 +1293,23 @@ CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
              "",
              options::opts::exclude | options::opts::depth)
 {
-  temp_node_id_source nis;
-  revision_data dat;
-
-  roster_t new_roster;
-  parent_map old_rosters;
-  cset excluded;
-
   database db(app);
   workspace work(app);
-  work.get_parent_rosters(db, old_rosters);
-  work.get_current_roster_shape(db, nis, new_roster);
 
+  parent_map old_rosters = work.get_parent_rosters(db);
+  roster_t new_roster = work.get_current_roster_shape(db);
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude),
                         app.opts.depth,
                         old_rosters, new_roster);
 
   work.update_current_roster_from_filesystem(new_roster, mask);
+  cset excluded;
   revision_t rev = make_restricted_revision(old_rosters, new_roster, mask,
                                             excluded, join_words(execid));
   rev.check_sane();
 
+  revision_data dat;
   write_revision(rev, dat);
 
   L(FL("dumping revision %s") % calculate_ident(rev));
@@ -1345,10 +1333,8 @@ CMD_AUTOMATE(get_base_revision_id, "",
     F("no arguments needed"));
 
   workspace work(app);
-  revision_t rev;
 
-  work.get_work_rev(rev);
-
+  revision_t rev = work.get_work_rev();
   E(rev.edges.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
@@ -1375,17 +1361,11 @@ CMD_AUTOMATE(get_current_revision_id, "",
   workspace work(app);
   database db(app);
 
-  parent_map parents;
-  roster_t new_roster;
-  revision_id new_revision_id;
-  temp_node_id_source nis;
-
-  work.get_current_roster_shape(db, nis, new_roster);
+  roster_t new_roster = work.get_current_roster_shape(db);
   work.update_current_roster_from_filesystem(new_roster);
 
-  work.get_parent_rosters(db, parents);
-  revision_t rev = make_revision(parents, new_roster);
-
+  revision_t rev = make_revision(work.get_parent_rosters(db),
+                                 new_roster);
   output << calculate_ident(rev) << '\n';
 }
 
@@ -1447,14 +1427,13 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
     {
       workspace work(app);
 
-      temp_node_id_source nis;
-
-      work.get_current_roster_shape(db, nis, new_roster);
+      new_roster = work.get_current_roster_shape(db);
       work.update_current_roster_from_filesystem(new_roster);
     }
   else
     {
-      revision_id rid = decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user);
+      revision_id rid = decode_hexenc_as<revision_id>(idx(args, 0)(),
+                                                      origin::user);
       E(db.revision_exists(rid), origin::user,
         F("no revision %s found in database") % rid);
       db.get_roster(rid, new_roster);

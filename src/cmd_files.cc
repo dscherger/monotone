@@ -165,8 +165,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
       // proceed if there's more than one, and give do_annotate what it
       // wants.  See tests/two_parent_workspace_annotate.
       workspace work(app);
-      revision_t rev;
-      work.get_work_rev(rev);
+      revision_t rev = work.get_work_rev();
       E(rev.edges.size() == 1, origin::user,
         F("with no revision selected, this command can only be used in "
           "a single-parent workspace"));
@@ -297,8 +296,7 @@ CMD(cat, "cat", "", CMD_REF(informative),
   if (app.opts.revision.empty())
     {
       workspace work(app);
-      parent_map parents;
-      work.get_parent_rosters(db, parents);
+      parent_map parents = work.get_parent_rosters(db);
       E(parents.size() == 1, origin::user,
         F("this command can only be used in a single-parent workspace"));
       rid = parent_id(parents.begin());
@@ -395,8 +393,7 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
     {
       workspace work(app);
 
-      parent_map parents;
-      work.get_parent_rosters(db, parents);
+      parent_map parents = work.get_parent_rosters(db);
       E(parents.size() == 1, origin::user,
         F("this command can only be used in a single-parent workspace"));
       rid = parent_id(parents.begin());

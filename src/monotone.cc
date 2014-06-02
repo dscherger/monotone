@@ -264,8 +264,7 @@ cpp_main(int argc, char ** argv)
             }
           else if (workspace::found)
             {
-              bookkeeping_path dump_path;
-              workspace::get_local_dump_path(dump_path);
+              bookkeeping_path dump_path = workspace::get_local_dump_path();
 
               // The 'false' means that, e.g., if we're running checkout,
               // then it's okay for dumps to go into our starting working

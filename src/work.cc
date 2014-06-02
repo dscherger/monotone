@@ -57,11 +57,12 @@ static char const revision_file_name[] = "revision";
 static char const update_file_name[] = "update";
 static char const bisect_file_name[] = "bisect";
 
-static void
-get_revision_path(bookkeeping_path & m_path)
+static bookkeeping_path
+get_revision_path()
 {
-  m_path = bookkeeping_root / revision_file_name;
+  bookkeeping_path m_path = bookkeeping_root / revision_file_name;
   L(FL("revision path is %s") % m_path);
+  return m_path;
 }
 
 static void
@@ -92,25 +93,28 @@ get_user_log_path(bookkeeping_path & ul_path)
   L(FL("user log path is %s") % ul_path);
 }
 
-static void
-get_commit_path(bookkeeping_path & commit_path)
+static bookkeeping_path
+get_commit_path()
 {
-  commit_path = bookkeeping_root / commit_file_name;
+  bookkeeping_path commit_path = bookkeeping_root / commit_file_name;
   L(FL("commit path is %s") % commit_path);
+  return commit_path;
 }
 
-static void
-get_update_path(bookkeeping_path & update_path)
+static bookkeeping_path
+get_update_path()
 {
-  update_path = bookkeeping_root / update_file_name;
+  bookkeeping_path update_path = bookkeeping_root / update_file_name;
   L(FL("update path is %s") % update_path);
+  return update_path;
 }
 
-static void
-get_bisect_path(bookkeeping_path & bisect_path)
+static bookkeeping_path
+get_bisect_path()
 {
-  bisect_path = bookkeeping_root / bisect_file_name;
+  bookkeeping_path bisect_path = bookkeeping_root / bisect_file_name;
   L(FL("bisect path is %s") % bisect_path);
+  return bisect_path;
 }
 
 //
@@ -181,12 +185,11 @@ workspace::create_workspace(options const & opts,
       write_data(ip_path, empty);
     }
 
-  bookkeeping_path dump_path;
-  workspace::get_local_dump_path(dump_path);
   // The 'false' means that, e.g., if we're running checkout,
   // then it's okay for dumps to go into our starting working
   // dir's _MTN rather than the new workspace dir's _MTN.
-  global_sanity.set_dump_path(system_path(dump_path, false).as_external());
+  global_sanity.set_dump_path
+    (system_path(workspace::get_local_dump_path(), false).as_external());
 }
 
 // Normal-use constructor.
@@ -211,11 +214,11 @@ workspace::workspace(lua_hooks & lua, i18n_format const & explanation)
 // routines for manipulating the bookkeeping directory
 
 // revision file contains a partial revision describing the workspace
-void
-workspace::get_work_rev(revision_t & rev)
+revision_t
+workspace::get_work_rev()
 {
-  bookkeeping_path rev_path;
-  get_revision_path(rev_path);
+  revision_t rev;
+  bookkeeping_path rev_path(get_revision_path());
   data rev_data;
   MM(rev_data);
   try
@@ -232,6 +235,7 @@ workspace::get_work_rev(revision_t & rev)
   read_revision(rev_data, rev);
   // Mark it so it doesn't creep into the database.
   rev.made_for = made_for_workspace;
+  return rev;
 }
 
 void
@@ -244,17 +248,15 @@ workspace::put_work_rev(revision_t const & rev)
   data rev_data;
   write_revision(rev, rev_data);
 
-  bookkeeping_path rev_path;
-  get_revision_path(rev_path);
-  write_data(rev_path, rev_data);
+  write_data(get_revision_path(), rev_data);
 }
 
-void
-workspace::get_update_id(revision_id & update_id)
+revision_id
+workspace::get_update_id()
 {
+  revision_id update_id;
   data update_data;
-  bookkeeping_path update_path;
-  get_update_path(update_path);
+  bookkeeping_path update_path = get_update_path();
   E(file_exists(update_path), origin::user,
     F("no update has occurred in this workspace"));
 
@@ -264,6 +266,7 @@ workspace::get_update_id(revision_id & update_id)
                           origin::internal);
   E(!null_id(update_id), origin::internal,
     F("no update revision available"));
+  return update_id;
 }
 
 void
@@ -271,19 +274,18 @@ workspace::put_update_id(revision_id const & update_id)
 {
   data update_data(encode_hexenc(update_id.inner()(), origin::internal),
                    origin::internal);
-  bookkeeping_path update_path;
-  get_update_path(update_path);
+  bookkeeping_path update_path = get_update_path();
   write_data(update_path, update_data);
 }
 
 // structures derived from the work revision, the database, and possibly
 // the workspace
 
-static void
+static cached_roster
 get_roster_for_rid(database & db,
-                   revision_id const & rid,
-                   cached_roster & cr)
+                   revision_id const & rid)
 {
+  cached_roster cr;
   // We may be asked for a roster corresponding to the null rid, which
   // is not in the database.  In this situation, what is wanted is an empty
   // roster (and marking map).
@@ -299,6 +301,7 @@ get_roster_for_rid(database & db,
       db.get_roster(rid, cr);
     }
   L(FL("base roster has %d entries") % cr.first->all_nodes().size());
+  return cr;
 }
 
 void
@@ -315,38 +318,43 @@ workspace::require_parents_in_db(database & db,
     }
 }
 
-void
-workspace::get_parent_rosters(database & db, parent_map & parents)
+parent_map
+workspace::get_parent_rosters(database & db)
 {
-  revision_t rev;
-  get_work_rev(rev);
+  revision_t rev = get_work_rev();
   require_parents_in_db(db, rev);
 
-  parents.clear();
+  parent_map parents;
   for (edge_map::const_iterator i = rev.edges.begin();
        i != rev.edges.end(); i++)
     {
-      cached_roster cr;
-      get_roster_for_rid(db, edge_old_revision(i), cr);
+      cached_roster cr = get_roster_for_rid(db, edge_old_revision(i));
       safe_insert(parents, make_pair(edge_old_revision(i), cr));
     }
+
+  return parents;
 }
 
-void
-workspace::get_current_roster_shape(database & db,
-                                    node_id_source & nis,
-                                    roster_t & ros)
+roster_t
+workspace::get_current_roster_shape(database & db)
 {
-  revision_t rev;
-  get_work_rev(rev);
+  temp_node_id_source nis;
+  return get_current_roster_shape(db, nis);
+}
+
+roster_t
+workspace::get_current_roster_shape(database & db,
+                                    node_id_source & nis)
+{
+  revision_t rev = get_work_rev();
   require_parents_in_db(db, rev);
   revision_id new_rid(fake_id());
 
   // If there is just one parent, it might be the null ID, which
   // make_roster_for_revision does not handle correctly.
+  roster_t ros;
   if (rev.edges.size() == 1 && null_id(edge_old_revision(rev.edges.begin())))
     {
-      I(ros.all_nodes().empty());
       editable_roster_base er(ros, nis);
       edge_changes(rev.edges.begin()).apply_to(er);
     }
@@ -355,23 +363,22 @@ workspace::get_current_roster_shape(database & db,
       marking_map dummy;
       make_roster_for_revision(db, nis, rev, new_rid, ros, dummy);
     }
+  return ros;
 }
 
 bool
 workspace::has_changes(database & db)
 {
-  parent_map parents;
-  get_parent_rosters(db, parents);
+  parent_map parents = get_parent_rosters(db);
 
   // if we have more than one parent roster then this workspace contains
   // a merge which means this is always a committable change
   if (parents.size() > 1)
     return true;
 
-  temp_node_id_source nis;
-  roster_t new_roster, old_roster = parent_roster(parents.begin());
+  roster_t old_roster = parent_roster(parents.begin()),
+    new_roster = get_current_roster_shape(db);
 
-  get_current_roster_shape(db, nis, new_roster);
   update_current_roster_from_filesystem(new_roster);
 
   return !(old_roster == new_roster);
@@ -379,9 +386,10 @@ workspace::has_changes(database & db)
 
 // user log file
 
-void
-workspace::read_user_log(utf8 & dat)
+utf8
+workspace::read_user_log()
 {
+  utf8 result;
   bookkeeping_path ul_path;
   get_user_log_path(ul_path);
 
@@ -389,8 +397,10 @@ workspace::read_user_log(utf8 & dat)
     {
       data tmp;
       read_data(ul_path, tmp);
-      system_to_utf8(typecast_vocab<external>(tmp), dat);
+      system_to_utf8(typecast_vocab<external>(tmp), result);
     }
+
+  return result;
 }
 
 void
@@ -416,32 +426,31 @@ workspace::blank_user_log()
 bool
 workspace::has_contents_user_log()
 {
-  utf8 user_log_message;
-  read_user_log(user_log_message);
+  utf8 user_log_message = read_user_log();
   return user_log_message().length() > 0;
 }
 
 // commit buffer backup file
 
-void
-workspace::load_commit_text(utf8 & dat)
+utf8
+workspace::load_commit_text()
 {
-  bookkeeping_path commit_path;
-  get_commit_path(commit_path);
-
+  utf8 dat;
+  bookkeeping_path commit_path = get_commit_path();
   if (file_exists(commit_path))
     {
       data tmp;
       read_data(commit_path, tmp);
       system_to_utf8(typecast_vocab<external>(tmp), dat);
     }
+
+  return dat;
 }
 
 void
 workspace::save_commit_text(utf8 const & dat)
 {
-  bookkeeping_path commit_path;
-  get_commit_path(commit_path);
+  bookkeeping_path commit_path = get_commit_path();
 
   external tmp;
   utf8_to_system_best_effort(dat, tmp);
@@ -451,9 +460,7 @@ workspace::save_commit_text(utf8 const & dat)
 void
 workspace::clear_commit_text()
 {
-  bookkeeping_path commit_path;
-  get_commit_path(commit_path);
-  delete_file(commit_path);
+  delete_file(get_commit_path());
 }
 
 // _MTN/options handling.
@@ -562,7 +569,7 @@ write_options_file(bookkeeping_path const & optspath,
 }
 
 void
-workspace::get_options(options & opts)
+workspace::append_options_to(options & opts)
 {
   if (!workspace::found)
     return;
@@ -606,14 +613,15 @@ workspace::get_options(options & opts)
     opts.key = cur_opts.key;
 }
 
-void
-workspace::get_options(system_path const & workspace_root,
-                       options & opts)
+options
+workspace::get_options(system_path const & workspace_root)
 {
   system_path o_path = (workspace_root
                         / bookkeeping_root_component
                         / options_file_name);
+  options opts;
   read_options_file(o_path, opts);
+  return opts;
 }
 
 void
@@ -628,7 +636,8 @@ workspace::maybe_set_options(options const & opts, lua_hooks & lua)
 // if this is a valid sqlite file and if it contains the correct identifier,
 // so be warned that you do not call this too early
 void
-workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sticky)
+workspace::set_options(options const & opts, lua_hooks & lua,
+                       bool branch_is_sticky)
 {
   E(workspace::found, origin::user, F("workspace required but not found"));
 
@@ -743,14 +752,13 @@ namespace syms
     symbol const skipped("skipped");
 };
 
-void
-workspace::get_bisect_info(vector<bisect::entry> & bisect)
+vector<bisect::entry>
+workspace::get_bisect_info()
 {
-  bookkeeping_path bisect_path;
-  get_bisect_path(bisect_path);
+  bookkeeping_path bisect_path = get_bisect_path();
 
   if (!file_exists(bisect_path))
-    return;
+    return vector<bisect::entry>();
 
   data dat;
   read_data(bisect_path, dat);
@@ -760,6 +768,7 @@ workspace::get_bisect_info(vector<bisect::entry> & bisect)
   basic_io::tokenizer tok(src);
   basic_io::parser parser(tok);
 
+  vector<bisect::entry> bisect;
   while (parser.symp())
     {
       string rev;
@@ -795,13 +804,14 @@ workspace::get_bisect_info(vector<bisect::entry> & bisect)
         decode_hexenc_as<revision_id>(rev, parser.tok.in.made_from);
       bisect.push_back(make_pair(type, rid));
     }
+
+  return bisect;
 }
 
 void
 workspace::put_bisect_info(vector<bisect::entry> const & bisect)
 {
-  bookkeeping_path bisect_path;
-  get_bisect_path(bisect_path);
+  bookkeeping_path bisect_path = get_bisect_path();
 
   basic_io::stanza st;
   for (vector<bisect::entry>::const_iterator i = bisect.begin();
@@ -844,20 +854,19 @@ workspace::put_bisect_info(vector<bisect::entry> const & bisect)
 void
 workspace::remove_bisect_info()
 {
-  bookkeeping_path bisect_path;
-  get_bisect_path(bisect_path);
-  delete_file(bisect_path);
+  delete_file(get_bisect_path());
 }
 
 // local dump file
 
-void
-workspace::get_local_dump_path(bookkeeping_path & d_path)
+bookkeeping_path
+workspace::get_local_dump_path()
 {
   E(workspace::found, origin::user, F("workspace required but not found"));
 
-  d_path = bookkeeping_root / local_dump_file_name;
+  bookkeeping_path d_path = bookkeeping_root / local_dump_file_name;
   L(FL("local dump path is %s") % d_path);
+  return d_path;
 }
 
 // inodeprint file
@@ -870,13 +879,15 @@ workspace::in_inodeprints_mode()
   return file_exists(ip_path);
 }
 
-void
-workspace::read_inodeprints(data & dat)
+data
+workspace::read_inodeprints()
 {
   I(in_inodeprints_mode());
   bookkeeping_path ip_path;
   get_inodeprints_path(ip_path);
+  data dat;
   read_data(ip_path, dat);
+  return dat;
 }
 
 void
@@ -918,14 +929,10 @@ workspace::maybe_update_inodeprints(database & db,
   // the file does not exist and cannot have an inodeprint.
 
   inodeprint_map ipm_new;
-  temp_node_id_source nis;
-  roster_t new_roster;
-
-  get_current_roster_shape(db, nis, new_roster);
+  roster_t new_roster = get_current_roster_shape(db);
   update_current_roster_from_filesystem(new_roster, mask);
 
-  parent_map parents;
-  get_parent_rosters(db, parents);
+  parent_map parents = get_parent_rosters(db);
 
   node_map const & new_nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = new_nodes.begin(); i != new_nodes.end(); ++i)
@@ -1624,11 +1631,7 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
   inodeprint_map ipm;
 
   if (in_inodeprints_mode())
-    {
-      data dat;
-      read_inodeprints(dat);
-      read_inodeprint_map(dat, ipm);
-    }
+    read_inodeprint_map(read_inodeprints(), ipm);
 
   size_t missing_items = 0;
 
@@ -1708,11 +1711,11 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
     % prog_name % prog_name);
 }
 
-void
+set<file_path>
 workspace::find_missing(roster_t const & new_roster_shape,
-                        node_restriction const & mask,
-                        set<file_path> & missing)
+                        node_restriction const & mask)
 {
+  set<file_path> missing;
   node_map const & nodes = new_roster_shape.all_nodes();
   for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
     {
@@ -1727,6 +1730,7 @@ workspace::find_missing(roster_t const & new_roster_shape,
             missing.insert(fp);
         }
     }
+  return missing;
 }
 
 void
@@ -1738,10 +1742,7 @@ workspace::find_unknown_and_ignored(database & db,
                                     set<file_path> & ignored)
 {
   set<file_path> known;
-  roster_t new_roster;
-  temp_node_id_source nis;
-
-  get_current_roster_shape(db, nis, new_roster);
+  roster_t new_roster = get_current_roster_shape(db);
   new_roster.extract_path_set(known);
 
   file_itemizer u(db, *this, known, unknown, ignored, mask, recurse);
@@ -1760,9 +1761,8 @@ workspace::perform_additions(database & db, set<file_path> const & paths,
     return;
 
   temp_node_id_source nis;
-  roster_t new_roster;
+  roster_t new_roster = get_current_roster_shape(db, nis);
   MM(new_roster);
-  get_current_roster_shape(db, nis, new_roster);
 
   editable_roster_base er(new_roster, nis);
 
@@ -1801,8 +1801,7 @@ workspace::perform_additions(database & db, set<file_path> const & paths,
         }
     }
 
-  parent_map parents;
-  get_parent_rosters(db, parents);
+  parent_map parents = get_parent_rosters(db);
   put_work_rev(make_revision_for_workspace(parents, new_roster));
 }
 
@@ -1828,13 +1827,10 @@ workspace::perform_deletions(database & db,
   if (paths.empty())
     return;
 
-  temp_node_id_source nis;
-  roster_t new_roster;
+  roster_t new_roster = get_current_roster_shape(db);
   MM(new_roster);
-  get_current_roster_shape(db, nis, new_roster);
 
-  parent_map parents;
-  get_parent_rosters(db, parents);
+  parent_map parents = get_parent_rosters(db);
 
   // we traverse the the paths backwards, so that we always hit deep paths
   // before shallow paths (because set<file_path> is lexicographically
@@ -1917,13 +1913,11 @@ workspace::perform_rename(database & db,
                           bool bookkeep_only)
 {
   temp_node_id_source nis;
-  roster_t new_roster;
-  MM(new_roster);
   set< pair<file_path, file_path> > renames;
+  roster_t new_roster = get_current_roster_shape(db, nis);
+  MM(new_roster);
 
   I(!srcs.empty());
-
-  get_current_roster_shape(db, nis, new_roster);
 
   // validation.  it's okay if the target exists as a file; we just won't
   // clobber it (in !--bookkeep-only mode).  similarly, it's okay if the
@@ -2030,8 +2024,7 @@ workspace::perform_rename(database & db,
       P(F("renaming '%s' to '%s' in workspace manifest") % i->first % i->second);
     }
 
-  parent_map parents;
-  get_parent_rosters(db, parents);
+  parent_map parents = get_parent_rosters(db);
   put_work_rev(make_revision_for_workspace(parents, new_roster));
 
   if (!bookkeep_only)
@@ -2072,10 +2065,11 @@ workspace::perform_pivot_root(database & db,
                               bool move_conflicting_paths)
 {
   temp_node_id_source nis;
-  roster_t old_roster, new_roster;
+  roster_t old_roster = get_current_roster_shape(db, nis);
   MM(old_roster);
+
+  roster_t new_roster;
   MM(new_roster);
-  get_current_roster_shape(db, nis, old_roster);
 
   I(old_roster.has_root());
   E(old_roster.has_node(new_root), origin::user,
@@ -2116,11 +2110,9 @@ workspace::perform_pivot_root(database & db,
     cs.apply_to(e);
   }
 
-  {
-    parent_map parents;
-    get_parent_rosters(db, parents);
-    put_work_rev(make_revision_for_workspace(parents, new_roster));
-  }
+  put_work_rev(make_revision_for_workspace(get_parent_rosters(db),
+                                           new_roster));
+
   if (!bookkeep_only)
     {
       content_merge_empty_adaptor cmea;

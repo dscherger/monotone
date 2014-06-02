@@ -4820,8 +4820,7 @@ database_impl::check_db_exists()
     case path::directory:
       if (directory_is_workspace(filename))
         {
-          options opts;
-          workspace::get_options(filename, opts);
+          options opts = workspace::get_options(filename);
           E(opts.dbname.as_internal().empty(), origin::user,
             F("'%s' is a workspace, not a database\n"
               "(did you mean '%s'?)") % filename % opts.dbname);
@@ -4844,7 +4843,6 @@ database_impl::check_db_nonexistent()
                                 "has same stem as new database '%s'.\n"
                                 "Cancelling database creation")
                               % journal % filename);
-
 }
 
 void
