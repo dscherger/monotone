@@ -12,6 +12,8 @@ XXX XXX XX XX XX XX UTC XXXX
 
         New features
 
+        - The ISO 8601 parser now understands time zone designators.
+
         -
 
         Bugs fixed
@@ -21,7 +23,7 @@ XXX XXX XX XX XX XX UTC XXXX
         Internal
 
         - Monotone sources now make use of C++11, meaning a somewhat
-          recent compiler is required to build, now.. Please see
+          recent compiler is required to build, now.  Please see
           INSTALL for details.
 
         -

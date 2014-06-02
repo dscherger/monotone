@@ -70,6 +70,7 @@ struct broken_down_time {
   int day;         /* day of the month (1 - 31) */
   int month;       /* month (1 - 12) */
   int year;        /* years (anno Domini, i.e. 1999) */
+  long gmtoff;     /* time zone offset in seconds east of UTC */
 };
 
 // The Unix epoch is 1970-01-01T00:00:00 (in UTC).  As we cannot safely
@@ -104,11 +105,11 @@ s64 const LATEST_SUPPORTED_DATE = 9223372017129600000LL;
 s64 const EARLIEST_SUPPORTED_DATE = -62135596800000LL;
 
 // These constants are all in seconds.
-u32 const SEC  = 1;
-u32 const MIN  = 60*SEC;
-u32 const HOUR = 60*MIN;
-u64 const DAY  = 24*HOUR;
-u64 const YEAR = 365*DAY;
+s32 const SEC  = 1;
+s32 const MIN  = 60*SEC;
+s32 const HOUR = 60*MIN;
+s64 const DAY  = 24*HOUR;
+s64 const YEAR = 365*DAY;
 
 inline s64 MILLISEC(s64 n) { return n * 1000; }
 
@@ -145,9 +146,10 @@ valid_ms_count(s64 d)
   return (d >= EARLIEST_SUPPORTED_DATE && d <= LATEST_SUPPORTED_DATE);
 }
 
-static void
-our_gmtime(s64 ts, broken_down_time & tb)
+static broken_down_time
+our_gmtime(s64 const ts)
 {
+  broken_down_time tb;
   I(valid_ms_count(ts));
 
   // All subsequent calculations are easier if 't' is always positive, so we
@@ -212,6 +214,9 @@ our_gmtime(s64 ts, broken_down_time & tb)
     }
   tb.month = month;
   tb.day = days + 1;
+  tb.gmtoff = 0;
+
+  return tb;
 }
 
 static s64
@@ -227,6 +232,10 @@ our_timegm(broken_down_time const & tb)
   I(tb.min   >= 0    && tb.min   <= 59);
   I(tb.sec   >= 0    && tb.sec   <= 60);
   I(tb.millisec >= 0 && tb.millisec <= 999);
+  // According to Wikipedia, there certainly is an UTC+14 time zone. Let's
+  // be very generous and accept up to 24 hours of offset in either
+  // direction.
+  I(tb.gmtoff >= -24 * HOUR && tb.gmtoff <= 24 * HOUR);
 
   // years (since 1970)
   d = YEAR * (tb.year - 1970);
@@ -249,6 +258,9 @@ our_timegm(broken_down_time const & tb)
   d += tb.hour * HOUR;
   d += tb.min * MIN;
   d += tb.sec * SEC;
+
+  // Account for the time zone offset.
+  d -= tb.gmtoff;
 
   return MILLISEC(d) + tb.millisec;
 }
@@ -275,6 +287,7 @@ get_epoch_offset()
   our_t.day = t.tm_mday;
   our_t.month = t.tm_mon + 1;
   our_t.year = t.tm_year + 1900;
+  our_t.gmtoff = 0;
 
   epoch_offset = our_timegm(our_t);
 
@@ -319,6 +332,7 @@ date_t::date_t(int year, int month, int day,
   t.day = day;
   t.month = month;
   t.year = year;
+  t.gmtoff = 0;
 
   d = our_timegm(t);
   I(valid());
@@ -341,9 +355,8 @@ date_t::now()
 string
 date_t::as_iso_8601_extended() const
 {
-  broken_down_time tb;
   I(valid());
-  our_gmtime(d, tb);
+  broken_down_time tb = our_gmtime(d);
   return (FL("%04u-%02u-%02uT%02u:%02u:%02u")
              % tb.year % tb.month % tb.day
              % tb.hour % tb.min % tb.sec).str();
@@ -523,9 +536,87 @@ date_t::as_millisecs_since_unix_epoch() const
 
 date_t::date_t(string const & s)
 {
+  static i18n_format const parse_err_msg
+    = F("unrecognized date (monotone only understands ISO 8601 format)");
+
   try
     {
-      size_t i = s.size() - 1;  // last character of the array
+      // First, check if there's some kind of time zone specified.  If not,
+      // this code interprets the time as if it's UTC.  That could be
+      // considered a bug, as per ISO 8601, such a date should be considered
+      // local.  However, we need to keep the existing behaviour for
+      // backwards compatibility.
+      size_t i;
+      s64 timezone_offset = 0;   // in seconds
+      size_t tz_start = s.rfind('Z');
+      if (tz_start == string::npos)
+        {
+          tz_start = s.rfind('+');
+          if (tz_start == string::npos)
+            tz_start = s.rfind('-');
+        }
+
+      // Make sure the tz_start is behind the T or any colon.
+      if (tz_start != string::npos)
+        {
+          size_t mid = s.rfind('T');
+          if (mid == string::npos)
+            {
+              mid = s.rfind(' ');
+              E(mid != string::npos, origin::user, parse_err_msg);
+            }
+
+          // Discount matches before the space or 'T' separator.
+          if (tz_start < mid)
+            tz_start = string::npos;
+        }
+
+      MM(tz_start);
+      MM(i);
+      if (tz_start == string::npos)
+        tz_start = s.size();
+      else
+        {
+          if (s.at(tz_start) == 'Z')
+            E(tz_start == s.size() - 1, origin::user, parse_err_msg);
+          else
+            {
+              i = s.size() - 1;
+
+              E(s.at(i) >= '0' && s.at(i) <= '9'
+                && s.at(i-1) >= '0' && s.at(i-1) <= '9', origin::user,
+                parse_err_msg);
+
+              u8 last_part = (s.at(i-1) - '0') * 10 + (s.at(i) - '0');
+              i -= 2;
+              E(i >= tz_start, origin::user, parse_err_msg);
+              if (i == tz_start)
+                // Only an hour offset was given. Multiply accordingly.
+                timezone_offset = last_part * HOUR;
+              else
+                {
+                  // Skip an optional colon.
+                  if (s.at(i) == ':')
+                    i--;
+
+                  // Minutes parsed, now read hours of time zone offset.
+                  E(s.at(i) >= '0' && s.at(i) <= '9'
+                    && s.at(i-1) >= '0' && s.at(i-1) <= '9', origin::user,
+                    parse_err_msg);
+                  u8 tz_hours = (s.at(i-1) - '0') * 10 + (s.at(i) - '0');
+                  timezone_offset = tz_hours * HOUR + last_part * MIN;
+                  i -= 2;
+                }
+
+              if (s.at(i) == '-')
+                timezone_offset = -timezone_offset;
+              else
+                E(s.at(i) == '+', origin::user, parse_err_msg);
+            }
+        }
+
+      // Last character of the date without time zone.
+      i = tz_start - 1;
 
       // check the first character which is not a digit
       while (s.at(i) >= '0' && s.at(i) <= '9')
@@ -536,13 +627,13 @@ date_t::date_t(string const & s)
       if (s.at(i) == '.')
         i--;
       else
-        i = s.size() - 1;
+        i = tz_start - 1;
 
       // seconds
       u8 sec;
       E(s.at(i) >= '0' && s.at(i) <= '9'
-        && s.at(i-1) >= '0' && s.at(i-1) <= '5', origin::user,
-        F("unrecognized date (monotone only understands ISO 8601 format)"));
+        && s.at(i-1) >= '0' && s.at(i-1) <= '5',
+        origin::user, parse_err_msg);
       sec = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
       i -= 2;
       E(sec <= 60, origin::user,
@@ -555,8 +646,8 @@ date_t::date_t(string const & s)
       // minutes
       u8 min;
       E(s.at(i) >= '0' && s.at(i) <= '9'
-        && s.at(i-1) >= '0' && s.at(i-1) <= '5', origin::user,
-        F("unrecognized date (monotone only understands ISO 8601 format)"));
+        && s.at(i-1) >= '0' && s.at(i-1) <= '5',
+        origin::user, parse_err_msg);
       min = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
       i -= 2;
       E(min < 60, origin::user,
@@ -570,23 +661,21 @@ date_t::date_t(string const & s)
       u8 hour;
       E((s.at(i-1) >= '0' && s.at(i-1) <= '1'
          && s.at(i) >= '0' && s.at(i) <= '9')
-        || (s.at(i-1) == '2' && s.at(i) >= '0' && s.at(i) <= '3'), origin::user,
-        F("unrecognized date (monotone only understands ISO 8601 format)"));
+        || (s.at(i-1) == '2' && s.at(i) >= '0' && s.at(i) <= '3'),
+        origin::user, parse_err_msg);
       hour = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
       i -= 2;
       E(hour < 24, origin::user,
         F("hour out of range"));
 
       // We accept 'T' as well as spaces between the date and the time
-      E(s.at(i) == 'T' || s.at(i) == ' ', origin::user,
-        F("unrecognized date (monotone only understands ISO 8601 format)"));
+      E(s.at(i) == 'T' || s.at(i) == ' ', origin::user, parse_err_msg);
       i--;
 
       // day
       u8 day;
       E(s.at(i-1) >= '0' && s.at(i-1) <= '3'
-        && s.at(i) >= '0' && s.at(i) <= '9', origin::user,
-        F("unrecognized date (monotone only understands ISO 8601 format)"));
+        && s.at(i) >= '0' && s.at(i) <= '9', origin::user, parse_err_msg);
       day = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
       i -= 2;
 
@@ -597,8 +686,7 @@ date_t::date_t(string const & s)
       // month
       u8 month;
       E(s.at(i-1) >= '0' && s.at(i-1) <= '1'
-        && s.at(i) >= '0' && s.at(i) <= '9', origin::user,
-        F("unrecognized date (monotone only understands ISO 8601 format)"));
+        && s.at(i) >= '0' && s.at(i) <= '9', origin::user, parse_err_msg);
       month = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
       E(month >= 1 && month <= 12, origin::user,
         F("month out of range in '%s'") % s);
@@ -609,8 +697,7 @@ date_t::date_t(string const & s)
         i--;
 
       // year
-      E(i >= 3, origin::user,
-        F("unrecognized date (monotone only understands ISO 8601 format)"));
+      E(i >= 3, origin::user, parse_err_msg);
 
       // this counts down through zero and stops when it wraps around
       // (size_t being unsigned)
@@ -618,8 +705,7 @@ date_t::date_t(string const & s)
       u32 digit = 1;
       while (i < s.size())
         {
-          E(s.at(i) >= '0' && s.at(i) <= '9', origin::user,
-            F("unrecognized date (monotone only understands ISO 8601 format)"));
+          E(s.at(i) >= '0' && s.at(i) <= '9', origin::user, parse_err_msg);
           year += (s.at(i) - '0')*digit;
           i--;
           digit *= 10;
@@ -647,13 +733,14 @@ date_t::date_t(string const & s)
       t.day = day;
       t.month = month;
       t.year = year;
+      W(F("got timezone_offset: %ld") % timezone_offset);
+      t.gmtoff = timezone_offset;
 
       d = our_timegm(t);
     }
   catch (std::out_of_range)
     {
-      E(false, origin::user,
-        F("unrecognized date (monotone only understands ISO 8601 format)"));
+      E(false, origin::user, parse_err_msg);
     }
 }
 
@@ -663,11 +750,8 @@ date_t::operator +=(s64 const other)
   // only operate on vaild dates, prevent turning an invalid
   // date into a valid one.
   I(valid());
-
   d += other;
-
   I(valid());
-
   return *this;
 }
 

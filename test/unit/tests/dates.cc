@@ -19,7 +19,7 @@ UNIT_TEST(our_timegm)
 {
 #define OK(x) UNIT_TEST_CHECK(our_timegm(t) == MILLISEC(x))
 
-  broken_down_time t = {0, 0, 0, 0, 1, 1, 1970};
+  broken_down_time t = {0, 0, 0, 0, 1, 1, 1970, 0};
   OK(0);
 
   t.year = 2000;
@@ -174,6 +174,24 @@ UNIT_TEST(from_string)
   // leap year February
   OK("2008-02-29T18:41:13", "2008-02-29T18:41:13");
   NO("2008-02-30T18:41:13");
+
+  // iso 8601 dates with time zones - from issue #217.
+  OK("2012-10-25T12:12:34Z",      "2012-10-25T12:12:34");
+  OK("2012-10-25T13:12:34+01",    "2012-10-25T12:12:34");
+  OK("2012-10-25T13:12:34+0100",  "2012-10-25T12:12:34");
+  OK("2012-10-25T13:12:34+01:00", "2012-10-25T12:12:34");
+  OK("2012-10-25T05:12:34-07",    "2012-10-25T12:12:34");
+  OK("2012-10-25T05:12:34-0700",  "2012-10-25T12:12:34");
+  OK("2012-10-25T05:12:34-07:00", "2012-10-25T12:12:34");
+
+  // ..and with milliseconds (that get ignored)
+  OK("2012-10-25T12:12:34.567Z",      "2012-10-25T12:12:34");
+  OK("2012-10-25T13:12:34.567+01",    "2012-10-25T12:12:34");
+  OK("2012-10-25T13:12:34.567+0100",  "2012-10-25T12:12:34");
+  OK("2012-10-25T13:12:34.567+01:00", "2012-10-25T12:12:34");
+  OK("2012-10-25T05:12:34.567-07",    "2012-10-25T12:12:34");
+  OK("2012-10-25T05:12:34.567-0700",  "2012-10-25T12:12:34");
+  OK("2012-10-25T05:12:34.567-07:00", "2012-10-25T12:12:34");
 
   // maybe we should support these, but we don't
   NO("2007-03-01");
@@ -535,8 +553,7 @@ roundtrip_1(s64 t)
   if (!valid_ms_count(t))
     return;
 
-  broken_down_time tm;
-  our_gmtime(t, tm);
+  broken_down_time tm = our_gmtime(t);
   s64 t1 = our_timegm(tm);
   if (t != t1)
     {
@@ -561,13 +578,15 @@ roundtrip_1(s64 t)
       tmo.day = tmsys.tm_mday;
       tmo.month = tmsys.tm_mon + 1;
       tmo.year = tmsys.tm_year + 1900;
+      tmo.gmtoff = 0;
 
       bool sys_match = (tm.year == tmo.year
                         && tm.month == tmo.month
                         && tm.day == tmo.day
                         && tm.hour == tmo.hour
                         && tm.min == tmo.min
-                        && tm.sec == tmo.sec);
+                        && tm.sec == tmo.sec
+                        && tm.gmtoff == tmo.gmtoff);
       if (!sys_match)
         {
           L(FL("ours: %04u-%02u-%02uT%02u:%02u:%02u.%03u")
