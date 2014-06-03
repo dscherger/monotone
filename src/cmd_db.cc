@@ -613,9 +613,7 @@ CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
   database db(app);
   E(db.revision_exists(rid), origin::user,
     F("no revision %s found in database") % rid);
-  rev_height height;
-  db.get_rev_height(rid, height);
-  P(F("cached height: %s") % height);
+  P(F("cached height: %s") % db.get_rev_height(rid));
 }
 
 // loading revisions is relatively fast

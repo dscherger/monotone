@@ -465,8 +465,7 @@ public:
                                         std::vector<cert> & certs);
 
   // heights
-  void get_rev_height(revision_id const & id,
-                      rev_height & height);
+  rev_height get_rev_height(revision_id const & id);
 
   void put_rev_height(revision_id const & id,
                       rev_height const & height);

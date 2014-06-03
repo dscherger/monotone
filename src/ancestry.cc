@@ -238,11 +238,7 @@ toposort(database & db,
 
   for (set<revision_id>::const_iterator i = revisions.begin();
        i != revisions.end(); ++i)
-    {
-      rev_height height;
-      db.get_rev_height(*i, height);
-      work.insert(make_pair(height, *i));
-    }
+    work.insert(make_pair(db.get_rev_height(*i), *i));
 
   sorted.clear();
 
@@ -276,8 +272,7 @@ accumulate_strict_ancestors(database & db,
           if (all_ancestors.find(parent) == all_ancestors.end())
             {
               // prune if we're below min_height
-              rev_height h;
-              db.get_rev_height(parent, h);
+              rev_height h = db.get_rev_height(parent);
               if (h >= min_height)
                 {
                   all_ancestors.insert(parent);
@@ -317,12 +312,10 @@ erase_ancestors_and_failures(database & db,
   // combinatorial explosion.
   set<revision_id> all_ancestors;
 
-  rev_height min_height;
-  db.get_rev_height(*candidates.begin(), min_height);
+  rev_height min_height = db.get_rev_height(*candidates.begin());
   for (std::set<revision_id>::const_iterator it = candidates.begin(); it != candidates.end(); it++)
     {
-      rev_height h;
-      db.get_rev_height(*it, h);
+      rev_height h = db.get_rev_height(*it);
       if (h < min_height)
         min_height = h;
     }
@@ -401,8 +394,7 @@ accumulate_strict_descendants(database & db,
           if (all_descendants.find(parent) == all_descendants.end())
             {
               // prune if we're above max_height
-              rev_height h;
-              db.get_rev_height(parent, h);
+              rev_height h = db.get_rev_height(parent);
               if (h <= max_height)
                 {
                   all_descendants.insert(parent);
@@ -442,12 +434,10 @@ erase_descendants_and_failures(database & db,
   // combinatorial explosion.
   set<revision_id> all_descendants;
 
-  rev_height max_height;
-  db.get_rev_height(*candidates.begin(), max_height);
+  rev_height max_height = db.get_rev_height(*candidates.begin());
   for (std::set<revision_id>::const_iterator it = candidates.begin(); it != candidates.end(); it++)
     {
-      rev_height h;
-      db.get_rev_height(*it, h);
+      rev_height h = db.get_rev_height(*it);
       if (h > max_height)
         max_height = h;
     }

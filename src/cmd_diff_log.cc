@@ -826,22 +826,14 @@ log_common (app_state & app,
     {
       for (set<revision_id>::const_iterator i = selected_revs.begin();
            i != selected_revs.end(); ++i)
-        {
-          rev_height height;
-          db.get_rev_height(*i, height);
-          frontier.push(make_pair(height, *i));
-        }
+        frontier.push(make_pair(db.get_rev_height(*i), *i));
       L(FL("log %d selected revisions") % selected_revs.size());
     }
   else
     {
       for (set<revision_id>::const_iterator i = starting_revs.begin();
            i != starting_revs.end(); ++i)
-        {
-          rev_height height;
-          db.get_rev_height(*i, height);
-          frontier.push(make_pair(height, *i));
-        }
+        frontier.push(make_pair(db.get_rev_height(*i), *i));
       L(FL("log %d starting revisions") % starting_revs.size());
     }
 
@@ -965,15 +957,15 @@ log_common (app_state & app,
 
       if (!log_selected)
         {
-          // only add revs to the frontier when not logging specific selected revs
+          // only add revs to the frontier when not logging specific
+          // selected revs
           for (set<revision_id>::const_iterator i = interesting.begin();
                i != interesting.end(); ++i)
             {
-              if (!app.opts.to.empty() && (ending_revs.find(*i) != ending_revs.end()))
+              if (!app.opts.to.empty()
+                  && (ending_revs.find(*i) != ending_revs.end()))
                 continue;
-              rev_height height;
-              db.get_rev_height(*i, height);
-              frontier.push(make_pair(height, *i));
+              frontier.push(make_pair(db.get_rev_height(*i), *i));
             }
         }
     }

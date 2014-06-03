@@ -2767,14 +2767,11 @@ database::is_a_ancestor_of_b(revision_id const & ancestor,
   if (ancestor == child)
     return false;
 
-  rev_height anc_height;
-  rev_height child_height;
-  get_rev_height(ancestor, anc_height);
-  get_rev_height(child, child_height);
+  rev_height anc_height = get_rev_height(ancestor),
+    child_height = get_rev_height(child);
 
   if (anc_height > child_height)
     return false;
-
 
   vector<revision_id> todo;
   todo.push_back(ancestor);
@@ -2792,7 +2789,7 @@ database::is_a_ancestor_of_b(revision_id const & ancestor,
             continue;
           else
             {
-              get_rev_height(rid, anc_height);
+              anc_height = get_rev_height(rid);
               if (child_height > anc_height)
                 {
                   seen.insert(rid);
@@ -2830,15 +2827,11 @@ database::get_revision_data(revision_id const & id)
   return revision_data(rdat);
 }
 
-void
-database::get_rev_height(revision_id const & id,
-                         rev_height & height)
+rev_height
+database::get_rev_height(revision_id const & id)
 {
   if (null_id(id))
-    {
-      height = rev_height::root_height();
-      return;
-    }
+    return rev_height::root_height();
 
   height_map::const_iterator i = imp->height_cache.find(id);
   if (i == imp->height_cache.end())
@@ -2850,15 +2843,12 @@ database::get_rev_height(revision_id const & id,
 
       I(res.size() == 1);
 
-      height = rev_height(res[0][0]);
+      rev_height height = rev_height(res[0][0]);
       imp->height_cache.insert(make_pair(id, height));
+      return height;
     }
   else
-    {
-      height = i->second;
-    }
-
-  I(height.valid());
+    return i->second;
 }
 
 void
@@ -3059,12 +3049,10 @@ database::put_height_for_revision(revision_id const & new_id,
   for (edge_map::const_iterator e = rev.edges.begin();
        e != rev.edges.end(); ++e)
     {
-      rev_height parent; MM(parent);
-      get_rev_height(edge_old_revision(e), parent);
+      rev_height parent = get_rev_height(edge_old_revision(e));
+      MM(parent);
       if (parent > highest_parent)
-      {
         highest_parent = parent;
-      }
     }
 
   // ... then find the first unused child
@@ -4724,9 +4712,7 @@ struct rev_height_graph : rev_graph
   }
   virtual rev_height get_height(revision_id const & rev) const
   {
-    rev_height h;
-    db.get_rev_height(rev, h);
-    return h;
+    return db.get_rev_height(rev);
   }
 
   database & db;

@@ -812,13 +812,11 @@ do_annotate_node(database & db,
             parents_interesting_ancestors
               = db.get_revision_parents(parent_revision);
 
-          rev_height parent_height;
-          db.get_rev_height(parent_revision, parent_height);
           annotate_node_work newunit(work_unit.annotations,
                                      parent_lineage,
                                      parent_revision,
                                      work_unit.fid,
-                                     parent_height,
+                                     db.get_rev_height(parent_revision),
                                      parents_interesting_ancestors,
                                      file_in_parent,
                                      parent_marked);
@@ -858,8 +856,6 @@ do_annotate (app_state & app, project_t & project, const_file_t file_node,
   work_units work_units;
   {
     // prepare the first work_unit
-    rev_height height;
-    project.db.get_rev_height(rid, height);
     set<revision_id> rids_interesting_ancestors;
     get_file_content_marks(project.db, rid, file_node->self,
                            rids_interesting_ancestors);
@@ -868,7 +864,8 @@ do_annotate (app_state & app, project_t & project, const_file_t file_node,
     if (rid_marked)
       rids_interesting_ancestors = project.db.get_revision_parents(rid);
 
-    annotate_node_work workunit(acp, lineage, rid, file_node->self, height,
+    annotate_node_work workunit(acp, lineage, rid, file_node->self,
+                                project.db.get_rev_height(rid),
                                 rids_interesting_ancestors, file_node->content,
                                 rid_marked);
     work_units.insert(workunit);

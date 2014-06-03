@@ -527,7 +527,7 @@ check_heights(database & db,
       rev_height h;
       try
         {
-          db.get_rev_height(*i, h);
+          h = db.get_rev_height(*i);
         }
       catch (std::exception & e)
         {
@@ -583,9 +583,8 @@ check_heights_relation(database & db,
           % p_id
           % c_id);
 
-      rev_height parent, child;
-      db.get_rev_height(p_id, parent);
-      db.get_rev_height(c_id, child);
+      rev_height parent = db.get_rev_height(p_id),
+        child = db.get_rev_height(c_id);
 
       if (!(child > parent))
         {
