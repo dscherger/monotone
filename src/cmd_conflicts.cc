@@ -340,7 +340,8 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
 enum side_t {left, right, neither};
 static char const * const conflict_resolution_not_supported_msg = N_("'%s' is not a supported conflict resolution for %s");
 
-// Call Lua merge3 hook to merge left_fid, right_fid, store result in result_path
+// Call Lua merge3 hook to merge left_fid, right_fid, store result in
+// result_path
 static bool
 do_interactive_merge(database & db,
                      lua_hooks & lua,
@@ -363,12 +364,11 @@ do_interactive_merge(database & db,
   conflicts.left_roster->get_name(nid, left_path);
   conflicts.right_roster->get_name(nid, right_path);
 
-  file_data left_data, right_data, ancestor_data;
   data merged_unpacked;
-
-  db.get_file_version(left_fid, left_data);
-  db.get_file_version(ancestor_fid, ancestor_data);
-  db.get_file_version(right_fid, right_data);
+  file_data
+    left_data = db.get_file_version(left_fid),
+    ancestor_data = db.get_file_version(ancestor_fid),
+    right_data = db.get_file_version(right_fid);
 
   if (lua.hook_merge3(ancestor_path, left_path, right_path, file_path(),
                       ancestor_data.inner(), left_data.inner(),

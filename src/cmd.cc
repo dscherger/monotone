@@ -1000,8 +1000,7 @@ process_commit_message_args(options const & opts,
     }
   else if (opts.msgfile_given)
     {
-      data dat;
-      read_data_for_command_line(opts.msgfile, dat);
+      data dat = read_data_for_command_line(opts.msgfile);
       external dat2 = typecast_vocab<external>(dat);
       system_to_utf8(dat2, log_message);
       if (!opts.no_prefix && message_prefix().length() != 0)

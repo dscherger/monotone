@@ -122,11 +122,8 @@ do_testing_on_two_equivalent_csets(cset const & a, cset const & b)
   write_cset(a, a_dat);
   write_cset(b, b_dat);
   I(a_dat == b_dat);
-  cset a2, b2;
-  MM(a2);
-  MM(b2);
-  read_cset(a_dat, a2);
-  read_cset(b_dat, b2);
+  cset a2 = read_cset(a_dat),
+       b2 = read_cset(b_dat);
   I(a2 == a);
   I(b2 == b);
   I(b2 == a);

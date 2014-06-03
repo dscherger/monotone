@@ -289,11 +289,8 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
   if (args.size() == 3)
     val = typecast_vocab<cert_value>(idx(args, 2));
   else
-    {
-      data dat;
-      read_data_stdin(dat);
-      val = typecast_vocab<cert_value>(dat);
-    }
+    val = typecast_vocab<cert_value>(read_data_stdin());
+
   for (set<revision_id>::const_iterator r = revisions.begin();
        r != revisions.end(); ++r)
     {

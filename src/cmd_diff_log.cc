@@ -48,21 +48,15 @@ using std::vector;
 using std::priority_queue;
 using std::set_difference;
 
-static void
+static data
 get_data(database & db,
          file_path const & path, file_id const & id,
-         bool const from_db, data & unpacked)
+         bool const from_db)
 {
   if (from_db)
-    {
-      file_data dat;
-      db.get_file_version(id, dat);
-      unpacked = dat.inner();
-    }
+    return db.get_file_version(id).inner();
   else
-    {
-      read_data(path, unpacked);
-    }
+    return read_data(path);
 }
 
 static void
@@ -79,7 +73,8 @@ dump_diff(lua_hooks & lua,
 {
   if (diff_format == external_diff)
     {
-      bool is_binary = is_manual_merge || guess_binary(left_data()) || guess_binary(right_data());
+      bool is_binary = is_manual_merge || guess_binary(left_data())
+        || guess_binary(right_data());
 
       file_path path = right_path;
       if (path.empty()) // use the left path for deletes
@@ -220,10 +215,11 @@ dump_diffs(lua_hooks & lua,
       data left_data, right_data;
 
       if (!null_id(dat.left_id))
-        get_data(db, dat.left_path, dat.left_id, left_from_db, left_data);
+        left_data = get_data(db, dat.left_path, dat.left_id, left_from_db);
 
       if (!null_id(dat.right_id))
-        get_data(db, dat.right_path, dat.right_id, right_from_db, right_data);
+        right_data = get_data(db, dat.right_path, dat.right_id,
+                              right_from_db);
 
       string encloser("");
       if (show_encloser)
@@ -854,7 +850,6 @@ log_common (app_state & app,
   bool use_markings(direction == log_reverse && !mask.empty());
 
   set<revision_id> seen;
-  revision_t rev;
   // this is instantiated even when not used, but it's lightweight
   asciik graph(output);
   while(!frontier.empty() && last != 0 && next != 0)
@@ -870,8 +865,7 @@ log_common (app_state & app,
         }
 
       seen.insert(rid);
-      db.get_revision(rid, rev);
-
+      revision_t rev = db.get_revision(rid);
       set<revision_id> marked_revs;
 
       if (!mask.empty())
@@ -931,17 +925,11 @@ log_common (app_state & app,
       // if rid is not marked we can jump directly to the marked ancestors,
       // otherwise we need to visit the parents
       if (use_markings && marked_revs.find(rid) == marked_revs.end())
-        {
-          interesting.insert(marked_revs.begin(), marked_revs.end());
-        }
+        interesting.insert(marked_revs.begin(), marked_revs.end());
       else if (direction == log_forward)
-        {
-          loader.load_children(rid, interesting);
-        }
+        interesting = loader.load_children(rid);
       else if (direction == log_reverse)
-        {
-          loader.load_parents(rid, interesting);
-        }
+        interesting = loader.load_parents(rid);
       else
         I(false);
 

@@ -330,8 +330,6 @@ void
 parse_edge(basic_io::parser & parser,
            revision_t & rev)
 {
-  shared_ptr<cset> cs(new cset());
-  MM(*cs);
   manifest_id old_man;
   revision_id old_rev;
   string tmp;
@@ -340,16 +338,15 @@ parse_edge(basic_io::parser & parser,
   parser.hex(tmp);
   old_rev = decode_hexenc_as<revision_id>(tmp, parser.tok.in.made_from);
 
-  parse_cset(parser, *cs);
-
+  shared_ptr<cset> cs(new cset(parse_cset(parser)));
   rev.edges.insert(make_pair(old_rev, cs));
 }
 
 
-void
-parse_revision(basic_io::parser & parser,
-               revision_t & rev)
+revision_t
+parse_revision(basic_io::parser & parser)
 {
+  revision_t rev;
   MM(rev);
   rev.edges.clear();
   rev.made_for = made_for_database;
@@ -364,33 +361,33 @@ parse_revision(basic_io::parser & parser,
     % tmp);
   parser.esym(syms::new_manifest);
   parser.hex(tmp);
-  rev.new_manifest = decode_hexenc_as<manifest_id>(tmp, parser.tok.in.made_from);
+  rev.new_manifest = decode_hexenc_as<manifest_id>(tmp,
+                                                   parser.tok.in.made_from);
   while (parser.symp(syms::old_revision))
     parse_edge(parser, rev);
   rev.check_sane();
+  return rev;
 }
 
-void
-read_revision(data const & dat,
-              revision_t & rev)
+revision_t
+read_revision(data const & dat)
 {
+  revision_t rev;
   MM(rev);
   basic_io::input_source src(dat(), "revision");
   src.made_from = dat.made_from;
   basic_io::tokenizer tok(src);
   basic_io::parser pars(tok);
-  parse_revision(pars, rev);
+  rev = parse_revision(pars);
   E(src.lookahead == EOF, rev.made_from,
     F("failed to parse revision"));
-  rev.check_sane();
+  return rev;
 }
 
-void
-read_revision(revision_data const & dat,
-              revision_t & rev)
+revision_t
+read_revision(revision_data const & dat)
 {
-  read_revision(dat.inner(), rev);
-  rev.check_sane();
+  return read_revision(dat.inner());
 }
 
 static void write_insane_revision(revision_t const & rev,

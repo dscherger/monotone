@@ -157,9 +157,7 @@ check_db_integrity_check(database & db)
 static void
 check_files(database & db, map<file_id, checked_file> & checked_files)
 {
-  set<file_id> files;
-
-  db.get_file_ids(files);
+  set<file_id> files = db.get_file_ids();
   L(FL("checking %d files") % files.size());
 
   ticker ticks(_("files"), "f", files.size()/70+1);
@@ -168,15 +166,13 @@ check_files(database & db, map<file_id, checked_file> & checked_files)
        i != files.end(); ++i)
     {
       L(FL("checking file %s") % *i);
-      file_data data;
-      db.get_file_version(*i, data);
+      file_data data = db.get_file_version(*i);
       checked_files[*i].found = true;
 
       if (db.file_size_exists(*i))
         {
-          file_size stored_size, calculated_size;
-          calculated_size = data.inner()().size();
-          db.get_file_size(*i, stored_size);
+          file_size calculated_size = data.inner()().size(),
+            stored_size = db.get_file_size(*i);
           checked_files[*i].size_ok = stored_size == calculated_size;
         }
       else
@@ -199,9 +195,7 @@ check_rosters_manifest(database & db,
                        set<manifest_id> & found_manifests,
                        map<file_id, checked_file> & checked_files)
 {
-  set<revision_id> rosters;
-
-  db.get_roster_ids(rosters);
+  set<revision_id> rosters = db.get_roster_ids();
   L(FL("checking %d rosters, manifest pass") % rosters.size());
 
   ticker ticks(_("rosters"), "r", rosters.size()/70+1);
@@ -330,9 +324,7 @@ check_revisions(database & db,
                 set<manifest_id> const & found_manifests,
                 size_t & missing_rosters)
 {
-  set<revision_id> revisions;
-
-  db.get_revision_ids(revisions);
+  set<revision_id> revisions = db.get_revision_ids();
   L(FL("checking %d revisions") % revisions.size());
 
   ticker ticks(_("revisions"), "r", revisions.size()/70+1);
@@ -341,14 +333,13 @@ check_revisions(database & db,
        i != revisions.end(); ++i)
     {
       L(FL("checking revision %s") % *i);
-      revision_data data;
-      db.get_revision(*i, data);
+      revision_data data = db.get_revision_data(*i);
       checked_revisions[*i].found = true;
 
       revision_t rev;
       try
         {
-          read_revision(data, rev);
+          rev = read_revision(data);
         }
       catch (logic_error & e)
         {
@@ -513,8 +504,7 @@ static void
 check_heights(database & db,
               map<revision_id, checked_height> & checked_heights)
 {
-  set<revision_id> heights;
-  db.get_revision_ids(heights);
+  set<revision_id> heights = db.get_revision_ids();
 
   // add revision [], it is the (imaginary) root of all revisions, and
   // should have a height, too

@@ -68,10 +68,9 @@ get_workspace_format()
     }
   else
     {
-      data f_dat;
       try
         {
-          read_data(f_path, f_dat);
+          data f_dat = read_data(f_path);
           format = lexical_cast<unsigned int>(remove_ws(f_dat()));
         }
       catch (exception & e)
@@ -191,7 +190,7 @@ migrate_1_to_2()
   data base_rev_data; MM(base_rev_data);
   try
     {
-      read_data(rev_path, base_rev_data);
+      base_rev_data = read_data(rev_path);
     }
   catch (exception & e)
     {
@@ -213,7 +212,7 @@ migrate_1_to_2()
         data workcs_data; MM(workcs_data);
         try
           {
-            read_data(workcs_path, workcs_data);
+            workcs_data = read_data(workcs_path);
           }
         catch (exception & e)
           {
@@ -222,7 +221,7 @@ migrate_1_to_2()
               % workcs_path % e.what());
           }
 
-        read_cset(workcs_data, workcs);
+        workcs = read_cset(workcs_data);
       }
     else
       require_path_is_nonexistent(workcs_path,

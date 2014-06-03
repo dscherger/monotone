@@ -334,11 +334,11 @@ parse_path(basic_io::parser & parser, file_path & sp)
   sp = file_path_internal(s);
 }
 
-void
-parse_cset(basic_io::parser & parser,
-           cset & cs)
+cset
+parse_cset(basic_io::parser & parser)
 {
-  cs.clear();
+  cset cs;
+  MM(cs);
   string t1, t2;
   MM(t1);
   MM(t2);
@@ -441,6 +441,8 @@ parse_cset(basic_io::parser & parser,
       parser.str(t2);
       safe_insert(cs.attrs_set, make_pair(new_pair, attr_value(t2, parser.tok.in.made_from)));
     }
+
+  return cs;
 }
 
 void
@@ -451,16 +453,16 @@ write_cset(cset const & cs, data & dat)
   dat = data(pr.buf, origin::internal);
 }
 
-void
-read_cset(data const & dat, cset & cs)
+cset
+read_cset(data const & dat)
 {
   MM(dat);
-  MM(cs);
   basic_io::input_source src(dat(), "cset");
   basic_io::tokenizer tok(src);
   basic_io::parser pars(tok);
-  parse_cset(pars, cs);
+  cset cs = parse_cset(pars);
   I(src.lookahead == EOF);
+  return cs;
 }
 
 template <> void

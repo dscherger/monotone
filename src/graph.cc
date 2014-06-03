@@ -197,16 +197,13 @@ advance_frontier(set<height_rev_pair> & frontier,
   const height_rev_pair h_node = *frontier.rbegin();
   const revision_id & node(h_node.second);
   frontier.erase(h_node);
-  set<revision_id> parents;
-  rg.get_parents(node, parents);
+  set<revision_id> parents = rg.get_parents(node);
   for (set<revision_id>::const_iterator r = parents.begin();
         r != parents.end(); r++)
   {
     if (seen.find(*r) == seen.end())
     {
-      rev_height h;
-      rg.get_height(*r, h);
-      frontier.insert(make_pair(h, *r));
+      frontier.insert(make_pair(rg.get_height(*r), *r));
       seen.insert(*r);
     }
   }
@@ -230,11 +227,8 @@ get_uncommon_ancestors(revision_id const & a,
 
   set<height_rev_pair> a_frontier, b_frontier, common_frontier;
   {
-    rev_height h;
-    rg.get_height(a, h);
-    a_frontier.insert(make_pair(h, a));
-    rg.get_height(b, h);
-    b_frontier.insert(make_pair(h, b));
+    a_frontier.insert(make_pair(rg.get_height(a), a));
+    b_frontier.insert(make_pair(rg.get_height(b), b));
   }
 
   unordered_set<revision_id> a_seen, b_seen, common_seen;

@@ -71,12 +71,12 @@ void move_dir(any_path const & old_path,
 void move_path(any_path const & old_path,
                any_path const & new_path);
 
-void read_data(any_path const & path, data & data);
+data read_data(any_path const & path);
 
-void read_data_stdin(data & dat);
+data read_data_stdin();
 
 // This function knows that "-" means "stdin".
-void read_data_for_command_line(utf8 const & path, data & dat);
+data read_data_for_command_line(utf8 const & path);
 
 // These are not any_path's because we make our write somewhat atomic -- we
 // first write to a temp file in _MTN/ (and it must be in _MTN/, not like /tmp

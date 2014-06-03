@@ -47,14 +47,12 @@ UNIT_TEST(from_network)
     "rename \"some_file\"\n"
     "   foo \"some_file\"\n"
   };
-  revision_t rev;
   for (unsigned i = 0; i < sizeof(bad_revisions)/sizeof(char const*); ++i)
     {
       UNIT_TEST_CHECKPOINT((string("iteration ")
                             + boost::lexical_cast<string>(i)).c_str());
       UNIT_TEST_CHECK_THROW(read_revision(data(bad_revisions[i],
-                                               origin::network),
-                                          rev),
+                                               origin::network)),
                             recoverable_failure);
     }
 }

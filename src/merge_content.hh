@@ -40,12 +40,10 @@ content_merge_adaptor
                            file_data const & parent_data,
                            file_data const & merged_data) = 0;
 
-  virtual void get_ancestral_roster(node_id nid,
-                                    revision_id & rid,
-                                    std::shared_ptr<roster_t const> & anc) = 0;
+  virtual roster_t_cp
+  get_ancestral_roster(node_id nid, revision_id & rid) = 0;
 
-  virtual void get_version(file_id const & ident,
-                           file_data & dat) const = 0;
+  virtual file_data get_version(file_id const & ident) const = 0;
 
   virtual ~content_merge_adaptor() {}
 };
@@ -87,9 +85,8 @@ content_merge_database_adaptor
   void cache_roster(revision_id const & rid,
                     std::shared_ptr<roster_t const> roster);
 
-  void get_ancestral_roster(node_id nid,
-                            revision_id & rid,
-                            std::shared_ptr<roster_t const> & anc);
+  roster_t_cp get_ancestral_roster(node_id nid,
+                                   revision_id & rid);
 
   // Search uncommon_ancestors (which must be left_uncommon_ancestors or
   // right_uncommon_ancestors); return rev, file_path, and file_id for nid
@@ -101,8 +98,7 @@ content_merge_database_adaptor
                            file_path   &                 dropped_name,
                            file_id     &                 dropped_file_id);
 
-  void get_version(file_id const & ident,
-                   file_data & dat) const;
+  file_data get_version(file_id const & ident) const;
 };
 
 struct
@@ -145,12 +141,9 @@ content_merge_workspace_adaptor
                    file_data const & parent_data,
                    file_data const & merged_data);
 
-  void get_ancestral_roster(node_id nid,
-                            revision_id & rid,
-                            std::shared_ptr<roster_t const> & anc);
+  roster_t_cp get_ancestral_roster(node_id nid, revision_id & rid);
 
-  void get_version(file_id const & ident,
-                   file_data & dat) const;
+  file_data get_version(file_id const & ident) const;
 };
 
 struct
@@ -177,13 +170,9 @@ content_merge_checkout_adaptor
                    file_data const & parent_data,
                    file_data const & merged_data);
 
-  void get_ancestral_roster(node_id nid,
-                            revision_id & rid,
-                            std::shared_ptr<roster_t const> & anc);
+  roster_t_cp get_ancestral_roster(node_id nid, revision_id & rid);
 
-  void get_version(file_id const & ident,
-                   file_data & dat) const;
-
+  file_data get_version(file_id const & ident) const;
 };
 
 
@@ -206,12 +195,9 @@ content_merge_empty_adaptor
                    file_data const & parent_data,
                    file_data const & merged_data);
 
-  void get_ancestral_roster(node_id nid,
-                            revision_id & rid,
-                            std::shared_ptr<roster_t const> & anc);
+  roster_t_cp get_ancestral_roster(node_id nid, revision_id & rid);
 
-  void get_version(file_id const & ident,
-                   file_data & dat) const;
+  file_data get_version(file_id const & ident) const;
 };
 
 struct content_merger

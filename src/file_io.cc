@@ -275,8 +275,8 @@ move_path(any_path const & old_path,
   rename_clobberingly(old_path.as_external(), new_path.as_external());
 }
 
-void
-read_data(any_path const & p, data & dat)
+data
+read_data(any_path const & p)
 {
   require_path_is_file(p,
                        F("file '%s' does not exist") % p,
@@ -291,13 +291,13 @@ read_data(any_path const & p, data & dat)
   origin::type data_from = p.made_from;
   if (data_from != origin::internal || data_from == origin::database)
     data_from = origin::system;
-  dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
-             data_from);
+  return data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
+              data_from);
 }
 
 // This function can only be called once per run.
-void
-read_data_stdin(data & dat)
+data
+read_data_stdin()
 {
   static bool have_consumed_stdin = false;
   E(!have_consumed_stdin, origin::user,
@@ -306,17 +306,17 @@ read_data_stdin(data & dat)
   unfiltered_pipe->start_msg();
   cin >> *unfiltered_pipe;
   unfiltered_pipe->end_msg();
-  dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
-             origin::user);
+  return data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
+              origin::user);
 }
 
-void
-read_data_for_command_line(utf8 const & path, data & dat)
+data
+read_data_for_command_line(utf8 const & path)
 {
   if (path() == "-")
-    read_data_stdin(dat);
+    return read_data_stdin();
   else
-    read_data(system_path(path), dat);
+    return read_data(system_path(path));
 }
 
 

@@ -217,13 +217,12 @@ workspace::workspace(lua_hooks & lua, i18n_format const & explanation)
 revision_t
 workspace::get_work_rev()
 {
-  revision_t rev;
   bookkeeping_path rev_path(get_revision_path());
   data rev_data;
   MM(rev_data);
   try
     {
-      read_data(rev_path, rev_data);
+      rev_data = read_data(rev_path);
     }
   catch(exception & e)
     {
@@ -232,7 +231,7 @@ workspace::get_work_rev()
         % rev_path % e.what());
     }
 
-  read_revision(rev_data, rev);
+  revision_t rev = read_revision(rev_data);
   // Mark it so it doesn't creep into the database.
   rev.made_for = made_for_workspace;
   return rev;
@@ -255,13 +254,11 @@ revision_id
 workspace::get_update_id()
 {
   revision_id update_id;
-  data update_data;
   bookkeeping_path update_path = get_update_path();
   E(file_exists(update_path), origin::user,
     F("no update has occurred in this workspace"));
 
-  read_data(update_path, update_data);
-
+  data update_data = read_data(update_path);
   update_id = revision_id(decode_hexenc(update_data(), origin::internal),
                           origin::internal);
   E(!null_id(update_id), origin::internal,
@@ -395,8 +392,7 @@ workspace::read_user_log()
 
   if (file_exists(ul_path))
     {
-      data tmp;
-      read_data(ul_path, tmp);
+      data tmp = read_data(ul_path);
       system_to_utf8(typecast_vocab<external>(tmp), result);
     }
 
@@ -439,8 +435,7 @@ workspace::load_commit_text()
   bookkeeping_path commit_path = get_commit_path();
   if (file_exists(commit_path))
     {
-      data tmp;
-      read_data(commit_path, tmp);
+      data tmp = read_data(commit_path);
       system_to_utf8(typecast_vocab<external>(tmp), dat);
     }
 
@@ -472,7 +467,7 @@ read_options_file(any_path const & optspath,
   data dat;
   try
     {
-      read_data(optspath, dat);
+      dat = read_data(optspath);
     }
   catch (exception & e)
     {
@@ -760,8 +755,7 @@ workspace::get_bisect_info()
   if (!file_exists(bisect_path))
     return vector<bisect::entry>();
 
-  data dat;
-  read_data(bisect_path, dat);
+  data dat = read_data(bisect_path);
 
   string name("bisect");
   basic_io::input_source src(dat(), name, origin::workspace);
@@ -885,9 +879,7 @@ workspace::read_inodeprints()
   I(in_inodeprints_mode());
   bookkeeping_path ip_path;
   get_inodeprints_path(ip_path);
-  data dat;
-  read_data(ip_path, dat);
-  return dat;
+  return read_data(ip_path);
 }
 
 void
@@ -1348,10 +1340,7 @@ editable_working_tree::create_file_node(file_id const & content)
   bookkeeping_path pth = path_for_detached_nid(nid);
   require_path_is_nonexistent(pth,
                               F("path '%s' already exists") % pth);
-  file_data dat;
-  source.get_version(content, dat);
-  write_data(pth, dat.inner());
-
+  write_data(pth, source.get_version(content).inner());
   return nid;
 }
 
@@ -1406,9 +1395,7 @@ editable_working_tree::apply_delta(file_path const & pth,
     F("content of file '%s' has changed, not overwriting") % pth);
   P(F("updating '%s'") % pth);
 
-  file_data dat;
-  source.get_version(new_id, dat);
-  write_data(pth, dat.inner());
+  write_data(pth, source.get_version(new_id).inner());
 }
 
 void

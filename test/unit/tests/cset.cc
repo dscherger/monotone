@@ -56,8 +56,7 @@ UNIT_TEST(cset_written)
              "\n"
              "add_dir \"pling\"\n");
     data d1(s, origin::internal);
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(d1, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(d1), logic_error);
     // check that it still fails if there's extra stanzas past the
     // mis-ordered entries
     data d2(s + "\n"
@@ -65,7 +64,7 @@ UNIT_TEST(cset_written)
                 " attr \"flavoursome\"\n"
                 "value \"mostly\"\n",
             origin::internal);
-    UNIT_TEST_CHECK_THROW(read_cset(d2, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(d2), logic_error);
   }
 
   {
@@ -74,8 +73,7 @@ UNIT_TEST(cset_written)
     data dat("delete \"foo\"\n"
              "\n"
              "delete \"bar\"\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -86,8 +84,7 @@ UNIT_TEST(cset_written)
              "\n"
              "rename \"bar\"\n"
              "    to \"barnew\"\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -96,8 +93,7 @@ UNIT_TEST(cset_written)
     data dat("add_dir \"foo\"\n"
              "\n"
              "add_dir \"bar\"\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -108,8 +104,7 @@ UNIT_TEST(cset_written)
              "\n"
              "add_file \"bar\"\n"
              " content [0000000000000000000000000000000000000000]\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -120,8 +115,7 @@ UNIT_TEST(cset_written)
              "\n"
              "add_file \"bar\"\n"
              " content [0000000000000000000000000000000000000000]\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -134,8 +128,7 @@ UNIT_TEST(cset_written)
              "patch \"bar\"\n"
              " from [0000000000000000000000000000000000000000]\n"
              "   to [1000000000000000000000000000000000000000]\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -146,8 +139,7 @@ UNIT_TEST(cset_written)
              "\n"
              "clear \"bar\"\n"
              " attr \"flavoursome\"\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -160,8 +152,7 @@ UNIT_TEST(cset_written)
              "  set \"bar\"\n"
              " attr \"flavoursome\"\n"
              "value \"yes\"\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -169,8 +160,7 @@ UNIT_TEST(cset_written)
     data dat("delete \"foo\"\n"
              "\n"
              "delete \"foo\"\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -183,8 +173,7 @@ UNIT_TEST(cset_written)
               "  set \"bar\"\n"
               " attr \"smell\"\n"
               "value \"socks\"\n");
-    cset cs;
-    UNIT_TEST_CHECK_NOT_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_NOT_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -195,8 +184,7 @@ UNIT_TEST(cset_written)
               "\n"
               "clear \"bar\"\n"
               " attr \"fooish\"\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -209,8 +197,7 @@ UNIT_TEST(cset_written)
               "  set \"bar\"\n"
               " attr \"fooish\"\n"
               "value \"seldom\"\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {
@@ -223,8 +210,7 @@ UNIT_TEST(cset_written)
               "  set \"bar\"\n"
               " attr \"flavoursome\"\n"
               "value \"sometimes\"\n");
-    cset cs;
-    UNIT_TEST_CHECK_THROW(read_cset(dat, cs), logic_error);
+    UNIT_TEST_CHECK_THROW(read_cset(dat), logic_error);
   }
 
   {

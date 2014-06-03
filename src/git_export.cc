@@ -60,10 +60,8 @@ namespace
 void
 read_mappings(system_path const & path, map<string, string> & mappings)
 {
-  data names;
   vector<string> lines;
-
-  read_data(path, names);
+  data names = read_data(path);
   split_into_lines(names(), lines);
 
   for (vector<string>::const_iterator i = lines.begin(); i != lines.end(); ++i)
@@ -99,10 +97,7 @@ import_marks(system_path const & marks_file,
              map<revision_id, size_t> & marked_revs)
 {
   size_t mark_id = 1;
-
-  data mark_data;
-  read_data(marks_file, mark_data);
-  istringstream marks(mark_data());
+  istringstream marks(read_data(marks_file)());
   marks.peek();
   while (!marks.eof())
     {
@@ -170,8 +165,7 @@ load_changes(database & db,
   for (vector<revision_id>::const_reverse_iterator
          r = revisions.rbegin(); r != revisions.rend(); ++r)
     {
-      revision_t revision;
-      db.get_revision(*r, revision);
+      revision_t revision = db.get_revision(*r);
 
       // we apparently only need/want the changes from the first parent.
       // including the changes from the second parent seems to cause
@@ -375,9 +369,7 @@ export_changes(database & db, lua_hooks & lua,
             }
         }
 
-      revision_t revision;
-      db.get_revision(*r, revision);
-
+      revision_t revision = db.get_revision(*r);
       edge_map::const_iterator edge = revision.edges.begin();
 
       revision_id parent1, parent2;
@@ -410,8 +402,7 @@ export_changes(database & db, lua_hooks & lua,
           if (marked_files.find(i->content) == marked_files.end())
             {
               // only mark and emit a blob the first time it is encountered
-              file_data data;
-              db.get_file_version(i->content, data);
+              file_data data = db.get_file_version(i->content);
               marked_files[i->content] = mark_id++;
               cout << "blob\n"
                    << "mark :" << marked_files[i->content] << "\n"
@@ -531,9 +522,8 @@ void
 export_root_refs(database & db,
                 map<revision_id, size_t> & marked_revs)
 {
-  set<revision_id> roots;
   revision_id nullid;
-  db.get_revision_children(nullid, roots);
+  set<revision_id> roots = db.get_revision_children(nullid);
   for (set<revision_id>::const_iterator
          i = roots.begin(); i != roots.end(); ++i)
     cout << "reset refs/mtn/roots/" << *i << "\n"
@@ -544,8 +534,7 @@ void
 export_leaf_refs(database & db,
                  map<revision_id, size_t> & marked_revs)
 {
-  set<revision_id> leaves;
-  db.get_leaves(leaves);
+  set<revision_id> leaves = db.get_leaves();
   for (set<revision_id>::const_iterator
          i = leaves.begin(); i != leaves.end(); ++i)
     cout << "reset refs/mtn/leaves/" << *i << "\n"

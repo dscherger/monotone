@@ -119,12 +119,11 @@ print_cset(basic_io::printer & printer,
 void
 write_cset(cset const & cs, data & dat);
 
-void
-parse_cset(basic_io::parser & parser,
-           cset & cs);
+cset
+parse_cset(basic_io::parser & parser);
 
-void
-read_cset(data const & dat, cset & cs);
+cset
+read_cset(data const & dat);
 
 template <> void
 dump(cset const & cs, std::string & out);

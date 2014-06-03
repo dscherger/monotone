@@ -472,18 +472,14 @@ revert(app_state & app,
           if (revert)
             {
               P(F("reverting %s") % path);
-              L(FL("reverting %s to [%s]") % path
-                % f->content);
+              L(FL("reverting %s to [%s]") % path % f->content);
 
               E(db.file_version_exists(f->content), origin::user,
                 F("no file version %s found in database for '%s'")
                 % f->content % path);
 
-              file_data dat;
-              L(FL("writing file %s to %s")
-                % f->content % path);
-              db.get_file_version(f->content, dat);
-              write_data(path, dat.inner());
+              L(FL("writing file %s to %s") % f->content % path);
+              write_data(path, db.get_file_version(f->content).inner());
             }
         }
       else
@@ -560,7 +556,7 @@ walk_revisions(database & db, const revision_id & from_rev,
         F("revision %s it not a child of %s, cannot invert")
         % from_rev % to_rev);
 
-      db.get_revision(r, rev);
+      revision_t rev = db.get_revision(r);
       E(rev.edges.size() < 2, origin::user,
         F("revision %s has %d parents, cannot invert")
         % r % rev.edges.size());
@@ -598,7 +594,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
   if (args.size() == 1)
     {
       complete(app.opts, app.lua, project, idx(args, 0)(), child_rev);
-      db.get_revision(child_rev, rev);
+      rev = db.get_revision(child_rev);
 
       E(rev.edges.size() == 1, origin::user,
         F("revision %s has %d parents, cannot invert")
@@ -638,7 +634,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
         }
 
       walk_revisions(db, child_rev, parent_rev);
-      db.get_revision(parent_rev, rev);
+      rev = db.get_revision(parent_rev);
 
       E(rev.edges.size() == 1, origin::user,
         F("revision %s has %d parents, cannot invert")
@@ -663,11 +659,11 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
                            app.opts.ignore_suspend_certs);
   unsigned int old_head_size = heads.size();
 
-  edge_entry const & old_edge (*rev.edges.begin());
+  edge_entry const & old_edge = *rev.edges.begin();
   E(!null_id(edge_old_revision(old_edge)), origin::user,
     F("cannot disapprove root revision"));
-  db.get_revision_manifest(edge_old_revision(old_edge),
-                               rev_inverse.new_manifest);
+  rev_inverse.new_manifest
+    = db.get_revision_manifest(edge_old_revision(old_edge));
   {
     roster_t old_roster, new_roster;
     db.get_roster(edge_old_revision(old_edge), old_roster);
@@ -1672,10 +1668,8 @@ void perform_commit(app_state & app,
                       L(FL("inserting delta %s -> %s")
                         % old_content % new_content);
 
-                    file_data old_data;
-                    data new_data;
-                    db.get_file_version(old_content, old_data);
-                    read_data(path, new_data);
+                    file_data old_data = db.get_file_version(old_content);
+                    data new_data = read_data(path);
                     // sanity check
                     file_id tid = calculate_ident(file_data(new_data));
                     E(tid == new_content, origin::user,
@@ -1683,9 +1677,8 @@ void perform_commit(app_state & app,
                       % path);
                     delta del;
                     diff(old_data.inner(), new_data, del);
-                    db.put_file_version(old_content,
-                                            new_content,
-                                            file_delta(del));
+                    db.put_file_version(old_content, new_content,
+                                        file_delta(del));
                   }
                 else
                   // If we don't err out here, the database will later.
@@ -1703,8 +1696,7 @@ void perform_commit(app_state & app,
 
                 if (global_sanity.debug_p())
                   L(FL("inserting full version %s") % new_content);
-                data new_data;
-                read_data(path, new_data);
+                data new_data = read_data(path);
                 // sanity check
                 file_id tid = calculate_ident(file_data(new_data));
                 E(tid == new_content, origin::user,
@@ -1773,8 +1765,7 @@ void perform_commit(app_state & app,
          i != ctmp.end(); ++i)
       certs.insert(make_pair(i->name, i->value));
 
-    revision_data rdat;
-    db.get_revision(restricted_rev_id, rdat);
+    revision_data rdat = db.get_revision_data(restricted_rev_id);
     app.lua.hook_note_commit(restricted_rev_id, rdat, certs);
   }
 }

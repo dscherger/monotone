@@ -192,28 +192,28 @@ struct mock_rev_graph : rev_graph
     }
   }
 
-  virtual void get_parents(revision_id const & node, set<revision_id> & parents) const
+  virtual set<revision_id> get_parents(revision_id const & node) const
   {
-    parents.clear();
+    set<revision_id> parents;
     for (rev_ancestry_map::const_iterator i = child_to_parent_map.lower_bound(node);
       i != child_to_parent_map.upper_bound(node); i++)
     {
       if (!null_id(i->second))
         safe_insert(parents, i->second);
     }
+    return parents;
   }
 
-  virtual void get_children(revision_id const & /* node */,
-                            set<revision_id> & /* parents */) const
+  virtual set<revision_id> get_children(revision_id const & /* node */) const
   {
     // not required
     I(false);
   }
 
-  virtual void get_height(revision_id const & rev, rev_height & h) const
+  virtual rev_height get_height(revision_id const & rev) const
   {
     MM(rev);
-    h = safe_get(height_map, rev);
+    return safe_get(height_map, rev);
   }
 
 

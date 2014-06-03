@@ -392,8 +392,7 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
   for (vector<revision_id>::const_iterator rev = sorted.begin();
        rev != sorted.end(); ++rev)
     {
-      set<revision_id> parents;
-      db.get_revision_parents(*rev, parents);
+      set<revision_id> parents = db.get_revision_parents(*rev);
       parents.erase(ghost); // remove the fake parent that root nodes have
       graph.print(*rev, parents, encode_hexenc(rev->inner()(),
                                                rev->inner().made_from));

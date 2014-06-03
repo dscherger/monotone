@@ -96,9 +96,8 @@ revision_enumerator::files_for_revision(revision_id const & r,
   map<file_id, file_id> file_deltas;
   map<file_id, size_t> file_edge_counts;
 
-  revision_t rs;
+  revision_t rs = project.db.get_revision(r);
   MM(rs);
-  project.db.get_revision(r, rs);
 
   for (edge_map::const_iterator i = rs.edges.begin();
        i != rs.edges.end(); ++i)

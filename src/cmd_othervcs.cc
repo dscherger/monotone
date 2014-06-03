@@ -107,8 +107,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), (""),
       import_marks(app.opts.import_marks, marked_revs);
     }
 
-  set<revision_id> revision_set;
-  db.get_revision_ids(revision_set);
+  set<revision_id> revision_set = db.get_revision_ids();
 
   // remove marked revs from the set to be exported
   for (map<revision_id, size_t>::const_iterator

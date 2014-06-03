@@ -346,9 +346,9 @@ put_attr_conflict (basic_io::stanza & st,
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
 
   // This ensures that the ancestor roster is computed
-  std::shared_ptr<roster_t const> ancestor_roster;
   revision_id ancestor_rid;
-  db_adaptor.get_ancestral_roster (conflict.nid, ancestor_rid, ancestor_roster);
+  roster_t_cp ancestor_roster =
+    db_adaptor.get_ancestral_roster(conflict.nid, ancestor_rid);
 
   std::shared_ptr<roster_t const> left_roster(db_adaptor.rosters[db_adaptor.left_rid]);
   I(0 != left_roster);
@@ -497,9 +497,9 @@ put_content_conflict (basic_io::stanza & st,
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
 
   // This ensures that the ancestor roster is computed
-  std::shared_ptr<roster_t const> ancestor_roster;
   revision_id ancestor_rid;
-  db_adaptor.get_ancestral_roster (conflict.nid, ancestor_rid, ancestor_roster);
+  roster_t_cp ancestor_roster
+    = db_adaptor.get_ancestral_roster(conflict.nid, ancestor_rid);
 
   file_path ancestor_name;
   file_path left_name;
@@ -567,14 +567,14 @@ roster_merge_result::report_missing_root_conflicts(roster_t const & left_roster,
       // these must be different for this conflict to happen
       I(left_root != right_root);
 
-      shared_ptr<roster_t const> left_lca_roster, right_lca_roster;
+      roster_t_cp left_lca_roster, right_lca_roster;
       revision_id left_lca_rid, right_lca_rid;
       file_path left_lca_name, right_lca_name;
 
-      adaptor.get_ancestral_roster(left_root, left_lca_rid,
-                                   left_lca_roster);
-      adaptor.get_ancestral_roster(right_root, right_lca_rid,
-                                   right_lca_roster);
+      left_lca_roster = adaptor.get_ancestral_roster(left_root,
+                                                     left_lca_rid);
+      right_lca_roster = adaptor.get_ancestral_roster(right_root,
+                                                      right_lca_rid);
 
       left_lca_roster->get_name(left_root, left_lca_name);
       right_lca_roster->get_name(right_root, right_lca_name);
@@ -698,17 +698,18 @@ roster_merge_result::report_invalid_name_conflicts(roster_t const & left_roster,
 
       I(!roster.is_attached(conflict.nid));
 
-      shared_ptr<roster_t const> lca_roster, parent_lca_roster;
+      roster_t_cp lca_roster, parent_lca_roster;
       revision_id lca_rid, parent_lca_rid;
       file_path lca_name, lca_parent_name;
       basic_io::stanza st;
 
-      adaptor.get_ancestral_roster(conflict.nid, lca_rid, lca_roster);
+      lca_roster = adaptor.get_ancestral_roster(conflict.nid, lca_rid);
       lca_roster->get_name(conflict.nid, lca_name);
       lca_roster->get_name(conflict.parent_name.first, lca_parent_name);
 
-      adaptor.get_ancestral_roster(conflict.parent_name.first,
-                                   parent_lca_rid, parent_lca_roster);
+      parent_lca_roster
+        = adaptor.get_ancestral_roster(conflict.parent_name.first,
+                                       parent_lca_rid);
 
       if (basic_io)
         st.push_str_pair(syms::conflict, syms::invalid_name);
@@ -808,12 +809,12 @@ roster_merge_result::report_directory_loop_conflicts(roster_t const & left_roste
       left_roster.get_name(conflict.parent_name.first, left_parent_name);
       right_roster.get_name(conflict.parent_name.first, right_parent_name);
 
-      shared_ptr<roster_t const> lca_roster;
       revision_id lca_rid;
       file_path lca_name, lca_parent_name;
       basic_io::stanza st;
 
-      adaptor.get_ancestral_roster(conflict.nid, lca_rid, lca_roster);
+      roster_t_cp lca_roster
+        = adaptor.get_ancestral_roster(conflict.nid, lca_rid);
       lca_roster->get_name(conflict.nid, lca_name);
       lca_roster->get_name(conflict.parent_name.first, lca_parent_name);
 
@@ -880,13 +881,14 @@ roster_merge_result::report_orphaned_node_conflicts(roster_t const & left_roster
 
       I(!roster.is_attached(conflict.nid));
 
-      shared_ptr<roster_t const> lca_roster, parent_lca_roster;
+      roster_t_cp lca_roster, parent_lca_roster;
       revision_id lca_rid, parent_lca_rid;
       file_path lca_name;
 
-      adaptor.get_ancestral_roster(conflict.nid, lca_rid, lca_roster);
-      adaptor.get_ancestral_roster(conflict.parent_name.first,
-                                   parent_lca_rid, parent_lca_roster);
+      lca_roster = adaptor.get_ancestral_roster(conflict.nid, lca_rid);
+      parent_lca_roster
+        = adaptor.get_ancestral_roster(conflict.parent_name.first,
+                                       parent_lca_rid);
 
       lca_roster->get_name(conflict.nid, lca_name);
 
@@ -1026,11 +1028,11 @@ roster_merge_result::report_multiple_name_conflicts(roster_t const & left_roster
       left_roster.get_name(conflict.nid, left_name);
       right_roster.get_name(conflict.nid, right_name);
 
-      shared_ptr<roster_t const> lca_roster;
+      roster_t_cp lca_roster;
       revision_id lca_rid;
       file_path lca_name;
 
-      adaptor.get_ancestral_roster(conflict.nid, lca_rid, lca_roster);
+      lca_roster = adaptor.get_ancestral_roster(conflict.nid, lca_rid);
       lca_roster->get_name(conflict.nid, lca_name);
 
       node_type type = get_type(*lca_roster, conflict.nid);
@@ -1116,18 +1118,18 @@ roster_merge_result::report_dropped_modified_conflicts(roster_t const & left_ros
           break;
         }
 
-      shared_ptr<roster_t const> lca_roster;
       revision_id lca_rid;
       file_path ancestor_name;
 
-      adaptor.get_ancestral_roster(nid, lca_rid, lca_roster);
+      roster_t_cp lca_roster = adaptor.get_ancestral_roster(nid, lca_rid);
       lca_roster->get_name(nid, ancestor_name);
 
       if (basic_io)
         {
           basic_io::stanza st;
 
-          content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
+          content_merge_database_adaptor & db_adaptor
+            (dynamic_cast<content_merge_database_adaptor &>(adaptor));
           file_id fid;
 
           st.push_str_pair(syms::conflict, syms::dropped_modified);
@@ -1307,11 +1309,12 @@ roster_merge_result::report_duplicate_name_conflicts(roster_t const & left_roste
       left_roster.get_name(left_nid, left_name);
       right_roster.get_name(right_nid, right_name);
 
-      shared_ptr<roster_t const> left_lca_roster, right_lca_roster;
+      roster_t_cp left_lca_roster, right_lca_roster;
       revision_id left_lca_rid, right_lca_rid;
 
-      adaptor.get_ancestral_roster(left_nid, left_lca_rid, left_lca_roster);
-      adaptor.get_ancestral_roster(right_nid, right_lca_rid, right_lca_roster);
+      left_lca_roster = adaptor.get_ancestral_roster(left_nid, left_lca_rid);
+      right_lca_roster = adaptor.get_ancestral_roster(right_nid,
+                                                      right_lca_rid);
 
       // In most cases, the left_name equals the right_name. However, maybe
       // a parent directory got renamed on one side. In that case, the names
@@ -1522,11 +1525,11 @@ roster_merge_result::report_attribute_conflicts(roster_t const & left_roster,
               left_roster.get_name(conflict.nid, left_name);
               right_roster.get_name(conflict.nid, right_name);
 
-              shared_ptr<roster_t const> lca_roster;
               revision_id lca_rid;
               file_path lca_name;
 
-              adaptor.get_ancestral_roster(conflict.nid, lca_rid, lca_roster);
+              roster_t_cp lca_roster
+                = adaptor.get_ancestral_roster(conflict.nid, lca_rid);
               lca_roster->get_name(conflict.nid, lca_name);
 
               if (type == file_type)
@@ -1588,11 +1591,12 @@ namespace
                       roster_t const & right_roster)
   {
     revision_id ancestor_rid;
-    shared_ptr<roster_t const> ancestor_roster;
-    adaptor.get_ancestral_roster(conflict.nid, ancestor_rid, ancestor_roster);
+    roster_t_cp ancestor_roster
+      = adaptor.get_ancestral_roster(conflict.nid, ancestor_rid);
 
     I(ancestor_roster);
-    I(ancestor_roster->has_node(conflict.nid)); // this fails if there is no least common ancestor
+    I(ancestor_roster->has_node(conflict.nid)); // this fails if there is no
+                                                // least common ancestor
 
     file_id anc_id, left_id, right_id;
     file_path anc_path, left_path, right_path;
@@ -1660,11 +1664,11 @@ roster_merge_result::report_file_content_conflicts(lua_hooks & lua,
               left_roster.get_name(conflict.nid, left_name);
               right_roster.get_name(conflict.nid, right_name);
 
-              shared_ptr<roster_t const> lca_roster;
               revision_id lca_rid;
               file_path lca_name;
 
-              adaptor.get_ancestral_roster(conflict.nid, lca_rid, lca_roster);
+              roster_t_cp lca_roster
+                = adaptor.get_ancestral_roster(conflict.nid, lca_rid);
               lca_roster->get_name(conflict.nid, lca_name);
 
               P(F("conflict: content conflict on file '%s' from revision %s")
@@ -1692,11 +1696,12 @@ namespace resolve_conflicts
                 file_id & merged_id)
   {
     revision_id ancestor_rid;
-    shared_ptr<roster_t const> ancestor_roster;
-    adaptor.get_ancestral_roster(conflict.nid, ancestor_rid, ancestor_roster);
+    roster_t_cp ancestor_roster
+      = adaptor.get_ancestral_roster(conflict.nid, ancestor_rid);
 
     I(ancestor_roster);
-    I(ancestor_roster->has_node(conflict.nid)); // this fails if there is no least common ancestor
+    I(ancestor_roster->has_node(conflict.nid)); // this fails if there is no
+                                                // least common ancestor
 
     file_id anc_id, left_id, right_id;
     file_path anc_path, left_path, right_path, merged_path;
@@ -2612,9 +2617,7 @@ roster_merge_result::read_conflict_file(database & db,
                                         roster_t & right_roster,
                                         marking_map & right_marking)
 {
-  data dat;
-
-  read_data (file_name, dat);
+  data dat = read_data(file_name);
 
   basic_io::input_source src(dat(), file_name.as_external());
   src.made_from = origin::user;
@@ -2716,11 +2719,9 @@ parse_resolve_conflicts_opts (options const & opts,
           return;
         }
 
-      data dat;
-
-      read_data (system_path(opts.resolve_conflicts_file), dat);
-
-      basic_io::input_source src(dat(), opts.resolve_conflicts_file.as_external());
+      data dat = read_data(system_path(opts.resolve_conflicts_file));
+      basic_io::input_source src(dat(),
+                                 opts.resolve_conflicts_file.as_external());
       src.made_from = origin::user;
       basic_io::tokenizer tok(src);
       basic_io::parser pars(tok);
@@ -2855,18 +2856,16 @@ create_new_node(roster_t const &            parent_roster,
 {
   file_path parent_name;
   file_id   parent_fid;
-  file_data parent_data;
 
   parent_roster.get_file_details(parent_nid, parent_fid, parent_name);
-  adaptor.get_version(parent_fid, parent_data);
+  file_data parent_data = adaptor.get_version(parent_fid);
 
-  P(F("replacing content of '%s' from %s with '%s'") % parent_name % side_image % new_content->as_external());
+  P(F("replacing content of '%s' from %s with '%s'")
+    % parent_name % side_image % new_content->as_external());
 
   P(F(history_lost_msg) % parent_name % side_image);
 
-  data result_raw_data;
-  read_data(*new_content, result_raw_data);
-
+  data result_raw_data = read_data(*new_content);
   file_data result_data = file_data(result_raw_data);
   file_id result_fid = calculate_ident(result_data);
 
@@ -2892,14 +2891,11 @@ replace_content(roster_t const &            parent_roster,
 
   parent_roster.get_file_details(nid, parent_fid, parent_name);
 
-  P(F("replacing content of '%s' from %s with '%s'") % parent_name % side_image % new_content->as_external());
+  P(F("replacing content of '%s' from %s with '%s'")
+    % parent_name % side_image % new_content->as_external());
 
-  file_data parent_data;
-  adaptor.get_version(parent_fid, parent_data);
-
-  data result_raw_data;
-  read_data(*new_content, result_raw_data);
-
+  file_data parent_data = adaptor.get_version(parent_fid);
+  data result_raw_data = read_data(*new_content);
   file_data result_data = file_data(result_raw_data);
   file_id result_fid = calculate_ident(result_data);
 
@@ -3179,13 +3175,10 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
         P(F("replacing content of '%s' with '%s'") % name % resolution.content->as_external());
 
         file_id result_fid;
-        file_data parent_data, result_data;
-        data result_raw_data;
-        adaptor.get_version(fid, parent_data);
+        data result_raw_data = read_data(*resolution.content);
+        file_data parent_data = adaptor.get_version(fid),
+                  result_data = file_data(result_raw_data);
 
-        read_data(*resolution.content, result_raw_data);
-
-        result_data = file_data(result_raw_data);
         result_fid = calculate_ident(result_data);
 
         file_t result_node
@@ -3337,16 +3330,15 @@ roster_merge_result::resolve_file_content_conflicts(lua_hooks & lua,
 
           case resolve_conflicts::content_user:
             {
-              P(F("replacing content of '%s', '%s' with '%s'") %
-                left_name % right_name % conflict.resolution.content->as_external());
+              P(F("replacing content of '%s', '%s' with '%s'")
+                % left_name % right_name
+                % conflict.resolution.content->as_external());
 
               file_id result_id;
-              file_data left_data, right_data, result_data;
-              data result_raw_data;
-              adaptor.get_version(conflict.left, left_data);
-              adaptor.get_version(conflict.right, right_data);
-
-              read_data(*conflict.resolution.content, result_raw_data);
+              data result_raw_data = read_data(*conflict.resolution.content);
+              file_data left_data = adaptor.get_version(conflict.left),
+                        right_data = adaptor.get_version(conflict.right),
+                        result_data = file_data(result_raw_data);
 
               result_data = file_data(result_raw_data);
               result_id = calculate_ident(result_data);

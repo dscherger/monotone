@@ -76,8 +76,8 @@ class graph_loader
  public:
   graph_loader(database & db) : db(db) {}
 
-  void load_parents(revision_id const rid, std::set<revision_id> & parents);
-  void load_children(revision_id const rid, std::set<revision_id> & children);
+  std::set<revision_id> load_parents(revision_id const rid);
+  std::set<revision_id> load_children(revision_id const rid);
   void load_ancestors(std::set<revision_id> & revs);
   void load_descendants(std::set<revision_id> & revs);
 
@@ -85,8 +85,7 @@ class graph_loader
   database & db;
   enum load_direction { ancestors, descendants };
 
-  void load_revs(load_direction const direction,
-                 std::set<revision_id> & revs);
+  void load_revs(load_direction const direction, std::set<revision_id> &);
 };
 
 inline revision_id const &
@@ -116,13 +115,11 @@ edge_changes(edge_map::const_iterator i)
 template <> void
 dump(revision_t const & rev, std::string & out);
 
-void
-read_revision(data const & dat,
-              revision_t & rev);
+revision_t
+read_revision(data const & dat);
 
-void
-read_revision(revision_data const & dat,
-              revision_t & rev);
+revision_t
+read_revision(revision_data const & dat);
 
 void
 write_revision(revision_t const & rev,
@@ -238,9 +235,8 @@ void
 print_revision(basic_io::printer & printer,
                revision_t const & rev);
 
-void
-parse_revision(basic_io::parser & parser,
-               revision_t & rev);
+revision_t
+parse_revision(basic_io::parser & parser);
 
 void
 print_edge(basic_io::printer & printer,

@@ -128,8 +128,7 @@ namespace legacy
                                    manifest_id & mid,
                                    renames_map & renames)
   {
-    revision_data dat;
-    db.get_revision(ident, dat);
+    revision_data dat = db.get_revision_data(ident);
     basic_io::input_source src(dat.inner()(), "revision");
     basic_io::tokenizer tok(src);
     basic_io::parser pars(tok);

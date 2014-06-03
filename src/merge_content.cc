@@ -27,6 +27,7 @@
 #include <iostream>
 #include <memory>
 
+using std::move;
 using std::make_pair;
 using std::map;
 using std::set;
@@ -143,11 +144,12 @@ load_and_cache_roster(database & db, revision_id const & rid,
     }
 }
 
-void
+roster_t_cp
 content_merge_database_adaptor::get_ancestral_roster(node_id nid,
-                                                     revision_id & rid,
-                                                     shared_ptr<roster_t const> & anc)
+                                                     revision_id & rid)
 {
+  shared_ptr<roster_t const> anc;
+
   // Given a file, if the lca is nonzero and its roster contains the file,
   // then we use its roster.  Otherwise we use the roster at the file's
   // birth revision, which is the "per-file worst case" lca.
@@ -180,6 +182,7 @@ content_merge_database_adaptor::get_ancestral_roster(node_id nid,
       load_and_cache_roster(db, rid, rosters, anc);
     }
   I(anc);
+  return anc;
 }
 
 void
@@ -216,11 +219,10 @@ content_merge_database_adaptor::get_dropped_details(set<revision_id> const & unc
   I(false);
 }
 
-void
-content_merge_database_adaptor::get_version(file_id const & ident,
-                                            file_data & dat) const
+file_data
+content_merge_database_adaptor::get_version(file_id const & ident) const
 {
-  db.get_file_version(ident, dat);
+  return db.get_file_version(ident);
 }
 
 
@@ -280,27 +282,24 @@ content_merge_workspace_adaptor::record_file(file_id const & parent_id,
   temporary_store.insert(make_pair(merged_id, merged_data));
 }
 
-void
+roster_t_cp
 content_merge_workspace_adaptor::get_ancestral_roster(node_id nid,
-                                                      revision_id & rid,
-                                                      shared_ptr<roster_t const> & anc)
+                                                      revision_id & rid)
 {
+  roster_t_cp anc;
+
   // Begin by loading any non-empty file lca roster
   if (base->has_node(nid))
     {
       rid = lca;
-      anc = base;
+      return base;
     }
   else
     {
       if (!left_mm.contains(nid))
-        {
-          rid = right_mm.get_marking(nid)->birth_revision;
-        }
+        rid = right_mm.get_marking(nid)->birth_revision;
       else if (!right_mm.contains(nid))
-        {
-          rid = left_mm.get_marking(nid)->birth_revision;
-        }
+        rid = left_mm.get_marking(nid)->birth_revision;
       else
         {
           const_marking_t const & lm = left_mm.get_marking(nid);
@@ -309,20 +308,21 @@ content_merge_workspace_adaptor::get_ancestral_roster(node_id nid,
           rid = lm->birth_revision;
         }
 
+      roster_t_cp anc;
       load_and_cache_roster(db, rid, rosters, anc);
+      I(anc);
+      return anc;
     }
-  I(anc);
 }
 
-void
-content_merge_workspace_adaptor::get_version(file_id const & ident,
-                                             file_data & dat) const
+file_data
+content_merge_workspace_adaptor::get_version(file_id const & ident) const
 {
   map<file_id,file_data>::const_iterator i = temporary_store.find(ident);
   if (i != temporary_store.end())
-    dat = i->second;
+    return i->second;
   else if (db.file_version_exists(ident))
-    db.get_file_version(ident, dat);
+    return db.get_file_version(ident);
   else
     {
       data tmp;
@@ -331,16 +331,16 @@ content_merge_workspace_adaptor::get_version(file_id const & ident,
       I(i != content_paths.end());
 
       require_path_is_file(i->second,
-                           F("file '%s' does not exist in workspace") % i->second,
-                           F("'%s' in workspace is a directory, not a file") % i->second);
-      read_data(i->second, tmp);
+        F("file '%s' does not exist in workspace") % i->second,
+        F("'%s' in workspace is a directory, not a file") % i->second);
+      tmp = read_data(i->second);
       fid = calculate_ident(file_data(tmp));
       E(fid == ident, origin::system,
         F("file '%s' in workspace has id %s, wanted %s")
         % i->second
         % fid
         % ident);
-      dat = file_data(tmp);
+      return file_data(move(tmp));
     }
 }
 
@@ -376,19 +376,17 @@ content_merge_checkout_adaptor::record_file(file_id const & /* ident */ ,
   I(false);
 }
 
-void
+roster_t_cp
 content_merge_checkout_adaptor::get_ancestral_roster(node_id /* nid */ ,
-                                                     revision_id & /* rid */ ,
-                                                     shared_ptr<roster_t const> & /* anc */ )
+                                                     revision_id & /* rid */)
 {
   I(false);
 }
 
-void
-content_merge_checkout_adaptor::get_version(file_id const & ident,
-                                            file_data & dat) const
+file_data
+content_merge_checkout_adaptor::get_version(file_id const & ident) const
 {
-  db.get_file_version(ident, dat);
+  return db.get_file_version(ident);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -422,17 +420,15 @@ content_merge_empty_adaptor::record_file(file_id const & /* parent_ident */ ,
   I(false);
 }
 
-void
+roster_t_cp
 content_merge_empty_adaptor::get_ancestral_roster(node_id /* nid */ ,
-                                                  revision_id & /* rid */ ,
-                                                  shared_ptr<roster_t const> & /* anc */ )
+                                                  revision_id & /* rid */)
 {
   I(false);
 }
 
-void
-content_merge_empty_adaptor::get_version(file_id const & /* ident */ ,
-                                         file_data & /* dat */ ) const
+file_data
+content_merge_empty_adaptor::get_version(file_id const & /* ident */) const
 {
   I(false);
 }
@@ -486,11 +482,9 @@ content_merger::attempt_auto_merge(file_path const & anc_path, // inputs
   // user to merge manually just because of an ancestor mistakenly marked
   // manual seems too harsh
 
-  file_data ancestor_data;
-
-  adaptor.get_version(left_id, left_data);
-  adaptor.get_version(ancestor_id, ancestor_data);
-  adaptor.get_version(right_id, right_data);
+  file_data ancestor_data = adaptor.get_version(ancestor_id);
+  left_data = adaptor.get_version(left_id);
+  right_data = adaptor.get_version(right_id);
 
   data const left_unpacked = left_data.inner();
   data const ancestor_unpacked = ancestor_data.inner();
@@ -596,16 +590,15 @@ content_merger::try_user_merge(file_path const & anc_path,
       return true;
     }
 
-  file_data left_data, right_data, ancestor_data;
-  data left_unpacked, ancestor_unpacked, right_unpacked, merged_unpacked;
-
-  adaptor.get_version(left_id, left_data);
-  adaptor.get_version(ancestor_id, ancestor_data);
-  adaptor.get_version(right_id, right_data);
-
-  left_unpacked = left_data.inner();
-  ancestor_unpacked = ancestor_data.inner();
-  right_unpacked = right_data.inner();
+  file_data
+    ancestor_data = adaptor.get_version(ancestor_id),
+    left_data = adaptor.get_version(left_id),
+    right_data = adaptor.get_version(right_id);
+  data
+    ancestor_unpacked = ancestor_data.inner(),
+    left_unpacked = left_data.inner(),
+    right_unpacked = right_data.inner(),
+    merged_unpacked;
 
   P(F("help required for 3-way merge\n"
       "[ancestor] %s\n"
@@ -654,8 +647,8 @@ try_to_merge_files(lua_hooks & lua,
       MM(conflict);
 
       revision_id rid;
-      shared_ptr<roster_t const> roster_for_file_lca;
-      adaptor.get_ancestral_roster(conflict.nid, rid, roster_for_file_lca);
+      roster_t_cp roster_for_file_lca
+        = adaptor.get_ancestral_roster(conflict.nid, rid);
 
       // Now we should certainly have a roster, which has the node.
       I(roster_for_file_lca);

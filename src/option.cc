@@ -491,8 +491,7 @@ void concrete_option_set::from_command_line(args_vector & args,
       if (name == "xargs" || name == "@")
         {
           // expand the --xargs in place
-          data dat;
-          read_data_for_command_line(arg, dat);
+          data dat = read_data_for_command_line(arg);
           args_vector fargs;
           tokenize_for_command_line(dat(), fargs);
 

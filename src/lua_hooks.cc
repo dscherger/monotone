@@ -209,9 +209,8 @@ lua_hooks::load_rcfile(utf8 const & rc)
     run_directory(st, system_path(rc).as_external().c_str(), "*");
   else
     {
-      data dat;
       L(FL("opening rcfile '%s'") % rc);
-      read_data_for_command_line(rc, dat);
+      data dat = read_data_for_command_line(rc);
       E(run_string(st, dat().c_str(), rc().c_str()), origin::user,
         F("lua error while loading rcfile '%s'") % rc);
       L(FL("'%s' is ok") % rc);

@@ -130,16 +130,13 @@ public:
 
   // get plain version if it exists, or reconstruct version
   // from deltas (if they exist)
-  void get_file_version(file_id const & ident,
-                        file_data & dat);
+  file_data get_file_version(file_id const & ident);
 
   // gets the (cached) size of the file if it exists
-  void get_file_size(file_id const & ident,
-                     file_size & size);
+  file_size get_file_size(file_id const & ident);
 
   // gets a map of all file sizes of this particular roster
-  void get_file_sizes(roster_t const & roster,
-                      std::map<file_id, file_size> & file_sizes);
+  std::map<file_id, file_size> get_file_sizes(roster_t const & roster);
 
   // put file w/o predecessor into db
   void put_file(file_id const & new_id,
@@ -150,14 +147,12 @@ public:
                         file_id const & new_id,
                         file_delta const & del);
 
-  void get_arbitrary_file_delta(file_id const & src_id,
-                                file_id const & dst_id,
-                                file_delta & del);
+  file_delta get_arbitrary_file_delta(file_id const & src_id,
+                                      file_id const & dst_id);
 
   // get plain version if it exists, or reconstruct version
   // from deltas (if they exist).
-  void get_manifest_version(manifest_id const & ident,
-                            manifest_data & dat);
+  manifest_data get_manifest_version(manifest_id const & ident);
 
 private:
   bool file_or_manifest_base_exists(file_id const & ident,
@@ -181,16 +176,13 @@ public:
   void get_forward_ancestry(rev_ancestry_map & graph);
   void get_reverse_ancestry(rev_ancestry_map & graph);
 
-  void get_revision_parents(revision_id const & ident,
-                           std::set<revision_id> & parents);
+  std::set<revision_id> get_revision_parents(revision_id const & ident);
 
-  void get_revision_children(revision_id const & ident,
-                             std::set<revision_id> & children);
+  std::set<revision_id> get_revision_children(revision_id const & ident);
 
-  void get_leaves(std::set<revision_id> & leaves);
+  std::set<revision_id> get_leaves();
 
-  void get_revision_manifest(revision_id const & cid,
-                             manifest_id & mid);
+  manifest_id get_revision_manifest(revision_id const & cid);
 
   void get_common_ancestors(std::set<revision_id> const & revs,
                             std::set<revision_id> & common_ancestors);
@@ -198,19 +190,17 @@ public:
   bool is_a_ancestor_of_b(revision_id const & ancestor,
                           revision_id const & child);
 
-  void get_revision_ids(std::set<revision_id> & ids);
+  std::set<revision_id> get_revision_ids();
   // this is exposed for 'db check':
-  void get_file_ids(std::set<file_id> & ids);
+  std::set<file_id> get_file_ids();
 
   //
   // --== Revision reading/writing ==--
   //
 public:
-  void get_revision(revision_id const & ident,
-                    revision_t & cs);
+  revision_t get_revision(revision_id const & ident);
 
-  void get_revision(revision_id const & ident,
-                    revision_data & dat);
+  revision_data get_revision_data(revision_id const & ident);
 
   bool put_revision(revision_id const & new_id,
                     revision_t const & rev);
@@ -239,7 +229,7 @@ public:
 
   // these are exposed for the use of database_check.cc
   bool roster_version_exists(revision_id const & ident);
-  void get_roster_ids(std::set<revision_id> & ids);
+  std::set<revision_id> get_roster_ids();
 
   // using roster deltas
   void get_markings(revision_id const & id,

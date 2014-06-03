@@ -472,8 +472,7 @@ set<revision_id> get_ancestors(project_t const & project,
     {
       revision_id revid = *frontier.begin();
       frontier.erase(frontier.begin());
-      set<revision_id> p;
-      project.db.get_revision_parents(revid, p);
+      set<revision_id> p = project.db.get_revision_parents(revid);
       for (set<revision_id>::const_iterator i = p.begin();
            i != p.end(); ++i)
         {
@@ -524,10 +523,8 @@ public:
     else if (name == "not")
       {
         diagnose_wrong_arg_count("not", 1, args.size());
-        set<revision_id> lhs;
-        set<revision_id> rhs = args[0]->complete(project);
-
-        project.db.get_revision_ids(lhs);
+        set<revision_id> rhs = args[0]->complete(project),
+                         lhs = project.db.get_revision_ids();
         set<revision_id> ret;
         set_difference(lhs.begin(), lhs.end(),
                        rhs.begin(), rhs.end(),
@@ -578,8 +575,7 @@ public:
           {
             revision_id revid = *frontier.begin();
             frontier.erase(frontier.begin());
-            set<revision_id> c;
-            project.db.get_revision_children(revid, c);
+            set<revision_id> c = project.db.get_revision_children(revid);
             for (set<revision_id>::const_iterator i = c.begin();
                  i != c.end(); ++i)
               {
@@ -600,8 +596,7 @@ public:
         for (set<revision_id>::const_iterator i = tmp.begin();
              i != tmp.end(); ++i)
           {
-            set<revision_id> p;
-            project.db.get_revision_parents(*i, p);
+            set<revision_id> p = project.db.get_revision_parents(*i);
             ret.insert(p.begin(), p.end());
           }
         ret.erase(revision_id());
@@ -615,8 +610,7 @@ public:
         for (set<revision_id>::const_iterator i = tmp.begin();
              i != tmp.end(); ++i)
           {
-            set<revision_id> c;
-            project.db.get_revision_children(*i, c);
+            set<revision_id> c = project.db.get_revision_children(*i);
             ret.insert(c.begin(), c.end());
           }
         ret.erase(revision_id());

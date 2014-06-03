@@ -39,9 +39,11 @@ void toposort_rev_ancestry(rev_ancestry_map const & graph,
 
 struct rev_graph
 {
-  virtual void get_parents(revision_id const & rev, std::set<revision_id> & parents) const = 0;
-  virtual void get_children(revision_id const & rev, std::set<revision_id> & children) const = 0;
-  virtual void get_height(revision_id const & rev, rev_height & h) const = 0;
+  virtual std::set<revision_id>
+  get_parents(revision_id const & rev) const = 0;
+  virtual std::set<revision_id>
+  get_children(revision_id const & rev) const = 0;
+  virtual rev_height get_height(revision_id const & rev) const = 0;
   virtual ~rev_graph() {};
 };
 

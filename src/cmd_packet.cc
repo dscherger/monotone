@@ -280,8 +280,7 @@ CMD(read, "read", "", CMD_REF(packet_io), "[FILE1 [FILE2 [...]]]",
       for (args_vector::const_iterator i = args.begin();
            i != args.end(); ++i)
         {
-          data dat;
-          read_data(system_path(*i), dat);
+          data dat = read_data(system_path(*i));
           istringstream ss(dat());
           count += read_packets(ss, dbw);
         }

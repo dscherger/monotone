@@ -112,7 +112,7 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
                               right_rid, right_with_attrs, right_markings);
 
   // Make the synthetic graph, by creating uncommon ancestor sets
-  std::set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
+  set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
   safe_insert(left_uncommon_ancestors, left_rid);
   safe_insert(right_uncommon_ancestors, right_rid);
 
@@ -1246,11 +1246,13 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
   revision_id ancestor_rid;
   file_path ancestor_path;
   file_id ancestor_fid;
-  shared_ptr<roster_t const> ancestor_roster;
-  adaptor.get_ancestral_roster(left_n->self, ancestor_rid, ancestor_roster);
-  ancestor_roster->get_file_details(left_n->self, ancestor_fid, ancestor_path);
+  roster_t_cp ancestor_roster
+    = adaptor.get_ancestral_roster(left_n->self, ancestor_rid);
+  ancestor_roster->get_file_details(left_n->self, ancestor_fid,
+                                    ancestor_path);
 
-  content_merger cm(app.lua, *ancestor_roster, left_roster, right_roster, adaptor);
+  content_merger cm(app.lua, *ancestor_roster, left_roster, right_roster,
+                    adaptor);
   file_data ancestor_data, left_data, right_data, merge_data;
 
   E(cm.attempt_auto_merge(ancestor_path, left_path, right_path,
@@ -1284,9 +1286,9 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   revision_id from_rid, to_rid;
   if (app.opts.revision.size() == 1)
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), to_rid);
-      std::set<revision_id> parents;
-      db.get_revision_parents(to_rid, parents);
+      complete(app.opts, app.lua, project,
+               idx(app.opts.revision, 0)(), to_rid);
+      set<revision_id> parents = db.get_revision_parents(to_rid);
       E(parents.size() == 1, origin::user,
         F("revision %s is a merge.\n"
           "To apply the changes relative to one of its parents, use:\n"
@@ -1298,8 +1300,10 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
     }
   else if (app.opts.revision.size() == 2)
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), from_rid);
-      complete(app.opts, app.lua, project, idx(app.opts.revision, 1)(), to_rid);
+      complete(app.opts, app.lua, project,
+               idx(app.opts.revision, 0)(), from_rid);
+      complete(app.opts, app.lua, project,
+               idx(app.opts.revision, 1)(), to_rid);
     }
   else
     throw usage(execid);

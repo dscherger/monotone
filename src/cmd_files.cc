@@ -40,9 +40,7 @@ CMD(fload, "fload", "", CMD_REF(debug), "",
     "",
     options::opts::none)
 {
-  data dat;
-  read_data_stdin(dat);
-
+  data dat = read_data_stdin();
   file_id f_id;
   file_data f_data(dat);
 
@@ -66,8 +64,6 @@ CMD(fmerge, "fmerge", "", CMD_REF(debug),
     left_id(decode_hexenc_as<file_id>(idx(args, 1)(), origin::user)),
     right_id(decode_hexenc_as<file_id>(idx(args, 2)(), origin::user));
 
-  file_data anc, left, right;
-
   database db(app);
   E(db.file_version_exists (anc_id), origin::user,
     F("ancestor file id does not exist"));
@@ -78,9 +74,10 @@ CMD(fmerge, "fmerge", "", CMD_REF(debug),
   E(db.file_version_exists (right_id), origin::user,
     F("right file id does not exist"));
 
-  db.get_file_version(anc_id, anc);
-  db.get_file_version(left_id, left);
-  db.get_file_version(right_id, right);
+  file_data
+    anc = db.get_file_version(anc_id),
+    left = db.get_file_version(left_id),
+    right = db.get_file_version(right_id);
 
   vector<string> anc_lines, left_lines, right_lines, merged_lines;
 
@@ -109,8 +106,6 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
     src_id(decode_hexenc_as<file_id>(idx(args, 2)(), origin::user)),
     dst_id(decode_hexenc_as<file_id>(idx(args, 3)(), origin::user));
 
-  file_data src, dst;
-
   database db(app);
   E(db.file_version_exists (src_id), origin::user,
     F("source file id does not exist"));
@@ -118,8 +113,9 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
   E(db.file_version_exists (dst_id), origin::user,
     F("destination file id does not exist"));
 
-  db.get_file_version(src_id, src);
-  db.get_file_version(dst_id, dst);
+  file_data
+    src = db.get_file_version(src_id),
+    dst = db.get_file_version(dst_id);
 
   string pattern("");
   if (!app.opts.no_show_encloser)
@@ -206,13 +202,9 @@ CMD(identify, "identify", "", CMD_REF(debug), N_("[PATH]"),
   if (args.size() > 1)
     throw usage(execid);
 
-  data dat;
-
-  if (args.empty())
-    read_data_stdin(dat);
-  else
-    read_data_for_command_line(idx(args, 0), dat);
-
+  data dat = (args.empty()
+              ? read_data_stdin()
+              : read_data_for_command_line(idx(args, 0)));
   cout << calculate_ident(dat) << '\n';
 }
 
@@ -239,9 +231,7 @@ CMD_AUTOMATE(identify, N_("PATH"),
   E(path() != "-", origin::user,
     F("cannot read from stdin"));
 
-  data dat;
-  read_data_for_command_line(path, dat);
-
+  data dat = read_data_for_command_line(path);
   output << calculate_ident(dat) << '\n';
 }
 
@@ -251,9 +241,8 @@ dump_file(database & db, std::ostream & output, file_id const & ident)
   E(db.file_version_exists(ident), origin::user,
     F("no file version %s found in database") % ident);
 
-  file_data dat;
   L(FL("dumping file %s") % ident);
-  db.get_file_version(ident, dat);
+  file_data dat = db.get_file_version(ident);
   output << dat;
 }
 
@@ -359,9 +348,7 @@ CMD_AUTOMATE(get_file_size, N_("FILEID"),
   E(db.file_version_exists(ident), origin::user,
     F("no file version %s found in database") % ident);
 
-  file_size size;
-  db.get_file_size(ident, size);
-  output << lexical_cast<string>(size) << "\n";
+  output << lexical_cast<string>(db.get_file_size(ident)) << "\n";
 }
 
 // Name: get_file_of

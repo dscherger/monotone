@@ -221,9 +221,7 @@ key_store_state::maybe_read_key_dir()
        i != key_files.end(); ++i)
     {
       L(FL("reading keys from file '%s'") % (*i));
-      data dat;
-      read_data(*i, dat);
-      istringstream is(dat());
+      istringstream is(read_data(*i)());
       if (read_packets(is, kr) == 0)
         W(F("ignored invalid key file '%s' in key store") % (*i) );
     }
@@ -465,9 +463,7 @@ key_store::delete_key(key_id const & ident)
       // ID we want to delete, before going mad
         {
           key_delete_validator val(ident, file);
-          data dat;
-          read_data(file, dat);
-          istringstream is(dat());
+          istringstream is(read_data(file)());
           I(read_packets(is, val));
         }
 

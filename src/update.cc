@@ -132,10 +132,8 @@ pick_update_candidates(lua_hooks & lua,
 
   // keep a visited set to avoid repeating work
   set<revision_id> visited;
-  set<revision_id> children;
+  set<revision_id> children = project.db.get_revision_children(base);
   vector<revision_id> to_traverse;
-
-  project.db.get_revision_children(base, children);
   copy(children.begin(), children.end(), back_inserter(to_traverse));
 
   while (!to_traverse.empty())
@@ -154,7 +152,7 @@ pick_update_candidates(lua_hooks & lua,
         candidates.insert(target);
 
       // and traverse its children as well
-      project.db.get_revision_children(target, children);
+      children = project.db.get_revision_children(target);
       copy(children.begin(), children.end(), back_inserter(to_traverse));
     }
 

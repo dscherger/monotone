@@ -176,8 +176,7 @@ void netsync_session::on_end(size_t ident)
               certs.insert(make_pair(identity, make_pair(j->name, j->value)));
             }
 
-          revision_data rdat;
-          project.db.get_revision(*i, rdat);
+          revision_data rdat = project.db.get_revision_data(*i);
           lua.hook_note_netsync_revision_received(*i, rdat, certs,
                                                   ident);
         }
@@ -229,8 +228,7 @@ void netsync_session::on_end(size_t ident)
               certs.insert(make_pair(identity, make_pair(j->name, j->value)));
             }
 
-          revision_data rdat;
-          project.db.get_revision(*i, rdat);
+          revision_data rdat = project.db.get_revision_data(*i);
           lua.hook_note_netsync_revision_sent(*i, rdat, certs,
                                                   ident);
         }
@@ -285,8 +283,7 @@ netsync_session::note_file_data(file_id const & f)
 {
   if (role == sink_role)
     return;
-  file_data fd;
-  project.db.get_file_version(f, fd);
+  file_data fd = project.db.get_file_version(f);
   queue_data_cmd(file_item, f.inner(), fd.inner()());
   file_items_sent.insert(f);
 }
@@ -296,8 +293,7 @@ netsync_session::note_file_delta(file_id const & src, file_id const & dst)
 {
   if (role == sink_role)
     return;
-  file_delta fdel;
-  project.db.get_arbitrary_file_delta(src, dst, fdel);
+  file_delta fdel = project.db.get_arbitrary_file_delta(src, dst);
   queue_delta_cmd(file_item, src.inner(), dst.inner(), fdel.inner());
   file_items_sent.insert(dst);
 }
@@ -307,8 +303,7 @@ netsync_session::note_rev(revision_id const & rev)
 {
   if (role == sink_role)
     return;
-  revision_t rs;
-  project.db.get_revision(rev, rs);
+  revision_t rs = project.db.get_revision(rev);
   data tmp;
   write_revision(rs, tmp);
   queue_data_cmd(revision_item, rev.inner(), tmp());
@@ -879,18 +874,14 @@ netsync_session::load_data(netcmd_item_type type,
 
     case revision_item:
       {
-        revision_data mdat;
-        data dat;
-        project.db.get_revision(revision_id(item), mdat);
+        revision_data mdat = project.db.get_revision_data(revision_id(item));
         out = mdat.inner()();
       }
       break;
 
     case file_item:
       {
-        file_data fdat;
-        data dat;
-        project.db.get_file_version(file_id(item), fdat);
+        file_data fdat = project.db.get_file_version(file_id(item));
         out = fdat.inner()();
       }
       break;
@@ -1054,8 +1045,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
         data d(dat, origin::network);
         if (!(calculate_ident(d) == item))
           throw bad_decode(F("hash check failed for revision %s") % item);
-        revision_t rev;
-        read_revision(d, rev);
+        revision_t rev = read_revision(d);
         if (project.db.put_revision(revision_id(item), rev))
           counts->revs_in.add_item(revision_id(item));
       }

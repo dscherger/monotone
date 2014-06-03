@@ -76,6 +76,7 @@ extern char const schema_constant[];
 //
 // see file schema.sql for the text of the schema.
 
+using std::move;
 using std::deque;
 using std::istream;
 using std::make_pair;
@@ -90,6 +91,7 @@ using std::string;
 using std::vector;
 using std::accumulate;
 using std::unordered_map;
+using std::function;
 
 using std::shared_ptr;
 using std::dynamic_pointer_cast;
@@ -372,7 +374,7 @@ private:
   //
   // --== The ancestry graph ==--
   //
-  void get_ids(string const & table, set<id> & ids);
+  void get_ids(string const & table, function<void (id &&)> visit);
 
   //
   // --== Rosters ==--
@@ -1819,16 +1821,15 @@ database_impl::cache_size()
 }
 
 void
-database_impl::get_ids(string const & table, set<id> & ids)
+database_impl::get_ids(string const & table,
+                       std::function<void (id &&)> visit)
 {
   results res;
   query q("SELECT id FROM " + table);
   fetch(res, one_col, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
-    {
-      ids.insert(id(res[i][0], origin::database));
-    }
+    visit(id(res[i][0], origin::database));
 }
 
 // for files and legacy manifest support
@@ -2307,9 +2308,8 @@ database::get_roster_version(revision_id const & ros_id,
   // into the database and then later get something different back out, then
   // this is the only thing that can catch it.
   roster->check_sane_against(*marking);
-  manifest_id expected_mid, actual_mid;
-  actual_mid = calculate_ident(*roster);
-  get_revision_manifest(ros_id, expected_mid);
+  manifest_id expected_mid = get_revision_manifest(ros_id),
+    actual_mid = calculate_ident(*roster);
   I(expected_mid == actual_mid);
 
   // const'ify the objects, to save them and pass them out
@@ -2363,61 +2363,60 @@ database::revision_exists(revision_id const & id)
   return res.size() == 1;
 }
 
-void
-database::get_file_ids(set<file_id> & ids)
+set<file_id>
+database::get_file_ids()
 {
-  ids.clear();
-  set<id> tmp;
-  imp->get_ids("files", tmp);
-  imp->get_ids("file_deltas", tmp);
-  add_decoration_to_container(tmp, ids);
+  set<file_id> tmp;
+  function<void (id &&)> inserter = [&tmp](id && i) {
+    tmp.insert(file_id(i));
+  };
+  imp->get_ids("files", inserter);
+  imp->get_ids("file_deltas", inserter);
+  return tmp;
 }
 
-void
-database::get_revision_ids(set<revision_id> & ids)
+set<revision_id>
+database::get_revision_ids()
 {
-  ids.clear();
-  set<id> tmp;
-  imp->get_ids("revisions", tmp);
-  add_decoration_to_container(tmp, ids);
+  set<revision_id> tmp;
+  imp->get_ids("revisions", [&tmp](id && i) { tmp.insert(revision_id(i)); });
+  return tmp;
 }
 
-void
-database::get_roster_ids(set<revision_id> & ids)
+set<revision_id>
+database::get_roster_ids()
 {
-  ids.clear();
-  set<id> tmp;
-  imp->get_ids("rosters", tmp);
-  add_decoration_to_container(tmp, ids);
-  imp->get_ids("roster_deltas", tmp);
-  add_decoration_to_container(tmp, ids);
+  set<revision_id> tmp;
+  function<void (id &&)> inserter = [&tmp](id && i) {
+    tmp.insert(revision_id(i));
+  };
+  imp->get_ids("rosters", inserter);
+  imp->get_ids("roster_deltas", inserter);
+  return tmp;
 }
 
-void
-database::get_file_version(file_id const & id,
-                           file_data & dat)
+file_data
+database::get_file_version(file_id const & id)
 {
   data tmp;
   imp->get_version(id.inner(), tmp, "files", "file_deltas");
-  dat = file_data(tmp);
+  return file_data(move(tmp));
 }
 
-void
-database::get_file_size(file_id const & ident,
-                        file_size & size)
+file_size
+database::get_file_size(file_id const & ident)
 {
   results res;
   query q("SELECT size FROM file_sizes WHERE id = ?");
   imp->fetch(res, one_col, one_row, q % blob(ident.inner()()));
   I(!res.empty());
-  size = lexical_cast<u64>(res[0][0]);
+  return lexical_cast<u64>(res[0][0]);
 }
 
-void
-database::get_file_sizes(roster_t const & roster,
-                         map<file_id, file_size> & sizes)
+map<file_id, file_size>
+database::get_file_sizes(roster_t const & roster)
 {
-  sizes.clear();
+  map<file_id, file_size> sizes;
 
   vector<file_id> all_file_ids;
   node_map const & nodes = roster.all_nodes();
@@ -2469,15 +2468,16 @@ database::get_file_sizes(roster_t const & roster,
 
       i+= variables;
     }
+
+  return sizes;
 }
 
-void
-database::get_manifest_version(manifest_id const & id,
-                               manifest_data & dat)
+manifest_data
+database::get_manifest_version(manifest_id const & id)
 {
   data tmp;
   imp->get_version(id.inner(), tmp, "manifests", "manifest_deltas");
-  dat = manifest_data(tmp);
+  return manifest_data(move(tmp));
 }
 
 void
@@ -2524,8 +2524,7 @@ database::put_file_version(file_id const & old_id,
       make_reverse_deltas = true;
     }
 
-  file_data old_data, new_data;
-  get_file_version(old_id, old_data);
+  file_data new_data, old_data = get_file_version(old_id);
   {
     data tmp;
     patch(old_data.inner(), del.inner(), tmp);
@@ -2583,10 +2582,9 @@ database::put_file_version(file_id const & old_id,
   guard.commit();
 }
 
-void
+file_delta
 database::get_arbitrary_file_delta(file_id const & src_id,
-                                   file_id const & dst_id,
-                                   file_delta & del)
+                                   file_id const & dst_id)
 {
   delta dtmp;
   // Deltas stored in the database go from base -> id.
@@ -2601,8 +2599,7 @@ database::get_arbitrary_file_delta(file_id const & src_id,
       // Exact hit: a plain delta from src -> dst.
       gzip<delta> del_packed(res[0][0], origin::database);
       decode_gzip(del_packed, dtmp);
-      del = file_delta(dtmp);
-      return;
+      return file_delta(move(dtmp));
     }
 
   query q2("SELECT delta FROM file_deltas "
@@ -2617,19 +2614,16 @@ database::get_arbitrary_file_delta(file_id const & src_id,
       gzip<delta> del_packed(res[0][0], origin::database);
       decode_gzip(del_packed, dtmp);
       string fwd_delta;
-      file_data dst;
-      get_file_version(dst_id, dst);
+      file_data dst = get_file_version(dst_id);
       invert_xdelta(dst.inner()(), dtmp(), fwd_delta);
-      del = file_delta(fwd_delta, origin::database);
-      return;
+      return file_delta(move(fwd_delta), origin::database);
     }
 
   // No deltas of use; just load both versions and diff.
-  file_data fd1, fd2;
-  get_file_version(src_id, fd1);
-  get_file_version(dst_id, fd2);
+  file_data fd1 = get_file_version(src_id),
+            fd2 = get_file_version(dst_id);
   diff(fd1.inner(), fd2.inner(), dtmp);
-  del = file_delta(dtmp);
+  return file_delta(move(dtmp));
 }
 
 
@@ -2663,48 +2657,44 @@ database::get_reverse_ancestry(rev_ancestry_map & graph)
                            revision_id(res[i][1], origin::database)));
 }
 
-void
-database::get_revision_parents(revision_id const & id,
-                               set<revision_id> & parents)
+set<revision_id>
+database::get_revision_parents(revision_id const & id)
 {
   I(!null_id(id));
   parent_id_map::iterator i = imp->parent_cache.find(id);
-  if (i == imp->parent_cache.end())
-    {
-      results res;
-      parents.clear();
-      imp->fetch(res, one_col, any_rows,
-                 query("SELECT parent FROM revision_ancestry WHERE child = ?")
-                 % blob(id.inner()()));
-      for (size_t i = 0; i < res.size(); ++i)
-        parents.insert(revision_id(res[i][0], origin::database));
+  if (i != imp->parent_cache.end())
+    return i->second;
 
-      imp->parent_cache.insert(make_pair(id, parents));
-    }
-  else
-    {
-      parents = i->second;
-    }
+  results res;
+  set<revision_id> parents;
+  imp->fetch(res, one_col, any_rows,
+             query("SELECT parent FROM revision_ancestry WHERE child = ?")
+             % blob(id.inner()()));
+  for (size_t i = 0; i < res.size(); ++i)
+    parents.insert(revision_id(res[i][0], origin::database));
+
+  imp->parent_cache.insert(make_pair(id, parents));
+  return parents;
 }
 
-void
-database::get_revision_children(revision_id const & id,
-                                set<revision_id> & children)
+set<revision_id>
+database::get_revision_children(revision_id const & id)
 {
   results res;
-  children.clear();
+  set<revision_id> children;
   imp->fetch(res, one_col, any_rows,
              query("SELECT child FROM revision_ancestry WHERE parent = ?")
         % blob(id.inner()()));
   for (size_t i = 0; i < res.size(); ++i)
     children.insert(revision_id(res[i][0], origin::database));
+  return children;
 }
 
-void
-database::get_leaves(set<revision_id> & leaves)
+set<revision_id>
+database::get_leaves()
 {
   results res;
-  leaves.clear();
+  set<revision_id> leaves;
   imp->fetch(res, one_col, any_rows,
              query("SELECT revisions.id FROM revisions "
                    "LEFT JOIN revision_ancestry "
@@ -2712,21 +2702,19 @@ database::get_leaves(set<revision_id> & leaves)
                    "WHERE revision_ancestry.child IS null"));
   for (size_t i = 0; i < res.size(); ++i)
     leaves.insert(revision_id(res[i][0], origin::database));
+  return leaves;
 }
 
-
-void
-database::get_revision_manifest(revision_id const & rid,
-                               manifest_id & mid)
+manifest_id
+database::get_revision_manifest(revision_id const & rid)
 {
-  revision_t rev;
-  get_revision(rid, rev);
-  mid = rev.new_manifest;
+  revision_t rev = get_revision(rid);
+  return rev.new_manifest;
 }
 
 void
-database::get_common_ancestors(std::set<revision_id> const & revs,
-                               std::set<revision_id> & common_ancestors)
+database::get_common_ancestors(set<revision_id> const & revs,
+                               set<revision_id> & common_ancestors)
 {
   set<revision_id> ancestors, all_common_ancestors;
   vector<revision_id> frontier;
@@ -2742,19 +2730,12 @@ database::get_common_ancestors(std::set<revision_id> const & revs,
           revision_id rid = frontier.back();
           frontier.pop_back();
           if(!null_id(rid))
-            {
-              set<revision_id> parents;
-              get_revision_parents(rid, parents);
-              for (set<revision_id>::const_iterator i = parents.begin();
-                   i != parents.end(); ++i)
+            for (revision_id const & parent : get_revision_parents(rid))
+              if (ancestors.find(parent) == ancestors.end())
                 {
-                  if (ancestors.find(*i) == ancestors.end())
-                    {
-                      frontier.push_back(*i);
-                      ancestors.insert(*i);
-                    }
+                  frontier.push_back(parent);
+                  ancestors.insert(parent);
                 }
-            }
         }
       if (all_common_ancestors.empty())
         all_common_ancestors = ancestors;
@@ -2762,8 +2743,9 @@ database::get_common_ancestors(std::set<revision_id> const & revs,
         {
           set<revision_id> common;
           set_intersection(ancestors.begin(), ancestors.end(),
-                         all_common_ancestors.begin(), all_common_ancestors.end(),
-                         inserter(common, common.begin()));
+                           all_common_ancestors.begin(),
+                           all_common_ancestors.end(),
+                           inserter(common, common.begin()));
           all_common_ancestors = common;
         }
     }
@@ -2801,22 +2783,20 @@ database::is_a_ancestor_of_b(revision_id const & ancestor,
     {
       revision_id anc = todo.back();
       todo.pop_back();
-      set<revision_id> anc_children;
-      get_revision_children(anc, anc_children);
-      for (set<revision_id>::const_iterator i = anc_children.begin();
-           i != anc_children.end(); ++i)
+      set<revision_id> anc_children = get_revision_children(anc);
+      for (revision_id const & rid : get_revision_children(anc))
         {
-          if (*i == child)
+          if (rid == child)
             return true;
-          else if (seen.find(*i) != seen.end())
+          else if (seen.find(rid) != seen.end())
             continue;
           else
             {
-              get_rev_height(*i, anc_height);
+              get_rev_height(rid, anc_height);
               if (child_height > anc_height)
                 {
-                  seen.insert(*i);
-                  todo.push_back(*i);
+                  seen.insert(rid);
+                  todo.push_back(rid);
                 }
             }
         }
@@ -2824,18 +2804,14 @@ database::is_a_ancestor_of_b(revision_id const & ancestor,
   return false;
 }
 
-void
-database::get_revision(revision_id const & id,
-                       revision_t & rev)
+revision_t
+database::get_revision(revision_id const & id)
 {
-  revision_data d;
-  get_revision(id, d);
-  read_revision(d, rev);
+  return read_revision(get_revision_data(id));
 }
 
-void
-database::get_revision(revision_id const & id,
-                       revision_data & dat)
+revision_data
+database::get_revision_data(revision_id const & id)
 {
   I(!null_id(id));
   results res;
@@ -2851,7 +2827,7 @@ database::get_revision(revision_id const & id,
   E(id == calculate_ident(revision_data(rdat)), origin::database,
     F("revision does not match hash"));
 
-  dat = revision_data(rdat);
+  return revision_data(rdat);
 }
 
 void
@@ -2915,10 +2891,9 @@ void
 database::deltify_revision(revision_id const & rid)
 {
   transaction_guard guard(*this);
-  revision_t rev;
-  MM(rev);
   MM(rid);
-  get_revision(rid, rev);
+  revision_t rev = get_revision(rid);
+  MM(rev);
   // Make sure that all parent revs have their files replaced with deltas
   // from this rev's files.
   {
@@ -2935,10 +2910,8 @@ database::deltify_revision(revision_id const & rid)
             if (file_or_manifest_base_exists(old_id, "files") &&
                 file_version_exists(new_id))
               {
-                file_data old_data;
-                file_data new_data;
-                get_file_version(old_id, old_data);
-                get_file_version(new_id, new_data);
+                file_data old_data = get_file_version(old_id),
+                          new_data = get_file_version(new_id);
                 delta delt;
                 diff(old_data.inner(), new_data.inner(), delt);
                 file_delta del(delt);
@@ -3120,16 +3093,14 @@ database::put_file_sizes_for_revision(revision_t const & rev)
       for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
            i != cs.files_added.end(); ++i)
         {
-          file_data dat;
-          get_file_version(i->second, dat);
+          file_data dat = get_file_version(i->second);
           imp->put_file_size(i->second, dat);
         }
 
       for (map<file_path, pair<file_id, file_id> >::const_iterator
            i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
         {
-          file_data dat;
-          get_file_version(i->second.second, dat);
+          file_data dat = get_file_version(i->second.second);
           imp->put_file_size(i->second.second, dat);
         }
     }
@@ -3157,9 +3128,7 @@ bool
 database::put_revision(revision_id const & new_id,
                        revision_data const & dat)
 {
-  revision_t rev;
-  read_revision(dat, rev);
-  return put_revision(new_id, rev);
+  return put_revision(new_id, read_revision(dat));
 }
 
 
@@ -3214,8 +3183,7 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
 
   // Check that the revision exists and doesn't have any children.
   I(revision_exists(rid));
-  set<revision_id> children;
-  get_revision_children(rid, children);
+  set<revision_id> children = get_revision_children(rid);
   I(children.empty());
 
 
@@ -3251,7 +3219,8 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
 void
 database::compute_branch_leaves(cert_value const & branch_name, set<revision_id> & revs)
 {
-  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(branch_name()));
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?")
+               % blob(branch_name()));
   get_revisions_with_cert(cert_name("branch"), branch_name, revs);
   erase_ancestors(*this, revs);
 }
@@ -3815,10 +3784,10 @@ database::put_revision_cert(cert const & cert)
 }
 
 void
-database::record_as_branch_leaf(cert_value const & branch, revision_id const & rev)
+database::record_as_branch_leaf(cert_value const & branch,
+                                revision_id const & rev)
 {
-  set<revision_id> parents;
-  get_revision_parents(rev, parents);
+  set<revision_id> parents = get_revision_parents(rev);
   set<revision_id> current_leaves;
   get_branch_leaves(branch, current_leaves);
 
@@ -4743,19 +4712,21 @@ database::put_roster(revision_id const & rev_id,
 struct rev_height_graph : rev_graph
 {
   rev_height_graph(database & db) : db(db) {}
-  virtual void get_parents(revision_id const & rev, set<revision_id> & parents) const
+  virtual set<revision_id> get_parents(revision_id const & rev) const
   {
-    db.get_revision_parents(rev, parents);
+    return db.get_revision_parents(rev);
   }
-  virtual void get_children(revision_id const & /* rev */,
-                            set<revision_id> & /* parents */) const
+  virtual set<revision_id> get_children(revision_id const & /* rev */) const
   {
     // not required
     I(false);
+    return set<revision_id>();
   }
-  virtual void get_height(revision_id const & rev, rev_height & h) const
+  virtual rev_height get_height(revision_id const & rev) const
   {
+    rev_height h;
     db.get_rev_height(rev, h);
+    return h;
   }
 
   database & db;
@@ -4767,7 +4738,6 @@ database::get_uncommon_ancestors(revision_id const & a,
                                  set<revision_id> & a_uncommon_ancs,
                                  set<revision_id> & b_uncommon_ancs)
 {
-
   rev_height_graph graph(*this);
   ::get_uncommon_ancestors(a, b, graph, a_uncommon_ancs, b_uncommon_ancs);
 }

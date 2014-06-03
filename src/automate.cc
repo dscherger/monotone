@@ -134,8 +134,7 @@ CMD_AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
       revision_id rid = frontier.back();
       frontier.pop_back();
       if(!null_id(rid)) {
-        set<revision_id> parents;
-        db.get_revision_parents(rid, parents);
+        set<revision_id> parents = db.get_revision_parents(rid);
         for (set<revision_id>::const_iterator i = parents.begin();
              i != parents.end(); ++i)
           {
@@ -186,8 +185,7 @@ CMD_AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"),
     {
       revision_id rid = frontier.back();
       frontier.pop_back();
-      set<revision_id> children;
-      db.get_revision_children(rid, children);
+      set<revision_id> children = db.get_revision_children(rid);
       for (set<revision_id>::const_iterator i = children.begin();
            i != children.end(); ++i)
         {
@@ -375,8 +373,7 @@ CMD_AUTOMATE(leaves, "",
 
   database db(app);
 
-  set<revision_id> leaves;
-  db.get_leaves(leaves);
+  set<revision_id> leaves = db.get_leaves();
   for (set<revision_id>::const_iterator i = leaves.begin();
        i != leaves.end(); ++i)
     output << *i << '\n';
@@ -403,9 +400,8 @@ CMD_AUTOMATE(roots, "",
 
   // the real root revisions are the children of one single imaginary root
   // with an empty revision id
-  set<revision_id> roots;
   revision_id nullid;
-  db.get_revision_children(nullid, roots);
+  set<revision_id> roots = db.get_revision_children(nullid);
   for (set<revision_id>::const_iterator i = roots.begin();
        i != roots.end(); ++i)
       output << *i << '\n';
@@ -434,8 +430,7 @@ CMD_AUTOMATE(parents, N_("REV"),
   revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
   E(db.revision_exists(rid), origin::user,
     F("no revision %s found in database") % rid);
-  set<revision_id> parents;
-  db.get_revision_parents(rid, parents);
+  set<revision_id> parents = db.get_revision_parents(rid);
   for (set<revision_id>::const_iterator i = parents.begin();
        i != parents.end(); ++i)
       if (!null_id(*i))
@@ -465,8 +460,7 @@ CMD_AUTOMATE(children, N_("REV"),
   revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
   E(db.revision_exists(rid), origin::user,
     F("no revision %s found in database") % rid);
-  set<revision_id> children;
-  db.get_revision_children(rid, children);
+  set<revision_id> children = db.get_revision_children(rid);
   for (set<revision_id>::const_iterator i = children.begin();
        i != children.end(); ++i)
       if (!null_id(*i))
@@ -1270,11 +1264,11 @@ CMD_AUTOMATE(get_revision, N_("REVID"),
 
   database db(app);
 
-  revision_data dat;
-  revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
+  revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(),
+                                                origin::user));
   E(db.revision_exists(rid), origin::user,
     F("no revision %s found in database") % rid);
-  db.get_revision(rid, dat);
+  revision_data dat = db.get_revision_data(rid);
 
   L(FL("dumping revision %s") % rid);
   output << dat;
@@ -1558,14 +1552,13 @@ CMD_AUTOMATE(get_extended_manifest_of, "REVISION",
   roster_t roster;
   marking_map mm;
 
-  revision_id rid = decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user);
+  revision_id rid = decode_hexenc_as<revision_id>(idx(args, 0)(),
+                                                  origin::user);
   E(db.revision_exists(rid), origin::user,
     F("no revision %s found in database") % rid);
   db.get_roster(rid, roster, mm);
 
-  map<file_id, file_size> file_sizes;
-  db.get_file_sizes(roster, file_sizes);
-
+  map<file_id, file_size> file_sizes = db.get_file_sizes(roster);
   data dat;
   print_extended_manifest(roster, mm, file_sizes, dat);
   output << dat;
@@ -1594,13 +1587,11 @@ CMD_AUTOMATE(packet_for_rdata, N_("REVID"),
 
   packet_writer pw(output);
 
-  revision_id r_id(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
-  revision_data r_data;
-
+  revision_id r_id(decode_hexenc_as<revision_id>(idx(args, 0)(),
+                                                 origin::user));
   E(db.revision_exists(r_id), origin::user,
     F("no revision %s found in database") % r_id);
-  db.get_revision(r_id, r_data);
-  pw.consume_revision_data(r_id, r_data);
+  pw.consume_revision_data(r_id, db.get_revision_data(r_id));
 }
 
 // Name: packets_for_certs
@@ -1661,12 +1652,9 @@ CMD_AUTOMATE(packet_for_fdata, N_("FILEID"),
   packet_writer pw(output);
 
   file_id f_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user));
-  file_data f_data;
-
   E(db.file_version_exists(f_id), origin::user,
     F("no such file '%s'") % f_id);
-  db.get_file_version(f_id, f_data);
-  pw.consume_file_data(f_id, f_data);
+  pw.consume_file_data(f_id, db.get_file_version(f_id));
 }
 
 // Name: packet_for_fdelta
@@ -1694,16 +1682,15 @@ CMD_AUTOMATE(packet_for_fdelta, N_("OLD_FILE NEW_FILE"),
 
   file_id f_old_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user));
   file_id f_new_id(decode_hexenc_as<file_id>(idx(args, 1)(), origin::user));
-  file_data f_old_data, f_new_data;
 
   E(db.file_version_exists(f_old_id), origin::user,
     F("no revision %s found in database") % f_old_id);
   E(db.file_version_exists(f_new_id), origin::user,
     F("no revision %s found in database") % f_new_id);
-  db.get_file_version(f_old_id, f_old_data);
-  db.get_file_version(f_new_id, f_new_data);
   delta del;
-  diff(f_old_data.inner(), f_new_data.inner(), del);
+  diff(db.get_file_version(f_old_id).inner(),
+       db.get_file_version(f_new_id).inner(),
+       del);
   pw.consume_file_delta(f_old_id, f_new_id, file_delta(del));
 }
 
@@ -2071,11 +2058,8 @@ CMD_AUTOMATE(put_file, N_("[FILEID] CONTENTS"),
       // but we can save the delta calculation by checking here too
       if (!db.file_version_exists(sha1sum))
         {
-          file_data olddat;
-          db.get_file_version(base_id, olddat);
           delta del;
-          diff(olddat.inner(), dat.inner(), del);
-
+          diff(db.get_file_version(base_id).inner(), dat.inner(), del);
           db.put_file_version(base_id, sha1sum, file_delta(del));
         }
     }
@@ -2105,8 +2089,8 @@ CMD_AUTOMATE(put_revision, N_("REVISION-DATA"),
 
   database db(app);
 
-  revision_t rev;
-  read_revision(typecast_vocab<revision_data>(idx(args, 0)), rev);
+  revision_t rev
+    = read_revision(typecast_vocab<revision_data>(idx(args, 0)));
 
   // recalculate manifest
   temp_node_id_source nis;

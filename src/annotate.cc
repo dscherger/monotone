@@ -210,12 +210,12 @@ typedef multi_index_container<
   > work_units;
 
 
-annotate_context::annotate_context(app_state & app, project_t & project, file_id fid)
+annotate_context::annotate_context(app_state & app, project_t & project,
+                                   file_id fid)
   : app(app), project(project), annotated_lines_completed(0)
 {
   // initialize file_lines
-  file_data fpacked;
-  project.db.get_file_version(fid, fpacked);
+  file_data fpacked = project.db.get_file_version(fid);
   string encoding = constants::default_encoding; // FIXME
   split_into_lines(fpacked.inner()(), encoding, file_lines);
   L(FL("annotate_context::annotate_context initialized "
@@ -780,8 +780,7 @@ do_annotate_node(database & db,
         }
       else
         {
-          file_data data;
-          db.get_file_version(file_in_parent, data);
+          file_data data = db.get_file_version(file_in_parent);
           L(FL("building parent lineage for parent file %s")
             % file_in_parent);
           parent_lineage
@@ -810,7 +809,8 @@ do_annotate_node(database & db,
 
           // if it's marked, we need to look at its parents instead.
           if (parent_marked)
-            db.get_revision_parents(parent_revision, parents_interesting_ancestors);
+            parents_interesting_ancestors
+              = db.get_revision_parents(parent_revision);
 
           rev_height parent_height;
           db.get_rev_height(parent_revision, parent_height);
@@ -866,7 +866,7 @@ do_annotate (app_state & app, project_t & project, const_file_t file_node,
     bool rid_marked = (rids_interesting_ancestors.size() == 1
                        && *(rids_interesting_ancestors.begin()) == rid);
     if (rid_marked)
-      project.db.get_revision_parents(rid, rids_interesting_ancestors);
+      rids_interesting_ancestors = project.db.get_revision_parents(rid);
 
     annotate_node_work workunit(acp, lineage, rid, file_node->self, height,
                                 rids_interesting_ancestors, file_node->content,

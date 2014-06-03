@@ -188,8 +188,7 @@ CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "REVID",
   complete(app.opts, app.lua, project, idx(args, 0)(), revid);
 
   // Check that the revision does not have any children
-  std::set<revision_id> children;
-  db.get_revision_children(revid, children);
+  std::set<revision_id> children = db.get_revision_children(revid);
   E(!children.size(), origin::user,
     F("revision %s already has children. We cannot kill it.")
     % revid);
@@ -200,12 +199,12 @@ CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "REVID",
   // commit afterwards. Of course we can't do this at all if
   //
   // a) the user is currently not inside a workspace
-  // b) the user has updated the current workspace to another revision already
-  //    thus the working revision is no longer based on the revision we're
-  //    trying to kill
-  // c) there are uncomitted changes in the working revision of this workspace.
-  //    this *eventually* could be handled with a workspace merge scenario, but
-  //    is left out for now
+  // b) the user has updated the current workspace to another revision
+  //    already thus the working revision is no longer based on the revision
+  //    we're trying to kill
+  // c) there are uncomitted changes in the working revision of this
+  //    workspace.  this *eventually* could be handled with a workspace
+  //    merge scenario, but is left out for now
   if (workspace::found)
     {
       workspace work(app);
@@ -228,8 +227,7 @@ CMD(db_kill_rev_locally, "kill_revision", "", CMD_REF(db_local), "REVID",
           P(F("applying changes from %s on the current workspace")
             % revid);
 
-          revision_t new_work_rev;
-          db.get_revision(revid, new_work_rev);
+          revision_t new_work_rev = db.get_revision(revid);
           new_work_rev.made_for = made_for_workspace;
           work.put_work_rev(new_work_rev);
           work.maybe_update_inodeprints(db);
@@ -629,10 +627,9 @@ CMD_HIDDEN(load_revisions, "load_revisions", "", CMD_REF(db), "",
     options::opts::none)
 {
   database db(app);
-  set<revision_id> ids;
-  vector<revision_id> revisions;
 
-  db.get_revision_ids(ids);
+  set<revision_id> ids = db.get_revision_ids();
+  vector<revision_id> revisions;
   toposort(db, ids, revisions);
 
   P(F("loading revisions"));
@@ -643,8 +640,7 @@ CMD_HIDDEN(load_revisions, "load_revisions", "", CMD_REF(db), "",
 
   for (revision_iterator i = revisions.begin(); i != revisions.end(); ++i)
     {
-      revision_t revision;
-      db.get_revision(*i, revision);
+      (void) db.get_revision(*i);
       ++loaded;
     }
 }
@@ -658,10 +654,8 @@ CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), "",
     options::opts::none)
 {
   database db(app);
-  set<revision_id> ids;
+  set<revision_id> ids =  db.get_revision_ids();
   vector<revision_id> rosters;
-
-  db.get_revision_ids(ids);
   toposort(db, ids, rosters);
 
   P(F("loading rosters"));
@@ -671,8 +665,8 @@ CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), "",
 
   for (roster_iterator i = rosters.begin(); i != rosters.end(); ++i)
     {
-      roster_t roster;
-      db.get_roster(*i, roster);
+      roster_t ros;
+      db.get_roster(*i, ros);
       ++loaded;
     }
 }
@@ -686,8 +680,7 @@ CMD_HIDDEN(load_files, "load_files", "", CMD_REF(db), "",
     options::opts::none)
 {
   database db(app);
-  set<file_id> files;
-  db.get_file_ids(files);
+  set<file_id> files = db.get_file_ids();
 
   P(F("loading files"));
   ticker loaded(_("files"), "f", 1);
@@ -697,8 +690,7 @@ CMD_HIDDEN(load_files, "load_files", "", CMD_REF(db), "",
 
   for (file_iterator i = files.begin(); i != files.end(); ++i)
     {
-      file_data file;
-      db.get_file_version(*i, file);
+      (void) db.get_file_version(*i);
       ++loaded;
     }
 }

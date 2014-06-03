@@ -719,8 +719,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
           legacy::manifest_map old_child_man;
 
           get_node_manifest(child, old_child_mid);
-          manifest_data mdat;
-          db.get_manifest_version(old_child_mid, mdat);
+          manifest_data mdat = db.get_manifest_version(old_child_mid);
           legacy::read_manifest_map(mdat, old_child_man);
 
           // Load all the parent rosters into a temporary roster map
@@ -772,8 +771,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
             legacy::manifest_map::const_iterator i = old_child_man.find(attr_path);
             if (i != old_child_man.end())
               {
-                file_data dat;
-                db.get_file_version(i->second, dat);
+                file_data dat = db.get_file_version(i->second);
                 legacy::dot_mt_attrs_map attrs;
                 legacy::read_dot_mt_attrs(dat.inner(), attrs);
                 for (legacy::dot_mt_attrs_map::const_iterator j = attrs.begin();
@@ -900,7 +898,8 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
 }
 
 void
-build_roster_style_revs_from_manifest_style_revs(database & db, key_store & keys,
+build_roster_style_revs_from_manifest_style_revs(database & db,
+                                                 key_store & keys,
                                                  project_t & project,
                                                  set<string> const & attrs_to_drop)
 {
@@ -915,8 +914,7 @@ build_roster_style_revs_from_manifest_style_revs(database & db, key_store & keys
   // committed under it), then we will simply drop it!
   // This code at least causes this case to throw an assertion; FIXME: make
   // this case actually work.
-  set<revision_id> all_rev_ids;
-  db.get_revision_ids(all_rev_ids);
+  set<revision_id> all_rev_ids = db.get_revision_ids();
 
   db.get_forward_ancestry(existing_graph);
   for (multimap<revision_id, revision_id>::const_iterator i = existing_graph.begin();
@@ -1005,9 +1003,8 @@ regenerate_heights(database & db)
     for (std::vector<revision_id>::const_iterator i = sorted_ids.begin();
          i != sorted_ids.end(); ++i)
       {
-        revision_t rev;
         revision_id const & rev_id = *i;
-        db.get_revision(rev_id, rev);
+        revision_t rev = db.get_revision(rev_id);
         db.put_height_for_revision(rev_id, rev);
         ++done;
       }
@@ -1036,9 +1033,8 @@ regenerate_rosters(database & db)
     for (std::vector<revision_id>::const_iterator i = sorted_ids.begin();
          i != sorted_ids.end(); ++i)
       {
-        revision_t rev;
         revision_id const & rev_id = *i;
-        db.get_revision(rev_id, rev);
+        revision_t rev = db.get_revision(rev_id);
         db.put_roster_for_revision(rev_id, rev);
         ++done;
       }
@@ -1102,9 +1098,8 @@ regenerate_file_sizes(database & db)
     for (std::vector<revision_id>::const_iterator i = sorted_ids.begin();
          i != sorted_ids.end(); ++i)
       {
-        revision_t rev;
         revision_id const & rev_id = *i;
-        db.get_revision(rev_id, rev);
+        revision_t rev = db.get_revision(rev_id);
         db.put_file_sizes_for_revision(rev);
         ++done;
       }

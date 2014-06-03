@@ -669,18 +669,16 @@ make_roster_for_revision(database & db,
 
 // ancestry graph loader
 
-void
-graph_loader::load_parents(revision_id const rid,
-                          set<revision_id> & parents)
+set<revision_id>
+graph_loader::load_parents(revision_id const rid)
 {
-  db.get_revision_parents(rid, parents);
+  return db.get_revision_parents(rid);
 }
 
-void
-graph_loader::load_children(revision_id const rid,
-                           set<revision_id> & children)
+set<revision_id>
+graph_loader::load_children(revision_id const rid)
 {
-  db.get_revision_children(rid, children);
+  return db.get_revision_children(rid);
 }
 
 void
@@ -710,9 +708,9 @@ graph_loader::load_revs(load_direction const direction,
       MM(relatives);
 
       if (direction == ancestors)
-        load_parents(rid, relatives);
+        relatives = load_parents(rid);
       else if (direction == descendants)
-        load_children(rid, relatives);
+        relatives = load_children(rid);
       else
         I(false);
 
