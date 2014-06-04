@@ -548,6 +548,7 @@ select_nodes_modified_by_rev(database & db,
       copy(edge_nodes_modified.begin(), edge_nodes_modified.end(),
                 inserter(nodes_modified, nodes_modified.begin()));
     }
+  return nodes_modified;
 }
 
 // These functions create new ancestry!
