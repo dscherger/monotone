@@ -733,7 +733,6 @@ date_t::date_t(string const & s)
       t.day = day;
       t.month = month;
       t.year = year;
-      W(F("got timezone_offset: %ld") % timezone_offset);
       t.gmtoff = timezone_offset;
 
       d = our_timegm(t);
