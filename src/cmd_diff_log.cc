@@ -888,23 +888,14 @@ log_common (app_state & app,
           // find out whether the current rev is to be printed
           // we don't care about changed paths if it is not marked
           if (!use_markings || marked_revs.find(rid) != marked_revs.end())
-            {
-              set<node_id> nodes_modified;
-              select_nodes_modified_by_rev(db, rev, roster,
-                                           nodes_modified);
-
-              for (set<node_id>::const_iterator n = nodes_modified.begin();
-                   n != nodes_modified.end(); ++n)
-                {
-                  // a deleted node will be "modified" but won't
-                  // exist in the result.
-                  // we don't want to print them.
-                  if (roster.has_node(*n) && mask.includes(roster, *n))
-                    {
-                      print_this = true;
-                    }
-                }
-            }
+            for (node_id nid : select_nodes_modified_by_rev(db, rev, roster))
+              {
+                // a deleted node will be "modified" but won't
+                // exist in the result.
+                // we don't want to print them.
+                if (roster.has_node(nid) && mask.includes(roster, nid))
+                  print_this = true;
+              }
         }
 
       if (app.opts.no_merges && rev.is_merge_node())

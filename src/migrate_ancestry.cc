@@ -119,8 +119,7 @@ is_ancestor(database & db,
     % ancestor_id
     % descendent_id);
 
-  multimap<revision_id, revision_id> graph;
-  db.get_forward_ancestry(graph);
+  rev_ancestry_map graph = db.get_forward_ancestry();
   return is_ancestor(ancestor_id, descendent_id, graph);
 }
 
@@ -906,7 +905,6 @@ build_roster_style_revs_from_manifest_style_revs(database & db,
   anc_graph graph(true, db, keys, project);
 
   P(F("converting existing revision graph to new roster-style revisions"));
-  multimap<revision_id, revision_id> existing_graph;
 
   // cross-check that we're getting everything
   // in fact the code in this function is wrong, because if a revision has no
@@ -915,8 +913,7 @@ build_roster_style_revs_from_manifest_style_revs(database & db,
   // This code at least causes this case to throw an assertion; FIXME: make
   // this case actually work.
   set<revision_id> all_rev_ids = db.get_revision_ids();
-
-  db.get_forward_ancestry(existing_graph);
+  rev_ancestry_map existing_graph = db.get_forward_ancestry();
   for (multimap<revision_id, revision_id>::const_iterator i = existing_graph.begin();
        i != existing_graph.end(); ++i)
     {
@@ -979,8 +976,7 @@ allrevs_toposorted(database & db,
                    vector<revision_id> & revisions)
 {
   // get the complete ancestry
-  rev_ancestry_map graph;
-  db.get_forward_ancestry(graph);
+  rev_ancestry_map graph = db.get_forward_ancestry();
   toposort_rev_ancestry(graph, revisions);
 }
 

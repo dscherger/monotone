@@ -35,8 +35,8 @@ revision_enumerator::revision_enumerator(project_t & project,
   revision_id root;
   revs.push_back(root);
 
-  project.db.get_forward_ancestry(graph);
-  project.db.get_reverse_ancestry(inverse_graph);
+  graph = project.db.get_forward_ancestry();
+  inverse_graph = project.db.get_reverse_ancestry();
 }
 
 void

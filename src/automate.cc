@@ -340,9 +340,7 @@ CMD_AUTOMATE(ancestry_difference, N_("NEW_REV [OLD_REV1 [OLD_REV2 [...]]]"),
         F("no revision %s found in database") % b);
       bs.insert(b);
     }
-  set<revision_id> ancestors;
-  ancestry_difference(db, a, bs, ancestors);
-
+  set<revision_id> ancestors = ancestry_difference(db, a, bs);
   vector<revision_id> sorted;
   toposort(db, ancestors, sorted);
   for (vector<revision_id>::const_iterator i = sorted.begin();
@@ -496,11 +494,8 @@ CMD_AUTOMATE(graph, "",
     F("no arguments needed"));
 
   database db(app);
-
-  multimap<revision_id, revision_id> edges_mmap;
-  map<revision_id, set<revision_id> > child_to_parents;
-
-  db.get_reverse_ancestry(edges_mmap);
+  map<revision_id, set<revision_id>> child_to_parents;
+  rev_ancestry_map edges_mmap = db.get_reverse_ancestry();
 
   for (multimap<revision_id, revision_id>::const_iterator i = edges_mmap.begin();
        i != edges_mmap.end(); ++i)

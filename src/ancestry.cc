@@ -86,9 +86,7 @@ find_common_ancestor_for_merge(database & db,
   leaves.insert(intern.intern(left.inner()()));
   leaves.insert(intern.intern(right.inner()()));
 
-
-  multimap<revision_id, revision_id> inverse_graph;
-  db.get_reverse_ancestry(inverse_graph);
+  rev_ancestry_map inverse_graph = db.get_reverse_ancestry();
 
   while (leaves.size() != 1)
     {
@@ -293,10 +291,10 @@ void
 erase_ancestors_and_failures(database & db,
                              std::set<revision_id> & candidates,
                              is_failure & p,
-                             multimap<revision_id, revision_id> *inverse_graph_cache_ptr)
+                             rev_ancestry_map *inverse_graph_cache_ptr)
 {
   // Load up the ancestry graph
-  multimap<revision_id, revision_id> inverse_graph;
+  rev_ancestry_map inverse_graph;
 
   if (candidates.empty())
     return;
@@ -304,9 +302,7 @@ erase_ancestors_and_failures(database & db,
   if (inverse_graph_cache_ptr == NULL)
     inverse_graph_cache_ptr = &inverse_graph;
   if (inverse_graph_cache_ptr->empty())
-  {
-    db.get_reverse_ancestry(*inverse_graph_cache_ptr);
-  }
+    *inverse_graph_cache_ptr = db.get_reverse_ancestry();
 
   // Keep a set of all ancestors that we've traversed -- to avoid
   // combinatorial explosion.
@@ -415,10 +411,10 @@ void
 erase_descendants_and_failures(database & db,
                                std::set<revision_id> & candidates,
                                is_failure & p,
-                               multimap<revision_id, revision_id> *graph_cache_ptr)
+                               rev_ancestry_map *graph_cache_ptr)
 {
   // Load up the ancestry graph
-  multimap<revision_id, revision_id> graph;
+  rev_ancestry_map graph;
 
   if (candidates.empty())
     return;
@@ -426,9 +422,7 @@ erase_descendants_and_failures(database & db,
   if (graph_cache_ptr == NULL)
     graph_cache_ptr = &graph;
   if (graph_cache_ptr->empty())
-  {
-    db.get_forward_ancestry(*graph_cache_ptr);
-  }
+    *graph_cache_ptr = db.get_forward_ancestry();
 
   // Keep a set of all descendants that we've traversed -- to avoid
   // combinatorial explosion.
@@ -488,15 +482,11 @@ erase_descendants(database & db, set<revision_id> & revisions)
 // but not in the ancestry of any of the Bs.  It tells you 'what's new' in A
 // that's not in the Bs.  If the output set if non-empty, then A will
 // certainly be in it; but the output set might be empty.
-void
+set<revision_id>
 ancestry_difference(database & db, revision_id const & a,
-                    set<revision_id> const & bs,
-                    set<revision_id> & new_stuff)
+                    set<revision_id> const & bs)
 {
-  new_stuff.clear();
-  multimap<revision_id, revision_id> inverse_graph;
-
-  db.get_reverse_ancestry(inverse_graph);
+  rev_ancestry_map inverse_graph = db.get_reverse_ancestry();
 
   interner<ctx> intern;
   map< ctx, shared_bitmap > ancestors;
@@ -527,25 +517,23 @@ ancestry_difference(database & db, revision_id const & a,
 
   *au -= *u;
 
+  set<revision_id> new_stuff;
   for (unsigned int i = 0; i != au->size(); ++i)
-  {
     if (au->test(i))
       {
         revision_id rid(intern.lookup(i), origin::internal);
         if (!null_id(rid))
           new_stuff.insert(rid);
       }
-  }
+  return new_stuff;
 }
 
-void
+set<node_id>
 select_nodes_modified_by_rev(database & db,
                              revision_t const & rev,
-                             roster_t const new_roster,
-                             set<node_id> & nodes_modified)
+                             roster_t const & new_roster)
 {
-  nodes_modified.clear();
-
+  std::set<node_id> nodes_modified;
   for (edge_map::const_iterator i = rev.edges.begin();
        i != rev.edges.end(); ++i)
     {

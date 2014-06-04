@@ -172,19 +172,17 @@ erase_descendants_and_failures(database & db,
                                is_failure & p,
                                std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
 
-void
+std::set<revision_id>
 ancestry_difference(database & db, revision_id const & a,
-                    std::set<revision_id> const & bs,
-                    std::set<revision_id> & new_stuff);
+                    std::set<revision_id> const & bs);
 
 
 // FIXME: can probably optimize this passing a lookaside cache of the active
 // frontier set of shared_ptr<roster_t>s, while traversing history.
-void
+std::set<node_id>
 select_nodes_modified_by_rev(database & db,
                              revision_t const & rev,
-                             roster_t const roster,
-                             std::set<node_id> & nodes_modified);
+                             roster_t const & roster);
 
 revision_t
 make_revision(revision_id const & old_rev_id,
