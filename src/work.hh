@@ -88,6 +88,19 @@ namespace bisect
   typedef std::pair<type, revision_id> entry;
 };
 
+struct workspace_result
+{
+  enum status
+    {
+      MISSING_FILE,
+      MISSING_DIR,
+      NOT_A_FILE,
+      NOT_A_DIR,
+    };
+
+  std::map<file_path, status> status_map;
+};
+
 struct workspace
 {
   // This is a public flag because it's set from monotone.cc using a
@@ -217,7 +230,9 @@ public:
   void update_current_roster_from_filesystem(roster_t & ros);
   void update_current_roster_from_filesystem(roster_t & ros,
                                              node_restriction const & mask);
-
+  void update_current_roster_from_filesystem(roster_t & ros,
+                                             node_restriction const & mask,
+                                             std::auto_ptr<workspace_result> & wres);
 
   // the "user log" is a file the user can edit as they program to record
   // changes they make to their source code. Upon commit the file is read

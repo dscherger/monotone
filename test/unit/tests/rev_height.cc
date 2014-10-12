@@ -108,6 +108,24 @@ UNIT_TEST(comparisons)
     }
 }
 
+UNIT_TEST(abs_height)
+{
+  rev_height root(rev_height::root_height());
+  rev_height left(root.child_height(0));
+  rev_height right(root.child_height(1));
+
+  UNIT_TEST_CHECK(root.abs() == 0);
+  UNIT_TEST_CHECK(left.abs() == 1);
+  UNIT_TEST_CHECK(right.abs() == 1);
+
+  rev_height left_sub(left.child_height(0));
+  rev_height right_sub_left(right.child_height(0));
+  rev_height right_sub_right(right.child_height(1));
+  UNIT_TEST_CHECK(left_sub.abs() == 2);
+  UNIT_TEST_CHECK(right_sub_left.abs() == 2);
+  UNIT_TEST_CHECK(right_sub_right.abs() == 2);
+}
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

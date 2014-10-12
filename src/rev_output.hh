@@ -28,6 +28,9 @@ revision_header(revision_id const rid, revision_t const & rev,
                 utf8 & header);
 
 void
+cset_summary(cset const & cs, std::ostringstream & out);
+
+void
 revision_summary(revision_t const & rev, utf8 & summary);
 
 #endif  // header guard
