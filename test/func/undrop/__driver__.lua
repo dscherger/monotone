@@ -12,7 +12,7 @@ check(mtn("undrop", "changed"), 0, false, false)
 check(readfile("changed")=="base")
 
 check(mtn("status"), 0, true, false)
-check(qgrep("no changes", "stdout"))
+check(qgrep("No changes", "stdout"))
 
 -- With changes before 'drop', 'undrop' is like 'revert --bookkeeponly'
 writefile("changed", "modified")
@@ -71,7 +71,7 @@ check(mtn("undrop", "dir1"), 0, false, true)
 check(readfile("dir1/file1")=="file1")
 check(readfile("dir1/file2")=="file2")
 check(mtn("status"), 0, true, false)
-check(qgrep("no changes", "stdout"))
+check(qgrep("No changes", "stdout"))
 
 -- file that was not dropped. 'revert' doesn't report an error for
 -- this, so 'undrop' doesn't either.

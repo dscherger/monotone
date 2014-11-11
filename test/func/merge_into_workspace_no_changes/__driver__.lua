@@ -45,7 +45,7 @@ check(mtn("automate", "graph"), 0, {"ancestry"}, nil)
 
 -- status should report no changes
 check(mtn("status"), 0, true, nil)
-check(qgrep("no changes", "stdout"))
+check(qgrep("No changes", "stdout"))
 
 -- we should not be able to merge anything on top of this, despite
 -- there being no changes in the workspace

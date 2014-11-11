@@ -1648,6 +1648,8 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
       // detach this node as well.
       if (!is_root_dir_t(node) && !ros.is_attached(node->parent))
         {
+          L(FL("missing parent %d -- detaching node %d")
+            % node->parent % nid);
           ros.detach_node(nid);
           continue;
         }
@@ -1668,8 +1670,13 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
               if (wres.get() == NULL)
                 W(F("missing directory '%s'") % (fp));
               else
-                wres->status_map.insert(make_pair(fp,
-                  workspace_result::status::MISSING_DIR));
+                {
+                  L(FL("missing directory '%s' - detaching node %d")
+                    % fp % nid);
+                  ros.detach_node(nid);
+                  wres->status_map.insert(make_pair(fp,
+                    workspace_result::status::MISSING_DIR));
+                }
             }
           else if (status != path::directory)
             {
@@ -1678,6 +1685,8 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
                 W(F("not a directory '%s'") % (fp));
               else
                 {
+                  L(FL("not a directory '%s' - detaching node %d")
+                    % fp % nid);
                   ros.detach_node(nid);
                   wres->status_map.insert(make_pair(fp,
                     workspace_result::status::NOT_A_DIR));
@@ -1697,8 +1706,13 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
               if (wres.get() == NULL)
                 W(F("missing file '%s'") % (fp));
               else
-                wres->status_map.insert(make_pair(fp,
-                  workspace_result::status::MISSING_FILE));
+                {
+                  L(FL("missing file '%s' - detaching node %d")
+                    % fp % nid);
+                  ros.detach_node(nid);
+                  wres->status_map.insert(make_pair(fp,
+                    workspace_result::status::MISSING_FILE));
+                }
             }
           else if (status != path::file)
             {
@@ -1707,19 +1721,24 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
                 W(F("not a file '%s'") % (fp));
               else
                 {
+                  L(FL("not a file '%s' - detaching node %d")
+                    % fp % nid);
                   ros.detach_node(nid);
                   wres->status_map.insert(make_pair(fp,
                     workspace_result::status::NOT_A_FILE));
                 }
             }
-
-          file_id fid;
-          ident_existing_file(fp, fid, status);
-          file_t file = downcast_to_file_t(node);
-          if (file->content != fid)
+          else
             {
-              ros.unshare(node);
-              downcast_to_file_t(node)->content = fid;
+              file_id fid;
+              ident_existing_file(fp, fid, status);
+              I(!null_id(fid));
+              file_t file = downcast_to_file_t(node);
+              if (file->content != fid)
+                {
+                  ros.unshare(node);
+                  downcast_to_file_t(node)->content = fid;
+                }
             }
         }
     }
@@ -1736,6 +1755,15 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
       " '%s revert --missing'")
     % missing_items % prog_name % prog_name % prog_name
     % prog_name % prog_name);
+
+  // Drop all detached nodes so the roster can be used to form a restricted
+  // roster.
+  for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+    {
+      node_id nid = i->first;
+      if (!ros.is_attached(nid))
+        ros.drop_detached_node(nid);
+    }
 }
 
 set<file_path>

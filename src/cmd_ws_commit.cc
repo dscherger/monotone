@@ -956,13 +956,13 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
     "",
     options::opts::depth | options::opts::exclude)
 {
-  temp_node_id_source nis;
-
   database db(app);
   project_t project(db);
   workspace work(app);
 
   parent_map old_rosters = work.get_parent_rosters(db);
+  I(!old_rosters.empty());
+
   roster_t new_roster = work.get_current_roster_shape(db);
 
   node_restriction mask(args_to_paths(args),
@@ -1246,58 +1246,71 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   //
   // Emit parent revisions and changes against them
   //
-  old_rosters = work.get_parent_rosters(db);
-  I(!old_rosters.empty());
   for (parent_entry const & i : old_rosters)
     {
       revision_id const & parent = parent_id(i);
       roster_t const & parent_roster = *i.second.first;
 
+      roster_t restricted_roster;
+      make_restricted_roster(parent_roster, new_roster,
+                             restricted_roster, mask);
+      cset cs(parent_roster, restricted_roster, true);
+
+      // Filter all missing nodes from the change set. These will later be
+      // reported as preventing a commit and shouldn't appear twice in the
+      // status message. (Note that new_roster will include all missing
+      // files as patches, due to the way we invoke
+      // update_current_roster_from_filesystem here).
+      for (pair<file_path, workspace_result::status> const & ity
+             : wres->status_map)
+        {
+          file_path const & fp = ity.first;
+          cs.nodes_deleted.erase(fp);
+        }
+
       if (null_id(parent))
-        {
-          out << _("Initial revision changes:") << "\n\n";
-          cset cs(parent_roster, new_roster, true);
-          cset_summary(cs, out);
-        }
+        out << _("Initial revision changes:") << '\n';
+      else if (cs.empty())
+        out << _("No changes against parent ") << parent << '\n';
       else
-        {
-          cset cs(parent_roster, new_roster, true);
-          if (cs.empty())
-            out << _("Exactly matches parent ") << parent << "\n\n";
-          else
-            {
-              out << _("Changes against parent ") << parent << "\n\n";
-              cset_summary(cs, out);
-            }
-        }
+        out << _("Changes against parent ") << parent << '\n';
+
+      if (!mask.empty())
+        out << _("(with the restrictions given)") << '\n';
+
+      out << '\n';
+
+      if (!cs.empty())
+        cset_summary(cs, out);
     }
 
   if (!wres->status_map.empty())
     {
-      out << _("These changes prevent a commit:") << "\n\n";
-      for (map<file_path, workspace_result::status>::const_iterator ity = wres->status_map.begin();
-           ity != wres->status_map.end(); ++ity)
+      out << _("These errors currently prevent a commit:") << "\n\n";
+
+      for (pair<file_path, workspace_result::status> const & ity
+             : wres->status_map)
         {
-          file_path const & fp = ity->first;
-          switch (ity->second)
+          file_path const & fp = ity.first;
+          switch (ity.second)
             {
             case workspace_result::status::MISSING_FILE:
-              out << _("  missing file: ") << fp << '\n';
+              out << _("  missing file:      ") << fp << '\n';
               break;
             case workspace_result::status::MISSING_DIR:
               out << _("  missing directory: ") << fp << '\n';
               break;
             case workspace_result::status::NOT_A_FILE:
-              out << _("  not a file: ") << fp << '\n';
+              out << _("  not a file:        ") << fp << '\n';
               break;
             case workspace_result::status::NOT_A_DIR:
-              out << _("  not a directory: ") << fp << '\n';
+              out << _("  not a directory:   ") << fp << '\n';
               break;
             }
         }
+
       out << '\n';
     }
-
 
   external output_external;
   utf8_to_system_best_effort(utf8(out.str(), origin::internal),

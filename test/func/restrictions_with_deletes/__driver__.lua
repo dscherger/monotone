@@ -21,4 +21,9 @@ commit()
 root_rev = base_revision()
 
 check(mtn("drop", "--bookkeep-only", "foo/bar", "foo"), 0, false, false)
-check(mtn("st", "--exclude", "foo/bar"), 1, false, false)
+check(mtn("status", "--exclude", "foo/bar"), 1, false, true)
+check(qgrep("invalid restriction", "stderr"))
+
+-- excluding the entire directory should work fine
+check(mtn("status", "--exclude", "foo"), 0, false, true)
+check(not qgrep("invalid restriction", "stderr"))

@@ -2465,6 +2465,11 @@ make_restricted_roster(roster_t const & from, roster_t const & to,
             {
               n = p; // see if we can add the parent
               I(is_dir_t(n->second));
+
+              L(FL("selected node %d %s parent %d")
+                % n->second->self
+                % n->second->name
+                % n->second->parent);
             }
           else
             {
