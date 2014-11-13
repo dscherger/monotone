@@ -178,9 +178,8 @@ load_changes(database & db,
       edge_map::const_iterator edge = revision.edges.begin();
       parent1 = edge_old_revision(edge);
 
-      roster_t old_roster, new_roster;
-      db.get_roster(parent1, old_roster);
-      db.get_roster(*r, new_roster);
+      roster_t const old_roster = db.get_roster(parent1),
+        new_roster = db.get_roster(*r);
 
       git_change changes;
       get_change(old_roster, new_roster, changes);

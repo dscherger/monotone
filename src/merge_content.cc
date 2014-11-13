@@ -137,8 +137,7 @@ load_and_cache_roster(database & db, revision_id const & rid,
     rout = i->second;
   else
     {
-      cached_roster cr;
-      db.get_roster(rid, cr);
+      cached_roster cr = db.get_cached_roster(rid);
       safe_insert(rmap, make_pair(rid, cr.first));
       rout = cr.first;
     }
@@ -200,7 +199,7 @@ content_merge_database_adaptor::get_dropped_details(set<revision_id> const & unc
   for (set<revision_id>::const_iterator i = uncommon_ancestors.begin();
        i != uncommon_ancestors.end(); ++i)
     {
-      db.get_roster(*i, roster, marking_map);
+      db.get_roster_and_markings(*i, roster, marking_map);
       if (roster.has_node(nid))
         {
           dropped_rev_id = *i;
@@ -209,7 +208,7 @@ content_merge_database_adaptor::get_dropped_details(set<revision_id> const & unc
         }
     }
 
-  db.get_roster(least_common_ancestor, roster, marking_map);
+  db.get_roster_and_markings(least_common_ancestor, roster, marking_map);
   if (roster.has_node(nid))
     {
       dropped_rev_id = least_common_ancestor;
@@ -820,8 +819,8 @@ interactive_merge_and_store(lua_hooks & lua,
   marking_map left_marking_map, right_marking_map;
   set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
 
-  db.get_roster(left_rid, left_roster, left_marking_map);
-  db.get_roster(right_rid, right_roster, right_marking_map);
+  db.get_roster_and_markings(left_rid, left_roster, left_marking_map);
+  db.get_roster_and_markings(right_rid, right_roster, right_marking_map);
   db.get_uncommon_ancestors(left_rid, right_rid,
                             left_uncommon_ancestors, right_uncommon_ancestors);
 
@@ -871,8 +870,7 @@ store_roster_merge_result(database & db,
   shared_ptr<cset> right_to_merged(new cset(right_roster, merged_roster));
   safe_insert(merged_rev.edges, make_pair(right_rid, right_to_merged));
 
-  revision_data merged_data;
-  write_revision(merged_rev, merged_data);
+  revision_data merged_data = write_revision(merged_rev);
   merged_rid = calculate_ident(merged_data);
   {
     transaction_guard guard(db);

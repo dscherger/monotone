@@ -234,9 +234,8 @@ migrate_1_to_2()
   }
   revision_t rev = make_revision_for_workspace(base_rid, move(workcs));
   MM(rev);
-  data rev_data;
-  write_revision(rev, rev_data);
-  write_data(rev_path, rev_data);
+  revision_data rev_data = write_revision(rev);
+  write_data(rev_path, rev_data.inner());
   if (delete_workcs)
     delete_file(workcs_path);
 }

@@ -202,8 +202,7 @@ UNIT_TEST(roundabout)
     cs->dirs_added.insert(file_path_internal(""));
     rev.edges.insert(make_pair(decode_hexenc_as<revision_id>(
       "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", origin::internal), cs));
-    revision_data rdat;
-    write_revision(rev, rdat);
+    revision_data rdat = write_revision(rev);
     revision_id rid = calculate_ident(rdat);
     pw.consume_revision_data(rid, rdat);
 

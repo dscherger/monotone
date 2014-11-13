@@ -218,11 +218,11 @@ revision_t
 workspace::get_work_rev()
 {
   bookkeeping_path rev_path(get_revision_path());
-  data rev_data;
+  revision_data rev_data;
   MM(rev_data);
   try
     {
-      rev_data = read_data(rev_path);
+      rev_data = revision_data(read_data(rev_path));
     }
   catch(exception & e)
     {
@@ -244,10 +244,8 @@ workspace::put_work_rev(revision_t const & rev)
   I(rev.made_for == made_for_workspace);
   rev.check_sane();
 
-  data rev_data;
-  write_revision(rev, rev_data);
-
-  write_data(get_revision_path(), rev_data);
+  revision_data rev_data = write_revision(rev);
+  write_data(get_revision_path(), rev_data.inner());
 }
 
 revision_id
@@ -295,7 +293,7 @@ get_roster_for_rid(database & db,
     {
       E(db.revision_exists(rid), origin::user,
         F("base revision %s does not exist in database") % rid);
-      db.get_roster(rid, cr);
+      cr = db.get_cached_roster(rid);
     }
   L(FL("base roster has %d entries") % cr.first->all_nodes().size());
   return cr;

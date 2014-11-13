@@ -370,12 +370,12 @@ parse_revision(basic_io::parser & parser)
 }
 
 revision_t
-read_revision(data const & dat)
+read_revision(revision_data const & dat)
 {
   revision_t rev;
   MM(rev);
-  basic_io::input_source src(dat(), "revision");
-  src.made_from = dat.made_from;
+  basic_io::input_source src(dat.inner()(), "revision");
+  src.made_from = dat.inner().made_from;
   basic_io::tokenizer tok(src);
   basic_io::parser pars(tok);
   rev = parse_revision(pars);
@@ -384,50 +384,30 @@ read_revision(data const & dat)
   return rev;
 }
 
-revision_t
-read_revision(revision_data const & dat)
-{
-  return read_revision(dat.inner());
-}
-
-static void write_insane_revision(revision_t const & rev,
-                                  data & dat)
+static data write_insane_revision(revision_t const & rev)
 {
   basic_io::printer pr;
   print_insane_revision(pr, rev);
-  dat = data(pr.buf, origin::internal);
+  return data(pr.buf, origin::internal);
 }
 
 template <> void
 dump(revision_t const & rev, string & out)
 {
-  data dat;
-  write_insane_revision(rev, dat);
-  out = dat();
+  out = write_insane_revision(rev)();
 }
 
-void
-write_revision(revision_t const & rev,
-               data & dat)
+revision_data
+write_revision(revision_t const & rev)
 {
   rev.check_sane();
-  write_insane_revision(rev, dat);
-}
-
-void
-write_revision(revision_t const & rev,
-               revision_data & dat)
-{
-  data d;
-  write_revision(rev, d);
-  dat = revision_data(d);
+  return revision_data(write_insane_revision(rev));
 }
 
 revision_id
 calculate_ident(revision_t const & rev)
 {
-  data tmp;
-  write_revision(rev, tmp);
+  revision_data tmp = write_revision(rev);
   return revision_id(calculate_ident(tmp));
 }
 

@@ -171,12 +171,12 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
       // this call will change to something else when the above bug is
       // fixed, and so should not be merged with the identical call in
       // the else branch.
-      db.get_roster(rid, roster);
+      roster = db.get_roster(rid);
     }
   else
     {
       complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), rid);
-      db.get_roster(rid, roster);
+      roster = db.get_roster(rid);
     }
 
   // find the version of the file requested
@@ -258,7 +258,7 @@ dump_file(database & db, std::ostream & output, revision_id rid, utf8 filename)
 
   roster_t roster;
   marking_map marks;
-  db.get_roster(rid, roster, marks);
+  db.get_roster_and_markings(rid, roster, marks);
   E(roster.has_node(fp), origin::user,
     F("no file '%s' found in revision %s") % fp % rid);
 

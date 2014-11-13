@@ -231,7 +231,7 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
                idx(app.opts.revision, 0)(), rev_id);
       E(db.revision_exists(rev_id), origin::user,
         F("no revision %s found in database") % rev_id);
-      db.get_roster(rev_id, roster);
+      roster = db.get_roster(rev_id);
     }
 
   // To find the duplicate files, we put all file_ids in a map

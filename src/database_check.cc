@@ -209,7 +209,7 @@ check_rosters_manifest(database & db,
       marking_map mm;
       try
         {
-          db.get_roster(*i, ros, mm);
+          db.get_roster_and_markings(*i, ros, mm);
         }
       // When attempting to fetch a roster with no corresponding revision,
       // we fail with E(), not I() (when it tries to look up the manifest_id
@@ -274,7 +274,7 @@ check_rosters_marking(database & db,
 
       roster_t ros;
       marking_map mm;
-      db.get_roster(ros_id, ros, mm);
+      db.get_roster_and_markings(ros_id, ros, mm);
 
       for (node_map::const_iterator n = ros.all_nodes().begin();
            n != ros.all_nodes().end(); ++n)
@@ -351,8 +351,7 @@ check_revisions(database & db,
       checked_revisions[*i].parseable = true;
 
       // normalisation check
-      revision_data norm_data;
-      write_revision(rev, norm_data);
+      revision_data norm_data = write_revision(rev);
       if (calculate_ident(norm_data) == *i)
           checked_revisions[*i].normalized = true;
 

@@ -1298,9 +1298,7 @@ CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
                                             excluded, join_words(execid));
   rev.check_sane();
 
-  revision_data dat;
-  write_revision(rev, dat);
-
+  revision_data dat = write_revision(rev);
   L(FL("dumping revision %s") % calculate_ident(rev));
   output << dat;
 }
@@ -1409,9 +1407,7 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
   E(args.size() < 2, origin::user,
     F("wrong argument count"));
 
-  manifest_data dat;
   roster_t new_roster;
-
   if (args.size() == 0)
     {
       workspace work(app);
@@ -1425,10 +1421,10 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
                                                       origin::user);
       E(db.revision_exists(rid), origin::user,
         F("no revision %s found in database") % rid);
-      db.get_roster(rid, new_roster);
+      new_roster = db.get_roster(rid);
     }
 
-  write_manifest_of_roster(new_roster, dat);
+  manifest_data dat = write_manifest_of_roster(new_roster);
   L(FL("dumping manifest %s") % calculate_ident(new_roster));
   output << dat;
 }
@@ -1551,7 +1547,7 @@ CMD_AUTOMATE(get_extended_manifest_of, "REVISION",
                                                   origin::user);
   E(db.revision_exists(rid), origin::user,
     F("no revision %s found in database") % rid);
-  db.get_roster(rid, roster, mm);
+  db.get_roster_and_markings(rid, roster, mm);
 
   map<file_id, file_size> file_sizes = db.get_file_sizes(roster);
   data dat;
@@ -1925,7 +1921,7 @@ CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
   ident = decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user);
   E(db.revision_exists(ident), origin::user,
     F("no revision %s found in database") % ident);
-  db.get_roster(ident, new_roster, mm);
+  db.get_roster_and_markings(ident, new_roster, mm);
 
   file_path path = file_path_external(idx(args,1));
   E(new_roster.has_node(path), origin::user,
@@ -1981,18 +1977,17 @@ CMD_AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"),
 
   database db(app);
 
-  roster_t new_roster, old_roster;
   revision_id ident, old_ident;
 
   ident = decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user);
   E(db.revision_exists(ident), origin::user,
     F("no revision %s found in database") % ident);
-  db.get_roster(ident, new_roster);
+  roster_t new_roster = db.get_roster(ident);
 
   old_ident = decode_hexenc_as<revision_id>(idx(args, 2)(), origin::user);
   E(db.revision_exists(old_ident), origin::user,
     F("no revision %s found in database") % old_ident);
-  db.get_roster(old_ident, old_roster);
+  roster_t old_roster = db.get_roster(old_ident);
 
   file_path path = file_path_external(idx(args,1));
   E(new_roster.has_node(path), origin::user,
@@ -2093,8 +2088,7 @@ CMD_AUTOMATE(put_revision, N_("REVISION-DATA"),
   for (edge_map::const_iterator e = rev.edges.begin(); e != rev.edges.end(); ++e)
     {
       // calculate new manifest
-      roster_t old_roster;
-      if (!null_id(e->first)) db.get_roster(e->first, old_roster);
+      roster_t old_roster = db.get_roster(e->first);
       roster_t new_roster = old_roster;
       editable_roster_base eros(new_roster, nis);
       e->second->apply_to(eros);

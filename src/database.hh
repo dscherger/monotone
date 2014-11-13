@@ -205,9 +205,6 @@ public:
   bool put_revision(revision_id const & new_id,
                     revision_t const & rev);
 
-  bool put_revision(revision_id const & new_id,
-                    revision_data const & dat);
-
 private:
   void deltify_revision(revision_id const & rid);
 
@@ -217,15 +214,13 @@ private:
 public:
   node_id next_node_id();
 
-  void get_roster(revision_id const & rid,
-                  roster_t & roster);
+  roster_t get_roster(revision_id const & rid);
 
-  void get_roster(revision_id const & rid,
-                  roster_t & roster,
-                  marking_map & marks);
+  void get_roster_and_markings(revision_id const & rid,
+                               roster_t & roster,
+                               marking_map & marks);
 
-  void get_roster(revision_id const & rid,
-                  cached_roster & cr);
+  cached_roster get_cached_roster(revision_id const & rid);
 
   // these are exposed for the use of database_check.cc
   bool roster_version_exists(revision_id const & ident);
@@ -241,13 +236,12 @@ public:
                         file_id & content);
 
 private:
-  void get_roster_version(revision_id const & ros_id,
-                          cached_roster & cr);
+  cached_roster get_roster_version(revision_id const & ros_id);
 
   void put_roster(revision_id const & rev_id,
                   revision_t const & rev,
-                  roster_t_cp const & roster,
-                  marking_map_cp const & marking);
+                  roster_t_cp && roster,
+                  marking_map_cp && marking);
 
   //
   // --== Keys ==--

@@ -304,9 +304,8 @@ netsync_session::note_rev(revision_id const & rev)
   if (role == sink_role)
     return;
   revision_t rs = project.db.get_revision(rev);
-  data tmp;
-  write_revision(rs, tmp);
-  queue_data_cmd(revision_item, rev.inner(), tmp());
+  revision_data tmp = write_revision(rs);
+  queue_data_cmd(revision_item, rev.inner(), tmp.inner()());
   counts->revs_out.add_item(rev);
 }
 
@@ -1042,8 +1041,8 @@ netsync_session::process_data_cmd(netcmd_item_type type,
     case revision_item:
       {
         L(FL("received revision '%s'") % hitem());
-        data d(dat, origin::network);
-        if (!(calculate_ident(d) == item))
+        revision_data d(dat, origin::network);
+        if (calculate_ident(d).inner() != item)
           throw bad_decode(F("hash check failed for revision %s") % item);
         revision_t rev = read_revision(d);
         if (project.db.put_revision(revision_id(item), rev))

@@ -36,6 +36,7 @@
 using std::inserter;
 using std::make_pair;
 using std::map;
+using std::move;
 using std::ostringstream;
 using std::pair;
 using std::reverse;
@@ -3069,10 +3070,9 @@ read_roster_and_marking(roster_data const & dat,
 }
 
 
-static void
+static data
 write_roster_and_marking(roster_t const & ros,
                          marking_map const & mm,
-                         data & dat,
                          bool print_local_parts,
                          bool do_sanity_check)
 {
@@ -3083,30 +3083,26 @@ write_roster_and_marking(roster_t const & ros,
       else
         ros.check_sane(true);
     }
+  data dat;
   ros.print_to(dat, mm, print_local_parts);
+  return dat;
 }
 
-
-void
+roster_data
 write_roster_and_marking(roster_t const & ros,
-                         marking_map const & mm,
-                         roster_data & dat)
+                         marking_map const & mm)
 {
-  data tmp;
-  write_roster_and_marking(ros, mm, tmp, true, true);
-  dat = roster_data(tmp);
+  data tmp = write_roster_and_marking(ros, mm, true, true);
+  return roster_data(move(tmp));
 }
 
-
-void
+manifest_data
 write_manifest_of_roster(roster_t const & ros,
-                         manifest_data & dat,
                          bool do_sanity_check)
 {
-  data tmp;
   marking_map mm;
-  write_roster_and_marking(ros, mm, tmp, false, do_sanity_check);
-  dat = manifest_data(tmp);
+  data tmp = write_roster_and_marking(ros, mm, false, do_sanity_check);
+  return manifest_data(move(tmp));
 }
 
 manifest_id calculate_ident(roster_t const & ros,
@@ -3114,7 +3110,7 @@ manifest_id calculate_ident(roster_t const & ros,
 {
   manifest_data tmp;
   if (!ros.all_nodes().empty())
-    write_manifest_of_roster(ros, tmp, do_sanity_check);
+    tmp = write_manifest_of_roster(ros, do_sanity_check);
   return calculate_ident(tmp);
 }
 

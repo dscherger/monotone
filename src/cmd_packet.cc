@@ -19,6 +19,7 @@
 #include "key_packet.hh"
 #include "packet.hh"
 #include "project.hh"
+#include "revision.hh"
 #include "vocab_cast.hh"
 
 using std::cin;
@@ -197,7 +198,7 @@ namespace
                                        revision_data const & dat)
     {
       transaction_guard guard(db);
-      db.put_revision(ident, dat);
+      db.put_revision(ident, read_revision(dat));
       guard.commit();
     }
 

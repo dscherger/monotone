@@ -538,8 +538,7 @@ select_nodes_modified_by_rev(database & db,
        i != rev.edges.end(); ++i)
     {
       set<node_id> edge_nodes_modified;
-      roster_t old_roster;
-      db.get_roster(edge_old_revision(i), old_roster);
+      roster_t old_roster = db.get_roster(edge_old_revision(i));
       select_nodes_modified_by_cset(edge_changes(i),
                                     old_roster,
                                     new_roster,
@@ -584,18 +583,17 @@ make_roster_for_merge(revision_t const & rev, revision_id const & new_rid,
   cset const & right_cs = edge_changes(i);
 
   I(!null_id(left_rid) && !null_id(right_rid));
-  cached_roster left_cached, right_cached;
-  db.get_roster(left_rid, left_cached);
-  db.get_roster(right_rid, right_cached);
+  cached_roster left_cr = db.get_cached_roster(left_rid),
+    right_cr = db.get_cached_roster(right_rid);
 
   set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
   db.get_uncommon_ancestors(left_rid, right_rid,
                             left_uncommon_ancestors,
                             right_uncommon_ancestors);
 
-  make_roster_for_merge(left_rid, *left_cached.first, *left_cached.second,
+  make_roster_for_merge(left_rid, *left_cr.first, *left_cr.second,
                         left_cs, left_uncommon_ancestors,
-                        right_rid, *right_cached.first, *right_cached.second,
+                        right_rid, *right_cr.first, *right_cr.second,
                         right_cs, right_uncommon_ancestors,
                         new_rid,
                         new_roster, new_markings,
@@ -610,7 +608,7 @@ make_roster_for_nonmerge(revision_t const & rev,
 {
   revision_id const & parent_rid = edge_old_revision(rev.edges.begin());
   cset const & parent_cs = edge_changes(rev.edges.begin());
-  db.get_roster(parent_rid, new_roster, new_markings);
+  db.get_roster_and_markings(parent_rid, new_roster, new_markings);
   make_roster_for_nonmerge(parent_cs, new_rid, new_roster, new_markings, nis);
 }
 

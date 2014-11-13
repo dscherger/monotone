@@ -732,10 +732,14 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
               u64 parent = i->second;
               if (parent_rosters.find(parent) == parent_rosters.end())
                 {
-                  shared_ptr<roster_t> ros = shared_ptr<roster_t>(new roster_t());
-                  shared_ptr<marking_map> mm = shared_ptr<marking_map>(new marking_map());
-                  db.get_roster(safe_get(node_to_new_rev, parent), *ros, *mm);
-                  safe_insert(parent_rosters, make_pair(parent, make_pair(ros, mm)));
+                  shared_ptr<roster_t> ros
+                    = shared_ptr<roster_t>(new roster_t());
+                  shared_ptr<marking_map>
+                    mm = shared_ptr<marking_map>(new marking_map());
+                  db.get_roster_and_markings(safe_get(node_to_new_rev, parent),
+                                             *ros, *mm);
+                  safe_insert(parent_rosters, make_pair(parent,
+                                                        make_pair(ros, mm)));
                 }
             }
 

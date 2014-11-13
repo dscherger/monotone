@@ -665,9 +665,8 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
   rev_inverse.new_manifest
     = db.get_revision_manifest(edge_old_revision(old_edge));
   {
-    roster_t old_roster, new_roster;
-    db.get_roster(edge_old_revision(old_edge), old_roster);
-    db.get_roster(child_rev, new_roster);
+    roster_t const old_roster = db.get_roster(edge_old_revision(old_edge)),
+      new_roster = db.get_roster(child_rev);
     *cs_inverse = cset(new_roster, old_roster);
   }
   rev_inverse.edges.insert(make_pair(child_rev, cs_inverse));
@@ -675,12 +674,10 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
   {
     transaction_guard guard(db);
 
-    revision_id inv_id;
-    revision_data rdat;
-
-    write_revision(rev_inverse, rdat);
-    inv_id = calculate_ident(rdat);
-    db.put_revision(inv_id, rdat);
+    revision_data rdat = write_revision(rev_inverse);
+    revision_id inv_id = calculate_ident(rdat);
+    // FIXME: where's the point of writing and re-reading?
+    db.put_revision(inv_id, read_revision(rdat));
 
     project.put_standard_certs_from_options(app.opts, app.lua, keys,
                                             inv_id, app.opts.branch,
@@ -1080,13 +1077,12 @@ checkout_common(app_state & app,
   workspace::create_workspace(app.opts, app.lua, dir);
   workspace work(app);
 
-  roster_t empty_roster, current_roster;
-
   L(FL("checking out revision %s to directory %s")
     % revid % dir);
-  db.get_roster(revid, current_roster);
+  roster_t current_roster = db.get_roster(revid);
 
   work.put_work_rev(make_revision_for_workspace(revid, cset()));
+  roster_t empty_roster;
   work.perform_content_update(empty_roster, current_roster,
                               cset(empty_roster, current_roster),
                               content_merge_checkout_adaptor(db),
@@ -1333,7 +1329,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
 
       project_t project(db);
       complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), rid);
-      db.get_roster(rid, current);
+      current = db.get_roster(rid);
 
       E(current.has_node(path), origin::user,
         F("unknown path '%s' in %s") % path % rid);
@@ -1527,8 +1523,7 @@ void perform_commit(app_state & app,
 
   // now that we have an (unedited) branch name, let the hook decide if the
   // changes should get committed at all
-  revision_data rev_data;
-  write_revision(restricted_rev, rev_data);
+  revision_data rev_data = write_revision(restricted_rev);
 
   bool changes_validated;
   string reason;
@@ -1706,9 +1701,8 @@ void perform_commit(app_state & app,
               }
           }
 
-        revision_data rdat;
-        write_revision(restricted_rev, rdat);
-        db.put_revision(restricted_rev_id, rdat);
+        revision_data rdat = write_revision(restricted_rev);
+        db.put_revision(restricted_rev_id, read_revision(rdat));
       }
 
     // if no --date option was specified and the user didn't edit the date
@@ -2022,10 +2016,10 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   I(start.first == bisect::start);
 
   revision_id starting_id = start.second;
-  P(F("reset back to %s") % describe_revision(app.opts, app.lua, project, starting_id));
+  P(F("reset back to %s")
+    % describe_revision(app.opts, app.lua, project, starting_id));
 
-  roster_t starting_roster;
-  db.get_roster(starting_id, starting_roster);
+  roster_t starting_roster = db.get_roster(starting_id);
 
   work.perform_content_update(current_roster, starting_roster,
                               cset(current_roster, starting_roster),
@@ -2295,10 +2289,10 @@ bisect_update(app_state & app, bisect::type type)
   if (null_id(selected_id))
     return;
 
-  P(F("updating to %s") % describe_revision(app.opts, app.lua, project, selected_id));
+  P(F("updating to %s")
+    % describe_revision(app.opts, app.lua, project, selected_id));
 
-  roster_t selected_roster;
-  db.get_roster(selected_id, selected_roster);
+  roster_t selected_roster = db.get_roster(selected_id);
   work.perform_content_update(current_roster, selected_roster,
                               cset(current_roster, selected_roster),
                               content_merge_checkout_adaptor(db),

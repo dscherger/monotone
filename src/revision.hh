@@ -116,18 +116,10 @@ template <> void
 dump(revision_t const & rev, std::string & out);
 
 revision_t
-read_revision(data const & dat);
-
-revision_t
 read_revision(revision_data const & dat);
 
-void
-write_revision(revision_t const & rev,
-               data & dat);
-
-void
-write_revision(revision_t const & rev,
-               revision_data & dat);
+revision_data
+write_revision(revision_t const & rev);
 
 revision_id
 calculate_ident(revision_t const & rev);

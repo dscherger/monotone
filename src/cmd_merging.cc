@@ -305,9 +305,8 @@ update(app_state & app,
   revision_id working_rid = calculate_ident(working_rev);
 
   // Get the CHOSEN roster
-  roster_t chosen_roster; MM(chosen_roster);
-  db.get_roster(chosen_rid, chosen_roster);
-
+  roster_t chosen_roster = db.get_roster(chosen_rid);
+  MM(chosen_roster);
 
   // And finally do the merge
   roster_merge_result result;
@@ -679,8 +678,8 @@ void perform_merge_into_dir(app_state & app,
           left_uncommon_ancestors,
           right_uncommon_ancestors;
 
-        db.get_roster(left_rid, left_roster, left_marking_map);
-        db.get_roster(right_rid, right_roster, right_marking_map);
+        db.get_roster_and_markings(left_rid, left_roster, left_marking_map);
+        db.get_roster_and_markings(right_rid, right_roster, right_marking_map);
         db.get_uncommon_ancestors(left_rid, right_rid,
                                   left_uncommon_ancestors,
                                   right_uncommon_ancestors);
@@ -798,7 +797,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
     options::opts::move_conflicting_paths)
 {
   revision_id left_id, right_id;
-  cached_roster left, right;
+  cached_roster left;
   shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
 
   if (args.size() != 1)
@@ -834,7 +833,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   }
 
   complete(app.opts, app.lua, project, idx(args, 0)(), right_id);
-  db.get_roster(right_id, right);
+  cached_roster right = db.get_cached_roster(right_id);
   E(!(left_id == right_id), origin::user,
     F("workspace is already at revision %s") % left_id);
 
@@ -859,9 +858,8 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
                merge_result);
 
   revision_id lca_id;
-  cached_roster lca;
   find_common_ancestor_for_merge(db, left_id, right_id, lca_id);
-  db.get_roster(lca_id, lca);
+  cached_roster lca = db.get_cached_roster(lca_id);
 
   map<file_id, file_path> paths;
   get_content_paths(*working_roster, paths);
@@ -1014,8 +1012,8 @@ show_conflicts_core (database & db,
   shared_ptr<roster_t> l_roster = shared_ptr<roster_t>(new roster_t());
   shared_ptr<roster_t> r_roster = shared_ptr<roster_t>(new roster_t());
   marking_map l_marking, r_marking;
-  db.get_roster(l_id, *l_roster, l_marking);
-  db.get_roster(r_id, *r_roster, r_marking);
+  db.get_roster_and_markings(l_id, *l_roster, l_marking);
+  db.get_roster_and_markings(r_id, *r_roster, r_marking);
   set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
   db.get_uncommon_ancestors(l_id, r_id, l_uncommon_ancestors, r_uncommon_ancestors);
   roster_merge_result result;
@@ -1232,8 +1230,8 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
   roster_t left_roster;
   roster_t right_roster;
   marking_map left_marking, right_marking;
-  db.get_roster(left_rid, left_roster, left_marking);
-  db.get_roster(right_rid, right_roster, right_marking);
+  db.get_roster_and_markings(left_rid, left_roster, left_marking);
+  db.get_roster_and_markings(right_rid, right_roster, right_marking);
 
   content_merge_database_adaptor adaptor(db, left_rid, right_rid,
                                          left_marking, right_marking,
@@ -1342,7 +1340,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   // Get the FROM roster
   shared_ptr<roster_t> from_roster = shared_ptr<roster_t>(new roster_t());
   MM(*from_roster);
-  db.get_roster(from_rid, *from_roster);
+  *from_roster = db.get_roster(from_rid);
 
   // Get the WORKING roster
   shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
@@ -1355,8 +1353,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   cset from_to_to; MM(from_to_to);
   cset from_to_to_excluded; MM(from_to_to_excluded);
   {
-    roster_t to_true_roster;
-    db.get_roster(to_rid, to_true_roster);
+    roster_t to_true_roster = db.get_roster(to_rid);
     node_restriction mask(args_to_paths(args),
                           args_to_paths(app.opts.exclude),
                           app.opts.depth,
@@ -1538,14 +1535,12 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
       revision_id rid;
       complete(app.opts, app.lua, project, idx(args, 0)(), rid);
       I(!null_id(rid));
-      db.get_roster(rid, roster, mm);
+      db.get_roster_and_markings(rid, roster, mm);
     }
   else
     throw usage(execid);
 
-  roster_data dat;
-  write_roster_and_marking(roster, mm, dat);
-  cout << dat;
+  cout << write_roster_and_marking(roster, mm);
 }
 
 

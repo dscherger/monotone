@@ -2641,10 +2641,11 @@ roster_merge_result::read_conflict_file(database & db,
 
       // we don't fetch the ancestor roster here, because not every function
       // needs it.
-      db.get_roster(left_rid, left_roster, left_marking);
-      db.get_roster(right_rid, right_roster, right_marking);
+      db.get_roster_and_markings(left_rid, left_roster, left_marking);
+      db.get_roster_and_markings(right_rid, right_roster, right_marking);
 
-      read_conflict_file_core(pars, left_rid, left_roster, right_rid, right_roster, *this, false);
+      read_conflict_file_core(pars, left_rid, left_roster, right_rid,
+                              right_roster, *this, false);
     }
   // else no conflicts
 
@@ -3092,8 +3093,7 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
                 }
               else
                 {
-                  roster_t tmp;
-                  adaptor.db.get_roster(conflict.left_rid, tmp);
+                  roster_t tmp = adaptor.db.get_roster(conflict.left_rid);
                   tmp.get_file_details(conflict.left_nid, left_fid, left_name);
                 }
             }
@@ -3103,7 +3103,8 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
         {
           if (conflict.right_rid == adaptor.right_rid)
             {
-              right_roster.get_file_details(conflict.right_nid, right_fid, right_name);
+              right_roster.get_file_details(conflict.right_nid, right_fid,
+                                            right_name);
             }
           else
             {
@@ -3111,13 +3112,14 @@ roster_merge_result::resolve_dropped_modified_conflicts(lua_hooks & lua,
                 {
                   adaptor.get_dropped_details
                     (adaptor.right_uncommon_ancestors, adaptor.lca,
-                     conflict.right_nid, conflict.right_rid, right_name, right_fid);
+                     conflict.right_nid, conflict.right_rid, right_name,
+                     right_fid);
                 }
               else
                 {
-                  roster_t tmp;
-                  adaptor.db.get_roster(conflict.right_rid, tmp);
-                  tmp.get_file_details(conflict.right_nid, right_fid, right_name);
+                  roster_t tmp = adaptor.db.get_roster(conflict.right_rid);
+                  tmp.get_file_details(conflict.right_nid, right_fid,
+                                       right_name);
                 }
             }
         }

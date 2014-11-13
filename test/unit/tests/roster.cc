@@ -88,17 +88,17 @@ do_testing_on_one_roster(roster_t const & r)
     }
 
   // do a read/write spin
-  roster_data r_dat; MM(r_dat);
   marking_map fm;
   make_fake_marking_for(r, fm);
-  write_roster_and_marking(r, fm, r_dat);
+  roster_data r_dat = write_roster_and_marking(r, fm);
+  MM(r_dat);
   roster_t r2; MM(r2);
   marking_map fm2;
   read_roster_and_marking(r_dat, r2, fm2);
   I(r == r2);
   I(fm == fm2);
-  roster_data r2_dat; MM(r2_dat);
-  write_roster_and_marking(r2, fm2, r2_dat);
+  roster_data r2_dat = write_roster_and_marking(r2, fm2);
+  MM(r2_dat);
   I(r_dat == r2_dat);
 }
 
@@ -226,13 +226,13 @@ tests_on_two_rosters(roster_t const & a, roster_t const & b, node_id_source & ni
   manifest_data b_dat; MM(b_dat);
   manifest_data b2_dat; MM(b2_dat);
   if (a.has_root())
-    write_manifest_of_roster(a, a_dat);
+    a_dat = write_manifest_of_roster(a);
   if (a2.has_root())
-    write_manifest_of_roster(a2, a2_dat);
+    a2_dat = write_manifest_of_roster(a2);
   if (b.has_root())
-    write_manifest_of_roster(b, b_dat);
+    b_dat = write_manifest_of_roster(b);
   if (b2.has_root())
-    write_manifest_of_roster(b2, b2_dat);
+    b2_dat = write_manifest_of_roster(b2);
   I(a_dat == a2_dat);
   I(b_dat == b2_dat);
 
@@ -1795,8 +1795,8 @@ UNIT_TEST(write_roster)
 
   {
     // manifest first
-    manifest_data mdat; MM(mdat);
-    write_manifest_of_roster(r, mdat);
+    manifest_data mdat = write_manifest_of_roster(r);
+    MM(mdat);
 
     manifest_data
       expected(string("format_version \"1\"\n"
@@ -1825,8 +1825,8 @@ UNIT_TEST(write_roster)
 
   {
     // full roster with local parts
-    roster_data rdat; MM(rdat);
-    write_roster_and_marking(r, mm, rdat);
+    roster_data rdat = write_roster_and_marking(r, mm);
+    MM(rdat);
 
     // node_id order is a hassle.
     // root 1, foo 2, xx 3, fo 4, foo_bar 5, foo_ang 6, foo_zoo 7

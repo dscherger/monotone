@@ -495,14 +495,12 @@ read_roster_and_marking(roster_data const & dat,
                         roster_t & ros,
                         marking_map & mm);
 
-void
+roster_data
 write_roster_and_marking(roster_t const & ros,
-                         marking_map const & mm,
-                         roster_data & dat);
+                         marking_map const & mm);
 
-void
+manifest_data
 write_manifest_of_roster(roster_t const & ros,
-                         manifest_data & dat,
                          bool do_sanity_check = true);
 
 

@@ -357,7 +357,7 @@ do_interactive_merge(database & db,
   if (!conflicts.ancestor_roster)
     {
       conflicts.ancestor_roster = std::shared_ptr<roster_t>(new roster_t());
-      db.get_roster(conflicts.ancestor_rid, *conflicts.ancestor_roster);
+      *conflicts.ancestor_roster = db.get_roster(conflicts.ancestor_rid);
     }
 
   conflicts.ancestor_roster->get_name(nid, ancestor_path);

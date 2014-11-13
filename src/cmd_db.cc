@@ -663,8 +663,7 @@ CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), "",
 
   for (roster_iterator i = rosters.begin(); i != rosters.end(); ++i)
     {
-      roster_t ros;
-      db.get_roster(*i, ros);
+      roster_t ros = db.get_roster(*i);
       ++loaded;
     }
 }

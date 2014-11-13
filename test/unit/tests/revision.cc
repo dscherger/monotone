@@ -51,8 +51,8 @@ UNIT_TEST(from_network)
     {
       UNIT_TEST_CHECKPOINT((string("iteration ")
                             + boost::lexical_cast<string>(i)).c_str());
-      UNIT_TEST_CHECK_THROW(read_revision(data(bad_revisions[i],
-                                               origin::network)),
+      UNIT_TEST_CHECK_THROW(read_revision(revision_data(bad_revisions[i],
+                                                        origin::network)),
                             recoverable_failure);
     }
 }

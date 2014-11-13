@@ -296,15 +296,14 @@ prepare_diff(app_state & app,
     }
   else if (app.opts.revision.size() == 1)
     {
-      roster_t left_roster, restricted_roster, right_roster;
       revision_id r_old_id;
       workspace work(app);
 
       complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(),
                r_old_id);
 
-      db.get_roster(r_old_id, left_roster);
-      right_roster = work.get_current_roster_shape(db);
+      roster_t left_roster = db.get_roster(r_old_id),
+        right_roster = work.get_current_roster_shape(db);
 
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude),
@@ -313,6 +312,7 @@ prepare_diff(app_state & app,
 
       work.update_current_roster_from_filesystem(right_roster, mask);
 
+      roster_t restricted_roster;
       make_restricted_roster(left_roster, right_roster, restricted_roster,
                              mask);
 
@@ -335,14 +335,15 @@ prepare_diff(app_state & app,
     }
   else if (app.opts.revision.size() == 2)
     {
-      roster_t left_roster, restricted_roster, right_roster;
       revision_id r_old_id, r_new_id;
 
-      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), r_old_id);
-      complete(app.opts, app.lua, project, idx(app.opts.revision, 1)(), r_new_id);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(),
+               r_old_id);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 1)(),
+               r_new_id);
 
-      db.get_roster(r_old_id, left_roster);
-      db.get_roster(r_new_id, right_roster);
+      roster_t left_roster = db.get_roster(r_old_id),
+        right_roster = db.get_roster(r_new_id);
 
       // FIXME: this is *possibly* a UI bug, insofar as we
       // look at the restriction name(s) you provided on the command
@@ -371,6 +372,7 @@ prepare_diff(app_state & app,
                             app.opts.depth,
                             left_roster, right_roster);
 
+      roster_t restricted_roster;
       make_restricted_roster(left_roster, right_roster, restricted_roster,
                              mask);
 
@@ -613,18 +615,16 @@ log_print_rev (app_state &      app,
       // if the current roster was loaded above this should hit the
       // cache and not cost much... logging diffs isn't superfast
       // regardless.
-      roster_t current_roster;
-      db.get_roster(rid, current_roster);
+      roster_t current_roster = db.get_roster(rid);
 
       for (edge_map::const_iterator e = rev.edges.begin();
            e != rev.edges.end(); ++e)
         {
-          roster_t parent_roster, restricted_roster;
-
-          db.get_roster(edge_old_revision(e), parent_roster);
+          roster_t parent_roster = db.get_roster(edge_old_revision(e));
 
           // always show forward diffs from the parent roster to
           // the current roster regardless of the log direction
+          roster_t restricted_roster;
           make_restricted_roster(parent_roster, current_roster,
                                  restricted_roster, mask);
 
@@ -798,8 +798,7 @@ log_common (app_state & app,
           // FIXME_RESTRICTIONS: should this add paths from the rosters of
           // all selected revs?
           I(!null_id(first_rid));
-          roster_t roster;
-          db.get_roster(first_rid, roster);
+          roster_t roster = db.get_roster(first_rid);
 
           mask = node_restriction(args_to_paths(args),
                                   args_to_paths(app.opts.exclude),
@@ -864,7 +863,7 @@ log_common (app_state & app,
         {
           roster_t roster;
           marking_map markings;
-          db.get_roster(rid, roster, markings);
+          db.get_roster_and_markings(rid, roster, markings);
 
           // get all revision ids mentioned in one of the markings
           for (marking_map::const_iterator m = markings.begin();

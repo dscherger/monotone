@@ -81,6 +81,7 @@ using std::deque;
 using std::istream;
 using std::make_pair;
 using std::map;
+using std::move;
 using std::multimap;
 using std::ostream;
 using std::pair;
@@ -343,9 +344,8 @@ private:
                                             string const & table);
   void get_roster_base(revision_id const & ident,
                        roster_t & roster, marking_map & marking);
-  void get_roster_delta(id const & ident,
-                        id const & base,
-                        roster_delta & del);
+  roster_delta get_roster_delta(id const & ident,
+                                id const & base);
 
   friend struct file_and_manifest_reconstruction_graph;
   friend struct roster_reconstruction_graph;
@@ -1903,10 +1903,9 @@ database_impl::get_roster_base(revision_id const & ident,
   read_roster_and_marking(roster_data(dat), roster, marking);
 }
 
-void
+roster_delta
 database_impl::get_roster_delta(id const & ident,
-                                id const & base,
-                                roster<delta> & del)
+                                id const & base)
 {
   results res;
   query q("SELECT checksum, delta FROM roster_deltas WHERE id = ? AND base = ?");
@@ -1920,7 +1919,7 @@ database_impl::get_roster_delta(id const & ident,
   gzip<delta> del_packed(res[0][1], origin::database);
   delta tmp;
   decode_gzip(del_packed, tmp);
-  del = roster<delta>(tmp);
+  return roster<delta>(tmp);
 }
 
 void
@@ -1946,8 +1945,7 @@ database_impl::write_delayed_roster(revision_id const & ident,
                                      roster_t const & roster,
                                      marking_map const & marking)
 {
-  roster_data dat;
-  write_roster_and_marking(roster, marking, dat);
+  roster_data dat = write_roster_and_marking(roster, marking);
   gzip<data> dat_packed;
   encode_gzip(dat.inner(), dat_packed);
 
@@ -2196,8 +2194,7 @@ database_impl::extract_from_deltas(revision_id const & ident, extractor & x)
       for (set<id>::const_iterator i = deltas.begin();
            i != deltas.end(); ++i)
         {
-          roster_delta del;
-          get_roster_delta(ident.inner(), *i, del);
+          roster_delta del = get_roster_delta(ident.inner(), *i);
           bool found = x.look_at_delta(del);
           if (found)
             return;
@@ -2215,8 +2212,7 @@ database_impl::extract_from_deltas(revision_id const & ident, extractor & x)
     {
       if (i > 0)
         {
-          roster_delta del;
-          get_roster_delta(target_rev, id(*p), del);
+          roster_delta del = get_roster_delta(target_rev, id(*p));
           bool found = x.look_at_delta(del);
           if (found)
             return;
@@ -2259,15 +2255,15 @@ database::get_file_content(revision_id const & id,
   imp->extract_from_deltas(id, x);
 }
 
-void
-database::get_roster_version(revision_id const & ros_id,
-                             cached_roster & cr)
+cached_roster
+database::get_roster_version(revision_id const & ros_id)
 {
   // if we already have it, exit early
   if (imp->roster_cache.exists(ros_id))
     {
-      imp->roster_cache.fetch(ros_id, cr);
-      return;
+      cached_roster cr;
+      I(imp->roster_cache.fetch(ros_id, cr));
+      return cr;
     }
 
   reconstruction_path selected_path;
@@ -2290,8 +2286,7 @@ database::get_roster_version(revision_id const & ros_id,
       id const nxt(*i);
       if (global_sanity.debug_p())
         L(FL("following delta %s -> %s") % curr % nxt);
-      roster_delta del;
-      imp->get_roster_delta(nxt, curr, del);
+      roster_delta del = imp->get_roster_delta(nxt, curr);
       apply_roster_delta(del, *roster, *marking);
       curr = nxt;
     }
@@ -2312,9 +2307,11 @@ database::get_roster_version(revision_id const & ros_id,
   I(expected_mid == actual_mid);
 
   // const'ify the objects, to save them and pass them out
+  cached_roster cr;
   cr.first = roster;
   cr.second = marking;
   imp->roster_cache.insert_clean(ros_id, cr);
+  return cr;
 }
 
 
@@ -2990,8 +2987,7 @@ database::put_revision(revision_id const & new_id,
 
   // Phase 2: Write the revision data (inside a transaction)
 
-  revision_data d;
-  write_revision(rev, d);
+  revision_data d = write_revision(rev);
   gzip<data> d_packed;
   encode_gzip(d.inner(), d_packed);
   imp->execute(query("INSERT INTO revisions VALUES(?, ?)")
@@ -3109,16 +3105,8 @@ database::put_roster_for_revision(revision_id const & new_id,
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
   marking_map_cp mm = mm_writeable;
-  put_roster(new_id, rev, ros, mm);
+  put_roster(new_id, rev, move(ros), move(mm));
 }
-
-bool
-database::put_revision(revision_id const & new_id,
-                       revision_data const & dat)
-{
-  return put_revision(new_id, read_revision(dat));
-}
-
 
 void
 database::delete_existing_revs_and_certs()
@@ -4618,18 +4606,20 @@ database::get_branches(globish const & glob,
     return imp->cert_stamper.get_indicator();
 }
 
-void
-database::get_roster(revision_id const & rev_id,
-                     roster_t & roster)
+roster_t
+database::get_roster(revision_id const & rev_id)
 {
+  roster_t roster;
   marking_map mm;
-  get_roster(rev_id, roster, mm);
+  // FIXME: we always fetch both (and copy, see below). Why return only one?
+  get_roster_and_markings(rev_id, roster, mm);
+  return roster;
 }
 
 void
-database::get_roster(revision_id const & rev_id,
-                     roster_t & roster,
-                     marking_map & marking)
+database::get_roster_and_markings(revision_id const & rev_id,
+                                  roster_t & roster,
+                                  marking_map & marking)
 {
   if (rev_id.inner()().empty())
     {
@@ -4638,25 +4628,26 @@ database::get_roster(revision_id const & rev_id,
       return;
     }
 
-  cached_roster cr;
-  get_roster(rev_id, cr);
+  cached_roster cr = get_cached_roster(rev_id);
+  // FIXME: that's a copy? Why do that if we already have a shared_ptr?
   roster = *cr.first;
   marking = *cr.second;
 }
 
-void
-database::get_roster(revision_id const & rev_id, cached_roster & cr)
+cached_roster
+database::get_cached_roster(revision_id const & rev_id)
 {
-  get_roster_version(rev_id, cr);
+  cached_roster cr = get_roster_version(rev_id);
   I(cr.first);
   I(cr.second);
+  return cr;
 }
 
 void
 database::put_roster(revision_id const & rev_id,
                      revision_t const & rev,
-                     roster_t_cp const & roster,
-                     marking_map_cp const & marking)
+                     roster_t_cp && roster,
+                     marking_map_cp && marking)
 {
   I(roster);
   I(marking);
@@ -4679,8 +4670,7 @@ database::put_roster(revision_id const & rev_id,
         continue;
       if (imp->roster_base_stored(old_rev))
         {
-          cached_roster cr;
-          get_roster_version(old_rev, cr);
+          cached_roster cr = get_roster_version(old_rev);
           roster_delta reverse_delta;
           cset const & changes = edge_changes(i);
           delta_rosters(*roster, *marking,
