@@ -53,6 +53,7 @@ using std::find;
 using std::inserter;
 using std::make_pair;
 using std::map;
+using std::move;
 using std::multimap;
 using std::ostream;
 using std::ostringstream;
@@ -2104,7 +2105,7 @@ CMD_AUTOMATE(put_revision, N_("REVISION-DATA"),
 
   // If the database refuses the revision, make sure this is because it's
   // already there.
-  E(db.put_revision(id, rev) || db.revision_exists(id),
+  E(db.put_revision(id, move(rev)) || db.revision_exists(id),
     origin::user,
     F("missing prerequisite for revision %s") % id);
 

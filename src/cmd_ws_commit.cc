@@ -674,10 +674,9 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
   {
     transaction_guard guard(db);
 
-    revision_data rdat = write_revision(rev_inverse);
-    revision_id inv_id = calculate_ident(rdat);
-    // FIXME: where's the point of writing and re-reading?
-    db.put_revision(inv_id, read_revision(rdat));
+    revision_id inv_id = calculate_ident(write_revision(rev_inverse));
+    rev_inverse.made_for = made_for_database;
+    db.put_revision(inv_id, move(rev_inverse));
 
     project.put_standard_certs_from_options(app.opts, app.lua, keys,
                                             inv_id, app.opts.branch,
@@ -1701,8 +1700,8 @@ void perform_commit(app_state & app,
               }
           }
 
-        revision_data rdat = write_revision(restricted_rev);
-        db.put_revision(restricted_rev_id, read_revision(rdat));
+        restricted_rev.made_for = made_for_database;
+        db.put_revision(restricted_rev_id, move(restricted_rev));
       }
 
     // if no --date option was specified and the user didn't edit the date

@@ -875,7 +875,7 @@ store_roster_merge_result(database & db,
   {
     transaction_guard guard(db);
 
-    db.put_revision(merged_rid, merged_rev);
+    db.put_revision(merged_rid, move(merged_rev));
 
     guard.commit();
   }

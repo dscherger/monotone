@@ -46,6 +46,7 @@
 
 using std::make_pair;
 using std::map;
+using std::move;
 using std::multimap;
 using std::out_of_range;
 using std::pair;
@@ -1332,13 +1333,15 @@ cluster_consumer::prepared_revision::prepared_revision(revision_id i,
 void
 cluster_consumer::store_revisions()
 {
-  for (vector<prepared_revision>::const_iterator i = preps.begin();
+  for (vector<prepared_revision>::iterator i = preps.begin();
        i != preps.end(); ++i)
-    if (project.db.put_revision(i->rid, *(i->rev)))
+    if (project.db.put_revision(i->rid, move(*(i->rev))))
       {
         store_auxiliary_certs(*i);
         ++n_revisions;
       }
+  // We moved out all revisions. Clear the vector.
+  preps.clear();
 }
 
 void

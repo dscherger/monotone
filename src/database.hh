@@ -203,7 +203,7 @@ public:
   revision_data get_revision_data(revision_id const & ident);
 
   bool put_revision(revision_id const & new_id,
-                    revision_t const & rev);
+                    revision_t && rev);
 
 private:
   void deltify_revision(revision_id const & rid);

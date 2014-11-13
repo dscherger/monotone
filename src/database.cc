@@ -2915,7 +2915,7 @@ database::deltify_revision(revision_id const & rid)
 
 bool
 database::put_revision(revision_id const & new_id,
-                       revision_t const & rev)
+                       revision_t && rev)
 {
   MM(new_id);
   MM(rev);
@@ -3012,13 +3012,9 @@ database::put_revision(revision_id const & new_id,
   // put a lot of revisions in a row (i.e. tailor or cvs_import)!
 
   if (!roster_version_exists(new_id))
-    {
-      put_roster_for_revision(new_id, rev);
-    }
+    put_roster_for_revision(new_id, rev);
   else
-    {
-      L(FL("roster for revision '%s' already exists in db") % new_id);
-    }
+    L(FL("roster for revision '%s' already exists in db") % new_id);
 
   // Phase 4: rewrite any files that need deltas added
 

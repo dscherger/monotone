@@ -37,6 +37,7 @@ using std::back_inserter;
 using std::deque;
 using std::make_pair;
 using std::map;
+using std::move;
 using std::multimap;
 using std::ostringstream;
 using std::pair;
@@ -877,9 +878,15 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
           */
 
           L(FL("mapped node %d to revision %s") % child % new_rid);
-          if (db.put_revision(new_rid, rev))
+          if (db.put_revision(new_rid, move(rev)))
             {
-              db.put_file_sizes_for_revision(rev);
+              // It's a bit silly to have to reload the revision from the
+              // database, but we moved it above for put_revision. And this
+              // is the only place that needs the revision after putting it
+              // into the database. So that doesn't warrant a second variant
+              // of put_revision, IMO.
+              revision_t committed_rev = db.get_revision(new_rid);
+              db.put_file_sizes_for_revision(committed_rev);
               ++n_revs_out;
             }
 
