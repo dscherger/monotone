@@ -359,6 +359,8 @@ private:
   template <typename T> friend void dump(T const & val, std::string & out);
 };
 
+extern const roster_t empty_roster;
+
 struct temp_node_id_source
   : public node_id_source
 {

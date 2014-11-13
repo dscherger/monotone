@@ -1076,12 +1076,10 @@ checkout_common(app_state & app,
   workspace::create_workspace(app.opts, app.lua, dir);
   workspace work(app);
 
-  L(FL("checking out revision %s to directory %s")
-    % revid % dir);
-  roster_t current_roster = db.get_roster(revid);
+  L(FL("checking out revision %s to directory %s") % revid % dir);
 
+  roster_t current_roster = db.get_roster(revid);
   work.put_work_rev(make_revision_for_workspace(revid, cset()));
-  roster_t empty_roster;
   work.perform_content_update(empty_roster, current_roster,
                               cset(empty_roster, current_roster),
                               content_merge_checkout_adaptor(db),

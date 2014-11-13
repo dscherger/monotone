@@ -894,7 +894,6 @@ CMD_NO_WORKSPACE(clone, "clone", "", CMD_REF(network),
   revision_t workrev = make_revision_for_workspace(ident, cset());
   work.put_work_rev(workrev);
 
-  roster_t empty_roster;
   cset checkout(empty_roster, current_roster);
   content_merge_checkout_adaptor wca(db);
   work.perform_content_update(empty_roster, current_roster, checkout, wca,

@@ -409,6 +409,8 @@ dump(node_t const & n, string & out)
   out = oss.str();
 }
 
+// The empty roster, for reference wherever needed.
+const roster_t empty_roster;
 
 roster_t::roster_t()
   : cow_version(++last_created_roster)
