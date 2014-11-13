@@ -89,7 +89,8 @@ check(not qgrep("sub", "stdout"))
 -- check reverting a missing file
 check(mtn("revert", "."), 0, false, false)
 remove("testfile0")
-check(mtn("status"), 1, false, false)
+check(mtn("status"), 0, true, false)
+check(qgrep("prevent a commit", "stdout"))
 check(mtn("revert", "testfile0"), 0, true, false)
 check(mtn("status"), 0, false, false)
 

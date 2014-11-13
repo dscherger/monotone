@@ -35,7 +35,7 @@ check(numlines("stdout") == 2)
 -- than "directory and all immediate children"
 
 check(mtn("st", "--depth", "0"), 0, true, false)
-check(qgrep("no changes", "stdout"))
+check(qgrep("No changes", "stdout"))
 
 check(mtn("st", "--depth", "1"), 0, true, false)
 check(qgrep("foo", "stdout"))

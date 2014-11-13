@@ -9,6 +9,7 @@
 
 #include "base.hh"
 #include <sstream>
+#include <algorithm>
 
 #include "sanity.hh"
 #include "rev_height.hh"
@@ -16,6 +17,7 @@
 using std::ostream;
 using std::string;
 using std::ostringstream;
+using std::min;
 
 /*
  * Implementation note: hv, holding the raw revision height, is
@@ -89,6 +91,22 @@ rev_height rev_height::root_height()
   string root;
   append(root, 0);
   return rev_height(root);
+}
+
+u64 rev_height::abs() const
+{
+  // In a way, numbers at even indexes account for height, while numbers at
+  // odd index positions enumerate children (starting at 0, counting that as
+  // an even index). Note, however, that $PREFIX.0.0 is one revision higher
+  // than $PREFIX. We account for that in this initialization.
+  u64 abs_height = d.size() / width / 2;
+
+  // Account for height in even index positions.
+  I((d.size() / width) % 2 == 1);
+  for (size_t i = 0; i < d.size() / width; i += 2)
+    abs_height += read_at(d, i);
+
+  return abs_height;
 }
 
 // Human-readable output

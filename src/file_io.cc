@@ -452,7 +452,10 @@ ident_existing_file(file_path const & p, file_id & ident, path::status status)
     case path::file:
       break;
     case path::directory:
-      W(F("expected file '%s', but it is a directory.") % p);
+      // FIXME: I don't want this in status output, but maybe it's required
+      // at other places? Check other callers.
+
+      // W(F("expected file '%s', but it is a directory.") % p);
       return false;
     }
 

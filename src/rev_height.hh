@@ -24,6 +24,7 @@ public:
 
   rev_height child_height(u32 nr) const;
   static rev_height root_height();
+  u64 abs() const;
 
   bool valid() const { return !d.empty(); }
 

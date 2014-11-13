@@ -731,7 +731,7 @@ UNIT_TEST(include_depth_1_empty_restriction)
 
   node_restriction nmask(includes, excludes, depth, roster);
 
-  UNIT_TEST_CHECK( nmask.empty());
+  UNIT_TEST_CHECK(!nmask.empty());
 
   UNIT_TEST_CHECK( nmask.includes(roster, nid_root));
   UNIT_TEST_CHECK( nmask.includes(roster, nid_f));
@@ -761,7 +761,7 @@ UNIT_TEST(include_depth_1_empty_restriction)
 
   path_restriction pmask(includes, excludes, depth);
 
-  UNIT_TEST_CHECK( pmask.empty());
+  UNIT_TEST_CHECK(!pmask.empty());
 
   UNIT_TEST_CHECK( pmask.includes(fp_root));
   UNIT_TEST_CHECK( pmask.includes(fp_f));
