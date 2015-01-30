@@ -26,6 +26,9 @@ XXX XXX XX XX XX XX UTC XXXX
           recent compiler is required to build, now.  Please see
           INSTALL for details.
 
+        - Monotone tests now work fine when building against Lua 5.3
+          as well.
+
         -
 
         Other

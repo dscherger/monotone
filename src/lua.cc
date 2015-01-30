@@ -334,7 +334,7 @@ Lua::push_int(int num)
 {
   if (failed) return *this;
   if (!check_stack(1)) return *this;
-  lua_pushnumber(st, num);
+  lua_pushinteger(st, num);
   return *this;
 }
 

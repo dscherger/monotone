@@ -1069,8 +1069,9 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
 
      counts.total = counts.total + 1
      local format_seconds = function (seconds)
+                               assert(seconds >= 0);
                                return string.format("%d:%02d",
-                                                    seconds / 60,
+                                                    math.floor(seconds / 60),
                                                     seconds % 60)
                             end
      local times = ""
