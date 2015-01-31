@@ -56,7 +56,8 @@ public:
   cset() = default;
   cset(cset const &) = delete;
   cset(cset &&) = default;
-  cset(roster_t const & from, roster_t const & to);
+  cset(roster_t const & from, roster_t const & to,
+       bool ignore_detached = false);
 
   cset & operator = (cset &&) = default;
 

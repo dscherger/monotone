@@ -12,5 +12,6 @@ commit()
 mkdir("dir")
 check(mtn("rename", "--bookkeep-only", "file", "dir"), 0, false, false)
 -- status and diff will now complain about missing files
-check(mtn("status"), 1, false, false)
+check(mtn("status"), 0, true, false)
+check(qgrep("not a file:        dir", "stdout"))
 check(mtn("diff"), 1, false, false)

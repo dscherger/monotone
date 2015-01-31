@@ -51,16 +51,16 @@ check(not qgrep('^  add_file  added', "stdout"))
 check(not qgrep('^  patched  patched', "stdout"))
 check(qgrep('^  patched  to_patched', "stdout"))
 
--- divergence
+-- check for 'newer head' info
 
-check(not qgrep("WILL CREATE DIVERGENCE", "stdout"))
+check(not qgrep("newer head", "stdout"))
 base = base_revision()
 addfile("foo", "foo")
 commit()
 other_tip = base_revision()
 check(mtn("status"), 0, true, false)
-check(not qgrep("WILL CREATE DIVERGENCE", "stdout"))
+check(not qgrep("newer head", "stdout"))
 remove("dropped")
 check(mtn("update", "-r", base), 0, false, false)
 check(mtn("status"), 0, true, false)
-check(qgrep("WILL CREATE DIVERGENCE", "stdout"))
+check(qgrep("newer head", "stdout"))

@@ -10,9 +10,10 @@ commit()
 
 remove("foo")
 
-check(mtn("status"), 1, false, false)
+check(mtn("status"), 0, true, false)
+check(qgrep("missing directory: foo", "stdout"))
 
 writefile("foo", "foo")
 
-check(mtn("status"), 1, false, false)
-
+check(mtn("status"), 0, true, false)
+check(qgrep("not a directory:   foo", "stdout"))

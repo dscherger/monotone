@@ -19,6 +19,8 @@
 #include "project.hh"
 #include "rev_output.hh"
 #include "revision.hh"
+#include "roster.hh"
+#include "parallel_iter.hh"
 
 using std::map;
 using std::ostringstream;
@@ -137,16 +139,67 @@ revision_header(revision_id const rid, revision_t const & rev,
 }
 
 void
-revision_summary(revision_t const & rev, utf8 & summary)
+cset_summary(cset const & cs, ostringstream & out)
 {
   // We intentionally do not collapse the final \n into the format
   // strings here, for consistency with newline conventions used by most
   // other format strings.
 
+  // presumably a merge rev could have an empty edge if one side won
+  if (cs.empty())
+    out << _("  no changes") << '\n';
+
+  for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
+       i != cs.nodes_deleted.end(); ++i)
+    out << (F("  dropped  %s") %*i) << '\n';
+
+  for (map<file_path, file_path>::const_iterator
+         i = cs.nodes_renamed.begin();
+       i != cs.nodes_renamed.end(); ++i)
+    out << (F("  renamed  %s\n"
+              "       to  %s") % i->first % i->second) << '\n';
+
+  for (set<file_path>::const_iterator i = cs.dirs_added.begin();
+       i != cs.dirs_added.end(); ++i)
+    out << (F("  added    %s") % *i) << '\n';
+
+  for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
+       i != cs.files_added.end(); ++i)
+    out << (F("  added    %s") % i->first) << '\n';
+
+  for (map<file_path, pair<file_id, file_id> >::const_iterator
+         i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
+    out << (F("  patched  %s") % i->first) << '\n';
+
+  for (map<pair<file_path, attr_key>, attr_value >::const_iterator
+         i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
+    out << (F("  attr on  %s\n"
+              "      set  %s\n"
+              "       to  %s")
+            % i->first.first % i->first.second % i->second) << '\n';
+
+  // FIXME: naming here could not be more inconsistent:
+  //  * the cset calls it attrs_cleared
+  //  * the command is attr drop
+  //  * here it is called unset
+  //  * the revision text uses attr clear 
+
+  for (set<pair<file_path, attr_key> >::const_iterator
+         i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
+    out << (F("  attr on  %s\n"
+              "    unset  %s") % i->first % i->second) << '\n';
+
+  out << '\n';
+}
+
+void
+revision_summary(revision_t const & rev, utf8 & summary)
+{
   ostringstream out;
   revision_id rid = calculate_ident(rev);
 
-  for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
+  for (edge_map::const_iterator i = rev.edges.begin();
+       i != rev.edges.end(); ++i)
     {
       revision_id parent = edge_old_revision(*i);
       cset const & cs = edge_changes(*i);
@@ -158,51 +211,7 @@ revision_summary(revision_t const & rev, utf8 & summary)
       else
         out << _("Changes against parent ") << parent << "\n\n";
 
-      // presumably a merge rev could have an empty edge if one side won
-      if (cs.empty())
-        out << _("no changes") << '\n';
-
-      for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
-            i != cs.nodes_deleted.end(); ++i)
-        out << (F("  dropped  %s") %*i) << '\n';
-
-      for (map<file_path, file_path>::const_iterator
-            i = cs.nodes_renamed.begin();
-            i != cs.nodes_renamed.end(); ++i)
-        out << (F("  renamed  %s\n"
-                  "       to  %s") % i->first % i->second) << '\n';
-
-      for (set<file_path>::const_iterator i = cs.dirs_added.begin();
-            i != cs.dirs_added.end(); ++i)
-        out << (F("  added    %s") % *i) << '\n';
-
-      for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
-            i != cs.files_added.end(); ++i)
-        out << (F("  added    %s") % i->first) << '\n';
-
-      for (map<file_path, pair<file_id, file_id> >::const_iterator
-              i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
-        out << (F("  patched  %s") % i->first) << '\n';
-
-      for (map<pair<file_path, attr_key>, attr_value >::const_iterator
-             i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
-        out << (F("  attr on  %s\n"
-                  "      set  %s\n"
-                  "       to  %s")
-                % i->first.first % i->first.second % i->second) << '\n';
-
-      // FIXME: naming here could not be more inconsistent
-      // the cset calls it attrs_cleared
-      // the command is attr drop
-      // here it is called unset
-      // the revision text uses attr clear 
-
-      for (set<pair<file_path, attr_key> >::const_iterator
-             i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
-        out << (F("  attr on  %s\n"
-                  "    unset  %s") % i->first % i->second) << '\n';
-
-      out << '\n';
+      cset_summary(cs, out);
     }
   summary = utf8(out.str(), origin::internal);
 }

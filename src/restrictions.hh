@@ -70,7 +70,11 @@ class restriction
 {
  public:
   bool empty() const
-  { return included_paths.empty() && excluded_paths.empty(); }
+    {
+      return included_paths.empty()
+        && excluded_paths.empty()
+        && depth == -1;
+    }
 
   enum include_rules
     {

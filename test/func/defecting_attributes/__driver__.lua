@@ -17,10 +17,10 @@ commit()
 
 -- ensure that there are no changes in the current workspace
 check(mtn("status"), 0, true, false)
-check(qgrep("no changes", "stdout"))
+check(qgrep("No changes", "stdout"))
 
 -- update to child
 check(mtn("update", "-r", child), 0, false, false)
 check(mtn("status"), 0, true, false)
-check(qgrep("no changes", "stdout"))
+check(qgrep("No changes", "stdout"))
 

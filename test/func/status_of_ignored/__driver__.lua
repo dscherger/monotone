@@ -15,7 +15,7 @@ addfile("file_1", "file_1")
 commit()
 
 check(mtn("status", "file_1"), 0, true, nil)
-check(qgrep("no changes", "stdout"))
+check(qgrep("No changes", "stdout"))
 
 -- Now gives an error:
 check(mtn("status", "foo.bak"), 1, nil, true)

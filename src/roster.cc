@@ -2244,12 +2244,16 @@ namespace
   void delta_in_both(node_id nid,
                      roster_t const & from, node_t from_n,
                      roster_t const & to, node_t to_n,
-                     cset & cs)
+                     cset & cs, bool ignore_detached)
   {
     I(same_type(from_n, to_n));
     I(from_n->self == to_n->self);
 
     if (shallow_equal(from_n, to_n, false))
+      return;
+
+    // Optionally ignore nodes that are detached on either side.
+    if (ignore_detached && (!from.is_attached(nid) || !to.is_attached(nid)))
       return;
 
     file_path from_p, to_p;
@@ -2308,7 +2312,8 @@ namespace
   }
 }
 
-cset::cset(roster_t const & from, roster_t const & to)
+cset::cset(roster_t const & from, roster_t const & to,
+           bool ignore_detached)
 {
   MM(*this);
   parallel::iter<node_map> i(from.all_nodes(), to.all_nodes());
@@ -2333,7 +2338,7 @@ cset::cset(roster_t const & from, roster_t const & to)
         case parallel::in_both:
           // moved/renamed/patched/attribute changes
           delta_in_both(i.left_key(), from, i.left_data(), to,
-                        i.right_data(), *this);
+                        i.right_data(), *this, ignore_detached);
           break;
         }
     }
@@ -2463,6 +2468,11 @@ make_restricted_roster(roster_t const & from, roster_t const & to,
             {
               n = p; // see if we can add the parent
               I(is_dir_t(n->second));
+
+              L(FL("selected node %d %s parent %d")
+                % n->second->self
+                % n->second->name
+                % n->second->parent);
             }
           else
             {

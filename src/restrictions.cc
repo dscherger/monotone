@@ -345,7 +345,7 @@ node_restriction::includes(roster_t const & roster, node_id nid) const
   file_path fp;
   roster.get_name(nid, fp);
 
-  if (empty())
+  if (included_paths.empty() && excluded_paths.empty())
     {
       if (depth != -1)
         {
@@ -425,7 +425,7 @@ node_restriction::includes(roster_t const & roster, node_id nid) const
 bool
 path_restriction::includes(file_path const & pth) const
 {
-  if (empty())
+  if (included_paths.empty() && excluded_paths.empty())
     {
       if (depth != -1)
         {
