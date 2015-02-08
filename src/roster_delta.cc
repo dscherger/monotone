@@ -28,6 +28,7 @@
 using boost::lexical_cast;
 using std::pair;
 using std::make_pair;
+using std::make_shared;
 using std::string;
 
 namespace
@@ -595,7 +596,7 @@ namespace
       {
         parser.sym();
         node_id nid = parse_nid(parser);
-        marking_t m(new marking());
+        marking_t m(make_shared<marking>());
         parse_marking(parser, m);
         safe_insert(d.markings_changed, make_pair(nid, m));
       }

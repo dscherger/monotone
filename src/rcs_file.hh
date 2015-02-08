@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <map>
+
 #include "vector.hh"
 
 struct rcs_admin
@@ -45,12 +46,12 @@ struct rcs_file
   std::map<std::string, std::shared_ptr<rcs_deltatext> > deltatexts;
   void push_delta(rcs_delta const & d)
   {
-    std::shared_ptr<rcs_delta> dp(new rcs_delta(d));
+    std::shared_ptr<rcs_delta> dp = std::make_shared<rcs_delta>(d);
     deltas.insert(make_pair(dp->num,dp));
   }
   void push_deltatext(rcs_deltatext const & dt)
   {
-    std::shared_ptr<rcs_deltatext> dp(new rcs_deltatext(dt));
+    std::shared_ptr<rcs_deltatext> dp = std::make_shared<rcs_deltatext>(dt);
     deltatexts.insert(make_pair(dp->num, dp));
   }
 };

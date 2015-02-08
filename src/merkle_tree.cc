@@ -9,6 +9,7 @@
 
 #include "base.hh"
 #include <map>
+#include <memory>
 #include <sstream>
 
 #include <boost/dynamic_bitset.hpp>
@@ -23,6 +24,7 @@
 #include "transforms.hh"
 
 using std::make_pair;
+using std::make_shared;
 using std::ostream_iterator;
 using std::ostringstream;
 using std::set;
@@ -508,7 +510,7 @@ insert_into_merkle_tree(merkle_table & tab,
     }
   else
     {
-      node = merkle_ptr(new merkle_node());
+      node = make_shared<merkle_node>();
       node->type = type;
       node->level = level;
       node->pref = pref;

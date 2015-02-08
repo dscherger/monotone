@@ -9,12 +9,15 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "cache_logger.hh"
 
 #include <fstream>
+#include <memory>
 
-using std::ofstream;
+#include "cache_logger.hh"
+
 using std::endl;
+using std::make_shared;
+using std::ofstream;
 using std::string;
 
 class cache_logger_impl
@@ -32,7 +35,7 @@ cache_logger::cache_logger(string const & filename, int max_size)
 {
   if (!filename.empty())
     {
-      _impl.reset(new cache_logger_impl(filename));
+      _impl = make_shared<cache_logger_impl>(filename);
     }
 }
 

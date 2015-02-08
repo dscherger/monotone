@@ -21,6 +21,7 @@
 
 using std::inserter;
 using std::make_pair;
+using std::make_shared;
 using std::set;
 using std::set_difference;
 using std::string;
@@ -144,14 +145,16 @@ refiner::send_synthetic_subquery(merkle_node const & our_node, size_t slot)
 }
 
 void
-refiner::note_subtree_shared_with_peer(merkle_node const & our_node, size_t slot)
+refiner::note_subtree_shared_with_peer(merkle_node const & our_node,
+                                       size_t slot)
 {
   prefix pref;
   our_node.extended_raw_prefix(slot, pref);
   collect_items_in_subtree(table, pref, our_node.level+1, peer_items);
 }
 
-refiner::refiner(netcmd_item_type type, protocol_voice voice, refiner_callbacks & cb)
+refiner::refiner(netcmd_item_type type, protocol_voice voice,
+                 refiner_callbacks & cb)
   : type(type), voice (voice), cb(cb),
     sent_initial_query(false),
     queries_in_flight(0),
@@ -161,7 +164,7 @@ refiner::refiner(netcmd_item_type type, protocol_voice voice, refiner_callbacks 
     min_items_to_receive(0),
     may_receive_more_than_min(false)
 {
-  merkle_ptr root = merkle_ptr(new merkle_node());
+  merkle_ptr root = make_shared<merkle_node>();
   root->type = type;
   table.insert(make_pair(make_pair(prefix(""), 0), root));
 }
@@ -272,7 +275,7 @@ refiner::process_refinement_command(refinement_type ty,
   else
     {
       // Synthesize empty node if we don't have one.
-      our_node = merkle_ptr(new merkle_node);
+      our_node = make_shared<merkle_node>();
       our_node->pref = their_node.pref;
       our_node->level = their_node.level;
       our_node->type = their_node.type;

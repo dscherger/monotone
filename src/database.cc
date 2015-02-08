@@ -76,10 +76,14 @@ extern char const schema_constant[];
 //
 // see file schema.sql for the text of the schema.
 
+using std::bind;
 using std::move;
 using std::deque;
+using std::dynamic_pointer_cast;
+using std::get;
 using std::istream;
 using std::make_pair;
+using std::make_shared;
 using std::map;
 using std::move;
 using std::multimap;
@@ -87,18 +91,15 @@ using std::ostream;
 using std::pair;
 using std::remove_if;
 using std::set;
+using std::shared_ptr;
 using std::sort;
 using std::string;
+using std::tuple;
 using std::vector;
 using std::accumulate;
 using std::unordered_map;
 using std::function;
 
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
-using std::get;
-using std::tuple;
-using std::bind;
 using boost::lexical_cast;
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,5)
@@ -2276,8 +2277,8 @@ database::get_roster_version(revision_id const & ros_id)
   selected_path.pop_back();
   // we know that this isn't already in the cache (because of the early exit
   // above), so we should create new objects and spend time filling them in.
-  shared_ptr<roster_t> roster(new roster_t);
-  shared_ptr<marking_map> marking(new marking_map);
+  shared_ptr<roster_t> roster = make_shared<roster_t>();
+  shared_ptr<marking_map> marking = make_shared<marking_map>();
   imp->get_roster_base(revision_id(curr), *roster, *marking);
 
   for (reconstruction_path::reverse_iterator i = selected_path.rbegin();
@@ -3092,8 +3093,10 @@ database::put_roster_for_revision(revision_id const & new_id,
 {
   // Construct, the roster, sanity-check the manifest id, and then write it
   // to the db
-  shared_ptr<roster_t> ros_writeable(new roster_t); MM(*ros_writeable);
-  shared_ptr<marking_map> mm_writeable(new marking_map); MM(*mm_writeable);
+  shared_ptr<roster_t> ros_writeable = make_shared<roster_t>();
+  MM(*ros_writeable);
+  shared_ptr<marking_map> mm_writeable = make_shared<marking_map>();
+  MM(*mm_writeable);
   make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable);
   E(rev.new_manifest == calculate_ident(*ros_writeable, false),
     rev.made_from,
@@ -3422,7 +3425,7 @@ database::check_signature(key_id const & id,
         F("failed to get RSA verifying key for %s") % id);
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,10,0)
-      verifier.reset(new Botan::PK_Verifier(*pub_key, "EMSA3(SHA1)"));
+      verifier = make_shared<Botan::PK_Verifier>(*pub_key, "EMSA3(SHA1)");
 #else
       verifier.reset(Botan::get_pk_verifier(*pub_key, "EMSA3(SHA-1)"));
 #endif

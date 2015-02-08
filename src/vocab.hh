@@ -33,7 +33,7 @@ public:
   immutable_string()
   {}
   immutable_string(std::string const & s)
-    : _rep(new std::string(s))
+    : _rep(std::make_shared<std::string>(s))
   {}
 
   std::string const & get() const

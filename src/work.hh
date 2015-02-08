@@ -231,8 +231,8 @@ public:
   void update_current_roster_from_filesystem(roster_t & ros,
                                              node_restriction const & mask);
   void update_current_roster_from_filesystem(roster_t & ros,
-                                             node_restriction const & mask,
-                                             std::auto_ptr<workspace_result> & wres);
+                                     node_restriction const & mask,
+                                     std::unique_ptr<workspace_result> & wres);
 
   // the "user log" is a file the user can edit as they program to record
   // changes they make to their source code. Upon commit the file is read

@@ -31,6 +31,7 @@ using std::pair;
 using std::map;
 using std::multimap;
 using std::make_pair;
+using std::make_shared;
 using std::list;
 using std::unordered_set;
 
@@ -67,7 +68,7 @@ get_reconstruction_path(id const & start,
   vector< shared_ptr<reconstruction_path> > live_paths;
 
   {
-    shared_ptr<reconstruction_path> pth0 = shared_ptr<reconstruction_path>(new reconstruction_path());
+    shared_ptr<reconstruction_path> pth0 = make_shared<reconstruction_path>();
     pth0->push_back(start);
     live_paths.push_back(pth0);
     seen_nodes.insert(start);
@@ -121,7 +122,7 @@ get_reconstruction_path(id const & start,
                           // copy every time?  Because that makes this into an
                           // O(n^2) algorithm, in the common case where there is
                           // only one direction to go at each stop.)
-                          pthN = shared_ptr<reconstruction_path>(new reconstruction_path(*pth));
+                          pthN = make_shared<reconstruction_path>(*pth);
                           I(!pthN->empty());
                           pthN->pop_back();
                         }

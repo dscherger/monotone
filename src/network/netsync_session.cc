@@ -28,15 +28,13 @@
 
 using std::deque;
 using std::make_pair;
+using std::make_shared;
 using std::map;
 using std::pair;
 using std::set;
+using std::shared_ptr;
 using std::string;
 using std::vector;
-
-using std::shared_ptr;
-
-
 
 static inline void
 require(bool check, string const & context)

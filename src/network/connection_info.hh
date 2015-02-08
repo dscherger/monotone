@@ -72,8 +72,8 @@ typedef std::shared_ptr<connection_counts> shared_conn_counts;
 
 class connection_counts
 {
-  connection_counts();
 public:
+  connection_counts();
   static shared_conn_counts create();
 
   future_set<key_id> keys_in;
@@ -82,7 +82,6 @@ public:
   future_set<key_id> keys_out;
   future_set<cert> certs_out;
   future_set<revision_id> revs_out;
-
 };
 
 // 'revs' is a list of revs that were transferred (normally
@@ -110,6 +109,7 @@ struct netsync_connection_info
   public:
     std::vector<utf8> addrs;
   } server;
+
   class Client
   {
     friend struct netsync_connection_info;
@@ -156,6 +156,8 @@ struct netsync_connection_info
     void set_connection_successful();
   } client;
 
+  netsync_connection_info(database & d, options const & o);
+
   static void
   setup_default(options const & opts,
                 database & db,
@@ -195,8 +197,6 @@ struct netsync_connection_info
                   shared_conn_info & info);
 
 private:
-  netsync_connection_info(database & d, options const & o);
-
   static void
   parse_includes_excludes_from_query(std::string const & query,
                                      std::vector<arg_type> & includes,

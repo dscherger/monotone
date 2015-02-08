@@ -25,15 +25,17 @@
 
 #include <vector>
 
+using std::make_shared;
 using std::map;
-using std::vector;
 using std::string;
+using std::vector;
+
 using boost::lexical_cast;
 
 connection_counts::connection_counts() { }
 shared_conn_counts connection_counts::create()
 {
-  return shared_conn_counts(new connection_counts());
+  return make_shared<connection_counts>();
 }
 
 void
@@ -399,7 +401,7 @@ netsync_connection_info::setup_default(options const & opts,
                                        connection_type type,
                                        shared_conn_info & info)
 {
-  info.reset(new netsync_connection_info(db, opts));
+  info = make_shared<netsync_connection_info>(db, opts);
   info->info_type = client_info;
   info->client.conn_type = type;
 
@@ -414,7 +416,7 @@ netsync_connection_info::setup_from_sync_request(options const & opts,
                                                  server_initiated_sync_request const & request,
                                                  shared_conn_info & info)
 {
-  info.reset(new netsync_connection_info(db, opts));
+  info = make_shared<netsync_connection_info>(db, opts);
   info->info_type = client_info;
   info->client.conn_type = netsync_connection;
 
@@ -462,7 +464,7 @@ netsync_connection_info::setup_from_uri(options const & opts,
                                         arg_type const & uri,
                                         shared_conn_info & info)
 {
-  info.reset(new netsync_connection_info(db, opts));
+  info = make_shared<netsync_connection_info>(db, opts);
   info->info_type = client_info;
   info->client.conn_type = type;
 
@@ -499,7 +501,7 @@ netsync_connection_info::setup_from_server_and_pattern(options const & opts,
   W(F("separate server and pattern arguments are deprecated, "
       "please consider using the URI calling syntax instead"));
 
-  info.reset(new netsync_connection_info(db, opts));
+  info = make_shared<netsync_connection_info>(db, opts);
   info->info_type = client_info;
   info->client.conn_type = type;
 
@@ -518,7 +520,7 @@ netsync_connection_info::setup_for_serve(options const & opts,
                                          lua_hooks & lua,
                                          shared_conn_info & info)
 {
-  info.reset(new netsync_connection_info(db, opts));
+  info = make_shared<netsync_connection_info>(db, opts);
   info->info_type = server_info;
   info->server.addrs = opts.bind_uris;
   info->client.conn_type = netsync_connection;

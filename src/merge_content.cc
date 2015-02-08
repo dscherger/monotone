@@ -29,11 +29,12 @@
 
 using std::move;
 using std::make_pair;
+using std::make_shared;
 using std::map;
 using std::set;
+using std::shared_ptr;
 using std::string;
 using std::vector;
-using std::shared_ptr;
 
 ///////////////////////////////////////////////////////////////////////////
 // content_merge_database_adaptor
@@ -864,10 +865,12 @@ store_roster_merge_result(database & db,
 
   merged_rev.new_manifest = calculate_ident(merged_roster);
 
-  shared_ptr<cset> left_to_merged(new cset(left_roster, merged_roster));
+  shared_ptr<cset> left_to_merged = make_shared<cset>
+    (left_roster, merged_roster);
   safe_insert(merged_rev.edges, make_pair(left_rid, left_to_merged));
 
-  shared_ptr<cset> right_to_merged(new cset(right_roster, merged_roster));
+  shared_ptr<cset> right_to_merged = make_shared<cset>
+    (right_roster, merged_roster);
   safe_insert(merged_rev.edges, make_pair(right_rid, right_to_merged));
 
   revision_data merged_data = write_revision(merged_rev);

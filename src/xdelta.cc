@@ -41,6 +41,7 @@
 #include "xdelta.hh"
 
 using std::make_pair;
+using std::make_shared;
 using std::min;
 using std::ostream;
 using std::ostringstream;
@@ -448,7 +449,7 @@ apply_delta(string const & a,
             string const & delta,
             string & b)
 {
-  shared_ptr<delta_applicator> da(new simple_applicator());
+  shared_ptr<delta_applicator> da(make_shared<simple_applicator>());
   da->begin(a);
   apply_delta(da, delta);
   da->next();
@@ -658,8 +659,8 @@ piecewise_applicator
   shared_ptr<version_spec> dst;
 
   piecewise_applicator() :
-    src(new version_spec()),
-    dst(new version_spec())
+    src(make_shared<version_spec>()),
+    dst(make_shared<version_spec>())
   {}
 
   virtual ~piecewise_applicator () {}
@@ -702,13 +703,13 @@ piecewise_applicator
 shared_ptr<delta_applicator>
 new_simple_applicator()
 {
-  return shared_ptr<delta_applicator>(new simple_applicator());
+  return shared_ptr<delta_applicator>(make_shared<simple_applicator>());
 }
 
 shared_ptr<delta_applicator>
 new_piecewise_applicator()
 {
-  return shared_ptr<delta_applicator>(new piecewise_applicator());
+  return shared_ptr<delta_applicator>(make_shared<piecewise_applicator>());
 }
 
 
@@ -817,7 +818,8 @@ invert_xdelta(string const & old_str,
               string const & delta,
               string & delta_inverse)
 {
-  shared_ptr<delta_applicator> da(new inverse_delta_writing_applicator(old_str));
+  shared_ptr<delta_applicator> da(
+    make_shared<inverse_delta_writing_applicator>(old_str));
   apply_delta(da, delta);
   da->finish(delta_inverse);
 }

@@ -20,11 +20,12 @@
 #include "reactor.hh"
 #include "session.hh"
 
-using std::vector;
+using std::make_shared;
+using std::shared_ptr;
 using std::string;
+using std::vector;
 
 using boost::lexical_cast;
-using std::shared_ptr;
 
 listener::listener(app_state & app,
                    project_t & project,
@@ -66,14 +67,12 @@ listener::do_io(Netxx::Probe::ready_type /* event */)
       Netxx::SockOpt socket_options(client.get_socketfd(), false);
       socket_options.set_non_blocking();
 
-      shared_ptr<Netxx::Stream> str =
-        shared_ptr<Netxx::Stream>(new Netxx::Stream(client.get_socketfd(),
-                                                    Netxx::Timeout(0, 1)));
+      shared_ptr<Netxx::Stream> str = make_shared<Netxx::Stream>
+        (client.get_socketfd(), Netxx::Timeout(0, 1));
 
-      shared_ptr<session> sess(new session(app, project, keys,
-                                           server_voice,
-                                           lexical_cast<string>(client),
-                                           str));
+      shared_ptr<session> sess = make_shared<session>
+        (app, project, keys, server_voice,
+         lexical_cast<string>(client), str);
       sess->begin_service();
       I(guard);
       react.add(sess, *guard);

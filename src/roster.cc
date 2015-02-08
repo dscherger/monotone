@@ -35,6 +35,7 @@
 
 using std::inserter;
 using std::make_pair;
+using std::make_shared;
 using std::map;
 using std::move;
 using std::ostringstream;
@@ -221,7 +222,7 @@ marking_t const & marking_map::get_marking_for_update(node_id nid)
       m->cow_version = cow_version;
       return m;
     }
-  return _store.set(nid, marking_t(new marking(*m)));
+  return _store.set(nid, make_shared<marking>(*m));
 }
 
 bool marking_map::contains(node_id nid) const
@@ -341,7 +342,7 @@ dir_node::detach_child(path_component const & pc)
 node_t
 dir_node::clone()
 {
-  dir_t d = dir_t(new dir_node(self));
+  dir_t d = dir_t(make_shared<dir_node>(self));
   d->parent = parent;
   d->name = name;
   d->attrs = attrs;
@@ -368,7 +369,7 @@ file_node::file_node()
 node_t
 file_node::clone()
 {
-  file_t f = file_t(new file_node(self, content));
+  file_t f = file_t(make_shared<file_node>(self, content));
   f->parent = parent;
   f->name = name;
   f->attrs = attrs;
@@ -998,7 +999,7 @@ roster_t::create_dir_node(node_id_source & nis)
 void
 roster_t::create_dir_node(node_id nid)
 {
-  dir_t d = dir_t(new dir_node());
+  dir_t d = dir_t(make_shared<dir_node>());
   d->self = nid;
   d->cow_version = cow_version;
   nodes.set(nid, d);
@@ -1019,7 +1020,7 @@ roster_t::create_file_node(file_id const & content, node_id_source & nis)
 void
 roster_t::create_file_node(file_id const & content, node_id nid)
 {
-  file_t f = file_t(new file_node());
+  file_t f = file_t(make_shared<file_node>());
   f->self = nid;
   f->content = content;
   f->cow_version = cow_version;
@@ -1672,7 +1673,7 @@ namespace
   void
   mark_new_node(revision_id const & new_rid, const_node_t n, marking_map & mm)
   {
-    marking_t new_marking(new marking());
+    marking_t new_marking = make_shared<marking>();
     new_marking->birth_revision = new_rid;
     I(new_marking->parent_name.empty());
     new_marking->parent_name.insert(new_rid);
@@ -1713,7 +1714,7 @@ namespace
 
     I(same_type(parent_n, n) && parent_n->self == n->self);
 
-    marking_t new_marking(new marking());
+    marking_t new_marking = make_shared<marking>();
 
     new_marking->birth_revision = parent_marking->birth_revision;
 
@@ -3006,7 +3007,7 @@ roster_t::parse_from(basic_io::parser & pa,
           pa.hex(content);
           pa.esym(syms::ident);
           pa.str(ident);
-          n = file_t(new file_node(read_num(ident),
+          n = file_t(make_shared<file_node>(read_num(ident),
                                    decode_hexenc_as<file_id>(content,
                                                              pa.tok.in.made_from)));
         }
@@ -3016,7 +3017,7 @@ roster_t::parse_from(basic_io::parser & pa,
           pa.str(pth);
           pa.esym(syms::ident);
           pa.str(ident);
-          n = dir_t(new dir_node(read_num(ident)));
+          n = dir_t(make_shared<dir_node>(read_num(ident)));
         }
       else
         break;
@@ -3060,7 +3061,7 @@ roster_t::parse_from(basic_io::parser & pa,
         }
 
       {
-        marking_t m(new marking());
+        marking_t m = make_shared<marking>();
         parse_marking(pa, m);
         mm.put_marking(n->self, m);
       }

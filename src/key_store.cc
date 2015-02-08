@@ -34,17 +34,17 @@
 #include "lazy_rng.hh"
 #include "botan_pipe_cache.hh"
 
+using std::dynamic_pointer_cast;
 using std::make_pair;
+using std::make_shared;
 using std::istringstream;
 using std::map;
 using std::ostringstream;
 using std::pair;
-using std::string;
-using std::vector;
-
-using std::unique_ptr;
 using std::shared_ptr;
-using std::dynamic_pointer_cast;
+using std::string;
+using std::unique_ptr;
+using std::vector;
 
 using Botan::RSA_PrivateKey;
 using Botan::RSA_PublicKey;
