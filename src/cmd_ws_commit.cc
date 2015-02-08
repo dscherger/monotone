@@ -268,7 +268,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   }
 
   utf8 summary;
-  revision_summary(rev, summary);
+  colorizer color(false, lua);
+  revision_summary(rev, color, summary);
 
   utf8 full_message(changelog() + cancel() + instructions() + editable() + ignored() +
                     notes() + summary(),
@@ -1174,6 +1175,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   // Emit 'On top of branch' or 'Current branch':
   bool fork_to_existing = false;
+  colorizer color(app.opts.colorize, app.lua);
   if (app.opts.branch().empty())
     {
       out << _("No current branch name defined for this workspace.")
