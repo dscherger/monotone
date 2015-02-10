@@ -15,6 +15,11 @@
 #include "database.hh"
 #include "merge_roster.hh"
 
+using std::make_shared;
+using std::set;
+using std::shared_ptr;
+using std::vector;
+
 CMD_GROUP(conflicts, "conflicts", "", CMD_REF(tree),
           N_("Commands for conflict resolutions"),
           "");
@@ -23,14 +28,14 @@ struct conflicts_t
 {
   roster_merge_result result;
   revision_id ancestor_rid, left_rid, right_rid;
-  std::shared_ptr<roster_t> ancestor_roster;
-  std::shared_ptr<roster_t> left_roster;
-  std::shared_ptr<roster_t> right_roster;
+  shared_ptr<roster_t> ancestor_roster;
+  shared_ptr<roster_t> left_roster;
+  shared_ptr<roster_t> right_roster;
   marking_map left_marking, right_marking;
 
   conflicts_t(database & db, bookkeeping_path const & file):
-    left_roster(std::shared_ptr<roster_t>(new roster_t())),
-    right_roster(std::shared_ptr<roster_t>(new roster_t()))
+    left_roster(make_shared<roster_t>()),
+    right_roster(make_shared<roster_t>())
   {
     result.clear(); // default constructor doesn't do this.
 
@@ -50,7 +55,8 @@ struct conflicts_t
 typedef enum {first, remaining} show_conflicts_case_t;
 
 static void
-show_resolution(resolve_conflicts::file_resolution_t resolution, char const * const prefix)
+show_resolution(resolve_conflicts::file_resolution_t resolution,
+                char const * const prefix)
 {
 
   if (resolution.resolution != resolve_conflicts::none)
@@ -60,16 +66,14 @@ show_resolution(resolve_conflicts::file_resolution_t resolution, char const * co
 }
 
 static void
-show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_case)
+show_conflicts(database & db, conflicts_t conflicts,
+               show_conflicts_case_t show_case)
 {
   // Go thru the conflicts we know how to resolve in the same order
   // merge.cc resolve_merge_conflicts outputs them.
-  for (std::vector<orphaned_node_conflict>::iterator i = conflicts.result.orphaned_node_conflicts.begin();
-       i != conflicts.result.orphaned_node_conflicts.end();
-       ++i)
+  for (orphaned_node_conflict const & conflict
+         : conflicts.result.orphaned_node_conflicts)
     {
-      orphaned_node_conflict & conflict = *i;
-
       if (conflict.resolution.resolution == resolve_conflicts::none)
         {
           file_path name;
@@ -94,7 +98,7 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
         }
     }
 
-  for (std::vector<dropped_modified_conflict>::iterator i = conflicts.result.dropped_modified_conflicts.begin();
+  for (vector<dropped_modified_conflict>::iterator i = conflicts.result.dropped_modified_conflicts.begin();
        i != conflicts.result.dropped_modified_conflicts.end();
        ++i)
     {
@@ -222,7 +226,7 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
         }
     }
 
-  for (std::vector<duplicate_name_conflict>::iterator i = conflicts.result.duplicate_name_conflicts.begin();
+  for (vector<duplicate_name_conflict>::iterator i = conflicts.result.duplicate_name_conflicts.begin();
        i != conflicts.result.duplicate_name_conflicts.end();
        ++i)
     {
@@ -263,7 +267,7 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
         }
     }
 
-  for (std::vector<file_content_conflict>::iterator i = conflicts.result.file_content_conflicts.begin();
+  for (vector<file_content_conflict>::iterator i = conflicts.result.file_content_conflicts.begin();
        i != conflicts.result.file_content_conflicts.end();
        ++i)
     {
@@ -314,7 +318,7 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
 
             content_merge_database_adaptor adaptor
               (db, conflicts.left_rid, conflicts.right_rid, conflicts.left_marking, conflicts.right_marking,
-               std::set<revision_id> (), std::set<revision_id> ()); // uncommon_ancestors only used in automate
+               set<revision_id> (), set<revision_id> ()); // uncommon_ancestors only used in automate
 
             conflicts.result.report_missing_root_conflicts
               (*conflicts.left_roster, *conflicts.right_roster, adaptor, false, std::cout);
@@ -356,7 +360,7 @@ do_interactive_merge(database & db,
 
   if (!conflicts.ancestor_roster)
     {
-      conflicts.ancestor_roster = std::shared_ptr<roster_t>(new roster_t());
+      conflicts.ancestor_roster = make_shared<roster_t>();
       *conflicts.ancestor_roster = db.get_roster(conflicts.ancestor_rid);
     }
 
@@ -448,7 +452,7 @@ set_first_conflict(database & db,
 
   if (side != neither)
     {
-      for (std::vector<dropped_modified_conflict>::iterator i = conflicts.result.dropped_modified_conflicts.begin();
+      for (vector<dropped_modified_conflict>::iterator i = conflicts.result.dropped_modified_conflicts.begin();
            i != conflicts.result.dropped_modified_conflicts.end();
            ++i)
         {
@@ -490,7 +494,7 @@ set_first_conflict(database & db,
             }
         }
 
-      for (std::vector<duplicate_name_conflict>::iterator i = conflicts.result.duplicate_name_conflicts.begin();
+      for (vector<duplicate_name_conflict>::iterator i = conflicts.result.duplicate_name_conflicts.begin();
            i != conflicts.result.duplicate_name_conflicts.end();
            ++i)
         {
@@ -522,7 +526,7 @@ set_first_conflict(database & db,
 
   if (side == neither)
     {
-      for (std::vector<orphaned_node_conflict>::iterator i = conflicts.result.orphaned_node_conflicts.begin();
+      for (vector<orphaned_node_conflict>::iterator i = conflicts.result.orphaned_node_conflicts.begin();
            i != conflicts.result.orphaned_node_conflicts.end();
            ++i)
         {
@@ -552,7 +556,7 @@ set_first_conflict(database & db,
             }
         }
 
-      for (std::vector<dropped_modified_conflict>::iterator i = conflicts.result.dropped_modified_conflicts.begin();
+      for (vector<dropped_modified_conflict>::iterator i = conflicts.result.dropped_modified_conflicts.begin();
            i != conflicts.result.dropped_modified_conflicts.end();
            ++i)
         {
@@ -668,7 +672,7 @@ set_first_conflict(database & db,
             }
         }
 
-      for (std::vector<file_content_conflict>::iterator i = conflicts.result.file_content_conflicts.begin();
+      for (vector<file_content_conflict>::iterator i = conflicts.result.file_content_conflicts.begin();
            i != conflicts.result.file_content_conflicts.end();
            ++i)
         {
@@ -707,11 +711,15 @@ set_first_conflict(database & db,
                     }
 
                   if (do_interactive_merge(db, lua, conflicts, conflict.nid,
-                                           conflict.ancestor, conflict.left, conflict.right, result_path))
+                                           conflict.ancestor, conflict.left,
+                                           conflict.right, result_path))
                     {
-                      conflict.resolution.resolution  = resolve_conflicts::content_user;
-                      conflict.resolution.content = std::shared_ptr<any_path>(new bookkeeping_path(result_path));
-                      P(F("interactive merge result saved in '%s'") % result_path.as_internal());
+                      conflict.resolution.resolution
+                        = resolve_conflicts::content_user;
+                      conflict.resolution.content
+                        = make_shared<bookkeeping_path>(result_path);
+                      P(F("interactive merge result saved in '%s'")
+                        % result_path.as_internal());
                     }
                   else
                     P(F("interactive merge failed."));

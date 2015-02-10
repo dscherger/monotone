@@ -13,11 +13,12 @@
 #include "../vocab.hh"
 #include "make_server.hh"
 
-using std::vector;
+using std::make_shared;
+using std::shared_ptr;
 using std::string;
+using std::vector;
 
 using boost::lexical_cast;
-using std::shared_ptr;
 
 shared_ptr<Netxx::StreamServer>
 make_server(vector<utf8> const & addresses,
@@ -55,7 +56,8 @@ make_server(vector<utf8> const & addresses,
                 }
             }
         }
-      shared_ptr<Netxx::StreamServer> ret(new Netxx::StreamServer(addr, timeout));
+      shared_ptr<Netxx::StreamServer> ret = make_shared< Netxx::StreamServer>
+        (addr, timeout);
 
       char const * name;
       name = addr.get_name();

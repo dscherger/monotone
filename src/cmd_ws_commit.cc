@@ -14,6 +14,7 @@
 #include <deque>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <algorithm>
 #include <iterator>
@@ -43,6 +44,7 @@
 #include "rev_height.hh"
 #include "vocab_cast.hh"
 
+using std::make_shared;
 using std::move;
 using std::shared_ptr;
 using std::cout;
@@ -52,12 +54,12 @@ using std::ostringstream;
 using std::pair;
 using std::set;
 using std::string;
-using std::vector;
-using std::auto_ptr;
 using std::min;
 using std::stack;
 using std::set_difference;
 using std::set_intersection;
+using std::unique_ptr;
+using std::vector;
 
 static set<branch_name>
 get_old_branch_names(database & db, parent_map const & parents)
@@ -597,7 +599,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
   bool log_message_given;
   revision_id child_rev, parent_rev;
   revision_t rev, rev_inverse;
-  shared_ptr<cset> cs_inverse(new cset());
+  shared_ptr<cset> cs_inverse = make_shared<cset>();
 
   if (args.size() == 1)
     {
@@ -967,7 +969,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
                         app.opts.depth,
                         old_rosters, new_roster, ignored_file(work));
 
-  auto_ptr<workspace_result> wres(new workspace_result);
+  unique_ptr<workspace_result> wres(new workspace_result);
   work.update_current_roster_from_filesystem(new_roster, mask, wres);
 
   vector<bisect::entry> info = work.get_bisect_info();

@@ -32,10 +32,10 @@
 
 #include "safe_map.hh"
 
-using std::shared_ptr;
 using std::back_inserter;
 using std::deque;
 using std::make_pair;
+using std::make_shared;
 using std::map;
 using std::move;
 using std::multimap;
@@ -43,6 +43,7 @@ using std::ostringstream;
 using std::pair;
 using std::queue;
 using std::set;
+using std::shared_ptr;
 using std::string;
 using std::vector;
 using std::set_difference;
@@ -733,10 +734,8 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
               u64 parent = i->second;
               if (parent_rosters.find(parent) == parent_rosters.end())
                 {
-                  shared_ptr<roster_t> ros
-                    = shared_ptr<roster_t>(new roster_t());
-                  shared_ptr<marking_map>
-                    mm = shared_ptr<marking_map>(new marking_map());
+                  shared_ptr<roster_t> ros = make_shared<roster_t>();
+                  shared_ptr<marking_map> mm = make_shared<marking_map>();
                   db.get_roster_and_markings(safe_get(node_to_new_rev, parent),
                                              *ros, *mm);
                   safe_insert(parent_rosters, make_pair(parent,
@@ -833,8 +832,8 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
               u64 parent = i->first;
               revision_id parent_rid = safe_get(node_to_new_rev, parent);
               shared_ptr<roster_t> parent_roster = i->second.first;
-              shared_ptr<cset> cs
-                = shared_ptr<cset>(new cset(*parent_roster, child_roster));
+              shared_ptr<cset> cs = make_shared<cset>
+                (*parent_roster, child_roster);
               safe_insert(rev.edges, make_pair(parent_rid, cs));
             }
 
@@ -846,10 +845,9 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
           if (rev.edges.empty())
             {
               revision_id parent_rid;
-              shared_ptr<roster_t> parent_roster
-                = shared_ptr<roster_t>(new roster_t());
-              shared_ptr<cset> cs
-                = shared_ptr<cset>(new cset(*parent_roster, child_roster));
+              shared_ptr<roster_t> parent_roster = make_shared<roster_t>();
+              shared_ptr<cset> cs = make_shared<cset>
+                (*parent_roster, child_roster);
               safe_insert(rev.edges, make_pair (parent_rid, cs));
 
             }

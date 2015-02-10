@@ -9,11 +9,14 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "options_applicator.hh"
+#include <memory>
 
+#include "options_applicator.hh"
 #include "options.hh"
 #include "sanity.hh"
 #include "ui.hh"
+
+using std::make_shared;
 
 class options_applicator_impl
 {

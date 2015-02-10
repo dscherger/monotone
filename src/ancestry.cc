@@ -27,6 +27,7 @@
 
 using std::shared_ptr;
 using std::make_pair;
+using std::make_shared;
 using std::map;
 using std::max;
 using std::multimap;
@@ -80,8 +81,8 @@ find_common_ancestor_for_merge(database & db,
   set<ctx> leaves;
   map<ctx, shared_bitmap> ancestors;
 
-  shared_bitmap isect = shared_bitmap(new bitmap());
-  shared_bitmap isect_ancs = shared_bitmap(new bitmap());
+  shared_bitmap isect = make_shared<bitmap>();
+  shared_bitmap isect_ancs = make_shared<bitmap>();
 
   leaves.insert(intern.intern(left.inner()()));
   leaves.insert(intern.intern(right.inner()()));
@@ -103,7 +104,7 @@ find_common_ancestor_for_merge(database & db,
             curr_leaf_ancestors = j->second;
           else
             {
-              curr_leaf_ancestors = shared_bitmap(new bitmap());
+              curr_leaf_ancestors = make_shared<bitmap>();
               calculate_ancestors_from_graph(intern, revision_id(intern.lookup(curr_leaf),
                                                                  origin::internal),
                                              inverse_graph, ancestors,
@@ -201,7 +202,7 @@ calculate_ancestors_from_graph(interner<ctx> & intern,
       if (pushed)
         continue;
 
-      shared_bitmap b = shared_bitmap(new bitmap());
+      shared_bitmap b = make_shared<bitmap>();
 
       for (gi i = parents.first; i != parents.second; ++i)
         {
@@ -491,7 +492,7 @@ ancestry_difference(database & db, revision_id const & a,
   interner<ctx> intern;
   map< ctx, shared_bitmap > ancestors;
 
-  shared_bitmap u = shared_bitmap(new bitmap());
+  shared_bitmap u = make_shared<bitmap>();
 
   for (set<revision_id>::const_iterator i = bs.begin();
        i != bs.end(); ++i)
@@ -503,7 +504,7 @@ ancestry_difference(database & db, revision_id const & a,
       u->set(c);
     }
 
-  shared_bitmap au = shared_bitmap(new bitmap());
+  shared_bitmap au = make_shared<bitmap>();
   calculate_ancestors_from_graph(intern, a, inverse_graph, ancestors, au);
   {
     ctx c = intern.intern(a.inner()());

@@ -38,12 +38,13 @@
 using std::deque;
 using std::exception;
 using std::make_pair;
+using std::make_shared;
 using std::map;
 using std::pair;
 using std::set;
 using std::string;
+using std::unique_ptr;
 using std::vector;
-using std::auto_ptr;
 
 using boost::lexical_cast;
 
@@ -287,8 +288,8 @@ get_roster_for_rid(database & db,
   // roster (and marking map).
   if (null_id(rid))
     {
-      cr.first = std::shared_ptr<roster_t const>(new roster_t);
-      cr.second = std::shared_ptr<marking_map const>(new marking_map);
+      cr.first = make_shared<roster_t const>();
+      cr.second = make_shared<marking_map const>();
     }
   else
     {
@@ -1613,14 +1614,14 @@ void
 workspace::update_current_roster_from_filesystem(roster_t & ros,
                                                  node_restriction const & mask)
 {
-  auto_ptr<workspace_result> res;
+  unique_ptr<workspace_result> res;
   update_current_roster_from_filesystem(ros, mask, res);
 }
 
 void
 workspace::update_current_roster_from_filesystem(roster_t & ros,
-                                                 node_restriction const & mask,
-                                                 auto_ptr<workspace_result> & wres)
+                                         node_restriction const & mask,
+                                         unique_ptr<workspace_result> & wres)
 {
   temp_node_id_source nis;
   inodeprint_map ipm;

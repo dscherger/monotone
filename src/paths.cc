@@ -17,12 +17,13 @@
 #include "safe_map.hh"
 
 using std::exception;
+using std::map;
+using std::make_pair;
+using std::make_shared;
 using std::ostream;
 using std::ostringstream;
 using std::string;
 using std::vector;
-using std::map;
-using std::make_pair;
 
 // some structure to ensure we aren't doing anything broken when resolving
 // filenames.  the idea is to make sure
@@ -880,13 +881,16 @@ new_optimal_path(std::string path, bool to_workspace_root)
   catch (recoverable_failure &)
     {
       // not in workspace
-      return std::shared_ptr<any_path>(new system_path(path, origin::user));
+      return std::shared_ptr<any_path>(make_shared<system_path>
+                                       (path, origin::user));
     }
 
   if (in_bookkeeping_dir(normalized))
-    return std::shared_ptr<any_path>(new bookkeeping_path(normalized, origin::user));
+    return std::shared_ptr<any_path>(make_shared<bookkeeping_path>
+                                     (normalized, origin::user));
   else
-    return std::shared_ptr<any_path>(new file_path(file_path_internal(normalized)));
+    return std::shared_ptr<any_path>(make_shared<file_path>
+                                     (file_path_internal(normalized)));
 };
 
 // Either conversion of S to a path_component, or composition of P / S, has

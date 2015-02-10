@@ -39,14 +39,14 @@
 using std::back_insert_iterator;
 using std::back_inserter;
 using std::cout;
+using std::make_shared;
 using std::map;
 using std::min;
+using std::pair;
 using std::set;
+using std::shared_ptr;
 using std::string;
 using std::vector;
-using std::pair;
-
-using std::shared_ptr;
 
 using boost::multi_index::multi_index_container;
 using boost::multi_index::indexed_by;
@@ -238,8 +238,8 @@ annotate_context::annotate_context(app_state & app, project_t & project,
 shared_ptr<annotate_lineage_mapping>
 annotate_context::initial_lineage() const
 {
-  shared_ptr<annotate_lineage_mapping>
-    res(new annotate_lineage_mapping(file_lines));
+  shared_ptr<annotate_lineage_mapping> res
+    = make_shared<annotate_lineage_mapping>(file_lines);
   return res;
 }
 
@@ -560,8 +560,8 @@ annotate_lineage_mapping::build_parent_lineage
  file_data const & parent_data) const
 {
   bool verbose = false;
-  shared_ptr<annotate_lineage_mapping>
-    parent_lineage(new annotate_lineage_mapping(parent_data));
+  shared_ptr<annotate_lineage_mapping> parent_lineage
+    = make_shared<annotate_lineage_mapping>(parent_data);
 
   vector<long, QA(long)> lcs;
   back_insert_iterator< vector<long, QA(long)> > bii(lcs);
@@ -847,8 +847,8 @@ do_annotate (app_state & app, project_t & project, const_file_t file_node,
   L(FL("annotating file %s with content %s in revision %s")
     % file_node->self % file_node->content % rid);
 
-  shared_ptr<annotate_context>
-    acp(new annotate_context(app, project, file_node->content));
+  shared_ptr<annotate_context> acp
+    = make_shared<annotate_context>(app, project, file_node->content);
 
   shared_ptr<annotate_lineage_mapping> lineage
     = acp->initial_lineage();

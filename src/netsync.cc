@@ -30,10 +30,13 @@
 #include "project.hh"
 
 using std::deque;
+using std::make_shared;
+using std::move;
+using std::shared_ptr;
 using std::string;
+using std::vector;
 
 using boost::lexical_cast;
-using std::shared_ptr;
 
 deque<server_initiated_sync_request> server_initiated_sync_requests;
 LUAEXT(server_request_sync, )
@@ -77,7 +80,7 @@ build_stream_to_server(options & /* opts */,
       string cmd = args[0];
       args.erase(args.begin());
       return shared_ptr<Netxx::StreamBase>
-        (new Netxx::PipeStream(cmd, args));
+        (make_shared<Netxx::PipeStream>(cmd, args));
     }
   else
     {
@@ -92,7 +95,7 @@ build_stream_to_server(options & /* opts */,
                           info->client.get_port(),
                           use_ipv6);
       return shared_ptr<Netxx::StreamBase>
-        (new Netxx::Stream(addr, timeout));
+        (make_shared<Netxx::Stream>(addr, timeout));
     }
 }
 
@@ -122,27 +125,27 @@ call_server(app_state & app,
   Netxx::SockOpt socket_options(server->get_socketfd(), false);
   socket_options.set_non_blocking();
 
-  shared_ptr<session> sess(new session(app, project, keys,
-                                       client_voice,
-                                       info->client.get_uri().resource(), server));
+  shared_ptr<session> sess = make_shared<session>
+    (app, project, keys, client_voice, info->client.get_uri().resource(),
+     move(server));
   shared_ptr<wrapped_session> wrapped;
   switch (info->client.get_connection_type())
     {
     case netsync_connection:
-      wrapped.reset(new netsync_session(sess.get(),
-                                        app.opts, app.lua, project,
-                                        keys, role,
-                                        info->client.get_include_pattern(),
-                                        info->client.get_exclude_pattern(),
-                                        counts));
+      wrapped = make_shared<netsync_session>
+        (sess.get(), app.opts, app.lua, project, keys, role,
+         info->client.get_include_pattern(),
+         info->client.get_exclude_pattern(),
+         counts);
       break;
     case automate_connection:
-      wrapped.reset(new automate_session(app, sess.get(),
-                                         &info->client.get_input_stream(),
-                                         &info->client.get_output_stream()));
+      wrapped = make_shared<automate_session>
+        (app, sess.get(),
+         &info->client.get_input_stream(),
+         &info->client.get_output_stream());
       break;
     }
-  sess->set_inner(wrapped);
+  sess->set_inner(move(wrapped));
 
   reactor react;
   react.add(sess, guard);
@@ -227,19 +230,16 @@ session_from_server_sync_item(app_state & app,
       Netxx::SockOpt socket_options(server->get_socketfd(), false);
       socket_options.set_non_blocking();
 
-      shared_ptr<session>
-        sess(new session(app, project, keys,
-                         client_voice,
-                         info->client.get_uri().resource(), server));
-      shared_ptr<wrapped_session>
-        wrapped(new netsync_session(sess.get(),
-                                    app.opts, app.lua, project,
-                                    keys, request.role,
-                                    info->client.get_include_pattern(),
-                                    info->client.get_exclude_pattern(),
-                                    connection_counts::create(),
-                                    true));
-      sess->set_inner(wrapped);
+      shared_ptr<session> sess = make_shared<session>
+        (app, project, keys, client_voice,
+         info->client.get_uri().resource(), move(server));
+      shared_ptr<wrapped_session> wrapped = make_shared<netsync_session>
+        (sess.get(), app.opts, app.lua, project, keys, request.role,
+         info->client.get_include_pattern(),
+         info->client.get_exclude_pattern(),
+         connection_counts::create(),
+         true);
+      sess->set_inner(move(wrapped));
       return sess;
     }
   catch (Netxx::NetworkException & e)
@@ -275,7 +275,7 @@ serve_connections(app_state & app,
                   project_t & project,
                   key_store & keys,
                   protocol_role role,
-                  std::vector<utf8> const & addresses)
+                  vector<utf8> const & addresses)
 {
 #ifdef USE_IPV6
   bool use_ipv6=true;
@@ -283,12 +283,12 @@ serve_connections(app_state & app,
   bool use_ipv6=false;
 #endif
 
-  shared_ptr<transaction_guard> guard(new transaction_guard(project.db));
+  shared_ptr<transaction_guard> guard
+    = make_shared<transaction_guard>(project.db);
 
   reactor react;
-  shared_ptr<listener> listen(new listener(app, project, keys,
-                                           react, role, addresses,
-                                           guard, use_ipv6));
+  shared_ptr<listener> listen = make_shared<listener>
+    (app, project, keys, react, role, addresses, guard, use_ipv6);
   react.add(listen, *guard);
   desired_listener_status = listener_listening;
   listener_status actual_listener_status = listener_listening;
@@ -296,8 +296,7 @@ serve_connections(app_state & app,
   while (true)
     {
       if (!guard)
-        guard = shared_ptr<transaction_guard>
-          (new transaction_guard(project.db));
+        guard = make_shared<transaction_guard>(project.db);
       I(guard);
 
       react.ready(*guard);
@@ -395,12 +394,9 @@ run_netsync_protocol(app_state & app,
         {
           if (opts.bind_stdio)
             {
-              shared_ptr<Netxx::PipeStream> str(new Netxx::PipeStream(0,1));
-
-              shared_ptr<session>
-                sess(new session(app, project, keys,
-                                 server_voice,
-                                 "stdio", str));
+              shared_ptr<session> sess = make_shared<session>
+                (app, project, keys, server_voice, "stdio",
+                 make_shared<Netxx::PipeStream>(0, 1));
               serve_single_connection(project, sess);
             }
           else

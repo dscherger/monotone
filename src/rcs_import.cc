@@ -45,6 +45,7 @@
 #include "xdelta.hh"
 
 using std::make_pair;
+using std::make_shared;
 using std::map;
 using std::move;
 using std::multimap;
@@ -849,7 +850,7 @@ cvs_history::push_branch(string const & branch_name, bool private_branch)
 
   if (private_branch)
     {
-      branch = shared_ptr<cvs_branch>(new cvs_branch());
+      branch = make_shared<cvs_branch>();
       stk.push(branch);
       bstk.push(branch_interner.intern(""));
       return;
@@ -859,7 +860,7 @@ cvs_history::push_branch(string const & branch_name, bool private_branch)
       map<string, shared_ptr<cvs_branch> >::const_iterator b = branches.find(bname);
       if (b == branches.end())
         {
-          branch = shared_ptr<cvs_branch>(new cvs_branch());
+          branch = make_shared<cvs_branch>();
           branches.insert(make_pair(bname, branch));
           ++n_tree_branches;
         }
@@ -1166,9 +1167,9 @@ import_branch(project_t & project,
             % i->author
             % i->changelog);
 
-          target = cluster_ptr(new cvs_cluster(i->time,
-                                               i->author,
-                                               i->changelog));
+          target = make_shared<cvs_cluster>(i->time,
+                                            i->author,
+                                            i->changelog);
           clusters.insert(target);
         }
 
@@ -1215,7 +1216,7 @@ import_cvs_repo(project_t & project,
   cvs.base_branch = branchname();
 
   // push the trunk
-  cvs.trunk = shared_ptr<cvs_branch>(new cvs_branch());
+  cvs.trunk = make_shared<cvs_branch>();
   cvs.stk.push(cvs.trunk);
   cvs.bstk.push(cvs.branch_interner.intern(cvs.base_branch));
 
@@ -1448,8 +1449,8 @@ cluster_consumer::consume_cluster(cvs_cluster const & c)
   // you have an empty cluster.
   I(!c.entries.empty());
 
-  shared_ptr<revision_t> rev(new revision_t());
-  shared_ptr<cset> cs(new cset());
+  shared_ptr<revision_t> rev = make_shared<revision_t>();
+  shared_ptr<cset> cs = make_shared<cset>();
   build_cset(c, *cs);
 
   cs->apply_to(editable_ros);

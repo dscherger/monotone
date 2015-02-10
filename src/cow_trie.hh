@@ -48,16 +48,18 @@ private:
     if (!d)
       {
 	if (level > 0)
-	  d.reset(new middle_node_type());
+	  d = std::make_shared<middle_node_type>();
 	else
-	  d.reset(new leaf_node_type());
+	  d = std::make_shared<leaf_node_type>();
       }
     if (!d.unique())
       {
 	if (level > 0)
-	  d.reset(new middle_node_type(*std::static_pointer_cast<middle_node_type>(d)));
+	  d = std::make_shared<middle_node_type>
+        (*std::static_pointer_cast<middle_node_type>(d));
 	else
-	  d.reset(new leaf_node_type(*std::static_pointer_cast<leaf_node_type>(d)));
+	  d = std::make_shared<leaf_node_type>
+        (*std::static_pointer_cast<leaf_node_type>(d));
       }
     unsigned idx = (key >> (_Bits * level)) & mask;
     if (level > 0)

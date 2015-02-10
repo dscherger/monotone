@@ -80,9 +80,9 @@ public:
           key_store & keys,
           protocol_voice voice,
           std::string const & peer,
-          std::shared_ptr<Netxx::StreamBase> sock);
+          std::shared_ptr<Netxx::StreamBase> && sock);
   ~session();
-  void set_inner(std::shared_ptr<wrapped_session> wrapped);
+  void set_inner(std::shared_ptr<wrapped_session> && wrapped);
 
   bool arm();
   bool do_work(transaction_guard & guard);

@@ -30,15 +30,16 @@
 #include "vector.hh"
 #include "vocab_cast.hh"
 
+using std::inserter;
 using std::make_pair;
+using std::make_shared;
+using std::move;
 using std::pair;
 using std::set;
 using std::string;
 using std::vector;
 using std::set_intersection;
 using std::set_difference;
-using std::inserter;
-
 using std::shared_ptr;
 
 void
@@ -650,7 +651,7 @@ selector::create_simple_selector(options const & opts,
   string sel = orig;
   if (sel.find_first_not_of(constants::legal_id_bytes) == string::npos
       && sel.size() == constants::idlen)
-    return shared_ptr<selector>(new ident_selector(sel));
+    return shared_ptr<selector>(make_shared<ident_selector>(sel));
 
   if (sel.size() < 2 || sel[1] != ':')
     {
@@ -666,39 +667,43 @@ selector::create_simple_selector(options const & opts,
         }
     }
   if (sel.size() < 2 || sel[1] != ':')
-    return shared_ptr<selector>(new unknown_selector(sel));
+    return shared_ptr<selector>(make_shared<unknown_selector>(sel));
   char sel_type = sel[0];
   sel.erase(0,2);
   switch (sel_type)
     {
     case 'a':
-      return shared_ptr<selector>(new author_selector(sel));
+      return shared_ptr<selector>(make_shared<author_selector>(sel));
     case 'b':
-      return shared_ptr<selector>(new branch_selector(sel, opts));
+      return shared_ptr<selector>(make_shared<branch_selector>(sel, opts));
     case 'c':
-      return shared_ptr<selector>(new cert_selector(sel));
+      return shared_ptr<selector>(make_shared<cert_selector>(sel));
     case 'd':
-      return shared_ptr<selector>(new date_selector(sel, lua));
+      return shared_ptr<selector>(make_shared<date_selector>(sel, lua));
     case 'e':
-      return shared_ptr<selector>(new earlier_than_selector(sel, lua));
+      return shared_ptr<selector>(make_shared<earlier_than_selector>
+                                  (sel, lua));
     case 'h':
-      return shared_ptr<selector>(new head_selector(sel, opts));
+      return shared_ptr<selector>(make_shared<head_selector>(sel, opts));
     case 'i':
-      return shared_ptr<selector>(new ident_selector(sel));
+      return shared_ptr<selector>(make_shared<ident_selector>(sel));
     case 'k':
-      return shared_ptr<selector>(new key_selector(sel, lua, project));
+      return shared_ptr<selector>(make_shared<key_selector>
+                                  (sel, lua, project));
     case 'l':
-      return shared_ptr<selector>(new later_than_selector(sel, lua));
+      return shared_ptr<selector>(make_shared<later_than_selector>(sel, lua));
     case 'm':
-      return shared_ptr<selector>(new message_selector(sel));
+      return shared_ptr<selector>(make_shared<message_selector>(sel));
     case 'p':
-      return shared_ptr<selector>(new parent_selector(sel, opts, lua, project));
+      return shared_ptr<selector>(make_shared<parent_selector>
+                                  (sel, opts, lua, project));
     case 't':
-      return shared_ptr<selector>(new tag_selector(sel));
+      return shared_ptr<selector>(make_shared<tag_selector>(sel));
     case 'u':
-      return shared_ptr<selector>(new update_selector(sel, lua));
+      return shared_ptr<selector>(make_shared<update_selector>(sel, lua));
     case 'w':
-      return shared_ptr<selector>(new working_base_selector(sel, project, lua));
+      return shared_ptr<selector>(make_shared<working_base_selector>
+                                  (sel, project, lua));
     default:
       E(false, origin::user, F("unknown selector type: %c") % sel_type);
     }
@@ -786,7 +791,8 @@ shared_ptr<selector> selector::create(options const & opts,
             && special_chars.find(idx(items, name_idx).str) == string::npos)
           {
             // looks like a function call
-            shared_ptr<fn_selector> to_add(new fn_selector(idx(items, name_idx).str));
+            shared_ptr<fn_selector> to_add =
+              make_shared<fn_selector>(idx(items, name_idx).str);
             L(FL("found function-like selector '%s' at stack position %d of %d")
               % items[name_idx].str % name_idx % items.size());
             // note the closing paren is not on the item stack
@@ -809,7 +815,8 @@ shared_ptr<selector> selector::create(options const & opts,
             E(lparen_pos == 2 && idx(items, items.size() - 1).sel, origin::user,
               F("selector '%s' is invalid, grouping parentheses contain something that "
                 "doesn't look like an expr") % orig);
-            shared_ptr<selector> to_add(new nested_selector(idx(items, items.size() - 1).sel));
+            shared_ptr<selector> to_add =
+              make_shared<nested_selector>(idx(items, items.size() - 1).sel);
             items.pop_back();
             items.pop_back();
             items.push_back(parse_item(to_add));
@@ -849,8 +856,10 @@ shared_ptr<selector> selector::create(options const & opts,
               E(lhs, origin::user,
                 F("selector '%s' is invalid, because there is a '%s' someplace it shouldn't be")
                 % orig % op);
-              shared_ptr<or_selector> lhs_as_or = std::dynamic_pointer_cast<or_selector>(lhs);
-              shared_ptr<and_selector> lhs_as_and = std::dynamic_pointer_cast<and_selector>(lhs);
+              shared_ptr<or_selector> lhs_as_or
+                = std::dynamic_pointer_cast<or_selector>(lhs);
+              shared_ptr<and_selector> lhs_as_and
+                = std::dynamic_pointer_cast<and_selector>(lhs);
               E(op == "/" || !lhs_as_and, origin::user,
                 F("selector '%s' is invalid, don't mix '/' and '|' operators without parentheses")
                 % orig);
@@ -872,17 +881,17 @@ shared_ptr<selector> selector::create(options const & opts,
                 {
                   if (op == "/")
                     {
-                      shared_ptr<and_selector> x(new and_selector());
-                      x->add(lhs);
-                      x->add(rhs);
-                      new_item = x;
+                      and_selector x;
+                      x.add(lhs);
+                      x.add(rhs);
+                      new_item = make_shared<and_selector>(move(x));
                     }
                   else
                     {
-                      shared_ptr<or_selector> x(new or_selector());
-                      x->add(lhs);
-                      x->add(rhs);
-                      new_item = x;
+                      or_selector x;
+                      x.add(lhs);
+                      x.add(rhs);
+                      new_item = make_shared<or_selector>(move(x));
                     }
                 }
               I(new_item);

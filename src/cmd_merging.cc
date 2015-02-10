@@ -35,13 +35,13 @@
 
 using std::cout;
 using std::make_pair;
+using std::make_shared;
 using std::map;
 using std::set;
+using std::shared_ptr;
 using std::string;
 using std::vector;
 using std::strlen;
-
-using std::shared_ptr;
 
 static void
 add_dormant_attrs(const_node_t parent, node_t child)
@@ -294,7 +294,7 @@ update(app_state & app,
     = parent_cached_roster(parents.begin()).first;
   MM(*old_roster);
 
-  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
+  shared_ptr<roster_t> working_roster = make_shared<roster_t>();
 
   MM(*working_roster);
   *working_roster = work.get_current_roster_shape(db, nis);
@@ -798,7 +798,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
 {
   revision_id left_id, right_id;
   cached_roster left;
-  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
+  shared_ptr<roster_t> working_roster = make_shared<roster_t>();
 
   if (args.size() != 1)
     throw usage(execid);
@@ -1009,13 +1009,14 @@ show_conflicts_core (database & db,
       return;
     }
 
-  shared_ptr<roster_t> l_roster = shared_ptr<roster_t>(new roster_t());
-  shared_ptr<roster_t> r_roster = shared_ptr<roster_t>(new roster_t());
+  shared_ptr<roster_t> l_roster = make_shared<roster_t>();
+  shared_ptr<roster_t> r_roster = make_shared<roster_t>();
   marking_map l_marking, r_marking;
   db.get_roster_and_markings(l_id, *l_roster, l_marking);
   db.get_roster_and_markings(r_id, *r_roster, r_marking);
   set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
-  db.get_uncommon_ancestors(l_id, r_id, l_uncommon_ancestors, r_uncommon_ancestors);
+  db.get_uncommon_ancestors(l_id, r_id, l_uncommon_ancestors,
+                            r_uncommon_ancestors);
   roster_merge_result result;
   roster_merge(*l_roster, l_marking, l_uncommon_ancestors,
                *r_roster, r_marking, r_uncommon_ancestors,
@@ -1338,12 +1339,12 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   temp_node_id_source nis;
 
   // Get the FROM roster
-  shared_ptr<roster_t> from_roster = shared_ptr<roster_t>(new roster_t());
+  shared_ptr<roster_t> from_roster = make_shared<roster_t>();
   MM(*from_roster);
   *from_roster = db.get_roster(from_rid);
 
   // Get the WORKING roster
-  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
+  shared_ptr<roster_t> working_roster = make_shared<roster_t>();
   MM(*working_roster);
   *working_roster = work.get_current_roster_shape(db, nis);
 
@@ -1369,7 +1370,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   }
   E(!from_to_to.empty(), origin::user, F("no changes to be applied"));
   // ...and use it to create the TO roster
-  shared_ptr<roster_t> to_roster = shared_ptr<roster_t>(new roster_t());
+  shared_ptr<roster_t> to_roster = make_shared<roster_t>();
   MM(*to_roster);
   {
     *to_roster = *from_roster;

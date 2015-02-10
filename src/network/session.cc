@@ -23,11 +23,11 @@
 #include "automate_session.hh"
 #include "netsync_session.hh"
 
+using std::make_shared;
+using std::shared_ptr;
 using std::string;
 
 using boost::lexical_cast;
-using std::shared_ptr;
-
 
 static const var_domain known_servers_domain = var_domain("known-servers");
 
@@ -37,8 +37,8 @@ session::session(app_state & app, project_t & project,
                  key_store & keys,
                  protocol_voice voice,
                  std::string const & peer,
-                 shared_ptr<Netxx::StreamBase> sock) :
-  session_base(voice, peer, sock),
+                 shared_ptr<Netxx::StreamBase> && sock) :
+  session_base(voice, peer, move(sock)),
   version(app.opts.max_netsync_version),
   max_version(app.opts.max_netsync_version),
   min_version(app.opts.min_netsync_version),
@@ -78,7 +78,7 @@ session::~session()
     wrapped->on_end(session_id);
 }
 
-void session::set_inner(shared_ptr<wrapped_session> wrapped)
+void session::set_inner(shared_ptr<wrapped_session> && wrapped)
 {
   this->wrapped = wrapped;
 }
@@ -656,17 +656,17 @@ bool session::handle_service_request()
   switch (is_what)
     {
     case is_netsync:
-      wrapped.reset(new netsync_session(this,
-                                        app.opts, app.lua,
-                                        project,
-                                        keys,
-                                        corresponding_role(role),
-                                        their_include,
-                                        their_exclude,
-                                        connection_counts::create()));
+      wrapped = make_shared<netsync_session>(this,
+                                             app.opts, app.lua,
+                                             project,
+                                             keys,
+                                             corresponding_role(role),
+                                             their_include,
+                                             their_exclude,
+                                             connection_counts::create());
       break;
     case is_automate:
-      wrapped.reset(new automate_session(app, this, 0, 0));
+      wrapped = make_shared<automate_session>(app, this, nullptr, nullptr);
       break;
     }
 

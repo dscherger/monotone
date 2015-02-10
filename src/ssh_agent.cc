@@ -29,11 +29,11 @@
 #include "unix/ssh_agent_platform.hh"
 #endif
 
+using std::dynamic_pointer_cast;
+using std::make_shared;
+using std::shared_ptr;
 using std::string;
 using std::vector;
-
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 using Botan::RSA_PublicKey;
 using Botan::RSA_PrivateKey;
