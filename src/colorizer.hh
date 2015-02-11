@@ -21,17 +21,17 @@ struct colorizer {
                  reset,
 
                  add,
+                 branch,
                  change,
                  comment,
                  encloser,
+                 graph,
                  important,
-                 log_revision,
                  remove,
                  rename,
                  rev_header,
+                 rev_id,
                  separator,
-                 set,
-                 unset
                 } purpose;
 
   colorizer(bool enable, lua_hooks & lh);

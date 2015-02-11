@@ -6345,7 +6345,6 @@ diff of the changes in each revision. If @option{--colorize} is given
 additionally, the diff output is colored if the underlying terminal
 supports that.
 
-
 If one or more files are given, the command will only log the revisions
 where those files are changed.
 

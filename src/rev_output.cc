@@ -1,4 +1,5 @@
 // Copyright (C) 2010 Derek Scherger <derek@echologic.com>
+//               2015 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -16,11 +17,12 @@
 #include "cert.hh"
 #include "cset.hh"
 #include "dates.hh"
+#include "parallel_iter.hh"
 #include "project.hh"
 #include "rev_output.hh"
 #include "revision.hh"
 #include "roster.hh"
-#include "parallel_iter.hh"
+#include "transforms.hh"
 
 using std::map;
 using std::ostringstream;
@@ -33,7 +35,8 @@ void
 revision_header(revision_id const rid, revision_t const & rev,
                 string const & author, date_t const date,
                 branch_name const & branch, utf8 const & changelog,
-                string const & date_fmt, colorizer const & color, utf8 & header)
+                string const & date_fmt, colorizer const & color,
+                utf8 & header)
 {
   vector<cert> certs;
   key_id empty_key;
@@ -59,14 +62,18 @@ revision_header(revision_id const rid, revision_t const & rev,
 {
   ostringstream out;
 
-  out << color.colorize(string(70, '-'), colorizer::log_revision) << '\n'
-      << color.colorize(_("Revision: "), colorizer::rev_header) << rid << '\n';
+  out << color.colorize(string(70, '-'), colorizer::separator) << '\n'
+      << color.colorize(_("Revision: "), colorizer::rev_header)
+      << color.colorize(encode_hexenc(rid.inner()(),
+                                      rid.inner().made_from),
+                        colorizer::rev_id) << '\n';
 
-  for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
+  for (edge_entry const & e : rev.edges)
     {
-      revision_id parent = edge_old_revision(*i);
+      revision_id parent = edge_old_revision(e);
       if (!null_id(parent))
-        out << color.colorize(_("Parent:   "), colorizer::rev_header) << parent << '\n';
+        out << color.colorize(_("Parent:   "), colorizer::rev_header)
+            << parent << '\n';
     }
 
   cert_name const author(author_cert_name);
@@ -114,7 +121,8 @@ revision_header(revision_id const rid, revision_t const & rev,
         {
           if (need_to_output_heading)
             {
-              out << _("Other certs:") << '\n';
+              out << color.colorize(_("Other certs:"),
+                                    colorizer::rev_header) << '\n';
               need_to_output_heading = false;
             }
 
@@ -127,8 +135,8 @@ revision_header(revision_id const rid, revision_t const & rev,
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == changelog)
       {
-        out << color.colorize(_("Changelog: "), colorizer::rev_header) << "\n\n"
-            << i->value << '\n';
+        out << color.colorize(_("Changelog: "), colorizer::rev_header)
+            << "\n\n" << i->value << '\n';
         if (!i->value().empty() && i->value()[i->value().length()-1] != '\n')
           out << '\n';
       }
@@ -136,8 +144,8 @@ revision_header(revision_id const rid, revision_t const & rev,
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == comment)
       {
-        out << color.colorize(_("Comments: "), colorizer::rev_header) << "\n\n"
-            << i->value << '\n';
+        out << color.colorize(_("Comments: "), colorizer::rev_header)
+            << "\n\n" << i->value << '\n';
         if (!i->value().empty() && i->value()[i->value().length()-1] != '\n')
           out << '\n';
       }
@@ -186,12 +194,12 @@ cset_summary(cset const & cs, colorizer const & color, ostringstream & out)
 
   for (map<pair<file_path, attr_key>, attr_value >::const_iterator
          i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
-        out << color.colorize((F("  attr on  %s\n"
-                                 "      set  %s\n"
-                                 "       to  %s")
-                               % i->first.first % i->first.second
-                               % i->second).str(),
-                              colorizer::set) << '\n';
+    out << (F("  attr on  %s\n"
+              "      set  %s\n"
+              "       to  %s")
+            % i->first.first
+            % color.colorize(i->first.second(), colorizer::add)
+            % i->second).str() << '\n';
 
   // FIXME: naming here could not be more inconsistent:
   //  * the cset calls it attrs_cleared
@@ -201,16 +209,17 @@ cset_summary(cset const & cs, colorizer const & color, ostringstream & out)
 
   for (set<pair<file_path, attr_key> >::const_iterator
          i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
-        out << color.colorize((F("  attr on  %s\n"
-                                 "    unset  %s") % i->first
-                                 % i->second).str(),
-                              colorizer::unset) << '\n';
+    out << (F("  attr on  %s\n"
+              "    unset  %s")
+            % i->first
+            % color.colorize(i->second(), colorizer::remove)).str() << '\n';
 
   out << '\n';
 }
 
 void
-revision_summary(revision_t const & rev, utf8 & summary)
+revision_summary(revision_t const & rev, colorizer const & color,
+                 utf8 & summary)
 {
   ostringstream out;
   revision_id rid = calculate_ident(rev);
@@ -228,7 +237,7 @@ revision_summary(revision_t const & rev, utf8 & summary)
       else
         out << _("Changes against parent ") << parent << "\n\n";
 
-      cset_summary(cs, out);
+      cset_summary(cs, color, out);
     }
   summary = utf8(out.str(), origin::internal);
 }

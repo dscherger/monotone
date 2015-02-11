@@ -458,14 +458,13 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
   bool new_from_db;
   database db(app);
 
-  prepare_diff(app, db, old_roster, new_roster, args, old_from_db, new_from_db, revs);
+  prepare_diff(app, db, old_roster, new_roster, args, old_from_db,
+               new_from_db, revs);
 
   colorizer colorizer(app.opts.colorize, app.lua);
 
   if (app.opts.with_header)
-    {
-      dump_header(revs, old_roster, new_roster, cout, colorizer, true);
-    }
+    dump_header(revs, old_roster, new_roster, cout, colorizer, true);
 
   dump_diffs(app.lua, db, old_roster, new_roster, cout,
              app.opts.diff_format,
@@ -523,7 +522,7 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
 
 static void
 log_certs(vector<cert> const & certs, ostream & os, cert_name const & name,
-          string const date_fmt = "")
+          colorizer const & color, string const date_fmt = "")
 {
   bool first = true;
 
@@ -537,7 +536,12 @@ log_certs(vector<cert> const & certs, ostream & os, cert_name const & name,
             os << ",";
 
           if (date_fmt.empty())
-            os << i->value;
+            {
+              if (name == branch_cert_name)
+                os << color.colorize(i->value(), colorizer::branch);
+              else
+                os << i->value;
+            }
           else
             {
               I(name == date_cert_name);
@@ -596,17 +600,18 @@ log_print_rev (app_state &      app,
 
   if (app.opts.brief)
     {
-      out << color.colorize(encode_hexenc(rid.inner()(), rid.inner().made_from),
-                            colorizer::log_revision);
-      log_certs(certs, out, author_name);
+      out << color.colorize(encode_hexenc(rid.inner()(),
+                                          rid.inner().made_from),
+                            colorizer::rev_id);
+      log_certs(certs, out, author_name, color);
       if (app.opts.no_graph)
-        log_certs(certs, out, date_name, date_fmt);
+        log_certs(certs, out, date_name, color, date_fmt);
       else
         {
           out << '\n';
-          log_certs(certs, out, date_name, date_fmt);
+          log_certs(certs, out, date_name, color, date_fmt);
         }
-      log_certs(certs, out, branch_name);
+      log_certs(certs, out, branch_name, color);
       out << '\n';
     }
   else
@@ -992,7 +997,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     options::opts::brief | options::opts::diffs |
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges | options::opts::no_files |
-    options::opts::no_graph )
+    options::opts::no_graph)
 {
   (void)execid;
 

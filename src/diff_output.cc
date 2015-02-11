@@ -414,20 +414,20 @@ void cxtdiff_hunk_writer::flush_pending_mods()
   // just deletions, prefix with "-"; if both, prefix with "!"
   colorizer::purpose p = colorizer::normal;
   if (inserts.empty() && !deletes.empty())
-  {
-    prefix = "-";
-    p = colorizer::remove;
-  }
+    {
+      prefix = "-";
+      p = colorizer::remove;
+    }
   else if (deletes.empty() && !inserts.empty())
-  {
-    prefix = "+";
-    p = colorizer::add;
-  }
+    {
+      prefix = "+";
+      p = colorizer::add;
+    }
   else
-  {
-    prefix = "!";
-    p = colorizer::change;
-  }
+    {
+      prefix = "!";
+      p = colorizer::change;
+    }
 
   for (vector<size_t>::const_iterator i = deletes.begin();
        i != deletes.end(); ++i)

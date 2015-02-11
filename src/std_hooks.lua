@@ -1575,41 +1575,72 @@ function get_man_page_formatter_command()
 end
 
 function get_output_color(purpose)
-	-- Returns a triple containing the fore color, background color and
-	-- style to use for formatting the output.
-	-- The fore color and background color can be any of the following
-	-- red, green, blue, yellow, cyan, magenta, black, white
-	-- Alternatively, they can be the empty string and Monotone will
-	-- decide.
-	-- Valid values for style are
-	-- none, bold, italic, underline
-	-- Alternatively, it can be the empty string and Monotone will
-	-- decide.
+   -- Returns a triple containing the fore color, background color and
+   -- style to use for formatting the output.
+   --
+   -- The fore color and background color can be any of the following:
+   -- red, green, blue, yellow, cyan, magenta, black, white.
+   -- Alternatively, they can be the empty string and Monotone will
+   -- decide.
+   --
+   -- Valid values for style are: none, bold, italic, underline.
+   -- Alternatively, it can be the empty string and Monotone will
+   -- decide.
 
-	local default_color = { fg = "", bg = "", style = "" }
-	local color_table = 
-	{
-		normal = default_color,
-		
-                add = { fg = "green", bg = "", style = "" },
-                change = { fg = "blue", bg = "", style = "" },
-                comment = { fg = "yellow", bg = "", style = "" },
-                encloser = { fg = "magenta", bg = "", style = "" },
-                important = { fg = "white", bg = "red", style = "" },
-                log_revision = { fg = "", bg = "", style = "bold" },
-                remove = { fg = "red", bg = "", style = "" },
-                rename = { fg = "yellow", bg = "", style = "" },
-                rev_header = { fg = "", bg = "", style = "bold" },
-                separator = { fg = "", bg = "", style = "bold" },
-                set = { fg = "cyan", bg = "", style = "" },
-                unset = { fg = "magenta", bg = "", style = "" }
-	}
+   local default_color = { fg = "", bg = "", style = "" }
+   local color_table = 
+   {
+      normal = default_color,
 
-	local chosen_color = color_table[purpose]
+      -- added lines in 'diff' output and added files/dirs in 'log'
+      add = { fg = "green", bg = "", style = "" },
+
+	  -- branch names
+	  branch = { fg = "yellow", bg = "", style = ""},
+
+      -- changed lines in 'diff' output and modified files in 'log'
+      change = { fg = "cyan", bg = "", style = "" },
+
+	  -- comment lines in 'diff' output
+      comment = { fg = "yellow", bg = "", style = "" },
+
+      -- encloser hint (i.e. function header) in 'diff'
+      encloser = { fg = "yellow", bg = "", style = "bold" },
+
+	  -- asciik graphs
+      graph = { fg = "yellow", bg = "", style = "" },
+
+	  -- currently unused!
+      important = { fg = "white", bg = "red", style = "" },
+
+	  -- deleted lines in 'diff' output and dropped files/dirs in 'log'
+      remove = { fg = "red", bg = "", style = "" },
+
+      -- renamed files or dirs in cset summaries
+      rename = { fg = "yellow", bg = "", style = "" },
+
+	  -- revision header fields in 'log' output
+      rev_header = { fg = "", bg = "", style = "bold" },
+
+	  -- revision ids in 'log', 'diff' and 'asciik'
+      rev_id = { fg = "mangenta", bg = "", style = "" },
+
+	  -- separator between sections of different files in 'diff' and between
+	  -- revisions in 'log' output
+      separator = { fg = "", bg = "", style = "bold" },
+
+      -- attributes set in cset summaries
+      set = { fg = "green", bg = "", style = "" },
+
+	  -- attributes cleared in cset summaries
+      unset = { fg = "red", bg = "", style = "" }
+   }
+
+   local chosen_color = color_table[purpose]
 	
-	if chosen_color == nil then
-		return default_color
-	else
-		return chosen_color.fg, chosen_color.bg, chosen_color.style
-	end
+   if chosen_color == nil then
+      return default_color
+   else
+      return chosen_color.fg, chosen_color.bg, chosen_color.style
+   end
 end

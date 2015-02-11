@@ -1,5 +1,6 @@
 // Copyright (C) 2010, 2011, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2015 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -273,9 +274,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   colorizer color(false, lua);
   revision_summary(rev, color, summary);
 
-  utf8 full_message(changelog() + cancel() + instructions() + editable() + ignored() +
-                    notes() + summary(),
-                    origin::internal);
+  utf8 full_message(changelog() + cancel() + instructions() + editable() +
+                    ignored() + notes() + summary(), origin::internal);
 
   external input_message;
   external output_message;
@@ -1281,7 +1281,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       out << '\n';
 
       if (!cs.empty())
-        cset_summary(cs, out);
+        cset_summary(cs, color, out);
     }
 
   if (!wres->status_map.empty())

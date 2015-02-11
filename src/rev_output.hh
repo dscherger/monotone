@@ -1,4 +1,5 @@
 // Copyright (C) 2010 Derek Scherger <derek@echologic.com>
+//               2015 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -30,10 +31,12 @@ revision_header(revision_id const rid, revision_t const & rev,
                 colorizer const & color, utf8 & header);
 
 void
-cset_summary(cset const & cs, std::ostringstream & out);
+cset_summary(cset const & cs, colorizer const & color,
+             std::ostringstream & out);
 
 void
-revision_summary(revision_t const & rev, colorizer const & color, utf8 & summary);
+revision_summary(revision_t const & rev, colorizer const & color,
+                 utf8 & summary);
 
 #endif  // header guard
 

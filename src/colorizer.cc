@@ -1,4 +1,5 @@
 // Copyright (C) 2010 Thomas Keller <me@thomaskeller.biz>
+//               2015 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -8,6 +9,7 @@
 // PURPOSE.
 
 #include "base.hh"
+
 #include "colorizer.hh"
 #include "platform.hh"
 
@@ -27,50 +29,46 @@ string colorizer::purpose_to_name(colorizer::purpose const p) const
 
     case add:
       return "add";
+    case branch:
+      return "branch";
     case change:
       return "change";
     case comment:
       return "comment";
     case encloser:
       return "encloser";
+    case graph:
+      return "graph";
     case important:
       return "important";
-    case log_revision:
-      return "log_revision";
     case remove:
       return "remove";
     case rename:
       return "rename";
     case rev_header:
       return "rev_header";
+    case rev_id:
+      return "rev_id";
     case separator:
       return "separator";
-    case set:
-      return "set";
-    case unset:
-      return "unset";
 
     default:
       I(false); // should never get here
   }
 }
 
-std::pair<colorizer::purpose, boost::tuple<string, string, string> > colorizer::map_output_color(
-  purpose const p)
+std::pair<colorizer::purpose, boost::tuple<string, string, string> >
+colorizer::map_output_color(purpose const p)
 {
   string fg, bg, style;
   string purpose_name = purpose_to_name(p);
 
+  // the user doesn't need to know about reset - it's an implementation
+  // detail for us to handle
   if (p == reset)
-    {
-      // the user doesn't need to know about reset - it's an implementation
-      // detail for us to handle
-      fg = bg = style = "";
-    }
+    fg = bg = style = "";
   else
-    {
-      lua.hook_get_output_color(purpose_name, fg, bg, style);
-    }
+    lua.hook_get_output_color(purpose_name, fg, bg, style);
 
   return std::make_pair(p, boost::make_tuple(fg_to_code(fg),
                                              bg_to_code(bg),
@@ -148,17 +146,17 @@ colorizer::colorizer(bool enable, lua_hooks & lh)
       colormap.insert(map_output_color(reset));
 
       colormap.insert(map_output_color(add));
+      colormap.insert(map_output_color(branch));
       colormap.insert(map_output_color(change));
       colormap.insert(map_output_color(comment));
       colormap.insert(map_output_color(encloser));
+      colormap.insert(map_output_color(graph));
       colormap.insert(map_output_color(important));
-      colormap.insert(map_output_color(log_revision));
       colormap.insert(map_output_color(remove));
       colormap.insert(map_output_color(rename));
       colormap.insert(map_output_color(rev_header));
+      colormap.insert(map_output_color(rev_id));
       colormap.insert(map_output_color(separator));
-      colormap.insert(map_output_color(set));
-      colormap.insert(map_output_color(unset));
     }
 }
 
