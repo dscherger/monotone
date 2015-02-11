@@ -13,9 +13,13 @@
 #include "colorizer.hh"
 #include "platform.hh"
 
-using std::string;
+using std::get;
 using std::map;
 using std::make_pair;
+using std::make_tuple;
+using std::pair;
+using std::string;
+using std::tuple;
 
 
 string colorizer::purpose_to_name(colorizer::purpose const p) const
@@ -39,6 +43,8 @@ string colorizer::purpose_to_name(colorizer::purpose const p) const
       return "encloser";
     case graph:
       return "graph";
+    case hint:
+      return "hint";
     case important:
       return "important";
     case remove:
@@ -57,7 +63,7 @@ string colorizer::purpose_to_name(colorizer::purpose const p) const
   }
 }
 
-std::pair<colorizer::purpose, boost::tuple<string, string, string> >
+pair<colorizer::purpose, tuple<string, string, string> >
 colorizer::map_output_color(purpose const p)
 {
   string fg, bg, style;
@@ -70,9 +76,9 @@ colorizer::map_output_color(purpose const p)
   else
     lua.hook_get_output_color(purpose_name, fg, bg, style);
 
-  return std::make_pair(p, boost::make_tuple(fg_to_code(fg),
-                                             bg_to_code(bg),
-                                             style_to_code(style)));
+  return make_pair(p, make_tuple(fg_to_code(fg),
+                                 bg_to_code(bg),
+                                 style_to_code(style)));
 }
 
 string colorizer::fg_to_code(string const color) const
@@ -151,6 +157,7 @@ colorizer::colorizer(bool enable, lua_hooks & lh)
       colormap.insert(map_output_color(comment));
       colormap.insert(map_output_color(encloser));
       colormap.insert(map_output_color(graph));
+      colormap.insert(map_output_color(hint));
       colormap.insert(map_output_color(important));
       colormap.insert(map_output_color(remove));
       colormap.insert(map_output_color(rename));
@@ -175,9 +182,9 @@ colorizer::colorize(string const & in, purpose p) const
 string
 colorizer::get_format(purpose const p) const
 {
-  boost::tuple<string, string, string> format = colormap.find(p)->second;
+  tuple<string, string, string> format = colormap.find(p)->second;
 
-  return format.get<0>() + format.get<1>() + format.get<2>();
+  return get<0>(format) + get<1>(format) + get<2>(format);
 }
 
 // Local Variables:

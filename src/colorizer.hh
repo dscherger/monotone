@@ -1,4 +1,5 @@
 // Copyright (C) 2010 Thomas Keller <me@thomaskeller.biz>
+//               2015 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -10,10 +11,11 @@
 #ifndef __COLORIZER_HH__
 #define __COLORIZER_HH__
 
+#include <map>
+#include <tuple>
+
 #include "lua_hooks.hh"
 #include "vocab.hh"
-#include <map>
-#include <boost/tuple/tuple.hpp>
 
 struct colorizer {
 
@@ -26,6 +28,7 @@ struct colorizer {
                  comment,
                  encloser,
                  graph,
+                 hint,
                  important,
                  remove,
                  rename,
@@ -40,12 +43,12 @@ struct colorizer {
   colorize(std::string const & in, purpose p = normal) const;
 
 private:
-  std::map<purpose, boost::tuple<std::string, std::string, std::string> >
+  std::map<purpose, std::tuple<std::string, std::string, std::string> >
     colormap;
   lua_hooks & lua;
   bool enabled;
 
-  std::pair<purpose, boost::tuple<std::string, std::string, std::string> >
+  std::pair<purpose, std::tuple<std::string, std::string, std::string> >
   map_output_color(purpose const p);
 
   std::string fg_to_code(std::string const color) const;

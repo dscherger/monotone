@@ -1605,13 +1605,16 @@ function get_output_color(purpose)
       comment = { fg = "yellow", bg = "", style = "" },
 
       -- encloser hint (i.e. function header) in 'diff'
-      encloser = { fg = "yellow", bg = "", style = "bold" },
+      encloser = { fg = "cyan", bg = "", style = "bold" },
 
 	  -- asciik graphs
       graph = { fg = "yellow", bg = "", style = "" },
 
+      -- hints in 'status'
+      hint = { fg = "", bg = "", style = "italic" },
+
 	  -- currently unused!
-      important = { fg = "white", bg = "red", style = "" },
+      important = { fg = "white", bg = "red", style = "bold" },
 
 	  -- deleted lines in 'diff' output and dropped files/dirs in 'log'
       remove = { fg = "red", bg = "", style = "" },
@@ -1622,12 +1625,12 @@ function get_output_color(purpose)
 	  -- revision header fields in 'log' output
       rev_header = { fg = "", bg = "", style = "bold" },
 
-	  -- revision ids in 'log', 'diff' and 'asciik'
-      rev_id = { fg = "mangenta", bg = "", style = "" },
+	  -- revision ids in 'log', 'diff' and 'status'
+      rev_id = { fg = "magenta", bg = "", style = "" },
 
 	  -- separator between sections of different files in 'diff' and between
 	  -- revisions in 'log' output
-      separator = { fg = "", bg = "", style = "bold" },
+      separator = { fg = "yellow", bg = "", style = "bold" },
 
       -- attributes set in cset summaries
       set = { fg = "green", bg = "", style = "" },

@@ -70,7 +70,7 @@ dump_diff(lua_hooks & lua,
           bool external_diff_args_given,
           string external_diff_args,
           string const & encloser,
-          colorizer const & colorizer,
+          colorizer const & color,
           ostream & output)
 {
   if (diff_format == external_diff)
@@ -98,7 +98,7 @@ dump_diff(lua_hooks & lua,
       // 60 is somewhat arbitrary, but less than 80
       string patch_sep = string(60, '=');
       output << patch_sep << '\n';
-
+          
       // see the big comment in diff_output.cc about what paths should be
       string left = left_path.as_internal();
       if (left.empty())
@@ -113,7 +113,7 @@ dump_diff(lua_hooks & lua,
                 left_data, right_data,
                 is_manual_merge,
                 output, diff_format,
-                encloser, colorizer);
+                encloser, color);
     }
 
 }

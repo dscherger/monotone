@@ -105,7 +105,7 @@ revision_header(revision_id const rid, revision_t const & rev,
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == branch)
       out << color.colorize(_("Branch:   "), colorizer::rev_header)
-          << i->value << '\n';
+          << color.colorize(i->value(), colorizer::branch) << '\n';
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == tag)
@@ -164,42 +164,45 @@ cset_summary(cset const & cs, colorizer const & color, ostringstream & out)
   if (cs.empty())
     out << _("  no changes") << '\n';
 
-  for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
-       i != cs.nodes_deleted.end(); ++i)
-        out << color.colorize((F("  dropped  %s") %*i).str(),
-                              colorizer::remove) << '\n';
+  for (file_path const & path : cs.nodes_deleted)
+    out << (F("  dropped  %s")
+            % color.colorize((F("%s") % path).str(),
+                             colorizer::remove)).str()
+        << '\n';
 
-  for (map<file_path, file_path>::const_iterator
-         i = cs.nodes_renamed.begin();
-       i != cs.nodes_renamed.end(); ++i)
-        out << color.colorize((F("  renamed  %s\n"
-                                 "       to  %s") % i->first
-                                 % i->second).str(),
-                              colorizer::rename) << '\n';
+  for (pair<file_path, file_path> const & p : cs.nodes_renamed)
+    out << (F("  renamed  %s\n"
+              "       to  %s")
+            % color.colorize((F("%s") % p.first).str(),
+                             colorizer::rename)
+            % color.colorize((F("%s") % p.second).str(),
+                             colorizer::rename)).str()
+        << '\n';
 
-  for (set<file_path>::const_iterator i = cs.dirs_added.begin();
-       i != cs.dirs_added.end(); ++i)
-        out << color.colorize((F("  added    %s") % *i).str(),
-                              colorizer::add) << '\n';
+  for (file_path const & path : cs.dirs_added)
+    out << (F("  added    %s")
+            % color.colorize((F("%s") % path).str(), colorizer::add)).str()
+        << '\n';
 
-  for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
-       i != cs.files_added.end(); ++i)
-        out << color.colorize((F("  added    %s") % i->first).str(),
-                              colorizer::add) << '\n';
+  for (pair<file_path, file_id> const & p : cs.files_added)
+    out << (F("  added    %s")
+            % color.colorize((F("%s") % p.first).str(),
+                             colorizer::add)).str()
+        << '\n';
 
-  for (map<file_path, pair<file_id, file_id> >::const_iterator
-         i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
-        out << color.colorize((F("  patched  %s") % i->first).str(),
-                              colorizer::change) << '\n';
+  for (pair<file_path, pair<file_id, file_id>> const & p : cs.deltas_applied)
+    out << (F("  patched  %s")
+            % color.colorize((F("%s") % p.first).str(),
+                             colorizer::change)).str()
+        << '\n';
 
-  for (map<pair<file_path, attr_key>, attr_value >::const_iterator
-         i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
+  for (pair<pair<file_path, attr_key>, attr_value> const & p : cs.attrs_set)
     out << (F("  attr on  %s\n"
               "      set  %s\n"
               "       to  %s")
-            % i->first.first
-            % color.colorize(i->first.second(), colorizer::add)
-            % i->second).str() << '\n';
+            % p.first.first
+            % color.colorize(p.first.second(), colorizer::add)
+            % color.colorize(p.second(), colorizer::add)).str() << '\n';
 
   // FIXME: naming here could not be more inconsistent:
   //  * the cset calls it attrs_cleared
@@ -207,12 +210,11 @@ cset_summary(cset const & cs, colorizer const & color, ostringstream & out)
   //  * here it is called unset
   //  * the revision text uses attr clear
 
-  for (set<pair<file_path, attr_key> >::const_iterator
-         i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
+  for (pair<file_path, attr_key> const & p : cs.attrs_cleared)
     out << (F("  attr on  %s\n"
               "    unset  %s")
-            % i->first
-            % color.colorize(i->second(), colorizer::remove)).str() << '\n';
+            % p.first
+            % color.colorize(p.second(), colorizer::remove)).str() << '\n';
 
   out << '\n';
 }
@@ -224,18 +226,20 @@ revision_summary(revision_t const & rev, colorizer const & color,
   ostringstream out;
   revision_id rid = calculate_ident(rev);
 
-  for (edge_map::const_iterator i = rev.edges.begin();
-       i != rev.edges.end(); ++i)
+  for (edge_entry const & edge : rev.edges)
     {
-      revision_id parent = edge_old_revision(*i);
-      cset const & cs = edge_changes(*i);
+      revision_id parent = edge_old_revision(edge);
+      cset const & cs = edge_changes(edge);
 
       // A colon at the end of this string looked nicer, but it made
       // double-click copying from terminals annoying.
       if (null_id(parent))
         out << _("Changes") << "\n\n";
       else
-        out << _("Changes against parent ") << parent << "\n\n";
+        out << _("Changes against parent ")
+            << color.colorize(encode_hexenc(parent.inner()(),
+                                            parent.inner().made_from),
+                              colorizer::rev_id) << "\n\n";
 
       cset_summary(cs, color, out);
     }
