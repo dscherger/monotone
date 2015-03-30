@@ -9,6 +9,9 @@
 // PURPOSE.
 
 #include "../../../src/base.hh"
+
+#include <iostream>
+
 #include "../unit_tests.hh"
 #include "../../../src/merge_content.hh"
 

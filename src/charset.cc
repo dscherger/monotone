@@ -10,6 +10,9 @@
 #include "base.hh"
 #include "vector.hh"
 
+#include <cstdlib>  // for std::free, to properly release memory allocated
+                    // by libidn
+
 #include <idna.h>
 #include <stringprep.h>
 

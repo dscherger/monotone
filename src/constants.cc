@@ -90,12 +90,6 @@ static_assert(sizeof(u16) == 2, "u16 is not exactly 16 bits wide");
 static_assert(sizeof(u32) == 4, "u32 is not exactly 32 bits wide");
 static_assert(sizeof(u64) == 8, "u64 is not exactly 64 bits wide");
 
-// a couple 
-static_assert(std::numeric_limits<s64>::max() == INT64_MAX,
-              "type of constant with LL-postfix doesn't reach INT64_MAX");
-static_assert(std::numeric_limits<decltype(0LL) >::max() >= INT64_MAX,
-              "how to write a 64-bit constant?");
-
 // constraint checks for relations between constants above
 using namespace constants;
 static_assert(merkle_num_tree_levels > 0,
