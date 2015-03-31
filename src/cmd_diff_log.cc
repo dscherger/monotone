@@ -461,7 +461,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
   prepare_diff(app, db, old_roster, new_roster, args, old_from_db,
                new_from_db, revs);
 
-  colorizer colorizer(app.opts.colorize, app.lua);
+  colorizer colorizer(!app.opts.nocolorize, app.lua);
 
   if (app.opts.with_header)
     dump_header(revs, old_roster, new_roster, cout, colorizer, true);
@@ -866,7 +866,7 @@ log_common (app_state & app,
 
   set<revision_id> seen;
 
-  colorizer color(app.opts.colorize && !automate, app.lua);
+  colorizer color(!app.opts.nocolorize && !automate, app.lua);
   // this is instantiated even when not used, but it's lightweight
   asciik graph(output, color);
 

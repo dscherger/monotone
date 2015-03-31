@@ -969,7 +969,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   database db(app);
   project_t project(db);
   workspace work(app);
-  colorizer color(app.opts.colorize, app.lua);
+  colorizer color(!app.opts.nocolorize, app.lua);
 
   parent_map old_rosters = work.get_parent_rosters(db);
   I(!old_rosters.empty());
