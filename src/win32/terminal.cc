@@ -16,9 +16,10 @@
 
 #include "../platform.hh"
 
-void initialize_pager()
+int initialize_pager()
 {
   // no pager support, therefore a no-op
+  return 0;
 }
 
 bool have_smart_terminal()

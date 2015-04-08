@@ -13,6 +13,7 @@
 
 #include <csignal>
 #include <cstdlib>
+#include <cerrno>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
