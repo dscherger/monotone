@@ -286,6 +286,8 @@ GROUPED_SIMPLE_OPTION(date_formats, no_format_dates,
                       "no-format-dates", bool,
                       gettext_noop("print date certs exactly as stored in the database"))
 
+GROUPED_SIMPLE_OPTION(globals, nocolorize, "no-colorize/colorize", bool,
+                      gettext_noop("colorize output"))
 
 OPTVAR(globals, db_type, dbname_type, )
 OPTVAR(globals, std::string, dbname_alias, )

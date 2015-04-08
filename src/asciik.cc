@@ -133,10 +133,11 @@ using std::find;
 using std::reverse;
 using std::distance;
 
-static revision_id ghost; // valid but empty revision_id to be used as ghost value
+static revision_id ghost; // valid but empty revision_id to be used as ghost
+                          // value
 
-asciik::asciik(ostream & os, size_t min_width)
-  : width(min_width), output(os)
+asciik::asciik(ostream & os, colorizer const & color, size_t min_width)
+  : width(min_width), output(os), color(color)
 {
 }
 
@@ -250,10 +251,13 @@ asciik::draw(size_t const curr_items,
 
   // prints it out
   //TODO convert line/interline/interline2 from ASCII to system charset
-  output << line << "  " << lines[0] << '\n';
-  output << interline << "  " << lines[1] << '\n';
+  output << color.colorize(line, colorizer::graph)
+         << "  " << lines[0] << '\n';
+  output << color.colorize(interline, colorizer::graph)
+         << "  " << lines[1] << '\n';
   for (int i = 2; i < num_lines; ++i)
-    output << interline2 << "  " << lines[i] << '\n';
+    output << color.colorize(interline2, colorizer::graph)
+           << "  " << lines[i] << '\n';
 }
 
 bool
@@ -387,7 +391,8 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
   toposort(db, revs, sorted);
   reverse(sorted.begin(), sorted.end());
 
-  asciik graph(std::cout, 10);
+  colorizer color(!app.opts.nocolorize, app.lua);
+  asciik graph(std::cout, color, 10);
 
   for (vector<revision_id>::const_iterator rev = sorted.begin();
        rev != sorted.end(); ++rev)
