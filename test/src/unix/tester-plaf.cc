@@ -340,7 +340,10 @@ static bool acquire_token()
 static void release_token()
 {
   if (tokens_held > 1)
-    write(jobsvr_write, "+", 1);
+    {
+      ssize_t nw = write(jobsvr_write, "+", 1);
+      I(nw == 1);
+    }
   I(tokens_held > 0);
   tokens_held--;
 }
@@ -385,7 +388,10 @@ void prepare_for_parallel_testcases(int jobs, int jread, int jwrite)
       // can ignore errors; the worst case is we don't parallelize as much
       // as was requested.
       for (int i = 0; i < jobs-1; i++)
-        write(jwrite, "+", 1);
+        {
+          ssize_t nw = write(jwrite, "+", 1);
+          I(nw == 1);
+        }
     }
 
   I(jread != -1 && jwrite != -1);
