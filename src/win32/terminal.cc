@@ -16,6 +16,11 @@
 
 #include "../platform.hh"
 
+void initialize_pager()
+{
+  // no pager support, therefore a no-op
+}
+
 bool have_smart_terminal()
 {
   std::string term;

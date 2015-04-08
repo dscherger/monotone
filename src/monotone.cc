@@ -278,6 +278,13 @@ cpp_main(int argc, char ** argv)
 
           app.lua.hook_note_mtn_startup(args);
 
+          // possibly redirect our output to a pager
+          if (initialize_pager() != 0)
+            {
+              L(FL("Failed to initialize the terminal"));
+              return ui.fatal_exception();
+            }
+
           // stop here if they asked for help
           if (app.opts.help)
             throw usage(cmd_id);
