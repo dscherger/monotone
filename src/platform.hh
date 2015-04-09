@@ -42,6 +42,7 @@ std::string munge_argv_into_cmdline(const char* const argv[]);
 #endif
 
 // Terminal and pager functions
+void initialize_terminal();
 int initialize_pager();
 #if !defined(_WIN32) && !defined(_WIN64)
 void finalize_pager();

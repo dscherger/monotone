@@ -53,10 +53,14 @@ CMD(db_init, "init", "", CMD_REF(db), "",
   db.initialize();
 }
 
+CMD_PRESET_OPTIONS(db_info)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(db_info, "info", "", CMD_REF(db), "",
     N_("Shows information about the database"),
     "",
-    options::opts::full)
+    options::opts::full | options::opts::pager)
 {
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
@@ -94,12 +98,16 @@ CMD(db_fix_certs, "fix_certs", "", CMD_REF(db), "",
   db.fix_bad_certs(app.opts.drop_bad_certs);
 }
 
+CMD_PRESET_OPTIONS(db_dump)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(db_dump, "dump", "", CMD_REF(db), "",
     N_("Dumps the contents of the database"),
     N_("Generates a list of SQL instructions that represent the whole "
        "contents of the database.  The resulting output is useful to later "
        "restore the database from a text file that serves as a backup."),
-    options::opts::none)
+    options::opts::pager)
 {
   E(args.size() == 0, origin::user,
     F("no arguments needed"));

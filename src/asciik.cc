@@ -370,10 +370,14 @@ asciik::print(revision_id const & rev,
     }
 }
 
+CMD_PRESET_OPTIONS(asciik)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
     N_("Prints an ASCII representation of the revisions' graph"),
     "",
-    options::opts::none)
+    options::opts::pager)
 {
   E(args.size() == 1, origin::user,
     F("wrong argument count"));

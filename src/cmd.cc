@@ -221,6 +221,16 @@ namespace commands {
     // we don't want the options to be reset, so don't destruct this
     new options_applicator(app.opts, options_applicator::for_primary_cmd);
 
+    // possibly initialize the pager
+    if (app.opts.pager)
+      {
+        if (initialize_pager() != 0)
+          {
+            L(FL("Failed to initialize the pager."));
+            throw ui.fatal_exception();
+          }
+      }
+
     cmd->exec(app, ident, args);
   }
 

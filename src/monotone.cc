@@ -278,24 +278,24 @@ cpp_main(int argc, char ** argv)
 
           app.lua.hook_note_mtn_startup(args);
 
-          // possibly redirect our output to a pager
-#if 0
-          if (initialize_pager() != 0)
-            {
-              L(FL("Failed to initialize the terminal"));
-              return ui.fatal_exception();
-            }
-#endif
+          // query terminal capabilities
+          initialize_terminal();
 
           // stop here if they asked for help
           if (app.opts.help)
-            throw usage(cmd_id);
+            {
+              if (initialize_pager() != 0)
+                {
+                  L(FL("Failed to initialize the pager."));
+                  throw ui.fatal_exception();
+                }
+              throw usage(cmd_id);
+            }
 
           // main options processed, now invoke the
           // sub-command w/ remaining args
           if (cmd_id.empty())
             throw usage(commands::command_id());
-
 
           // as soon as a command requires a workspace, this is set to true
           workspace::used = false;

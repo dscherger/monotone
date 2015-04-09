@@ -1085,11 +1085,15 @@ show_conflicts_core (database & db,
     }
 }
 
+CMD_PRESET_OPTIONS(show_conflicts)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(show_conflicts, "show_conflicts", "", CMD_REF(informative), N_("REV REV"),
     N_("Shows what conflicts need resolution between two revisions"),
     N_("The conflicts are calculated based on the two revisions given in "
        "the REV parameters."),
-    options::opts::none)
+    options::opts::pager)
 {
   database db(app);
   project_t project(db);
@@ -1445,10 +1449,14 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[PATH...]"),
   }
 }
 
+CMD_PRESET_OPTIONS(heads)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(heads, "heads", "", CMD_REF(tree), "",
     N_("Shows unmerged head revisions of a branch"),
     "",
-    options::opts::branch)
+    options::opts::branch | options::opts::pager)
 {
   set<revision_id> heads;
   if (!args.empty())
@@ -1475,10 +1483,14 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
     cout << describe_revision(app.opts, app.lua, project, *i) << '\n';
 }
 
+CMD_PRESET_OPTIONS(get_roster)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
     N_("Dumps the roster associated with a given identifier"),
     N_("If no REVID is given, the workspace is used."),
-    options::opts::none)
+    options::opts::pager)
 {
   database db(app);
   roster_t roster;

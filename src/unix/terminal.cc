@@ -53,14 +53,17 @@ child_signal(int signo)
     }
 }
 
-int initialize_pager()
+void initialize_terminal()
 {
   // Remember the original terminal width and smart terminal values.
   I(!terminal_initialized);
   _terminal_width = terminal_width();
   _have_smart_terminal = have_smart_terminal();
   terminal_initialized = true;
+}
 
+int initialize_pager()
+{
   if (!_have_smart_terminal)
     return 0;
 

@@ -534,20 +534,29 @@ revert(app_state & app,
   work.maybe_update_inodeprints(db, mask);
 }
 
+CMD_PRESET_OPTIONS(revert)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
     N_("Reverts files and/or directories"),
     N_("In order to revert the entire workspace, specify '.' as the "
        "file name."),
-    options::opts::depth | options::opts::exclude | options::opts::missing)
+    options::opts::depth | options::opts::exclude | options::opts::missing |
+    options::opts::pager)
 {
   revert(app, args, false);
 }
 
+CMD_PRESET_OPTIONS(undrop)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(undrop, "undrop", "", CMD_REF(workspace), N_("PATH..."),
     N_("Reverses a mistaken 'drop'"),
     N_("If the file was deleted from the workspace, this is the same as 'revert'. "
        "Otherwise, it just removes the 'drop' from the manifest."),
-    options::opts::none)
+    options::opts::pager)
 {
   revert(app, args, true);
 }
@@ -703,10 +712,14 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
   updater.maybe_do_update();
 }
 
+CMD_PRESET_OPTIONS(mkdir)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(mkdir, "mkdir", "", CMD_REF(workspace), N_("[DIRECTORY...]"),
     N_("Creates directories and adds them to the workspace"),
     "",
-    options::opts::no_ignore)
+    options::opts::no_ignore | options::opts::pager)
 {
   if (args.size() < 1)
     throw usage(execid);
@@ -778,12 +791,13 @@ void perform_add(app_state & app,
 CMD_PRESET_OPTIONS(add)
 {
   opts.recursive=false; // match 'ls unknown' and 'add --unknown --recursive'
+  opts.pager = have_smart_terminal();
 }
 CMD(add, "add", "", CMD_REF(workspace), N_("[PATH]..."),
     N_("Adds files to the workspace"),
     "",
     options::opts::unknown | options::opts::no_ignore |
-    options::opts::recursive)
+    options::opts::recursive | options::opts::pager)
 {
   if (!app.opts.unknown && (args.size() < 1))
     throw usage(execid);
@@ -819,10 +833,16 @@ void perform_drop(app_state & app,
   work.perform_deletions(db, paths,
                              app.opts.recursive, app.opts.bookkeep_only);
 }
+
+CMD_PRESET_OPTIONS(drop)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
     N_("Drops files from the workspace"),
     "",
-    options::opts::bookkeep_only | options::opts::missing | options::opts::recursive)
+    options::opts::bookkeep_only | options::opts::missing |
+    options::opts::recursive | options::opts::pager)
 {
   if (!app.opts.missing && (args.size() < 1))
     throw usage(execid);
@@ -833,13 +853,16 @@ CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
   perform_drop(app, db, work, args_to_paths(args));
 }
 
-
+CMD_PRESET_OPTIONS(rename)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(rename, "rename", "mv", CMD_REF(workspace),
     N_("SRC DEST\n"
        "SRC1 [SRC2 [...]] DEST_DIR"),
     N_("Renames entries in the workspace"),
     "",
-    options::opts::bookkeep_only)
+    options::opts::bookkeep_only | options::opts::pager)
 {
   if (args.size() < 2)
     throw usage(execid);
@@ -868,7 +891,10 @@ CMD(rename, "rename", "mv", CMD_REF(workspace),
   work.perform_rename(db, src_paths, dst_path, app.opts.bookkeep_only);
 }
 
-
+CMD_PRESET_OPTIONS(pivot_root)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
     N_("Renames the root directory"),
     N_("After this command, the directory that currently "
@@ -877,7 +903,8 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
        "that is currently the root "
        "directory will have name PUT_OLD.\n"
        "Use of '--bookkeep-only' is NOT recommended."),
-    options::opts::bookkeep_only | options::opts::move_conflicting_paths)
+    options::opts::bookkeep_only | options::opts::move_conflicting_paths |
+    options::opts::pager)
 {
   if (args.size() != 2)
     throw usage(execid);
@@ -949,10 +976,14 @@ show_branch_status(map<branch_name, set<revision_id>> const & div_heads,
     }
 }
 
+CMD_PRESET_OPTIONS(status)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
     N_("Shows workspace's status information"),
     "",
-    options::opts::depth | options::opts::exclude)
+    options::opts::depth | options::opts::exclude | options::opts::pager)
 {
   database db(app);
   project_t project(db);
@@ -1411,13 +1442,17 @@ checkout_common(app_state & app,
   guard.commit();
 }
 
+CMD_PRESET_OPTIONS(checkout)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
     N_("Checks out a revision from the database into a directory"),
     N_("If a revision is given, that's the one that will be checked out.  "
        "Otherwise, it will be the head of the branch (given or implicit).  "
        "If no directory is given, the branch name will be used as directory."),
     options::opts::branch | options::opts::revision |
-    options::opts::move_conflicting_paths)
+    options::opts::move_conflicting_paths | options::opts::pager)
 {
   if (args.size() > 1 || app.opts.revision.size() > 1)
     throw usage(execid);
@@ -1488,12 +1523,16 @@ drop_attr(app_state & app, args_vector const & args)
     (make_revision_for_workspace(work.get_parent_rosters(db), new_roster));
 }
 
+CMD_PRESET_OPTIONS(attr_drop)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
     N_("Removes attributes from a file"),
     N_("If no attribute is specified, this command removes all attributes "
        "attached to the file given in PATH.  Otherwise only removes the "
        "attribute specified in ATTR."),
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() != 1 && args.size() != 2)
     throw usage(execid);
@@ -1501,12 +1540,16 @@ CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
   drop_attr(app, args);
 }
 
+CMD_PRESET_OPTIONS(attr_get)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
     N_("Gets the values of a file's attributes"),
     N_("If no attribute is specified, this command prints all attributes "
        "attached to the file given in PATH.  Otherwise it only prints the "
        "attribute specified in ATTR."),
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() != 1 && args.size() != 2)
     throw usage(execid);
@@ -1582,11 +1625,15 @@ set_attr(app_state & app, args_vector const & args)
   work.put_work_rev(make_revision_for_workspace(parents, new_roster));
 }
 
+CMD_PRESET_OPTIONS(attr_set)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
     N_("Sets an attribute on a file"),
     N_("Sets the attribute given on ATTR to the value specified in VALUE "
        "for the file mentioned in PATH."),
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() != 3)
     throw usage(execid);
@@ -2300,12 +2347,16 @@ CMD_GROUP(bisect, "bisect", "", CMD_REF(informative),
              "and untested subsets and successively narrow the untested set "
              "to find the first revision that introduced some change."));
 
+CMD_PRESET_OPTIONS(reset)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(reset, "reset", "", CMD_REF(bisect), "",
     N_("Reset the current bisection search"),
     N_("Update the workspace back to the revision from which the bisection "
        "was started and remove all current search information, allowing a new "
        "search to be started."),
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() != 0)
     throw usage(execid);

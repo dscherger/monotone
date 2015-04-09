@@ -425,6 +425,7 @@ void dump_header(std::string const & revs,
 CMD_PRESET_OPTIONS(diff)
 {
   opts.with_header = true;
+  opts.pager = have_smart_terminal();
 }
 CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
     N_("Shows current differences"),
@@ -435,7 +436,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
        "between them is given.  If no format is specified, unified is "
        "used by default."),
     options::opts::revision | options::opts::depth | options::opts::exclude |
-    options::opts::diff_options)
+    options::opts::diff_options | options::opts::pager)
 {
   (void)execid;
 
@@ -449,12 +450,11 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
   bool new_from_db;
   database db(app);
 
-  prepare_diff(app, db, old_roster, new_roster, args, old_from_db, new_from_db, revs);
+  prepare_diff(app, db, old_roster, new_roster, args,
+               old_from_db, new_from_db, revs);
 
   if (app.opts.with_header)
-    {
-      dump_header(revs, old_roster, new_roster, cout, true);
-    }
+    dump_header(revs, old_roster, new_roster, cout, true);
 
   dump_diffs(app.lua, db, old_roster, new_roster, cout,
              app.opts.diff_format,
@@ -961,6 +961,10 @@ log_common (app_state & app,
     }
 }
 
+CMD_PRESET_OPTIONS(log)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     N_("Prints selected history in forward or reverse order"),
     N_("This command prints selected history in forward or reverse order, "
@@ -970,7 +974,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     options::opts::brief | options::opts::diffs |
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges | options::opts::no_files |
-    options::opts::no_graph)
+    options::opts::no_graph | options::opts::pager)
 {
   (void)execid;
 

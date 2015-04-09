@@ -546,6 +546,9 @@ OPTION(verbosity, reallyquiet, false, "reallyquiet",
 SIMPLE_OPTION(full, "full/concise", bool,
        gettext_noop("print detailed information"))
 
+SIMPLE_OPTION(pager, "pager/no-pager", bool,
+              gettext_noop("automatically run the output through a pager (default if the output is a terminal)"))
+
 SIMPLE_OPTION(formatted, "formatted/plain", bool,
               gettext_noop("automatically run the output through nroff (default if the output is a terminal)"))
 

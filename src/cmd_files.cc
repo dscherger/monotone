@@ -90,10 +90,14 @@ CMD(fmerge, "fmerge", "", CMD_REF(debug),
 
 }
 
+CMD_PRESET_OPTIONS(fdiff)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
     N_("Differences 2 files and outputs the result"),
     "",
-    options::opts::diff_options)
+    options::opts::diff_options | options::opts::pager)
 {
   if (args.size() != 4)
     throw usage(execid);
@@ -130,11 +134,15 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
             cout, app.opts.diff_format, pattern);
 }
 
+CMD_PRESET_OPTIONS(annotate)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
     N_("Prints an annotated copy of a file"),
     N_("Calculates and prints an annotated copy of the given file from "
        "the specified REVISION."),
-    options::opts::revision | options::opts::revs_only)
+    options::opts::revision | options::opts::revs_only | options::opts::pager)
 {
   revision_id rid;
   database db(app);
@@ -270,12 +278,16 @@ dump_file(database & db, std::ostream & output, revision_id rid, utf8 filename)
   dump_file(db, output, file_node->content);
 }
 
+CMD_PRESET_OPTIONS(cat)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(cat, "cat", "", CMD_REF(informative),
     N_("FILENAME"),
     N_("Prints a file from the database"),
     N_("Fetches the given file FILENAME from the database and prints it "
        "to the standard output."),
-    options::opts::revision)
+    options::opts::revision | options::opts::pager)
 {
   if (args.size() != 1)
     throw usage(execid);

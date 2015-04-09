@@ -96,10 +96,14 @@ namespace {
   }
 }
 
+CMD_PRESET_OPTIONS(certs)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(certs, "certs", "", CMD_REF(list), "REVID",
     N_("Lists certificates attached to a revision"),
     "",
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() != 1)
     throw usage(execid);
@@ -203,11 +207,15 @@ CMD(certs, "certs", "", CMD_REF(list), "REVID",
   guard.commit();
 }
 
+CMD_PRESET_OPTIONS(duplicates)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(duplicates, "duplicates", "", CMD_REF(list), "",
     N_("Lists duplicate files in the specified revision."
        " If no revision is specified, use the workspace"),
     "",
-    options::opts::revision)
+    options::opts::revision | options::opts::pager)
 {
   if (!args.empty())
     throw usage(execid);
@@ -348,10 +356,14 @@ namespace {
   }
 }
 
+CMD_PRESET_OPTIONS(keys)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
     N_("Lists keys that match a pattern"),
     "",
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() > 1)
     throw usage(execid);
@@ -470,10 +482,14 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
 
 }
 
+CMD_PRESET_OPTIONS(branches)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
     N_("Lists branches in the database that match a pattern"),
     "",
-    options::opts::exclude)
+    options::opts::exclude | options::opts::pager)
 {
   globish inc("*", origin::internal);
   if (args.size() == 1)
@@ -493,10 +509,14 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
       cout << *i << '\n';
 }
 
+CMD_PRESET_OPTIONS(epochs)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
     N_("Lists the current epoch of branches that match a pattern"),
     "",
-    options::opts::none)
+    options::opts::pager)
 {
   database db(app);
   map<branch_name, epoch_data> epochs;
@@ -529,10 +549,14 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
     }
 }
 
+CMD_PRESET_OPTIONS(tags)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
     N_("Lists all tags in the database"),
     "",
-    options::opts::exclude)
+    options::opts::exclude | options::opts::pager)
 {
   globish inc("*", origin::internal);
   if (args.size() == 1)
@@ -579,10 +603,14 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
     }
 }
 
+CMD_PRESET_OPTIONS(vars)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
     N_("Lists variables in the whole database or a domain"),
     "",
-    options::opts::none)
+    options::opts::pager)
 {
   bool filterp;
   var_domain filter;
@@ -659,20 +687,28 @@ print_workspace_info(database & db, lua_hooks & lua,
       out << indent << F("no known valid workspaces") << '\n';
 }
 
+CMD_PRESET_OPTIONS(workspaces)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(workspaces, "workspaces", "", CMD_REF(list), "",
     N_("Lists known workspaces of a specified database"),
     "",
-    options::opts::none)
+    options::opts::pager)
 {
   database db(app.opts, app.lua);
   db.ensure_open();
   print_workspace_info(db, app.lua, cout);
 }
 
+CMD_PRESET_OPTIONS(databases)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(databases, "databases", "dbs", CMD_REF(list), "",
     N_("Lists managed databases and their known workspaces"),
     "",
-    options::opts::none)
+    options::opts::pager)
 {
   vector<system_path> search_paths, files, dirs;
 
@@ -738,10 +774,14 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
     }
 }
 
+CMD_PRESET_OPTIONS(known)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(known, "known", "", CMD_REF(list), "",
     N_("Lists workspace files that belong to the current branch"),
     "",
-    options::opts::depth | options::opts::exclude)
+    options::opts::depth | options::opts::exclude | options::opts::pager)
 {
   database db(app);
   workspace work(app);
@@ -798,11 +838,13 @@ static void get_unknown_ignored(app_state & app,
 CMD_PRESET_OPTIONS(unknown)
 {
   opts.recursive=true;
+  opts.pager = have_smart_terminal();
 }
 CMD(unknown, "unknown", "", CMD_REF(list), "[PATH]",
     N_("Lists workspace files that are unknown in the current branch"),
     "",
-    options::opts::depth | options::opts::exclude | options::opts::recursive)
+    options::opts::depth | options::opts::exclude | options::opts::recursive |
+    options::opts::pager)
 {
   set<file_path> unknown, _;
   get_unknown_ignored(app, args, app.opts.recursive, unknown, _);
@@ -814,11 +856,13 @@ CMD(unknown, "unknown", "", CMD_REF(list), "[PATH]",
 CMD_PRESET_OPTIONS(ignored)
 {
   opts.recursive=true;
+  opts.pager = have_smart_terminal();
 }
 CMD(ignored, "ignored", "", CMD_REF(list), "[PATH]",
     N_("Lists workspace files that are ignored in the current branch"),
     "",
-    options::opts::depth | options::opts::exclude | options::opts::recursive)
+    options::opts::depth | options::opts::exclude | options::opts::recursive |
+    options::opts::pager)
 {
   set<file_path> _, ignored;
   get_unknown_ignored(app, args, app.opts.recursive, _, ignored);
@@ -827,10 +871,14 @@ CMD(ignored, "ignored", "", CMD_REF(list), "[PATH]",
        ostream_iterator<file_path>(cout, "\n"));
 }
 
+CMD_PRESET_OPTIONS(missing)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(missing, "missing", "", CMD_REF(list), "",
     N_("Lists files that belong to the branch but are not in the workspace"),
     "",
-    options::opts::depth | options::opts::exclude)
+    options::opts::depth | options::opts::exclude | options::opts::pager)
 {
   database db(app);
   workspace work(app);
@@ -846,11 +894,14 @@ CMD(missing, "missing", "", CMD_REF(list), "",
        ostream_iterator<file_path>(cout, "\n"));
 }
 
-
+CMD_PRESET_OPTIONS(changed)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(changed, "changed", "", CMD_REF(list), "[PATH...]",
     N_("Lists files that have changed with respect to the current revision"),
     "",
-    options::opts::depth | options::opts::exclude)
+    options::opts::depth | options::opts::exclude | options::opts::pager)
 {
   database db(app);
   workspace work(app);
