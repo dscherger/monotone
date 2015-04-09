@@ -14,6 +14,7 @@
 #include "annotate.hh"
 #include "revision.hh"
 #include "cmd.hh"
+#include "colorizer.hh"
 #include "diff_output.hh"
 #include "merge_content.hh"
 #include "file_io.hh"
@@ -131,7 +132,8 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
             src_id, dst_id,
             src.inner(), dst.inner(),
             false, // is_manual_merge
-            cout, app.opts.diff_format, pattern);
+            cout, app.opts.diff_format, 
+            pattern, colorizer(!app.opts.nocolorize, app.lua));
 }
 
 CMD_PRESET_OPTIONS(annotate)

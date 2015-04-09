@@ -15,6 +15,7 @@
 // of GNU-diffutils-like things (diff, diff3, maybe patch..)
 
 #include "vocab.hh"
+#include "colorizer.hh"
 
 void make_diff(std::string const & filename1,
                std::string const & filename2,
@@ -25,7 +26,8 @@ void make_diff(std::string const & filename1,
                bool is_manual_merge,
                std::ostream & ost,
                diff_type type,
-               std::string const & pattern);
+               std::string const & pattern,
+               colorizer const & colorizer);
 
 #endif // __DIFF_PATCH_HH__
 
