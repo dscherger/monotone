@@ -40,6 +40,7 @@ Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
 Copyright @copyright{} 2006 - 2010 Thomas Keller @*
 Copyright @copyright{} 2007 - 2012, 2014 Stephen Leake @*
+Copyright @copyright{} 2008 - 2015 Markus Wanner @*
 
 This manual is made available under the GNU GPL version 2.0 or
 greater.  See the accompanying file COPYING for details.
@@ -4884,6 +4885,11 @@ local name of the key used for the commit. See
 Specify the branch for a command. This normally defaults to the
 workspace branch.
 
+@anchor{--colorize}@item --colorize
+@itemx --no-colorize
+Override the terminal capabilities detection and force monotone to
+emit colorized or non-colorized output.
+
 @anchor{--date}@item --date
 Override the date cert for a commit. The date defaults to the current
 calendar time.
@@ -4895,6 +4901,11 @@ a commit has a different default for the message.
 @anchor{--message-file}@item --message-file @var{filename}
 Set the commit changelog message, as a file. Each command that does
 a commit has a different default for the message.
+
+@anchor{--pager}@item --pager
+@itemx --no-pager
+Override the terminal capabilities detection and force monotone to
+pipe its output through a pager program.
 
 @anchor{--update}@item --[no-]update
 If @option{--update} is given, and the command is executed in a

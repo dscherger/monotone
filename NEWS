@@ -12,10 +12,14 @@ XXX XXX XX XX XX XX UTC XXXX
 
         New features
 
-        - Monotone has a new global '--colorize' option which colors the
-          output of commands like 'diff', 'fdiff' or 'log' for better
-          readability in terminals that support output coloring and
-          formatting.
+        - Monotone has a new global '--colorize' option which colors
+          the output of the commands 'diff', 'fdiff', 'log' and
+          'status' for better readability. On smart terminals, this
+          feature is enabled by default. (Unix only).
+
+        - In addition, piping all output through a pager is now
+          supported and enabled by default on smart terminals. So far,
+          this feature is not available on Windows, either.
 
         - The ISO 8601 parser now understands time zone designators.
 
