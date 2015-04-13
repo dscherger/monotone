@@ -143,9 +143,6 @@ colorizer::colorizer(bool enable, lua_hooks & lh)
   : lua(lh),
     enabled(enable)
 {
-  if (!have_smart_terminal())
-    enabled = false;
-
   if (enabled)
     {
       colormap.insert(map_output_color(normal));

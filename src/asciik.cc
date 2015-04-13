@@ -376,6 +376,7 @@ asciik::print(revision_id const & rev,
 
 CMD_PRESET_OPTIONS(asciik)
 {
+  opts.colorize = have_smart_terminal();
   opts.pager = have_smart_terminal();
 }
 CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
@@ -395,7 +396,7 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
   toposort(db, revs, sorted);
   reverse(sorted.begin(), sorted.end());
 
-  colorizer color(!app.opts.nocolorize, app.lua);
+  colorizer color(app.opts.colorize, app.lua);
   asciik graph(std::cout, color, 10);
 
   for (vector<revision_id>::const_iterator rev = sorted.begin();

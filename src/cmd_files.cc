@@ -93,6 +93,7 @@ CMD(fmerge, "fmerge", "", CMD_REF(debug),
 
 CMD_PRESET_OPTIONS(fdiff)
 {
+  opts.colorize = have_smart_terminal();
   opts.pager = have_smart_terminal();
 }
 CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
@@ -133,7 +134,7 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
             src.inner(), dst.inner(),
             false, // is_manual_merge
             cout, app.opts.diff_format, 
-            pattern, colorizer(!app.opts.nocolorize, app.lua));
+            pattern, colorizer(app.opts.colorize, app.lua));
 }
 
 CMD_PRESET_OPTIONS(annotate)

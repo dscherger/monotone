@@ -990,6 +990,7 @@ show_branch_status(map<branch_name, set<revision_id>> const & div_heads,
 
 CMD_PRESET_OPTIONS(status)
 {
+  opts.colorize = have_smart_terminal();
   opts.pager = have_smart_terminal();
 }
 CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
@@ -1000,7 +1001,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   database db(app);
   project_t project(db);
   workspace work(app);
-  colorizer color(!app.opts.nocolorize, app.lua);
+  colorizer color(app.opts.colorize, app.lua);
 
   parent_map old_rosters = work.get_parent_rosters(db);
   I(!old_rosters.empty());
