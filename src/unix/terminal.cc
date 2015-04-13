@@ -64,9 +64,6 @@ void initialize_terminal()
 
 int initialize_pager()
 {
-  if (!_have_smart_terminal)
-    return 0;
-
   const char* pager = getenv("PAGER");
 
   // FIXME: the pager to use should be selectable by configuration
