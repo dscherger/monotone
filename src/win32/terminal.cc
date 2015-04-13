@@ -16,6 +16,18 @@
 
 #include "../platform.hh"
 
+void initialize_terminal()
+{
+  // Another no-op - FIXME: should use the same caching mechanism as the
+  // unix variant.
+}
+
+int initialize_pager()
+{
+  // no pager support, therefore a no-op
+  return 0;
+}
+
 bool have_smart_terminal()
 {
   std::string term;

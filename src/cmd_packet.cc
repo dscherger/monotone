@@ -115,10 +115,14 @@ pubkey_common(app_state & app,
   pw.consume_public_key(identity.given_name, key);
 }
 
+CMD_PRESET_OPTIONS(pubkey)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("KEY_NAME_OR_HASH"),
     N_("Prints a public key packet"),
     "",
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() != 1)
     throw usage(execid);
@@ -137,10 +141,14 @@ CMD_AUTOMATE(get_public_key, N_("KEY_NAME_OR_HASH"),
   pubkey_common(app, args, output);
 }
 
+CMD_PRESET_OPTIONS(privkey)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("KEY_NAME_OR_HASH"),
     N_("Prints a private key packet"),
     "",
-    options::opts::none)
+    options::opts::pager)
 {
   database db(app, database::maybe_unspecified);
   key_store keys(app);

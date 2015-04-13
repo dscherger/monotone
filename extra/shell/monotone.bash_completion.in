@@ -74,7 +74,7 @@ _monotone_databases() {
     COMPREPLY=(
 	"${COMPREPLY[@]}"
 	$(compgen -W "$(LANG=POSIX \
-                        ${mtn} list databases 2> /dev/null |\
+                        ${mtn} list --no-pager databases 2> /dev/null |\
                         grep -v '^\s' |\
                         sed -e 's/(in [^)]*):$//')" -- ${cur#*=} )
     )
@@ -88,16 +88,16 @@ _monotone_keys() {
     else
 	range='1,/\[private/'
     fi
-    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list keys 2> /dev/null |\
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list --no-pager keys 2> /dev/null |\
                                 sed -n ${range}'{/^[0-9a-f]/s/[0-9a-f]* //p}')" -- ${cur#*=} ) )
 }
 
 _monotone_branches() {
-    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list branches 2> /dev/null)" -- ${cur#*=} ) )
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list --no-pager branches 2> /dev/null)" -- ${cur#*=} ) )
 }
 
 _monotone_tags() {
-    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list tags 2> /dev/null | awk '{print $1}')" -- ${cur#*=} ) )
+    COMPREPLY=( "${COMPREPLY[@]}" $(compgen -W "$(${mtn} $mono_db list --no-pager tags 2> /dev/null | awk '{print $1}')" -- ${cur#*=} ) )
 }
 
 _monotone_public_key() {

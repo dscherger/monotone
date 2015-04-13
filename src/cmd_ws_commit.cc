@@ -1,5 +1,6 @@
 // Copyright (C) 2010, 2011, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2015 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -270,11 +271,11 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   }
 
   utf8 summary;
-  revision_summary(rev, summary);
+  colorizer color(false, lua);
+  revision_summary(rev, color, summary);
 
-  utf8 full_message(changelog() + cancel() + instructions() + editable() + ignored() +
-                    notes() + summary(),
-                    origin::internal);
+  utf8 full_message(changelog() + cancel() + instructions() + editable() +
+                    ignored() + notes() + summary(), origin::internal);
 
   external input_message;
   external output_message;
@@ -534,20 +535,29 @@ revert(app_state & app,
   work.maybe_update_inodeprints(db, mask);
 }
 
+CMD_PRESET_OPTIONS(revert)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
     N_("Reverts files and/or directories"),
     N_("In order to revert the entire workspace, specify '.' as the "
        "file name."),
-    options::opts::depth | options::opts::exclude | options::opts::missing)
+    options::opts::depth | options::opts::exclude | options::opts::missing |
+    options::opts::pager)
 {
   revert(app, args, false);
 }
 
+CMD_PRESET_OPTIONS(undrop)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(undrop, "undrop", "", CMD_REF(workspace), N_("PATH..."),
     N_("Reverses a mistaken 'drop'"),
     N_("If the file was deleted from the workspace, this is the same as 'revert'. "
        "Otherwise, it just removes the 'drop' from the manifest."),
-    options::opts::none)
+    options::opts::pager)
 {
   revert(app, args, true);
 }
@@ -703,10 +713,14 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
   updater.maybe_do_update();
 }
 
+CMD_PRESET_OPTIONS(mkdir)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(mkdir, "mkdir", "", CMD_REF(workspace), N_("[DIRECTORY...]"),
     N_("Creates directories and adds them to the workspace"),
     "",
-    options::opts::no_ignore)
+    options::opts::no_ignore | options::opts::pager)
 {
   if (args.size() < 1)
     throw usage(execid);
@@ -778,12 +792,13 @@ void perform_add(app_state & app,
 CMD_PRESET_OPTIONS(add)
 {
   opts.recursive=false; // match 'ls unknown' and 'add --unknown --recursive'
+  opts.pager = have_smart_terminal();
 }
 CMD(add, "add", "", CMD_REF(workspace), N_("[PATH]..."),
     N_("Adds files to the workspace"),
     "",
     options::opts::unknown | options::opts::no_ignore |
-    options::opts::recursive)
+    options::opts::recursive | options::opts::pager)
 {
   if (!app.opts.unknown && (args.size() < 1))
     throw usage(execid);
@@ -819,10 +834,16 @@ void perform_drop(app_state & app,
   work.perform_deletions(db, paths,
                              app.opts.recursive, app.opts.bookkeep_only);
 }
+
+CMD_PRESET_OPTIONS(drop)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
     N_("Drops files from the workspace"),
     "",
-    options::opts::bookkeep_only | options::opts::missing | options::opts::recursive)
+    options::opts::bookkeep_only | options::opts::missing |
+    options::opts::recursive | options::opts::pager)
 {
   if (!app.opts.missing && (args.size() < 1))
     throw usage(execid);
@@ -833,13 +854,16 @@ CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
   perform_drop(app, db, work, args_to_paths(args));
 }
 
-
+CMD_PRESET_OPTIONS(rename)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(rename, "rename", "mv", CMD_REF(workspace),
     N_("SRC DEST\n"
        "SRC1 [SRC2 [...]] DEST_DIR"),
     N_("Renames entries in the workspace"),
     "",
-    options::opts::bookkeep_only)
+    options::opts::bookkeep_only | options::opts::pager)
 {
   if (args.size() < 2)
     throw usage(execid);
@@ -868,7 +892,10 @@ CMD(rename, "rename", "mv", CMD_REF(workspace),
   work.perform_rename(db, src_paths, dst_path, app.opts.bookkeep_only);
 }
 
-
+CMD_PRESET_OPTIONS(pivot_root)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
     N_("Renames the root directory"),
     N_("After this command, the directory that currently "
@@ -877,7 +904,8 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
        "that is currently the root "
        "directory will have name PUT_OLD.\n"
        "Use of '--bookkeep-only' is NOT recommended."),
-    options::opts::bookkeep_only | options::opts::move_conflicting_paths)
+    options::opts::bookkeep_only | options::opts::move_conflicting_paths |
+    options::opts::pager)
 {
   if (args.size() != 2)
     throw usage(execid);
@@ -896,6 +924,7 @@ show_branch_status(map<branch_name, set<revision_id>> const & div_heads,
                    map<branch_name,
                        map<revision_id, s64>> const & newer_heads,
                    branch_name const & parent_branch,
+                   colorizer const & color,
                    bool show_hints,
                    ostringstream & out)
 {
@@ -915,7 +944,9 @@ show_branch_status(map<branch_name, set<revision_id>> const & div_heads,
           out << (first_newer_head
                   ? _("       with newer head: ")
                   : _("                   and: "))
-              << ity.first << ' '
+              << color.colorize(encode_hexenc(ity.first.inner()(),
+                                              ity.first.inner().made_from),
+                                colorizer::rev_id) << ' '
               << (F("(+%d revs)") % ity.second) << '\n';
           // FIXME: report more details, here (date, author)
           first_newer_head = false;
@@ -929,7 +960,9 @@ show_branch_status(map<branch_name, set<revision_id>> const & div_heads,
       out << (first_div_head
               ? _("   with divergent head: ")
               : _("                   and: "))
-          << head << '\n';
+          << color.colorize(encode_hexenc(head.inner()(),
+                                          head.inner().made_from),
+                            colorizer::rev_id) << '\n';
       first_div_head = false;
       // FIXME: rpeort more details, here (date, author)
     }
@@ -939,24 +972,36 @@ show_branch_status(map<branch_name, set<revision_id>> const & div_heads,
     {
       if (count_newer_heads > 1 && !divergent_heads.empty())
         out << string(24, ' ')
-            << _("(consider 'mtn merge' and/or 'mtn up')") << '\n';
+            << color.colorize(_("(consider 'mtn merge' and/or 'mtn up')"),
+                              colorizer::hint)
+            << '\n';
       else if (count_newer_heads > 1 || !divergent_heads.empty())
         out << string(24, ' ')
-            << _("(consider 'mtn merge' followed by 'mtn up')") << '\n';
+            << color.colorize(_("(consider 'mtn merge' followed by 'mtn up')"),
+                              colorizer::hint)
+            << '\n';
       else if (count_newer_heads == 1)
         out << string(24, ' ')
-            << _("(consider 'mtn up')") << '\n';
+            << color.colorize(_("(consider 'mtn up')"),
+                              colorizer::hint)
+            << '\n';
     }
 }
 
+CMD_PRESET_OPTIONS(status)
+{
+  opts.colorize = have_smart_terminal();
+  opts.pager = have_smart_terminal();
+}
 CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
     N_("Shows workspace's status information"),
     "",
-    options::opts::depth | options::opts::exclude)
+    options::opts::depth | options::opts::exclude | options::opts::pager)
 {
   database db(app);
   project_t project(db);
   workspace work(app);
+  colorizer color(app.opts.colorize, app.lua);
 
   parent_map old_rosters = work.get_parent_rosters(db);
   I(!old_rosters.empty());
@@ -982,7 +1027,10 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         {
           revision_id current_id = parent_id(*old_rosters.begin());
           if (start.second != current_id)
-            P(F("bisection from revision %s in progress") % start.second);
+            P(F("bisection from revision %s in progress")
+              % color.colorize(encode_hexenc(start.second.inner()(),
+                                             start.second.inner().made_from),
+                               colorizer::rev_id));
         }
     }
 
@@ -1043,7 +1091,10 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       rev_height parent_height = project.db.get_rev_height(parent);
 
       L(FL("Parent revision %s has height %s (abs %d)")
-        % parent % parent_height % parent_height.abs());
+        % color.colorize(encode_hexenc(parent.inner()(),
+                                       parent.inner().made_from),
+                         colorizer::rev_id)
+        % parent_height % parent_height.abs());
 
       vector<cert> certs;
       db.get_revision_certs(parent, certs);
@@ -1138,7 +1189,10 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
                       // revision to this head.
                       rev_height head_h = project.db.get_rev_height(head);
                       L(FL("Head '%s' of branch '%s' has height %s (abs %d)")
-                        % head % parent_branch
+                        % color.colorize(encode_hexenc(head.inner()(),
+                                                       head.inner().made_from),
+                                         colorizer::rev_id)
+                        % color.colorize(parent_branch(), colorizer::branch)
                         % head_h % head_h.abs());
                       I(head_h > parent_h);
                       s64 diff = head_h.abs() - parent_h.abs();
@@ -1201,7 +1255,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
               fork_to_existing = true;
             }
         }
-      out << app.opts.branch() << '\n';
+      out << color.colorize(app.opts.branch(), colorizer::branch) << '\n';
     }
 
   if (fork_to_existing || count_parents_in_current_branch > 0)
@@ -1216,6 +1270,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       // separately.
       I(!app.opts.branch().empty());
       show_branch_status(div_heads, newer_heads, app.opts.branch,
+                         color,
                          !fork_to_existing, out);
     }
 
@@ -1231,9 +1286,10 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       {
         I(parent_branch != app.opts.branch);
         out << '\n';
-        out << _("Branching off from:     ") << parent_branch << '\n';
+        out << _("Branching off from:     ")
+            << color.colorize(parent_branch(), colorizer::branch) << '\n';
         show_branch_status(div_heads, newer_heads,
-                           parent_branch, true, out);
+                           parent_branch, color, true, out);
       }
   out << '\n';
 
@@ -1269,9 +1325,15 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       if (null_id(parent))
         out << _("Initial revision changes:") << '\n';
       else if (cs.empty())
-        out << _("No changes against parent ") << parent << '\n';
+        out << _("No changes against parent ")
+            << color.colorize(encode_hexenc(parent.inner()(),
+                                            parent.inner().made_from),
+                              colorizer::rev_id) << '\n';
       else
-        out << _("Changes against parent ") << parent << '\n';
+        out << _("Changes against parent ")
+            << color.colorize(encode_hexenc(parent.inner()(),
+                                            parent.inner().made_from),
+                              colorizer::rev_id) << '\n';
 
       if (!mask.empty())
         out << _("(with the restrictions given)") << '\n';
@@ -1279,7 +1341,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       out << '\n';
 
       if (!cs.empty())
-        cset_summary(cs, out);
+        cset_summary(cs, color, out);
     }
 
   if (!wres->status_map.empty())
@@ -1293,16 +1355,24 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
           switch (ity.second)
             {
             case workspace_result::status::MISSING_FILE:
-              out << _("  missing file:      ") << fp << '\n';
+              out << _("  missing file:      ")
+                  << color.colorize((F("%s") % fp).str(),
+                                    colorizer::important) << '\n';
               break;
             case workspace_result::status::MISSING_DIR:
-              out << _("  missing directory: ") << fp << '\n';
+              out << _("  missing directory: ")
+                  << color.colorize((F("%s") % fp).str(),
+                                    colorizer::important) << '\n';
               break;
             case workspace_result::status::NOT_A_FILE:
-              out << _("  not a file:        ") << fp << '\n';
+              out << _("  not a file:        ")
+                  << color.colorize((F("%s") % fp).str(),
+                                    colorizer::important) << '\n';
               break;
             case workspace_result::status::NOT_A_DIR:
-              out << _("  not a directory:   ") << fp << '\n';
+              out << _("  not a directory:   ")
+                  << color.colorize((F("%s") % fp).str(),
+                                    colorizer::important) << '\n';
               break;
             }
         }
@@ -1341,9 +1411,9 @@ checkout_common(app_state & app,
       if (heads.size() > 1)
         {
           P(F("branch '%s' has multiple heads:") % app.opts.branch);
-          for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
+          for (revision_id const & rid : heads)
             P(i18n_format("  %s")
-              % describe_revision(app.opts, app.lua, project, *i));
+              % describe_revision(app.opts, app.lua, project, rid));
           P(F("choose one with '%s checkout -r<id>'") % prog_name);
           E(false, origin::user,
             F("branch '%s' has multiple heads") % app.opts.branch);
@@ -1353,7 +1423,8 @@ checkout_common(app_state & app,
   else if (app.opts.revision.size() == 1)
     {
       // use specified revision
-      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), revid);
+      complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(),
+               revid);
 
       guess_branch(app.opts, project, revid);
 
@@ -1411,13 +1482,17 @@ checkout_common(app_state & app,
   guard.commit();
 }
 
+CMD_PRESET_OPTIONS(checkout)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
     N_("Checks out a revision from the database into a directory"),
     N_("If a revision is given, that's the one that will be checked out.  "
        "Otherwise, it will be the head of the branch (given or implicit).  "
        "If no directory is given, the branch name will be used as directory."),
     options::opts::branch | options::opts::revision |
-    options::opts::move_conflicting_paths)
+    options::opts::move_conflicting_paths | options::opts::pager)
 {
   if (args.size() > 1 || app.opts.revision.size() > 1)
     throw usage(execid);
@@ -1488,12 +1563,16 @@ drop_attr(app_state & app, args_vector const & args)
     (make_revision_for_workspace(work.get_parent_rosters(db), new_roster));
 }
 
+CMD_PRESET_OPTIONS(attr_drop)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
     N_("Removes attributes from a file"),
     N_("If no attribute is specified, this command removes all attributes "
        "attached to the file given in PATH.  Otherwise only removes the "
        "attribute specified in ATTR."),
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() != 1 && args.size() != 2)
     throw usage(execid);
@@ -1501,12 +1580,16 @@ CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
   drop_attr(app, args);
 }
 
+CMD_PRESET_OPTIONS(attr_get)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
     N_("Gets the values of a file's attributes"),
     N_("If no attribute is specified, this command prints all attributes "
        "attached to the file given in PATH.  Otherwise it only prints the "
        "attribute specified in ATTR."),
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() != 1 && args.size() != 2)
     throw usage(execid);
@@ -1582,11 +1665,15 @@ set_attr(app_state & app, args_vector const & args)
   work.put_work_rev(make_revision_for_workspace(parents, new_roster));
 }
 
+CMD_PRESET_OPTIONS(attr_set)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
     N_("Sets an attribute on a file"),
     N_("Sets the attribute given on ATTR to the value specified in VALUE "
        "for the file mentioned in PATH."),
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() != 3)
     throw usage(execid);
@@ -2300,12 +2387,16 @@ CMD_GROUP(bisect, "bisect", "", CMD_REF(informative),
              "and untested subsets and successively narrow the untested set "
              "to find the first revision that introduced some change."));
 
+CMD_PRESET_OPTIONS(reset)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(reset, "reset", "", CMD_REF(bisect), "",
     N_("Reset the current bisection search"),
     N_("Update the workspace back to the revision from which the bisection "
        "was started and remove all current search information, allowing a new "
        "search to be started."),
-    options::opts::none)
+    options::opts::pager)
 {
   if (args.size() != 0)
     throw usage(execid);

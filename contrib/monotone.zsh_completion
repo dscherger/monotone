@@ -487,23 +487,23 @@ _mtn_files() {
     local prefix=${PREFIX}X
     local rcwd="$(_mtn_rcwd)"
     local -a list
-    list=( ${${${(f)"$(mtn ls $1 ${prefix:h} 2>/dev/null)"}#$rcwd}#/} )
+    list=( ${${${(f)"$(mtn ls --no-pager $1 ${prefix:h} 2>/dev/null)"}#$rcwd}#/} )
     compadd -f -a list 
 }
 
 (( $+functions[_mtn_branches] )) ||
 _mtn_branches() {
-    compadd -- $(mtn ls branches 2>/dev/null)
+    compadd -- $(mtn ls --no-pager branches 2>/dev/null)
 }
 
 (( $+functions[_mtn_tags] )) ||
 _mtn_tags() {
-    compadd -- ${(u)${(f)"$(mtn ls tags 2>/dev/null)"}%% *}
+    compadd -- ${(u)${(f)"$(mtn ls --no-pager tags 2>/dev/null)"}%% *}
 }
 
 (( $+functions[_mtn_public_keys] )) ||
 _mtn_public_keys() {
-    compadd -- ${${${(@M)${(f)"$(mtn ls keys 2>/dev/null)"}:#*@*}#* }%%* *}
+    compadd -- ${${${(@M)${(f)"$(mtn ls --no-pager keys 2>/dev/null)"}:#*@*}#* }%%* *}
 }
 
 (( $+functions[_mtn_keys] )) ||

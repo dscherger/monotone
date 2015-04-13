@@ -42,6 +42,8 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+#include "../platform.hh"
+
 static char const * argv0;
 
 // a convenient wrapper
@@ -95,6 +97,11 @@ interrupt_signal(int signo)
   write_str_to_stderr(": operation canceled: ");
   write_str_to_stderr(strsignal(signo));
   write_str_to_stderr("\n");
+
+  // If not already terminated, interrupt the pager, now.
+  if (get_pager_pid() != 0)
+    kill(get_pager_pid(), SIGINT);
+
   raise(signo);
   // The signal has been reset to the default handler by SA_RESETHAND
   // specified in the sigaction() call, but it's also blocked; it will be

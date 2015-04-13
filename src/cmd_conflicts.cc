@@ -766,11 +766,15 @@ set_first_conflict(database & db,
 // CMD(store) is in cmd_merging.cc, since it needs access to
 // show_conflicts_core, and doesn't need conflicts_t.
 
+CMD_PRESET_OPTIONS(show_first)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(show_first, "show_first", "", CMD_REF(conflicts),
     "",
     N_("Show the first unresolved conflict in the conflicts file, and possible resolutions"),
     "",
-    options::opts::conflicts_opts)
+    options::opts::conflicts_opts | options::opts::pager)
 {
   database db(app);
   conflicts_t conflicts (db, app.opts.conflicts_file);
@@ -779,11 +783,15 @@ CMD(show_first, "show_first", "", CMD_REF(conflicts),
   show_conflicts(db, conflicts, first);
 }
 
+CMD_PRESET_OPTIONS(show_remaining)
+{
+  opts.pager = have_smart_terminal();
+}
 CMD(show_remaining, "show_remaining", "", CMD_REF(conflicts),
     "",
     N_("Show the remaining unresolved conflicts in the conflicts file"),
     "",
-    options::opts::conflicts_opts)
+    options::opts::conflicts_opts | options::opts::pager)
 {
   database db(app);
   conflicts_t conflicts (db, app.opts.conflicts_file);

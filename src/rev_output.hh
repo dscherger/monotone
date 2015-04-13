@@ -1,4 +1,5 @@
 // Copyright (C) 2010 Derek Scherger <derek@echologic.com>
+//               2015 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -10,6 +11,7 @@
 #ifndef __REV_SUMMARY_HH__
 #define __REV_SUMMARY_HH__
 
+#include "colorizer.hh"
 #include "rev_types.hh"
 #include "vocab.hh"
 
@@ -17,21 +19,24 @@ struct date_t;
 class cert;
 
 void
-revision_header(revision_id const rid, revision_t const & rev, 
+revision_header(revision_id const rid, revision_t const & rev,
                 std::string const & author, date_t const date,
                 branch_name const & branch, utf8 const & changelog,
-                std::string const & date_fmt, utf8 & header);
-
-void
-revision_header(revision_id const rid, revision_t const & rev, 
-                std::vector<cert> const & certs, std::string const & date_fmt,
+                std::string const & date_fmt, colorizer const & color,
                 utf8 & header);
 
 void
-cset_summary(cset const & cs, std::ostringstream & out);
+revision_header(revision_id const rid, revision_t const & rev,
+                std::vector<cert> const & certs, std::string const & date_fmt,
+                colorizer const & color, utf8 & header);
 
 void
-revision_summary(revision_t const & rev, utf8 & summary);
+cset_summary(cset const & cs, colorizer const & color,
+             std::ostringstream & out);
+
+void
+revision_summary(revision_t const & rev, colorizer const & color,
+                 utf8 & summary);
 
 #endif  // header guard
 

@@ -40,6 +40,14 @@ void make_io_binary();
 #if defined(_WIN32) || defined(_WIN64)
 std::string munge_argv_into_cmdline(const char* const argv[]);
 #endif
+
+// Terminal and pager functions
+void initialize_terminal();
+int initialize_pager();
+#if !defined(_WIN32) && !defined(_WIN64)
+void finalize_pager();
+pid_t get_pager_pid();
+#endif
 // for term selection
 bool have_smart_terminal();
 // this function cannot call W/P/L, because it is called by the tick printing
