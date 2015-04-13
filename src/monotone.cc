@@ -282,9 +282,9 @@ cpp_main(int argc, char ** argv)
           initialize_terminal();
 
           // stop here if they asked for help
-          if (app.opts.help && have_smart_terminal())
+          if (app.opts.help)
             {
-              if (initialize_pager() != 0)
+              if (have_smart_terminal() && initialize_pager() != 0)
                 {
                   L(FL("Failed to initialize the pager."));
                   throw ui.fatal_exception();
