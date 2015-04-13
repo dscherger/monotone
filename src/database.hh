@@ -247,9 +247,8 @@ private:
   // --== Keys ==--
   //
 public:
-  void get_key_ids(std::vector<key_id> & pubkeys);
-
-  void get_public_keys(std::vector<key_name> & pubkeys);
+  std::vector<key_id> get_key_ids();
+  std::vector<key_name> get_public_keys();
 
   bool public_key_exists(key_id const & hash);
   bool public_key_exists(key_name const & ident);
@@ -349,9 +348,10 @@ public:
   // --== Epochs ==--
   //
 public:
-  void get_epochs(std::map<branch_name, epoch_data> & epochs);
+  std::map<branch_name, epoch_data> get_epochs();
 
-  void get_epoch(epoch_id const & eid, branch_name & branch, epoch_data & epo);
+  void get_epoch(epoch_id const & eid, branch_name & branch,
+                 epoch_data & epo);
 
   bool epoch_exists(epoch_id const & eid);
 
@@ -363,9 +363,9 @@ public:
   // --== Database 'vars' ==--
   //
 public:
-  void get_vars(std::map<var_key, var_value > & vars);
+  std::map<var_key, var_value> get_vars();
 
-  void get_var(var_key const & key, var_value & value);
+  var_value get_var(var_key const & key);
 
   bool var_exists(var_key const & key);
 
@@ -389,30 +389,23 @@ public:
                                    std::string const & prefix,
                                    std::string & constraint);
 
-  void complete(std::string const & partial,
-                std::set<revision_id> & completions);
-
-  void complete(std::string const & partial,
-                std::set<file_id> & completions);
-
-  void complete(std::string const & partial,
-                std::set< std::pair<key_id, utf8 > > & completions);
+  std::set<revision_id> complete_revid(std::string const & partial);
+  std::set<file_id> complete_file_id(std::string const & partial);
+  std::set<std::pair<key_id, utf8>> complete_key(std::string const & partial);
 
   //
   // --== Revision selectors ==--
   //
 public:
-  void select_parent(std::string const & partial,
-                     std::set<revision_id> & completions);
-  void select_cert(std::string const & certname,
-                   std::set<revision_id> & completions);
-  void select_cert(std::string const & certname, std::string const & certvalue,
-                   std::set<revision_id> & completions);
-  void select_author_tag_or_branch(std::string const & partial,
-                                   std::set<revision_id> & completions);
-  void select_date(std::string const & date, std::string const & comparison,
-                   std::set<revision_id> & completions);
-  void select_key(key_id const & id, std::set<revision_id> & completions);
+  std::set<revision_id> select_parent(std::string const & partial);
+  std::set<revision_id> select_cert(std::string const & certname);
+  std::set<revision_id> select_cert(std::string const & certname,
+                                    std::string const & certvalue);
+  std::set<revision_id>
+  select_author_tag_or_branch(std::string const & partial);
+  std::set<revision_id> select_date(std::string const & date,
+                                    std::string const & comparison);
+  std::set<revision_id> select_key(key_id const & id);
 
   //
   // --== The 'db' family of top-level commands ==--
@@ -453,10 +446,9 @@ public:
   void delete_existing_revs_and_certs();
   void delete_existing_manifests();
 
-  void get_manifest_certs(manifest_id const & id, std::vector<cert> & certs);
-  void get_manifest_certs(cert_name const & name, std::vector<cert> & certs);
-  void get_revision_certs_with_keynames(revision_id const & id,
-                                        std::vector<cert> & certs);
+  std::vector<cert> get_manifest_certs(manifest_id const & id);
+  std::vector<cert> get_manifest_certs(cert_name const & name);
+  std::vector<cert> get_revision_certs_with_keynames(revision_id const & id);
 
   // heights
   rev_height get_rev_height(revision_id const & id);

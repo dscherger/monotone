@@ -2177,8 +2177,7 @@ CMD_AUTOMATE(get_db_variables, N_("[DOMAIN]"),
       filter = typecast_vocab<var_domain>(idx(args, 0));
     }
 
-  map<var_key, var_value> vars;
-  db.get_vars(vars);
+  map<var_key, var_value> vars = db.get_vars();
 
   var_domain cur_domain;
   basic_io::stanza st;
@@ -2282,8 +2281,7 @@ CMD_AUTOMATE(drop_db_variables, N_("DOMAIN [NAME]"),
     }
   else
     {
-      map<var_key, var_value> vars;
-      db.get_vars(vars);
+      map<var_key, var_value> vars = db.get_vars();
       bool found_something = false;
 
       for (map<var_key, var_value>::const_iterator i = vars.begin();

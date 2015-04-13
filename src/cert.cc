@@ -78,8 +78,7 @@ read_cert(database & db, string const & in, cert & t,
       {
         keyname = key_name(key, origin::network);
         bool found = false;
-        std::vector<key_id> all_keys;
-        db.get_key_ids(all_keys);
+        std::vector<key_id> all_keys = db.get_key_ids();
         for (std::vector<key_id>::const_iterator i = all_keys.begin();
              i != all_keys.end(); ++i)
           {

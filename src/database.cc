@@ -391,7 +391,7 @@ private:
   //
   // --== Keys ==--
   //
-  void get_keys(string const & table, vector<key_name> & keys);
+  vector<key_name> get_keys(string const & table);
 
   // cache of verifiers for public keys
   verifier_cache verifiers;
@@ -403,47 +403,36 @@ private:
   bool cert_exists(cert const & t,
                    string const & table);
   void put_cert(cert const & t, string const & table);
-  void results_to_certs(results const & res,
-                        vector<cert> & certs);
-  void results_to_certs(results const & res,
-                        vector<pair<id, cert> > & certs);
-  void oldstyle_results_to_certs(results const & res,
-                                 vector<cert> & certs);
+  vector<cert> results_to_certs(results const & res);
+  vector<pair<id, cert>> results_to_certs_with_ids(results const & res);
+  vector<cert> oldstyle_results_to_certs(results const & res);
 
-  void get_certs(vector<cert> & certs,
-                 string const & table);
+  vector<cert> get_certs(string const & table);
 
-  void get_oldstyle_certs(id const & ident,
-                          vector<cert> & certs,
-                          string const & table);
+  vector<cert> get_oldstyle_certs(id const & ident,
+                                  string const & table);
 
-  void get_certs(id const & ident,
-                 vector<cert> & certs,
-                 string const & table);
+  vector<cert> get_certs(id const & ident,
+                         string const & table);
 
-  void get_certs(cert_name const & name,
-                 vector<cert> & certs,
-                 string const & table);
+  vector<cert> get_certs(cert_name const & name,
+                         string const & table);
 
-  void get_oldstyle_certs(cert_name const & name,
-                          vector<cert> & certs,
-                          string const & table);
+  vector<cert> get_oldstyle_certs(cert_name const & name,
+                                  string const & table);
 
-  void get_certs(id const & ident,
-                 cert_name const & name,
-                 vector<cert> & certs,
-                 string const & table);
+  vector<cert> get_certs(id const & ident,
+                         cert_name const & name,
+                         string const & table);
 
-  void get_certs(id const & ident,
-                 cert_name const & name,
-                 cert_value const & val,
-                 vector<cert> & certs,
-                 string const & table);
+  vector<cert> get_certs(id const & ident,
+                         cert_name const & name,
+                         cert_value const & val,
+                         string const & table);
 
-  void get_certs(cert_name const & name,
-                 cert_value const & val,
-                 vector<pair<id, cert> > & certs,
-                 string const & table);
+  vector<pair<id, cert>> get_certs_with_ids(cert_name const & name,
+                                            cert_value const & val,
+                                            string const & table);
 
   outdated_indicator_factory cert_stamper;
 
@@ -1143,10 +1132,9 @@ database::info(ostream & out, bool analyze)
 
   typedef map<revision_id, date_t> rev_date;
   rev_date rd;
-  vector<cert> certs;
 
   L(FL("fetching revision dates"));
-  imp->get_certs(date_cert_name, certs, "revision_certs");
+  vector<cert> certs = imp->get_certs(date_cert_name, "revision_certs");
 
   L(FL("analyzing revision dates"));
   rev_date::iterator d;
@@ -1314,8 +1302,7 @@ database::test_migration_step(key_store & keys, string const & schema)
 void
 database::fix_bad_certs(bool drop_not_fixable)
 {
-  vector<key_id> all_keys;
-  get_key_ids(all_keys);
+  vector<key_id> all_keys = get_key_ids();
 
   P(F("loading certs"));
   vector<pair<id, cert> > all_certs;
@@ -1323,7 +1310,7 @@ database::fix_bad_certs(bool drop_not_fixable)
     results res;
     query q("SELECT revision_id, name, value, keypair_id, signature, hash FROM revision_certs");
     imp->fetch(res, 6, any_rows, q);
-    imp->results_to_certs(res, all_certs);
+    all_certs = imp->results_to_certs_with_ids(res);
   }
 
   P(F("checking"));
@@ -2507,9 +2494,8 @@ database::put_file_version(file_id const & old_id,
   var_value delta_direction("reverse");
   var_key key(var_domain("database"), var_name("delta-direction"));
   if (var_exists(key))
-    {
-      get_var(key, delta_direction);
-    }
+    delta_direction = get_var(key);
+
   bool make_reverse_deltas(delta_direction() == "reverse" ||
                            delta_direction() == "both");
   bool make_forward_deltas(delta_direction() == "forward" ||
@@ -3055,9 +3041,7 @@ database::put_height_for_revision(revision_id const & new_id,
     {
       candidate = highest_parent.child_height(childnr);
       if (!has_rev_height(candidate))
-        {
-          break;
-        }
+        break;
       I(childnr < std::numeric_limits<u32>::max());
       ++childnr;
     }
@@ -3231,32 +3215,33 @@ void database::delete_certs_locally(revision_id const & rev,
 
 // crypto key management
 
-void
-database::get_key_ids(vector<key_id> & pubkeys)
+vector<key_id>
+database::get_key_ids()
 {
-  pubkeys.clear();
   results res;
-
   imp->fetch(res, one_col, any_rows, query("SELECT id FROM public_keys"));
 
+  vector<key_id> pubkeys;
   for (size_t i = 0; i < res.size(); ++i)
     pubkeys.push_back(key_id(res[i][0], origin::database));
+  return pubkeys;
 }
 
-void
-database_impl::get_keys(string const & table, vector<key_name> & keys)
+vector<key_name>
+database_impl::get_keys(string const & table)
 {
-  keys.clear();
   results res;
   fetch(res, one_col, any_rows, query("SELECT id FROM " + table));
+  vector<key_name> keys;
   for (size_t i = 0; i < res.size(); ++i)
     keys.push_back(key_name(res[i][0], origin::database));
+  return keys;
 }
 
-void
-database::get_public_keys(vector<key_name> & keys)
+vector<key_name>
+database::get_public_keys()
 {
-  imp->get_keys("public_keys", keys);
+  return imp->get_keys("public_keys");
 }
 
 bool
@@ -3504,11 +3489,10 @@ database_impl::put_cert(cert const & t,
           % blob(t.sig()));
 }
 
-void
-database_impl::results_to_certs(results const & res,
-                                vector<cert> & certs)
+vector<cert>
+database_impl::results_to_certs(results const & res)
 {
-  certs.clear();
+  vector<cert> certs;
   for (size_t i = 0; i < res.size(); ++i)
     {
       cert t;
@@ -3519,13 +3503,13 @@ database_impl::results_to_certs(results const & res,
                rsa_sha1_signature(res[i][4], origin::database));
       certs.push_back(t);
     }
+  return certs;
 }
 
-void
-database_impl::results_to_certs(results const & res,
-                                vector<pair<id, cert> > & certs)
+vector<pair<id, cert>>
+database_impl::results_to_certs_with_ids(results const & res)
 {
-  certs.clear();
+  vector<pair<id, cert>> certs;
   for (size_t i = 0; i < res.size(); ++i)
     {
       cert t;
@@ -3537,13 +3521,14 @@ database_impl::results_to_certs(results const & res,
       certs.push_back(make_pair(id(res[i][5], origin::database),
                                 t));
     }
+  return certs;
 }
 
-void
-database_impl::oldstyle_results_to_certs(results const & res,
-                                         vector<cert> & certs)
+vector<cert>
+database_impl::oldstyle_results_to_certs(results const & res)
+
 {
-  certs.clear();
+  vector<cert> certs;
   for (size_t i = 0; i < res.size(); ++i)
     {
       revision_id rev_id(res[i][0], origin::database);
@@ -3568,6 +3553,7 @@ database_impl::oldstyle_results_to_certs(results const & res,
       rsa_sha1_signature sig(res[i][4], origin::database);
       certs.push_back(cert(rev_id, name, value, k_id, sig));
     }
+  return certs;
 }
 
 void
@@ -3588,20 +3574,18 @@ database_impl::install_functions()
                            NULL, NULL) == 0);
 }
 
-void
-database_impl::get_certs(vector<cert> & certs,
-                         string const & table)
+vector<cert>
+database_impl::get_certs(string const & table)
 {
   results res;
-  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table);
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM "
+          + table);
   fetch(res, 5, any_rows, q);
-  results_to_certs(res, certs);
+  return results_to_certs(res);
 }
 
-
-void
+vector<cert>
 database_impl::get_oldstyle_certs(id const & ident,
-                                  vector<cert> & certs,
                                   string const & table)
 {
   MM(ident);
@@ -3610,97 +3594,90 @@ database_impl::get_oldstyle_certs(id const & ident,
           " WHERE id = ?");
 
   fetch(res, 5, any_rows, q % blob(ident()));
-  oldstyle_results_to_certs(res, certs);
+  return oldstyle_results_to_certs(res);
 }
 
-void
+vector<cert>
 database_impl::get_certs(id const & ident,
-                         vector<cert> & certs,
                          string const & table)
 {
   MM(ident);
   results res;
-  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
-          " WHERE revision_id = ?");
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM "
+          + table + " WHERE revision_id = ?");
 
   fetch(res, 5, any_rows, q % blob(ident()));
-  results_to_certs(res, certs);
+  return results_to_certs(res);
 }
 
-void
+vector<cert>
 database_impl::get_certs(cert_name const & name,
-                         vector<cert> & certs,
                          string const & table)
 {
   MM(name);
   results res;
-  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
-          " WHERE name = ?");
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM "
+          + table + " WHERE name = ?");
   fetch(res, 5, any_rows, q % text(name()));
-  results_to_certs(res, certs);
+  return results_to_certs(res);
 }
 
-void
+vector<cert>
 database_impl::get_oldstyle_certs(cert_name const & name,
-                                  vector<cert> & certs,
                                   string const & table)
 {
   results res;
   query q("SELECT id, name, value, keypair, signature FROM " + table +
           " WHERE name = ?");
   fetch(res, 5, any_rows, q % text(name()));
-  oldstyle_results_to_certs(res, certs);
+  return oldstyle_results_to_certs(res);
 }
 
-void
+vector<cert>
 database_impl::get_certs(id const & ident,
                          cert_name const & name,
-                         vector<cert> & certs,
                          string const & table)
 {
   results res;
-  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
-          " WHERE revision_id = ? AND name = ?");
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM "
+          + table + " WHERE revision_id = ? AND name = ?");
 
   fetch(res, 5, any_rows,
         q % blob(ident())
           % text(name()));
-  results_to_certs(res, certs);
+  return results_to_certs(res);
 }
 
-void
-database_impl::get_certs(cert_name const & name,
-                         cert_value const & val,
-                         vector<pair<id, cert> > & certs,
-                         string const & table)
+vector<pair<id, cert> >
+database_impl::get_certs_with_ids(cert_name const & name,
+                                  cert_value const & val,
+                                  string const & table)
 {
   results res;
-  query q("SELECT revision_id, name, value, keypair_id, signature, hash FROM " + table +
-          " WHERE name = ? AND value = ?");
+  query q("SELECT revision_id, name, value, keypair_id, signature, hash FROM "
+          + table + " WHERE name = ? AND value = ?");
 
   fetch(res, 6, any_rows,
         q % text(name())
           % blob(val()));
-  results_to_certs(res, certs);
+  return results_to_certs_with_ids(res);
 }
 
-
-void
+vector<cert>
 database_impl::get_certs(id const & ident,
                          cert_name const & name,
                          cert_value const & value,
-                         vector<cert> & certs,
                          string const & table)
 {
   results res;
-  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
-          " WHERE revision_id = ? AND name = ? AND value = ?");
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM "
+          + table + " WHERE revision_id = ? AND name = ? AND value = ?");
 
   fetch(res, 5, any_rows,
         q % blob(ident())
           % text(name())
           % blob(value()));
-  results_to_certs(res, certs);
+  return results_to_certs(res);
 }
 
 
@@ -3861,7 +3838,7 @@ database::get_revision_cert_nobranch_index(vector< pair<revision_id,
 outdated_indicator
 database::get_revision_certs(vector<cert> & certs)
 {
-  imp->get_certs(certs, "revision_certs");
+  certs = imp->get_certs("revision_certs");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3869,7 +3846,7 @@ outdated_indicator
 database::get_revision_certs(cert_name const & name,
                             vector<cert> & certs)
 {
-  imp->get_certs(name, certs, "revision_certs");
+  certs = imp->get_certs(name, "revision_certs");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3878,7 +3855,7 @@ database::get_revision_certs(revision_id const & id,
                              cert_name const & name,
                              vector<cert> & certs)
 {
-  imp->get_certs(id.inner(), name, certs, "revision_certs");
+  certs = imp->get_certs(id.inner(), name, "revision_certs");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3888,7 +3865,7 @@ database::get_revision_certs(revision_id const & id,
                              cert_value const & val,
                              vector<cert> & certs)
 {
-  imp->get_certs(id.inner(), name, val, certs, "revision_certs");
+  certs = imp->get_certs(id.inner(), name, val, "revision_certs");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3924,7 +3901,7 @@ database::get_revision_certs(cert_name const & name,
                              cert_value const & val,
                              vector<pair<id, cert> > & certs)
 {
-  imp->get_certs(name, val, certs, "revision_certs");
+  certs = imp->get_certs_with_ids(name, val, "revision_certs");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3932,7 +3909,7 @@ outdated_indicator
 database::get_revision_certs(revision_id const & id,
                              vector<cert> & certs)
 {
-  imp->get_certs(id.inner(), certs, "revision_certs");
+  certs = imp->get_certs(id.inner(), "revision_certs");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3957,13 +3934,12 @@ database::get_revision_cert(id const & hash,
                             cert & c)
 {
   results res;
-  vector<cert> certs;
   imp->fetch(res, 5, one_row,
              query("SELECT revision_id, name, value, keypair_id, signature "
                    "FROM revision_certs "
                    "WHERE hash = ?")
              % blob(hash()));
-  imp->results_to_certs(res, certs);
+  vector<cert> certs = imp->results_to_certs(res);
   I(certs.size() == 1);
   c = certs[0];
 }
@@ -4129,22 +4105,25 @@ database::erase_bogus_certs(vector<cert> & certs,
 // don't much worry that they are not perfectly typesafe.  Also, we know
 // that the callers want bogus certs erased.
 
-void
-database::get_manifest_certs(manifest_id const & id, std::vector<cert> & certs)
+vector<cert>
+database::get_manifest_certs(manifest_id const & id)
 {
-  imp->get_oldstyle_certs(id.inner(), certs, "manifest_certs");
+  std::vector<cert> certs
+    = imp->get_oldstyle_certs(id.inner(), "manifest_certs");
   erase_bogus_certs_internal(certs, *this,
                              bind(&check_manifest_cert_trust,
                                   this, &this->lua, _1, _2, _3, _4));
+  return certs;
 }
 
-void
-database::get_manifest_certs(cert_name const & name, std::vector<cert> & certs)
+vector<cert>
+database::get_manifest_certs(cert_name const & name)
 {
-  imp->get_oldstyle_certs(name, certs, "manifest_certs");
+  vector<cert> certs = imp->get_oldstyle_certs(name, "manifest_certs");
   erase_bogus_certs_internal(certs, *this,
                              bind(&check_manifest_cert_trust,
                                   this, &this->lua, _1, _2, _3, _4));
+  return certs;
 }
 
 // completions
@@ -4188,33 +4167,30 @@ database_impl::add_prefix_matching_constraint(string const & colname,
     }
 }
 
-void
-database::complete(string const & partial,
-                   set<revision_id> & completions)
+set<revision_id>
+database::complete_revid(string const & partial)
 {
   results res;
-  completions.clear();
   query q("SELECT id FROM revisions WHERE ");
 
   imp->add_prefix_matching_constraint("id", partial, q);
   imp->fetch(res, 1, any_rows, q);
 
+  set<revision_id> completions;
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(revision_id(res[i][0], origin::database));
+  return completions;
 }
 
-
-void
-database::complete(string const & partial,
-                   set<file_id> & completions)
+set<file_id>
+database::complete_file_id(string const & partial)
 {
   results res;
-  completions.clear();
-
   query q("SELECT id FROM files WHERE ");
   imp->add_prefix_matching_constraint("id", partial, q);
   imp->fetch(res, 1, any_rows, q);
 
+  set<file_id> completions;
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(file_id(res[i][0], origin::database));
 
@@ -4226,81 +4202,74 @@ database::complete(string const & partial,
 
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(file_id(res[i][0], origin::database));
+  return completions;
 }
 
-void
-database::complete(string const & partial,
-                   set< pair<key_id, utf8 > > & completions)
+set<pair<key_id, utf8>>
+database::complete_key(string const & partial)
 {
   results res;
-  completions.clear();
   query q("SELECT id, name FROM public_keys WHERE ");
 
   imp->add_prefix_matching_constraint("id", partial, q);
   imp->fetch(res, 2, any_rows, q);
 
+  set<pair<key_id, utf8> > completions;
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(make_pair(key_id(res[i][0], origin::database),
                                  utf8(res[i][1], origin::database)));
+  return completions;
 }
 
 // revision selectors
-
-void
-database::select_parent(string const & partial,
-                        set<revision_id> & completions)
+set<revision_id>
+database::select_parent(string const & partial)
 {
   results res;
-  completions.clear();
-
   query q("SELECT DISTINCT parent FROM revision_ancestry WHERE ");
   imp->add_prefix_matching_constraint("child", partial, q);
   imp->fetch(res, 1, any_rows, q);
 
+  set<revision_id> completions;
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(revision_id(res[i][0], origin::database));
+  return completions;
 }
 
-void
-database::select_cert(string const & certname,
-                      set<revision_id> & completions)
+set<revision_id>
+database::select_cert(string const & certname)
 {
   results res;
-  completions.clear();
-
   imp->fetch(res, 1, any_rows,
              query("SELECT DISTINCT revision_id FROM revision_certs WHERE name = ?")
              % text(certname));
 
+  set<revision_id> completions;
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(revision_id(res[i][0], origin::database));
+  return completions;
 }
 
-void
-database::select_cert(string const & certname, string const & certvalue,
-                      set<revision_id> & completions)
+set<revision_id>
+database::select_cert(string const & certname, string const & certvalue)
 {
   results res;
-  completions.clear();
-
   imp->fetch(res, 1, any_rows,
              query("SELECT DISTINCT revision_id FROM revision_certs"
                    " WHERE name = ? AND CAST(value AS TEXT) GLOB ?")
              % text(certname) % text(certvalue));
 
+  set<revision_id> completions;
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(revision_id(res[i][0], origin::database));
+  return completions;
 }
 
-void
-database::select_author_tag_or_branch(string const & partial,
-                                      set<revision_id> & completions)
+set<revision_id>
+database::select_author_tag_or_branch(string const & partial)
 {
   results res;
-  completions.clear();
-
   string pattern = partial + "*";
-
   imp->fetch(res, 1, any_rows,
              query("SELECT DISTINCT revision_id FROM revision_certs"
                    " WHERE (name=? OR name=? OR name=?)"
@@ -4308,17 +4277,16 @@ database::select_author_tag_or_branch(string const & partial,
              % text(author_cert_name()) % text(tag_cert_name())
              % text(branch_cert_name()) % text(pattern));
 
+  set<revision_id> completions;
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(revision_id(res[i][0], origin::database));
+  return completions;
 }
 
-void
-database::select_date(string const & date, string const & comparison,
-                      set<revision_id> & completions)
+set<revision_id>
+database::select_date(string const & date, string const & comparison)
 {
   results res;
-  completions.clear();
-
   query q;
   q.sql_cmd = ("SELECT DISTINCT revision_id FROM revision_certs "
                "WHERE name = ? AND CAST(value AS TEXT) ");
@@ -4327,33 +4295,36 @@ database::select_date(string const & date, string const & comparison,
 
   imp->fetch(res, 1, any_rows,
              q % text(date_cert_name()) % text(date));
+  set<revision_id> completions;
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(revision_id(res[i][0], origin::database));
+  return completions;
 }
 
-void
-database::select_key(key_id const & id, set<revision_id> & completions)
+set<revision_id>
+database::select_key(key_id const & id)
 {
   results res;
-  completions.clear();
-
   imp->fetch(res, 1, any_rows,
              query("SELECT DISTINCT revision_id FROM revision_certs"
                    " WHERE keypair_id = ?")
              % blob(id.inner()()));
 
+  set<revision_id> completions;
   for (size_t i = 0; i < res.size(); ++i)
     completions.insert(revision_id(res[i][0], origin::database));
+  return completions;
 }
 
 // epochs
 
-void
-database::get_epochs(map<branch_name, epoch_data> & epochs)
+map<branch_name, epoch_data>
+database::get_epochs()
 {
-  epochs.clear();
   results res;
-  imp->fetch(res, 2, any_rows, query("SELECT branch, epoch FROM branch_epochs"));
+  imp->fetch(res, 2, any_rows,
+             query("SELECT branch, epoch FROM branch_epochs"));
+  map<branch_name, epoch_data> epochs;
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
     {
       branch_name decoded(idx(*i, 0), origin::database);
@@ -4362,6 +4333,7 @@ database::get_epochs(map<branch_name, epoch_data> & epochs)
                               epoch_data(idx(*i, 1),
                                          origin::database)));
     }
+  return epochs;
 }
 
 void
@@ -4421,12 +4393,13 @@ database::check_integrity()
 
 // vars
 
-void
-database::get_vars(map<var_key, var_value> & vars)
+map<var_key, var_value>
+database::get_vars()
 {
-  vars.clear();
   results res;
-  imp->fetch(res, 3, any_rows, query("SELECT domain, name, value FROM db_vars"));
+  imp->fetch(res, 3, any_rows,
+             query("SELECT domain, name, value FROM db_vars"));
+  map<var_key, var_value> vars;
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
     {
       var_domain domain(idx(*i, 0), origin::database);
@@ -4435,10 +4408,11 @@ database::get_vars(map<var_key, var_value> & vars)
       I(vars.find(make_pair(domain, name)) == vars.end());
       vars.insert(make_pair(make_pair(domain, name), value));
     }
+  return vars;
 }
 
-void
-database::get_var(var_key const & key, var_value & value)
+var_value
+database::get_var(var_key const & key)
 {
   results res;
   imp->fetch(res, one_col, any_rows,
@@ -4447,8 +4421,7 @@ database::get_var(var_key const & key, var_value & value)
                    % text(key.first())
                    % blob(key.second()));
   I(res.size() == 1);
-  var_value dbvalue(res[0][0], origin::database);
-  value = dbvalue;
+  return var_value(res[0][0], origin::database);
 }
 
 bool
@@ -4493,7 +4466,7 @@ database::register_workspace(system_path const & workspace)
 {
   var_value val;
   if (var_exists(KNOWN_WORKSPACES_KEY))
-    get_var(KNOWN_WORKSPACES_KEY, val);
+    val = get_var(KNOWN_WORKSPACES_KEY);
 
   vector<string> workspaces;
   split_into_lines(val(), workspaces);
@@ -4516,9 +4489,7 @@ database::unregister_workspace(system_path const & workspace)
 {
   if (var_exists(KNOWN_WORKSPACES_KEY))
     {
-      var_value val;
-      get_var(KNOWN_WORKSPACES_KEY, val);
-
+      var_value val = get_var(KNOWN_WORKSPACES_KEY);
       vector<string> workspaces;
       split_into_lines(val(), workspaces);
 
@@ -4541,9 +4512,7 @@ database::get_registered_workspaces(vector<system_path> & workspaces)
 {
   if (var_exists(KNOWN_WORKSPACES_KEY))
     {
-      var_value val;
-      get_var(KNOWN_WORKSPACES_KEY, val);
-
+      var_value val = get_var(KNOWN_WORKSPACES_KEY);
       vector<string> paths;
       split_into_lines(val(), paths);
 

@@ -81,8 +81,7 @@ netsync_connection_info::Client::Client(database & d, options const & o) :
 
   if (db.var_exists(default_server_key))
     {
-      var_value addr_value;
-      db.get_var(default_server_key, addr_value);
+      var_value addr_value = db.get_var(default_server_key);
       try
         {
           set_raw_uri(addr_value());
@@ -98,14 +97,12 @@ netsync_connection_info::Client::Client(database & d, options const & o) :
   if (db.var_exists(default_include_pattern_key))
     {
       vector<arg_type> includes, excludes;
-      var_value pattern_value;
-
-      db.get_var(default_include_pattern_key, pattern_value);
+      var_value pattern_value = db.get_var(default_include_pattern_key);
       includes.push_back(typecast_vocab<arg_type>(pattern_value));
 
       if (db.var_exists(default_exclude_pattern_key))
         {
-          db.get_var(default_exclude_pattern_key, pattern_value);
+          pattern_value = db.get_var(default_exclude_pattern_key);
           excludes.push_back(typecast_vocab<arg_type>(pattern_value));
         }
 
@@ -293,14 +290,12 @@ netsync_connection_info::Client::set_raw_uri(string const & raw_uri)
   if (db.var_exists(server_include))
     {
       vector<arg_type> includes, excludes;
-      var_value pattern_value;
-
-      db.get_var(server_include, pattern_value);
+      var_value pattern_value = db.get_var(server_include);
       includes.push_back(typecast_vocab<arg_type>(pattern_value));
 
       if (db.var_exists(server_exclude))
         {
-          db.get_var(server_exclude, pattern_value);
+          pattern_value = db.get_var(server_exclude);
           excludes.push_back(typecast_vocab<arg_type>(pattern_value));
         }
 

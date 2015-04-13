@@ -933,8 +933,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
         read_epoch(dat, branch, epoch);
         L(FL("received epoch %s for branch %s")
           % epoch % branch);
-        map<branch_name, epoch_data> epochs;
-        project.db.get_epochs(epochs);
+        map<branch_name, epoch_data> epochs = project.db.get_epochs();
         map<branch_name, epoch_data>::const_iterator i;
         i = epochs.find(branch);
         if (i == epochs.end())
@@ -1374,9 +1373,7 @@ netsync_session::rebuild_merkle_trees(set<branch_name> const & branchnames)
   }
 
   {
-    map<branch_name, epoch_data> epochs;
-    project.db.get_epochs(epochs);
-
+    map<branch_name, epoch_data> epochs = project.db.get_epochs();
     epoch_data epoch_zero(string(constants::epochlen_bytes, '\x00'),
                           origin::internal);
     for (set<branch_name>::const_iterator i = branchnames.begin();

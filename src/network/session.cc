@@ -273,8 +273,8 @@ bool session::do_work(transaction_guard & guard)
                                           var_name(get_peer(), origin::internal));
                     if (project.db.var_exists(their_key_key))
                       {
-                        var_value expected_key_hash;
-                        project.db.get_var(their_key_key, expected_key_hash);
+                        var_value expected_key_hash
+                          = project.db.get_var(their_key_key);
                         if (expected_key_hash != printable_key_hash)
                           {
                             P(F("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"

@@ -243,9 +243,7 @@ toposort(database & db,
 
   for (map<rev_height, revision_id>::const_iterator i = work.begin();
        i != work.end(); ++i)
-    {
-      sorted.push_back(i->second);
-    }
+    sorted.push_back(i->second);
 }
 
 static void

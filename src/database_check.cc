@@ -444,9 +444,7 @@ static void
 check_keys(database & db,
            map<key_id, checked_key> & checked_keys)
 {
-  vector<key_id> pubkeys;
-
-  db.get_key_ids(pubkeys);
+  vector<key_id> pubkeys = db.get_key_ids();
 
   L(FL("checking %d public keys") % pubkeys.size());
 

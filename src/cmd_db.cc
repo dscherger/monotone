@@ -552,8 +552,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
 
   if (idx(args, 0)() == "revision")
     {
-      set<revision_id> completions;
-      db.complete(idx(args, 1)(), completions);
+      set<revision_id> completions = db.complete_revid(idx(args, 1)());
       for (set<revision_id>::const_iterator i = completions.begin();
            i != completions.end(); ++i)
         {
@@ -563,8 +562,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
     }
   else if (idx(args, 0)() == "file")
     {
-      set<file_id> completions;
-      db.complete(idx(args, 1)(), completions);
+      set<file_id> completions = db.complete_file_id(idx(args, 1)());
       for (set<file_id>::const_iterator i = completions.begin();
            i != completions.end(); ++i)
         cout << *i << '\n';
@@ -572,8 +570,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
   else if (idx(args, 0)() == "key")
     {
       typedef set< pair<key_id, utf8 > > completions_t;
-      completions_t completions;
-      db.complete(idx(args, 1)(), completions);
+      completions_t completions = db.complete_key(idx(args, 1)());
       for (completions_t::const_iterator i = completions.begin();
            i != completions.end(); ++i)
         {
@@ -609,7 +606,8 @@ CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
   if (args.size() != 1)
     throw usage(execid);
 
-  revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
+  revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(),
+                                                origin::user));
   database db(app);
   E(db.revision_exists(rid), origin::user,
     F("no revision %s found in database") % rid);

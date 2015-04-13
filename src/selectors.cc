@@ -83,9 +83,7 @@ public:
   author_selector(string const & arg) : value(arg) {}
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.select_cert(author_cert_name(), value, ret);
-    return ret;
+    return project.db.select_cert(author_cert_name(), value);
   }
 };
 class key_selector : public selector
@@ -103,9 +101,7 @@ public:
   }
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.select_key(identity.id, ret);
-    return ret;
+    return project.db.select_key(identity.id);
   }
 };
 class branch_selector : public selector
@@ -122,9 +118,7 @@ public:
   }
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.select_cert(branch_cert_name(), value, ret);
-    return ret;
+    return project.db.select_cert(branch_cert_name(), value);
   }
 };
 class cert_selector : public selector
@@ -138,13 +132,12 @@ public:
   }
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
     size_t equals = value.find("=");
     if (equals == string::npos)
-      project.db.select_cert(value, ret);
+      return project.db.select_cert(value);
     else
-      project.db.select_cert(value.substr(0, equals), value.substr(equals + 1), ret);
-    return ret;
+      return project.db.select_cert(value.substr(0, equals),
+                                    value.substr(equals + 1));
   }
 };
 string preprocess_date_for_selector(string sel, lua_hooks & lua, bool equals)
@@ -188,9 +181,7 @@ public:
     : value(preprocess_date_for_selector(arg, lua, true)) {}
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.select_date(value, "GLOB", ret);
-    return ret;
+    return project.db.select_date(value, "GLOB");
   }
 };
 class earlier_than_selector : public selector
@@ -201,9 +192,7 @@ public:
     : value(preprocess_date_for_selector(arg, lua, false)) {}
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.select_date(value, "<=", ret);
-    return ret;
+    return project.db.select_date(value, "<=");
   }
 };
 class head_selector : public selector
@@ -252,9 +241,7 @@ public:
   ident_selector(string const & arg) : value(arg) {}
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.complete(value, ret);
-    return ret;
+    return project.db.complete_revid(value);
   }
   bool is_full_length() const
   {
@@ -273,9 +260,7 @@ public:
     : value(preprocess_date_for_selector(arg, lua, false)) {}
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.select_date(value, ">", ret);
-    return ret;
+    return project.db.select_date(value, ">");
   }
 };
 class message_selector : public selector
@@ -285,9 +270,10 @@ public:
   message_selector(string const & arg) : value(arg) {}
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> changelogs, comments;
-    project.db.select_cert(changelog_cert_name(), value, changelogs);
-    project.db.select_cert(comment_cert_name(), value, comments);
+    set<revision_id> changelogs
+      = project.db.select_cert(changelog_cert_name(), value);
+    set<revision_id> comments
+      = project.db.select_cert(comment_cert_name(), value);
 
     changelogs.insert(comments.begin(), comments.end());
     return changelogs;
@@ -324,9 +310,7 @@ public:
   }
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.select_parent(value, ret);
-    return ret;
+    return project.db.select_parent(value);
   }
 };
 class tag_selector : public selector
@@ -336,9 +320,7 @@ public:
   tag_selector(string const & arg) : value(arg) {}
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.select_cert(tag_cert_name(), value, ret);
-    return ret;
+    return project.db.select_cert(tag_cert_name(), value);
   }
 };
 class update_selector : public selector
@@ -358,9 +340,7 @@ public:
   }
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.complete(value, ret);
-    return ret;
+    return project.db.complete_revid(value);
   }
 };
 class working_base_selector : public selector
@@ -395,9 +375,7 @@ public:
   unknown_selector(string const & arg) : value(arg) {}
   virtual set<revision_id> complete(project_t & project)
   {
-    set<revision_id> ret;
-    project.db.select_author_tag_or_branch(value, ret);
-    return ret;
+    return project.db.select_author_tag_or_branch(value);
   }
 };
 

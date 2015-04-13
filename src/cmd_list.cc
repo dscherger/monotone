@@ -319,7 +319,7 @@ namespace {
       vector<key_id> dbkeys;
       if (db.database_specified())
         {
-          db.get_key_ids(dbkeys);
+          dbkeys = db.get_key_ids();
           for (vector<key_id>::iterator i = dbkeys.begin();
                i != dbkeys.end(); i++)
             {
@@ -499,8 +499,7 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
     options::opts::none)
 {
   database db(app);
-  map<branch_name, epoch_data> epochs;
-  db.get_epochs(epochs);
+  map<branch_name, epoch_data> epochs = db.get_epochs();
 
   if (args.empty())
     {
@@ -599,8 +598,7 @@ CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
     throw usage(execid);
 
   database db(app);
-  map<var_key, var_value> vars;
-  db.get_vars(vars);
+  map<var_key, var_value> vars = db.get_vars();
   for (map<var_key, var_value>::const_iterator i = vars.begin();
        i != vars.end(); ++i)
     {

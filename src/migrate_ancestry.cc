@@ -352,8 +352,7 @@ anc_graph::add_node_for_old_manifest(manifest_id const & man)
       node_to_old_man.insert(make_pair(node, man));
 
       // load certs
-      vector<cert> mcerts;
-      db.get_manifest_certs(man, mcerts);
+      vector<cert> mcerts = db.get_manifest_certs(man);
       for(vector<cert>::const_iterator i = mcerts.begin();
           i != mcerts.end(); ++i)
         {
@@ -958,9 +957,7 @@ build_changesets_from_manifest_ancestry(database & db, key_store & keys,
 
   P(F("rebuilding revision graph from manifest certs"));
 
-  vector<cert> tmp;
-  db.get_manifest_certs(cert_name("ancestor"), tmp);
-
+  vector<cert> tmp = db.get_manifest_certs(cert_name("ancestor"));
   for (vector<cert>::const_iterator i = tmp.begin();
        i != tmp.end(); ++i)
     {

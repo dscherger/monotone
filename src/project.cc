@@ -516,8 +516,7 @@ project_t::lookup_key_by_name(key_store * const keys,
     }
   if (db.database_specified())
     {
-      vector<key_id> dbkeys;
-      db.get_key_ids(dbkeys);
+      vector<key_id> dbkeys = db.get_key_ids();
       for (vector<key_id>::const_iterator i = dbkeys.begin();
            i != dbkeys.end(); ++i)
         {
