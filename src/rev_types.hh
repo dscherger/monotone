@@ -57,7 +57,7 @@ class system_path;
 class path_component;
 
 // full definitions in revision.hh
-struct revision_t;
+class revision_t;
 typedef std::map<revision_id, std::shared_ptr<cset> > edge_map;
 typedef edge_map::value_type edge_entry;
 
