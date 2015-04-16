@@ -78,5 +78,9 @@ namespace std {
 
 #endif // __cplusplus
 
+// Clang doesn't support __float128, but glibc needs it.
+#ifdef __clang__
+struct __float128;
+#endif
 
 #endif // _compat_h__compatability_header

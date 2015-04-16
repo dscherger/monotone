@@ -39,6 +39,11 @@
 #undef __STRICT_ANSI__
 #endif
 
+// Clang doesn't support __float128, but glibc needs it.
+#ifdef __clang__
+struct __float128;
+#endif
+
 #include <iosfwd>
 #include <string>  // it would be nice if there were a <stringfwd>
 
