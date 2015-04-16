@@ -182,6 +182,19 @@ function fsize(filename)
   return size
 end
 
+function readable(filename)
+  if not exists(filename) then
+    return false
+  end
+  local file = io.open(filename, "r")
+  if file == nil then
+    return false
+  else
+    file:close()
+	return true
+  end
+end
+
 function readfile_q(filename)
   local file = open_or_err(filename, "rb", 3)
   local dat = file:read("*a")
