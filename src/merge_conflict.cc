@@ -105,7 +105,7 @@ put_added_conflict_left(basic_io::stanza & st,
   // access functions to content_merge_adaptor.
 
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
-  std::shared_ptr<roster_t const> roster(db_adaptor.rosters[db_adaptor.left_rid]);
+  roster_t_cp roster(db_adaptor.rosters[db_adaptor.left_rid]);
   file_path name;
 
   roster->get_name (nid, name);
@@ -131,7 +131,7 @@ put_added_conflict_right(basic_io::stanza & st,
                          node_id const nid)
 {
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
-  std::shared_ptr<roster_t const> roster(db_adaptor.rosters[db_adaptor.right_rid]);
+  roster_t_cp roster(db_adaptor.rosters[db_adaptor.right_rid]);
   I(0 != roster);
 
   file_path name;
@@ -160,9 +160,9 @@ put_rename_conflict_left(basic_io::stanza & st,
                          node_id const nid)
 {
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
-  std::shared_ptr<roster_t const> ancestor_roster(db_adaptor.rosters[db_adaptor.lca]);
+  roster_t_cp ancestor_roster(db_adaptor.rosters[db_adaptor.lca]);
   I(0 != ancestor_roster);
-  std::shared_ptr<roster_t const> left_roster(db_adaptor.rosters[db_adaptor.left_rid]);
+  roster_t_cp left_roster(db_adaptor.rosters[db_adaptor.left_rid]);
 
   file_path ancestor_name;
   file_path left_name;
@@ -287,9 +287,9 @@ put_rename_conflict_right (basic_io::stanza & st,
                            node_id const nid)
 {
   content_merge_database_adaptor & db_adaptor (dynamic_cast<content_merge_database_adaptor &>(adaptor));
-  std::shared_ptr<roster_t const> ancestor_roster(db_adaptor.rosters[db_adaptor.lca]);
+  roster_t_cp ancestor_roster(db_adaptor.rosters[db_adaptor.lca]);
   I(0 != ancestor_roster);
-  std::shared_ptr<roster_t const> right_roster(db_adaptor.rosters[db_adaptor.right_rid]);
+  roster_t_cp right_roster(db_adaptor.rosters[db_adaptor.right_rid]);
   I(0 != right_roster);
 
   file_path ancestor_name;
@@ -350,9 +350,9 @@ put_attr_conflict (basic_io::stanza & st,
   roster_t_cp ancestor_roster =
     db_adaptor.get_ancestral_roster(conflict.nid, ancestor_rid);
 
-  std::shared_ptr<roster_t const> left_roster(db_adaptor.rosters[db_adaptor.left_rid]);
+  roster_t_cp left_roster(db_adaptor.rosters[db_adaptor.left_rid]);
   I(0 != left_roster);
-  std::shared_ptr<roster_t const> right_roster(db_adaptor.rosters[db_adaptor.right_rid]);
+  roster_t_cp right_roster(db_adaptor.rosters[db_adaptor.right_rid]);
   I(0 != right_roster);
 
   file_path ancestor_name;

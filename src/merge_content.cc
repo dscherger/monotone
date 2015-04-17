@@ -123,17 +123,17 @@ content_merge_database_adaptor::record_file(file_id const & parent_ident,
 
 void
 content_merge_database_adaptor::cache_roster(revision_id const & rid,
-                                             std::shared_ptr<roster_t const> roster)
+                                             roster_t_cp roster)
 {
   safe_insert(rosters, make_pair(rid, roster));
 };
 
 static void
 load_and_cache_roster(database & db, revision_id const & rid,
-                      map<revision_id, shared_ptr<roster_t const> > & rmap,
-                      shared_ptr<roster_t const> & rout)
+                      map<revision_id, roster_t_cp> & rmap,
+                      roster_t_cp & rout)
 {
-  map<revision_id, shared_ptr<roster_t const> >::const_iterator i = rmap.find(rid);
+  map<revision_id, roster_t_cp>::const_iterator i = rmap.find(rid);
   if (i != rmap.end())
     rout = i->second;
   else
@@ -148,7 +148,7 @@ roster_t_cp
 content_merge_database_adaptor::get_ancestral_roster(node_id nid,
                                                      revision_id & rid)
 {
-  shared_ptr<roster_t const> anc;
+  roster_t_cp anc;
 
   // Given a file, if the lca is nonzero and its roster contains the file,
   // then we use its roster.  Otherwise we use the roster at the file's
@@ -232,7 +232,7 @@ content_merge_database_adaptor::get_version(file_id const & ident) const
 
 void
 content_merge_workspace_adaptor::cache_roster(revision_id const & rid,
-                                              std::shared_ptr<roster_t const> roster)
+                                              roster_t_cp roster)
 {
   rosters.insert(std::make_pair(rid, roster));
 }

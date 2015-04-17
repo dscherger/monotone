@@ -59,7 +59,7 @@ content_merge_database_adaptor
   marking_map const & left_mm;
   marking_map const & right_mm;
   std::set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
-  std::map<revision_id, std::shared_ptr<roster_t const> > rosters;
+  std::map<revision_id, roster_t_cp> rosters;
   content_merge_database_adaptor(database & db,
                                  revision_id const & left,
                                  revision_id const & right,
@@ -83,7 +83,7 @@ content_merge_database_adaptor
                    file_data const & merged_data);
 
   void cache_roster(revision_id const & rid,
-                    std::shared_ptr<roster_t const> roster);
+                    roster_t_cp roster);
 
   roster_t_cp get_ancestral_roster(node_id nid,
                                    revision_id & rid);
@@ -108,14 +108,14 @@ content_merge_workspace_adaptor
   std::map<file_id, file_data> temporary_store;
   database & db;
   revision_id const lca;
-  std::shared_ptr<roster_t const> base;
+  roster_t_cp base;
   marking_map const & left_mm;
   marking_map const & right_mm;
-  std::map<revision_id, std::shared_ptr<roster_t const> > rosters;
+  std::map<revision_id, roster_t_cp> rosters;
   std::map<file_id, file_path> content_paths;
   content_merge_workspace_adaptor(database & db,
                                   revision_id const & lca,
-                                  std::shared_ptr<roster_t const> base,
+                                  roster_t_cp base,
                                   marking_map const & left_mm,
                                   marking_map const & right_mm,
                                   std::map<file_id, file_path> const & paths)
@@ -124,7 +124,7 @@ content_merge_workspace_adaptor
   {}
 
   void cache_roster(revision_id const & rid,
-                    std::shared_ptr<roster_t const> roster);
+                    roster_t_cp roster);
 
   void record_merge(file_id const & left_ident,
                     file_id const & right_ident,
