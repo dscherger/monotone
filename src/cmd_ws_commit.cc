@@ -1196,7 +1196,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
                         % head_h % head_h.abs());
                       I(head_h > parent_h);
                       s64 diff = head_h.abs() - parent_h.abs();
-                      I(diff > 0);
+                      // FIXME: diff isn't guaranteed to be greater than zero
 
                       // And store it for later use in the report.
                       head_distances.insert(make_pair(head, diff));
