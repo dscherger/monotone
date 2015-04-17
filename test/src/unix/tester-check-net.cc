@@ -253,7 +253,8 @@ int main(void)
     }
   if (p != child)
     {
-      fprintf(stderr, "teardown: unexpected child %d != %d\n", p, child);
+      fprintf(stderr, "teardown: unexpected child %ld != %ld\n",
+              (long int) p, (long int) child);
       return 2;
     }
   if (!WIFEXITED(status))
