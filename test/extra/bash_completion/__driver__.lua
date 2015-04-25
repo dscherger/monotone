@@ -23,6 +23,7 @@ function expect_if(cond, test)
 	     "-c", "set srcdir \""..srcdir.."\"",
 	     "-c", "source library.exp",
 	     "-f", test..".exp"}, 0, true, false)
+      skip_if(qgrep("No bash completion package present", "stdout"))
       xfail_if(cond, grep("<<success>>", "stdout"), 0, false, false)
    else
       check(false)
