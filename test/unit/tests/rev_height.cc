@@ -108,22 +108,53 @@ UNIT_TEST(comparisons)
     }
 }
 
-UNIT_TEST(abs_height)
+UNIT_TEST(height_difference)
 {
   rev_height root(rev_height::root_height());
   rev_height left(root.child_height(0));
   rev_height right(root.child_height(1));
 
-  UNIT_TEST_CHECK(root.abs() == 0);
-  UNIT_TEST_CHECK(left.abs() == 1);
-  UNIT_TEST_CHECK(right.abs() == 1);
+  UNIT_TEST_CHECK(root.distance_to(root) == make_pair(true, 0L));
+  UNIT_TEST_CHECK(left.distance_to(left) == make_pair(true, 0L));
+  UNIT_TEST_CHECK(right.distance_to(right) == make_pair(true, 0L));
+
+  UNIT_TEST_CHECK(left.distance_to(root) == make_pair(true, 1L));
+  UNIT_TEST_CHECK(root.distance_to(left) == make_pair(true, -1L));
+
+  UNIT_TEST_CHECK(right.distance_to(root) == make_pair(true, 1L));
+  UNIT_TEST_CHECK(root.distance_to(right) == make_pair(true, -1L));
 
   rev_height left_sub(left.child_height(0));
-  rev_height right_sub_left(right.child_height(0));
-  rev_height right_sub_right(right.child_height(1));
-  UNIT_TEST_CHECK(left_sub.abs() == 2);
-  UNIT_TEST_CHECK(right_sub_left.abs() == 2);
-  UNIT_TEST_CHECK(right_sub_right.abs() == 2);
+
+  UNIT_TEST_CHECK(left_sub.distance_to(left) == make_pair(true, 1L));
+  UNIT_TEST_CHECK(left.distance_to(left_sub) == make_pair(true, -1L));
+
+  UNIT_TEST_CHECK(left_sub.distance_to(root) == make_pair(true, 2L));
+  UNIT_TEST_CHECK(root.distance_to(left_sub) == make_pair(true, -2L));
+
+  rev_height right_sub_l(right.child_height(0));
+  UNIT_TEST_CHECK(right_sub_l.distance_to(right) == make_pair(true, 1L));
+  UNIT_TEST_CHECK(right.distance_to(right_sub_l) == make_pair(true, -1L));
+
+  UNIT_TEST_CHECK(right_sub_l.distance_to(root) == make_pair(true, 2L));
+  UNIT_TEST_CHECK(root.distance_to(right_sub_l) == make_pair(true, -2L));
+
+  rev_height right_sub_r(right.child_height(1));
+  UNIT_TEST_CHECK(right_sub_r.distance_to(right) == make_pair(true, 1L));
+  UNIT_TEST_CHECK(right.distance_to(right_sub_r) == make_pair(true, -1L));
+
+  UNIT_TEST_CHECK(right_sub_r.distance_to(root) == make_pair(true, 2L));
+  UNIT_TEST_CHECK(root.distance_to(right_sub_r) == make_pair(true, -2L));
+
+  rev_height merge(left_sub.child_height(0));
+  UNIT_TEST_CHECK(merge.distance_to(root) == make_pair(true, 3L));
+  UNIT_TEST_CHECK(root.distance_to(merge) == make_pair(true, -3L));
+
+  UNIT_TEST_CHECK(merge.distance_to(right_sub_l) == make_pair(false, 0L));
+  UNIT_TEST_CHECK(right_sub_l.distance_to(merge) == make_pair(false, 0L));
+  
+  UNIT_TEST_CHECK(merge.distance_to(right_sub_r) == make_pair(false, 0L));
+  UNIT_TEST_CHECK(right_sub_r.distance_to(merge) == make_pair(false, 0L));
 }
 
 // Local Variables:

@@ -946,8 +946,11 @@ show_branch_status(map<branch_name, set<revision_id>> const & div_heads,
                   : _("                   and: "))
               << color.colorize(encode_hexenc(ity.first.inner()(),
                                               ity.first.inner().made_from),
-                                colorizer::rev_id) << ' '
-              << (F("(+%d revs)") % ity.second) << '\n';
+                                colorizer::rev_id);
+          if (ity.second > 0)
+            out << ' ' << (F("(+%d revs)") % ity.second);
+          out << '\n';
+          
           // FIXME: report more details, here (date, author)
           first_newer_head = false;
           count_newer_heads++;
@@ -1060,7 +1063,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   {
     s64 height_diff;
     int count_branch_certs;
-    map<branch_name, map<revision_id, s64> > branch_head_dist;
     set<utf8> tags;
     bool in_current_branch;
     bool is_suspended;
@@ -1090,11 +1092,11 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       parent_state ps;
       rev_height parent_height = project.db.get_rev_height(parent);
 
-      L(FL("Parent revision %s has height %s (abs %d)")
+      L(FL("Parent revision %s has height %s")
         % color.colorize(encode_hexenc(parent.inner()(),
                                        parent.inner().made_from),
                          colorizer::rev_id)
-        % parent_height % parent_height.abs());
+        % parent_height);
 
       vector<cert> certs;
       db.get_revision_certs(parent, certs);
@@ -1171,7 +1173,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
               erase_ancestors(db, descendents);
 
-              map<revision_id, s64> head_distances;
               if (descendents.empty())
                 {
                   ps.is_head = true;
@@ -1188,19 +1189,25 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
                       // Determine the (height) distance of the parent
                       // revision to this head.
                       rev_height head_h = project.db.get_rev_height(head);
-                      L(FL("Head '%s' of branch '%s' has height %s (abs %d)")
+                      L(FL("Head '%s' of branch '%s' has height %s")
                         % color.colorize(encode_hexenc(head.inner()(),
                                                        head.inner().made_from),
                                          colorizer::rev_id)
                         % color.colorize(parent_branch(), colorizer::branch)
-                        % head_h % head_h.abs());
+                        % head_h);
                       I(head_h > parent_h);
-                      s64 diff = head_h.abs() - parent_h.abs();
-                      // FIXME: diff isn't guaranteed to be greater than zero
+
+                      pair<bool, s64> diff = head_h.distance_to(parent_h);
+                      if (diff.first)
+                        I(diff.second > 0);
+                      else
+                        {
+                          // FIXME: if the distance cannot be determined
+                          // from the revision height, use breadth first
+                          // seach with some limit.
+                        }
 
                       // And store it for later use in the report.
-                      head_distances.insert(make_pair(head, diff));
-
                       map<branch_name, map<revision_id, s64> >::iterator
                         nbh_ity = newer_heads.find(parent_branch);
                       if (nbh_ity == newer_heads.end())
@@ -1208,7 +1215,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
                           (make_pair(parent_branch, map<revision_id, s64>()))
                           .first;
 
-                      nbh_ity->second.insert(make_pair(head, diff));
+                      nbh_ity->second.insert(make_pair(head, diff.second));
 
                       // Remove this head from the list of divergent branch
                       // heads. It's a descendent of the parent revision,
@@ -1216,9 +1223,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
                       branch_head_ity->second.erase(head);
                     }
                 }
-
-              ps.branch_head_dist.insert(make_pair(parent_branch,
-                                                   head_distances));
             }
         }
 

@@ -10,11 +10,15 @@
 #ifndef __REV_HEIGHT_HH_
 #define __REV_HEIGHT_HH_
 
+#include <utility>
+
 #include "numeric_vocab.hh"
 
 class rev_height
 {
   std::string d;
+
+  s64 diff_add_rest(size_t pos) const;
 
 public:
   rev_height() : d() {}
@@ -24,7 +28,6 @@ public:
 
   rev_height child_height(u32 nr) const;
   static rev_height root_height();
-  u64 abs() const;
 
   bool valid() const { return !d.empty(); }
 
@@ -52,6 +55,7 @@ public:
   {
     return this->d >= other.d;
   }
+  std::pair<bool, s64> distance_to(rev_height const & other) const;
 };
 
 std::ostream & operator <<(std::ostream & os, rev_height const & h);

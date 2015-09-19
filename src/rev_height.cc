@@ -8,16 +8,20 @@
 // PURPOSE.
 
 #include "base.hh"
-#include <sstream>
+
 #include <algorithm>
+#include <sstream>
+#include <utility>
 
 #include "sanity.hh"
 #include "rev_height.hh"
 
-using std::ostream;
-using std::string;
-using std::ostringstream;
+using std::make_pair;
 using std::min;
+using std::ostream;
+using std::ostringstream;
+using std::pair;
+using std::string;
 
 /*
  * Implementation note: hv, holding the raw revision height, is
@@ -93,20 +97,76 @@ rev_height rev_height::root_height()
   return rev_height(root);
 }
 
-u64 rev_height::abs() const
+s64 rev_height::diff_add_rest(size_t pos) const
 {
-  // In a way, numbers at even indexes account for height, while numbers at
-  // odd index positions enumerate children (starting at 0, counting that as
-  // an even index). Note, however, that $PREFIX.0.0 is one revision higher
-  // than $PREFIX. We account for that in this initialization.
-  u64 abs_height = d.size() / width / 2;
+  s64 sum = 0;
+  for (size_t i = pos; i < d.size() / width; i += 2)
+    sum += read_at(d, i) + 1;
+  L(FL("        diff_add_rest returns %d") % sum);
+  return sum;
+}
 
-  // Account for height in even index positions.
-  I((d.size() / width) % 2 == 1);
-  for (size_t i = 0; i < d.size() / width; i += 2)
-    abs_height += read_at(d, i);
+// Tries to calculate the difference between two revisions directly from the
+// rev_height, if possible. Returns <false, 0> if this isn't possible.
+pair<bool, s64> rev_height::distance_to(rev_height const & rhs) const
+{
+  // Numbers at even indices account for height (i.e. number of commits in
+  // that "branch") while numbers at odd positions enumerate children. Note
+  // that $PREFIX.$BRANCH_ID.0 is one revision deeper in the tree than just
+  // $PREFIX. Independent of the BRANCH_ID. Therefore, to calculate
+  // differences, we're only interested in the even numbers plus the depth.
+  I(d.size() >= width);
+  I(rhs.d.size() >= width);
+  I(d.size() % (2 * width) == width);
+  I(rhs.d.size() % (2 * width) == width);
 
-  return abs_height;
+  size_t l_size = d.size() / width,
+    r_size = rhs.d.size() / width;
+
+  for (size_t i = 0; ; i += 2)
+    {
+      bool l_cont = (i < l_size),
+        r_cont = (i < r_size);
+
+      if (!l_cont && !r_cont)
+        return make_pair(true, 0);
+      else if (l_cont && r_cont)
+        {
+          u32 left = read_at(d, i),
+            right = read_at(rhs.d, i);
+
+          if (left == right)
+            continue;
+          else if (left > right)
+            {
+              if (i + 2 < r_size)
+                // diverging branches, cannot calculate difference directly.
+                return make_pair(false, 0);
+              else
+                return make_pair(true,
+                                 left - right + diff_add_rest(i + 2));
+            }
+          else
+            {
+              if (i + 2 < l_size)
+                // diverging branches, cannot calculate difference directly.
+                return make_pair(false, 0);
+              else
+                return make_pair(true,
+                                 -(right - left + rhs.diff_add_rest(i + 2)));
+            }
+        }
+      else if (!r_cont)
+        return make_pair(true, diff_add_rest(i));
+      else
+        {
+          I(!l_cont);
+          return make_pair(true, -(rhs.diff_add_rest(i)));
+        }
+    }
+
+  // Should never be reached.
+  I(false);
 }
 
 // Human-readable output
