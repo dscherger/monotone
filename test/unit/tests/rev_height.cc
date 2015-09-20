@@ -108,53 +108,45 @@ UNIT_TEST(comparisons)
     }
 }
 
+#define CHECK_DIFFERENCE(a, b, exp_success, exp_diff)               \
+  do                                                                \
+    {                                                               \
+      auto result = make_pair<bool, s64>(exp_success, exp_diff);    \
+      UNIT_TEST_CHECK(a.distance_to(b) == result);                  \
+      result.second = -result.second;                               \
+      UNIT_TEST_CHECK(b.distance_to(a) == result);                  \
+    }                                                               \
+  while (0)
+
 UNIT_TEST(height_difference)
 {
   rev_height root(rev_height::root_height());
   rev_height left(root.child_height(0));
   rev_height right(root.child_height(1));
 
-  UNIT_TEST_CHECK(root.distance_to(root) == make_pair(true, 0L));
-  UNIT_TEST_CHECK(left.distance_to(left) == make_pair(true, 0L));
-  UNIT_TEST_CHECK(right.distance_to(right) == make_pair(true, 0L));
+  CHECK_DIFFERENCE(root, root, true, 0);
+  CHECK_DIFFERENCE(left, left, true, 0);
+  CHECK_DIFFERENCE(right, right, true, 0);
 
-  UNIT_TEST_CHECK(left.distance_to(root) == make_pair(true, 1L));
-  UNIT_TEST_CHECK(root.distance_to(left) == make_pair(true, -1L));
-
-  UNIT_TEST_CHECK(right.distance_to(root) == make_pair(true, 1L));
-  UNIT_TEST_CHECK(root.distance_to(right) == make_pair(true, -1L));
+  CHECK_DIFFERENCE(left, root, true, 1);
+  CHECK_DIFFERENCE(right, root, true, 1);
 
   rev_height left_sub(left.child_height(0));
-
-  UNIT_TEST_CHECK(left_sub.distance_to(left) == make_pair(true, 1L));
-  UNIT_TEST_CHECK(left.distance_to(left_sub) == make_pair(true, -1L));
-
-  UNIT_TEST_CHECK(left_sub.distance_to(root) == make_pair(true, 2L));
-  UNIT_TEST_CHECK(root.distance_to(left_sub) == make_pair(true, -2L));
+  CHECK_DIFFERENCE(left_sub, left, true, 1);
+  CHECK_DIFFERENCE(left_sub, root, true, 2);
 
   rev_height right_sub_l(right.child_height(0));
-  UNIT_TEST_CHECK(right_sub_l.distance_to(right) == make_pair(true, 1L));
-  UNIT_TEST_CHECK(right.distance_to(right_sub_l) == make_pair(true, -1L));
-
-  UNIT_TEST_CHECK(right_sub_l.distance_to(root) == make_pair(true, 2L));
-  UNIT_TEST_CHECK(root.distance_to(right_sub_l) == make_pair(true, -2L));
+  CHECK_DIFFERENCE(right_sub_l, right, true, 1);
+  CHECK_DIFFERENCE(right_sub_l, root, true, 2);
 
   rev_height right_sub_r(right.child_height(1));
-  UNIT_TEST_CHECK(right_sub_r.distance_to(right) == make_pair(true, 1L));
-  UNIT_TEST_CHECK(right.distance_to(right_sub_r) == make_pair(true, -1L));
-
-  UNIT_TEST_CHECK(right_sub_r.distance_to(root) == make_pair(true, 2L));
-  UNIT_TEST_CHECK(root.distance_to(right_sub_r) == make_pair(true, -2L));
+  CHECK_DIFFERENCE(right_sub_r, right, true, 1);
+  CHECK_DIFFERENCE(right_sub_r, root, true, 2);
 
   rev_height merge(left_sub.child_height(0));
-  UNIT_TEST_CHECK(merge.distance_to(root) == make_pair(true, 3L));
-  UNIT_TEST_CHECK(root.distance_to(merge) == make_pair(true, -3L));
-
-  UNIT_TEST_CHECK(merge.distance_to(right_sub_l) == make_pair(false, 0L));
-  UNIT_TEST_CHECK(right_sub_l.distance_to(merge) == make_pair(false, 0L));
-  
-  UNIT_TEST_CHECK(merge.distance_to(right_sub_r) == make_pair(false, 0L));
-  UNIT_TEST_CHECK(right_sub_r.distance_to(merge) == make_pair(false, 0L));
+  CHECK_DIFFERENCE(merge, root, true, 3);
+  CHECK_DIFFERENCE(merge, right_sub_r, false, 0);
+  CHECK_DIFFERENCE(merge, right_sub_r, false, 0);
 }
 
 // Local Variables:
