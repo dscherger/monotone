@@ -1019,24 +1019,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   unique_ptr<workspace_result> wres(new workspace_result);
   work.update_current_roster_from_filesystem(new_roster, mask, wres);
 
-  vector<bisect::entry> info = work.get_bisect_info();
-
-  if (!info.empty())
-    {
-      bisect::entry start = *info.begin();
-      I(start.first == bisect::start);
-
-      if (old_rosters.size() == 1)
-        {
-          revision_id current_id = parent_id(*old_rosters.begin());
-          if (start.second != current_id)
-            P(F("bisection from revision %s in progress")
-              % color.colorize(encode_hexenc(start.second.inner()(),
-                                             start.second.inner().made_from),
-                               colorizer::rev_id));
-        }
-    }
-
   revision_id rid;
   string author;
   key_store keys(app);
@@ -1230,6 +1212,28 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
     }
 
   ostringstream out;
+
+  // Emit a warning, if we are in the middle of a bisect operation.
+  vector<bisect::entry> info = work.get_bisect_info();
+  if (!info.empty())
+    {
+      bisect::entry start = *info.begin();
+      I(start.first == bisect::start);
+
+      if (old_rosters.size() == 1)
+        {
+          revision_id current_id = parent_id(*old_rosters.begin());
+          if (start.second != current_id)
+            out << color.colorize(
+                     (FL("bisection from revision %s in progress")
+                      % encode_hexenc(start.second.inner()(),
+                                      start.second.inner().made_from)
+                      ).str(),
+                     colorizer::important)
+                << '\n';
+        }
+    }
+
   out << string(70, '-') << '\n';
 
   // Emit 'On top of branch' or 'Current branch':
