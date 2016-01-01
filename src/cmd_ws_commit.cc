@@ -1107,7 +1107,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
                   branch_head_ity = div_heads.insert
                     (make_pair(parent_branch,
                                set<revision_id>())).first;
-                  project.get_branch_heads(app.opts.branch,
+                  project.get_branch_heads(parent_branch,
                                            branch_head_ity->second,
                                            app.opts.ignore_suspend_certs);
                 }
