@@ -5,8 +5,8 @@ XXX XXX XX XX XX XX UTC XXXX
         Changes
 
         - Monotone now requires at least version 1.35.0 of the Boost
-          headers.  This enables us to get rid of even more bundled
-          copies of externally maintained source.
+          headers.  This allows us to get rid of some compatibility
+          code.
 
         -
 
