@@ -201,8 +201,8 @@ cset_summary(cset const & cs, colorizer const & color, ostringstream & out)
               "      set  %s\n"
               "       to  %s")
             % p.first.first
-            % color.colorize(p.first.second(), colorizer::add)
-            % color.colorize(p.second(), colorizer::add)).str() << '\n';
+            % color.colorize(p.first.second(), colorizer::change)
+            % color.colorize(p.second(), colorizer::change)).str() << '\n';
 
   // FIXME: naming here could not be more inconsistent:
   //  * the cset calls it attrs_cleared
