@@ -954,6 +954,7 @@ find_bookdir(system_path const & root, path_component const & bookdir,
           continue;
 
         case path::file:
+        case path::special:
           L(FL("'%s' is not a directory") % check);
           return false;
 
@@ -972,6 +973,7 @@ find_bookdir(system_path const & root, path_component const & bookdir,
       return false;
 
     case path::file:
+    case path::special:
       L(FL("'%s' is not a directory") % check);
       return false;
 
@@ -984,7 +986,7 @@ find_bookdir(system_path const & root, path_component const & bookdir,
   // check for _MTN/. and _MTN/.. to see if mt dir is readable
   try
     {
-      if (!path_exists(check / ".") || !path_exists(check / ".."))
+      if (!directory_exists(check / ".") || !directory_exists(check / ".."))
         {
           L(FL("problems with '%s' (missing '.' or '..')") % check);
           return false;
@@ -1039,8 +1041,9 @@ find_and_go_to_workspace(string const & search_root)
       L(FL("limiting search for workspace to %s") % root);
 
       require_path_is_directory(root,
-                               F("search root '%s' does not exist") % root,
-                               F("search root '%s' is not a directory") % root);
+        F("search root '%s' does not exist") % root,
+        F("search root '%s' is not a directory") % root,
+        F("search root '%s' is not a directory") % root);
     }
 
   // first look for the current name of the bookkeeping directory.

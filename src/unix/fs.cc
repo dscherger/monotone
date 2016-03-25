@@ -153,10 +153,8 @@ get_path_status(string const & path)
   else if (S_ISDIR(buf.st_mode))
     return path::directory;
   else
-    {
-      // fifo or device or who knows what...
-      E(false, origin::system, F("cannot handle special file '%s'") % path);
-    }
+    // fifo or device or who knows what...
+    return path::special;
 }
 
 namespace
@@ -248,7 +246,8 @@ read_directory(string const & path,
           static bool fstatat_works = true;
           if (fstatat_works)
             {
-              st_result = fstatat(dir.fd(), d->d_name, &st, AT_SYMLNK_NOFOLLOW);
+              st_result = fstatat(dir.fd(), d->d_name, &st,
+                                  AT_SYMLNK_NOFOLLOW);
               if (st_result == -1 && errno == ENOSYS)
                 fstatat_works = false;
             }

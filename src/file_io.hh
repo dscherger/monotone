@@ -33,10 +33,12 @@ void require_path_is_nonexistent(any_path const & path,
                                  i18n_format const & message);
 void require_path_is_file(any_path const & path,
                           i18n_format const & message_if_nonexistent,
-                          i18n_format const & message_if_directory);
+                          i18n_format const & message_if_directory,
+                          i18n_format const & message_if_special);
 void require_path_is_directory(any_path const & path,
                                i18n_format const & message_if_nonexistent,
-                               i18n_format const & message_if_file);
+                               i18n_format const & message_if_file,
+                               i18n_format const & message_if_special);
 
 // returns true if there is a file or directory at 'path'
 bool path_exists(any_path const & path);
@@ -106,6 +108,7 @@ public:
   // returns true if the directory should be descended into
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path) = 0;
+  virtual void visit_special(file_path const & path) = 0;
   virtual ~tree_walker();
 };
 

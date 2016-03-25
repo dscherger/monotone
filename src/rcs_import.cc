@@ -909,6 +909,10 @@ public:
     else
       L(FL("skipping non-RCS file '%s'") % file);
   }
+  virtual void visit_special(file_path const & path)
+  {
+    L(FL("skipping special file '%s'") % path);
+  }
   virtual ~cvs_tree_walker() {}
 };
 

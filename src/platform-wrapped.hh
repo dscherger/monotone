@@ -23,7 +23,7 @@ inline void change_current_working_dir(any_path const & to)
 inline path::status get_path_status(any_path const & path)
 {
   std::string p(path.as_external());
-  return get_path_status(p.empty()?".":p);
+  return get_path_status(p.empty() ? "." : p);
 }
 
 inline void rename_clobberingly(any_path const & from, any_path const & to)
@@ -57,20 +57,6 @@ private:
   bool isdir;
 };
 
-struct special_file_error : public dirent_consumer
-{
-  special_file_error(any_path const & p) : parent(p) {}
-  virtual void consume(char const * f)
-  {
-    any_path result;
-    if (safe_compose(parent, f, result, false))
-      E(false, origin::system,
-        F("'%s' is neither a file nor a directory") % result);
-  }
-private:
-  any_path const & parent;
-};
-
 inline void
 read_directory(any_path const & path,
                dirent_consumer & files,
@@ -78,15 +64,6 @@ read_directory(any_path const & path,
                dirent_consumer & specials)
 {
   read_directory(path.as_external(), files, dirs, specials);
-}
-
-inline void
-read_directory(any_path const & path,
-               dirent_consumer & files,
-               dirent_consumer & dirs)
-{
-  special_file_error sfe(path);
-  read_directory(path.as_external(), files, dirs, sfe);
 }
 
 #endif

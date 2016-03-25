@@ -1,5 +1,6 @@
 // Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -61,36 +62,38 @@ require_path_is_nonexistent(any_path const & path,
 void
 require_path_is_file(any_path const & path,
                      i18n_format const & message_if_nonexistent,
-                     i18n_format const & message_if_directory)
+                     i18n_format const & message_if_directory,
+                     i18n_format const & message_if_special)
 {
   switch (get_path_status(path))
     {
     case path::nonexistent:
       E(false, origin::user, message_if_nonexistent);
-      break;
     case path::file:
       return;
     case path::directory:
       E(false, origin::user, message_if_directory);
-      break;
+    case path::special:
+      E(false, origin::user, message_if_special);
     }
 }
 
 void
 require_path_is_directory(any_path const & path,
                           i18n_format const & message_if_nonexistent,
-                          i18n_format const & message_if_file)
+                          i18n_format const & message_if_file,
+                          i18n_format const & message_if_special)
 {
   switch (get_path_status(path))
     {
     case path::nonexistent:
       E(false, origin::user, message_if_nonexistent);
-      break;
     case path::file:
       E(false, origin::user, message_if_file);
+    case path::special:
+      E(false, origin::user, message_if_special);
     case path::directory:
       return;
-      break;
     }
 }
 
@@ -181,6 +184,9 @@ mkdir_p(any_path const & p)
     case path::file:
       E(false, origin::system,
         F("could not create directory '%s': it is a file") % p);
+    case path::special:
+      E(false, origin::system,
+        F("could not create directory '%s': it is a special file") % p);
     case path::nonexistent:
       std::string const current = p.as_external();
       any_path const parent = p.dirname();
@@ -201,9 +207,10 @@ make_dir_for(any_path const & p)
 void
 delete_file(any_path const & p)
 {
-  require_path_is_file(p,
-                       F("file to delete '%s' does not exist") % p,
-                       F("file to delete, '%s', is not a file but a directory") % p);
+  require_path_is_file (p,
+   F("file to delete '%s' does not exist") % p,
+   F("file to delete, '%s', is not a file but a directory") % p,
+   F("file to delete, '%s', is not a regular file") % p);
   do_remove(p.as_external());
 }
 
@@ -211,8 +218,9 @@ void
 delete_dir_shallow(any_path const & p)
 {
   require_path_is_directory(p,
-                            F("directory to delete '%s' does not exist") % p,
-                            F("directory to delete, '%s', is not a directory but a file") % p);
+    F("directory to delete '%s' does not exist") % p,
+    F("directory to delete, '%s', is not a directory but a file") % p,
+    F("directory to delete, '%s', is not a directory but a special file") % p);
   do_remove(p.as_external());
 }
 
@@ -228,8 +236,9 @@ void
 delete_dir_recursive(any_path const & p)
 {
   require_path_is_directory(p,
-                            F("directory to delete, '%s', does not exist") % p,
-                            F("directory to delete, '%s', is a file") % p);
+    F("directory to delete, '%s', does not exist") % p,
+    F("directory to delete, '%s', is a file") % p,
+    F("directory to delete, '%s', is a special file") % p);
 
   do_remove_recursive(p.as_external());
 }
@@ -239,9 +248,10 @@ move_file(any_path const & old_path,
           any_path const & new_path)
 {
   require_path_is_file(old_path,
-                       F("rename source file '%s' does not exist") % old_path,
-                       F("rename source file '%s' is a directory "
-                         "-- bug in monotone?") % old_path);
+    F("rename source file '%s' does not exist") % old_path,
+    F("rename source file '%s' is a directory -- bug in monotone?")
+      % old_path,
+    F("rename source file '%s' is not a regular file") % old_path);
   require_path_is_nonexistent(new_path,
                               F("rename target '%s' already exists")
                               % new_path);
@@ -253,10 +263,9 @@ move_dir(any_path const & old_path,
          any_path const & new_path)
 {
   require_path_is_directory(old_path,
-                            F("rename source dir '%s' does not exist")
-                            % old_path,
-                            F("rename source dir '%s' is a file "
-                              "-- bug in monotone?") % old_path);
+    F("rename source dir '%s' does not exist") % old_path,
+    F("rename source dir '%s' is a file -- bug in monotone?") % old_path,
+    F("rename source dir '%s' is not a regular file") % old_path);
   require_path_is_nonexistent(new_path,
                               F("rename target '%s' already exists")
                               % new_path);
@@ -279,8 +288,10 @@ data
 read_data(any_path const & p)
 {
   require_path_is_file(p,
-                       F("file '%s' does not exist") % p,
-                       F("file '%s' cannot be read as data; it is a directory") % p);
+    F("file '%s' does not exist") % p,
+    F("file '%s' cannot be read as data; it is a directory") % p,
+    F("cannot read from '%s'; it is not a regular file") % p);
+
 
   ifstream file(p.as_external().c_str(),
                 ios_base::in | ios_base::binary);
@@ -395,20 +406,22 @@ walk_tree_recursive(file_path const & path,
   // peak memory.  By splitting the loop in half, we avoid this problem.
   //
   // [1] http://lkml.org/lkml/2006/2/24/215
-  vector<file_path> files, dirs;
+  vector<file_path> files, specials, dirs;
   fill_path_vec<file_path> fill_files(path, files, false);
+  fill_path_vec<file_path> fill_specials(path, specials, false);
   fill_path_vec<file_path> fill_dirs(path, dirs, true);
 
-  read_directory(path, fill_files, fill_dirs);
+  read_directory(path, fill_files, fill_dirs, fill_specials);
 
-  for (vector<file_path>::const_iterator i = files.begin();
-       i != files.end(); ++i)
-    walker.visit_file(*i);
+  for (file_path const & path : files)
+    walker.visit_file(path);
 
-  for (vector<file_path>::const_iterator i = dirs.begin();
-       i != dirs.end(); ++i)
-    if (walker.visit_dir(*i))
-      walk_tree_recursive(*i, walker);
+  for (file_path const & path : specials)
+    walker.visit_special(path);
+
+  for (file_path const & path : dirs)
+    if (walker.visit_dir(path))
+      walk_tree_recursive(path, walker);
 }
 
 // from some (safe) sub-entry of cwd
@@ -433,6 +446,9 @@ walk_tree(file_path const & path, tree_walker & walker)
       if (walker.visit_dir(path))
         walk_tree_recursive(path, walker);
       break;
+    case path::special:
+      walker.visit_special(path);
+      break;
     }
 }
 
@@ -452,6 +468,7 @@ ident_existing_file(file_path const & p, file_id & ident, path::status status)
     case path::file:
       break;
     case path::directory:
+    case path::special:
       // FIXME: I don't want this in status output, but maybe it's required
       // at other places? Check other callers.
 

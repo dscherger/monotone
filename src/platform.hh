@@ -127,7 +127,7 @@ inline std::string get_default_keydir()
 std::string get_homedir();
 namespace path
 {
-  typedef enum { nonexistent, directory, file } status;
+  typedef enum { nonexistent, directory, file, special } status;
 };
 path::status get_path_status(std::string const & path);
 

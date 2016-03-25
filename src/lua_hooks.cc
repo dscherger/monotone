@@ -224,7 +224,7 @@ lua_hooks::load_rcfile(any_path const & rc, bool required)
   bool exists;
   try
     {
-      exists = path_exists(rc);
+      exists = file_exists(rc);
     }
   catch (recoverable_failure & e)
     {

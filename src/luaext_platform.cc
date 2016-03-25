@@ -240,12 +240,7 @@ LUAEXT(exists, )
   try
     {
       char const * name = luaL_checkstring(LS, -1);
-      switch (get_path_status(name))
-        {
-        case path::nonexistent:  lua_pushboolean(LS, false); break;
-        case path::file:
-        case path::directory:    lua_pushboolean(LS, true); break;
-        }
+      lua_pushboolean(LS, get_path_status(name) != path::nonexistent);
     }
   catch(recoverable_failure & e)
     {
@@ -259,12 +254,7 @@ LUAEXT(isdir, )
   try
     {
       char const * name = luaL_checkstring(LS, -1);
-      switch (get_path_status(name))
-        {
-        case path::nonexistent:
-        case path::file:         lua_pushboolean(LS, false); break;
-        case path::directory:    lua_pushboolean(LS, true); break;
-        }
+      lua_pushboolean(LS, get_path_status(name) == path::directory);
     }
   catch(recoverable_failure & e)
     {

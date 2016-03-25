@@ -80,15 +80,8 @@ string dirname(string const & s)
 // Ensure the existence of DIR before proceeding.
 static void ensure_dir(string const & dir)
 {
-  try
-    {
-      do_mkdir(dir);
-    }
-  catch (recoverable_failure &)
-    {
-      if (get_path_status(dir) != path::directory)
-        throw;
-    }
+  if (get_path_status(dir) != path::directory)
+    do_mkdir(dir);
 }
 
 map<string, string> orig_env_vars;
@@ -164,6 +157,9 @@ void do_make_tree_accessible(string const & p)
       make_accessible(p);
       return;
 
+    case path::special:
+      I(false);
+
     case path::nonexistent:
       return;
     }
@@ -188,6 +184,9 @@ void do_copy_recursive(string const & from, string to)
       if (fromstat == path::directory)
         do_mkdir(to);
       break;
+
+    case path::special:
+      I(false);
 
     case path::directory:
       to = to + "/" + basename(from);

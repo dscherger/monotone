@@ -1,5 +1,6 @@
 // Copyright (C) 2009, 2010, 2012, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -40,6 +41,7 @@ using std::exception;
 using std::make_pair;
 using std::make_shared;
 using std::map;
+using std::move;
 using std::pair;
 using std::set;
 using std::string;
@@ -1002,20 +1004,20 @@ struct file_itemizer : public tree_walker
 {
   database & db;
   workspace & work;
-  set<file_path> & known;
-  set<file_path> & unknown;
-  set<file_path> & ignored;
+  file_items items;
+  set<file_path> const & known;
   path_restriction const & mask;
   bool const recurse;
-  file_itemizer(database & db, workspace & work,
-                set<file_path> & k,
-                set<file_path> & u,
-                set<file_path> & i,
+  file_itemizer(database & db, workspace & work, set<file_path> const & k,
                 path_restriction const & r,
                 bool recurse)
-    : db(db), work(work), known(k), unknown(u), ignored(i), mask(r), recurse(recurse) {}
+    : db(db), work(work), known(k), mask(r), recurse(recurse)
+    { }
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
+  virtual void visit_special(file_path const & path);
+  file_items consume_items()
+    { return move(items); }
 };
 
 
@@ -1024,7 +1026,7 @@ file_itemizer::visit_dir(file_path const & path)
 {
   this->visit_file(path);
   // Don't recurse into ignored directories, even for 'ls ignored'.
-  return recurse && ignored.find(path) == ignored.end();
+  return recurse && items.ignored.find(path) == items.ignored.end();
 }
 
 void
@@ -1033,12 +1035,23 @@ file_itemizer::visit_file(file_path const & path)
   if (mask.includes(path) && known.find(path) == known.end())
     {
       if (work.ignore_file(path) || db.is_dbfile(path))
-        ignored.insert(path);
+        items.ignored.insert(path);
       else
-        unknown.insert(path);
+        items.unknown.insert(path);
     }
 }
 
+void
+file_itemizer::visit_special(file_path const & path)
+{
+  if (mask.includes(path))
+    {
+      if (work.ignore_file(path))
+        items.ignored.insert(path);
+      else
+        items.special.insert(path);
+    }
+}
 
 struct workspace_itemizer : public tree_walker
 {
@@ -1050,6 +1063,7 @@ struct workspace_itemizer : public tree_walker
                      node_id_source & nis);
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
+  virtual void visit_special(file_path const & path);
 };
 
 workspace_itemizer::workspace_itemizer(roster_t & roster,
@@ -1077,6 +1091,13 @@ workspace_itemizer::visit_file(file_path const & path)
   roster.attach_node(nid, path);
 }
 
+void
+workspace_itemizer::visit_special(file_path const & path)
+{
+  E(false, origin::user,
+    F("cannot handle special file '%s'") % path);
+}
+
 
 class
 addition_builder
@@ -1096,6 +1117,7 @@ public:
   {}
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
+  virtual void visit_special(file_path const & path);
   void add_nodes_for(file_path const & path, file_path const & goal);
 };
 
@@ -1131,6 +1153,9 @@ addition_builder::add_nodes_for(file_path const & path,
     case path::directory:
       nid = er.create_dir_node();
       break;
+    case path::special:
+      E(false, origin::user,
+        F("cannot handle special file '%s'") % path);
     }
 
   I(nid != the_null_node);
@@ -1139,13 +1164,13 @@ addition_builder::add_nodes_for(file_path const & path,
   work.init_attributes(path, er);
 }
 
-
 bool
 addition_builder::visit_dir(file_path const & path)
 {
   this->visit_file(path);
-  // when --recursive, don't recurse into ignored dirs (it would just waste time)
-  // when --no-recursive, this result is ignored (see workspace::perform_additions)
+  // when --recursive is given, don't recurse into ignored dirs (it would
+  // just waste time), otherwise this result is ignored (see
+  // workspace::perform_additions)
   return !work.ignore_file(path);
 }
 
@@ -1167,6 +1192,26 @@ addition_builder::visit_file(file_path const & path)
 
   I(ros.has_root());
   add_nodes_for(path, path);
+}
+
+void
+addition_builder::visit_special(file_path const & path)
+{
+  if ((respect_ignore && work.ignore_file(path)) || db.is_dbfile(path))
+    {
+      P(F("skipping ignorable file '%s'") % path);
+      return;
+    }
+
+  if (ros.has_node(path))
+    {
+      if (!path.empty())
+        P(F("skipping '%s', already accounted for in workspace") % path);
+      return;
+    }
+
+  E(false, origin::user,
+    F("cannot add '%s'; it is not a regular file") % path);
 }
 
 struct editable_working_tree : public editable_tree
@@ -1291,17 +1336,18 @@ editable_working_tree::detach_node(file_path const & src_pth)
       // root dir detach, so we move contents, rather than the dir itself
       mkdir_p(dst_pth);
 
-      vector<file_path> files, dirs;
+      vector<file_path> files, specials, dirs;
       fill_path_vec<file_path> fill_files(src_pth, files, false);
+      fill_path_vec<file_path> fill_specials(src_pth, specials, false);
       fill_path_vec<file_path> fill_dirs(src_pth, dirs, true);
-      read_directory(src_pth, fill_files, fill_dirs);
+      read_directory(src_pth, fill_files, fill_dirs, fill_specials);
 
-      for (vector<file_path>::const_iterator i = files.begin();
-           i != files.end(); ++i)
-        move_file(*i, dst_pth / (*i).basename());
-      for (vector<file_path>::const_iterator i = dirs.begin();
-           i != dirs.end(); ++i)
-        move_dir(*i, dst_pth / (*i).basename());
+      for (file_path const path : files)
+        move_file(path, dst_pth / path.basename());
+      for (file_path const & path : specials)
+        move_file(path, dst_pth / path.basename());
+      for (file_path const & path : dirs)
+        move_dir(path, dst_pth / path.basename());
 
       root_dir_attached = false;
     }
@@ -1363,17 +1409,18 @@ editable_working_tree::attach_node(node_id nid, file_path const & dst_pth)
   if (dst_pth == file_path())
     {
       // root dir attach, so we move contents, rather than the dir itself
-      vector<bookkeeping_path> files, dirs;
+      vector<bookkeeping_path> files, specials, dirs;
       fill_path_vec<bookkeeping_path> fill_files(src_pth, files, false);
+      fill_path_vec<bookkeeping_path> fill_specials(src_pth, specials, false);
       fill_path_vec<bookkeeping_path> fill_dirs(src_pth, dirs, true);
-      read_directory(src_pth, fill_files, fill_dirs);
+      read_directory(src_pth, fill_files, fill_dirs, fill_specials);
 
-      for (vector<bookkeeping_path>::const_iterator i = files.begin();
-           i != files.end(); ++i)
-        move_file(*i, dst_pth / (*i).basename());
-      for (vector<bookkeeping_path>::const_iterator i = dirs.begin();
-           i != dirs.end(); ++i)
-        move_dir(*i, dst_pth / (*i).basename());
+      for (bookkeeping_path const & path : files)
+        move_file(path, dst_pth / path.basename());
+      for (bookkeeping_path const & path : specials)
+        move_file(path, dst_pth / path.basename());
+      for (bookkeeping_path const & path : dirs)
+        move_dir(path, dst_pth / path.basename());
 
       delete_dir_shallow(src_pth);
       root_dir_attached = true;
@@ -1390,7 +1437,8 @@ editable_working_tree::apply_delta(file_path const & pth,
 {
   require_path_is_file(pth,
                        F("file '%s' does not exist") % pth,
-                       F("file '%s' is a directory") % pth);
+                       F("file '%s' is a directory") % pth,
+                       F("file '%s' is not a regular file") % pth);
   E(calculate_ident(pth) == old_id, origin::system,
     F("content of file '%s' has changed, not overwriting") % pth);
   P(F("updating '%s'") % pth);
@@ -1787,24 +1835,21 @@ workspace::find_missing(roster_t const & new_roster_shape,
   return missing;
 }
 
-void
+file_items
 workspace::find_unknown_and_ignored(database & db,
                                     path_restriction const & mask,
                                     bool recurse,
-                                    vector<file_path> const & roots,
-                                    set<file_path> & unknown,
-                                    set<file_path> & ignored)
+                                    vector<file_path> const & roots)
 {
   set<file_path> known;
   roster_t new_roster = get_current_roster_shape(db);
   new_roster.extract_path_set(known);
 
-  file_itemizer u(db, *this, known, unknown, ignored, mask, recurse);
-  for (vector<file_path>::const_iterator
-         i = roots.begin(); i != roots.end(); ++i)
-    {
-      walk_tree(*i, u);
-    }
+  file_itemizer u(db, *this, known, mask, recurse);
+  for (file_path const & p : roots)
+    walk_tree(p, u);
+
+  return u.consume_items();
 }
 
 void
@@ -1821,36 +1866,39 @@ workspace::perform_additions(database & db, set<file_path> const & paths,
   editable_roster_base er(new_roster, nis);
 
   if (!new_roster.has_root())
-    {
-      er.attach_node(er.create_dir_node(), file_path_internal(""));
-    }
+    er.attach_node(er.create_dir_node(), file_path_internal(""));
 
   I(new_roster.has_root());
-  addition_builder build(db, *this, new_roster, er, respect_ignore, recursive);
+  addition_builder build(db, *this, new_roster, er, respect_ignore,
+                         recursive);
 
-  for (set<file_path>::const_iterator i = paths.begin(); i != paths.end(); ++i)
+  for (file_path const path : paths)
     {
       if (recursive)
         {
-          // NB.: walk_tree will handle error checking for non-existent paths
-          walk_tree(*i, build);
+          // NB.: walk_tree will handle error checking for non-existent
+          // paths
+          walk_tree(path, build);
         }
       else
         {
           // in the case where we're just handed a set of paths, we use the
           // builder in this strange way.
-          switch (get_path_status(*i))
+          switch (get_path_status(path))
             {
             case path::nonexistent:
               E(false, origin::user,
-                F("no such file or directory: '%s'") % *i);
+                F("no such file or directory: '%s'") % path);
               break;
             case path::file:
-              build.visit_file(*i);
+              build.visit_file(path);
               break;
             case path::directory:
-              build.visit_dir(*i);
+              build.visit_dir(path);
               break;
+            case path::special:
+              E(false, origin::user,
+                F("cannot handle special file '%s'") % path);
             }
         }
     }
@@ -1990,8 +2038,9 @@ workspace::perform_rename(database & db,
 
       if (src == dst || dst.is_beneath_of(src))
         {
-          if (get_path_status(dst) == path::directory)
-            W(F("cannot move '%s' to a subdirectory of itself, '%s/%s'") % src % dst % src);
+          if (directory_exists(dst))
+            W(F("cannot move '%s' to a subdirectory of itself, '%s/%s'")
+              % src % dst % src);
           else
             W(F("'%s' and '%s' are the same file") % src % dst);
         }
@@ -2008,8 +2057,9 @@ workspace::perform_rename(database & db,
           // touch foo
           // mtn mv foo bar/foo where bar doesn't exist
           file_path parent = dst.dirname();
-          E(get_path_status(parent) == path::directory, origin::user,
-            F("destination path's parent directory '%s/' doesn't exist") % parent);
+          E(directory_exists(parent), origin::user,
+            F("destination path's parent directory '%s/' doesn't exist")
+            % parent);
 
           renames.insert(make_pair(src, dpath));
           add_parent_dirs(db, nis, *this, dpath, new_roster);
@@ -2025,7 +2075,7 @@ workspace::perform_rename(database & db,
       // 2) mv foo bar
       //    mtn mv --bookkeep-only foo bar
 
-      E(get_path_status(dst) == path::directory, origin::user,
+      E(directory_exists(dst), origin::user,
         F("destination '%s/' is not a directory") % dst);
 
       for (set<file_path>::const_iterator i = srcs.begin();
@@ -2040,8 +2090,8 @@ workspace::perform_rename(database & db,
           file_path d = dst / i->basename();
           if (bookkeep_only &&
               srcs.size() == 1 &&
-              get_path_status(*srcs.begin()) == path::directory &&
-              get_path_status(dst) == path::directory)
+              directory_exists(*srcs.begin()) &&
+              directory_exists(dst))
             {
               // case 2)
               d = dst;

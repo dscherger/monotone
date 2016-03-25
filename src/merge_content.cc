@@ -332,7 +332,8 @@ content_merge_workspace_adaptor::get_version(file_id const & ident) const
 
       require_path_is_file(i->second,
         F("file '%s' does not exist in workspace") % i->second,
-        F("'%s' in workspace is a directory, not a file") % i->second);
+        F("'%s' in workspace is a directory, not a file") % i->second,
+        F("'%s' in workspace is not a regular file") % i->second);
       tmp = read_data(i->second);
       fid = calculate_ident(file_data(tmp));
       E(fid == ident, origin::system,

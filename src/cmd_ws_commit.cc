@@ -766,20 +766,29 @@ void perform_add(app_state & app,
     {
       path_restriction mask(roots, args_to_paths(app.opts.exclude),
                             app.opts.depth, ignored_file(work));
-      set<file_path> unknown;
-      set<file_path> ignored;
 
       // if no starting paths have been specified use the workspace root
       if (roots.empty())
         roots.push_back(file_path());
 
-      work.find_unknown_and_ignored(db, mask, add_recursive, roots, unknown, ignored);
+      file_items items
+        = work.find_unknown_and_ignored(db, mask, add_recursive, roots);
+
+      if (!items.special.empty())
+        {
+          for (file_path const & path : items.special)
+            P(F("special file: %s") % path);
+          E(false, origin::user,
+            F("cannot handle special files"));
+        }
 
       // This does nothing unless --no-ignore is given
-      work.perform_additions(db, ignored, add_recursive, !app.opts.no_ignore);
+      work.perform_additions(db, items.ignored, add_recursive,
+                             !app.opts.no_ignore);
 
-      // No need for recursion here; all paths to be added are explicit in unknown
-      work.perform_additions(db, unknown, false, true);
+      // No need for recursion here; all paths to be added are explicit in
+      // unknown
+      work.perform_additions(db, items.unknown, false, true);
     }
   else
     {
@@ -1338,7 +1347,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
                                             parent.inner().made_from),
                               colorizer::rev_id) << '\n';
       else
-        out << _("Changes against parent ")
+        out << _("Changes against parent  ")
             << color.colorize(encode_hexenc(parent.inner()(),
                                             parent.inner().made_from),
                               colorizer::rev_id) << '\n';
@@ -2304,7 +2313,8 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   require_path_is_directory
     (dir,
      F("import directory '%s' doesn't exists") % dir,
-     F("import directory '%s' is a file") % dir);
+     F("import directory '%s' is a file") % dir,
+     F("import directory '%s' is not a regular file") % dir);
 
   system_path _MTN_dir = dir / path_component("_MTN");
 

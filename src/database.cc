@@ -4741,6 +4741,10 @@ database_impl::check_db_exists()
         }
       E(false, origin::user,
         F("'%s' is a directory, not a database") % filename);
+
+    case path::special:
+      E(false, origin::user,
+        F("cannot handle special file '%s'") % filename);
     }
 }
 

@@ -1,5 +1,6 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 // Copyright (C) 2012 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -14,6 +15,7 @@
 #include <utility>
 #include <iostream>
 #include <iterator>
+#include <set>
 
 #include "basic_io.hh"
 #include "cert.hh"
@@ -708,7 +710,7 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
     "",
     options::opts::pager)
 {
-  vector<system_path> search_paths, files, dirs;
+  vector<system_path> search_paths, files, specials, dirs;
 
   E(app.lua.hook_get_default_database_locations(search_paths), origin::user,
     F("no default database location configured"));
@@ -717,20 +719,15 @@ CMD(databases, "databases", "dbs", CMD_REF(list), "",
   E(app.lua.hook_get_default_database_glob(file_matcher), origin::user,
     F("could not query default database glob"));
 
-  for (vector<system_path>::const_iterator i = search_paths.begin();
-       i != search_paths.end(); ++i)
+  for (system_path const search_path : search_paths)
     {
-      system_path search_path(*i);
-
       fill_path_vec<system_path> fill_files(search_path, files, false);
+      fill_path_vec<system_path> fill_specials(search_path, specials, false);
       fill_path_vec<system_path> fill_dirs(search_path, dirs, true);
-      read_directory(search_path, fill_files, fill_dirs);
+      read_directory(search_path, fill_files, fill_dirs, fill_specials);
 
-      for (vector<system_path>::const_iterator j = files.begin();
-           j != files.end(); ++j)
+      for (system_path const db_path : files)
         {
-          system_path db_path(*j);
-
           // a little optimization, so we don't scan and open every file
           string p = db_path.as_internal();
           if (!file_matcher.matches(p))
@@ -813,11 +810,9 @@ CMD(known, "known", "", CMD_REF(list), "",
        ostream_iterator<file_path>(cout, "\n"));
 }
 
-static void get_unknown_ignored(app_state & app,
-                                args_vector const & args,
-                                bool recurse,
-                                set<file_path> & unknown,
-                                set<file_path> & ignored)
+static file_items get_unknown_and_ignored(app_state & app,
+                                          args_vector const & args,
+                                          bool recurse)
 {
   database db(app);
   workspace work(app);
@@ -830,7 +825,7 @@ static void get_unknown_ignored(app_state & app,
   if (roots.empty())
     roots.push_back(file_path());
 
-  work.find_unknown_and_ignored(db, mask, recurse, roots, unknown, ignored);
+  return work.find_unknown_and_ignored(db, mask, recurse, roots);
 }
 
 CMD_PRESET_OPTIONS(unknown)
@@ -844,10 +839,14 @@ CMD(unknown, "unknown", "", CMD_REF(list), "[PATH]",
     options::opts::depth | options::opts::exclude | options::opts::recursive |
     options::opts::pager)
 {
-  set<file_path> unknown, _;
-  get_unknown_ignored(app, args, app.opts.recursive, unknown, _);
+  file_items items = get_unknown_and_ignored(app, args, app.opts.recursive);
 
-  copy(unknown.begin(), unknown.end(),
+  // special files, if not ignored, should be treated as unknown
+  set<file_path> merged;
+  std::set_union(items.unknown.begin(), items.unknown.end(),
+                 items.special.begin(), items.special.end(),
+                 inserter(merged, merged.begin()));
+  copy(merged.begin(), merged.end(),
        ostream_iterator<file_path>(cout, "\n"));
 }
 
@@ -862,10 +861,9 @@ CMD(ignored, "ignored", "", CMD_REF(list), "[PATH]",
     options::opts::depth | options::opts::exclude | options::opts::recursive |
     options::opts::pager)
 {
-  set<file_path> _, ignored;
-  get_unknown_ignored(app, args, app.opts.recursive, _, ignored);
+  file_items items = get_unknown_and_ignored(app, args, app.opts.recursive);
 
-  copy(ignored.begin(), ignored.end(),
+  copy(items.ignored.begin(), items.ignored.end(),
        ostream_iterator<file_path>(cout, "\n"));
 }
 

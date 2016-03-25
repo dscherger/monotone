@@ -23,6 +23,11 @@ XXX XXX XX XX XX XX UTC XXXX
 
         - The ISO 8601 parser now understands time zone designators.
 
+        - Special files like sockets, fifos or device files in a
+          working directory do not block monotone anymore. Instead
+          they get listed as unknown or ignored. Adding or committing
+          such special files is still prohibited.
+
         -
 
         Bugs fixed

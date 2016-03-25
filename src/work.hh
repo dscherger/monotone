@@ -1,5 +1,6 @@
 // Copyright (C) 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -80,6 +81,13 @@ class app_state;
 // conditions, but works in practice (it is, for instance, the same
 // expectation used by "make").  nonetheless, this mode is off by default.
 
+struct file_items
+{
+  std::set<file_path> unknown;
+  std::set<file_path> ignored;
+  std::set<file_path> special;
+};
+
 bool directory_is_workspace(system_path const & dir);
 
 namespace bisect
@@ -149,12 +157,10 @@ public:
   find_missing(roster_t const & new_roster_shape,
                node_restriction const & mask);
 
-  void find_unknown_and_ignored(database & db,
-                                path_restriction const & mask,
-                                bool recurse,
-                                std::vector<file_path> const & roots,
-                                std::set<file_path> & unknown,
-                                std::set<file_path> & ignored);
+  file_items find_unknown_and_ignored(database & db,
+                                      path_restriction const & mask,
+                                      bool recurse,
+                                      std::vector<file_path> const & roots);
 
   void perform_additions(database & db,
                          std::set<file_path> const & targets,

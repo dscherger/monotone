@@ -1,0 +1,98 @@
+    path ""
+old_type "directory"
+new_type "directory"
+ fs_type "directory"
+   birth [57c2c5ff1a57c920c7791157fbbef62aabf9d491]
+  status "known"
+
+    path ".mtn-ignore"
+old_type "file"
+new_type "file"
+ fs_type "file"
+   birth [57c2c5ff1a57c920c7791157fbbef62aabf9d491]
+  status "known"
+ changes "content"
+
+    path "dir"
+old_type "directory"
+new_type "directory"
+ fs_type "directory"
+   birth [57c2c5ff1a57c920c7791157fbbef62aabf9d491]
+  status "known"
+
+    path "dir/1"
+old_type "file"
+new_type "file"
+ fs_type "file"
+   birth [57c2c5ff1a57c920c7791157fbbef62aabf9d491]
+  status "known"
+
+    path "dir/2"
+old_type "file"
+new_type "file"
+ fs_type "file"
+   birth [57c2c5ff1a57c920c7791157fbbef62aabf9d491]
+  status "known"
+
+   path "emptyhomedir"
+fs_type "directory"
+ status "unknown"
+
+   path "expected-inventory.stdout"
+fs_type "file"
+ status "unknown"
+
+   path "fifo1"
+fs_type "special"
+ status "unknown"
+
+   path "fifo2"
+fs_type "special"
+ status "unknown"
+
+    path "file"
+old_type "file"
+new_type "file"
+ fs_type "file"
+   birth [57c2c5ff1a57c920c7791157fbbef62aabf9d491]
+  status "known"
+
+   path "keys"
+fs_type "directory"
+ status "ignored"
+
+   path "min_hooks.lua"
+fs_type "file"
+ status "unknown"
+
+   path "stderr"
+fs_type "file"
+ status "unknown"
+
+   path "stdout"
+fs_type "file"
+ status "unknown"
+
+   path "test.db"
+fs_type "file"
+ status "unknown"
+
+   path "test_hooks.lua"
+fs_type "file"
+ status "ignored"
+
+   path "tester.log"
+fs_type "file"
+ status "unknown"
+
+   path "ts-stderr"
+fs_type "file"
+ status "ignored"
+
+   path "ts-stdin"
+fs_type "file"
+ status "ignored"
+
+   path "ts-stdout"
+fs_type "file"
+ status "ignored"

@@ -1,5 +1,6 @@
 // Copyright (C) 2004 Nathaniel Smith <njs@pobox.com>
 //               2007, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -803,6 +804,7 @@ struct inventory_itemizer : public tree_walker
   }
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
+  virtual void visit_special(file_path const & path);
 };
 
 bool
@@ -835,6 +837,19 @@ inventory_itemizer::visit_file(file_path const & path)
     }
 }
 
+void
+inventory_itemizer::visit_special(file_path const & path)
+{
+  if (mask.includes(path))
+    {
+      inventory_item & item = inventory[path];
+
+      item.fs_type = path::special;
+      I(!item.new_node.exists);
+    }
+}
+
+
 static void
 inventory_filesystem(workspace & work,
                      path_restriction const & mask,
@@ -846,9 +861,8 @@ inventory_filesystem(workspace & work,
   // does not visit that node, so set fs_type now, if it meets the
   // restriction.
   if (mask.includes(root))
-    {
       inventory[root].fs_type = path::directory;
-    }
+
   walk_tree(root, itemizer);
 }
 
@@ -930,27 +944,20 @@ inventory_determine_states(workspace & work, file_path const & fs_path,
       if (!item.new_node.exists)
         {
           if (work.ignore_file(fs_path))
-            {
-              states.push_back("ignored");
-            }
+            states.push_back("ignored");
           else
-            {
-              states.push_back("unknown");
-            }
+            states.push_back("unknown");
         }
       else if (item.new_node.type != item.fs_type)
-        {
-          states.push_back("invalid");
-        }
+        states.push_back("invalid");
       else
-        {
-          states.push_back("known");
-        }
+        states.push_back("known");
     }
 }
 
 static void
-inventory_determine_changes(inventory_item const & item, roster_t const & old_roster,
+inventory_determine_changes(inventory_item const & item,
+                            roster_t const & old_roster,
                             vector<string> & changes)
 {
   // old nodes do not have any recorded content changes and attributes,
@@ -963,9 +970,11 @@ inventory_determine_changes(inventory_item const & item, roster_t const & old_ro
     {
       // check if the content has changed - this makes only sense for files
       // for which we can get the content id of both new and old nodes.
-      if (item.new_node.type == path::file && item.fs_type != path::nonexistent)
+      if (item.new_node.type == path::file &&
+          item.fs_type != path::nonexistent)
         {
-          const_file_t old_file = downcast_to_file_t(old_roster.get_node(item.new_node.id));
+          const_file_t old_file =
+            downcast_to_file_t(old_roster.get_node(item.new_node.id));
 
           switch (item.old_node.type)
             {
@@ -982,6 +991,9 @@ inventory_determine_changes(inventory_item const & item, roster_t const & old_ro
 
             case path::directory:
               break;
+
+            case path::special:
+              I(false);
             }
         }
 
@@ -1084,11 +1096,10 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
 
   basic_io::printer pr;
 
-  for (inventory_map::const_iterator i = inventory.begin(); i != inventory.end();
-       ++i)
+  for (inventory_map::value_type const & i : inventory)
     {
-      file_path const & fp = i->first;
-      inventory_item const & item = i->second;
+      file_path const & fp = i.first;
+      inventory_item const & item = i.second;
 
       //
       // check if we should output this element at all
@@ -1136,37 +1147,54 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
         {
           switch (item.old_node.type)
             {
-            case path::file: st.push_str_pair(syms::old_type, "file"); break;
-            case path::directory: st.push_str_pair(syms::old_type, "directory"); break;
-            case path::nonexistent: I(false);
+            case path::file:
+              st.push_str_pair(syms::old_type, "file");
+              break;
+            case path::directory:
+              st.push_str_pair(syms::old_type, "directory");
+              break;
+            case path::special:
+            case path::nonexistent:
+              I(false);
             }
 
           if (item.new_path.as_internal().length() > 0)
-            {
-              st.push_file_pair(syms::new_path, item.new_path);
-            }
+            st.push_file_pair(syms::new_path, item.new_path);
         }
 
       if (item.new_node.exists)
         {
           switch (item.new_node.type)
             {
-            case path::file: st.push_str_pair(syms::new_type, "file"); break;
-            case path::directory: st.push_str_pair(syms::new_type, "directory"); break;
-            case path::nonexistent: I(false);
+            case path::file:
+              st.push_str_pair(syms::new_type, "file");
+              break;
+            case path::directory:
+              st.push_str_pair(syms::new_type, "directory");
+              break;
+            case path::special:
+            case path::nonexistent:
+              I(false);
             }
 
           if (item.old_path.as_internal().length() > 0)
-            {
-              st.push_file_pair(syms::old_path, item.old_path);
-            }
+            st.push_file_pair(syms::old_path, item.old_path);
         }
 
       switch (item.fs_type)
         {
-        case path::file: st.push_str_pair(syms::fs_type, "file"); break;
-        case path::directory: st.push_str_pair(syms::fs_type, "directory"); break;
-        case path::nonexistent: st.push_str_pair(syms::fs_type, "none"); break;
+        case path::file:
+          st.push_str_pair(syms::fs_type, "file");
+          break;
+        case path::directory:
+          st.push_str_pair(syms::fs_type, "directory");
+          break;
+        case path::nonexistent:
+          st.push_str_pair(syms::fs_type, "none");
+          break;
+        case path::special:
+          st.push_str_pair(syms::fs_type, "special");
+          break;
         }
 
       //
