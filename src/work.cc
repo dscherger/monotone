@@ -1094,8 +1094,11 @@ workspace_itemizer::visit_file(file_path const & path)
 void
 workspace_itemizer::visit_special(file_path const & path)
 {
-  E(false, origin::user,
-    F("cannot handle special file '%s'") % path);
+  // pretend this was an ordinary file, so it will prevent versioned files
+  // from overriding and force a '--move-conflicting-paths'.
+  file_id fid;
+  node_id nid = roster.create_file_node(fid, nis);
+  roster.attach_node(nid, path);
 }
 
 
@@ -1618,24 +1621,33 @@ move_conflicting_paths_into_bookkeeping(set<file_path> const & leftover_paths)
 
   mkdir_p(leftover_path);
 
-  for (set<file_path>::const_iterator i = leftover_paths.begin();
-        i != leftover_paths.end(); ++i)
+  for (file_path const path : leftover_paths)
     {
-      L(FL("processing %s") % *i);
+      L(FL("processing %s") % path);
 
-      file_path basedir = (*i).dirname();
+      file_path basedir = path.dirname();
       if (!basedir.empty())
         mkdir_p(leftover_path / basedir);
 
-      bookkeeping_path new_path = leftover_path / *i;
-      if (directory_exists(*i))
-        move_dir(*i, new_path);
-      else if (file_exists(*i))
-        move_file(*i, new_path);
+      bookkeeping_path new_path = leftover_path / path;
+      if (directory_exists(path))
+        {
+          move_dir(path, new_path);
+          P(F("moved conflicting directory '%s' to '%s'")
+            % path % new_path);
+        }
+      else if (file_exists(path))
+        {
+          move_file(path, new_path);
+          P(F("moved conflicting file '%s' to '%s'")
+            % path % new_path);
+        }
       else
-        I(false);
-
-      P(F("moved conflicting path '%s' to '%s'") % *i % new_path);
+        {
+          move_path(path, new_path);
+          P(F("moved conflicting special file '%s' to '%s'")
+            % path % new_path);
+        }
     }
 }
 

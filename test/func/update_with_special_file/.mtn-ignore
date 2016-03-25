@@ -1,0 +1,11 @@
+^emptyhomedir$
+^expected-inventory.stdout$
+^fifo1$
+^keys
+^min_hooks\.lua$
+^stdout$
+^tester\.log$
+^test_hooks\.lua$
+^ts-stderr$
+^ts-stdin$
+^ts-stdout$

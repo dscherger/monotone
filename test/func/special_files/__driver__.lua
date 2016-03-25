@@ -15,7 +15,6 @@ check(mtn("add", ".mtn-ignore"), 0, false, false)
 commit()
 
 -- create two special files
-
 check({"mkfifo", "fifo1"})
 check({"mkfifo", "fifo2"})
 
