@@ -717,12 +717,11 @@ notify_if_multiple_heads(project_t & project,
 // Guess which branch is appropriate for a commit below IDENT.
 // OPTS may override.  Branch name is returned in BRANCHNAME.
 // Does not modify branch state in OPTS.
-void
-guess_branch(options & opts, project_t & project,
-             revision_id const & ident, branch_name & branchname)
+branch_name
+project_t::guess_branch(options const & opts, revision_id const & ident) const
 {
   if (opts.branch_given && !opts.branch().empty())
-    branchname = opts.branch;
+    return opts.branch;
   else
     {
       E(!ident.inner()().empty(), origin::user,
@@ -730,7 +729,7 @@ guess_branch(options & opts, project_t & project,
           "please provide a branch name"));
 
       set<branch_name> branches;
-      project.get_revision_branches(ident, branches);
+      get_revision_branches(ident, branches);
 
       E(!branches.empty(), origin::user,
         F("no branch certs found for revision %s, "
@@ -742,18 +741,8 @@ guess_branch(options & opts, project_t & project,
 
       set<branch_name>::iterator i = branches.begin();
       I(i != branches.end());
-      branchname = *i;
+      return *i;
     }
-}
-
-// As above, but set the branch name in the options
-// if it wasn't already set.
-void
-guess_branch(options & opts, project_t & project, revision_id const & ident)
-{
-  branch_name branchname;
-  guess_branch(opts, project, ident, branchname);
-  opts.branch = branchname;
 }
 
 // Local Variables:

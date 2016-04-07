@@ -27,21 +27,21 @@ struct date_t;
 
 // "Special" certs have syntax and semantics essential to correct operation.
 // They add structure to the ancestry graph.
-
-#define branch_cert_name cert_name("branch")
-#define suspend_cert_name cert_name("suspend")
-#define tag_cert_name cert_name("tag")
+const cert_name
+  branch_cert_name("branch"),
+  suspend_cert_name("suspend"),
+  tag_cert_name("tag");
 
 // "Standard" certs are largely for user information, but their values have
 // conventional syntax and semantics defined by the system, and the
 // revision-trust hook can use them to impose further structure on the
 // ancestry graph.
-
-#define date_cert_name cert_name("date")
-#define author_cert_name cert_name("author")
-#define changelog_cert_name cert_name("changelog")
-#define comment_cert_name cert_name("comment")
-#define testresult_cert_name cert_name("testresult")
+const cert_name
+  date_cert_name("date"),
+  author_cert_name("author"),
+  changelog_cert_name("changelog"),
+  comment_cert_name("comment"),
+  testresult_cert_name("testresult");
 
 struct key_identity_info
 {
@@ -181,6 +181,8 @@ public:
   void get_key_identity(lua_hooks & lua,
                         external_key_name const & input,
                         key_identity_info & output) const;
+  branch_name guess_branch(options const & opts,
+                           revision_id const & rev) const;
 };
 
 std::string
@@ -190,12 +192,6 @@ describe_revision(options const & opts, lua_hooks & lua,
 void
 notify_if_multiple_heads(project_t & project, branch_name const & branchname,
                          bool ignore_suspend_certs);
-
-void
-guess_branch(options & opts, project_t & project, revision_id const & rev,
-             branch_name & branchname);
-void
-guess_branch(options & opts, project_t & project, revision_id const & rev);
 
 #endif
 

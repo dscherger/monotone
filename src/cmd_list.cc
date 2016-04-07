@@ -568,7 +568,6 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
   database db(app);
   set<tag_t> tags;
   project_t project(db);
-  cert_name branch = branch_cert_name;
 
   project.get_tags(tags);
 
@@ -593,7 +592,7 @@ CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
           for (vector<cert>::const_iterator c = certs.begin();
                c != certs.end(); ++c)
             {
-              if (c->name == branch)
+              if (c->name == branch_cert_name)
                 {
                   cout << c->value << ' ';
                 }

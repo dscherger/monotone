@@ -591,12 +591,6 @@ log_print_rev (app_state &      app,
                colorizer const & color,
                ostream &        out)
 {
-  cert_name const author_name(author_cert_name);
-  cert_name const date_name(date_cert_name);
-  cert_name const branch_name(branch_cert_name);
-  cert_name const tag_name(tag_cert_name);
-  cert_name const changelog_name(changelog_cert_name);
-  cert_name const comment_name(comment_cert_name);
   vector<cert> certs;
   project.get_revision_certs(rid, certs);
 
@@ -605,15 +599,15 @@ log_print_rev (app_state &      app,
       out << color.colorize(encode_hexenc(rid.inner()(),
                                           rid.inner().made_from),
                             colorizer::rev_id);
-      log_certs(certs, out, author_name, color);
+      log_certs(certs, out, author_cert_name, color);
       if (app.opts.no_graph)
-        log_certs(certs, out, date_name, color, date_fmt);
+        log_certs(certs, out, date_cert_name, color, date_fmt);
       else
         {
           out << '\n';
-          log_certs(certs, out, date_name, color, date_fmt);
+          log_certs(certs, out, date_cert_name, color, date_fmt);
         }
-      log_certs(certs, out, branch_name, color);
+      log_certs(certs, out, branch_cert_name, color);
       out << '\n';
     }
   else

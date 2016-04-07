@@ -256,8 +256,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
     project.get_branch_heads(branch, heads, false);
     if (!heads.empty())
       {
-        for (edge_map::const_iterator e = rev.edges.begin();
-             e != rev.edges.end(); ++e)
+        for (edge_entry const & e : rev.edges)
           {
             if (heads.find(edge_old_revision(e)) == heads.end())
               {
@@ -619,7 +618,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
         F("revision %s has %d parents, cannot invert")
         % child_rev % rev.edges.size());
 
-      guess_branch(app.opts, project, child_rev);
+      app.opts.branch = project.guess_branch(app.opts, child_rev);
       E(!app.opts.branch().empty(), origin::user,
         F("need '--branch' argument for disapproval"));
 
@@ -659,7 +658,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review),
         F("revision %s has %d parents, cannot invert")
         % child_rev % rev.edges.size());
 
-      guess_branch(app.opts, project, child_rev);
+      app.opts.branch = project.guess_branch(app.opts, child_rev);
       E(!app.opts.branch().empty(), origin::user,
         F("need '--branch' argument for disapproval"));
 
@@ -1407,7 +1406,7 @@ static void
 checkout_common(app_state & app,
                 args_vector const & args)
 {
-  revision_id revid;
+  revision_id rev_id;
   system_path dir;
 
   database db(app);
@@ -1435,22 +1434,21 @@ checkout_common(app_state & app,
           E(false, origin::user,
             F("branch '%s' has multiple heads") % app.opts.branch);
         }
-      revid = *(heads.begin());
+      rev_id = *(heads.begin());
     }
   else if (app.opts.revision.size() == 1)
     {
       // use specified revision
       complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(),
-               revid);
+               rev_id);
 
-      guess_branch(app.opts, project, revid);
-
+      app.opts.branch = project.guess_branch(app.opts, rev_id);
       I(!app.opts.branch().empty());
 
-      E(project.revision_is_in_branch(revid, app.opts.branch),
+      E(project.revision_is_in_branch(rev_id, app.opts.branch),
         origin::user,
         F("revision %s is not a member of branch %s")
-        % revid % app.opts.branch);
+        % rev_id % app.opts.branch);
     }
 
   // we do this part of the checking down here, because it is legitimate to
@@ -1485,10 +1483,10 @@ checkout_common(app_state & app,
   workspace::create_workspace(app.opts, app.lua, dir);
   workspace work(app);
 
-  L(FL("checking out revision %s to directory %s") % revid % dir);
+  L(FL("checking out revision %s to directory %s") % rev_id % dir);
 
-  roster_t current_roster = db.get_roster(revid);
-  work.put_work_rev(make_revision_for_workspace(revid, cset()));
+  roster_t current_roster = db.get_roster(rev_id);
+  work.put_work_rev(make_revision_for_workspace(rev_id, cset()));
   work.perform_content_update(empty_roster, current_roster,
                               cset(empty_roster, current_roster),
                               content_merge_checkout_adaptor(db),
@@ -1925,13 +1923,11 @@ void perform_commit(app_state & app,
   if (app.opts.branch().empty())
     {
       branch_name branchname, bn_candidate;
-      for (edge_map::iterator i = restricted_rev.edges.begin();
-           i != restricted_rev.edges.end();
-           i++)
+      for (edge_entry const & edge : restricted_rev.edges)
         {
           // this will prefer --branch if it was set
-          guess_branch(app.opts, project, edge_old_revision(i),
-                       bn_candidate);
+          bn_candidate =
+            project.guess_branch(app.opts, edge_old_revision(edge));
           E(branchname() == "" || branchname == bn_candidate, origin::user,
             F("parent revisions of this commit are in different branches:\n"
               "'%s' and '%s'.\n"
@@ -2057,9 +2053,7 @@ void perform_commit(app_state & app,
           L(FL("inserting new revision %s")
             % restricted_rev_id);
 
-        for (edge_map::const_iterator edge = restricted_rev.edges.begin();
-             edge != restricted_rev.edges.end();
-             edge++)
+        for (edge_entry const & edge : restricted_rev.edges)
           {
             // process file deltas or new files
             cset const & cs = edge_changes(edge);
@@ -2277,8 +2271,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
       // use specified revision
       complete(app.opts, app.lua, project, idx(app.opts.revision, 0)(), ident);
 
-      guess_branch(app.opts, project, ident);
-
+      app.opts.branch = project.guess_branch(app.opts, ident);
       I(!app.opts.branch().empty());
 
       E(project.revision_is_in_branch(ident, app.opts.branch),

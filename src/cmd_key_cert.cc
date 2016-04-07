@@ -367,11 +367,11 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
   if (args.size() != 2)
     throw usage(execid);
 
-  revision_id r;
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
+  revision_id rev_id;
+  complete(app.opts, app.lua, project, idx(args, 0)(), rev_id);
 
   cache_user_key(app.opts, project, keys, app.lua);
-  project.put_tag(keys, r, idx(args, 1)());
+  project.put_tag(keys, rev_id, idx(args, 1)());
 }
 
 
@@ -388,11 +388,11 @@ CMD(testresult, "testresult", "", CMD_REF(review),
   if (args.size() != 2)
     throw usage(execid);
 
-  revision_id r;
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
+  revision_id rev_id;
+  complete(app.opts, app.lua, project, idx(args, 0)(), rev_id);
 
   cache_user_key(app.opts, project, keys, app.lua);
-  project.put_revision_testresult(keys, r, idx(args, 1)());
+  project.put_revision_testresult(keys, rev_id, idx(args, 1)());
 }
 
 
@@ -410,14 +410,14 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
 
   maybe_workspace_updater updater(app, project);
 
-  revision_id r;
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
-  guess_branch(app.opts, project, r);
+  revision_id rev_id;
+  complete(app.opts, app.lua, project, idx(args, 0)(), rev_id);
+  app.opts.branch = project.guess_branch(app.opts, rev_id);
   E(!app.opts.branch().empty(), origin::user,
     F("need '--branch' argument for approval"));
 
   cache_user_key(app.opts, project, keys, app.lua);
-  project.put_revision_in_branch(keys, r, app.opts.branch);
+  project.put_revision_in_branch(keys, rev_id, app.opts.branch);
 
   updater.maybe_do_update();
 }
@@ -436,14 +436,14 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
 
   maybe_workspace_updater updater(app, project);
 
-  revision_id r;
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
-  guess_branch(app.opts, project, r);
+  revision_id rev_id;
+  complete(app.opts, app.lua, project, idx(args, 0)(), rev_id);
+  app.opts.branch = project.guess_branch(app.opts, rev_id);
   E(!app.opts.branch().empty(), origin::user,
     F("need '--branch' argument to suspend"));
 
   cache_user_key(app.opts, project, keys, app.lua);
-  project.suspend_revision_in_branch(keys, r, app.opts.branch);
+  project.suspend_revision_in_branch(keys, rev_id, app.opts.branch);
 
   updater.maybe_do_update();
 }
@@ -476,11 +476,11 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
     origin::user,
     F("empty comment"));
 
-  revision_id r;
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
+  revision_id rev_id;
+  complete(app.opts, app.lua, project, idx(args, 0)(), rev_id);
 
   cache_user_key(app.opts, project, keys, app.lua);
-  project.put_revision_comment(keys, r, comment);
+  project.put_revision_comment(keys, rev_id, comment);
 }
 
 // Local Variables:

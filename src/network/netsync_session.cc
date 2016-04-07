@@ -319,13 +319,9 @@ netsync_session::note_cert(id const & i)
   rsa_pub_key junk;
   project.db.get_pubkey(c.key, keyname, junk);
   if (get_version() >= 7)
-    {
-      c.marshal_for_netio(keyname, str);
-    }
+    c.marshal_for_netio(keyname, str);
   else
-    {
-      c.marshal_for_netio_v6(keyname, str);
-    }
+    c.marshal_for_netio_v6(keyname, str);
   queue_data_cmd(cert_item, i, str);
   counts->certs_out.add_item(c);
 }
@@ -440,35 +436,29 @@ netsync_session::dry_run_finished() const
 bool
 netsync_session::finished_working() const
 {
-  if (dry_run_finished())
-    return true;
-
-  bool all = done_all_refinements()
-    && received_all_items()
-    && queued_all_items()
-    && rev_enumerator.done();
-  return all;
+  return dry_run_finished() ||
+    (done_all_refinements()
+     && received_all_items()
+     && queued_all_items()
+     && rev_enumerator.done());
 }
 
 bool
 netsync_session::queued_all_items() const
 {
-  if (role == sink_role)
-    return true;
-  bool all = rev_refiner.items_to_send.empty()
-    && cert_refiner.items_to_send.empty()
-    && key_refiner.items_to_send.empty()
-    && epoch_refiner.items_to_send.empty();
-  return all;
+  return role == sink_role ||
+    (rev_refiner.items_to_send.empty()
+     && cert_refiner.items_to_send.empty()
+     && key_refiner.items_to_send.empty()
+     && epoch_refiner.items_to_send.empty());
 }
-
 
 void
 netsync_session::maybe_note_epochs_finished()
 {
   // Maybe there are outstanding epoch requests.
   // These only matter if we're in sink or source-and-sink mode.
-  if (!(epoch_refiner.items_to_receive == 0) && !(role == source_role))
+  if (epoch_refiner.items_to_receive != 0 && role != source_role)
     return;
 
   // And maybe we haven't even finished the refinement.
@@ -1098,17 +1088,13 @@ netsync_session::send_all_data(netcmd_item_type ty, set<id> const & items)
 
   // Use temporary; passed arg will be invalidated during iteration.
   set<id> tmp = items;
-
-  for (set<id>::const_iterator i = tmp.begin();
-       i != tmp.end(); ++i)
-    {
-      if (data_exists(ty, *i))
-        {
-          string out;
-          load_data(ty, *i, out);
-          queue_data_cmd(ty, *i, out);
-        }
-    }
+  for (id const & id : tmp)
+    if (data_exists(ty, id))
+      {
+        string out;
+        load_data(ty, id, out);
+        queue_data_cmd(ty, id, out);
+      }
 }
 
 bool

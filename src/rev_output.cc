@@ -76,20 +76,13 @@ revision_header(revision_id const rid, revision_t const & rev,
             << parent << '\n';
     }
 
-  cert_name const author(author_cert_name);
-  cert_name const date(date_cert_name);
-  cert_name const branch(branch_cert_name);
-  cert_name const tag(tag_cert_name);
-  cert_name const changelog(changelog_cert_name);
-  cert_name const comment(comment_cert_name);
-
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
-    if (i->name == author)
+    if (i->name == author_cert_name)
       out << color.colorize(_("Author:   "), colorizer::rev_header)
           << i->value << '\n';
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
-    if (i->name == date)
+    if (i->name == date_cert_name)
       {
         if (date_fmt.empty())
           out << color.colorize(_("Date:     "), colorizer::rev_header)
@@ -103,12 +96,12 @@ revision_header(revision_id const rid, revision_t const & rev,
       }
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
-    if (i->name == branch)
+    if (i->name == branch_cert_name)
       out << color.colorize(_("Branch:   "), colorizer::rev_header)
           << color.colorize(i->value(), colorizer::branch) << '\n';
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
-    if (i->name == tag)
+    if (i->name == tag_cert_name)
       out << color.colorize(_("Tag:      "), colorizer::rev_header)
           << i->value << '\n';
 
@@ -116,8 +109,12 @@ revision_header(revision_id const rid, revision_t const & rev,
   bool need_to_output_heading = true;
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     {
-      if (i->name != author && i->name != branch && i->name != changelog &&
-          i->name != comment && i->name != date && i->name != tag)
+      if (i->name != author_cert_name &&
+          i->name != branch_cert_name &&
+          i->name != changelog_cert_name &&
+          i->name != comment_cert_name &&
+          i->name != date_cert_name &&
+          i->name != tag_cert_name)
         {
           if (need_to_output_heading)
             {
@@ -133,7 +130,7 @@ revision_header(revision_id const rid, revision_t const & rev,
   out << "\n";
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
-    if (i->name == changelog)
+    if (i->name == changelog_cert_name)
       {
         out << color.colorize(_("Changelog: "), colorizer::rev_header)
             << "\n\n" << i->value << '\n';
@@ -142,7 +139,7 @@ revision_header(revision_id const rid, revision_t const & rev,
       }
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
-    if (i->name == comment)
+    if (i->name == comment_cert_name)
       {
         out << color.colorize(_("Comments: "), colorizer::rev_header)
             << "\n\n" << i->value << '\n';
