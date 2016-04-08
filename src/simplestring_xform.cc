@@ -1,4 +1,5 @@
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//               2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -41,6 +42,13 @@ lowercase(string const & in)
   return n;
 }
 
+string
+lowercase(string && n)
+{
+  transform(n.begin(), n.end(), n.begin(), lowerize());
+  return n;
+}
+
 struct
 upperize
 {
@@ -54,6 +62,13 @@ string
 uppercase(string const & in)
 {
   string n(in);
+  transform(n.begin(), n.end(), n.begin(), upperize());
+  return n;
+}
+
+string
+uppercase(string && n)
+{
   transform(n.begin(), n.end(), n.begin(), upperize());
   return n;
 }

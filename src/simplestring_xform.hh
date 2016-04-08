@@ -1,4 +1,5 @@
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//               2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -13,7 +14,9 @@
 #include "vector.hh"
 
 std::string uppercase(std::string const & in);
+std::string uppercase(std::string && in);
 std::string lowercase(std::string const & in);
+std::string lowercase(std::string && in);
 
 namespace split_flags
 {
