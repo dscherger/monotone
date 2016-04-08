@@ -1,5 +1,6 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -23,6 +24,21 @@ struct node_id_source
   virtual node_id next() = 0;
   virtual ~node_id_source() {}
 };
+
+// special attributes
+const attr_key features_attr_key("mtn:features");
+
+// features
+enum feature
+  {
+    dummy_feature
+  };
+
+std::set<utf8>
+parse_feature_list(attr_value const & v);
+
+std::set<feature>
+validate_features(std::set<utf8> const & flist);
 
 ///////////////////////////////////////////////////////////////////
 

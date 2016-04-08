@@ -1,5 +1,6 @@
 // Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
+//               2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -33,6 +34,8 @@
 #include "ui.hh"
 #include "vocab_cast.hh"
 
+#include <boost/tokenizer.hpp>
+
 using std::inserter;
 using std::make_pair;
 using std::make_shared;
@@ -47,9 +50,45 @@ using std::stack;
 using std::string;
 using std::vector;
 
+using boost::char_separator;
 using boost::lexical_cast;
+using boost::tokenizer;
 
 ///////////////////////////////////////////////////////////////////
+
+
+set<utf8>
+parse_feature_list(attr_value const & v)
+{
+  set<utf8> features;
+  char_separator<char> sep(" ");
+  // typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
+  for (string tok : tokenizer<char_separator<char>>(v(), sep))
+    features.insert(utf8(lowercase(trim(tok)), origin::user));
+  return features;
+}
+
+set<feature>
+validate_features(set<utf8> const & flist)
+{
+  vector<utf8> unknown;
+  set<feature> supported;
+  for (utf8 const & fname : flist)
+    {
+      // This is just a dummy feature used exclusively for testing. It
+      // doesn't have any effect.
+      if (fname() == "dummy-feature-for-testing")
+        supported.insert(dummy_feature);
+      else
+        unknown.push_back(utf8("'" + fname() + "'", origin::user));
+    }
+
+  E(unknown.empty(), origin::user,
+    F("Unknown feature(s): %s - please update your version of monotone")
+    % join_words(unknown));
+
+  return supported;
+}
 
 namespace
 {
