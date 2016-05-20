@@ -1,4 +1,5 @@
 // Copyright (C) 2005 Jon Bright <jon@siliconcircus.com>
+// Copyright (C) 2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -17,6 +18,7 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <cstring>
+#include <spawn.h>
 
 #include <iostream>
 #include <sstream>
@@ -232,39 +234,34 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
       return -1;
     }
 
-  switch(pid = vfork())
-    {
-      case -1:
-        close(infds[0]);
-        close(infds[1]);
-        close(outfds[0]);
-        close(outfds[1]);
-        return -1;
-      case 0:
-        {
-          if (infds[0] != STDIN_FILENO)
-            {
-              dup2(infds[0], STDIN_FILENO);
-              close(infds[0]);
-            }
-          close(infds[1]);
-          if (outfds[1] != STDOUT_FILENO)
-            {
-              dup2(outfds[1], STDOUT_FILENO);
-              close(outfds[1]);
-            }
-          close(outfds[0]);
+  posix_spawn_file_actions_t action;
 
-          execvp(argv[0], (char * const *)argv);
-          raise(SIGKILL);
-        }
-    }
+  posix_spawn_file_actions_adddup2(&action, infds[0], STDIN_FILENO);
+  posix_spawn_file_actions_addclose(&action, infds[0]);
+  posix_spawn_file_actions_addclose(&action, infds[1]);
+
+  posix_spawn_file_actions_adddup2(&action, outfds[1], STDOUT_FILENO);
+  posix_spawn_file_actions_addclose(&action, outfds[1]);
+  posix_spawn_file_actions_addclose(&action, outfds[0]);
+
+  int spawn_result =
+    posix_spawnp(&pid, argv[0], &action, NULL, (char * const *) argv, environ);
+
   close(infds[0]);
   close(outfds[1]);
-  *in = fdopen(infds[1], "w");
-  *out = fdopen(outfds[0], "r");
 
-  return pid;
+  if (spawn_result == 0)
+    {
+      *in = fdopen(infds[1], "w");
+      *out = fdopen(outfds[0], "r");
+      return pid;
+    }
+  else
+    {
+      close(infds[1]);
+      close(outfds[0]);
+      return -1;
+    }
 }
 
 int process_wait(pid_t pid, int *res, int timeout)
