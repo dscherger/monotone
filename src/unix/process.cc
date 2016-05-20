@@ -26,6 +26,8 @@
 #include "../sanity.hh"
 #include "../platform.hh"
 
+extern char ** environ;
+
 int existsonpath(const char *exe)
 {
   L(FL("checking for program '%s'\n") % exe);
