@@ -50,7 +50,9 @@ static char const * argv0;
 inline void
 write_str_to_stderr(const char *s)
 {
-  write(2, s, strlen(s));
+  ssize_t sz = strlen(s);
+  if (write(2, s, sz) != sz)
+    { /* no-op */ }
 }
 
 // this message should be kept consistent with ui.cc::fatal and
