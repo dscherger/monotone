@@ -529,15 +529,20 @@ database::init()
   // all requests for a :memory: database point to the same database
   // implementation. This means we cannot use two different memory databases
   // within the same monotone process
-  if (dbcache.find(dbpath) == dbcache.end())
+
+  database_cache::iterator ity = dbcache.lower_bound(dbpath);
+
+  // Add to the dbcache, if not existent, yet.
+  if (ity == dbcache.end() || ity->first != dbpath)
     {
       L(FL("creating new database_impl instance for %s") % dbpath);
-      dbcache.insert(make_pair(dbpath, std::shared_ptr<database_impl>(
-        new database_impl(dbpath, opts.dbname_type, opts.roster_cache_performance_log)
+
+      ity = dbcache.insert(ity, make_pair(dbpath, make_shared<database_impl>(
+        dbpath, opts.dbname_type, opts.roster_cache_performance_log
       )));
     }
 
-  imp = dbcache[dbpath];
+  imp = ity->second;
 }
 
 database::~database()
