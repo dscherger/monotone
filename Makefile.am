@@ -81,7 +81,6 @@ MOST_SOURCES = 								\
 	src/network/session.hh src/network/session.cc			\
 	src/network/session_base.hh src/network/session_base.cc		\
 	src/network/wrapped_session.hh src/network/wrapped_session.cc	\
-	src/netxx_pipe.cc src/netxx_pipe.hh				\
 	src/netcmd.cc src/netcmd.hh					\
 	src/merkle_tree.cc src/merkle_tree.hh 				\
 	src/lcs.cc src/lcs.hh						\
@@ -126,24 +125,6 @@ MOST_SOURCES = 								\
 	src/parallel_iter.hh src/safe_map.hh src/pch.hh			\
 	src/current_exception.hh
 
-NETXX_SOURCES =								\
-	src/netxx/accept.cxx src/netxx/accept.h src/netxx/address.cxx	\
-	src/netxx/common.h src/netxx/compat.h src/netxx/datagram.cxx	\
-	src/netxx/datagramserver.cxx src/netxx/osutil.cxx		\
-	src/netxx/osutil.h src/netxx/peer.cxx src/netxx/probe.cxx 	\
-	src/netxx/probe_impl.h src/netxx/probe_select.cxx 		\
-	src/netxx/recvfrom.cxx src/netxx/recvfrom.h src/netxx/resolve.h	\
-	src/netxx/serverbase.cxx src/netxx/serverbase.h			\
-	src/netxx/sockaddr.cxx src/netxx/sockaddr.h			\
-	src/netxx/socket.cxx src/netxx/socket.h src/netxx/sockopt.cxx 	\
-	src/netxx/stream.cxx src/netxx/streambase.cxx 			\
-	src/netxx/streamserver.cxx src/netxx/address.h 			\
-	src/netxx/datagram.h src/netxx/datagramserver.h 		\
-	src/netxx/netbuf.h src/netxx/netxx.h src/netxx/peer.h 		\
-	src/netxx/probe.h src/netxx/probeinfo.h src/netxx/sockopt.h 	\
-	src/netxx/stream.h src/netxx/streambase.h 			\
-	src/netxx/streamserver.h src/netxx/timeout.h src/netxx/types.h
-
 UNIX_PLATFORM_SOURCES =							\
 	src/unix/read_password.cc src/unix/get_system_flavour.cc	\
 	src/unix/process.cc src/unix/terminal.cc src/unix/inodeprint.cc	\
@@ -166,7 +147,7 @@ UNIT_TESTEES =								\
 	src/basic_io.cc src/charset.cc src/commands.cc src/cset.cc 	\
 	src/git_change.cc src/globish.cc src/graph.cc src/merge_3way.cc	\
 	src/merge_roster.cc src/mkstemp.cc src/netcmd.cc 		\
-	src/netxx_pipe.cc src/option.cc src/outdated_indicator.cc	\
+	src/option.cc src/outdated_indicator.cc	\
 	src/pcrewrap.cc src/refiner.cc src/restrictions.cc		\
 	src/revision.cc src/simplestring_xform.cc src/transforms.cc 	\
 	src/uri.cc src/vocab.cc src/xdelta.cc
@@ -180,7 +161,7 @@ UNIT_TESTERS =								\
 	test/unit/tests/git_change.cc test/unit/tests/globish.cc	\
 	test/unit/tests/graph.cc test/unit/tests/merge_3way.cc		\
 	test/unit/tests/merge_roster.cc test/unit/tests/mkstemp.cc	\
-	test/unit/tests/netcmd.cc test/unit/tests/netxx_pipe.cc		\
+	test/unit/tests/netcmd.cc			\
 	test/unit/tests/option.cc test/unit/tests/outdated_indicator.cc	\
 	test/unit/tests/pcrewrap.cc test/unit/tests/refiner.cc 		\
 	test/unit/tests/restrictions.cc test/unit/tests/revision.cc	\
@@ -234,7 +215,7 @@ test_bin_tester_SOURCES = test/src/tester.cc test/src/tester-plaf.hh src/transfo
 	src/specialized_lexical_cast.cc
 nodist_test_bin_tester_SOURCES = test/src/testlib.cc
 
-noinst_LIBRARIES = src/libplatform.a src/lib3rdparty.a
+noinst_LIBRARIES = src/libplatform.a
 src_libplatform_a_SOURCES = src/platform.hh
 src_lib3rdparty_a_SOURCES = $(NETXX_SOURCES)
 
@@ -311,43 +292,21 @@ SUFFIXES = .gch .merged.po .gmo
 AM_CPPFLAGS = $(intl_CFLAGS) $(pcre_CFLAGS) $(botan_CFLAGS)	\
 	      $(lua_CFLAGS) $(sqlite3_CFLAGS) $(idn_CFLAGS)
 
-LDADD = src/libplatform.a src/lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
+LDADD = src/libplatform.a $(intl_LIBS) $(pcre_LIBS)	\
 	$(botan_LIBS) $(lua_LIBS) $(sqlite3_LIBS) $(idn_LIBS)
 
 if WIN32_PLATFORM
   src_libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_SOURCES += src/win32/main.cc
   test_bin_tester_SOURCES += test/src/win32/tester-plaf.cc
-  test_bin_check_net_SOURCES = test/src/win32/tester-check-net.cc
   AM_CPPFLAGS += -DWIN32
   LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
 else
   src_libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += src/unix/main.cc
   test_bin_tester_SOURCES += test/src/unix/tester-plaf.cc
-  test_bin_check_net_SOURCES = test/src/unix/tester-check-net.cc
 endif
 
-if MISSING_INET_PTON
-  src_lib3rdparty_a_SOURCES += src/netxx/inet_pton.cxx src/netxx/inet_pton.h
-  AM_CPPFLAGS += -DNETXX_NO_PTON
-endif
-
-if MISSING_INET_NTOP
-  src_lib3rdparty_a_SOURCES += src/netxx/inet_ntop.cxx src/netxx/inet_ntop.h
-  AM_CPPFLAGS += -DNETXX_NO_NTOP
-endif
-
-if MISSING_GETADDRINFO
-  src_lib3rdparty_a_SOURCES += src/netxx/resolve_gethostbyname.cxx \
-			       src/netxx/resolve_getservbyname.cxx
-else
-  src_lib3rdparty_a_SOURCES += src/netxx/resolve_getaddrinfo.cxx
-endif
-
-if MISSING_INET6
-  AM_CPPFLAGS += -DNETXX_NO_INET6
-endif
 
 # extra files
 

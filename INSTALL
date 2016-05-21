@@ -23,7 +23,7 @@ building and installation process for monotone
     - zlib 1.1.4 or later
     - libiconv if the iconv() function is missing
     - texinfo (to build the documentation)
-    - Botan 1.6.3 or later (Botan might require bzip2, OpenSSL and / or
+    - Botan 1.8.0 or later (Botan might require bzip2, OpenSSL and / or
       GnuMP in addition, depending on the package you're using.)
     - PCRE 7.4 or later
     - SQLite 3.3.8 or later
@@ -37,8 +37,8 @@ building and installation process for monotone
              libbotan1.10-dev libsqlite3-dev libpcre3-dev liblua5.2-dev
              libidn11-dev libgmp3-dev libbz2-dev texinfo
 
-           (monotone works with older and newer Botan versions as well, 
-            so libbotan1.6-dev or libbotan1.8-dev are also good to go.)
+           (monotone also works with older versions of Botan, so
+            libbotan1.8-dev is also good to go.)
 
         on FreeBSD:
 
