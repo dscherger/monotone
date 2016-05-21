@@ -1,5 +1,6 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //               2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
+//               2014-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -217,18 +218,14 @@ namespace commands {
 
     reapply_options(app, cmd, ident);
 
-    // intentional leak
-    // we don't want the options to be reset, so don't destruct this
-    new options_applicator(app.opts, options_applicator::for_primary_cmd);
+    app.push_opt_applicator(
+      options_applicator(app.opts, options_applicator::for_primary_cmd));
 
     // possibly initialize the pager
-    if (app.opts.pager)
+    if (app.opts.pager && initialize_pager() != 0)
       {
-        if (initialize_pager() != 0)
-          {
-            L(FL("Failed to initialize the pager."));
-            throw ui.fatal_exception();
-          }
+        L(FL("Failed to initialize the pager."));
+        throw ui.fatal_exception();
       }
 
     cmd->exec(app, ident, args);

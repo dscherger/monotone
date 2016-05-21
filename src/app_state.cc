@@ -1,4 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2007-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -8,13 +9,23 @@
 // PURPOSE.
 
 #include "base.hh"
+#include <utility>
+
 #include "app_state.hh"
+
+using std::move;
 
 app_state::app_state() : lua(this), mtn_automate_allowed(false)
 {}
 
 app_state::~app_state()
 {}
+
+void
+app_state::push_opt_applicator(options_applicator && applicator)
+{
+  opt_applicators.push_back(move(applicator));
+}
 
 // Local Variables:
 // mode: C++

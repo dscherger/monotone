@@ -17,15 +17,7 @@
 #include "ui.hh"
 
 using std::make_shared;
-
-class options_applicator_impl
-{
-public:
-  options_applicator::for_what what;
-  bool were_timestamps_enabled;
-  int prev_verbosity;
-  user_interface::ticker_type tick_type;
-};
+using std::unique_ptr;
 
 options_applicator::options_applicator(options const & opts,
                                        options_applicator::for_what what)
@@ -64,13 +56,17 @@ options_applicator::options_applicator(options const & opts,
 
 options_applicator::~options_applicator()
 {
+  // After moving out the unique_ptr to another options_applicator, this
+  // destructor may be invoked - on the old object - with a nullptr for
+  // _impl.
+  if (_impl.get() == nullptr)
+    return;     // no-op
+
   ui.enable_timestamps(_impl->were_timestamps_enabled);
 
   global_sanity.set_verbosity(_impl->prev_verbosity, false);
 
   ui.set_ticker_type(_impl->tick_type);
-
-  delete _impl;
 }
 
 // Local Variables:

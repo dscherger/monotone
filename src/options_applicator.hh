@@ -11,16 +11,34 @@
 #ifndef __OPTIONS_APPLICATOR_HH__
 #define __OPTIONS_APPLICATOR_HH__
 
-class options;
+#include <iostream>
+#include <memory>
 
+#include "ui.hh"
+
+class options;
 class options_applicator_impl;
+
 class options_applicator
 {
-  options_applicator_impl * const _impl;
+  std::unique_ptr<options_applicator_impl> _impl;
 public:
   enum for_what {for_primary_cmd, for_automate_subcmd};
   options_applicator(options const & opts, for_what what);
   ~options_applicator();
+
+  // movable
+  options_applicator(options_applicator &&) = default;
+  options_applicator & operator=(options_applicator &&) = default;
+};
+
+class options_applicator_impl
+{
+public:
+  options_applicator::for_what what;
+  bool were_timestamps_enabled;
+  int prev_verbosity;
+  user_interface::ticker_type tick_type;
 };
 
 #endif

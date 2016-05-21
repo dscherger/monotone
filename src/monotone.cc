@@ -1,4 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2008-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -203,7 +204,6 @@ cpp_main(int argc, char ** argv)
         F("this monotone binary requires Botan 1.9.11 or newer"));
 #endif
 
-
       app_state app;
       try
         {
@@ -225,14 +225,8 @@ cpp_main(int argc, char ** argv)
           // and if found, change directory to it
           // Certain commands may subsequently require a workspace or fail
           // if we didn't find one at this point.
-          if (app.opts.no_workspace)
-            {
-              workspace::found = false;
-            }
-          else
-            {
-              workspace::found = find_and_go_to_workspace(app.opts.root);
-            }
+          workspace::found = app.opts.no_workspace ? false
+            : find_and_go_to_workspace(app.opts.root);
 
           // Load all available monotonercs.  If we found a workspace above,
           // we'll pick up _MTN/monotonerc as well as the user's monotonerc.
@@ -244,24 +238,19 @@ cpp_main(int argc, char ** argv)
           // lua extension function
           commands::command_id cmd_id;
           if (!app.opts.args.empty())
-            {
-              cmd_id = commands::complete_command(app.opts.args);
-            }
+            cmd_id = commands::complete_command(app.opts.args);
 
           // check if the user specified default arguments for this command
           if (!cmd_id.empty())
-            app.lua.hook_get_default_command_options(cmd_id,
-                                                     app.reset_info.default_args);
+            app.lua.hook_get_default_command_options
+              (cmd_id, app.reset_info.default_args);
 
           if (app.opts.log_given)
-            {
-              ui.redirect_log_to(app.opts.log);
-            }
+            ui.redirect_log_to(app.opts.log);
+
           global_sanity.set_verbosity(app.opts.verbosity, true);
           if (app.opts.dump_given)
-            {
-              global_sanity.set_dump_path(app.opts.dump.as_external());
-            }
+            global_sanity.set_dump_path(app.opts.dump.as_external());
           else if (workspace::found)
             {
               bookkeeping_path dump_path = workspace::get_local_dump_path();
@@ -314,7 +303,19 @@ cpp_main(int argc, char ** argv)
           ui.inform_usage(u, app.opts);
           return app.opts.help ? 0 : 2;
         }
+      // Note that we try to catch the following two exceptions here
+      // already, with thi app_state still in scope.
+      catch (std::exception const & ex)
+        {
+          return ui.fatal_exception(ex);
+        }
+      catch (...)
+        {
+          return ui.fatal_exception();
+        }
     }
+  // While these catch handlers only apply to the outer try block and don't
+  // have no app_state in scope.
   catch (std::exception const & ex)
     {
       return ui.fatal_exception(ex);
