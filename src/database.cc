@@ -1809,7 +1809,15 @@ database_impl::cache_size()
   results res;
   query q("PRAGMA default_cache_size");
   fetch(res, one_col, one_row, q);
-  return lexical_cast<unsigned int>(res[0][0]);
+
+  string result = res[0][0];
+  if (result[0] == '-') {
+    // Handling of negative numbers changed with SQLite 3.7.10.
+    int factor = sqlite3_libversion_number() >= 300710 ? 1024 : 1;
+    return lexical_cast<unsigned int>(result.substr(1)) * factor;
+  } else {
+    return lexical_cast<unsigned int>(result);
+  }
 }
 
 void
