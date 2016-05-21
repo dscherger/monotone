@@ -64,12 +64,10 @@ void initialize_terminal()
 
 int initialize_pager()
 {
-  const char* pager = getenv("PAGER");
+  // const char* pager = getenv("PAGER");
 
   // FIXME: the pager to use should be selectable by configuration
-  char* cmdline = strdup("/usr/bin/less -FRX");
-  char* const pager_args[] = {&cmdline[0], &cmdline[14], NULL};
-  cmdline[13] = '\0';
+  char const * const pager_args[] = {"/usr/bin/less", "-FRX", NULL};
 
   int infds[2];
   if (pipe(infds) < 0)
@@ -104,14 +102,12 @@ int initialize_pager()
         }
       close(infds[0]);  // we don't care about errors, here
 
-      execvp(pager_args[0], pager_args); // (char * const *)argv);
+      execvp(pager_args[0], (char * const *) pager_args);
       raise(SIGKILL);
 
     default: /* Parent */
       if (close(infds[0]) != 0)
         perror("mtn: failed to close the pager's end of the pipe");
-
-      free(cmdline);
 
       // Install yet another signal handler for SIGCHLD to abort monotone
       // once the user quits the pager.

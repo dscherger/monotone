@@ -158,11 +158,15 @@ LUAEXT(spawn_pipe, )
   char **argv = (char**)malloc((n+1)*sizeof(char*));
   int i;
   pid_t pid;
-  if (argv==NULL)
+  if (argv == NULL)
     return 0;
-  if (n<1)
-    return 0;
-  for (i=0; i<n; i++) argv[i] = (char*)luaL_checkstring(LS,  i+1);
+  if (n < 1)
+    {
+      free(argv);
+      return 0;
+    }
+  for (i=0; i<n; i++)
+    argv[i] = (char*)luaL_checkstring(LS,  i+1);
   argv[i] = NULL;
 
   mtn_lua_Stream *ins = newstream(LS);
