@@ -36,9 +36,7 @@ void
 mtn_sanity::inform_log(std::string const &msg)
 {
   if (debug_p())
-    {
-      ui.inform(msg);
-    }
+    ui.inform(msg);
 }
 
 void

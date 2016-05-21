@@ -10,9 +10,10 @@
 #ifndef __SANITY_HH__
 #define __SANITY_HH__
 
-#include <stdexcept>
-#include <ostream>
 #include <cstdio>
+#include <memory>
+#include <ostream>
+#include <stdexcept>
 
 #include "numeric_vocab.hh"
 #include "origin_type.hh"
@@ -50,8 +51,7 @@ public:
   virtual ~unrecoverable_failure() throw() {}
 };
 
-class MusingI;
-
+class MusingBase;
 class format_base;
 struct plain_format;
 struct i18n_format;
@@ -59,7 +59,7 @@ struct i18n_format;
 struct sanity {
   sanity();
   virtual ~sanity();
-  virtual void initialize(int, char **, char const *);
+  virtual void initialize(int argc, char ** argv, char const * lc_all);
   void dump_buffer();
   int set_verbosity(int level, bool allow_debug_change);
   int get_verbosity() const;
@@ -97,8 +97,8 @@ struct sanity {
                      unsigned long idx,
                      char const * file, int line));
   void gasp();
-  void push_musing(MusingI const *musing);
-  void pop_musing(MusingI const *musing);
+  void push_musing(std::unique_ptr<MusingBase> && musing);
+  void pop_musing();
 
   // debugging aid, see DUMP() below
   void print_var(std::string const & value,
@@ -116,7 +116,7 @@ private:
   virtual void inform_error(std::string const &msg) = 0;
 
   struct impl;
-  impl * imp;
+  impl * imp;  // FIXME: turn into a unique_ptr
 };
 
 extern sanity & global_sanity;
@@ -385,15 +385,6 @@ struct bad_decode {
 
 // Last gasp dumps
 
-class MusingI
-{
-public:
-  MusingI() { global_sanity.push_musing(this); }
-  virtual ~MusingI() { global_sanity.pop_musing(this); }
-  virtual void gasp(std::string & out) const = 0;
-};
-
-
 class MusingBase
 {
   char const * name;
@@ -403,34 +394,40 @@ class MusingBase
 
 protected:
   MusingBase(char const * name, char const * file, int line, char const * func)
-    : name(name), file(file), func(func), line(line)  {}
+    : name(name), file(file), func(func), line(line)
+  { }
 
   void gasp_head(std::string & out) const;
   void gasp_body(const std::string & objstr, std::string & out) const;
-};
-
-
-// remove_reference is a workaround for C++ defect #106.
-template <typename T>
-struct remove_reference {
-  typedef T type;
-};
-
-template <typename T>
-struct remove_reference <T &> {
-  typedef typename remove_reference<T>::type type;
+public:
+  virtual void gasp(std::string & out) const = 0;
 };
 
 
 template <typename T>
-class Musing : public MusingI, private MusingBase
+class Musing : public MusingBase
 {
 public:
-  Musing(typename remove_reference<T>::type const & obj, char const * name, char const * file, int line, char const * func)
-    : MusingBase(name, file, line, func), obj(obj) {}
+  Musing(T && obj, char const * name,
+         char const * file, int line, char const * func)
+    : MusingBase(name, file, line, func), obj(std::move(obj)) {}
   virtual void gasp(std::string & out) const;
 private:
-  typename remove_reference<T>::type const & obj;
+  T obj;
+};
+
+class ScopedMusing
+{
+public:
+  ScopedMusing(std::unique_ptr<MusingBase> && musing)
+  {
+    global_sanity.push_musing(std::move(musing));
+  }
+
+  ~ScopedMusing()
+  {
+    global_sanity.pop_musing();
+  }
 };
 
 // The header line must be printed into the "out" string before
@@ -462,7 +459,9 @@ Musing<T>::gasp(std::string & out) const
 //
 // FIXME: no idea whether or not this works on anything other than g++ or
 // clang, but using decltype sounds promising.
-#define real_M(obj, line) Musing<decltype(obj)> this_is_a_musing_fnord_object_ ## line (obj, #obj, __FILE__, __LINE__, __func__)
+#define real_M(obj, line) ScopedMusing                                  \
+  this_is_a_musing_fnord_object_ ## line(std::unique_ptr<MusingBase>())
+
 #define fake_M(obj, line) real_M(obj, line)
 #define MM(obj) fake_M(obj, __LINE__)
 
@@ -471,9 +470,10 @@ Musing<T>::gasp(std::string & out) const
 // be before all MM objects on the musings list, or you will get an
 // invariant failure.  (In other words, don't use PERM_MM unless you
 // are sanity::initialize.)
-#define PERM_MM(obj) \
-  new Musing<decltype(obj)>(*(new remove_reference<decltype(obj)>::type(obj)), \
-                            #obj, __FILE__, __LINE__, __func__)
+#define PERM_MM(var)                                                    \
+  global_sanity.push_musing(std::unique_ptr<MusingBase>(                \
+    new Musing<decltype(var)>(std::move(var), #var,                     \
+                              __FILE__, __LINE__, __func__)))
 
 // debugging utility to dump out vars like MM but without requiring a crash
 

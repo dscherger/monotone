@@ -1,4 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2014-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -33,13 +34,14 @@ using std::ostream_iterator;
 using std::ostringstream;
 using std::out_of_range;
 using std::string;
+using std::unique_ptr;
 using std::vector;
 
 using boost::format;
 using boost::lexical_cast;
 
 // set by sanity::initialize
-std::string const * prog_name_ptr;
+string const * prog_name_ptr;
 
 string
 origin::type_to_string(origin::type t)
@@ -75,11 +77,11 @@ struct sanity::impl
   // verbosity level.
   bool is_debug;
   boost::circular_buffer<char> logbuf;
-  std::string real_prog_name;
-  std::string filename;
-  std::string gasp_dump;
+  string real_prog_name;
+  string filename;
+  string gasp_dump;
   bool already_dumping;
-  std::vector<MusingI const *> musings;
+  vector<unique_ptr<MusingBase>> musings;
 
   void (*out_of_band_function)(char channel, std::string const& text, void *opaque);
   void *out_of_band_opaque;
@@ -94,7 +96,7 @@ struct sanity::impl
 
 sanity::sanity()
 {
-  imp = 0;
+  imp = nullptr;
 }
 
 sanity::~sanity()
@@ -104,7 +106,7 @@ sanity::~sanity()
 }
 
 void
-sanity::initialize(int argc, char ** argv, char const * lc_all)
+sanity::initialize(int argc, char ** argv, char const * localename)
 {
   imp = new impl;
 
@@ -131,9 +133,8 @@ sanity::initialize(int argc, char ** argv, char const * lc_all)
   PERM_MM(cmdline_string);
   L(FL("command line: %s") % cmdline_string);
 
-  if (!lc_all)
-    lc_all = "n/a";
-  PERM_MM(string(lc_all));
+  string lc_all(localename ? localename : "n/a");
+  PERM_MM(lc_all);
   L(FL("set locale: LC_ALL=%s") % lc_all);
 
   // find base name of executable and save in the prog_name global. note that
@@ -389,22 +390,19 @@ sanity::index_failure(char const * vec_expr,
 // Last gasp dumps
 
 void
-sanity::push_musing(MusingI const *musing)
+sanity::push_musing(unique_ptr<MusingBase> && musing)
 {
   I(imp);
   if (!imp->already_dumping)
-    imp->musings.push_back(musing);
+    imp->musings.push_back(move(musing));
 }
 
 void
-sanity::pop_musing(MusingI const *musing)
+sanity::pop_musing()
 {
   I(imp);
   if (!imp->already_dumping)
-    {
-      I(imp->musings.back() == musing);
-      imp->musings.pop_back();
-    }
+    imp->musings.pop_back();
 }
 
 
@@ -423,13 +421,12 @@ sanity::gasp()
   ostringstream out;
   out << (F("Current work set: %i items") % imp->musings.size())
       << '\n'; // final newline is kept out of the translation
-  for (vector<MusingI const *>::const_iterator
-         i = imp->musings.begin(); i != imp->musings.end(); ++i)
+  for (unique_ptr<MusingBase> const & musing : imp->musings)
     {
       string tmp;
       try
         {
-          (*i)->gasp(tmp);
+          musing->gasp(tmp);
           out << tmp;
         }
       catch (logic_error)
