@@ -6,7 +6,7 @@ AC_DEFUN([ASIO_VERSION_CHECK],
  AC_CACHE_CHECK([for asio version 1.2.0 or newer],
                  ac_cv_asio_version_least_1_2_0,
  [
-  AC_COMPILE_IFELSE(
+  AC_COMPILE_IFELSE([AC_LANG_SOURCE(
   [#include <asio/version.hpp>
   #if ASIO_VERSION >= 100200
   int main() { return 0; }
@@ -16,7 +16,7 @@ AC_DEFUN([ASIO_VERSION_CHECK],
   ],
   ac_cv_asio_version_least_1_2_0=yes,
   ac_cv_asio_version_least_1_2_0=no)
- ])
+ ])])
   if test x$ac_cv_asio_version_least_1_2_0 = xno; then
     AC_MSG_FAILURE([asio 1.2.0 or newer required])
   fi

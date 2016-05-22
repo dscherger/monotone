@@ -15,6 +15,24 @@
 
 using std::string;
 
+#define CHECK_ADDRESS_SPLITTER(in, host, port)                      \
+  UNIT_TEST_CHECK(split_address(in) == host_port_pair(host, port))
+
+UNIT_TEST(address_splitter)
+{
+  CHECK_ADDRESS_SPLITTER("localhost", "localhost", "");
+  CHECK_ADDRESS_SPLITTER(":4691", "", "4691");
+  CHECK_ADDRESS_SPLITTER(" :4691 ", "", "4691");
+  CHECK_ADDRESS_SPLITTER("0.0.0.0:4691", "0.0.0.0", "4691");
+  CHECK_ADDRESS_SPLITTER("[::]:4691", "::", "4691");
+  CHECK_ADDRESS_SPLITTER("2001::0db8", "2001::0db8", "");
+  CHECK_ADDRESS_SPLITTER("2001:0db8::7334", "2001:0db8::7334", "");
+  CHECK_ADDRESS_SPLITTER("[2001:0db8::7334]", "2001:0db8::7334", "");
+  CHECK_ADDRESS_SPLITTER("[2001:0db8::7334]:4691", "2001:0db8::7334", "4691");
+  CHECK_ADDRESS_SPLITTER("::ffff:192.0.2.128", "::ffff:192.0.2.128", "");
+  CHECK_ADDRESS_SPLITTER("[::ffff:192.0.2.128]", "::ffff:192.0.2.128", "");
+}
+
 UNIT_TEST(mac)
 {
   netcmd out_cmd(constants::netcmd_current_protocol_version);

@@ -72,15 +72,11 @@ MOST_SOURCES = 								\
 	src/netsync.hh src/netsync.cc            			\
 	src/network/automate_session.hh src/network/automate_session.cc	\
 	src/network/connection_info.hh src/network/connection_info.cc	\
-	src/network/listener_base.hh src/network/listener_base.cc	\
 	src/network/listener.hh src/network/listener.cc			\
-	src/network/make_server.hh src/network/make_server.cc		\
 	src/network/netsync_session.hh src/network/netsync_session.cc	\
-	src/network/reactable.hh src/network/reactable.cc		\
-	src/network/reactor.hh src/network/reactor.cc			\
 	src/network/session.hh src/network/session.cc			\
-	src/network/session_base.hh src/network/session_base.cc		\
 	src/network/wrapped_session.hh src/network/wrapped_session.cc	\
+	src/network/stream.hh src/network/stream.cc			\
 	src/netcmd.cc src/netcmd.hh					\
 	src/merkle_tree.cc src/merkle_tree.hh 				\
 	src/lcs.cc src/lcs.hh						\
@@ -130,6 +126,7 @@ UNIX_PLATFORM_SOURCES =							\
 	src/unix/process.cc src/unix/terminal.cc src/unix/inodeprint.cc	\
 	src/unix/fs.cc src/unix/make_io_binary.cc			\
 	src/unix/os_strerror.cc src/unix/cputime.cc 			\
+	src/unix/pipe.cc						\
 	src/unix/ssh_agent_platform.cc src/unix/ssh_agent_platform.hh	\
 	src/unix/parse_date.cc
 
@@ -299,12 +296,14 @@ if WIN32_PLATFORM
   src_libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_SOURCES += src/win32/main.cc
   test_bin_tester_SOURCES += test/src/win32/tester-plaf.cc
+  test_bin_check_net_SOURCES = test/src/win32/tester-check-net.cc
   AM_CPPFLAGS += -DWIN32
   LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
 else
   src_libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += src/unix/main.cc
   test_bin_tester_SOURCES += test/src/unix/tester-plaf.cc
+  test_bin_check_net_SOURCES = test/src/unix/tester-check-net.cc
 endif
 
 

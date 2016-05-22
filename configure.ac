@@ -1,5 +1,5 @@
 # Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
-#               2014 Markus Wanner <markus@bluegap.ch>
+#               2014-2016 Markus Wanner <markus@bluegap.ch>
 #
 # This program is made available under the GNU GPL version 2.0 or
 # greater. See the accompanying file COPYING for details.

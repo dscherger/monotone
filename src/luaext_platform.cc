@@ -11,6 +11,7 @@
 
 #include <csignal>
 #include <cstdlib>
+#include <cstdio>
 
 #include "lua.hh"
 #include "platform.hh"
@@ -175,8 +176,12 @@ LUAEXT(spawn_pipe, )
   mtn_lua_Stream *outs = newstream(LS);
   outs->closef = &io_fclose;
 
-  pid = process_spawn_pipe(argv, &ins->f, &outs->f);
+  int in, out;
+  pid = process_spawn_pipe(argv, &in, &out);
   free(argv);
+
+  ins->f = fdopen(in, "w");
+  outs->f = fdopen(out, "r");
 
   lua_pushnumber(LS, pid);
 

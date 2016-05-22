@@ -229,8 +229,11 @@ public:
   void write_usher_cmd(utf8 const & greeting);
   void read_usher_reply_cmd(u8 & version, utf8 & server, std::string & pattern) const;
   void write_usher_reply_cmd(utf8 const & server, std::string const & pattern);
-
 };
+
+// Utility function for splitting host:port pairs.
+typedef std::pair<std::string, std::string> host_port_pair;
+extern host_port_pair split_address(std::string const & address);
 
 #endif // __NETCMD_HH__
 

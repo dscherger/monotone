@@ -13,7 +13,6 @@
 
 #include <memory>
 
-#include "../netxx/types.h"
 #include "../database.hh"
 #include "../options.hh"
 #include "../automate_ostream.hh"
@@ -145,7 +144,7 @@ struct netsync_connection_info
     automate_ostream & get_output_stream() const;
     void set_input_stream(std::istream & is);
     void set_output_stream(automate_ostream & os);
-    Netxx::port_type get_port() const;
+    unsigned short get_port() const;
     globish get_include_pattern() const;
     globish get_exclude_pattern() const;
     uri_t get_uri() const;

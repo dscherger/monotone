@@ -1,5 +1,6 @@
 // Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
+//               2014-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -9,21 +10,22 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "netsync.hh"
 
+#include <functional>
 #include <queue>
 
-#include "netxx/sockopt.h"
-#include "netxx/stream.h"
+#include <asio.hpp>
 
+#include "netsync.hh"
 #include "app_state.hh"
 #include "database.hh"
 #include "lua.hh"
+#include "key_store.hh"
 #include "network/automate_session.hh"
 #include "network/connection_info.hh"
 #include "network/listener.hh"
 #include "network/netsync_session.hh"
-#include "network/reactor.hh"
+#include "network/stream.hh"
 #include "network/session.hh"
 #include "options.hh"
 #include "platform.hh"
@@ -32,13 +34,23 @@
 using std::deque;
 using std::make_shared;
 using std::move;
+using std::unique_ptr;
 using std::shared_ptr;
 using std::string;
 using std::vector;
 
 using boost::lexical_cast;
 
-deque<server_initiated_sync_request> server_initiated_sync_requests;
+static std::function<void(server_initiated_sync_request && req)>
+  trigger_server_initiated_sync;
+
+/* FIXME: these shouldn't be quite as global... */
+static unique_ptr<asio::io_service> global_ios;
+static shared_ptr<transaction_guard> global_guard;
+static std::function<bool()> global_is_listening;
+static std::function<void()> global_start_listener;
+static std::function<void()> global_stop_listener;
+
 LUAEXT(server_request_sync, )
 {
   char const * w = luaL_checkstring(LS, 1);
@@ -60,43 +72,9 @@ LUAEXT(server_request_sync, )
   else if (what == "pull")
     request.role = sink_role;
 
-  server_initiated_sync_requests.push_back(request);
+  I(trigger_server_initiated_sync);
+  trigger_server_initiated_sync(move(request));
   return 0;
-}
-
-
-static shared_ptr<Netxx::StreamBase>
-build_stream_to_server(options & /* opts */,
-                       lua_hooks & /* lua */,
-                       shared_conn_info const & info,
-                       Netxx::Timeout timeout)
-{
-  shared_ptr<Netxx::StreamBase> server;
-
-  if (info->client.get_use_argv())
-    {
-      vector<string> args = info->client.get_argv();
-      I(!args.empty());
-      string cmd = args[0];
-      args.erase(args.begin());
-      return shared_ptr<Netxx::StreamBase>
-        (make_shared<Netxx::PipeStream>(cmd, args));
-    }
-  else
-    {
-#ifdef USE_IPV6
-      bool use_ipv6=true;
-#else
-      bool use_ipv6=false;
-#endif
-      string host(info->client.get_uri().host);
-      I(!host.empty());
-      Netxx::Address addr(host.c_str(),
-                          info->client.get_port(),
-                          use_ipv6);
-      return shared_ptr<Netxx::StreamBase>
-        (make_shared<Netxx::Stream>(addr, timeout));
-    }
 }
 
 static void
@@ -107,27 +85,24 @@ call_server(app_state & app,
             shared_conn_info const & info,
             shared_conn_counts const & counts)
 {
-  Netxx::PipeCompatibleProbe probe;
-  transaction_guard guard(project.db);
+  shared_ptr<transaction_guard> guard(new transaction_guard(project.db));
 
-  Netxx::Timeout timeout(static_cast<long>(constants::netsync_timeout_seconds)),
-    instant(0,1);
+  asio::io_service ios;
+
+  // FIXME: apply timeout from constants::netsync_timeout_seconds
 
   P(F("connecting to '%s'") % info->client.get_uri().resource());
   P(F("  include pattern  '%s'") % info->client.get_include_pattern());
   P(F("  exclude pattern  '%s'") % info->client.get_exclude_pattern());
 
-  shared_ptr<Netxx::StreamBase> server
-    = build_stream_to_server(app.opts, app.lua, info, timeout);
+  shared_ptr<session> sess(new session(
+    app, project, keys, guard,
+    unique_ptr<abstract_stream>(
+      abstract_stream::create_stream_for(info->client, ios)),
+    client_voice));
 
-  // 'false' here means not to revert changes when the SockOpt
-  // goes out of scope.
-  Netxx::SockOpt socket_options(server->get_socketfd(), false);
-  socket_options.set_non_blocking();
+  sess->set_base_uri(info->client.get_uri().resource());
 
-  shared_ptr<session> sess = make_shared<session>
-    (app, project, keys, client_voice, info->client.get_uri().resource(),
-     move(server));
   shared_ptr<wrapped_session> wrapped;
   switch (info->client.get_connection_type())
     {
@@ -147,234 +122,214 @@ call_server(app_state & app,
     }
   sess->set_inner(move(wrapped));
 
-  reactor react;
-  react.add(sess, guard);
-
-  while (true)
+  sess->set_term_handler([sess](bool)
     {
-      react.ready(guard);
+      sess->stop();
+    });
 
-      if (react.size() == 0)
-        {
-          // Commit whatever work we managed to accomplish anyways.
-          guard.commit();
+  // We set the connection handler just before starting the reactor, as this
+  // may (in case of pipes) immediately trigger the connection handler.
+  sess->set_stream_conn_handler();
 
-          // We failed during processing. This should only happen in
-          // client voice when we have a decode exception, or received an
-          // error from our server (which is translated to a decode
-          // exception). We call these cases E() errors.
-          E(false, origin::network,
-            F("processing failure while talking to peer '%s', disconnecting")
-            % sess->get_peer());
-          return;
-        }
-
-      bool io_ok = react.do_io();
-
-      E(io_ok, origin::network,
-        F("timed out waiting for I/O with peer '%s', disconnecting")
-        % sess->get_peer());
-
-      if (react.size() == 0)
-        {
-          // Commit whatever work we managed to accomplish anyways.
-          guard.commit();
-
-          // ensure that the tickers have finished and write any last ticks
-          ui.ensure_clean_line();
-
-          // We had an I/O error. We must decide if this represents a
-          // user-reported error or a clean disconnect. See protocol
-          // state diagram in session::process_bye_cmd.
-
-          if (sess->protocol_state == session_base::confirmed_state)
-            {
-              P(F("successful exchange with '%s'")
-                % sess->get_peer());
-              return;
-            }
-          else if (sess->encountered_error)
-            {
-              P(F("peer '%s' disconnected after we informed them of error")
-                % sess->get_peer());
-              return;
-            }
-          else
-            E(false, origin::network,
-              (F("I/O failure while talking to peer '%s', disconnecting")
-               % sess->get_peer()));
-        }
+  char const * err_info = NULL;
+  try
+    {
+      ios.run();
     }
+  catch (asio::system_error & e)
+    {
+      L(FL("caught network exception: %s") % e.what());
+      err_info = e.what();
+    }
+  catch (std::runtime_error & e)
+    {
+      L(FL("caught runtime error: %s") % e.what());
+      err_info = e.what();
+    }
+
+  // Commit whatever work we managed to accomplish anyways.
+  guard->commit();
+
+  // ensure that the tickers have finished and write any last ticks
+  ui.ensure_clean_line();
+
+  // Check the termination status of our session and report back to the
+  // user. See the protocol state diagram in session::process_bye_cmd as
+  // well.
+
+  if (sess->protocol_state == session::confirmed_state)
+    P(F("successful exchange with '%s'")
+      % info->client.get_uri().host);
+  else if (sess->encountered_error)
+    P(F("peer '%s' disconnected after we informed them of error")
+      % info->client.get_uri().host);
+  else if (err_info)
+    E(false, origin::network,
+      F("I/O failure while talking to peer '%s' (%s), disconnecting")
+      % info->client.get_uri().host % err_info);
+  else
+    E(false, origin::network,
+      F("I/O failure while talking to peer '%s', disconnecting")
+      % info->client.get_uri().host);
+
+  // FIXME: in case of a decode exception or such, the old netxx code
+  // committed work the client managed to accomplish anyways.
+  //
+  // Original comments for that case: We failed during processing. This
+  // should only happen in client voice when we have a decode exception, or
+  // received an error from our server (which is translated to a decode
+  // exception). We call these cases E() errors.
+  //
+  // The error message was:
+  // F("processing failure while talking to peer '%s', disconnecting")
+  //   % sess->get_peer());
 }
 
-static shared_ptr<session>
-session_from_server_sync_item(app_state & app,
-                              project_t & project,
-                              key_store & keys,
-                              server_initiated_sync_request const & request)
+static void
+session_from_sync_request(app_state & app,
+                          project_t & project,
+                          key_store & keys,
+                          server_initiated_sync_request const & request)
 {
   shared_conn_info info;
   netsync_connection_info::setup_from_sync_request(app.opts, project.db,
                                                    app.lua, request,
                                                    info);
+  I(info->client.get_connection_type() == netsync_connection);
 
-  try
-    {
-      P(F("connecting to '%s'") % info->client.get_uri().resource());
-      shared_ptr<Netxx::StreamBase> server
-        = build_stream_to_server(app.opts, app.lua, info,
-                                 Netxx::Timeout(constants::netsync_timeout_seconds));
+  P(F("connecting to '%s'") % info->client.get_uri().resource());
 
-      // 'false' here means not to revert changes when
-      // the SockOpt goes out of scope.
-      Netxx::SockOpt socket_options(server->get_socketfd(), false);
-      socket_options.set_non_blocking();
+  /* FIXME: timeouts? */
 
-      shared_ptr<session> sess = make_shared<session>
-        (app, project, keys, client_voice,
-         info->client.get_uri().resource(), move(server));
-      shared_ptr<wrapped_session> wrapped = make_shared<netsync_session>
+  /* FIXME: copied from call_server... merge? */
+  P(F("connecting to '%s'") % info->client.get_uri().resource());
+  P(F("  include pattern  '%s'") % info->client.get_include_pattern());
+  P(F("  exclude pattern  '%s'") % info->client.get_exclude_pattern());
+
+  I(global_ios.get() != nullptr);
+  I(global_guard.get() != nullptr);
+  shared_ptr<session> sess(new session
+    (app, project, keys, global_guard,
+     unique_ptr<abstract_stream>
+       (abstract_stream::create_stream_for(info->client, *global_ios)),
+     client_voice));
+
+  sess->set_base_uri(info->client.get_uri().resource());
+  shared_ptr<wrapped_session> wrapped
+    = make_shared<netsync_session>
         (sess.get(), app.opts, app.lua, project, keys, request.role,
          info->client.get_include_pattern(),
          info->client.get_exclude_pattern(),
          connection_counts::create(),
          true);
-      sess->set_inner(move(wrapped));
-      return sess;
-    }
-  catch (Netxx::NetworkException & e)
+  sess->set_inner(move(wrapped));
+  sess->set_stream_conn_handler();
+
+  sess->set_term_handler([sess, info](bool success)
     {
-      P(F("network error: %s") % e.what());
-      return shared_ptr<session>();
-    }
+      L(FL("netsync session with '%s' terminated.")
+        % info->client.get_uri().resource());
+      sess->stop();
+    });
+
+  sess->start();
+  L(FL("Opened connection to %s") % sess->get_peer_name());
 }
 
-enum listener_status { listener_listening, listener_not_listening };
-listener_status desired_listener_status;
 LUAEXT(server_set_listening, )
 {
   if (lua_isboolean(LS, 1))
     {
       bool want_listen = lua_toboolean(LS, 1);
-      if (want_listen)
-        desired_listener_status = listener_listening;
-      else
-        desired_listener_status = listener_not_listening;
+      if (want_listen && !global_is_listening())
+        global_start_listener();
+      else if (!want_listen && global_is_listening())
+        global_stop_listener();
       return 0;
     }
   else
-    {
-      return luaL_error(LS, "bad argument (not a boolean)");
-    }
+    return luaL_error(LS, "bad argument (not a boolean)");
 }
 
 static void
-serve_connections(app_state & app,
-                  options & /* opts */,
-                  lua_hooks & /* lua */,
-                  project_t & project,
-                  key_store & keys,
-                  protocol_role role,
-                  vector<utf8> const & addresses)
+run_netsync_server(app_state & app,
+                   options & opts, lua_hooks & lua,
+                   project_t & project, key_store & keys,
+                   protocol_role role,
+                   shared_conn_info & info,
+                   shared_conn_counts const & counts)
 {
-#ifdef USE_IPV6
-  bool use_ipv6=true;
-#else
-  bool use_ipv6=false;
-#endif
+  global_ios = unique_ptr<asio::io_service>(new asio::io_service());
+  global_guard = make_shared<transaction_guard>(project.db);
 
-  shared_ptr<transaction_guard> guard
-    = make_shared<transaction_guard>(project.db);
-
-  reactor react;
-  shared_ptr<listener> listen = make_shared<listener>
-    (app, project, keys, react, role, addresses, guard, use_ipv6);
-  react.add(listen, *guard);
-  desired_listener_status = listener_listening;
-  listener_status actual_listener_status = listener_listening;
-
-  while (true)
+  // Install a handler for lua to call and request server initiated
+  // runs of the netsync protocol.
+  trigger_server_initiated_sync
+    = [&app, &project, &keys]
+    (server_initiated_sync_request && req)
     {
-      if (!guard)
-        guard = make_shared<transaction_guard>(project.db);
-      I(guard);
+      session_from_sync_request(app,  project, keys, move(req));
+    };
 
-      react.ready(*guard);
+  if (opts.bind_stdio)
+    {
+      asio::local::stream_protocol proto;
 
-      while (!server_initiated_sync_requests.empty())
+      unique_ptr<abstract_stream> stream;
+      try
         {
-          server_initiated_sync_request request
-            = server_initiated_sync_requests.front();
-          server_initiated_sync_requests.pop_front();
-          shared_ptr<session> sess
-            = session_from_server_sync_item(app,  project, keys,
-                                            request);
-
-          if (sess)
-            {
-              react.add(sess, *guard);
-              L(FL("Opened connection to %s") % sess->get_peer());
-            }
+          stream = unique_ptr<abstract_stream>(
+            new unix_local_stream(*global_ios, "stdio",
+                                  STDIN_FILENO, STDOUT_FILENO));
+        }
+      catch (asio::system_error & e)
+        {
+          throw recoverable_failure(origin::network,
+            (F("cannot open stdio: %s") % e.what()).str());
         }
 
-      if (desired_listener_status != actual_listener_status)
+      shared_ptr<session>
+        sess(new session(app, project, keys, global_guard,
+                         move(stream), server_voice));
+      sess->start();
+
+      try
         {
-          switch (desired_listener_status)
-            {
-            case listener_listening:
-              react.add(listen, *guard);
-              actual_listener_status = listener_listening;
-              break;
-            case listener_not_listening:
-              react.remove(listen);
-              actual_listener_status = listener_not_listening;
-              break;
-            }
+          global_ios->run();
+          sess->stop();
         }
-      if (!react.size())
-        break;
-
-      react.do_io();
-
-      react.prune();
-
-      int num_sessions;
-      if (actual_listener_status == listener_listening)
-        num_sessions = react.size() - 1;
-      else
-        num_sessions = react.size();
-      if (num_sessions == 0)
+      catch (...)
         {
-          // Let the guard die completely if everything's gone quiet.
-          guard->commit();
-          guard.reset();
+          // Commit whatever work we managed to accomplish anyways.
+          global_guard->commit();
+          global_guard.reset();
+          throw;
         }
+
+      global_guard->commit();
+      global_guard.reset();
+    }
+  else
+    {
+      vector<host_port_pair> addrs;
+      for (utf8 const & addr : info->server.addrs)
+        addrs.push_back(split_address(addr()));
+
+      listener listen(app, project, keys, global_guard,
+                      *global_ios, role, move(addrs));
+
+      global_start_listener = [&listen]()
+        { listen.start_listening(); };
+
+      global_stop_listener = [&listen]()
+        { listen.stop_listening(); };
+
+      global_is_listening = [&listen]() -> bool
+        { return listen.is_listening(); };
+
+      global_ios->run();
     }
 }
-
-static void
-serve_single_connection(project_t & project,
-                        shared_ptr<session> sess)
-{
-  sess->begin_service();
-  P(F("beginning service on '%s'") % sess->get_peer());
-
-  transaction_guard guard(project.db);
-
-  reactor react;
-  react.add(sess, guard);
-
-  while (react.size() > 0)
-    {
-      react.ready(guard);
-      react.do_io();
-      react.prune();
-    }
-  guard.commit();
-}
-
-
-
 
 void
 run_netsync_protocol(app_state & app,
@@ -391,18 +346,7 @@ run_netsync_protocol(app_state & app,
   try
     {
       if (voice == server_voice)
-        {
-          if (opts.bind_stdio)
-            {
-              shared_ptr<session> sess = make_shared<session>
-                (app, project, keys, server_voice, "stdio",
-                 make_shared<Netxx::PipeStream>(0, 1));
-              serve_single_connection(project, sess);
-            }
-          else
-            serve_connections(app, opts, lua, project, keys,
-                              role, info->server.addrs);
-        }
+        run_netsync_server(app, opts, lua, project, keys, role, info, counts);
       else
         {
           I(voice == client_voice);
@@ -410,14 +354,10 @@ run_netsync_protocol(app_state & app,
           info->client.set_connection_successful();
         }
     }
-  catch (Netxx::NetworkException & e)
+  catch (asio::system_error & e)
     {
       throw recoverable_failure(origin::network,
                                 (F("network error: %s") % e.what()).str());
-    }
-  catch (Netxx::Exception & e)
-    {
-      throw oops((F("network error: %s") % e.what()).str());;
     }
 }
 

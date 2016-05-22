@@ -1,4 +1,5 @@
 // Copyright (C) 2009 Timothy Brownawell <tbrownaw@prjek.net>
+//               2014-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -8,26 +9,39 @@
 // PURPOSE.
 
 #include "../base.hh"
+#include <sstream>
+
+#include <functional>
+
+#include <asio.hpp>
+
 #include "../app_state.hh"
 #include "../key_store.hh"
 #include "../database.hh"
 #include "../keys.hh"
 #include "../lazy_rng.hh"
+#include "../lexical_cast.hh"
 #include "../lua_hooks.hh"
-#include "automate_session.hh"
-#include "netsync_session.hh"
 #include "../options.hh"
 #include "../project.hh"
 #include "../vocab_cast.hh"
+#include "../globish.hh"
+#include "../uri.hh"
+#include "../sanity.hh"
+#include "stream.hh"
 #include "session.hh"
 #include "automate_session.hh"
 #include "netsync_session.hh"
 
 using std::make_shared;
+using std::move;
 using std::shared_ptr;
 using std::string;
+using std::stringstream;
+using std::unique_ptr;
 
 using boost::lexical_cast;
+using asio::ip::tcp;
 
 static const var_domain known_servers_domain = var_domain("known-servers");
 
@@ -35,10 +49,15 @@ size_t session::session_num = 0;
 
 session::session(app_state & app, project_t & project,
                  key_store & keys,
-                 protocol_voice voice,
-                 std::string const & peer,
-                 shared_ptr<Netxx::StreamBase> && sock) :
-  session_base(voice, peer, move(sock)),
+                 shared_ptr<transaction_guard> & guard,
+                 unique_ptr<abstract_stream> && s,
+                 protocol_voice voice)
+: outbuf_bytes(0),
+  last_io_time(::time(NULL)),
+  stream(move(s)),
+  protocol_state(working_state),
+  voice(voice),
+  encountered_error(false),
   version(app.opts.max_netsync_version),
   max_version(app.opts.max_netsync_version),
   min_version(app.opts.min_netsync_version),
@@ -59,9 +78,12 @@ session::session(app_state & app, project_t & project,
   app(app),
   project(project),
   keys(keys),
-  peer(peer),
+  guard(guard),
   unnoted_bytes_in(0),
-  unnoted_bytes_out(0)
+  unnoted_bytes_out(0),
+  write_in_progress(false),
+  read_in_progress(false),
+  stopped(false)
 {
   if (!app.opts.max_netsync_version_given)
     {
@@ -72,16 +94,80 @@ session::session(app_state & app, project_t & project,
     min_version = constants::netcmd_minimum_protocol_version;
 }
 
+
+void
+session::mark_recent_io()
+{
+  last_io_time = ::time(NULL);
+}
+
+bool
+session::timed_out(time_t now)
+{
+  return static_cast<unsigned long>
+    (last_io_time + constants::netsync_timeout_seconds)
+    < static_cast<unsigned long>(now);
+}
+
+void
+session::queue_output(string const & s)
+{
+  outbuf.push_back(make_pair(s, 0));
+  outbuf_bytes += s.size();
+}
+
+bool
+session::output_overfull() const
+{
+  return outbuf_bytes > constants::bufsz * 10;
+}
+
 session::~session()
 {
+  I(stopped);
+}
+
+void
+session::stop()
+{
+  I(!stopped);
+  stopped = true;
+
   if (wrapped)
-    wrapped->on_end(session_id);
+    {
+      try
+        {
+          wrapped->on_end(session_id);
+        }
+      catch (std::exception const & e)
+        {
+          E(false, origin::internal,
+            F("session on_end exception: %s") % e.what());
+        }
+    }
+
+  // just to be extra sure
+  stream.reset();
+  wrapped.reset();
+  set_term_handler(nullptr);
 }
 
 void session::set_inner(shared_ptr<wrapped_session> && wrapped)
 {
   this->wrapped = wrapped;
 }
+
+void session::set_base_uri(string uri)
+{
+  I(voice == client_voice);
+  base_uri = uri;
+}
+
+void session::set_term_handler(std::function<void(bool)> term_handler)
+{
+  this->term_handler = term_handler;
+}
+
 
 id
 session::mk_nonce()
@@ -123,13 +209,13 @@ session::set_session_key(rsa_oaep_sha_data const & hmac_key_encrypted)
     }
 }
 
-bool session::arm()
+void session::arm()
 {
   if (!armed)
     {
       // Don't pack the buffer unnecessarily.
       if (output_overfull())
-        return false;
+        return;
 
       if (cmd_in.read(min_version, max_version, inbuf, read_hmac))
         {
@@ -137,21 +223,272 @@ bool session::arm()
           armed = true;
         }
     }
-  return armed;
 }
 
-void session::begin_service()
+void session::start()
 {
-  netcmd cmd(0);
-  cmd.write_usher_cmd(utf8("", origin::internal));
-  write_netcmd(cmd);
+  if (voice == server_voice)
+    {
+      L(FL("start"));
+      netcmd cmd(0);
+      cmd.write_usher_cmd(utf8("", origin::internal));
+      write_netcmd(cmd);
+      L(FL("started"));
+    }
+
+  iterate();
 }
+
+void session::iterate()
+{
+  I(guard);
+  try
+    {
+      if (!armed && outbuf.empty())
+        do_work(*guard);
+
+      arm();
+      while (armed && !encountered_error)
+        {
+          if (do_work(*guard))
+            {
+              L(FL("iterate: do_work returned true."));
+              arm();
+            }
+          else
+            {
+              L(FL("do_work returned false - closing stream."));
+              I(!write_in_progress);
+              stream->close();
+
+              if (!!term_handler)
+                term_handler(true);
+              return;
+            }
+        }
+
+      // FIXME: the old netxx code featured a full transaction commit
+      // (i.e. not just checkpointing) whenever the number of active
+      // sessions dropped to zero. That should be implemented for the asio
+      // variant as well (i.e. guard->commit(); guard.reset>()).
+
+      // Trigger processing of the data that possibly accumulated in the
+      // outbuf. Note that if we've hit an error, we still want to send and
+      // indication of the error back, before closing the stream.
+      if (!write_in_progress)
+        process_outbuf();
+
+      // Continue to read, except if we've already hit an error.
+      if (!read_in_progress && !encountered_error)
+        read_some();
+    }
+  catch (bad_decode & e)
+    {
+      W(F("protocol error while processing peer %s: '%s'")
+        % get_peer_name() % e.what);
+      if (!!term_handler)
+        term_handler(false);
+    }
+  catch (recoverable_failure & e)
+    {
+      W(F("recoverable '%s' error while processing peer %s: '%s'")
+        % origin::type_to_string(e.caused_by())
+        % get_peer_name() % e.what());
+      if (!!term_handler)
+        term_handler(false);
+    }
+}
+
+void
+session::read_some()
+{
+  I(inbuf.size() < constants::netcmd_maxsz);
+  I(!read_in_progress);
+  read_in_progress = true;
+
+  auto handler = [this](asio::error_code const & err, std::size_t count) {
+    this->handle_data_received(err, count);                      
+  };
+
+  stream->async_read_some(asio::buffer(receive_buffer, 8192), handler);
+}
+
+
+void session::handle_data_received(const asio::error_code & err,
+                                   std::size_t bytes_transferred)
+{
+  L(FL("handle_data_received"));
+  I(read_in_progress);
+  read_in_progress = false;
+
+  bool eof = false;
+  bool ok = true;
+  if (!err)
+    {
+      I(bytes_transferred > 0);
+
+      L(FL("read %d bytes from peer %s")
+        % bytes_transferred % get_peer_name());
+      if (encountered_error)
+        L(FL("in error unwind mode, so throwing them into the bit bucket"));
+
+      inbuf.append(receive_buffer, bytes_transferred);
+      mark_recent_io();
+      note_bytes_in(bytes_transferred);
+    }
+  else if (err.value() == asio::error::eof)
+    {
+      if (protocol_state == working_state)
+        terminate_err(F("peer %s: unexpected termination of connection")
+                      % get_peer_name());
+      else
+        terminate_ok();
+      return;
+    }
+  else
+    {
+      L(FL("FIXME: handle this error: %d: %s")
+        % err.value() % err.message());
+      ok = false;
+    }
+
+  L(FL("handle_data_received (ok: %s, read_in_progress: %s, write_in_progress: %s)")
+    % ok % read_in_progress % write_in_progress);
+
+  if (ok)
+    iterate();
+  else
+    {
+      switch (protocol_state)
+        {
+        case working_state:
+          P(F("peer %s: IO failed in working state (error)")
+            % get_peer_name());
+          break;
+
+        case shutdown_state:
+          P(F("peer %s: IO failed in shutdown state "
+              "(possibly client misreported error)")
+            % get_peer_name());
+          break;
+
+        case confirmed_state:
+          P(F("peer %s: IO failed in confirmed state (success)")
+            % get_peer_name());
+          break;
+        }
+
+      if (!!term_handler)
+        term_handler(false);
+    }
+}
+
+
+
+void session::process_outbuf()
+{
+  I(!write_in_progress);
+
+  /* A no-op, if the outbuf is empty. */
+  if (outbuf.empty())
+    return;
+
+  size_t writelen = outbuf.front().first.size() - outbuf.front().second;
+
+  /* FIXME: implement this timeout somehow!
+  timeval abs_timeout, now;
+  gettimeofday(&abs_timeout, NULL);
+  abs_timeout.tv_sec += constants::netsync_timeout_seconds;
+  */
+
+  const void * data = outbuf.front().first.data() + outbuf.front().second;
+  size_t size = std::min(writelen, size_t(8192LL)); // constants::bufsz);
+  L(FL("Trying to write %d bytes of data.") % size);
+  write_in_progress = true;
+
+  auto handler = [this](asio::error_code const & err, std::size_t count) {
+    handle_data_sent(err, count);
+  };
+  stream->async_write_some(asio::buffer(data, size), handler);
+}
+
+void session::handle_data_sent(const asio::error_code & err,
+                               std::size_t bytes_transferred)
+{
+  L(FL("handle_data_sent"));
+  write_in_progress = false;
+  bool ok = true;
+  if (!err)
+    {
+      L(FL("#### sent %d of %d bytes! (total entries: %d)")
+        % bytes_transferred
+        % outbuf.front().first.size()
+        % outbuf.size());
+
+      outbuf.front().second += bytes_transferred;
+      I(outbuf.front().second <= outbuf.front().first.size());
+      if (outbuf.front().second == outbuf.front().first.size())
+        {
+          // This part has successfully been transferred, remove.
+          outbuf_bytes -= outbuf.front().first.size();
+          outbuf.pop_front();
+        }
+
+      L(FL("wrote %d bytes to peer %s")
+        % bytes_transferred % get_peer_name());
+      mark_recent_io();
+      note_bytes_out(bytes_transferred);
+
+      if (encountered_error && outbuf.empty())
+        {
+          // we've flushed our error message, so it's time to get out.
+          L(FL("finished flushing output queue in error unwind mode, disconnecting"));
+          ok = false;
+        }
+      else
+        ok = true;
+    }
+  else
+    {
+      L(FL("FIXME: handle this error: %s") % err.message());
+      ok = false;
+    }
+
+  L(FL("handle_data_sent (ok: %s)") % ok);
+
+  if (ok)
+    iterate();
+  else
+    {
+      switch (protocol_state)
+        {
+        case working_state:
+          P(F("peer %s IO failed in working state (error)")
+            % get_peer_name());
+          break;
+
+        case shutdown_state:
+          P(F("peer %s IO failed in shutdown state "
+              "(possibly client misreported error)")
+            % get_peer_name());
+          break;
+
+        case confirmed_state:
+          P(F("peer %s IO failed in confirmed state (success)")
+            % get_peer_name());
+          break;
+        }
+
+      if (!!term_handler)
+        term_handler(false);
+    }
+}
+                            
 
 bool session::do_work(transaction_guard & guard)
 {
   try
     {
-      arm();
       bool is_goodbye = armed && cmd_in.get_cmd_code() == bye_cmd;
       bool is_error = armed && cmd_in.get_cmd_code() == error_cmd;
       if (completed_hello && !is_goodbye && !is_error)
@@ -162,10 +499,10 @@ bool session::do_work(transaction_guard & guard)
             {
               if (armed)
                 L(FL("doing work for peer '%s' with '%d' netcmd")
-                  % get_peer() % cmd_in.get_cmd_code());
+                  % get_peer_name() % cmd_in.get_cmd_code());
               else
                 L(FL("doing work for peer '%s' with no netcmd")
-                  % get_peer());
+                  % get_peer_name());
               bool ok = wrapped->do_work(guard, armed ? &cmd_in : 0);
               armed = false;
               if (ok)
@@ -174,6 +511,7 @@ bool session::do_work(transaction_guard & guard)
                       && protocol_state == working_state
                       && wrapped->finished_working())
                     {
+                      L(FL("queuing bye_cmd, entering shutdown state"));
                       protocol_state = shutdown_state;
                       guard.do_checkpoint();
                       queue_bye_cmd(0);
@@ -186,6 +524,7 @@ bool session::do_work(transaction_guard & guard)
         {
           if (!armed)
             return true;
+
           armed = false;
           switch (cmd_in.get_cmd_code())
             {
@@ -201,7 +540,7 @@ bool session::do_work(transaction_guard & guard)
                       L(FL("received greeting from usher: %s") % msg().substr(1));
                   }
                 netcmd cmdout(version);
-                cmdout.write_usher_reply_cmd(utf8(peer_id, origin::internal),
+                cmdout.write_usher_reply_cmd(utf8(base_uri, origin::internal),
                                              wrapped->usher_reply_data());
                 write_netcmd(cmdout);
                 L(FL("sent reply."));
@@ -270,7 +609,8 @@ bool session::do_work(transaction_guard & guard)
                     L(FL("server key has name %s, hash %s")
                       % their_keyname % printable_key_hash);
                     var_key their_key_key(known_servers_domain,
-                                          var_name(get_peer(), origin::internal));
+                                          var_name(base_uri,
+                                                   origin::internal));
                     if (project.db.var_exists(their_key_key))
                       {
                         var_value expected_key_hash
@@ -296,8 +636,7 @@ bool session::do_work(transaction_guard & guard)
                         P(F("first time connecting to server %s.\n"
                             "I'll assume it's really them, but you might want to double-check\n"
                             "their key's fingerprint: %s")
-                          % get_peer()
-                          % printable_key_hash);
+                          % base_uri % printable_key_hash);
                         project.db.set_var(their_key_key, printable_key_hash);
                       }
 
@@ -355,7 +694,7 @@ bool session::do_work(transaction_guard & guard)
                   {
                     try
                       {
-                        int err = boost::lexical_cast<int>(errmsg.substr(0,3));
+                        int err = lexical_cast<int>(errmsg.substr(0,3));
                         if (err >= 100)
                           {
                             error_code = err;
@@ -386,6 +725,8 @@ bool session::do_work(transaction_guard & guard)
       encountered_error = true;
       return true; // Don't terminate until we've send the error_cmd.
     }
+
+  I(!armed);
 }
 
 void
@@ -715,9 +1056,20 @@ protocol_voice session::get_voice() const
   return voice;
 }
 
-string session::get_peer() const
+string session::get_peer_name() const
 {
-  return peer;
+  I(stream);
+  return stream->get_remote_name();
+}
+
+void session::set_stream_conn_handler()
+{
+  stream->set_conn_handler([this]() { this->start(); });
+}
+
+void session::stream_conn_established()
+{
+  stream->connection_established();
 }
 
 int session::get_error_code() const
@@ -759,6 +1111,22 @@ session::note_bytes_out(int count)
     }
   else
     unnoted_bytes_out += count;
+}
+
+void
+session::terminate_ok()
+{
+  if (!!term_handler)
+    term_handler(true);
+}
+
+void
+session::terminate_err(i18n_format msg)
+{
+  P(msg);
+
+  if (!!term_handler)
+    term_handler(false);
 }
 
 // Local Variables:

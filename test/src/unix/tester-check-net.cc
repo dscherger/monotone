@@ -18,9 +18,6 @@
 #include "config.h"
 
 #include <cstdio>
-
-#if defined HAVE_SOCKET && defined HAVE_NETINET_IN_H
-
 #include <cstdlib>
 #include <cstring>
 #include <csignal>
@@ -265,16 +262,6 @@ int main(void)
 
   return WEXITSTATUS(status);
 }
-
-#else /* no socket, or no netinet/in.h */
-
-int main(void)
-{
-  fprintf(stderr, "socket headers are missing, cannot test networking\n");
-  return 1;
-}
-
-#endif
 
 // Local Variables:
 // mode: C++

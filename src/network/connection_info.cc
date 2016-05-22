@@ -209,13 +209,13 @@ netsync_connection_info::Client::set_output_stream(automate_ostream & os)
   output_stream = &os;
 }
 
-Netxx::port_type
+unsigned short
 netsync_connection_info::Client::get_port() const
 {
-  std::size_t port = constants::netsync_default_port;
-  if (!uri.port.empty())
-    port = atoi(uri.port.c_str());
-  return lexical_cast<Netxx::port_type>(port);
+  if (uri.port.empty())
+    return constants::netsync_default_port;
+  else
+    return lexical_cast<unsigned short>(uri.port);
 }
 
 void
