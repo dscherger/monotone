@@ -460,7 +460,7 @@ Musing<T>::gasp(std::string & out) const
 // FIXME: no idea whether or not this works on anything other than g++ or
 // clang, but using decltype sounds promising.
 #define real_M(obj, line) ScopedMusing                                  \
-  this_is_a_musing_fnord_object_ ## line(std::unique_ptr<MusingBase>())
+  this_is_a_musing_fnord_object_ ## line((std::unique_ptr<MusingBase>()))
 
 #define fake_M(obj, line) real_M(obj, line)
 #define MM(obj) fake_M(obj, __LINE__)
