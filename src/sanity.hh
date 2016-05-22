@@ -1,4 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -403,17 +404,28 @@ public:
   virtual void gasp(std::string & out) const = 0;
 };
 
-
 template <typename T>
-class Musing : public MusingBase
+class MusingRval : public MusingBase
 {
 public:
-  Musing(T && obj, char const * name,
-         char const * file, int line, char const * func)
+  MusingRval(T && obj, char const * name,
+             char const * file, int line, char const * func)
     : MusingBase(name, file, line, func), obj(std::move(obj)) {}
   virtual void gasp(std::string & out) const;
 private:
   T obj;
+};
+
+template <typename T>
+class MusingRef : public MusingBase
+{
+public:
+  MusingRef(T const & obj, char const * name,
+         char const * file, int line, char const * func)
+    : MusingBase(name, file, line, func), obj(obj) {}
+  virtual void gasp(std::string & out) const;
+private:
+  T const & obj;
 };
 
 class ScopedMusing
@@ -439,12 +451,20 @@ public:
 // Having the header line without the body is still useful, as it
 // provides some semblance of a backtrace.
 template <typename T> void
-Musing<T>::gasp(std::string & out) const
+MusingRval<T>::gasp(std::string & out) const
 {
   std::string tmp;
   MusingBase::gasp_head(out);
   dump(obj, tmp);
+  MusingBase::gasp_body(tmp, out);
+}
 
+template <typename T> void
+MusingRef<T>::gasp(std::string & out) const
+{
+  std::string tmp;
+  MusingBase::gasp_head(out);
+  dump(obj, tmp);
   MusingBase::gasp_body(tmp, out);
 }
 
@@ -456,11 +476,10 @@ Musing<T>::gasp(std::string & out) const
 // them.)  However, while fake_M does nothing directly, it doesn't pass its
 // line argument to ##; therefore, its line argument is fully expanded before
 // being passed to real_M.
-//
-// FIXME: no idea whether or not this works on anything other than g++ or
-// clang, but using decltype sounds promising.
 #define real_M(obj, line) ScopedMusing                                  \
-  this_is_a_musing_fnord_object_ ## line((std::unique_ptr<MusingBase>()))
+  this_is_a_musing_fnord_object_ ## line(std::unique_ptr<MusingBase>(   \
+    new MusingRef<decltype(obj)>(obj, #obj,                             \
+                                 __FILE__, __LINE__, __func__)))
 
 #define fake_M(obj, line) real_M(obj, line)
 #define MM(obj) fake_M(obj, __LINE__)
@@ -472,8 +491,8 @@ Musing<T>::gasp(std::string & out) const
 // are sanity::initialize.)
 #define PERM_MM(var)                                                    \
   global_sanity.push_musing(std::unique_ptr<MusingBase>(                \
-    new Musing<decltype(var)>(std::move(var), #var,                     \
-                              __FILE__, __LINE__, __func__)))
+    new MusingRval<decltype(var)>(std::move(var), #var,                 \
+                                  __FILE__, __LINE__, __func__)))
 
 // debugging utility to dump out vars like MM but without requiring a crash
 

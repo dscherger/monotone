@@ -346,15 +346,7 @@ sanity::generic_failure(char const * expr,
       % file % line % origin::type_to_string(caused_by) % expr,
       file, line);
 
-  string prefix;
-  if (caused_by == origin::user)
-    {
-      prefix = _("misuse: ");
-    }
-  else
-    {
-      prefix = _("error: ");
-    }
+  string prefix = caused_by == origin::user ? _("misuse: ") : _("error: ");
   string message;
   prefix_lines_with(prefix, do_format(explain, file, line), message);
   switch (caused_by)
