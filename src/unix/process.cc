@@ -219,7 +219,7 @@ pid_t process_spawn_redirected(char const * in,
     }
 }
 
-pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
+pid_t process_spawn_pipe(char const * const argv[], int * in, int * out)
 {
   int infds[2];
   int outfds[2];
@@ -259,12 +259,15 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
 
           execvp(argv[0], (char * const *)argv);
           raise(SIGKILL);
+          // if execvp returns, the child better exits, here
+          exit(EXIT_FAILURE);
         }
     }
   close(infds[0]);
   close(outfds[1]);
-  *in = fdopen(infds[1], "w");
-  *out = fdopen(outfds[0], "r");
+
+  *in = infds[1];
+  *out = outfds[0];
 
   return pid;
 }

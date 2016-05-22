@@ -1,5 +1,6 @@
 // Copyright (C) 2008, 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
+//               2014-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -118,12 +119,14 @@ netsync_session::netsync_session(session * owner,
 netsync_session::~netsync_session()
 { }
 
-void netsync_session::on_begin(size_t ident, key_identity_info const & remote_key)
+void netsync_session::on_begin(size_t ident,
+                               key_identity_info const & remote_key)
 {
   lua.hook_note_netsync_start(ident,
-                              get_voice() == server_voice ? "server" : "client",
+                              get_voice() == server_voice ? "server"
+                                                          : "client",
                               role,
-                              get_peer(), remote_key,
+                              get_peer_name(), remote_key,
                               our_include_pattern, our_exclude_pattern);
 }
 
@@ -143,7 +146,6 @@ void netsync_session::on_end(size_t ident)
       || !counts->keys_in.items.empty()
       || !counts->certs_in.items.empty())
     {
-
       vector<cert> unattached_written_certs;
       map<revision_id, vector<cert> > rev_written_certs;
       sort_rev_order (counts->revs_in, counts->certs_in,
@@ -379,7 +381,7 @@ netsync_session::done_all_refinements() const
 
   if (all && !set_totals)
     {
-      L(FL("All refinements done for peer %s") % get_peer());
+      L(FL("All refinements done for peer %s") % get_peer_name());
       if (cert_out_ticker.get())
         cert_out_ticker->set_total(cert_refiner.items_to_send.size());
 
@@ -404,11 +406,11 @@ netsync_session::received_all_items() const
 {
   if (role == source_role)
     return true;
-  bool all = rev_refiner.items_to_receive == 0
-    && cert_refiner.items_to_receive == 0
-    && key_refiner.items_to_receive == 0
-    && epoch_refiner.items_to_receive == 0;
-  return all;
+  else
+    return rev_refiner.items_to_receive == 0
+      && cert_refiner.items_to_receive == 0
+      && key_refiner.items_to_receive == 0
+      && epoch_refiner.items_to_receive == 0;
 }
 
 bool
@@ -568,6 +570,7 @@ netsync_session::note_item_sent(netcmd_item_type ty, id const & ident)
 
 bool
 netsync_session::do_work(transaction_guard & guard,
+                         /* FIXME: turn this into an optional<string> */
                          netcmd const * const cmd_in)
 {
   if (!cmd_in || process(guard, *cmd_in))
@@ -1270,20 +1273,20 @@ bool netsync_session::process(transaction_guard & guard,
 
       if (!ret)
         L(FL("peer %s finishing processing with '%d' packet")
-          % get_peer() % cmd_in.get_cmd_code());
+          % get_peer_name() % cmd_in.get_cmd_code());
       return ret;
     }
   catch (bad_decode & bd)
     {
       W(F("protocol error while processing peer %s: '%s'")
-        % get_peer() % bd.what);
+        % get_peer_name() % bd.what);
       return false;
     }
   catch (recoverable_failure & rf)
     {
       W(F("recoverable '%s' error while processing peer %s: '%s'")
         % origin::type_to_string(rf.caused_by())
-        % get_peer() % rf.what());
+        % get_peer_name() % rf.what());
       return false;
     }
 }

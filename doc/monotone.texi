@@ -5700,10 +5700,10 @@ option, the server listens for TCP connections and serves them
 continuously, until it is shut down.
 
 The network @var{address} given to @command{serve} as an argument to
-@option{--bind} should be a host name to listen on, optionally
-followed by a colon and a port number. The default port number is
-4691. If no @option{--bind} option is given, the server listens on
-port 4691 of every network interface.
+@option{--bind} should be a host name or IP address to listen on,
+optionally followed by a colon and a port number. The default port
+number is 4691. If no @option{--bind} option is given, the server
+listens on port 4691 of every network interface.
 
 If @command{serve} is run with @option{--stdio}, a single netsync
 session is served over the @code{stdin} and @code{stdout} file

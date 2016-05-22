@@ -72,5 +72,6 @@ server({}, 1, "you have multiple private keys")
 if(ostype == "Windows") then
    partial_skip = true
 else         
-   server({"--rcfile", "server-hooks.lua"}, -SIGTERM, "beginning service on localhost")
+   server({"--rcfile", "server-hooks.lua"}, -SIGTERM,
+          "Beginning service on 127.0.0.1")
 end

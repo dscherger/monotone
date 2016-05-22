@@ -182,7 +182,7 @@ bool automate_session::do_work(transaction_guard & /* guard */,
         pair<int, string> err = automate_stdio_helpers::
           automate_stdio_shared_body(app, cmdline, params, oss,
                                      remote_stdio_pre_fn(app, remote_identity, cmdline, params),
-                                     remote_stdio_log_fn(get_peer()));
+                                     remote_stdio_log_fn(get_peer_name()));
         if (err.first != 0)
           write_automate_packet_cmd('e', err.second);
         if (!oss.str().empty())
