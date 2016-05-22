@@ -25,6 +25,8 @@
 #define BOOST_SP_DISABLE_THREADS
 #define BOOST_MULTI_INDEX_DISABLE_SERIALIZATION
 
+#define ASIO_DISABLE_THREADS
+
 // Undefine this if you do not want to support SQLite versions older
 // than 3.3.14.
 #define SUPPORT_SQLITE_BEFORE_3003014

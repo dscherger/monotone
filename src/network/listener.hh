@@ -1,5 +1,6 @@
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
 //               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2014-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -11,10 +12,12 @@
 #ifndef __LISTENER_HH__
 #define __LISTENER_HH__
 
+#include "../base.hh"
+#include <asio.hpp>
+
 #include "../netcmd.hh"
 #include "../vector.hh"
 #include "../vocab.hh"
-#include "listener_base.hh"
 
 class app_state;
 class key_store;
@@ -22,33 +25,45 @@ class project_t;
 class reactor;
 class transaction_guard;
 
+class ear;
+class session;
+
 // Accepts new network connections and creates 'session' instances
 // for them.
-class listener : public listener_base
+class listener
 {
   app_state & app;
   project_t & project;
   key_store & keys;
-
-  reactor & react;
-
-  protocol_role role;
-  Netxx::Timeout timeout;
-
   std::shared_ptr<transaction_guard> & guard;
-  Netxx::Address addr;
-public:
 
+  asio::io_service & ios;
+  protocol_role role;
+  std::vector<host_port_pair> addresses;
+
+  // FIXME: Netxx::Timeout timeout;
+
+public:
   listener(app_state & app,
            project_t & project,
            key_store & keys,
-           reactor & react,
-           protocol_role role,
-           std::vector<utf8> const & addresses,
            std::shared_ptr<transaction_guard> &guard,
-           bool use_ipv6);
+           asio::io_service & ios,
+           protocol_role role,
+           std::vector<host_port_pair> && addresses);
 
-  bool do_io(Netxx::Probe::ready_type event);
+  void start_listening();
+  void stop_listening();
+  bool is_listening();
+
+  friend class ear;
+
+private:
+  std::vector<std::shared_ptr<ear> > open_ears;
+  std::set<std::shared_ptr<session> > open_sessions;
+
+  void start_acceptor_for(asio::ip::tcp::endpoint const & ep);
+  void start_acceptors_for(asio::ip::tcp::resolver::iterator ity);
 };
 
 #endif

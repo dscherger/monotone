@@ -28,7 +28,7 @@ struct netsync_error
 
 // It would be very nice if netsync_session and automate_session could
 // just inherit from session. But, on the server sessions are created
-// when accept() returns, and we don't know which kind of session it
+// before calling accept(), and we don't know which kind of session it
 // is until the handshake has nearly completed and we've received one
 // of (anonymous_cmd, auth_cmd, automate_cmd). So session has a pointer
 // to an instance of this class, which will be set to a new
@@ -42,7 +42,7 @@ protected:
   u8 get_version() const;
   void error(int errcode, std::string const & message);
   protocol_voice get_voice() const;
-  std::string get_peer() const;
+  std::string get_peer_name() const;
   bool output_overfull() const;
   bool encountered_error() const;
   bool shutdown_confirmed() const;

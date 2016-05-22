@@ -20,6 +20,7 @@ building and installation process for monotone
     - boost 1.35.0 or later: either an installed copy or an extracted
       tarball of its unbuilt sources somewhere in the file system are
       supported
+    - asio 1.2.0 or later - in the non-boost, headers-only variant.
     - zlib 1.1.4 or later
     - libiconv if the iconv() function is missing
     - texinfo (to build the documentation)
@@ -33,33 +34,40 @@ building and installation process for monotone
         on Debian and Ubuntu:
 
            install the following packages:
-             autoconf automake gettext g++ libboost1.35-dev libz-dev
-             libbotan1.10-dev libsqlite3-dev libpcre3-dev liblua5.2-dev
-             libidn11-dev libgmp3-dev libbz2-dev texinfo
+             autoconf automake gettext g++ libboost-dev libasio-dev
+             libz-dev libbz2-dev texinfo libbotan1.10-dev libpcre3-dev
+             libsqlite3-dev liblua5.2-dev libidn11-dev
 
-           (monotone works with older and newer Botan versions as well, 
-            so libbotan1.6-dev or libbotan1.8-dev are also good to go.)
+           (monotone also works with older versions of Botan as well,
+		    so libbotan1.6-dev or libbotan1.8-dev are also good to go.)
 
         on FreeBSD:
 
            install the following packages from the ports collection:
-             databases/sqlite3 devel/automake devel/boost devel/gettext
-             devel/gmake devel/pcre lang/lua security/botan110 dns/libidn
+             devel/automake devel/autoconf devel/gettext devel/clang
+             devel/gmake devel/boost net/asio print/texinfo
+             security/botan110 devel/pcre databases/sqlite3 lang/lua
+             dns/libidn
 
-           (monotone works with older and newer Botan versions as well, 
-            so security/botan is also good to go.)
+           (monotone also works with older versions of Botan, so
+            security/botan is also good to go.)
 
         on OpenBSD:
 
            install the following packages using 'pkg_add':
              autoconf automake boost botan gmake libiconv libidn lua
-             pcre sqlite3 
+             pcre sqlite3
+
+           It seems asio is not packaged for OpenBSD. However, it
+           being a headers-only library, you can just fetch a release
+           tarball and copy the headers. Please get in touch if you're
+           building on OpenBSD.
 
         on NetBSD:
 
            install the following packages:
              autoconf automake boost-headers botan gmake gcc48
-             libiconv libidn lua pcre sqlite3
+             libiconv libidn lua pcre sqlite3 FIXME: asio on NetBSD???
 
            and make sure to actually use gcc-4.8 with a proper CXX
            definition, for example: CXX=/usr/pkg/gcc48/bin/g++
@@ -67,15 +75,15 @@ building and installation process for monotone
         on Gentoo:
 
            emerge the following packages:
-             autoconf automake boost botan gettext libpcre libidn lua
-             sqlite zlib
+             autoconf automake boost asio botan gettext libpcre libidn
+             lua sqlite zlib
 
         on Fedora:
 
            install the following packages:
-             autoconf automake gettext boost boost-devel zlib zlib-devel
-             lua lua-devel pcre pcre-devel sqlite sqlite-devel libidn
-             libidn-devel gcc-c++ texinfo texinfo-tex botan botan-devel
+             autoconf automake gettext gcc-c++ boost-devel asio-devel
+             zlib-devel texinfo texinfo-tex botan-devel pcre-devel
+             sqlite-devel lua-devel libidn-devel
 
         on RHEL or CentOS (before version 7):
 
@@ -91,9 +99,9 @@ building and installation process for monotone
         on openSUSE:
 
             install the following extra packages with YaST or zypper:
-              autoconf automake gettext-tools gcc-c++ boost-devel zlib-devel
-              libbotan-devel sqlite3-devel pcre-devel lua-devel libidn-devel
-              libbz2-devel texinfo make
+              autoconf automake gettext-tools gcc-c++ make boost-devel
+              asio-devel libz1-devel texinfo libbotan-devel pcre-devel
+              sqlite3-devel lua-devel libidn-devel
 
         on Mac OS X:
 
@@ -107,6 +115,12 @@ building and installation process for monotone
            MacPorts, you can also download and extract it manually and
            let CXXFLAGS point to the include directory of the
            extracted version.
+           
+           CXXFLAGS point to the include/ directory of the extracted
+           version.
+
+           If you already have boost from MacPorts, that's fine as
+           well. Asio is not packaged, yet. FIXME: merge properly
 
            While monotone can be compiled on 'Mountain Lion' (10.8),
            we recommend at least 'Mavericks' (10.9), because Apple
@@ -137,6 +151,7 @@ building and installation process for monotone
                 http://gcc.gnu.org/                  for g++
                 http://clang.llvm.org/               for clang++
                 http://www.boost.org/                for Boost
+                http://think-async.com/              for asio (non-Boost!)
                 http://www.pcre.org/                 for PCRE
                 http://www.lua.org/                  for Lua
                 http://www.sqlite.org/               for SQLite

@@ -1,4 +1,5 @@
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
+//               2014-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -16,6 +17,7 @@
 #include "netio.hh"
 #include "numeric_vocab.hh"
 #include "sanity.hh"
+#include "simplestring_xform.hh"
 #include "transforms.hh"
 #include "hmac.hh"
 #include "globish.hh"
@@ -46,6 +48,47 @@ read_netcmd_item_type(string const & in,
       throw bad_decode(F("unknown item type 0x%x for '%s'")
                        % static_cast<int>(tmp) % name);
     }
+}
+
+// This function splits the value to the --bind argument, which may be
+// prefixed with a hostname.
+host_port_pair split_address(string const & address)
+{
+  string host_str, port_str;
+
+  if (!address.empty())
+    {
+      string saddr = trim(address);
+      size_t l_colon = saddr.find(':');
+      size_t r_colon = saddr.rfind(':');
+      if (l_colon == r_colon && r_colon != string::npos)
+        {
+          // can't be an IPv6 address as there is only one colon
+          if (r_colon > 0)
+            host_str = saddr.substr(0, r_colon);
+          port_str = saddr.substr(r_colon + 1);
+        }
+      else
+        {
+          size_t l_bracket = saddr.find('[');
+          size_t r_bracket = saddr.rfind(']');
+          if (l_bracket != string::npos && r_bracket != string::npos)
+            {
+              host_str = saddr.substr(l_bracket + 1,
+                                      r_bracket - l_bracket - 1);
+
+              // we silently ignore everything in between the right bracket
+              // and the colon, here, but...
+              if (r_colon != string::npos && r_colon > r_bracket)
+                port_str = saddr.substr(r_colon + 1);
+            }
+          else
+            // either a hostname or a plain IPv6 address
+            host_str = saddr;
+        }
+    }
+
+  return host_port_pair(host_str, port_str);
 }
 
 netcmd::netcmd(u8 ver)

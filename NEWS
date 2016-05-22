@@ -1,3 +1,19 @@
+Changes from nvm.asio, please move down when landing on mainline:
+
+TODO before merging
+
+- implement timeouts
+- windows support
+- fallback to other endpoints doesn't work.
+- argument --bind "123" should bind to a port, not a host name
+- maybe simplify the "armed" stuff
+- re-check the UI: all user facing log lines should emit host names,
+  not IP addresses.
+- cleanup the mess with read_some and handlers, maybe move some of the
+  stuff into the stream class.
+- rethink double-buffering (see receive_buffer in session.hh)
+- maybe rename src/unix/pipe.cc to stream.cc
+
 XXX XXX XX XX XX XX UTC XXXX
 
         1.2 release.
@@ -7,6 +23,10 @@ XXX XXX XX XX XX XX UTC XXXX
         - Monotone now requires at least version 1.35.0 of the Boost
           headers.  This allows us to get rid of some compatibility
           code.
+
+        - The bundled NetXX library got replaced by ASIO - a network
+          and low-level I/O library that's well maintained and has a
+          chance to make it into a future C++ standard (see N4588).
 
         -
 

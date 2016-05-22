@@ -1,5 +1,6 @@
 // Copyright (C) 2014 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2009 Timothy Brownawell <tbrownaw@prjek.net>
+// Copyright (C) 2014-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -62,9 +63,10 @@ bool wrapped_session::get_authenticated() const
   return owner->get_authenticated();
 }
 
-string wrapped_session::get_peer() const
+string wrapped_session::get_peer_name() const
 {
-  return owner->get_peer();
+  I(owner != nullptr);
+  return owner->get_peer_name();
 }
 
 bool wrapped_session::output_overfull() const
@@ -74,7 +76,7 @@ bool wrapped_session::output_overfull() const
 
 bool wrapped_session::shutdown_confirmed() const
 {
-  return owner->protocol_state == session_base::confirmed_state;
+  return owner->protocol_state == session::confirmed_state;
 }
 
 void wrapped_session::request_netsync(protocol_role role,
