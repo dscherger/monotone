@@ -52,7 +52,14 @@ for n,x in pairs{[""]  = {0,0,0,0,0,0,0},
     check(mtn("log", "--no-colorize", "--no-graph", n), 0, true, false)
   end
   for i,v in pairs(x) do
-    L("Checking log of '", n, "' for revision ", i, "\n")
-    check((v == 0) == qgrep("^Revision: "..revs[i], "stdout"), 0, false, false)
+    if v == 0 then
+	  L("Checking log of '", n, "' for revision ", i,
+	    " expecting rev_id ", revs[i], " to be in the log\n")
+      check(qgrep("^Revision: "..revs[i], "stdout"), 0, false, false)
+	else
+	  L("Checking log of '", n, "' for revision ", i,
+	    " expecting rev_id ", revs[i], " to be absent\n")
+      check(not qgrep("^Revision: "..revs[i], "stdout"), 0, false, false)
+	end
   end
 end
