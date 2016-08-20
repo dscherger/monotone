@@ -172,7 +172,8 @@ project_t::get_branch_heads(branch_name const & name,
   set<revision_id> & my_heads = branch.second;
   if (indicator.outdated())
     {
-      L(FL("getting heads of branch %s") % name);
+      L(FL("getting heads of branch %s (with suspend certs %s)")
+           % name % (ignore_suspend_certs ? "respected" : "ignored"));
 
       set<revision_id> leaves;
       indicator = db.get_branch_leaves(typecast_vocab<cert_value>(name),

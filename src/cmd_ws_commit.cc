@@ -927,66 +927,79 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
                           app.opts.move_conflicting_paths);
 }
 
+struct head_state 
+{
+  s64 distance;
+  bool is_suspended;
+  bool is_divergent;
+  bool is_parent;
+
+  head_state()
+    : is_divergent(true)
+  { }
+};
+
+static int
+list_heads_status(string const & first_msg,
+                  map<revision_id, head_state> const & heads,
+                  bool list_divergent_heads,
+                  colorizer const & color,
+                  ostringstream & out)
+{
+  bool first = true;
+  int count_matching_heads = 0;
+  for (pair<revision_id, head_state> const & ity : heads)
+    {
+      revision_id const & head_rev_id = ity.first;
+      head_state const & state = ity.second;
+      if (state.is_parent || list_divergent_heads != state.is_divergent)
+        continue;
+
+      out << (first ? first_msg :  _("                   and: "))
+          << color.colorize(encode_hexenc(head_rev_id.inner()(),
+                                          head_rev_id.inner().made_from),
+                            colorizer::rev_id);
+          if (state.distance > 0)
+            out << ' ' << (F("(+%d revs)") % state.distance);
+          out << '\n';
+
+      first = false;
+      count_matching_heads += 1;
+      // FIXME: rpeort more details, here (date, author)
+    }
+  return count_matching_heads;
+}
+
 static void
-show_branch_status(map<branch_name, set<revision_id>> const & div_heads,
-                   map<branch_name,
-                       map<revision_id, s64>> const & newer_heads,
+show_branch_status(map<branch_name,
+                       map<revision_id, head_state>> const & all_heads,
                    branch_name const & parent_branch,
                    colorizer const & color,
                    bool show_hints,
                    ostringstream & out)
 {
-  map<branch_name, set<revision_id>>::const_iterator branch_head_ity
-    = div_heads.find(parent_branch);
-  I(branch_head_ity != div_heads.end());
-  set<revision_id> const & divergent_heads = branch_head_ity->second;
+  map<branch_name, map<revision_id, head_state>>::const_iterator branch_head_ity
+    = all_heads.find(parent_branch);
+  I(branch_head_ity != all_heads.end());
+  map<revision_id, head_state> const & heads = branch_head_ity->second;
 
-  map<branch_name, map<revision_id, s64>>::const_iterator
-    newer_heads_ity = newer_heads.find(parent_branch);
-  int count_newer_heads = 0;
-  if (newer_heads_ity != newer_heads.end())
-    {
-      bool first_newer_head = true;
-      for (pair<revision_id, s64> const & ity : newer_heads_ity->second)
-        {
-          out << (first_newer_head
-                  ? _("       with newer head: ")
-                  : _("                   and: "))
-              << color.colorize(encode_hexenc(ity.first.inner()(),
-                                              ity.first.inner().made_from),
-                                colorizer::rev_id);
-          if (ity.second > 0)
-            out << ' ' << (F("(+%d revs)") % ity.second);
-          out << '\n';
-          
-          // FIXME: report more details, here (date, author)
-          first_newer_head = false;
-          count_newer_heads++;
-        }
-    }
+  int count_newer_heads
+    = list_heads_status(_("       with newer head: "), heads, false,
+                        color, out);
 
-  bool first_div_head = true;
-  for (revision_id const & head : divergent_heads)
-    {
-      out << (first_div_head
-              ? _("   with divergent head: ")
-              : _("                   and: "))
-          << color.colorize(encode_hexenc(head.inner()(),
-                                          head.inner().made_from),
-                            colorizer::rev_id) << '\n';
-      first_div_head = false;
-      // FIXME: rpeort more details, here (date, author)
-    }
+  int count_divergent_heads
+    = list_heads_status(_("   with divergent head: "), heads, true,
+                        color, out);
 
   // Provide a context based hint, if possible.
   if (show_hints)
     {
-      if (count_newer_heads > 1 && !divergent_heads.empty())
+      if (count_newer_heads > 1 && count_divergent_heads > 0)
         out << string(24, ' ')
             << color.colorize(_("(consider 'mtn merge' and/or 'mtn up')"),
                               colorizer::hint)
             << '\n';
-      else if (count_newer_heads > 1 || !divergent_heads.empty())
+      else if (count_newer_heads > 1 || count_divergent_heads > 0)
         out << string(24, ' ')
             << color.colorize(_("(consider 'mtn merge' followed by 'mtn up')"),
                               colorizer::hint)
@@ -1032,16 +1045,21 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   key_store keys(app);
   key_identity_info key;
 
+  set<branch_name> parent_branches;
+
   // Heads of all branches involved.
-  map<branch_name, set<revision_id> > div_heads;
-  map<branch_name, set<revision_id> >::iterator branch_head_ity;
+  map<branch_name, map<revision_id, head_state> > heads;
+  map<branch_name, map<revision_id, head_state> >::iterator branch_head_ity;
   if (!app.opts.branch().empty())
     {
-      branch_head_ity = div_heads.insert
-        (make_pair(app.opts.branch, set<revision_id>())).first;
-      project.get_branch_heads(app.opts.branch,
-                               branch_head_ity->second,
+      branch_head_ity = heads.insert
+        (make_pair(app.opts.branch, map<revision_id, head_state>())).first;
+
+      set<revision_id> heads;
+      project.get_branch_heads(app.opts.branch, heads,
                                app.opts.ignore_suspend_certs);
+      for (revision_id const & rev_id : heads)
+        branch_head_ity->second.insert(make_pair(rev_id, head_state()));
     }
 
   bool on_head_of_current_branch = false;
@@ -1052,22 +1070,16 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   struct parent_state
   {
     s64 height_diff;
-    int count_branch_certs;
+    vector<branch_name> branches;
+    set<branch_name> suspended_branches;
     set<utf8> tags;
     bool in_current_branch;
-    bool is_suspended;
-    bool is_head;
     parent_state()
       : height_diff(INT_MAX),
-        count_branch_certs(0),
-        in_current_branch(false),
-        is_suspended(false),
-        is_head(false)
+        in_current_branch(false)
       { };
   };
   map<revision_id, parent_state> parent_states;
-  set<branch_name> parent_branches;
-  map<branch_name, map<revision_id, s64>> newer_heads;
 
   // Collect information about all parents, not emitting any output, yet.
   for (parent_entry const & i : old_rosters)
@@ -1080,14 +1092,12 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         }
 
       parent_state ps;
-      rev_height parent_height = project.db.get_rev_height(parent);
-
-      L(FL("Parent revision %s has height %s")
+      L(FL("Checking parent revision %s")
         % color.colorize(encode_hexenc(parent.inner()(),
                                        parent.inner().made_from),
-                         colorizer::rev_id)
-        % parent_height);
+                         colorizer::rev_id));
 
+      // Collect information from certs
       vector<cert> certs;
       db.get_revision_certs(parent, certs);
       for (cert const & c : certs)
@@ -1095,123 +1105,96 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
           if (c.name == tag_cert_name)
             ps.tags.insert(utf8(c.value(), origin::database));
           else if (c.name == suspend_cert_name)
-            ps.is_suspended = true;
+            ps.suspended_branches.insert(typecast_vocab<branch_name>(c.value));
           else if (c.name == branch_cert_name)
+            ps.branches.push_back(typecast_vocab<branch_name>(c.value));
+        }
+
+      // Act per branch cert of each parent
+      for (branch_name const & parent_branch : ps.branches)
+        {
+          // Ignore suspended revisions
+          bool is_suspended = ps.suspended_branches.find(parent_branch)
+            != ps.suspended_branches.end();
+          if (!app.opts.ignore_suspend_certs && is_suspended)
             {
-              branch_name parent_branch
-                (typecast_vocab<branch_name>(c.value));
-              ps.count_branch_certs++;
+              // FIXME: warn for diverging from a suspended parent?
+              L(FL("is a suspended parent?"));
+            }
 
+          if (parent_branch == app.opts.branch)
+            count_parents_in_current_branch++;
+
+          // Keep track of braches of parent revisions...
+          parent_branches.insert(parent_branch);
+
+          // ..and those braches' heads.
+          branch_head_ity = heads.find(parent_branch);
+          if (branch_head_ity == heads.end())
+            {
+              branch_head_ity = heads.insert
+                (make_pair(parent_branch,
+                           map<revision_id, head_state>())).first;
+
+              set<revision_id> heads;
+              project.get_branch_heads(parent_branch,
+                                       heads,
+                                       app.opts.ignore_suspend_certs);
+              for (revision_id const & rev_id : heads)
+                branch_head_ity->second.insert(make_pair(rev_id, head_state()));
+            }
+
+          // Check revision graph.
+
+          // FIXME: blatantly copied from automate.cc - should be
+          // merged. Consider using graph_loader or some such.
+
+          // FIXME: for this use case, we might want to limit search depth.
+
+          set<revision_id> descendents;
+          project.get_branch_heads(parent_branch, descendents,
+                                   app.opts.ignore_suspend_certs);
+          if (descendents.empty())
+            {
               if (parent_branch == app.opts.branch)
-                count_parents_in_current_branch++;
-
-              // Keep track of braches of parent revisions...
-              parent_branches.insert(parent_branch);
-
-              // ..and those braches' heads.
-              branch_head_ity = div_heads.find(parent_branch);
-              if (branch_head_ity == div_heads.end())
+                on_head_of_current_branch = true;
+            }
+          else
+            {
+              rev_height parent_h = project.db.get_rev_height(parent);
+              for (revision_id const & head : descendents)
                 {
-                  branch_head_ity = div_heads.insert
-                    (make_pair(parent_branch,
-                               set<revision_id>())).first;
-                  project.get_branch_heads(parent_branch,
-                                           branch_head_ity->second,
-                                           app.opts.ignore_suspend_certs);
-                }
+                  // Determine the (height) distance of the parent
+                  // revision to this head.
+                  rev_height head_h = project.db.get_rev_height(head);
+                  L(FL("Head '%s' of branch '%s' has height %s")
+                    % color.colorize(encode_hexenc(head.inner()(),
+                                                   head.inner().made_from),
+                                     colorizer::rev_id)
+                    % color.colorize(parent_branch(), colorizer::branch)
+                    % head_h);
 
-              // But remove the parent revision - we are only interested in
-              // divergent branch heads.
-              branch_head_ity->second.erase(parent);
+                  pair<bool, s64> diff = head_h.distance_to(parent_h);
 
-              // Check revision graph.
+                  // Mark as not divergent and store the distance.
+                  auto head_state_ity = branch_head_ity->second.find(head);
+                  if (head_state_ity == branch_head_ity->second.end())
+                    head_state_ity = branch_head_ity->second.insert
+                      (make_pair(head, head_state())).first;
 
-              // FIXME: blatantly copied from automate.cc - should be
-              // merged. Consider using graph_loader or some such.
+                  head_state_ity->second.is_divergent = false;
+                  head_state_ity->second.is_parent = head == parent;
 
-              // FIXME: for this use case, we might want to limit search
-              // depth.
-
-              set<revision_id> descendents;
-              map<revision_id, int> desc_depth;
-              stack<pair<revision_id, int> > frontier;
-              frontier.push(make_pair(parent, 0));
-              while (!frontier.empty())
-                {
-                  revision_id rid = frontier.top().first;
-                  int depth = frontier.top().second + 1;
-                  frontier.pop();
-                  for (revision_id const & child
-                         : db.get_revision_children(rid))
-                    {
-                      if (descendents.find(child) == descendents.end())
-                        {
-                          set<branch_name> desc_branches;
-                          // FIXME: this returns an outdated indicator?!?
-                          project.get_revision_branches(child, desc_branches);
-
-                          if (desc_branches.find(parent_branch)
-                              != desc_branches.end())
-                            {
-                              frontier.push(make_pair(child, depth));
-                              descendents.insert(child);
-                              desc_depth.insert(make_pair(child, depth));
-                            }
-                        }
-                    }
-                }
-
-              erase_ancestors(db, descendents);
-
-              if (descendents.empty())
-                {
-                  ps.is_head = true;
-                  if (parent_branch == app.opts.branch)
-                    on_head_of_current_branch = true;
-                }
-              else
-                {
-                  rev_height parent_h = project.db.get_rev_height(parent);
-                  for (revision_id const & head : descendents)
-                    {
-                      I(head != parent);
-
-                      // Determine the (height) distance of the parent
-                      // revision to this head.
-                      rev_height head_h = project.db.get_rev_height(head);
-                      L(FL("Head '%s' of branch '%s' has height %s")
-                        % color.colorize(encode_hexenc(head.inner()(),
-                                                       head.inner().made_from),
-                                         colorizer::rev_id)
-                        % color.colorize(parent_branch(), colorizer::branch)
-                        % head_h);
-                      I(head_h > parent_h);
-
-                      pair<bool, s64> diff = head_h.distance_to(parent_h);
-                      if (diff.first)
-                        I(diff.second > 0);
-                      else
-                        {
-                          // FIXME: if the distance cannot be determined
-                          // from the revision height, use breadth first
-                          // seach with some limit.
-                        }
-
-                      // And store it for later use in the report.
-                      map<branch_name, map<revision_id, s64> >::iterator
-                        nbh_ity = newer_heads.find(parent_branch);
-                      if (nbh_ity == newer_heads.end())
-                        nbh_ity = newer_heads.insert
-                          (make_pair(parent_branch, map<revision_id, s64>()))
-                          .first;
-
-                      nbh_ity->second.insert(make_pair(head, diff.second));
-
-                      // Remove this head from the list of divergent branch
-                      // heads. It's a descendent of the parent revision,
-                      // not divergent.
-                      branch_head_ity->second.erase(head);
-                    }
+                  // FIXME: if the distance cannot be determined from the
+                  // revision height, we should use breadth first seach with
+                  // some limit. For now, we simply punt and do not display
+                  // anything.
+                  //
+                  // FIXME: cases where diff.second < 0 should be
+                  // analyzed. diff.second == 0 is easily possible for head
+                  // == parent.
+                  if (diff.first && diff.second > 0)
+                    head_state_ity->second.distance = diff.second;
                 }
             }
         }
@@ -1261,8 +1244,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         out << _("Current branch:         ");
       else
         {
-          branch_head_ity = div_heads.find(app.opts.branch);
-          I(branch_head_ity != div_heads.end());
+          branch_head_ity = heads.find(app.opts.branch);
+          I(branch_head_ity != heads.end());
           if (branch_head_ity->second.empty())
             out << _("Creating branch:        ");
           else
@@ -1279,24 +1262,19 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       // If at least one parent revision is also in the branch of the
       // current workspace (as per app.opts.branch), we treat that as the
       // branch of interest.
-
-      // div_heads contains all heads of the branch. Assemble a set of
-      // divergent heads by dropping the parent revisions (which may or may
-      // not be heads) as well as the newer heads, which we report
-      // separately.
       I(!app.opts.branch().empty());
-      show_branch_status(div_heads, newer_heads, app.opts.branch,
-                         color,
+      show_branch_status(heads, app.opts.branch, color,
                          !fork_to_existing, out);
     }
 
-  // Report some more data on other parent branches involved, if none of the
-  // parent revisions are in the same branch as what the user specified in
-  // app.opts.branch (i.e. when creating a new branch or forking off to an
-  // existing one).
+  // If none of the parent revisions are in the same branch as what the user
+  // specified in app.opts.branch (i.e. when creating a new branch or
+  // forking off to an existing one), we also report data from branches
+  // the current workspace is based on.
   //
-  // There may well be multiple branches of interest, in those cases:
-  // Parents may be updatable within their branch.
+  // There may well be multiple branches of interest, in those cases. And
+  // there may be newer heads in those branches than the current parent
+  // revision.
   if (count_parents_in_current_branch == 0)
     for (branch_name const & parent_branch : parent_branches)
       {
@@ -1304,8 +1282,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         out << '\n';
         out << _("Branching off from:     ")
             << color.colorize(parent_branch(), colorizer::branch) << '\n';
-        show_branch_status(div_heads, newer_heads,
-                           parent_branch, color, true, out);
+        show_branch_status(heads, parent_branch, color, true, out);
       }
   out << '\n';
 
