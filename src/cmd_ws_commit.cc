@@ -1,6 +1,6 @@
 // Copyright (C) 2010, 2011, 2012 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-//               2015 Markus Wanner <markus@bluegap.ch>
+//               2015-2016 Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -1645,6 +1645,14 @@ set_attr(app_state & app, args_vector const & args)
 
   attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
   attr_value a_value = typecast_vocab<attr_value>(idx(args, 2));
+
+  if (a_key == features_attr_key)
+    {
+      E(is_root_dir_t(node), origin::user,
+        F("the '%s' attribute can only be set on the root node")
+        % features_attr_key());
+      validate_features(parse_feature_list(a_value));
+    }
 
   node->attrs[a_key] = make_pair(true, a_value);
 
