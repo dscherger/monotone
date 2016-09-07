@@ -2286,24 +2286,21 @@ workspace::perform_content_update(roster_t const & old_roster,
   // new versions of files to _MTN/tmp and then renames them over top of the
   // old versions and doesn't reset attributes (mtn:execute).
 
-  for (map<file_path, pair<file_id, file_id> >::const_iterator
-         i = update.deltas_applied.begin(); i != update.deltas_applied.end();
-       ++i)
+  for (pair<file_path, pair<file_id, file_id>> const & i
+         : update.deltas_applied)
     {
-      const_node_t node = new_roster.get_node(i->first);
-      for (attr_map_t::const_iterator a = node->attrs.begin();
-           a != node->attrs.end(); ++a)
-        {
-          if (a->second.first)
-            this->lua.hook_set_attribute(a->first(), i->first,
-                                         a->second.second());
-        }
+      const_node_t node = new_roster.get_node(i.first);
+      for (pair<attr_key, pair<bool, attr_value>> const & a : node->attrs)
+        if (a.second.first)
+          this->lua.hook_set_attribute(a.first(), i.first,
+                                       a.second.second());
     }
 
   delete_dir_shallow(detached);
 
   if (moved_conflicting)
-    P(F("moved some conflicting files into '%s'") % bookkeeping_resolutions_dir);
+    P(F("moved some conflicting files into '%s'")
+      % bookkeeping_resolutions_dir);
 }
 
 // Local Variables:
