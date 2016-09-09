@@ -2220,6 +2220,16 @@ workspace::perform_pivot_root(database & db,
   safe_insert(cs.nodes_renamed, make_pair(file_path_internal(""), put_old));
   safe_insert(cs.nodes_renamed, make_pair(new_root, file_path_internal("")));
 
+  // Move the 'mtn:features' attribute, if any.
+  attr_value features;
+  if (old_roster.get_attr(file_path_internal(""), features_attr_key,
+                          features))
+    {
+      safe_insert(cs.attrs_cleared, make_pair(put_old, features_attr_key));
+      safe_insert(cs.attrs_set, make_pair(
+        make_pair(file_path_internal(""), features_attr_key), features));
+    }
+
   {
     new_roster = old_roster;
     editable_roster_base e(new_roster, nis);
