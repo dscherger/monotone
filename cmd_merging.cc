@@ -738,6 +738,12 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   N(!(left_id == right_id),
     F("workspace is already at revision %s") % left_id);
 
+  N(!is_ancestor(db, right_id, left_id),
+    F("revision %s is already an ancestor of your workspace") % right_id);
+  N(!is_ancestor(db, left_id, right_id),
+    F("revision %s is a descendant of the workspace parent,\n"
+      "did you mean 'mtn update -r %s'?") % right_id % right_id);
+
   P(F("[left]  %s") % left_id);
   P(F("[right] %s") % right_id);
 

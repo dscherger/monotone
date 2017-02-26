@@ -65,18 +65,7 @@ using boost::shared_ptr;
 
 void revision_t::check_sane() const
 {
-  // null id in current manifest only permitted if previous
-  // state was null and no changes
-  // FIXME: above comment makes no sense.  This should just be
-  // I(!null_id(new_manifest)), and the only reason I am not making it so
-  // right now is that I don't have time to immediately track down all the
-  // fallout.
-  if (null_id(new_manifest))
-    {
-      for (edge_map::const_iterator i = edges.begin();
-           i != edges.end(); ++i)
-        I(null_id(edge_old_revision(i)));
-    }
+  I(!null_id(new_manifest));
 
   if (edges.size() == 1)
     {
@@ -792,8 +781,7 @@ make_revision_for_workspace(revision_id const & old_rev_id,
 
   rev.edges.clear();
   safe_insert(rev.edges, make_pair(old_rev_id, cs));
-  if (!null_id(old_rev_id))
-    rev.new_manifest = manifest_id(fake_id());
+  rev.new_manifest = manifest_id(fake_id());
   rev.made_for = made_for_workspace;
 }
 

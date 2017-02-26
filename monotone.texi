@@ -4504,7 +4504,7 @@ content [84e2c30a2571bd627918deee1e6613d34e64a29e]
    file "include/hello.h"
 content [c61af2e67eb9b81e46357bb3c409a9a53a7cdfc6]
 
-   file "src/hello.c
+   file "src/hello.c"
 content [97dfc6fd4f486df95868d85b4b81197014ae2a84]
 @end group
 @end smallexample
@@ -7489,7 +7489,7 @@ A packet looks like:
 <command number> is a decimal number specifying which command this output
 is from. It is 0 for the first command, and increases by one each time.
 
-<err code> is 0 for success, 1 for a syntax error, and 2 for any other error.
+<err code> is 0 for success, 1 for a syntax error which occurred in stdio scope (before the command is executed), and 2 for a command error.
 
 <last?> is 'l' if this is the last piece of output for this command, and 'm'
 if there is more output to come.

@@ -37,7 +37,7 @@ namespace resolve_conflicts
     return boost::shared_ptr<any_path>(new file_path(file_path_external(utf8(path))));
   };
 
-  static char const * const
+  static char const *
   image(resolve_conflicts::resolution_t resolution)
   {
     switch (resolution)
@@ -3194,7 +3194,7 @@ void string_to_set(string const & from, set<revision_id> & to)
   to.clear();
   for (string::const_iterator i = from.begin(); i != from.end(); ++i)
     {
-      char label = (*i - '0') << 4 + (*i - '0');
+      char label = ((*i - '0') << 4) + (*i - '0');
       to.insert(revision_id(string(constants::idlen_bytes, label)));
     }
 }

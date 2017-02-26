@@ -107,7 +107,7 @@ check(get("closed"))
 clean()
 writefile("_MTN/revision", 
 	  "format_version \"1\"\n\n"..
-	  "new_manifest []\n\n"..
+	  "new_manifest [0000000000000000000000000000000000000000]\n\n"..
 	  "old_revision []\n")
 
 addfile("testfile", "testfile", mtn2)
