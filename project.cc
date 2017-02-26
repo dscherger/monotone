@@ -12,6 +12,7 @@
 #include "lua_hooks.hh"
 #include "keys.hh"
 #include "options.hh"
+#include "vocab_cast.hh"
 
 using std::string;
 using std::set;
@@ -38,7 +39,7 @@ project_t::get_branch_list(std::set<branch_name> & names,
            i != got.end(); ++i)
         {
           // check that the branch has at least one non-suspended head
-          const branch_name branch(*i);
+          const branch_name branch(*i, origin::database);
           std::set<revision_id> heads;
 
           if (check_heads)
@@ -66,7 +67,7 @@ project_t::get_branch_list(globish const & glob,
        i != got.end(); ++i)
     {
       // check that the branch has at least one non-suspended head
-      const branch_name branch(*i);
+      const branch_name branch(*i, origin::database);
       std::set<revision_id> heads;
 
       if (check_heads)
@@ -92,7 +93,7 @@ namespace
       vector< revision<cert> > certs;
       db.get_revision_certs(rid,
                             cert_name(branch_cert_name),
-                            cert_value(branch()),
+                            typecast_vocab<cert_value>(branch),
                             certs);
       erase_bogus_certs(db, certs);
       return certs.empty();
@@ -112,7 +113,7 @@ namespace
       vector< revision<cert> > certs;
       db.get_revision_certs(rid,
                             cert_name(suspend_cert_name),
-                            cert_value(branch()),
+                            typecast_vocab<cert_value>(branch),
                             certs);
       erase_bogus_certs(db, certs);
       return !certs.empty();
@@ -135,7 +136,7 @@ project_t::get_branch_heads(branch_name const & name,
       L(FL("getting heads of branch %s") % name);
 
       branch.first = db.get_revisions_with_cert(cert_name(branch_cert_name),
-                                                cert_value(name()),
+                                                typecast_vocab<cert_value>(name),
                                                 branch.second);
 
       not_in_branch p(db, name);
@@ -164,7 +165,8 @@ project_t::revision_is_in_branch(revision_id const & id,
                                  branch_name const & branch)
 {
   vector<revision<cert> > certs;
-  db.get_revision_certs(id, branch_cert_name, cert_value(branch()), certs);
+  db.get_revision_certs(id, branch_cert_name,
+                        typecast_vocab<cert_value>(branch), certs);
 
   int num = certs.size();
 
@@ -192,7 +194,8 @@ project_t::revision_is_suspended_in_branch(revision_id const & id,
                                  branch_name const & branch)
 {
   vector<revision<cert> > certs;
-  db.get_revision_certs(id, suspend_cert_name, cert_value(branch()), certs);
+  db.get_revision_certs(id, suspend_cert_name,
+                        typecast_vocab<cert_value>(branch), certs);
 
   int num = certs.size();
 
@@ -249,7 +252,7 @@ project_t::get_revision_branches(revision_id const & id,
   branches.clear();
   for (std::vector<revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); ++i)
-    branches.insert(branch_name(i->inner().value()));
+    branches.insert(typecast_vocab<branch_name>(i->inner().value));
 
   return i;
 }
@@ -258,7 +261,8 @@ outdated_indicator
 project_t::get_branch_certs(branch_name const & branch,
                             std::vector<revision<cert> > & certs)
 {
-  return db.get_revision_certs(branch_cert_name, cert_value(branch()), certs);
+  return db.get_revision_certs(branch_cert_name,
+                               typecast_vocab<cert_value>(branch), certs);
 }
 
 tag_t::tag_t(revision_id const & ident,
@@ -295,7 +299,8 @@ project_t::get_tags(set<tag_t> & tags)
   for (std::vector<revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     tags.insert(tag_t(revision_id(i->inner().ident),
-                      utf8(i->inner().value()), i->inner().key));
+                      typecast_vocab<utf8>(i->inner().value),
+                      i->inner().key));
 
   return i;
 }

@@ -7,19 +7,19 @@ using std::string;
 
 LUAEXT(match, globish)
 {
-  const char *re = luaL_checkstring(L, -2);
-  const char *str = luaL_checkstring(L, -1);
+  const char *re = luaL_checkstring(LS, -2);
+  const char *str = luaL_checkstring(LS, -1);
 
   bool result = false;
   try {
-    globish g(re);
+    globish g(re, origin::user);
     result = g.matches(str);
-  } catch (informative_failure & e) {
-    return luaL_error(L, e.what());
+  } catch (recoverable_failure & e) {
+    return luaL_error(LS, e.what());
   } catch (...) {
-    return luaL_error(L, "Unknown error.");
+    return luaL_error(LS, "Unknown error.");
   }
-  lua_pushboolean(L, result);
+  lua_pushboolean(LS, result);
   return 1;
 }
 

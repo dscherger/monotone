@@ -21,6 +21,7 @@
 #include "keys.hh"
 #include "key_store.hh"
 #include "transforms.hh"
+#include "vocab_cast.hh"
 
 using std::cout;
 using std::ostream_iterator;
@@ -59,7 +60,7 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident(idx(args, 0)());
+  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
   if (db.database_specified())
     {
       transaction_guard guard(db);
@@ -87,7 +88,7 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   else
     fmt = F("public or private key '%s' does not exist "
             "in keystore, and no database was specified");
-  N(key_deleted, fmt % idx(args, 0)());
+  E(key_deleted, origin::user, fmt % idx(args, 0)());
 }
 
 CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEYID"),
@@ -173,12 +174,12 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
 
   cert_value val;
   if (args.size() == 3)
-    val = cert_value(idx(args, 2)());
+    val = typecast_vocab<cert_value>(idx(args, 2));
   else
     {
       data dat;
       read_data_stdin(dat);
-      val = cert_value(dat());
+      val = typecast_vocab<cert_value>(dat);
     }
 
   project.put_cert(keys, rid, cname, val);
@@ -208,7 +209,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
   cert_name cname;
   internalize_cert_name(idx(args, 1), cname);
 
-  cert_value value(idx(args, 2)());
+  cert_value value = typecast_vocab<cert_value>(idx(args, 2));
 
   set<rsa_keypair_id> signers;
   for (unsigned int i = 3; i != args.size(); ++i)
@@ -296,7 +297,8 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
-  N(app.opts.branchname() != "", F("need --branch argument for approval"));
+  E(app.opts.branchname() != "", origin::user,
+    F("need --branch argument for approval"));
 
   cache_user_key(app.opts, app.lua, db, keys);
   project.put_revision_in_branch(keys, r, app.opts.branchname);
@@ -317,7 +319,8 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
-  N(app.opts.branchname() != "", F("need --branch argument to suspend"));
+  E(app.opts.branchname() != "", origin::user,
+    F("need --branch argument to suspend"));
 
   cache_user_key(app.opts, app.lua, db, keys);
   project.suspend_revision_in_branch(keys, r, app.opts.branchname);
@@ -341,12 +344,14 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   else
     {
       external comment_external;
-      N(app.lua.hook_edit_comment(external(""), external(""), comment_external),
+      E(app.lua.hook_edit_comment(external(""), external(""), comment_external),
+        origin::user,
         F("edit comment failed"));
       system_to_utf8(comment_external, comment);
     }
 
-  N(comment().find_first_not_of("\n\r\t ") != string::npos,
+  E(comment().find_first_not_of("\n\r\t ") != string::npos,
+    origin::user,
     F("empty comment"));
 
   revision_id r;

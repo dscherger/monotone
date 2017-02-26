@@ -16,6 +16,7 @@
 #include "database.hh"
 #include "key_store.hh"
 #include "packet.hh"
+#include "vocab_cast.hh"
 
 using std::cin;
 using std::cout;
@@ -33,7 +34,7 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident(idx(args, 0)());
+  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
   bool exists(false);
   rsa_pub_key key;
   if (db.database_specified() && db.public_key_exists(ident))
@@ -48,7 +49,7 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
       key = kp.pub;
       exists = true;
     }
-  N(exists,
+  E(exists, origin::user,
     F("public key '%s' does not exist") % idx(args, 0)());
 
   packet_writer pw(cout);
@@ -65,8 +66,8 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident(idx(args, 0)());
-  N(keys.key_pair_exists(ident),
+  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
+  E(keys.key_pair_exists(ident), origin::user,
     F("public and private key '%s' do not exist in keystore")
     % idx(args, 0)());
 
@@ -165,7 +166,7 @@ CMD_AUTOMATE(read_packets, N_("PACKET-DATA"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -188,7 +189,7 @@ CMD(read, "read", "", CMD_REF(packet_io), "[FILE1 [FILE2 [...]]]",
   if (args.empty())
     {
       count += read_packets(cin, dbw);
-      N(count != 0, F("no packets found on stdin"));
+      E(count != 0, origin::user, F("no packets found on stdin"));
     }
   else
     {
@@ -200,9 +201,10 @@ CMD(read, "read", "", CMD_REF(packet_io), "[FILE1 [FILE2 [...]]]",
           istringstream ss(dat());
           count += read_packets(ss, dbw);
         }
-      N(count != 0, FP("no packets found in given file",
-                       "no packets found in given files",
-                       args.size()));
+      E(count != 0, origin::user,
+        FP("no packets found in given file",
+           "no packets found in given files",
+           args.size()));
     }
   P(FP("read %d packet", "read %d packets", count) % count);
 }

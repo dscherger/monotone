@@ -402,7 +402,7 @@ annotate_context::build_revisions_to_annotations
                                     true, false, "T"));
 
       string result;
-      string hex_rev_str(encode_hexenc(i->inner()()));
+      string hex_rev_str(encode_hexenc(i->inner()(), i->inner().made_from));
       result.append(hex_rev_str.substr(0, 8));
       result.append(".. by ");
       result.append(author);

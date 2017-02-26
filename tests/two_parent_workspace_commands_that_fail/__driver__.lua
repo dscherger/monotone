@@ -29,30 +29,40 @@ diag = "mtn: misuse: this command can only be used in a single-parent workspace\
 diffdiag = ("mtn: misuse: this workspace has more than one parent\n"..
         "mtn: misuse: (specify a revision to diff against with --revision)\n")
 
-check(mtn("merge_into_workspace", anc), 1, nil, diag)
+check(mtn("merge_into_workspace", anc), 1, nil, true)
+check(grep("-v", "detected at", "stderr"), 0, diag)
 
 -- diff with no arguments: what parent?
-check(mtn("diff"), 1, nil, diffdiag)
-check(mtn("automate", "content_diff"), 1, nil, diffdiag)
+check(mtn("diff"), 1, nil, true)
+check(grep("-v", "detected at", "stderr"), 0, diffdiag)
+check(mtn("automate", "content_diff"), 1, nil, true)
+check(grep("-v", "detected at", "stderr"), 0, diffdiag)
 
 -- diff can do something sensible if you specify a parent
 check(mtn("diff", "-r", left), 0, false, nil)
 check(mtn("automate", "content_diff", "-r", right), 0, false, nil)
 
 -- similarly for cat
-check(mtn("cat", "testfile"), 1, nil, diag)
-check(mtn("automate", "get_file_of", "testfile"), 1, nil, diag)
+check(mtn("cat", "testfile"), 1, nil, true)
+check(grep("-v", "detected at", "stderr"), 0, diag)
+check(mtn("automate", "get_file_of", "testfile"), 1, nil, true)
+check(grep("-v", "detected at", "stderr"), 0, diag)
 check(mtn("cat", "-r", left, "testfile"), 0, false, nil)
 check(mtn("automate", "get_file_of", "-r", right, "testfile"), 0, false, nil)
 
 -- revert and update: to where?
-check(mtn("revert", "."), 1, nil, diag)
-check(mtn("update"), 1, nil, diag)
+check(mtn("revert", "."), 1, nil, true)
+check(grep("-v", "detected at", "stderr"), 0, diag)
+check(mtn("update"), 1, nil, true)
+check(grep("-v", "detected at", "stderr"), 0, diag)
 
 -- formats need updating to deal
-check(mtn("automate", "get_base_revision_id"), 1, nil, diag)
-check(mtn("automate", "inventory"), 1, nil, diag)
-check(mtn("automate", "get_attributes", "testfile"), 1, nil, diag)
+check(mtn("automate", "get_base_revision_id"), 1, nil, true)
+check(grep("-v", "detected at", "stderr"), 0, diag)
+check(mtn("automate", "inventory"), 1, nil, true)
+check(grep("-v", "detected at", "stderr"), 0, diag)
+check(mtn("automate", "get_attributes", "testfile"), 1, nil, true)
+check(grep("-v", "detected at", "stderr"), 0, diag)
 
 -- commit cannot be restricted
 check(mtn("commit", "testfile", "--message", "blah-blah"),

@@ -52,7 +52,7 @@ map_nodes(map<node_id, restricted_path::status> & node_map,
           map<node_id, restricted_path::status>::iterator n
             = node_map.find(nid);
           if (n != node_map.end())
-            N(n->second == status,
+            E(n->second == status, origin::user,
               F("conflicting include/exclude on path '%s'") % *i);
           else
             node_map.insert(make_pair(nid, status));
@@ -82,7 +82,7 @@ map_paths(map<file_path, restricted_path::status> & path_map,
     {
       map<file_path, restricted_path::status>::iterator p = path_map.find(*i);
       if (p != path_map.end())
-        N(p->second == status,
+        E(p->second == status, origin::user,
           F("conflicting include/exclude on path '%s'") % *i);
       else
         path_map.insert(make_pair(*i, status));
@@ -180,7 +180,8 @@ validate_paths(set<file_path> const & included_paths,
         W(F("restriction excludes unknown path '%s'") % *i);
       }
 
-  N(bad == 0, FP("%d unknown path", "%d unknown paths", bad) % bad);
+  E(bad == 0, origin::user,
+    FP("%d unknown path", "%d unknown paths", bad) % bad);
 }
 
 restriction::restriction(std::vector<file_path> const & includes,
@@ -511,22 +512,22 @@ namespace
   node_id nid_yyf;
   node_id nid_yyg;
 
-  file_id fid_f  (string(constants::idlen_bytes, '\x11'));
-  file_id fid_g  (string(constants::idlen_bytes, '\x22'));
+  file_id fid_f  (string(constants::idlen_bytes, '\x11'), origin::internal);
+  file_id fid_g  (string(constants::idlen_bytes, '\x22'), origin::internal);
 
-  file_id fid_xf (string(constants::idlen_bytes, '\x33'));
-  file_id fid_xg (string(constants::idlen_bytes, '\x44'));
-  file_id fid_xxf(string(constants::idlen_bytes, '\x55'));
-  file_id fid_xxg(string(constants::idlen_bytes, '\x66'));
-  file_id fid_xyf(string(constants::idlen_bytes, '\x77'));
-  file_id fid_xyg(string(constants::idlen_bytes, '\x88'));
+  file_id fid_xf (string(constants::idlen_bytes, '\x33'), origin::internal);
+  file_id fid_xg (string(constants::idlen_bytes, '\x44'), origin::internal);
+  file_id fid_xxf(string(constants::idlen_bytes, '\x55'), origin::internal);
+  file_id fid_xxg(string(constants::idlen_bytes, '\x66'), origin::internal);
+  file_id fid_xyf(string(constants::idlen_bytes, '\x77'), origin::internal);
+  file_id fid_xyg(string(constants::idlen_bytes, '\x88'), origin::internal);
 
-  file_id fid_yf (string(constants::idlen_bytes, '\x99'));
-  file_id fid_yg (string(constants::idlen_bytes, '\xaa'));
-  file_id fid_yxf(string(constants::idlen_bytes, '\xbb'));
-  file_id fid_yxg(string(constants::idlen_bytes, '\xcc'));
-  file_id fid_yyf(string(constants::idlen_bytes, '\xdd'));
-  file_id fid_yyg(string(constants::idlen_bytes, '\xee'));
+  file_id fid_yf (string(constants::idlen_bytes, '\x99'), origin::internal);
+  file_id fid_yg (string(constants::idlen_bytes, '\xaa'), origin::internal);
+  file_id fid_yxf(string(constants::idlen_bytes, '\xbb'), origin::internal);
+  file_id fid_yxg(string(constants::idlen_bytes, '\xcc'), origin::internal);
+  file_id fid_yyf(string(constants::idlen_bytes, '\xdd'), origin::internal);
+  file_id fid_yyg(string(constants::idlen_bytes, '\xee'), origin::internal);
 }
 
 static void setup(roster_t & roster)
@@ -955,7 +956,7 @@ UNIT_TEST(restrictions, invalid_roster_paths)
   excludes.push_back(file_path_internal("bar"));
 
   UNIT_TEST_CHECK_THROW(node_restriction(includes, excludes, -1, roster),
-                        informative_failure);
+                        recoverable_failure);
 }
 
 UNIT_TEST(restrictions, invalid_workspace_paths)
@@ -968,7 +969,7 @@ UNIT_TEST(restrictions, invalid_workspace_paths)
   excludes.push_back(file_path_internal("bar"));
 
   UNIT_TEST_CHECK_THROW(path_restriction(includes, excludes, -1),
-                    informative_failure);
+                        recoverable_failure);
 }
 
 UNIT_TEST(restrictions, ignored_invalid_workspace_paths)

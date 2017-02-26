@@ -11,13 +11,13 @@ using std::strerror;
 
 LUAEXT(mkstemp, )
 {
-  char const *filename = luaL_checkstring (L, 1);
+  char const *filename = luaL_checkstring (LS, 1);
   string dup(filename);
 
   if (!monotone_mkstemp(dup))
     return 0;
 
-  lua_pushstring(L, dup.c_str());
+  lua_pushstring(LS, dup.c_str());
   return 1;
 }
 

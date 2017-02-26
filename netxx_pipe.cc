@@ -249,7 +249,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
                                NULL, // Current directory
                                &siStartInfo,
                                &piProcInfo);
-  E(started,
+  E(started, origin::system,
     F("CreateProcess(%s,...) call failed: %s")
     % cmdline % err_msg());
 
@@ -266,7 +266,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
 
   int fd1[2], fd2[2];
   child = pipe_and_fork(fd1, fd2);
-  E(child >= 0, F("pipe/fork failed: %s") % strerror(errno));
+  E(child >= 0, origin::system, F("pipe/fork failed: %s") % strerror(errno));
   if (!child)
     {
       execvp(newargv[0], const_cast<char * const *>(newargv));
@@ -594,7 +594,8 @@ UNIT_TEST(pipe, simple_pipe)
           probe.clear();
           probe.add(pipe, Netxx::Probe::ready_read);
           res = probe.ready(timeout);
-          E(res.second & Netxx::Probe::ready_read, F("timeout reading data %d") % c);
+          E(res.second & Netxx::Probe::ready_read, origin::system,
+            F("timeout reading data %d") % c);
 #ifdef WIN32
           I(res.first == pipe.get_socketfd());
 #else
@@ -611,7 +612,7 @@ UNIT_TEST(pipe, simple_pipe)
   pipe.close();
 
   }
-catch (informative_failure &e)
+catch (recoverable_failure &e)
   // for some reason boost does not provide
   // enough information
   {

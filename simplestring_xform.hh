@@ -29,6 +29,28 @@ void join_lines(std::vector<std::string> const & in,
 void join_lines(std::vector<std::string> const & in,
                 std::string & out);
 
+
+template<class Thing> inline
+origin::type get_made_from(Thing const & thing)
+{
+  return thing.made_from;
+}
+template<> inline
+origin::type get_made_from<std::string>(std::string const & thing)
+{
+  return origin::internal;
+}
+template<class Thing> inline
+Thing from_string(std::string const & str, origin::type made_from)
+{
+  return Thing(str, made_from);
+}
+template<> inline
+std::string from_string<std::string>(std::string const & str, origin::type made_from)
+{
+  return str;
+}
+
 template< class T >
 std::vector< T > split_into_words(T const & in)
 {
@@ -40,32 +62,37 @@ std::vector< T > split_into_words(T const & in)
 
   while (end != std::string::npos && end >= begin)
     {
-      out.push_back(T(instr.substr(begin, end-begin)));
+      out.push_back(from_string<T>(instr.substr(begin, end-begin),
+                                   get_made_from(in)));
       begin = end + 1;
       if (begin >= instr.size())
         break;
       end = instr.find_first_of(" ", begin);
     }
   if (begin < instr.size())
-    out.push_back(T(instr.substr(begin, instr.size() - begin)));
+    out.push_back(from_string<T>(instr.substr(begin, instr.size() - begin),
+                                 get_made_from(in)));
 
   return out;
 }
 
 template< class Container >
-typename Container::value_type join_words(Container const & in, std::string const & sep = " ")
+typename Container::value_type join_words(Container const & in,
+                                          std::string const & sep = " ")
 {
+  origin::type made_from = origin::internal;
   std::string str;
   typename Container::const_iterator iter = in.begin();
   while (iter != in.end())
     {
+      made_from = get_made_from(*iter);
       str += (*iter)();
       iter++;
       if (iter != in.end())
         str += sep;
     }
   typedef typename Container::value_type result_type;
-  return result_type(str);
+  return from_string<result_type>(str, made_from);
 }
 
 void prefix_lines_with(std::string const & prefix,

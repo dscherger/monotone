@@ -1065,7 +1065,7 @@ UNIT_TEST(crypto, calculate_ident)
   //L(FL(" Input: %s") % input);
   //L(FL("Output: %s") % output);
 
-  UNIT_TEST_CHECK(output() == decode_hexenc(ident));
+  UNIT_TEST_CHECK(output() == decode_hexenc(ident, origin::internal));
   L(FL("SHA Short Message Test:  Passed\n\n"));
 
 
@@ -1104,7 +1104,7 @@ UNIT_TEST(crypto, calculate_ident)
           string messageString = MD[i - 3] + MD[i - 2] + MD[i - 1];
           // L(FL("messageString: %s") % messageString );
 
-          data messageData(decode_hexenc(messageString));
+          data messageData(decode_hexenc_as<data>(messageString, origin::internal));
           // L(FL("message: %s") % messageString );
 
           calculate_ident(messageData, output2);
