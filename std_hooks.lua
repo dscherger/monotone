@@ -145,9 +145,11 @@ function ignore_file(name)
                        .. name .. "':\n")
            warn_reported_file = true
         end
-            io.stderr:write(".mtn-ignore:" .. i .. ": warning: " .. result
-                    .. "\n\t- skipping this regex for "
-                .. "all remaining files.\n")
+        local prefix = ".mtn-ignore:" .. i .. ": warning: "
+            io.stderr:write(prefix
+                            .. string.gsub(result, "\n", "\n" .. prefix)
+                               .. "\n\t- skipping this regex for "
+                               .. "all remaining files.\n")
             ignored_files[i] = nil
          end
       end

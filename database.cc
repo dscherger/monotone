@@ -457,7 +457,7 @@ database::check_is_not_rosterified()
   results res;
   imp->fetch(res, one_col, any_rows,
              query("SELECT 1 FROM rosters LIMIT 1"));
-  N(res.empty(),
+  E(res.empty(), origin::user,
     F("this database already contains rosters"));
 }
 
@@ -483,6 +483,7 @@ database_impl::check_format()
       // Or else the database was just created.
       // Do we need to regenerate cached data?
       E(!have_revisions || (have_rosters && have_heights),
+        origin::no_fault,
         F("database %s lacks some cached data\n"
           "run '%s db regenerate_caches' to restore use of this database")
         % filename % ui.prog_name);
@@ -494,7 +495,7 @@ database_impl::check_format()
 
       // they need to either changesetify or rosterify.  which?
       if (have_revisions)
-        E(false,
+        E(false, origin::no_fault,
           F("database %s contains old-style revisions\n"
             "if you are a project leader or doing local testing:\n"
             "  see the file UPGRADE for instructions on upgrading.\n"
@@ -504,7 +505,7 @@ database_impl::check_format()
             "sorry about the inconvenience.")
           % filename);
       else
-        E(false,
+        E(false, origin::no_fault,
           F("database %s contains manifests but no revisions\n"
             "this is a very old database; it needs to be upgraded\n"
             "please see README.changesets for details")
@@ -523,7 +524,7 @@ sqlite3_gunzip_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
   data unpacked;
   const char *val = (const char*) sqlite3_value_blob(args[0]);
   int bytes = sqlite3_value_bytes(args[0]);
-  decode_gzip(gzip<data>(string(val,val+bytes)), unpacked);
+  decode_gzip(gzip<data>(string(val,val+bytes), origin::database), unpacked);
   sqlite3_result_blob(f, unpacked().c_str(), unpacked().size(), SQLITE_TRANSIENT);
 }
 
@@ -597,7 +598,7 @@ dump_row(ostream &out, sqlite3_stmt *stmt, string const& table_name)
           out << "X'";
           const char *val = (const char*) sqlite3_column_blob(stmt, i);
           int bytes = sqlite3_column_bytes(stmt, i);
-          out << encode_hexenc(string(val,val+bytes));
+          out << encode_hexenc(string(val,val+bytes), origin::internal);
           out << '\'';
         }
       else
@@ -790,7 +791,7 @@ static bool longest_number(string a, string b)
 // error, either return a string version of the error message (if it was an
 // SQLite error) or rethrow the execption (if it wasn't).
 static string
-format_sqlite_error_for_info(informative_failure const & e)
+format_sqlite_error_for_info(recoverable_failure const & e)
 {
   string err(e.what());
   string prefix = _("error: ");
@@ -883,7 +884,7 @@ database::info(ostream & out, bool analyze)
             counts.push_back((F("%u") % n).str());
           }
       }
-    catch (informative_failure const & e)
+    catch (recoverable_failure const & e)
       {
         counts.push_back(format_sqlite_error_for_info(e));
       }
@@ -990,7 +991,7 @@ database::info(ostream & out, bool analyze)
         {
           cert_date = date_t(i->value());
         }
-      catch (informative_failure & e)
+      catch (recoverable_failure & e)
         {
           // simply skip dates we cannot parse
           W(F("invalid date '%s' for revision %s; skipped")
@@ -1192,13 +1193,13 @@ database_impl::fetch(results & res,
       L(FL("prepared statement %s") % query.sql_cmd);
 
       // no support for multiple statements here
-      E(*tail == 0,
+      E(*tail == 0, origin::internal,
         F("multiple statements in query: %s") % query.sql_cmd);
     }
 
   ncol = sqlite3_column_count(i->second.stmt());
 
-  E(want_cols == any_cols || want_cols == ncol,
+  E(want_cols == any_cols || want_cols == ncol, origin::database,
     F("wanted %d columns got %d in query: %s") % want_cols % ncol % query.sql_cmd);
 
   // bind parameters for this execution
@@ -1221,7 +1222,7 @@ database_impl::fetch(results & res,
           if (query.args[param-1].type == query_param::blob)
             {
               prefix = "x";
-              log = encode_hexenc(log);
+              log = encode_hexenc(log, origin::internal);
             }
 
           if (log.size() > constants::db_log_line_sz)
@@ -1263,7 +1264,8 @@ database_impl::fetch(results & res,
         {
           const char * value = (const char*)sqlite3_column_blob(i->second.stmt(), col);
           int bytes = sqlite3_column_bytes(i->second.stmt(), col);
-          E(value, F("null result in query: %s") % query.sql_cmd);
+          E(value, origin::database,
+            F("null result in query: %s") % query.sql_cmd);
           row.push_back(string(value, value + bytes));
           //L(FL("row %d col %d value='%s'") % nrow % col % value);
         }
@@ -1281,6 +1283,7 @@ database_impl::fetch(results & res,
   i->second.count++;
 
   E(want_rows == any_rows || want_rows == nrow,
+    origin::database,
     F("wanted %d rows got %d in query: %s") % want_rows % nrow % query.sql_cmd);
 }
 
@@ -1490,7 +1493,7 @@ database_impl::count(string const & table)
       fetch(res, one_col, one_row, q);
       return (F("%u") % lexical_cast<u64>(res[0][0])).str();
     }
-  catch (informative_failure const & e)
+  catch (recoverable_failure const & e)
     {
       return format_sqlite_error_for_info(e);
     }
@@ -1510,7 +1513,7 @@ database_impl::space(string const & table, string const & rowspace, u64 & total)
       total += bytes;
       return (F("%u") % bytes).str();
     }
-  catch (informative_failure & e)
+  catch (recoverable_failure & e)
     {
       return format_sqlite_error_for_info(e);
     }
@@ -1546,7 +1549,7 @@ database_impl::get_ids(string const & table, set<id> & ids)
 
   for (size_t i = 0; i < res.size(); ++i)
     {
-      ids.insert(id(res[i][0]));
+      ids.insert(id(res[i][0], origin::database));
     }
 }
 
@@ -1568,7 +1571,7 @@ database_impl::get_file_or_manifest_base_unchecked(id const & ident,
   query q("SELECT data FROM " + table + " WHERE id = ?");
   fetch(res, one_col, one_row, q % blob(ident()));
 
-  gzip<data> rdata(res[0][0]);
+  gzip<data> rdata(res[0][0], origin::database);
   data rdata_unpacked;
   decode_gzip(rdata,rdata_unpacked);
 
@@ -1589,7 +1592,7 @@ database_impl::get_file_or_manifest_delta_unchecked(id const & ident,
   fetch(res, one_col, one_row,
         q % blob(ident()) % blob(base()));
 
-  gzip<delta> del_packed(res[0][0]);
+  gzip<delta> del_packed(res[0][0], origin::database);
   decode_gzip(del_packed, del);
 }
 
@@ -1611,12 +1614,12 @@ database_impl::get_roster_base(revision_id const & ident,
   query q("SELECT checksum, data FROM rosters WHERE id = ?");
   fetch(res, 2, one_row, q % blob(ident.inner()()));
 
-  id checksum(res[0][0]);
+  id checksum(res[0][0], origin::database);
   id calculated;
-  calculate_ident(data(res[0][1]), calculated);
+  calculate_ident(data(res[0][1], origin::database), calculated);
   I(calculated == checksum);
 
-  gzip<data> dat_packed(res[0][1]);
+  gzip<data> dat_packed(res[0][1], origin::database);
   data dat;
   decode_gzip(dat_packed, dat);
   read_roster_and_marking(roster_data(dat), roster, marking);
@@ -1631,12 +1634,12 @@ database_impl::get_roster_delta(id const & ident,
   query q("SELECT checksum, delta FROM roster_deltas WHERE id = ? AND base = ?");
   fetch(res, 2, one_row, q % blob(ident()) % blob(base()));
 
-  id checksum(res[0][0]);
+  id checksum(res[0][0], origin::database);
   id calculated;
-  calculate_ident(data(res[0][1]), calculated);
+  calculate_ident(data(res[0][1], origin::database), calculated);
   I(calculated == checksum);
 
-  gzip<delta> del_packed(res[0][1]);
+  gzip<delta> del_packed(res[0][1], origin::database);
   delta tmp;
   decode_gzip(del_packed, tmp);
   del = roster<delta>(tmp);
@@ -1674,7 +1677,7 @@ database_impl::write_delayed_roster(revision_id const & ident,
   // ident is a number, and we should calculate a checksum on what
   // we write
   id checksum;
-  calculate_ident(data(dat_packed()), checksum);
+  calculate_ident(typecast_vocab<data>(dat_packed), checksum);
 
   // and then write it
   execute(query("INSERT INTO rosters (id, checksum, data) VALUES (?, ?, ?)")
@@ -1711,7 +1714,7 @@ database_impl::put_roster_delta(revision_id const & ident,
   encode_gzip(del.inner(), del_packed);
 
   id checksum;
-  calculate_ident(data(del_packed()), checksum);
+  calculate_ident(typecast_vocab<data>(del_packed), checksum);
 
   query q("INSERT INTO roster_deltas (id, base, checksum, delta) VALUES (?, ?, ?, ?)");
   execute(q
@@ -1744,7 +1747,7 @@ struct file_and_manifest_reconstruction_graph : public reconstruction_graph
     query q("SELECT base FROM " + delta_table + " WHERE id = ?");
     imp.fetch(res, one_col, any_rows, q % blob(from()));
     for (results::const_iterator i = res.begin(); i != res.end(); ++i)
-      next.insert(id((*i)[0]));
+      next.insert(id((*i)[0], origin::database));
   }
 };
 
@@ -1786,7 +1789,7 @@ database_impl::get_version(id const & ident,
         {
           string tmp;
           appl->finish(tmp);
-          vcache.insert_clean(curr, data(tmp));
+          vcache.insert_clean(curr, data(tmp, origin::database));
         }
 
       if (global_sanity.debug_p())
@@ -1801,7 +1804,7 @@ database_impl::get_version(id const & ident,
 
   string tmp;
   appl->finish(tmp);
-  dat = data(tmp);
+  dat = data(tmp, origin::database);
 
   id final;
   calculate_ident(dat, final);
@@ -1826,7 +1829,7 @@ struct roster_reconstruction_graph : public reconstruction_graph
     query q("SELECT base FROM roster_deltas WHERE id = ?");
     imp.fetch(res, one_col, any_rows, q % blob(from()));
     for (results::const_iterator i = res.begin(); i != res.end(); ++i)
-      next.insert(id((*i)[0]));
+      next.insert(id((*i)[0], origin::database));
   }
 };
 
@@ -2153,7 +2156,7 @@ database::put_file_version(file_id const & old_id,
   {
     string tmp;
     invert_xdelta(old_data.inner()(), del.inner()(), tmp);
-    reverse_delta = file_delta(tmp);
+    reverse_delta = file_delta(tmp, origin::database);
     data old_tmp;
     patch(new_data.inner(), reverse_delta.inner(), old_tmp);
     // We already have the real old data, so compare the
@@ -2198,7 +2201,7 @@ database::get_arbitrary_file_delta(file_id const & src_id,
   if (!res.empty())
     {
       // Exact hit: a plain delta from src -> dst.
-      gzip<delta> del_packed(res[0][0]);
+      gzip<delta> del_packed(res[0][0], origin::database);
       decode_gzip(del_packed, dtmp);
       del = file_delta(dtmp);
       return;
@@ -2213,13 +2216,13 @@ database::get_arbitrary_file_delta(file_id const & src_id,
     {
       // We have a delta from dst -> src; we need to
       // invert this to a delta from src -> dst.
-      gzip<delta> del_packed(res[0][0]);
+      gzip<delta> del_packed(res[0][0], origin::database);
       decode_gzip(del_packed, dtmp);
       string fwd_delta;
       file_data dst;
       get_file_version(dst_id, dst);
       invert_xdelta(dst.inner()(), dtmp(), fwd_delta);
-      del = file_delta(fwd_delta);
+      del = file_delta(fwd_delta, origin::database);
       return;
     }
 
@@ -2243,8 +2246,8 @@ database::get_revision_ancestry(rev_ancestry_map & graph)
   imp->fetch(res, 2, any_rows,
              query("SELECT parent,child FROM revision_ancestry"));
   for (size_t i = 0; i < res.size(); ++i)
-    graph.insert(make_pair(revision_id(res[i][0]),
-                           revision_id(res[i][1])));
+    graph.insert(make_pair(revision_id(res[i][0], origin::database),
+                           revision_id(res[i][1], origin::database)));
 }
 
 void
@@ -2261,7 +2264,7 @@ database::get_revision_parents(revision_id const & id,
                  query("SELECT parent FROM revision_ancestry WHERE child = ?")
                  % blob(id.inner()()));
       for (size_t i = 0; i < res.size(); ++i)
-        parents.insert(revision_id(res[i][0]));
+        parents.insert(revision_id(res[i][0], origin::database));
 
       imp->parent_cache.insert(make_pair(id, parents));
     }
@@ -2281,7 +2284,7 @@ database::get_revision_children(revision_id const & id,
              query("SELECT child FROM revision_ancestry WHERE parent = ?")
         % blob(id.inner()()));
   for (size_t i = 0; i < res.size(); ++i)
-    children.insert(revision_id(res[i][0]));
+    children.insert(revision_id(res[i][0], origin::database));
 }
 
 void
@@ -2295,7 +2298,7 @@ database::get_leaves(set<revision_id> & leaves)
                    "ON revisions.id = revision_ancestry.parent "
                    "WHERE revision_ancestry.child IS null"));
   for (size_t i = 0; i < res.size(); ++i)
-    leaves.insert(revision_id(res[i][0]));
+    leaves.insert(revision_id(res[i][0], origin::database));
 }
 
 
@@ -2380,7 +2383,7 @@ database::get_revision(revision_id const & id,
              query("SELECT data FROM revisions WHERE id = ?")
              % blob(id.inner()()));
 
-  gzip<data> gzdata(res[0][0]);
+  gzip<data> gzdata(res[0][0], origin::database);
   data rdat;
   decode_gzip(gzdata,rdat);
 
@@ -2659,8 +2662,8 @@ database::put_roster_for_revision(revision_id const & new_id,
   MM(roster_manifest_id);
   make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable);
   calculate_ident(*ros_writeable, roster_manifest_id);
-  made_from_t made_from(rev.made_from);
-  I(rev.new_manifest == roster_manifest_id);
+  E(rev.new_manifest == roster_manifest_id, rev.made_from,
+    F("revision contains incorrect manifest_id"));
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
   marking_map_cp mm = mm_writeable;
@@ -2772,7 +2775,7 @@ database::get_key_ids(vector<rsa_keypair_id> & pubkeys)
   imp->fetch(res, one_col, any_rows, query("SELECT id FROM public_keys"));
 
   for (size_t i = 0; i < res.size(); ++i)
-    pubkeys.push_back(rsa_keypair_id(res[i][0]));
+    pubkeys.push_back(rsa_keypair_id(res[i][0], origin::database));
 }
 
 void
@@ -2786,7 +2789,7 @@ database::get_key_ids(globish const & pattern,
 
   for (size_t i = 0; i < res.size(); ++i)
     if (pattern.matches(res[i][0]))
-      pubkeys.push_back(rsa_keypair_id(res[i][0]));
+      pubkeys.push_back(rsa_keypair_id(res[i][0], origin::database));
 }
 
 void
@@ -2796,7 +2799,7 @@ database_impl::get_keys(string const & table, vector<rsa_keypair_id> & keys)
   results res;
   fetch(res, one_col, any_rows, query("SELECT id FROM " + table));
   for (size_t i = 0; i < res.size(); ++i)
-    keys.push_back(rsa_keypair_id(res[i][0]));
+    keys.push_back(rsa_keypair_id(res[i][0], origin::database));
 }
 
 void
@@ -2840,8 +2843,8 @@ database::get_pubkey(id const & hash,
   imp->fetch(res, 2, one_row,
              query("SELECT id, keydata FROM public_keys WHERE hash = ?")
              % blob(hash()));
-  id = rsa_keypair_id(res[0][0]);
-  pub = rsa_pub_key(res[0][1]);
+  id = rsa_keypair_id(res[0][0], origin::database);
+  pub = rsa_pub_key(res[0][1], origin::database);
 }
 
 void
@@ -2852,7 +2855,7 @@ database::get_key(rsa_keypair_id const & pub_id,
   imp->fetch(res, one_col, one_row,
              query("SELECT keydata FROM public_keys WHERE id = ?")
              % text(pub_id()));
-  pub = rsa_pub_key(res[0][0]);
+  pub = rsa_pub_key(res[0][0], origin::database);
 }
 
 bool
@@ -2906,7 +2909,8 @@ database::encrypt_rsa(rsa_keypair_id const & pub_id,
   shared_ptr<RSA_PublicKey> pub_key
     = shared_dynamic_cast<RSA_PublicKey>(x509_key);
   if (!pub_key)
-    throw informative_failure("Failed to get RSA encrypting key");
+    throw recoverable_failure(origin::system,
+                              "Failed to get RSA encrypting key");
 
   shared_ptr<PK_Encryptor>
     encryptor(get_pk_encryptor(*pub_key, "EME1(SHA-1)"));
@@ -2916,7 +2920,8 @@ database::encrypt_rsa(rsa_keypair_id const & pub_id,
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
           plaintext.size(), *rng);
   ciphertext = rsa_oaep_sha_data(string(reinterpret_cast<char const *>(ct.begin()),
-                                        ct.size()));
+                                        ct.size()),
+                                 origin::database);
 }
 
 cert_status
@@ -2947,7 +2952,7 @@ database::check_signature(rsa_keypair_id const & id,
       shared_ptr<RSA_PublicKey> pub_key
         = boost::shared_dynamic_cast<RSA_PublicKey>(x509_key);
 
-      E(pub_key,
+      E(pub_key, id.made_from,
         F("Failed to get RSA verifying key for %s") % id);
 
       verifier.reset(get_pk_verifier(*pub_key, "EMSA3(SHA-1)"));
@@ -3023,11 +3028,11 @@ database_impl::results_to_certs(results const & res,
   for (size_t i = 0; i < res.size(); ++i)
     {
       cert t;
-      t = cert(revision_id(res[i][0]),
-               cert_name(res[i][1]),
-               cert_value(res[i][2]),
-               rsa_keypair_id(res[i][3]),
-               rsa_sha1_signature(res[i][4]));
+      t = cert(revision_id(res[i][0], origin::database),
+               cert_name(res[i][1], origin::database),
+               cert_value(res[i][2], origin::database),
+               rsa_keypair_id(res[i][3], origin::database),
+               rsa_sha1_signature(res[i][4], origin::database));
       certs.push_back(t);
     }
 }
@@ -3178,9 +3183,9 @@ database::get_revision_cert_nobranch_index(vector< pair<revision_id,
   idx.reserve(res.size());
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
     {
-      idx.push_back(make_pair(revision_id((*i)[0]),
-                              make_pair(revision_id((*i)[1]),
-                                        rsa_keypair_id((*i)[2]))));
+      idx.push_back(make_pair(revision_id((*i)[0], origin::database),
+                              make_pair(revision_id((*i)[1], origin::database),
+                                        rsa_keypair_id((*i)[2], origin::database))));
     }
   return imp->cert_stamper.get_indicator();
 }
@@ -3241,7 +3246,7 @@ database::get_revisions_with_cert(cert_name const & name,
   query q("SELECT id FROM revision_certs WHERE name = ? AND value = ?");
   imp->fetch(res, one_col, any_rows, q % text(name()) % blob(val()));
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
-    revisions.insert(revision_id((*i)[0]));
+    revisions.insert(revision_id((*i)[0], origin::database));
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3281,7 +3286,7 @@ database::get_revision_certs(revision_id const & ident,
              % blob(ident.inner()()));
   ts.clear();
   for (size_t i = 0; i < res.size(); ++i)
-    ts.push_back(id(res[i][0]));
+    ts.push_back(id(res[i][0], origin::database));
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3349,7 +3354,7 @@ database_impl::add_prefix_matching_constraint(string const & colname,
     q.sql_cmd += "1";  // always true
   else
     {
-      string binary_prefix = decode_hexenc(prefix);
+      string binary_prefix = decode_hexenc(prefix, origin::internal);
       string lower_bound(binary_prefix);
       string upper_bound(binary_prefix);
 
@@ -3410,7 +3415,7 @@ database::complete(string const & partial,
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(revision_id(res[i][0]));
+    completions.insert(revision_id(res[i][0], origin::database));
 }
 
 
@@ -3426,7 +3431,7 @@ database::complete(string const & partial,
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(file_id(res[i][0]));
+    completions.insert(file_id(res[i][0], origin::database));
 
   res.clear();
 
@@ -3435,7 +3440,7 @@ database::complete(string const & partial,
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(file_id(res[i][0]));
+    completions.insert(file_id(res[i][0], origin::database));
 }
 
 void
@@ -3450,8 +3455,8 @@ database::complete(string const & partial,
   imp->fetch(res, 2, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(make_pair(key_id(res[i][0]),
-                                 utf8(res[i][1])));
+    completions.insert(make_pair(key_id(res[i][0], origin::database),
+                                 utf8(res[i][1], origin::database)));
 }
 
 // revision selectors
@@ -3464,11 +3469,12 @@ database::select_parent(string const & partial,
   completions.clear();
 
   query q("SELECT DISTINCT parent FROM revision_ancestry WHERE ");
-  imp->add_prefix_matching_constraint("child", encode_hexenc(partial), q);
+  imp->add_prefix_matching_constraint("child", encode_hexenc(partial,
+                                                             origin::internal), q);
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(revision_id(res[i][0]));
+    completions.insert(revision_id(res[i][0], origin::database));
 }
 
 void
@@ -3483,7 +3489,7 @@ database::select_cert(string const & certname,
              % text(certname));
 
   for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(revision_id(res[i][0]));
+    completions.insert(revision_id(res[i][0], origin::database));
 }
 
 void
@@ -3499,7 +3505,7 @@ database::select_cert(string const & certname, string const & certvalue,
              % text(certname) % text(certvalue));
 
   for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(revision_id(res[i][0]));
+    completions.insert(revision_id(res[i][0], origin::database));
 }
 
 void
@@ -3519,7 +3525,7 @@ database::select_author_tag_or_branch(string const & partial,
              % text(branch_cert_name()) % text(pattern));
 
   for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(revision_id(res[i][0]));
+    completions.insert(revision_id(res[i][0], origin::database));
 }
 
 void
@@ -3538,7 +3544,7 @@ database::select_date(string const & date, string const & comparison,
   imp->fetch(res, 1, any_rows,
              q % text(date_cert_name()) % text(date));
   for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(revision_id(res[i][0]));
+    completions.insert(revision_id(res[i][0], origin::database));
 }
 
 // epochs
@@ -3551,10 +3557,11 @@ database::get_epochs(map<branch_name, epoch_data> & epochs)
   imp->fetch(res, 2, any_rows, query("SELECT branch, epoch FROM branch_epochs"));
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
     {
-      branch_name decoded(idx(*i, 0));
+      branch_name decoded(idx(*i, 0), origin::database);
       I(epochs.find(decoded) == epochs.end());
       epochs.insert(make_pair(decoded,
-                              epoch_data(idx(*i, 1))));
+                              epoch_data(idx(*i, 1),
+                                         origin::database)));
     }
 }
 
@@ -3569,8 +3576,8 @@ database::get_epoch(epoch_id const & eid,
                    " WHERE hash = ?")
              % blob(eid.inner()()));
   I(res.size() == 1);
-  branch = branch_name(idx(idx(res, 0), 0));
-  epo = epoch_data(idx(idx(res, 0), 1));
+  branch = branch_name(idx(idx(res, 0), 0), origin::database);
+  epo = epoch_data(idx(idx(res, 0), 1), origin::database);
 }
 
 bool
@@ -3624,9 +3631,9 @@ database::get_vars(map<var_key, var_value> & vars)
   imp->fetch(res, 3, any_rows, query("SELECT domain, name, value FROM db_vars"));
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
     {
-      var_domain domain(idx(*i, 0));
-      var_name name(idx(*i, 1));
-      var_value value(idx(*i, 2));
+      var_domain domain(idx(*i, 0), origin::database);
+      var_name name(idx(*i, 1), origin::database);
+      var_value value(idx(*i, 2), origin::database);
       I(vars.find(make_pair(domain, name)) == vars.end());
       vars.insert(make_pair(make_pair(domain, name), value));
     }
@@ -3839,7 +3846,7 @@ database::next_node_id()
 void
 database_impl::check_filename()
 {
-  N(!filename.empty(), F("no database specified"));
+  E(!filename.empty(), origin::user, F("no database specified"));
 }
 
 
@@ -3852,18 +3859,19 @@ database_impl::check_db_exists()
       return;
 
     case path::nonexistent:
-      N(false, F("database %s does not exist") % filename);
+      E(false, origin::user, F("database %s does not exist") % filename);
 
     case path::directory:
       if (directory_is_workspace(filename))
         {
           system_path workspace_database;
           workspace::get_database_option(filename, workspace_database);
-          N(workspace_database.empty(),
+          E(workspace_database.empty(), origin::user,
             F("%s is a workspace, not a database\n"
               "(did you mean %s?)") % filename % workspace_database);
         }
-      N(false, F("%s is a directory, not a database") % filename);
+      E(false, origin::user,
+        F("%s is a directory, not a database") % filename);
     }
 }
 
@@ -3874,7 +3882,7 @@ database_impl::check_db_nonexistent()
                               F("database %s already exists")
                               % filename);
 
-  system_path journal(filename.as_internal() + "-journal");
+  system_path journal(filename.as_internal() + "-journal", origin::internal);
   require_path_is_nonexistent(journal,
                               F("existing (possibly stale) journal file '%s' "
                                 "has same stem as new database '%s'\n"

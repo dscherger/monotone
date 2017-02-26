@@ -17,6 +17,7 @@
 
 #include "i18n.h"
 #include "numeric_vocab.hh"
+#include "origin_type.hh"
 
 // our assertion / sanity / error logging system *was* based on GNU Nana,
 // but we're only using a small section of it, and have anyways rewritten
@@ -26,12 +27,29 @@
 // message to make it to the user, not a diagnostic error indicating
 // internal failure but a suggestion that they do something differently.
 
-class informative_failure : public std::exception {
-  std::string const whatmsg;
+namespace origin {
+  std::string type_to_string(type t);
+}
+
+// An error that may have had an external source.
+class recoverable_failure : public std::runtime_error {
+  origin::type _caused_by;
 public:
-  explicit informative_failure(std::string const & s) : whatmsg(s) {};
-  virtual ~informative_failure() throw() {};
-  virtual char const * what() const throw() { return whatmsg.c_str(); }
+  recoverable_failure(origin::type o, std::string const & s)
+    : std::runtime_error(s), _caused_by(o) {};
+  origin::type caused_by() const { return _caused_by; }
+  virtual ~recoverable_failure() throw() {}
+};
+
+// An error that indicates either an immediate logic bug or
+// a corrupt database. You don't want to catch these.
+class unrecoverable_failure : public std::logic_error {
+  origin::type _caused_by;
+public:
+  unrecoverable_failure(origin::type o, std::string const & s)
+    : std::logic_error(s), _caused_by(o) {};
+  origin::type caused_by() const { return _caused_by; }
+  virtual ~unrecoverable_failure() throw() {}
 };
 
 class MusingI;
@@ -67,12 +85,18 @@ struct sanity {
                 char const * file, int line);
   void warning(i18n_format const & fmt,
                char const * file, int line);
+  /*
   NORETURN(void naughty_failure(char const * expr, i18n_format const & explain,
                        char const * file, int line));
   NORETURN(void error_failure(char const * expr, i18n_format const & explain,
                      char const * file, int line));
   NORETURN(void invariant_failure(char const * expr,
                          char const * file, int line));
+  */
+  NORETURN(void generic_failure(char const * expr,
+                                origin::type caused_by,
+                                i18n_format const & explain,
+                                char const * file, int line));
   NORETURN(void index_failure(char const * vec_expr,
                      char const * idx_expr,
                      unsigned long sz,
@@ -326,34 +350,18 @@ struct bad_decode {
   std::string what;
 };
 
-enum made_from_t { made_from_local, made_from_network };
-made_from_t const made_from = made_from_local;
-
-// Something that knows where it came from, so that its sanity checks
-// can throw bad_decode instead of informative_error if it came from
-// the network.
-class origin_aware
-{
-public:
-  made_from_t made_from;
-  origin_aware() : made_from(made_from_local) {}
-  origin_aware(made_from_t m) : made_from(m) {}
-};
-
 // I is for invariants that "should" always be true
 // (if they are wrong, there is a *bug*)
 #define I(e)                                                            \
   do {                                                                  \
     if (UNLIKELY(!(e)))                                                 \
       {                                                                 \
-        if (made_from == made_from_network)                             \
-          throw bad_decode(F("%s:%s : %s")                              \
-                           % __FILE__ % __LINE__ % "I("#e")");          \
-        else                                                            \
-          global_sanity.invariant_failure("I("#e")", __FILE__, __LINE__); \
+        global_sanity.generic_failure("I("#e")", origin::internal,      \
+                                      F("%s") % "I("#e")",              \
+                                      __FILE__, __LINE__);              \
       }                                                                 \
   } while (0)
-
+/*
 // N is for naughtyness on behalf of the user
 // (if they are wrong, the user just did something wrong)
 #define N(e, explain)                                                   \
@@ -369,18 +377,14 @@ public:
                                         __FILE__, __LINE__);            \
       }                                                                 \
   } while (0)
-
+*/
 // E is for errors; they are normal (i.e., not a bug), but not necessarily
 // attributable to user naughtiness
-#define E(e, explain)                                                  \
+#define E(e, whence, explain)                                          \
   do {                                                                 \
     if (UNLIKELY(!(e)))                                                \
       {                                                                \
-        if (made_from == made_from_network)                            \
-          throw bad_decode(F("%s:%s : %s")                             \
-                           % __FILE__ % __LINE__ % (explain));         \
-        else                                                           \
-          global_sanity.error_failure("E("#e")",                       \
+        global_sanity.generic_failure("E("#e")", (whence),             \
                                       (explain),                       \
                                       __FILE__, __LINE__);             \
       }                                                                \

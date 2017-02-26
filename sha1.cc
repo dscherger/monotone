@@ -100,7 +100,7 @@ CMD_HIDDEN(benchmark_sha1, "benchmark_sha1", "", CMD_REF(debug), "",
   P(F("Benchmarking %s SHA-1 cores") % registry().size());
   int mebibytes = 100;
   string test_str(mebibytes << 20, 'a');
-  data test_data(test_str);
+  data test_data(test_str, origin::internal);
   for (map<int, pair<string, sha1_maker*> >::const_iterator i = registry().begin();
        i != registry().end(); ++i)
     {

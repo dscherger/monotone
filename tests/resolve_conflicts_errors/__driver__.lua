@@ -43,8 +43,9 @@ check(samefilestd("conflicts-attr-show-2", "stderr"))
 ----------
 -- specify conflicts file not in bookkeeping dir
 check(mtn("conflicts", "--conflicts-file", "conflicts", "store", left_1, right_1), 1, nil, true)
-canonicalize("stderr")
-check(samefilestd("conflicts-attr-store-2", "stderr"))
+check(grep("-v", "detected at", "stderr"), 0, true)
+canonicalize("stdout")
+check(samefilestd("conflicts-attr-store-2", "stdout"))
 
 ----------
 -- use old conflicts file for new merge
@@ -56,8 +57,9 @@ commit("testbranch", "right 2")
 
 -- attempt merge with old conflict file
 check(mtn("merge", "--resolve-conflicts"), 1, nil, true)
-canonicalize("stderr")
-check(samefilestd("merge-old-conflicts-file", "stderr"))
+check(grep("-v", "detected at", "stderr"), 0, true)
+canonicalize("stdout")
+check(samefilestd("merge-old-conflicts-file", "stdout"))
 
 
 ----------
@@ -85,7 +87,8 @@ check(qgrep("wrong number of arguments", "stderr"))
 -- both sides specify user file
 check(mtn("conflicts", "resolve_first_left", "user", "checkout.sh"), 0, nil, nil)
 check(mtn("conflicts", "resolve_first_right", "user", "checkout.sh"), 1, nil, true)
-canonicalize("stderr")
-check("mtn: misuse: left and right resolutions cannot both be 'user'\n" == readfile("stderr"))
+check(grep("-v", "detected at", "stderr"), 0, true)
+canonicalize("stdout")
+check("mtn: misuse: left and right resolutions cannot both be 'user'\n" == readfile("stdout"))
 
 -- end of file

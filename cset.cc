@@ -394,7 +394,8 @@ parse_cset(basic_io::parser & parser,
       prev_path = p1;
       parser.esym(syms::content);
       parser.hex(t1);
-      safe_insert(cs.files_added, make_pair(p1, file_id(decode_hexenc(t1))));
+      safe_insert(cs.files_added,
+                  make_pair(p1, decode_hexenc_as<file_id>(t1, parser.tok.in.made_from)));
     }
 
   prev_path.clear();
@@ -409,8 +410,8 @@ parse_cset(basic_io::parser & parser,
       parser.esym(syms::to);
       parser.hex(t2);
       safe_insert(cs.deltas_applied,
-                  make_pair(p1, make_pair(file_id(decode_hexenc(t1)),
-                                          file_id(decode_hexenc(t2)))));
+                  make_pair(p1, make_pair(decode_hexenc_as<file_id>(t1, parser.tok.in.made_from),
+                                          decode_hexenc_as<file_id>(t2, parser.tok.in.made_from))));
     }
 
   prev_pair.first.clear();
@@ -420,7 +421,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<file_path, attr_key> new_pair(p1, attr_key(t1));
+      pair<file_path, attr_key> new_pair(p1, attr_key(t1, parser.tok.in.made_from));
       I(prev_pair.first.empty() || new_pair > prev_pair);
       prev_pair = new_pair;
       safe_insert(cs.attrs_cleared, new_pair);
@@ -433,12 +434,12 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<file_path, attr_key> new_pair(p1, attr_key(t1));
+      pair<file_path, attr_key> new_pair(p1, attr_key(t1, parser.tok.in.made_from));
       I(prev_pair.first.empty() || new_pair > prev_pair);
       prev_pair = new_pair;
       parser.esym(syms::value);
       parser.str(t2);
-      safe_insert(cs.attrs_set, make_pair(new_pair, attr_value(t2)));
+      safe_insert(cs.attrs_set, make_pair(new_pair, attr_value(t2, parser.tok.in.made_from)));
     }
 }
 
@@ -447,7 +448,7 @@ write_cset(cset const & cs, data & dat)
 {
   basic_io::printer pr;
   print_cset(pr, cs);
-  dat = data(pr.buf);
+  dat = data(pr.buf, origin::internal);
 }
 
 void
@@ -516,7 +517,7 @@ UNIT_TEST(cset, cset_written)
              " content [0000000000000000000000000000000000000000]\n"
              "\n"
              "add_dir \"pling\"\n");
-    data d1(s);
+    data d1(s, origin::internal);
     cset cs;
     UNIT_TEST_CHECK_THROW(read_cset(d1, cs), logic_error);
     // check that it still fails if there's extra stanzas past the
@@ -524,7 +525,8 @@ UNIT_TEST(cset, cset_written)
     data d2(s + "\n"
                 "  set \"bar\"\n"
                 " attr \"flavoursome\"\n"
-                "value \"mostly\"\n");
+                "value \"mostly\"\n",
+            origin::internal);
     UNIT_TEST_CHECK_THROW(read_cset(d2, cs), logic_error);
   }
 
@@ -690,9 +692,12 @@ UNIT_TEST(cset, cset_written)
   {
     L(FL("TEST: cset writing - normalisation"));
     cset cs; MM(cs);
-    file_id f1(decode_hexenc("1234567800000000000000000000000000000000"));
-    file_id f2(decode_hexenc("9876543212394657263900000000000000000000"));
-    file_id f3(decode_hexenc("0000000000011111111000000000000000000000"));
+    file_id f1(decode_hexenc_as<file_id>("1234567800000000000000000000000000000000",
+                                         origin::internal));
+    file_id f2(decode_hexenc_as<file_id>("9876543212394657263900000000000000000000",
+                                         origin::internal));
+    file_id f3(decode_hexenc_as<file_id>("0000000000011111111000000000000000000000",
+                                         origin::internal));
 
     file_path foo = file_path_internal("foo");
     file_path foo_quux = file_path_internal("foo/quux");
@@ -762,8 +767,10 @@ UNIT_TEST(cset, basic_csets)
 
   editable_roster_base tree(r, nis);
 
-  file_id f1(decode_hexenc("0000000000000000000000000000000000000001"));
-  file_id f2(decode_hexenc("0000000000000000000000000000000000000002"));
+  file_id f1(decode_hexenc_as<file_id>("0000000000000000000000000000000000000001",
+                                       origin::internal));
+  file_id f2(decode_hexenc_as<file_id>("0000000000000000000000000000000000000002",
+                                       origin::internal));
 
   file_path root;
   file_path foo = file_path_internal("foo");
@@ -937,8 +944,10 @@ UNIT_TEST(cset, invalid_csets)
   MM(r);
   editable_roster_base tree(r, nis);
 
-  file_id f1(decode_hexenc("0000000000000000000000000000000000000001"));
-  file_id f2(decode_hexenc("0000000000000000000000000000000000000002"));
+  file_id f1(decode_hexenc_as<file_id>("0000000000000000000000000000000000000001",
+                                       origin::internal));
+  file_id f2(decode_hexenc_as<file_id>("0000000000000000000000000000000000000002",
+                                       origin::internal));
 
   file_path root;
   file_path foo = file_path_internal("foo");
@@ -1107,7 +1116,8 @@ UNIT_TEST(cset, root_dir)
   MM(r);
   editable_roster_base tree(r, nis);
 
-  file_id f1(decode_hexenc("0000000000000000000000000000000000000001"));
+  file_id f1(decode_hexenc_as<file_id>("0000000000000000000000000000000000000001",
+                                       origin::internal));
 
   file_path root, baz = file_path_internal("baz");
 

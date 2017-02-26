@@ -208,7 +208,7 @@ tokenize_for_command_line(string const & from, args_vector & to)
         {
           if (type != one)
             ++i;
-          N(i != from.end(), F("Invalid escape in --xargs file"));
+          E(i != from.end(), origin::user, F("Invalid escape in --xargs file"));
           cur += *i;
           have_tok = true;
         }
@@ -217,7 +217,7 @@ tokenize_for_command_line(string const & from, args_vector & to)
           if (type == none)
             {
               if (have_tok)
-                to.push_back(arg_type(cur));
+                to.push_back(arg_type(cur, origin::user));
               cur.clear();
               have_tok = false;
             }
@@ -234,14 +234,14 @@ tokenize_for_command_line(string const & from, args_vector & to)
         }
     }
   if (have_tok)
-    to.push_back(arg_type(cur));
+    to.push_back(arg_type(cur, origin::user));
 }
 
 void concrete_option_set::from_command_line(int argc, char const * const * argv)
 {
   args_vector arguments;
   for (int i = 1; i < argc; ++i)
-    arguments.push_back(arg_type(argv[i]));
+    arguments.push_back(arg_type(argv[i], origin::user));
   from_command_line(arguments, true);
 }
 
@@ -316,7 +316,7 @@ void concrete_option_set::from_command_line(args_vector & args,
                   arg = idx(args,i+1);
                 }
               else
-                arg = arg_type(idx(args,i)().substr(equals+1));
+                arg = arg_type(idx(args,i)().substr(equals+1), origin::user);
             }
         }
       else if (idx(args,i)().substr(0,1) == "-")
@@ -337,7 +337,7 @@ void concrete_option_set::from_command_line(args_vector & args,
                   arg = idx(args,i+1);
                 }
               else
-                arg = arg_type(idx(args,i)().substr(2));
+                arg = arg_type(idx(args,i)().substr(2), origin::user);
             }
         }
       else
@@ -393,7 +393,7 @@ void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > con
        i != keyvals.end(); ++i)
     {
       string const & key(i->first);
-      arg_type const & value(arg_type(i->second));
+      arg_type const & value(arg_type(i->second, origin::user));
 
       concrete_option o = getopt(by_name, key);
 
@@ -513,10 +513,10 @@ UNIT_TEST(option, concrete_options)
 
   {
     args_vector cmdline;
-    cmdline.push_back(arg_type("--bool"));
-    cmdline.push_back(arg_type("-s"));
-    cmdline.push_back(arg_type("-s"));
-    cmdline.push_back(arg_type("foo"));
+    cmdline.push_back(arg_type("--bool", origin::internal));
+    cmdline.push_back(arg_type("-s", origin::internal));
+    cmdline.push_back(arg_type("-s", origin::internal));
+    cmdline.push_back(arg_type("foo", origin::internal));
     os.from_command_line(cmdline);
   }
   UNIT_TEST_CHECK(b);

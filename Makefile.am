@@ -10,7 +10,7 @@ SANITY_CORE_SOURCES =							\
 	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
 	simplestring_xform.cc simplestring_xform.hh 			\
 	constants.cc constants.hh numeric_vocab.hh 			\
-	platform.hh numeric_vocab.cc
+	platform.hh numeric_vocab.cc origin_type.hh
 
 LUAEXT_SOURCES = 							\
 	vocab.hh vocab.cc vocab_terms.hh vocab_macros.hh vocab_cast.hh  \
