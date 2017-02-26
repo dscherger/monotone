@@ -14,6 +14,7 @@
 
 #include "cmd.hh"
 #include "app_state.hh"
+#include "automate_ostream.hh"
 #include "ui.hh"
 #include "lua.hh"
 #include "lua_hooks.hh"
@@ -246,104 +247,6 @@ public:
   }
 };
 
-struct automate_streambuf : public std::streambuf
-{
-private:
-  size_t _bufsize;
-  std::ostream *out;
-  automate_reader *in;
-  int cmdnum;
-  int err;
-public:
-  automate_streambuf(size_t bufsize)
-    : std::streambuf(), _bufsize(bufsize), out(0), in(0), cmdnum(0), err(0)
-  {
-    char *inbuf = new char[_bufsize];
-    setp(inbuf, inbuf + _bufsize);
-  }
-  automate_streambuf(std::ostream & o, size_t bufsize)
-    : std::streambuf(), _bufsize(bufsize), out(&o), in(0), cmdnum(0), err(0)
-  {
-    char *inbuf = new char[_bufsize];
-    setp(inbuf, inbuf + _bufsize);
-  }
-  automate_streambuf(automate_reader & i, size_t bufsize)
-    : std::streambuf(), _bufsize(bufsize), out(0), in(&i), cmdnum(0), err(0)
-  {
-    char *inbuf = new char[_bufsize];
-    setp(inbuf, inbuf + _bufsize);
-  }
-  ~automate_streambuf()
-  {}
-
-  void set_err(int e)
-  {
-    sync();
-    err = e;
-  }
-
-  void end_cmd()
-  {
-    _M_sync(true);
-    ++cmdnum;
-    err = 0;
-  }
-
-  virtual int sync()
-  {
-    _M_sync();
-    return 0;
-  }
-
-  void _M_sync(bool end = false)
-  {
-    if (!out)
-      {
-        setp(pbase(), pbase() + _bufsize);
-        return;
-      }
-    int num = pptr() - pbase();
-    if (num || end)
-      {
-        (*out) << cmdnum << ':'
-            << err << ':'
-            << (end?'l':'m') << ':'
-            << num << ':' << std::string(pbase(), num);
-        setp(pbase(), pbase() + _bufsize);
-        out->flush();
-      }
-  }
-  int_type
-  overflow(int_type c = traits_type::eof())
-  {
-    sync();
-    sputc(c);
-    return 0;
-  }
-};
-
-struct automate_ostream : public std::ostream
-{
-  automate_streambuf _M_autobuf;
-
-  automate_ostream(std::ostream &out, size_t blocksize)
-    : std::ostream(NULL),
-      _M_autobuf(out, blocksize)
-  { this->init(&_M_autobuf); }
-
-  ~automate_ostream()
-  {}
-
-  automate_streambuf *
-  rdbuf() const
-  { return const_cast<automate_streambuf *>(&_M_autobuf); }
-
-  void set_err(int e)
-  { _M_autobuf.set_err(e); }
-
-  void end_cmd()
-  { _M_autobuf.end_cmd(); }
-};
 
 CMD_AUTOMATE(stdio, "",
              N_("Automates several commands in one run"),
